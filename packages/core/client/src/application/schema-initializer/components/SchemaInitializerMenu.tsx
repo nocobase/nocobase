@@ -4,7 +4,7 @@ import React, { FC, ReactNode } from 'react';
 import { useInitializerChildren } from '../hooks';
 import { SchemaInitializerOptions } from '../types';
 import { useCompile } from '../../../schema-component';
-import { useSchemaInitializerV2 } from '../context';
+import { useSchemaInitializer } from '../context';
 
 export interface SchemaInitializerMenuProps {
   title: string;
@@ -17,7 +17,7 @@ export interface SchemaInitializerMenuProps {
 export const SchemaInitializerMenu: FC<SchemaInitializerMenuProps> = (props) => {
   const { children, title, name, icon } = props;
   const validChildren = useInitializerChildren(children);
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const compile = useCompile();
 
   return (

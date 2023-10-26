@@ -8,14 +8,14 @@ import {
   SchemaComponentOptions,
   useCollectionManager,
   useGlobalTheme,
-  useSchemaInitializerV2,
+  useSchemaInitializer,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useMapTranslation } from '../locale';
 import { createMapBlockSchema, findNestedOption } from './utils';
 
 export const MapBlockInitializer = (props) => {
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const options = useContext(SchemaOptionsContext);
   const { getCollectionFieldsOptions } = useCollectionManager();
   const { t } = useMapTranslation();

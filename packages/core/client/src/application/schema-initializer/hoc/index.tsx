@@ -22,7 +22,7 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
       designable: propsDesignable,
       popoverProps,
       children,
-      noDropdown,
+      noPopover,
     } = props;
 
     // 插入 schema 的能力
@@ -47,7 +47,7 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
 
     return (
       <SchemaInitializerV2Context.Provider value={{ insert: insertSchema, options: props }}>
-        {noDropdown ? (
+        {noPopover ? (
           React.createElement(C, cProps)
         ) : (
           <Popover

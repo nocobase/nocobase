@@ -47,7 +47,7 @@ export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = ListProps<any>>
   itemsComponentProps?: P2;
   itemsComponentStyle?: React.CSSProperties;
 
-  noDropdown?: boolean;
+  noPopover?: boolean;
   popoverProps?: PopoverProps;
   designable?: boolean;
   wrap?: (s: ISchema) => ISchema;

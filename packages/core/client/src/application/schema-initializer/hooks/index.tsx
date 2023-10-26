@@ -7,7 +7,6 @@ import {
   SchemaInitializerItem,
   SchemaInitializerDivider,
 } from '../components';
-import { useStyles } from '../components/style';
 import { useCompile } from '../../../schema-component';
 import { SchemaInitializerItemOptions } from '../../../schema-initializer';
 
@@ -59,7 +58,6 @@ export function useSchemaInitializerMenuItems(
   onClick?: (args: any) => void,
 ) {
   const compile = useCompile();
-  const { styles } = useStyles();
   const findComponent = useFindComponent();
 
   const getMenuItems = useCallback(

@@ -1,7 +1,7 @@
 import { gridRowColWrap } from '../utils';
-import { SchemaInitializerGroup, SchemaInitializerV2 } from '../../application';
+import { SchemaInitializerGroup, SchemaInitializer } from '../../application';
 
-export const blockInitializers = new SchemaInitializerV2({
+export const blockInitializers = new SchemaInitializer({
   name: 'BlockInitializers',
   'data-testid': 'add-block-button-in-page',
   title: '{{t("Add block")}}',

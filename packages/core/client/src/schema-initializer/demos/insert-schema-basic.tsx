@@ -4,9 +4,9 @@ import {
   Plugin,
   SchemaComponent,
   SchemaComponentProvider,
-  SchemaInitializerV2,
+  SchemaInitializer,
   useApp,
-  useSchemaInitializerV2,
+  useSchemaInitializer,
 } from '@nocobase/client';
 import { observer, useField } from '@formily/react';
 import { Field } from '@formily/core';
@@ -22,7 +22,7 @@ const Hello = observer(() => {
 
 function Demo({ title }) {
   // 调用插入功能
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const handleClick = () => {
     insert({
       type: 'void',
@@ -33,7 +33,7 @@ function Demo({ title }) {
   return <div onClick={handleClick}>{title}</div>;
 }
 
-const myInitializer = new SchemaInitializerV2({
+const myInitializer = new SchemaInitializer({
   name: 'MyInitializer',
   title: 'Add Block',
   // 插入位置

@@ -15,9 +15,9 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   SchemaInitializerItem,
-  SchemaInitializerV2,
+  SchemaInitializer,
   useCollectionManager,
-  useSchemaInitializerV2,
+  useSchemaInitializer,
 } from '@nocobase/client';
 import { FormDrawer, FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
@@ -71,7 +71,7 @@ const FormItemInitializer = (props) => {
   const { getInterface } = useCollectionManager();
   const schemaOptions = useContext(SchemaOptionsContext);
   const cm = useContext(CollectionManagerContext);
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   return (
     <SchemaInitializerItem
       title={'add'}
@@ -121,7 +121,7 @@ const FormItemInitializer = (props) => {
   );
 };
 
-const addFieldButton = new SchemaInitializerV2({
+const addFieldButton = new SchemaInitializer({
   name: 'AddFieldButton',
   // 正常情况下这个值为 false，通过点击页面左上角的设计按钮切换，这里为了显示设置为 true
   designable: true,

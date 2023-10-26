@@ -1,7 +1,7 @@
-import { SchemaInitializerV2 } from '../../application';
+import { SchemaInitializer } from '../../application';
 
 // 表格操作配置
-export const subTableActionInitializers = new SchemaInitializerV2({
+export const subTableActionInitializers = new SchemaInitializer({
   name: 'SubTableActionInitializers',
   'data-testid': 'configure-actions-button-of-sub-table',
   title: "{{t('Configure actions')}}",

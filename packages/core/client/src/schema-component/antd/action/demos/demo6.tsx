@@ -7,12 +7,12 @@ import {
   Plugin,
   SchemaComponent,
   SchemaComponentProvider,
-  SchemaInitializerV2,
+  SchemaInitializer,
 } from '@nocobase/client';
 import { uid } from '@formily/shared';
 import { ISchema } from '@formily/react';
 
-const addActionButton = new SchemaInitializerV2({
+const addActionButton = new SchemaInitializer({
   name: 'AddActionButton',
   designable: true,
   title: 'Configure actions',

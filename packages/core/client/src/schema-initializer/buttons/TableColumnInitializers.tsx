@@ -7,7 +7,7 @@ import {
   useInheritsTableColumnInitializerFields,
   useTableColumnInitializerFields,
 } from '../utils';
-import { SchemaInitializerChildren, SchemaInitializerV2 } from '../../application';
+import { SchemaInitializerChildren, SchemaInitializer } from '../../application';
 
 // 表格列配置
 const ParentCollectionFields = () => {
@@ -45,7 +45,7 @@ const AssociatedFields = () => {
   return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
 
-export const tableColumnInitializers = new SchemaInitializerV2({
+export const tableColumnInitializers = new SchemaInitializer({
   name: 'TableColumnInitializers',
   'data-testid': 'configure-columns-button-of-table-block',
   insertPosition: 'beforeEnd',

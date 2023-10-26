@@ -4,11 +4,11 @@ import { useBlockAssociationContext, useBlockRequestContext } from '../../block-
 import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializerV2 } from '../../application';
+import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
 
 export const RecordReadPrettyFormBlockInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, icon = true, targetCollection, ...others } = props;
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const currentCollection = useCollection();
   const collection = targetCollection || currentCollection;

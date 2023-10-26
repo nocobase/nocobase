@@ -11,7 +11,7 @@ import {
   useFormItemInitializerFields,
 } from '../../../schema-initializer/utils';
 import { OpenModeSchemaItems } from '../../../schema-items';
-import { SchemaInitializerV2, useApp } from '../../../application';
+import { SchemaInitializer, useApp } from '../../../application';
 
 const gridRowColWrap = (schema: ISchema) => {
   schema['x-read-pretty'] = true;
@@ -57,7 +57,7 @@ export const KanbanCardDesigner = () => {
   );
 };
 
-export const kanbanCardInitializers = new SchemaInitializerV2({
+export const kanbanCardInitializers = new SchemaInitializer({
   name: 'KanbanCardInitializers',
   wrap: gridRowColWrap,
   useInsert() {

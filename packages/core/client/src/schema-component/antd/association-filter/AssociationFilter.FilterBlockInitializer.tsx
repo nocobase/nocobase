@@ -1,8 +1,8 @@
 import { useOptionalFieldList } from '../../../block-provider/hooks';
 import { useAssociatedFields } from '../../../filter-provider/utils';
-import { SchemaInitializerV2 } from '../../../application';
+import { SchemaInitializer } from '../../../application';
 
-export const associationFilterFilterBlockInitializer = new SchemaInitializerV2({
+export const associationFilterFilterBlockInitializer = new SchemaInitializer({
   name: 'AssociationFilter.FilterBlockInitializer',
   'data-testid': 'configure-fields-button-of-association-filter-filter-block',
   style: { marginTop: 16 },

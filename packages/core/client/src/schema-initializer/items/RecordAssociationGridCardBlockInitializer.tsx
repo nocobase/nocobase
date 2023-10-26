@@ -4,11 +4,11 @@ import { TableOutlined } from '@ant-design/icons';
 import { useCollectionManager } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createGridCardBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializerV2 } from '../../application';
+import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
 
 export const RecordAssociationGridCardBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, ...others } = props;
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { getCollection } = useCollectionManager();
   const field = item.field;

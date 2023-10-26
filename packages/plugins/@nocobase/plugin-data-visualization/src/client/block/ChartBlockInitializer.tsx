@@ -2,11 +2,11 @@ import { LineChartOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import {
   SchemaInitializerItem,
-  SchemaInitializerV2,
+  SchemaInitializer,
   useACLRoleContext,
   useSchemaInitializerMenuItems,
   useCollectionDataSourceItemsV2,
-  useSchemaInitializerV2,
+  useSchemaInitializer,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { ChartConfigContext } from '../configure/ChartConfigure';
@@ -46,7 +46,7 @@ const ItemsComponent = () => {
   return <Menu items={menuItems} />;
 };
 
-export const chartInitializers = new SchemaInitializerV2({
+export const chartInitializers = new SchemaInitializer({
   name: 'ChartInitializers',
   icon: 'PlusOutlined',
   popoverProps: {
@@ -57,7 +57,7 @@ export const chartInitializers = new SchemaInitializerV2({
 });
 
 export const ChartV2BlockInitializer: React.FC = (props) => {
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   return (
     <SchemaInitializerItem
       {...props}

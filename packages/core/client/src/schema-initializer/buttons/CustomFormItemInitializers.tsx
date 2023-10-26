@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../../schema-component';
 import { gridRowColWrap, useCustomFormItemInitializerFields, useInheritsFormItemInitializerFields } from '../utils';
-import { SchemaInitializerChildren, SchemaInitializerV2 } from '../../application';
+import { SchemaInitializerChildren, SchemaInitializer } from '../../application';
 
 // 表单里配置字段
 const ParentCollectionFields = () => {
@@ -23,7 +23,7 @@ const ParentCollectionFields = () => {
   return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
 };
 
-export const customFormItemInitializers = new SchemaInitializerV2({
+export const customFormItemInitializers = new SchemaInitializer({
   name: 'CustomFormItemInitializers',
   'data-testid': 'configure-fields-button-of-custom-form-item',
   wrap: gridRowColWrap,

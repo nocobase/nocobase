@@ -10,10 +10,10 @@ import { useGlobalTheme } from '../../global-theme';
 import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { createKanbanBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
-import { useSchemaInitializerV2 } from '../../application';
+import { useSchemaInitializer } from '../../application';
 
 export const KanbanBlockInitializer = (props) => {
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const { getCollectionFields } = useCollectionManager();
   const options = useContext(SchemaOptionsContext);

@@ -9,7 +9,7 @@ import {
   MarkdownBlockInitializer,
   SchemaComponent,
   SchemaComponentProvider,
-  SchemaInitializerV2,
+  SchemaInitializer,
 } from '@nocobase/client';
 import React from 'react';
 
@@ -29,7 +29,7 @@ const gridRowColWrap = (schema) => {
   };
 };
 
-export const addBlockButton = new SchemaInitializerV2({
+export const addBlockButton = new SchemaInitializer({
   name: 'AddBlockButton',
   title: 'Add block',
   wrap: gridRowColWrap,

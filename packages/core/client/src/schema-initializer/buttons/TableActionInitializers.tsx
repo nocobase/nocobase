@@ -1,9 +1,9 @@
 import { useFieldSchema } from '@formily/react';
 import { useCollection } from '../../';
-import { SchemaInitializerV2 } from '../../application';
+import { SchemaInitializer } from '../../application';
 
 // 表格操作配置
-export const tableActionInitializers = new SchemaInitializerV2({
+export const tableActionInitializers = new SchemaInitializer({
   name: 'TableActionInitializers',
   'data-testid': 'configure-actions-button-of-table-block',
   title: "{{t('Configure actions')}}",

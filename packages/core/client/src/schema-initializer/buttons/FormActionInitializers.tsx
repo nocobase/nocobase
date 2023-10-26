@@ -1,4 +1,4 @@
-import { SchemaInitializerItemType, SchemaInitializerV2 } from '../../application';
+import { SchemaInitializerItemType, SchemaInitializer } from '../../application';
 
 // TODO(refactor): should be moved to workflow plugin
 const formTriggerWorkflowActionInitializerV2: SchemaInitializerItemType = {
@@ -27,7 +27,7 @@ const formTriggerWorkflowActionInitializerV2: SchemaInitializerItemType = {
 };
 
 // 表单的操作配置
-export const formActionInitializers = new SchemaInitializerV2({
+export const formActionInitializers = new SchemaInitializer({
   name: 'FormActionInitializers',
   'data-testid': 'configure-actions-button-of-form-block',
   title: '{{t("Configure actions")}}',
@@ -95,7 +95,7 @@ export const formActionInitializers = new SchemaInitializerV2({
   ],
 });
 
-export const createFormActionInitializers = new SchemaInitializerV2({
+export const createFormActionInitializers = new SchemaInitializer({
   name: 'CreateFormActionInitializers',
   'data-testid': 'configure-actions-button-of-create-form',
   title: '{{t("Configure actions")}}',
@@ -163,7 +163,7 @@ export const createFormActionInitializers = new SchemaInitializerV2({
   ],
 });
 
-export const updateFormActionInitializers = new SchemaInitializerV2({
+export const updateFormActionInitializers = new SchemaInitializer({
   name: 'UpdateFormActionInitializers',
   'data-testid': 'configure-actions-button-of-update-form',
   title: '{{t("Configure actions")}}',
@@ -282,7 +282,7 @@ export const updateFormActionInitializers = new SchemaInitializerV2({
   ],
 });
 
-export const bulkEditFormActionInitializers = new SchemaInitializerV2({
+export const bulkEditFormActionInitializers = new SchemaInitializer({
   name: 'BulkEditFormActionInitializers',
   'data-testid': 'configure-actions-button-of-bulk-edit-form',
   title: '{{t("Configure actions")}}',

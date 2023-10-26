@@ -1,8 +1,8 @@
 import { useCollection } from '../..';
 import { gridRowColWrap } from '../utils';
-import { SchemaInitializerV2 } from '../../application';
+import { SchemaInitializer } from '../../application';
 
-export const tableSelectorInitializers = new SchemaInitializerV2({
+export const tableSelectorInitializers = new SchemaInitializer({
   name: 'TableSelectorInitializers',
   'data-testid': 'configure-columns-button-of-table-block',
   wrap: gridRowColWrap,

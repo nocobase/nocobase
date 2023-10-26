@@ -10,7 +10,7 @@ import {
   useFormItemInitializerFields,
   useInheritsFormItemInitializerFields,
 } from '../utils';
-import { SchemaInitializerChildren, SchemaInitializerV2 } from '../../application';
+import { SchemaInitializerChildren, SchemaInitializer } from '../../application';
 
 const ParentCollectionFields = () => {
   const inheritFields = useInheritsFormItemInitializerFields();
@@ -48,7 +48,7 @@ const AssociatedFields = () => {
 };
 
 // 表单里配置字段
-export const formItemInitializers = new SchemaInitializerV2({
+export const formItemInitializers = new SchemaInitializer({
   name: 'FormItemInitializers',
   'data-testid': 'configure-fields-button-of-form-item',
   wrap: gridRowColWrap,
@@ -122,7 +122,7 @@ export const FilterAssociatedFields = () => {
   return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
 };
 
-export const filterFormItemInitializers = new SchemaInitializerV2({
+export const filterFormItemInitializers = new SchemaInitializer({
   name: 'FilterFormItemInitializers',
   'data-testid': 'configure-fields-button-of-filter-form-item',
   wrap: gridRowColWrap,

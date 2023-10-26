@@ -3,11 +3,11 @@ import React from 'react';
 
 import { useCollection } from '../../collection-manager';
 import { createTableSelectorSchema } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializerV2 } from '../../application';
+import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
 
 export const TableSelectorInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = props;
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const collection = useCollection();
   return (
     <SchemaInitializerItem

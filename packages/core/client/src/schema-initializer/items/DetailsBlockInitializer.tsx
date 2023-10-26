@@ -3,10 +3,10 @@ import React from 'react';
 import { useCollectionManager } from '../../collection-manager';
 import { createDetailsBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
-import { useSchemaInitializerV2 } from '../../application';
+import { useSchemaInitializer } from '../../application';
 
 export const DetailsBlockInitializer = (props) => {
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const { getCollection } = useCollectionManager();
   return (
     <DataBlockInitializer

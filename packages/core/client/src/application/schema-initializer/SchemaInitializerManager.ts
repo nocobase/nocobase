@@ -1,21 +1,21 @@
 import { ButtonProps, ListProps } from 'antd';
 import { Application } from '../Application';
-import { SchemaInitializerV2 } from './SchemaInitializer';
+import { SchemaInitializer } from './SchemaInitializer';
 import { SchemaInitializerOptions } from './types';
 
 export class SchemaInitializerManager {
   constructor(
-    protected initializers: Record<string, SchemaInitializerV2<any, any>> = {},
+    protected initializers: Record<string, SchemaInitializer<any, any>> = {},
     protected app: Application,
   ) {
     this.app = app;
   }
 
-  add<P1 = any, P2 = any>(schemaInitializer: SchemaInitializerV2<P1, P2>) {
+  add<P1 = any, P2 = any>(schemaInitializer: SchemaInitializer<P1, P2>) {
     this.initializers[schemaInitializer.name] = schemaInitializer;
   }
 
-  get<P1 = ButtonProps, P2 = ListProps<any>>(name: string): SchemaInitializerV2<P1, P2> | undefined {
+  get<P1 = ButtonProps, P2 = ListProps<any>>(name: string): SchemaInitializer<P1, P2> | undefined {
     return this.initializers[name];
   }
 

@@ -19,7 +19,7 @@ import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import type { RequireJS } from './utils/requirejs';
 import { getRequireJs } from './utils/requirejs';
-import { SchemaInitializerV2, SchemaInitializerManager } from './schema-initializer';
+import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
 import * as schemaInitializerComponents from './schema-initializer/components';
 
 declare global {
@@ -40,7 +40,7 @@ export interface ApplicationOptions {
   scopes?: Record<string, any>;
   router?: RouterOptions;
   devDynamicImport?: DevDynamicImport;
-  initializers?: Record<string, SchemaInitializerV2>;
+  initializers?: Record<string, SchemaInitializer>;
   loadRemotePlugins?: boolean;
 }
 

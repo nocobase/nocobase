@@ -7,7 +7,7 @@ import {
   useFormItemInitializerFields,
   useInheritsFormItemInitializerFields,
 } from '../utils';
-import { SchemaInitializerChildren, SchemaInitializerV2 } from '../../application';
+import { SchemaInitializerChildren, SchemaInitializer } from '../../application';
 
 const ParentCollectionFields = () => {
   const inheritFields = useInheritsFormItemInitializerFields();
@@ -44,7 +44,7 @@ const AssociatedFields = () => {
   return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
 
-export const readPrettyFormItemInitializers = new SchemaInitializerV2({
+export const readPrettyFormItemInitializers = new SchemaInitializer({
   name: 'ReadPrettyFormItemInitializers',
   'data-testid': 'configure-fields-button-of-read-pretty-form-item',
   wrap: gridRowColWrap,

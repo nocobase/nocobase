@@ -1,7 +1,7 @@
 import React from 'react';
-import { Application, Plugin, SchemaInitializerV2, useApp } from '@nocobase/client';
+import { Application, Plugin, SchemaInitializer, useApp } from '@nocobase/client';
 
-const myInitializer = new SchemaInitializerV2({
+const myInitializer = new SchemaInitializer({
   name: 'MyInitializer',
   designable: true,
   title: 'Button Text',

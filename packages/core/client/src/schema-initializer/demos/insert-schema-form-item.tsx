@@ -11,8 +11,8 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   SchemaInitializerItemType,
-  SchemaInitializerV2,
-  useSchemaInitializerV2,
+  SchemaInitializer,
+  useSchemaInitializer,
 } from '@nocobase/client';
 
 const useFormItemInitializerFields = () => {
@@ -47,7 +47,7 @@ const useFormItemInitializerFields = () => {
 };
 
 const TextInitializer: FC = (props) => {
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   return (
     <SchemaInitializerItem
       onClick={() => {
@@ -63,7 +63,7 @@ const TextInitializer: FC = (props) => {
   );
 };
 
-const addFormItemInitializer = new SchemaInitializerV2({
+const addFormItemInitializer = new SchemaInitializer({
   name: 'AddFormItem',
   title: 'Configure actions',
   insertPosition: 'beforeEnd',

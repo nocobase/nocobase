@@ -1,8 +1,8 @@
 import { useCollection } from '../../';
-import { SchemaInitializerV2 } from '../../application';
+import { SchemaInitializer } from '../../application';
 
 // 日历的操作配置
-export const calendarActionInitializers = new SchemaInitializerV2({
+export const calendarActionInitializers = new SchemaInitializer({
   name: 'CalendarActionInitializers',
   'data-testid': 'configure-actions-button-of-calendar-block',
   title: '{{t("Configure actions")}}',

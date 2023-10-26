@@ -11,7 +11,7 @@ import {
   useAPIClient,
   useCompile,
   useGlobalTheme,
-  useSchemaInitializerV2,
+  useSchemaInitializer,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import JSON5 from 'json5';
@@ -56,7 +56,7 @@ interface ChartFormInterface {
 }
 
 export const ChartBlockInitializer = (props) => {
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
   const compile = useCompile();

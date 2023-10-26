@@ -1,7 +1,7 @@
-import { SchemaInitializerV2 } from '@nocobase/client';
+import { SchemaInitializer } from '@nocobase/client';
 
 // 操作记录表格操作配置
-export const auditLogsTableActionInitializers = new SchemaInitializerV2({
+export const auditLogsTableActionInitializers = new SchemaInitializer({
   name: 'AuditLogsTableActionInitializers',
   'data-testid': 'configure-actions-button-of-audit-logs-table',
   title: "{{t('Configure actions')}}",

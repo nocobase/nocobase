@@ -11,15 +11,14 @@ import {
   FormBlockContext,
   RecordProvider,
   SchemaComponent,
-  SchemaInitializer,
   SchemaInitializerItem,
   SchemaInitializerItemOptions,
   SchemaInitializerItems,
-  SchemaInitializerV2,
+  SchemaInitializer,
   gridRowColWrap,
   useCollectionManager,
   useRecord,
-  useSchemaInitializerV2,
+  useSchemaInitializer,
 } from '@nocobase/client';
 import { merge, uid } from '@nocobase/utils/client';
 import lodash from 'lodash';
@@ -67,7 +66,7 @@ function CustomFormBlockProvider(props) {
 }
 
 function CustomFormBlockInitializer({ ...props }) {
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   return (
     <SchemaInitializerItem
       {...props}
@@ -317,7 +316,7 @@ const CustomItemsComponent = (props) => {
   );
 };
 
-export const addCustomFormField = new SchemaInitializerV2({
+export const addCustomFormField = new SchemaInitializer({
   name: 'AddCustomFormField',
   'data-testid': 'configure-fields-button-of-add-custom-form-field',
   wrap: gridRowColWrap,
@@ -328,7 +327,7 @@ export const addCustomFormField = new SchemaInitializerV2({
 
 function CustomFormFieldInitializer(props) {
   const { item } = props;
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const { onAddField, setCallback } = useContext(AddCustomFormFieldButtonContext);
   const { getInterface } = useCollectionManager();
 

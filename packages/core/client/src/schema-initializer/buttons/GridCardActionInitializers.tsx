@@ -1,8 +1,8 @@
-import { SchemaInitializerV2 } from '../../application';
+import { SchemaInitializer } from '../../application';
 import { useCollection } from '../../collection-manager';
 
 // 表单的操作配置
-export const gridCardActionInitializers = new SchemaInitializerV2({
+export const gridCardActionInitializers = new SchemaInitializer({
   name: 'GridCardActionInitializers',
   'data-testid': 'configure-actions-button-of-grid-card-block',
   title: "{{t('Configure actions')}}",
@@ -81,7 +81,7 @@ export const gridCardActionInitializers = new SchemaInitializerV2({
   ],
 });
 
-export const gridCardItemActionInitializers = new SchemaInitializerV2({
+export const gridCardItemActionInitializers = new SchemaInitializer({
   name: 'GridCardItemActionInitializers',
   'data-testid': 'configure-actions-button-of-grid-card-item',
   title: '{{t("Configure actions")}}',

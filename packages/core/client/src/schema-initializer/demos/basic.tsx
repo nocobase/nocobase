@@ -1,7 +1,7 @@
 import React from 'react';
-import { Application, Plugin, SchemaInitializerV2, useApp } from '@nocobase/client';
+import { Application, Plugin, SchemaInitializer, useApp } from '@nocobase/client';
 
-const myInitializer = new SchemaInitializerV2({
+const myInitializer = new SchemaInitializer({
   name: 'MyInitializer',
   // 正常情况下这个值为 false，通过点击页面左上角的设计按钮切换，这里为了显示设置为 true
   designable: true,

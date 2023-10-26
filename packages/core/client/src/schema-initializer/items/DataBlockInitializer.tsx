@@ -1,7 +1,7 @@
 import Icon, { TableOutlined } from '@ant-design/icons';
 import { Menu } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
-import { useSchemaInitializerV2, useSchemaInitializerMenuItems } from '../../application';
+import { useSchemaInitializer, useSchemaInitializerMenuItems } from '../../application';
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCollectionDataSourceItemsV2 } from '../utils';
@@ -18,7 +18,7 @@ export const DataBlockInitializer = (props) => {
     title,
     items,
   } = props;
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const compile = useCompile();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const onClick = useCallback(

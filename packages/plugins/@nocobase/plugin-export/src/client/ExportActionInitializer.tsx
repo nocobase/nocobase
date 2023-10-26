@@ -5,7 +5,7 @@ import {
   useCollection,
   useCompile,
   useDesignable,
-  useSchemaInitializerV2,
+  useSchemaInitializer,
 } from '@nocobase/client';
 import React from 'react';
 import { useFields } from './useFields';
@@ -45,7 +45,7 @@ const initExportSettings = (fields) => {
 
 export const ExportActionInitializer = (props) => {
   const { item } = props;
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const { exists, remove } = useCurrentSchema('export', 'x-action', item.find, item.remove);
   const compile = useCompile();
   const { name } = useCollection();

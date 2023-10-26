@@ -6,6 +6,6 @@ export const SchemaInitializerV2Context = createContext<{ insert: InsertType; op
 );
 SchemaInitializerV2Context.displayName = 'SchemaInitializerV2Context';
 
-export const useSchemaInitializerV2 = () => {
+export const useSchemaInitializer = () => {
   return React.useContext(SchemaInitializerV2Context);
 };

@@ -2,7 +2,7 @@ import React, { FC } from 'react';
 import {
   Application,
   Plugin,
-  SchemaInitializerV2,
+  SchemaInitializer,
   SchemaInitializerItemType,
   SchemaInitializerChildren,
   useApp,
@@ -50,7 +50,7 @@ const ParentA: FC<{ children: SchemaInitializerItemType[] }> = ({ children }) =>
   );
 };
 
-const myInitializer = new SchemaInitializerV2({
+const myInitializer = new SchemaInitializer({
   name: 'MyInitializer',
   designable: true,
   title: 'Button Text',

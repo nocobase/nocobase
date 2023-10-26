@@ -1,7 +1,7 @@
 import { useCollection } from '../../';
-import { SchemaInitializerV2 } from '../../application';
+import { SchemaInitializer } from '../../application';
 
-export const kanbanActionInitializers = new SchemaInitializerV2({
+export const kanbanActionInitializers = new SchemaInitializer({
   name: 'KanbanActionInitializers',
   'data-testid': 'configure-actions-button-of-kanban-block',
   title: "{{t('Configure actions')}}",

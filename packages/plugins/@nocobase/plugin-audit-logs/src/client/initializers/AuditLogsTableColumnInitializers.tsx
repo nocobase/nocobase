@@ -1,6 +1,6 @@
 import {
   SchemaInitializerChildren,
-  SchemaInitializerV2,
+  SchemaInitializer,
   useAssociatedTableColumnInitializerFields,
   useCompile,
   useInheritsTableColumnInitializerFields,
@@ -44,7 +44,7 @@ const AssociatedFields = () => {
   return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
 
-export const auditLogsTableColumnInitializers = new SchemaInitializerV2({
+export const auditLogsTableColumnInitializers = new SchemaInitializer({
   name: 'AuditLogsTableColumnInitializers',
   insertPosition: 'beforeEnd',
   icon: 'SettingOutlined',

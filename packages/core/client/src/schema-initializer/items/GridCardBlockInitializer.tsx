@@ -3,10 +3,10 @@ import { OrderedListOutlined } from '@ant-design/icons';
 import { createGridCardBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
 import { useCollectionManager } from '../../collection-manager';
-import { useSchemaInitializerV2 } from '../../application';
+import { useSchemaInitializer } from '../../application';
 
 export const GridCardBlockInitializer = (props) => {
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const { getCollection } = useCollectionManager();
   return (
     <DataBlockInitializer

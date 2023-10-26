@@ -1,7 +1,7 @@
-import { SchemaInitializerV2, gridRowColWrap } from '@nocobase/client';
+import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
 import { NAMESPACE } from '../../locale';
 
-export const snapshotBlockInitializers = new SchemaInitializerV2({
+export const snapshotBlockInitializers = new SchemaInitializer({
   name: 'SnapshotBlockInitializers',
   'data-testid': 'add-block-button-in-snapshot-block',
   wrap: gridRowColWrap,

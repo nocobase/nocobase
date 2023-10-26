@@ -6,7 +6,7 @@ import { SchemaInitializerButton } from './components/SchemaInitializerButton';
 import { SchemaInitializerItems } from './components/SchemaInitializerItems';
 import { withInitializer } from './hoc';
 
-export class SchemaInitializerV2<P1 = ButtonProps, P2 = ListProps<any>> {
+export class SchemaInitializer<P1 = ButtonProps, P2 = ListProps<any>> {
   options: SchemaInitializerOptions<P1, P2>;
   name: string;
   get items() {

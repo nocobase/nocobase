@@ -1,7 +1,7 @@
 import type { ISchema } from '@formily/react';
 import { Schema, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import { SchemaInitializerSwitch, css, useCollection, useDesignable, useSchemaInitializerV2 } from '@nocobase/client';
+import { SchemaInitializerSwitch, css, useCollection, useDesignable, useSchemaInitializer } from '@nocobase/client';
 import React from 'react';
 import { NAMESPACE } from './constants';
 import { useFields } from './useFields';
@@ -41,7 +41,7 @@ const initImportSettings = (fields) => {
 
 export const ImportActionInitializer = (props) => {
   const { item } = props;
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const { exists, remove } = useCurrentSchema('importXlsx', 'x-action', item.find, item.remove);
   const { name } = useCollection();
   const fields = useFields(name);

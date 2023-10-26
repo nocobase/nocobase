@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { createStyles } from 'antd-style';
 import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../..';
 import { useGlobalTheme } from '../../../../global-theme';
-import { SchemaInitializerItem, SchemaInitializerV2, useSchemaInitializerV2 } from '../../../../application';
+import { SchemaInitializerItem, SchemaInitializer, useSchemaInitializer } from '../../../../application';
 
 const useStyles = createStyles(({ token }) => ({
   menuItem: {
@@ -16,7 +16,7 @@ const useStyles = createStyles(({ token }) => ({
 }));
 
 export const GroupItem = () => {
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
@@ -79,7 +79,7 @@ export const GroupItem = () => {
 };
 
 export const PageMenuItem = () => {
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
@@ -157,7 +157,7 @@ export const PageMenuItem = () => {
 };
 
 export const LinkMenuItem = () => {
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
@@ -226,7 +226,7 @@ export const LinkMenuItem = () => {
   return <SchemaInitializerItem title={t('Link')} onClick={handleClick} className={styles.menuItem} />;
 };
 
-export const menuItemInitializer = new SchemaInitializerV2({
+export const menuItemInitializer = new SchemaInitializer({
   name: 'MenuItemInitializers',
   insertPosition: 'beforeEnd',
   icon: 'PlusOutlined',

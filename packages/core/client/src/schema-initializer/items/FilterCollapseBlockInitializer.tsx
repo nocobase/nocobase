@@ -3,11 +3,11 @@ import React from 'react';
 
 import { createCollapseBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
-import { useSchemaInitializerV2 } from '../../application';
+import { useSchemaInitializer } from '../../application';
 
 export const FilterCollapseBlockInitializer = (props) => {
   const { item } = props;
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const items = item?.key === 'filterCollapseBlockInTableSelector' && [];
 
   return (

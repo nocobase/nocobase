@@ -9,10 +9,10 @@ import { useGlobalTheme } from '../../global-theme';
 import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { createCalendarBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
-import { useSchemaInitializerV2 } from '../../application';
+import { useSchemaInitializer } from '../../application';
 
 export const CalendarBlockInitializer = (props) => {
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const { getCollectionField, getCollectionFieldsOptions } = useCollectionManager();
   const options = useContext(SchemaOptionsContext);

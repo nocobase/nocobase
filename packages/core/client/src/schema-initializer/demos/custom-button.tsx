@@ -1,9 +1,9 @@
 import React from 'react';
-import { Application, Plugin, SchemaInitializerV2, useApp } from '@nocobase/client';
+import { Application, Plugin, SchemaInitializer, useApp } from '@nocobase/client';
 import { PlusOutlined } from '@ant-design/icons';
 import { Divider, Avatar, AvatarProps } from 'antd';
 
-const myInitializer = new SchemaInitializerV2<AvatarProps>({
+const myInitializer = new SchemaInitializer<AvatarProps>({
   name: 'MyInitializer',
   designable: true,
   // 使用自定义组件代替默认的 Button
@@ -42,7 +42,7 @@ const Root = () => {
       <Divider />
       <div>
         <div>不使用 dropdown</div>
-        {render({ noDropdown: true, componentProps: { onClick: () => alert('test') } })}
+        {render({ noPopover: true, componentProps: { onClick: () => alert('test') } })}
       </div>
     </div>
   );

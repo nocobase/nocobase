@@ -1,10 +1,10 @@
 import { MenuOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
-import { createDesignable, Resizable, SchemaInitializerV2, useAPIClient, useDesignable } from '@nocobase/client';
+import { createDesignable, Resizable, SchemaInitializer, useAPIClient, useDesignable } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const auditLogsTableActionColumnInitializers = new SchemaInitializerV2({
+export const auditLogsTableActionColumnInitializers = new SchemaInitializer({
   name: 'AuditLogsTableActionColumnInitializers',
   insertPosition: 'beforeEnd',
   Component: () => <MenuOutlined style={{ cursor: 'pointer' }} />,

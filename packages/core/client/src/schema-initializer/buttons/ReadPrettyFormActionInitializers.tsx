@@ -1,12 +1,12 @@
 import { useCollection } from '../..';
-import { SchemaInitializerV2 } from '../../application';
+import { SchemaInitializer } from '../../application';
 
 const useVisibleCollection = () => {
   const collection = useCollection();
   return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
 };
 // 表单的操作配置
-export const readPrettyFormActionInitializers = new SchemaInitializerV2({
+export const readPrettyFormActionInitializers = new SchemaInitializer({
   name: 'ReadPrettyFormActionInitializers',
   'data-testid': 'configure-actions-button-of-read-pretty-form',
   title: '{{t("Configure actions")}}',

@@ -1,8 +1,8 @@
-import { SchemaInitializerV2 } from '../../application';
+import { SchemaInitializer } from '../../application';
 import { useCollection } from '../../collection-manager';
 
 // 表单的操作配置
-export const listActionInitializers = new SchemaInitializerV2({
+export const listActionInitializers = new SchemaInitializer({
   name: 'ListActionInitializers',
   'data-testid': 'configure-actions-button-of-list-block',
   title: "{{t('Configure actions')}}",
@@ -85,7 +85,7 @@ export const listActionInitializers = new SchemaInitializerV2({
   ],
 });
 
-export const listItemActionInitializers = new SchemaInitializerV2({
+export const listItemActionInitializers = new SchemaInitializer({
   name: 'ListItemActionInitializers',
   'data-testid': 'configure-actions-button-of-list-item',
   title: '{{t("Configure actions")}}',

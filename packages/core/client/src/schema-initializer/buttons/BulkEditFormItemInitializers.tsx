@@ -1,7 +1,7 @@
 import { gridRowColWrap, useCustomBulkEditFormItemInitializerFields } from '../utils';
-import { SchemaInitializerV2 } from '../../application';
+import { SchemaInitializer } from '../../application';
 
-export const bulkEditFormItemInitializers = new SchemaInitializerV2({
+export const bulkEditFormItemInitializers = new SchemaInitializer({
   name: 'BulkEditFormItemInitializers',
   'data-testid': 'configure-fields-button-of-bulk-edit-form-item',
   wrap: gridRowColWrap,

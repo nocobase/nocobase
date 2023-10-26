@@ -1,7 +1,7 @@
-import { SchemaInitializerV2, gridRowColWrap } from '@nocobase/client';
+import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
 
-export const mBlockInitializers = new SchemaInitializerV2({
+export const mBlockInitializers = new SchemaInitializer({
   name: 'MBlockInitializers',
   'data-testid': 'add-block-button-in-mobile-page',
   title: '{{t("Add block")}}',

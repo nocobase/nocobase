@@ -1,7 +1,7 @@
 import { useForm } from '@formily/react';
 import React, { useMemo } from 'react';
 import { SchemaComponent, useActionContext, useDesignable, useRecordIndex } from '../..';
-import { SchemaInitializerV2 } from '../../application';
+import { SchemaInitializer } from '../../application';
 
 export const TabPaneInitializers = (props?: any) => {
   const { designable, insertBeforeEnd } = useDesignable();
@@ -135,20 +135,20 @@ export const TabPaneInitializersForBulkEditFormBlock = (props) => {
   return <TabPaneInitializers {...props} isBulkEdit />;
 };
 
-export const tabPaneInitializers = new SchemaInitializerV2({
+export const tabPaneInitializers = new SchemaInitializer({
   name: 'TabPaneInitializers',
   Component: TabPaneInitializers,
-  noDropdown: true,
+  noPopover: true,
 });
 
-export const tabPaneInitializersForRecordBlock = new SchemaInitializerV2({
+export const tabPaneInitializersForRecordBlock = new SchemaInitializer({
   name: 'TabPaneInitializersForCreateFormBlock',
   Component: TabPaneInitializersForCreateFormBlock,
-  noDropdown: true,
+  noPopover: true,
 });
 
-export const tabPaneInitializersForBulkEditFormBlock = new SchemaInitializerV2({
+export const tabPaneInitializersForBulkEditFormBlock = new SchemaInitializer({
   name: 'TabPaneInitializersForBulkEditFormBlock',
   Component: TabPaneInitializersForBulkEditFormBlock,
-  noDropdown: true,
+  noPopover: true,
 });

@@ -1,8 +1,8 @@
 import { useFieldSchema } from '@formily/react';
 import { useCollection } from '../../';
-import { SchemaInitializerV2 } from '../../application';
+import { SchemaInitializer } from '../../application';
 
-export const ganttActionInitializers = new SchemaInitializerV2({
+export const ganttActionInitializers = new SchemaInitializer({
   name: 'GanttActionInitializers',
   'data-testid': 'configure-actions-button-of-gantt-block',
   title: "{{t('Configure actions')}}",

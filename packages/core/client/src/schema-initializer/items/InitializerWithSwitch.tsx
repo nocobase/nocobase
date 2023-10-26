@@ -2,7 +2,7 @@ import { merge } from '@formily/shared';
 import React from 'react';
 
 import { useCurrentSchema } from '../utils';
-import { SchemaInitializerSwitch, useSchemaInitializerV2 } from '../../application';
+import { SchemaInitializerSwitch, useSchemaInitializer } from '../../application';
 
 export const InitializerWithSwitch = (props) => {
   const { type, schema, item, remove: passInRemove, disabled } = props;
@@ -12,7 +12,7 @@ export const InitializerWithSwitch = (props) => {
     item.find,
     passInRemove ?? item.remove,
   );
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
 
   return (
     <SchemaInitializerSwitch

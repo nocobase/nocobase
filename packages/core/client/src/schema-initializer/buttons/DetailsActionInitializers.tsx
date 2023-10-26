@@ -1,7 +1,7 @@
-import { SchemaInitializerV2 } from '../../application';
+import { SchemaInitializer } from '../../application';
 
 // 表单的操作配置
-export const detailsActionInitializers = new SchemaInitializerV2({
+export const detailsActionInitializers = new SchemaInitializer({
   name: 'DetailsActionInitializers',
   'data-testid': 'configure-actions-button-of-details-block',
   title: '{{t("Configure actions")}}',

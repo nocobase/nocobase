@@ -1,5 +1,5 @@
 import React, { FC } from 'react';
-import { Application, Plugin, SchemaInitializerV2, InitializerItemsProps, useApp } from '@nocobase/client';
+import { Application, Plugin, SchemaInitializer, InitializerItemsProps, useApp } from '@nocobase/client';
 import { ButtonProps, Card, Divider, List, ListProps, Menu, MenuProps } from 'antd';
 
 // 自定义 Items 渲染为 Menu
@@ -31,7 +31,7 @@ const CustomListGridMenu: FC<InitializerItemsProps<ButtonProps, ListProps<any>>>
   );
 };
 
-const myInitializer = new SchemaInitializerV2({
+const myInitializer = new SchemaInitializer({
   name: 'MyInitializer',
   designable: true,
   title: 'Button Text',

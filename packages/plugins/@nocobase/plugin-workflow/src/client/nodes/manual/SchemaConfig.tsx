@@ -22,9 +22,9 @@ import {
   useCompile,
   useFormActiveFields,
   useFormBlockContext,
-  SchemaInitializerV2,
+  SchemaInitializer,
   useSchemaOptionsContext,
-  useSchemaInitializerV2,
+  useSchemaInitializer,
   SchemaInitializerItem,
 } from '@nocobase/client';
 import { Registry, lodash } from '@nocobase/utils/client';
@@ -112,7 +112,7 @@ function SimpleDesigner() {
   );
 }
 
-export const addBlockButton = new SchemaInitializerV2({
+export const addBlockButton = new SchemaInitializer({
   name: 'AddBlockButton',
   'data-testid': 'add-block-button-in-workflow',
   wrap: gridRowColWrap,
@@ -298,7 +298,7 @@ function ManualActionDesigner(props) {
 }
 
 function ContinueInitializer({ action, actionProps, ...props }) {
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   return (
     <SchemaInitializerItem
       {...props}
@@ -347,7 +347,7 @@ function ActionInitializer({ action, actionProps, ...props }) {
   );
 }
 
-export const addActionButton = new SchemaInitializerV2({
+export const addActionButton = new SchemaInitializer({
   name: 'AddActionButton',
   'data-testid': 'configure-actions-add-action-button',
   title: '{{t("Configure actions")}}',

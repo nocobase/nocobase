@@ -2,10 +2,10 @@ import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
-import { SchemaInitializerItem, useSchemaInitializerV2 } from '../../application';
+import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
 
 export const MarkdownBlockInitializer = (props) => {
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
 
   return (

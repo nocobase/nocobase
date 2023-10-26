@@ -1,7 +1,7 @@
 import { gridRowColWrap } from '../utils';
-import { SchemaInitializerV2 } from '../../application';
+import { SchemaInitializer } from '../../application';
 
-export const recordFormBlockInitializers = new SchemaInitializerV2({
+export const recordFormBlockInitializers = new SchemaInitializer({
   name: 'RecordFormBlockInitializers',
   'data-testid': 'add-block-button-in-record-form-block',
   title: '{{ t("Add block") }}',

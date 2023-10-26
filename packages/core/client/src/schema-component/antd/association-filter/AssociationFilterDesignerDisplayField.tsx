@@ -2,12 +2,12 @@ import { merge } from '@formily/shared';
 import React from 'react';
 
 import { useCurrentSchema } from '../../../schema-initializer/utils';
-import { SchemaInitializerSwitch, useSchemaInitializerV2 } from '../../../application';
+import { SchemaInitializerSwitch, useSchemaInitializer } from '../../../application';
 
 export const AssociationFilterDesignerDisplayField = (props) => {
   const { schema, item } = props;
   const { exists, remove } = useCurrentSchema(schema.name, 'name', item.find, item.remove);
-  const { insert } = useSchemaInitializerV2();
+  const { insert } = useSchemaInitializer();
   return (
     <SchemaInitializerSwitch
       checked={exists}

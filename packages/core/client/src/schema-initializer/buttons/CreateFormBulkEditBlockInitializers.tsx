@@ -1,7 +1,7 @@
 import { gridRowColWrap } from '../utils';
-import { SchemaInitializerV2 } from '../../application';
+import { SchemaInitializer } from '../../application';
 
-export const createFormBulkEditBlockInitializers = new SchemaInitializerV2({
+export const createFormBulkEditBlockInitializers = new SchemaInitializer({
   name: 'CreateFormBulkEditBlockInitializers',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',

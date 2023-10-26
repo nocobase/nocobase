@@ -1,7 +1,7 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import { SchemaInitializerItemOptions, useCollection, useCollectionManager } from '../..';
 import { gridRowColWrap } from '../utils';
-import { SchemaInitializerV2, useSchemaInitializerV2 } from '../../application';
+import { SchemaInitializer, useSchemaInitializer } from '../../application';
 
 const recursiveParent = (schema: Schema) => {
   if (!schema) return null;
@@ -176,7 +176,7 @@ const useFormCollections = (props) => {
 };
 
 function useRecordBlocks() {
-  const { options } = useSchemaInitializerV2();
+  const { options } = useSchemaInitializer();
   const { actionInitializers } = options;
   const collection = useCollection();
   const { getChildrenCollections } = useCollectionManager();
@@ -232,7 +232,7 @@ function useRecordBlocks() {
   return res;
 }
 
-export const recordBlockInitializers = new SchemaInitializerV2({
+export const recordBlockInitializers = new SchemaInitializer({
   name: 'RecordBlockInitializers',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',

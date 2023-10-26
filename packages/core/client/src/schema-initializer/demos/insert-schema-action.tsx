@@ -7,10 +7,10 @@ import {
   Plugin,
   SchemaComponent,
   SchemaComponentProvider,
-  SchemaInitializerV2,
+  SchemaInitializer,
 } from '@nocobase/client';
 
-const addActionInitializer = new SchemaInitializerV2({
+const addActionInitializer = new SchemaInitializer({
   name: 'AddAction',
   title: 'Configure actions',
   // 插入位置
