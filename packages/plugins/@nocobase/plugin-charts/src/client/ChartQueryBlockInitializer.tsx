@@ -8,6 +8,7 @@ import {
   SchemaComponentOptions,
   useAPIClient,
   useGlobalTheme,
+  useSchemaInitializer,
 } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import React, { useCallback, useContext, useMemo } from 'react';
@@ -24,6 +25,7 @@ export interface ChartQueryMetadata {
 
 export const ChartQueryBlockInitializer = (props) => {
   const { templateWrap, onCreateBlockSchema, componentType, createBlockSchema, ...others } = props;
+  const { setVisible } = useSchemaInitializer();
   const apiClient = useAPIClient();
   const ctx = useChartQueryMetadataContext();
   const options = useContext(SchemaOptionsContext);
@@ -75,6 +77,7 @@ export const ChartQueryBlockInitializer = (props) => {
               const item = items.find((item) => item.id === data?.data?.id);
               onCreateBlockSchema({ item });
             }
+            setVisible(false);
           } catch (err) {
             error(err);
           }
@@ -83,7 +86,7 @@ export const ChartQueryBlockInitializer = (props) => {
           error(err);
         });
     },
-    [apiClient, ctx, onCreateBlockSchema, options.components, options.scope],
+    [apiClient, ctx, onCreateBlockSchema, options.components, options.scope, setVisible],
   );
 
   const items = useMemo(() => {
@@ -145,6 +148,7 @@ export const ChartQueryBlockInitializer = (props) => {
       {...others}
       onClick={async ({ item }) => {
         onCreateBlockSchema({ item });
+        setVisible(false);
       }}
       items={items}
     />

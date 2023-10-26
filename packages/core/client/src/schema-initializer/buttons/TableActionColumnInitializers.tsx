@@ -3,7 +3,12 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerActionModal, SchemaInitializerItem, SchemaInitializer } from '../../application';
+import {
+  SchemaInitializerActionModal,
+  SchemaInitializerItem,
+  SchemaInitializer,
+  useSchemaInitializer,
+} from '../../application';
 import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { createDesignable, useDesignable } from '../../schema-component';
@@ -12,12 +17,23 @@ export const Resizable = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
+  const { setVisible } = useSchemaInitializer();
   return (
     <SchemaInitializerActionModal
       title={t('Column width')}
       component={React.forwardRef<any, any>((props, ref) => {
-        const { children, ...others } = props;
-        return <SchemaInitializerItem ref={ref} {...others} title={t('Column width')}></SchemaInitializerItem>;
+        const { children, onClick, ...others } = props;
+        return (
+          <SchemaInitializerItem
+            ref={ref}
+            onClick={({ event }) => {
+              setVisible(false);
+              onClick(event);
+            }}
+            {...others}
+            title={t('Column width')}
+          ></SchemaInitializerItem>
+        );
       })}
       schema={
         {

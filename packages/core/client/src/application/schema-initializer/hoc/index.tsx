@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ComponentType, useCallback } from 'react';
 import { Popover } from 'antd';
 import { ISchema, observer } from '@formily/react';
 
 import { useDesignable } from '../../../schema-component';
 import { SchemaInitializerOptions } from '../types';
-import { SchemaInitializerV2Context } from '../context';
+import { SchemaInitializerContext } from '../context';
 import { useStyles } from '../components/style';
 
 const defaultWrap = (s: ISchema) => s;
@@ -39,6 +39,7 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
     );
 
     const { wrapSSR, hashId, componentCls } = useStyles();
+    const [visible, setVisible] = useState(false);
 
     // designable 为 false 时，不渲染
     if (!designable && propsDesignable !== true) {
@@ -46,12 +47,22 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
     }
 
     return (
-      <SchemaInitializerV2Context.Provider value={{ insert: insertSchema, options: props }}>
+      <SchemaInitializerContext.Provider
+        value={{
+          visible,
+          setVisible,
+          insert: insertSchema,
+          options: props,
+        }}
+      >
         {noPopover ? (
           React.createElement(C, cProps)
         ) : (
           <Popover
             {...popoverProps}
+            open={visible}
+            defaultOpen={visible}
+            onOpenChange={setVisible}
             content={wrapSSR(
               <div
                 className={`${componentCls} ${hashId}`}
@@ -68,7 +79,7 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
             <span>{React.createElement(C, cProps)}</span>
           </Popover>
         )}
-      </SchemaInitializerV2Context.Provider>
+      </SchemaInitializerContext.Provider>
     );
   });
 

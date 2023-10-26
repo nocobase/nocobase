@@ -32,7 +32,7 @@ const BlockInitializers = () => {
 }
 ```
 
-现在仅支持 `SchemaInitializer` 的实例。例如：
+现在仅支持 `new SchemaInitializer()` 的实例。例如：
 
 ```tsx
 const blockInitializers = new SchemaInitializer({
@@ -55,7 +55,7 @@ const blockInitializers = new SchemaInitializer({
 - 新增 `componentProps`、`style` 用于配置 `Component` 的属性和样式。
 - 新增 `ItemsComponent` 参数，用于定制化渲染的列表。默认为 `SchemaInitializerItems`。
 - 新增 `itemsComponentProps`、`itemsComponentStyle` 用于配置 `ItemsComponent` 的属性和样式。
-- 新增 `noPopover` 参数，用于配置是否显示下拉菜单。
+- 新增 `noPopover` 参数，用于配置是否显示 `popover` 效果。
 - 新增 `useInsert` 参数，用于当 `insert` 函数需要使用 hooks 时。
 - 更改 将 `dropdown` 参数改为了 `popoverProps`，使用 `Popover` 代替了 `Dropdown`。
 - items 参数变更
@@ -86,14 +86,14 @@ const blockInitializers = new SchemaInitializer({
 +         name: 'table',
 -         type: 'item', // 当有 Component 参数时，就不需要此了
           title: '{{t("Table")}}',
--         component: 'TableBlockInitializer',
-+         Component: 'TableBlockInitializer',
+-         component: TableBlockInitializer,
++         Component: TableBlockInitializer,
         },
          {
           key: 'form',
           type: 'item',
           title: '{{t("Form")}}',
-          component: 'FormBlockInitializer',
+          component: FormBlockInitializer,
         }
       ],
     },
@@ -127,7 +127,7 @@ export const BulkEditFormItemInitializers = (props: any) => {
         {
           type: 'item',
           title: t('Add text'),
-          component: 'BlockInitializer',
+          component: BlockInitializer,
         },
       ]}
       insertPosition={insertPosition}
@@ -160,7 +160,7 @@ const bulkEditFormItemInitializers = new SchemaInitializer({
     {
       title: t('Add text'),
       name: 'add-text',
-      Component: 'BlockInitializer', // component 替换为 Component
+      Component: BlockInitializer, // component 替换为 Component
     },
   ]
 });
@@ -181,20 +181,21 @@ const bulkEditFormItemInitializers = new SchemaInitializer({
 之前是通过 `props` 获取 `insert` 函数，现在需要通过 `useSchemaInitializer()` 获取。例如：
 
 ```diff
+const FormBlockInitializer = (props) => {
+-  const { insert } = props;
++  const { insert } = useSchemaInitializer();
+ // ...
+}
+
 export const blockInitializers = new SchemaInitializer({
  name: 'BlockInitializers',
  items: [
   {
     name: 'form',
-    Component: 'FormBlockInitializer'
+    Component: FormBlockInitializer
   }
  ]
 });
-
-const FormBlockInitializer = (props) => {
--  const { insert } = props;
-+  const { insert } = useSchemaInitializer();
-}
 ```
 
 #### 注册方式变更
@@ -239,7 +240,7 @@ if (!children.find((item) => item.key === 'hello')) {
     key: 'hello',
     type: 'item',
     title: '{{t("Hello block")}}',
-    component: 'HelloBlockInitializer',
+    component: HelloBlockInitializer,
   });
 }
 ```
@@ -255,7 +256,7 @@ class MyPlugin extends Plugin {
     // 添加 Hello
     blockInitializers.add('media.hello', {
       title: '{{t("Hello block")}}',
-      Component: 'HelloBlockInitializer',
+      Component: HelloBlockInitializer,
     })
   }
 }

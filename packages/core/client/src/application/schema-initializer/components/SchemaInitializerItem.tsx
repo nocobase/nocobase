@@ -46,7 +46,7 @@ export const SchemaInitializerItem = React.forwardRef<any, SchemaInitializerItem
   }
 
   return (
-    <div ref={ref} onClick={() => onClick?.({ item: props })}>
+    <div ref={ref} onClick={(event) => onClick?.({ event, item: props })}>
       <div className={classNames({ [`${componentCls}-menu-item`]: applyMenuStyle }, className)} style={style}>
         {children || (
           <>
