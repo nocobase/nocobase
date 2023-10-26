@@ -93,7 +93,16 @@ export class CollectionGroupManager {
         continue;
       }
 
-      const duplicator = CollectionGroupManager.unifyDuplicatorOption(collection.options.duplicator);
+      let duplicator: ReturnType<typeof CollectionGroupManager.unifyDuplicatorOption>;
+
+      try {
+        duplicator = CollectionGroupManager.unifyDuplicatorOption(collection.options.duplicator);
+      } catch (error) {
+        throw new Error(`collection ${collection.name} has invalid duplicator option: ${error.message}`, {
+          cause: error,
+        });
+      }
+
       if (!duplicator) {
         skipped.push({
           name: collection.name,

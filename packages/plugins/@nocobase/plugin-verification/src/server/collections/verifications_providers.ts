@@ -1,6 +1,8 @@
 export default {
   namespace: 'verification.verificationProviders',
-  duplicator: 'optional',
+  duplicator: {
+    dataType: 'config',
+  },
   name: 'verifications_providers',
   fields: [
     {

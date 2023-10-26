@@ -2,7 +2,9 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   namespace: 'file-manager.attachmentRecords',
-  duplicator: 'optional',
+  duplicator: {
+    dataType: 'business',
+  },
   name: 'attachments',
   title: '文件管理器',
   createdBy: true,

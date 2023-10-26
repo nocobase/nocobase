@@ -2,7 +2,9 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'rolesUsers',
-  duplicator: 'optional',
+  duplicator: {
+    dataType: 'business',
+  },
   namespace: 'acl.acl',
   fields: [{ type: 'boolean', name: 'default' }],
 } as CollectionOptions;

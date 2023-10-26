@@ -5,7 +5,9 @@ import { CollectionOptions } from '@nocobase/database';
  */
 export default {
   namespace: 'auth.auth',
-  duplicator: 'optional',
+  duplicator: {
+    dataType: 'config',
+  },
   name: 'authenticators',
   sortable: true,
   title: '{{t("Authenticators")}}',

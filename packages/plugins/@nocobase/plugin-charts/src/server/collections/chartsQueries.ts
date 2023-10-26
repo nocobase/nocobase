@@ -2,7 +2,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   namespace: 'charts.chartsQueries',
-  duplicator: 'optional',
+  duplicator: 'required',
   name: 'chartsQueries',
   fields: [
     {

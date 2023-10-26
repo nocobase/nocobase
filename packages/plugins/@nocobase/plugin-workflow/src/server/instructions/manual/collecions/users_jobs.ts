@@ -3,7 +3,9 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   namespace: 'workflow.executionLogs',
   name: 'users_jobs',
-  duplicator: 'optional',
+  duplicator: {
+    dataType: 'business',
+  },
   fields: [
     {
       type: 'bigInt',

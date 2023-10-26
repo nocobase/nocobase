@@ -3,7 +3,7 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   namespace: 'users.users',
   duplicator: {
-    dumpable: 'optional',
+    dataType: 'business',
     with: 'rolesUsers',
   },
   name: 'users',

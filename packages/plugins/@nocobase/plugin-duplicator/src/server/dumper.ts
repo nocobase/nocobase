@@ -1,4 +1,4 @@
-import { CollectionGroup } from '@nocobase/database';
+import { CollectionGroup, DumpDataType } from '@nocobase/database';
 import archiver from 'archiver';
 import dayjs from 'dayjs';
 import fs from 'fs';
@@ -14,6 +14,10 @@ import { FieldValueWriter } from './field-value-writer';
 import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
 
 const finished = util.promisify(stream.finished);
+
+type DumpOptions = {
+  dataTypes: Set<DumpDataType>;
+};
 
 export class Dumper extends AppMigrator {
   direction = 'dump' as const;
@@ -54,58 +58,58 @@ export class Dumper extends AppMigrator {
     });
   }
 
-  async dump(options: { selectedOptionalGroupNames: string[]; selectedUserCollections: string[] }) {
-    const { requiredGroups, optionalGroups } = await this.dumpableCollections();
-    const { selectedOptionalGroupNames, selectedUserCollections = [] } = options;
+  async dump(options: DumpOptions) {
+    const appCollectionGroups = CollectionGroupManager.getGroups(this.app);
 
-    const throughCollections = this.findThroughCollections(selectedUserCollections);
-
-    const selectedOptionalGroups = optionalGroups.filter((group) => {
-      return selectedOptionalGroupNames.some((selectedOptionalGroupName) => {
-        const [namespace, functionKey] = selectedOptionalGroupName.split('.');
-        return group.function === functionKey && group.namespace === namespace;
-      });
-    });
-
-    const dumpedCollections = lodash.uniq(
-      [
-        CollectionGroupManager.getGroupsCollections(requiredGroups),
-        CollectionGroupManager.getGroupsCollections(selectedOptionalGroups),
-        selectedUserCollections,
-        throughCollections,
-      ].flat(),
-    );
-
-    for (const collection of dumpedCollections) {
-      await this.dumpCollection({
-        name: collection,
-      });
-    }
-
-    const mapGroupToMetaJson = (groups) =>
-      groups.map((group: CollectionGroup) => {
-        const data = {
-          ...group,
-        };
-
-        if (group.delayRestore) {
-          data['delayRestore'] = true;
-        }
-
-        return data;
-      });
-
-    await this.dumpMeta({
-      requiredGroups: mapGroupToMetaJson(requiredGroups),
-      selectedOptionalGroups: mapGroupToMetaJson(selectedOptionalGroups),
-      selectedUserCollections: selectedUserCollections,
-    });
-
-    await this.dumpDb();
-
-    const filePath = await this.packDumpedDir();
-    await this.clearWorkDir();
-    return filePath;
+    //
+    // const throughCollections = this.findThroughCollections(selectedUserCollections);
+    //
+    // const selectedOptionalGroups = optionalGroups.filter((group) => {
+    //   return selectedOptionalGroupNames.some((selectedOptionalGroupName) => {
+    //     const [namespace, functionKey] = selectedOptionalGroupName.split('.');
+    //     return group.function === functionKey && group.namespace === namespace;
+    //   });
+    // });
+    //
+    // const dumpedCollections = lodash.uniq(
+    //   [
+    //     CollectionGroupManager.getGroupsCollections(requiredGroups),
+    //     CollectionGroupManager.getGroupsCollections(selectedOptionalGroups),
+    //     selectedUserCollections,
+    //     throughCollections,
+    //   ].flat(),
+    // );
+    //
+    // for (const collection of dumpedCollections) {
+    //   await this.dumpCollection({
+    //     name: collection,
+    //   });
+    // }
+    //
+    // const mapGroupToMetaJson = (groups) =>
+    //   groups.map((group: CollectionGroup) => {
+    //     const data = {
+    //       ...group,
+    //     };
+    //
+    //     if (group.delayRestore) {
+    //       data['delayRestore'] = true;
+    //     }
+    //
+    //     return data;
+    //   });
+    //
+    // await this.dumpMeta({
+    //   requiredGroups: mapGroupToMetaJson(requiredGroups),
+    //   selectedOptionalGroups: mapGroupToMetaJson(selectedOptionalGroups),
+    //   selectedUserCollections: selectedUserCollections,
+    // });
+    //
+    // await this.dumpDb();
+    //
+    // const filePath = await this.packDumpedDir();
+    // await this.clearWorkDir();
+    // return filePath;
   }
 
   async dumpDb() {

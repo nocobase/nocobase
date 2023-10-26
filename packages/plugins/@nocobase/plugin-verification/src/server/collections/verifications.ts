@@ -1,6 +1,8 @@
 export default {
   namespace: 'verification.verificationData',
-  duplicator: 'optional',
+  duplicator: {
+    dataType: 'config',
+  },
   name: 'verifications',
   fields: [
     {

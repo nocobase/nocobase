@@ -7,7 +7,7 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   namespace: 'auth.auth',
   duplicator: {
-    dumpable: 'optional',
+    dataType: 'business',
     /**
      * When dump this collection, the users collection is required to be dumped.
      */

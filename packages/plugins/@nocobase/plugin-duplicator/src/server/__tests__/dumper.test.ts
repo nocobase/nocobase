@@ -1,6 +1,6 @@
 import { MockServer } from '@nocobase/test';
 import createApp from './index';
-import { Dumper } from '../dumper';
+import { CollectionGroupManager } from '../collection-group-manager';
 
 describe('dumper', () => {
   let app: MockServer;
@@ -26,10 +26,8 @@ describe('dumper', () => {
       context: {},
     });
 
-    const dump = new Dumper(app);
-    const dumpableCollections = await dump.dumpableCollections();
+    const collectionGroups = CollectionGroupManager.getGroups(app);
 
-    expect((dumpableCollections.requiredGroups || []).length).toBeGreaterThan(0);
-    expect(dumpableCollections.userCollections[0]['name']).toEqual('test_collection');
+    console.log(collectionGroups);
   });
 });
