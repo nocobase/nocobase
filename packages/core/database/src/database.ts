@@ -177,22 +177,14 @@ export class Database extends EventEmitter implements AsyncEmitter {
   tableNameCollectionMap = new Map<string, Collection>();
   context: any = {};
   queryInterface: QueryInterface;
-
-  _instanceId: string;
-
   utils = new DatabaseUtils(this);
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
-
   importedFrom = new Map<string, Array<string>>();
-
   modelHook: ModelHook;
   version: DatabaseVersion;
-
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
-
   logger: Logger;
-
   collectionGroupManager = new CollectionGroupManager(this);
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
@@ -288,7 +280,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       name: 'migrations',
       autoGenId: false,
       timestamps: false,
-      namespace: 'core.migration',
+      namespace: 'core.server',
       duplicator: 'required',
       fields: [{ type: 'string', name: 'name', primaryKey: true }],
     });
@@ -308,6 +300,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.initListener();
     patchSequelizeQueryInterface(this);
   }
+
+  _instanceId: string;
 
   get instanceId() {
     return this._instanceId;

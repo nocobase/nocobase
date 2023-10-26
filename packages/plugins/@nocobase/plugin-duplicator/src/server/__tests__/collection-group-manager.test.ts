@@ -20,18 +20,51 @@ describe('collection group manager', () => {
   it('should list collection groups from db collections', async () => {
     const collectionGroups = CollectionGroupManager.getGroups(app);
 
-    expect(collectionGroups.map((i) => i.function)).toMatchObject([
-      'migration',
-      'applicationPlugins',
-      'applicationVersion',
-      'collections',
-    ]);
+    expect(collectionGroups.map((i) => i.function)).toMatchObject(['server', 'core']);
 
-    expect(collectionGroups.find((i) => i.function === 'collections')).toMatchObject({
-      namespace: 'collection-manager',
-      function: 'collections',
-      collections: ['collectionCategory', 'collectionCategories', 'collections', 'fields'],
-      dumpable: 'required',
+    expect(collectionGroups.find((i) => i.function === 'core')).toMatchObject({
+      namespace: 'collection-manager.core',
+      function: 'core',
+      collections: ['collectionCategory', 'collectionCategories', 'collections', 'fields'].map((name) => {
+        const collection = app.db.getCollection(name);
+        return {
+          name: collection.name,
+          title: collection.options.title || collection.name,
+        };
+      }),
+      dataType: 'meta',
     });
+  });
+
+  it('should handle dumpable with attribute', async () => {
+    app.db.collection({
+      namespace: 'test.test',
+      name: 'test',
+      duplicator: {
+        dataType: 'meta',
+        with: 'test1',
+      },
+    });
+
+    app.db.collection({
+      namespace: 'test.test',
+      name: 'test1',
+      duplicator: {
+        dataType: 'meta',
+        with: 'test2',
+      },
+    });
+
+    app.db.collection({
+      name: 'test2',
+      title: 'test2Title',
+    });
+
+    const collectionGroups = CollectionGroupManager.getGroups(app);
+    const testGroup = collectionGroups.find((i) => i.function === 'test');
+
+    const test2Collection = testGroup.collections.find((i) => i.name === 'test2');
+
+    expect(test2Collection).toBeTruthy();
   });
 });

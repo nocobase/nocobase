@@ -15,12 +15,20 @@ import { Model } from './model';
 import { AdjacencyListRepository } from './repositories/tree-repository/adjacency-list-repository';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
+import { Dumpable, DumpDataType } from './collection-group-manager';
 
 export type RepositoryType = typeof Repository;
 
-export type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
+export type CollectionSortable =
+  | string
+  | boolean
+  | {
+      name?: string;
+      scopeKey?: string;
+    };
 
 type dumpable = 'required' | 'optional' | 'skip';
+type dumpableType = 'meta' | 'business' | 'config';
 
 function EnsureAtomicity(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
   const originalMethod = descriptor.value;
@@ -56,6 +64,20 @@ function EnsureAtomicity(target: any, propertyKey: string, descriptor: PropertyD
   return descriptor;
 }
 
+export type BaseDuplicatorObject = {
+  with?: string[] | string;
+  delayRestore?: any;
+};
+
+export type Duplicator =
+  | Dumpable
+  | ({
+      dumpable?: Dumpable;
+    } & BaseDuplicatorObject)
+  | ({
+      dataType?: DumpDataType;
+    } & BaseDuplicatorObject);
+
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
   title?: string;
@@ -68,13 +90,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    * @prop {string[] | string} [with] - Collections dumped with this collection
    * @prop {any} [delayRestore] - A function to execute after all collections are restored
    */
-  duplicator?:
-    | dumpable
-    | {
-        dumpable: dumpable;
-        with?: string[] | string;
-        delayRestore?: any;
-      };
+  duplicator?: Duplicator;
 
   tableName?: string;
   inherits?: string[] | string;
@@ -488,7 +504,16 @@ export class Collection<
     this.setField(options.name || name, options);
   }
 
-  addIndex(index: string | string[] | { fields: string[]; unique?: boolean; [key: string]: any }) {
+  addIndex(
+    index:
+      | string
+      | string[]
+      | {
+          fields: string[];
+          unique?: boolean;
+          [key: string]: any;
+        },
+  ) {
     if (!index) {
       return;
     }

@@ -1,32 +1,88 @@
+import { castArray, uniq } from 'lodash';
 import Database from './database';
-import { isString, castArray } from 'lodash';
+import { BaseDuplicatorObject, Duplicator } from './collection';
 
+type MetaDataType = 'meta';
+type ConfigDataType = 'config';
+type BusinessDataType = 'business';
+
+export type DumpDataType = MetaDataType | ConfigDataType | BusinessDataType;
+export type Dumpable = 'required' | 'optional' | 'skip';
+
+// Collection Group is a collection of collections, which can be dumped and restored together.
 export interface CollectionGroup {
   namespace: string;
   collections: string[];
   function: string;
-
-  dumpable: 'required' | 'optional' | 'skip';
+  dataType: DumpDataType;
   delayRestore?: any;
+}
+
+export interface CollectionGroupWithCollectionTitle extends Omit<CollectionGroup, 'collections'> {
+  collections: Array<{
+    name: string;
+    title: string;
+  }>;
 }
 
 export class CollectionGroupManager {
   constructor(public db: Database) {}
 
-  getGroups() {
-    const collections = [...this.db.collections.values()];
+  static unifyDuplicatorOption(duplicatorOption: Duplicator):
+    | (BaseDuplicatorObject & {
+        dataType: DumpDataType;
+      })
+    | undefined {
+    if (!duplicatorOption) {
+      return undefined;
+    }
+
+    if (typeof duplicatorOption === 'string') {
+      switch (duplicatorOption) {
+        case 'skip':
+          return undefined;
+        case 'required':
+          return { dataType: 'meta' };
+        case 'optional':
+          throw new Error('optional collection must have dataType specified');
+      }
+    }
+
+    if ('dumpable' in duplicatorOption) {
+      if (duplicatorOption.dumpable === 'optional') {
+        throw new Error('optional collection must have dataType specified');
+      }
+      const { dumpable, ...rest } = duplicatorOption;
+      return {
+        ...rest,
+        dataType: 'meta',
+      };
+    }
+
+    if ('dataType' in duplicatorOption) {
+      return {
+        dataType: duplicatorOption.dataType,
+        ...duplicatorOption,
+      };
+    }
+
+    return undefined;
+  }
+
+  // get all collection groups
+  getGroups(): Array<CollectionGroupWithCollectionTitle> {
     const groups = new Map<string, CollectionGroup>();
 
     const skipped = [];
 
-    for (const collection of collections) {
+    for (const [_, collection] of this.db.collections) {
       const groupKey = collection.options.namespace;
 
       if (!groupKey) {
         continue;
       }
 
-      const [namespace, groupFunc] = groupKey.split('.');
+      const [_, groupFunc] = groupKey.split('.');
 
       if (!groupFunc) {
         skipped.push({
@@ -37,38 +93,26 @@ export class CollectionGroupManager {
         continue;
       }
 
+      const duplicator = CollectionGroupManager.unifyDuplicatorOption(collection.options.duplicator);
+      if (!duplicator) {
+        skipped.push({
+          name: collection.name,
+          reason: 'no-dumpable',
+        });
+        continue;
+      }
+
+      // if group not exists, create it
       if (!groups.has(groupKey)) {
-        const dumpable = (() => {
-          if (!collection.options.duplicator) {
-            return undefined;
-          }
-
-          if (isString(collection.options.duplicator)) {
-            return {
-              dumpable: collection.options.duplicator,
-            };
-          }
-
-          return collection.options.duplicator;
-        })();
-
-        if (!dumpable) {
-          skipped.push({
-            name: collection.name,
-            reason: 'no-dumpable',
-          });
-          continue;
-        }
-
         const group: CollectionGroup = {
-          namespace,
+          namespace: groupKey,
           function: groupFunc,
-          collections: dumpable.with ? castArray(dumpable.with) : [],
-          dumpable: dumpable.dumpable,
+          collections: duplicator.with ? castArray(duplicator.with) : [],
+          dataType: duplicator.dataType,
         };
 
-        if (dumpable.delayRestore) {
-          group.delayRestore = dumpable.delayRestore;
+        if (duplicator.delayRestore) {
+          group.delayRestore = duplicator.delayRestore;
         }
 
         groups.set(groupKey, group);
@@ -76,6 +120,12 @@ export class CollectionGroupManager {
 
       const group = groups.get(groupKey);
       group.collections.push(collection.name);
+
+      if (duplicator.with) {
+        group.collections.push(...castArray(duplicator.with));
+      }
+
+      group.collections = uniq(group.collections);
     }
 
     const results = [...groups.values()];
@@ -89,6 +139,17 @@ export class CollectionGroupManager {
       this.db.logger.warn(`collection ${skipItem.name} is not in any collection group, reason: ${skipItem.reason}.`);
     }
 
-    return results;
+    return results.map((group) => {
+      return {
+        ...group,
+        collections: group.collections.map((name) => {
+          const collection = this.db.getCollection(name);
+          return {
+            name,
+            title: collection.options.title || name,
+          };
+        }),
+      };
+    });
   }
 }
