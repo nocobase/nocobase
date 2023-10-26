@@ -268,12 +268,12 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
 
     // edit mode
     useEffect(() => {
+      if (!map.current) return;
       if (!value) {
         toRemoveOverlay();
         drawingManagerRef?.current?.setDrawingMode?.(drawingMode.current);
         onChange?.(null);
       }
-      if (!map.current) return;
       if (!value || (!readonly && overlayRef.current)) {
         return;
       }
