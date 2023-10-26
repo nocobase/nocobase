@@ -293,8 +293,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
 
   // 当值变更时，toggle mouseTool
   useEffect(() => {
-    if (!mouseTool.current || !editor.current) return;
-    if (value === undefined) {
+    if (!value && (mouseTool.current || editor.current)) {
       toRemoveOverlay();
       if (editor.current) {
         editor.current.setTarget();
@@ -302,6 +301,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
       }
       onChange?.(null);
     }
+    if (!mouseTool.current || !editor.current) return;
     const target = editor.current.getTarget();
     if (target) {
       mouseTool.current.close?.();
