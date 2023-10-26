@@ -1,6 +1,6 @@
 import { useFieldSchema } from '@formily/react';
 import { useCallback } from 'react';
-import { useBlockContext } from '../../../../block-provider';
+import { useBlockContext } from '../../../../block-provider/BlockProvider';
 import { useCollection } from '../../../../collection-manager';
 import { useRecord, useRecordIndex } from '../../../../record-provider';
 import { useCompile } from '../../../hooks';
