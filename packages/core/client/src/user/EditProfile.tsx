@@ -126,6 +126,7 @@ export const useEditProfile = () => {
 
   return useMemo<MenuProps['items'][0]>(() => {
     return {
+      role: 'button',
       key: 'profile',
       eventKey: 'EditProfile',
       onClick: () => {

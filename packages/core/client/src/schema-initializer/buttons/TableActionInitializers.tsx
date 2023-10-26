@@ -3,7 +3,6 @@ import { useCollection } from '../../';
 
 // 表格操作配置
 export const TableActionInitializers = {
-  'data-testid': 'configure-actions-button-of-table-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {

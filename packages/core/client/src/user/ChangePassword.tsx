@@ -120,6 +120,7 @@ export const useChangePassword = () => {
 
   return useMemo<MenuProps['items'][0]>(() => {
     return {
+      role: 'button',
       key: 'password',
       eventKey: 'ChangePassword',
       onClick: () => {

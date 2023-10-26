@@ -248,7 +248,7 @@ describe('workflow > instructions > aggregate', () => {
           associated: true,
           association: {
             name: 'posts',
-            associatedKey: `{{$jobsMapByNodeId.${n1.id}.id}}`,
+            associatedKey: `{{$jobsMapByNodeKey.${n1.key}.id}}`,
             associatedCollection: 'tags',
           },
           params: {
@@ -266,7 +266,7 @@ describe('workflow > instructions > aggregate', () => {
           associated: true,
           association: {
             name: 'posts',
-            associatedKey: `{{$jobsMapByNodeId.${n1.id}.id}}`,
+            associatedKey: `{{$jobsMapByNodeKey.${n1.key}.id}}`,
             associatedCollection: 'tags',
           },
           params: {

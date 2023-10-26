@@ -2,7 +2,6 @@ import { gridRowColWrap } from '../utils';
 
 // 页面里添加区块
 export const BlockInitializers = {
-  'data-testid': 'add-block-button-in-page',
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',
   wrap: gridRowColWrap,

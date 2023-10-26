@@ -13,7 +13,7 @@ import {
   useResourceActionContext,
 } from '@nocobase/client';
 import { Registry, parse, str2moment } from '@nocobase/utils/client';
-import { App, Button, Dropdown, Input, Tag, message } from 'antd';
+import { App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AddButton } from '../AddButton';
@@ -21,6 +21,7 @@ import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { StatusButton } from '../components/StatusButton';
 import { JobStatusOptionsMap } from '../constants';
+import { useGetAriaLabelOfAddButton } from '../hooks/useGetAriaLabelOfAddButton';
 import { lang } from '../locale';
 import useStyles from '../style';
 import { VariableOption, VariableOptions } from '../variable';
@@ -137,6 +138,7 @@ export function useUpstreamScopes(node) {
 
 export function Node({ data }) {
   const { styles } = useStyles();
+  const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
   const { component: Component = NodeDefaultView, endding } = instructions.get(data.type);
 
   return (
@@ -144,7 +146,7 @@ export function Node({ data }) {
       <div className={cx(styles.nodeBlockClass)}>
         <Component data={data} />
         {!endding ? (
-          <AddButton upstream={data} />
+          <AddButton aria-label={getAriaLabel()} upstream={data} />
         ) : (
           <div
             className={css`
@@ -199,7 +201,7 @@ export function RemoveButton() {
 
       const template = parse(node.config);
       const refs = template.parameters.filter(
-        ({ key }) => key.startsWith(`$jobsMapByNodeId.${current.id}.`) || key === `$jobsMapByNodeId.${current.id}`,
+        ({ key }) => key.startsWith(`$jobsMapByNodeKey.${current.key}.`) || key === `$jobsMapByNodeKey.${current.key}`,
       );
       return refs.length;
     });
@@ -336,13 +338,20 @@ export function NodeDefaultView(props) {
 
   return (
     <div className={cx(styles.nodeClass, `workflow-node-type-${data.type}`)}>
-      <div className={cx(styles.nodeCardClass, { configuring: editingConfig })} onClick={onOpenDrawer}>
+      <div
+        role="button"
+        aria-label={`${typeTitle}-${editingTitle}`}
+        className={cx(styles.nodeCardClass, { configuring: editingConfig })}
+        onClick={onOpenDrawer}
+      >
         <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
           <Tag>{typeTitle}</Tag>
           <span className="workflow-node-id">{data.id}</span>
         </div>
         <div>
           <Input.TextArea
+            role="button"
+            aria-label="textarea"
             disabled={workflow.executed}
             value={editingTitle}
             onChange={(ev) => setEditingTitle(ev.target.value)}
@@ -371,7 +380,33 @@ export function NodeDefaultView(props) {
                 },
                 [`${instruction.type}_${data.id}`]: {
                   type: 'void',
-                  title: data.title,
+                  title: (
+                    <div
+                      className={css`
+                        display: flex;
+                        justify-content: space-between;
+
+                        strong {
+                          font-weight: bold;
+                        }
+
+                        .ant-tag {
+                          margin-inline-end: 0;
+                        }
+
+                        code {
+                          font-weight: normal;
+                        }
+                      `}
+                    >
+                      <strong>{data.title}</strong>
+                      <Tooltip title={lang('Variable key of node')}>
+                        <Tag>
+                          <code>{data.key}</code>
+                        </Tag>
+                      </Tooltip>
+                    </div>
+                  ),
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
                   'x-decorator-props': {

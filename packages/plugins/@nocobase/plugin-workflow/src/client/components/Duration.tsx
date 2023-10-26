@@ -35,7 +35,9 @@ export default function ({ value = 60000, onChange }) {
         className="auto-width"
       />
       <Select
-        data-testid="antd-select"
+        // @ts-ignore
+        role="button"
+        data-testid="select-time-unit"
         popupMatchSelectWidth={false}
         value={option.value}
         onChange={(unit) => onChange(Math.round(quantity * unit))}

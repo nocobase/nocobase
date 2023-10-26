@@ -167,15 +167,7 @@ function AddBlockButton(props: any) {
     },
   ] as SchemaInitializerItemOptions[];
 
-  return (
-    <SchemaInitializer.Button
-      data-testid="add-block-button-in-workflow"
-      {...props}
-      wrap={gridRowColWrap}
-      items={items}
-      title="{{t('Add block')}}"
-    />
-  );
+  return <SchemaInitializer.Button {...props} wrap={gridRowColWrap} items={items} title="{{t('Add block')}}" />;
 }
 
 function AssignedFieldValues() {
@@ -235,7 +227,9 @@ function AssignedFieldValues() {
 
   return (
     <>
-      <SchemaSettings.Item onClick={() => setOpen(true)}>{title}</SchemaSettings.Item>
+      <SchemaSettings.Item title={title} onClick={() => setOpen(true)}>
+        {title}
+      </SchemaSettings.Item>
       <Modal
         width={'50%'}
         title={title}
@@ -351,7 +345,6 @@ function ActionInitializer({ action, actionProps, ...props }) {
 function AddActionButton(props) {
   return (
     <SchemaInitializer.Button
-      data-testid="configure-actions-add-action-button"
       {...props}
       items={[
         {

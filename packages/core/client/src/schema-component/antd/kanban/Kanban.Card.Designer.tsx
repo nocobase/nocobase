@@ -1,6 +1,6 @@
 import { MenuOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { ISchema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Space } from 'antd';
 import React from 'react';
@@ -13,6 +13,7 @@ import {
   useFormItemInitializerFields,
 } from '../../../schema-initializer/utils';
 import { OpenModeSchemaItems } from '../../../schema-items';
+import { useGetAriaLabelOfDesigner } from '../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
 
 const titleCss = css`
   pointer-events: none;
@@ -56,17 +57,17 @@ const gridRowColWrap = (schema: ISchema) => {
 // };
 
 export const KanbanCardDesigner = (props: any) => {
-  const { dn, designable } = useDesignable();
+  const { designable } = useDesignable();
   const { t } = useTranslation();
   const api = useAPIClient();
   const { refresh } = useDesignable();
-  const field = useField();
   const fieldSchema = useFieldSchema();
   const fields = useFormItemInitializerFields({
     readPretty: true,
     block: 'Kanban',
   });
   const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Kanban' });
+  const { getAriaLabel } = useGetAriaLabelOfDesigner();
 
   const items: any = [
     {
@@ -133,7 +134,13 @@ export const KanbanCardDesigner = (props: any) => {
               dn.insertBeforeEnd(schema);
             }}
             items={items}
-            component={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />}
+            component={
+              <MenuOutlined
+                role="button"
+                aria-label={getAriaLabel('schema-initializer')}
+                style={{ cursor: 'pointer', fontSize: 12 }}
+              />
+            }
           />
         </Space>
       </div>

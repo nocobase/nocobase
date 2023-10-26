@@ -260,7 +260,7 @@ describe('workflow > actions > workflows', () => {
         type: 'calculation',
         config: {
           engine: 'math.js',
-          expression: `{{$jobsMapByNodeId.${n1.id}.data.read}} + {{$jobsMapByNodeId.${n1.id}.data.read}}`,
+          expression: `{{$jobsMapByNodeKey.${n1.key}.data.read}} + {{$jobsMapByNodeKey.${n1.key}.data.read}}`,
         },
         upstreamId: n1.id,
       });
@@ -279,11 +279,12 @@ describe('workflow > actions > workflows', () => {
       const n1_2 = w2.nodes.find((n) => !n.upstreamId);
       const n2_2 = w2.nodes.find((n) => !n.downstreamId);
 
+      expect(n1_2.key).toBe(n1.key);
       expect(n1_2.type).toBe('echo');
       expect(n2_2.type).toBe('calculation');
       expect(n2_2.config).toMatchObject({
         engine: 'math.js',
-        expression: `{{$jobsMapByNodeId.${n1_2.id}.data.read}} + {{$jobsMapByNodeId.${n1_2.id}.data.read}}`,
+        expression: `{{$jobsMapByNodeKey.${n1_2.key}.data.read}} + {{$jobsMapByNodeKey.${n1_2.key}.data.read}}`,
       });
 
       await w2.update({ enabled: true });
@@ -297,47 +298,6 @@ describe('workflow > actions > workflows', () => {
       const [execution] = await w2.getExecutions();
       const [echo, calculation] = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(calculation.result).toBe(2);
-    });
-
-    it('revision with using of deleted nodes', async () => {
-      const w1 = await WorkflowModel.create({
-        enabled: true,
-        type: 'collection',
-        config: {
-          mode: 1,
-          collection: 'posts',
-        },
-      });
-
-      const n2 = await w1.createNode({
-        type: 'calculation',
-        config: {
-          calculation: {
-            calculator: 'add',
-            operands: [
-              {
-                type: '$jobsMapByNodeId',
-                options: {
-                  nodeId: 0,
-                  path: 'data.read',
-                },
-              },
-              {
-                value: `{{$jobsMapByNodeId.0.data.read}}`,
-              },
-            ],
-          },
-        },
-      });
-
-      const { status } = await agent.resource(`workflows`).revision({
-        filterByTk: w1.id,
-        filter: {
-          key: w1.key,
-        },
-      });
-
-      expect(status).toBe(400);
     });
 
     it('duplicate workflow', async () => {

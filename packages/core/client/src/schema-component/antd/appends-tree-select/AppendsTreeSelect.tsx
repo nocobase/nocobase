@@ -1,3 +1,4 @@
+import { CloseCircleFilled } from '@ant-design/icons';
 import { Tag, TreeSelect } from 'antd';
 import type { DefaultOptionType } from 'rc-tree-select/es/TreeSelect';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -7,6 +8,7 @@ import { CollectionFieldOptions, useCollectionManager, useCompile } from '../../
 export type AppendsTreeSelectProps = {
   value: string[] | string;
   onChange: (value: string[] | string) => void;
+  title?: string;
   multiple?: boolean;
   filter?(field): boolean;
   collection?: string;
@@ -72,6 +74,7 @@ function getCollectionFieldOptions(this: CallScope, collection, parentNode?): Tr
 
 export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
   const {
+    title,
     value: propsValue,
     onChange,
     collection,
@@ -202,7 +205,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
       }
       const { fullTitle } = optionsMap[value] ?? {};
       return (
-        <Tag data-testid="antd-tag" closable={closable && !disabled} onClose={onClose}>
+        <Tag closable={closable && !disabled} onClose={onClose}>
           {fullTitle?.join(' / ')}
         </Tag>
       );
@@ -219,12 +222,16 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
 
   return (
     <TreeSelect
-      data-testid="antd-tree-select"
+      // @ts-ignore
+      role="button"
+      data-testid={`select-field${title ? `-${title}` : ''}`}
       value={filteredValue}
       placeholder={t('Select field')}
       showCheckedStrategy={TreeSelect.SHOW_ALL}
       treeDefaultExpandedKeys={valueKeys}
-      allowClear
+      allowClear={{
+        clearIcon: <CloseCircleFilled role="button" aria-label="icon-close" />,
+      }}
       treeCheckStrictly={props.multiple}
       treeCheckable={props.multiple}
       tagRender={TreeTag}

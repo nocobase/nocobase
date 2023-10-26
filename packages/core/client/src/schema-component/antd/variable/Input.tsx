@@ -40,27 +40,26 @@ const ConstantTypes = {
   string: {
     label: `{{t("String")}}`,
     value: 'string',
-    component: function StringComponent({ onChange, value }) {
-      return <AntInput value={value} onChange={(ev) => onChange(ev.target.value)} />;
+    component: function StringComponent({ onChange, value, ...otherProps }) {
+      return <AntInput value={value} onChange={(ev) => onChange(ev.target.value)} {...otherProps} />;
     },
     default: '',
   },
   number: {
     label: '{{t("Number")}}',
     value: 'number',
-    component: function NumberComponent({ onChange, value }) {
-      return <InputNumber value={value} onChange={onChange} />;
+    component: function NumberComponent({ onChange, value, ...otherProps }) {
+      return <InputNumber value={value} onChange={onChange} {...otherProps} />;
     },
     default: 0,
   },
   boolean: {
     label: `{{t("Boolean")}}`,
     value: 'boolean',
-    component: function BooleanComponent({ onChange, value }) {
+    component: function BooleanComponent({ onChange, value, ...otherProps }) {
       const { t } = useTranslation();
       return (
         <Select
-          data-testid="antd-select"
           value={value}
           onChange={onChange}
           placeholder={t('Select')}
@@ -68,6 +67,7 @@ const ConstantTypes = {
             { value: true, label: t('True') },
             { value: false, label: t('False') },
           ]}
+          {...otherProps}
         />
       );
     },
@@ -76,13 +76,14 @@ const ConstantTypes = {
   date: {
     label: '{{t("Date")}}',
     value: 'date',
-    component: function DateComponent({ onChange, value }) {
+    component: function DateComponent({ onChange, value, ...otherProps }) {
       return (
         <DatePicker
           value={dayjs(value)}
           onChange={(d) => (d ? onChange(d.toDate()) : null)}
           allowClear={false}
           showTime
+          {...otherProps}
         />
       );
     },
@@ -271,7 +272,7 @@ export function Input(props) {
 
               &:hover {
                 .clear-button {
-                  opacity: 0.8;
+                  display: inline-block;
                 }
               }
 
@@ -293,6 +294,8 @@ export function Input(props) {
           )}
         >
           <div
+            role="button"
+            aria-label="variable-tag"
             onInput={(e) => e.preventDefault()}
             onKeyDown={(e) => {
               if (e.key !== 'Backspace') {
@@ -311,10 +314,11 @@ export function Input(props) {
           </div>
           {!disabled ? (
             <span
+              role="button"
+              aria-label="icon-close"
               className={cx('clear-button')}
               // eslint-disable-next-line react/no-unknown-property
               unselectable="on"
-              aria-hidden
               onClick={() => onChange(null)}
             >
               <CloseCircleFilled />
@@ -322,7 +326,11 @@ export function Input(props) {
           ) : null}
         </div>
       ) : (
-        <div style={{ flex: 1 }}>{children ?? <ConstantComponent value={value} onChange={onChange} />}</div>
+        <div style={{ flex: 1 }}>
+          {children ?? (
+            <ConstantComponent role="button" aria-label="variable-constant" value={value} onChange={onChange} />
+          )}
+        </div>
       )}
       {options.length > 1 && !disabled ? (
         <Cascader

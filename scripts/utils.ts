@@ -44,7 +44,7 @@ function checkPort(port) {
 /**
  * 检查服务是否启动成功
  */
-const checkServer = async (duration = 1000, max = 60) => {
+const checkServer = async (duration = 1000, max = 60 * 10) => {
   return new Promise((resolve, reject) => {
     let count = 0;
     const timer = setInterval(async () => {
@@ -76,7 +76,7 @@ const checkServer = async (duration = 1000, max = 60) => {
  * 检查 UI 是否启动成功
  * @param duration
  */
-const checkUI = async (duration = 1000, max = 60) => {
+const checkUI = async (duration = 1000, max = 60 * 10) => {
   return new Promise((resolve, reject) => {
     let count = 0;
     const timer = setInterval(async () => {

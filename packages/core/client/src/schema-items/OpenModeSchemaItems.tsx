@@ -45,11 +45,10 @@ export const OpenModeSchemaItems: React.FC<Options> = (options) => {
         />
       ) : null}
       {openSize && ['modal', 'drawer'].includes(openModeValue) ? (
-        <SchemaSettings.Item>
+        <SchemaSettings.Item title="Popup size">
           <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
             {t('Popup size')}
             <Select
-              data-testid="antd-select"
               bordered={false}
               options={[
                 { label: t('Small'), value: 'small' },

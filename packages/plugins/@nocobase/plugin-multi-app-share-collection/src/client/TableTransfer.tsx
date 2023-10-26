@@ -233,7 +233,6 @@ export const TableTransfer = connect((props) => {
             <strong style={{ fontSize: token.fontSizeLG, color: token.colorText }}>{t('Unshared collections')}</strong>
             <Input.Group compact style={{ width: 360 }}>
               <Select
-                data-testid="antd-select"
                 popupMatchSelectWidth={false}
                 onChange={(value) => {
                   removedDataSource.setCategoryFilter(value);
@@ -319,7 +318,6 @@ export const TableTransfer = connect((props) => {
             <strong style={{ fontSize: token.fontSizeLG, color: token.colorText }}>{t('Shared collections')}</strong>
             <Input.Group compact style={{ width: 360 }}>
               <Select
-                data-testid="antd-select"
                 popupMatchSelectWidth={false}
                 onChange={(value) => {
                   addedDataSource.setCategoryFilter(value);
