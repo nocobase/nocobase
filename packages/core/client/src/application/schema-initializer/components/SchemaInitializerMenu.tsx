@@ -1,10 +1,10 @@
 import Icon from '@ant-design/icons';
 import { Menu } from 'antd';
 import React, { FC, ReactNode } from 'react';
-import { useInitializerChildren } from '../hooks';
 import { SchemaInitializerOptions } from '../types';
 import { useCompile } from '../../../schema-component';
-import { useSchemaInitializer } from '../context';
+import { useSchemaInitializerMenuItems } from '../hooks';
+import { uid } from '@formily/shared';
 
 export interface SchemaInitializerMenuProps {
   title: string;
@@ -15,10 +15,9 @@ export interface SchemaInitializerMenuProps {
 }
 
 export const SchemaInitializerMenu: FC<SchemaInitializerMenuProps> = (props) => {
-  const { children, title, name, icon } = props;
-  const validChildren = useInitializerChildren(children);
-  const { insert } = useSchemaInitializer();
+  const { children, title, name = uid(), icon } = props;
   const compile = useCompile();
+  const childrenItems = useSchemaInitializerMenuItems(children, name);
 
   return (
     <Menu
@@ -27,14 +26,7 @@ export const SchemaInitializerMenu: FC<SchemaInitializerMenuProps> = (props) => 
           key: name,
           label: compile(title),
           icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
-          children: validChildren.map((item) => {
-            const { name, key, Component, icon, ...props } = item;
-            return {
-              label: React.createElement(Component, { name, insert, ...props }),
-              key: name || key,
-              icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
-            };
-          }),
+          children: childrenItems,
         },
       ]}
     ></Menu>

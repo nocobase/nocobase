@@ -1,4 +1,4 @@
-import React, { ComponentType, useCallback } from 'react';
+import React, { ComponentType, ReactNode, useCallback } from 'react';
 import { SchemaInitializerItemType, SchemaInitializerOptions } from '../types';
 import { useFindComponent } from '../../../schema-component';
 import {
@@ -66,30 +66,28 @@ export function useSchemaInitializerMenuItems(
         return [];
       }
       return items.map((item, indexA) => {
+        const ItemComponent = (item as any).component || (item as any).Component;
+        let element: ReactNode;
+        if (ItemComponent) {
+          const Component = findComponent(ItemComponent);
+          if (!Component) {
+            console.error(`SchemaInitializer: component "${ItemComponent}" not found`);
+            return null;
+          }
+          element = React.createElement(Component, { ...item, title: compile((item as any).title), item });
+        }
+
         if (item.type === 'divider') {
           return { type: 'divider', key: `divider-${indexA}` };
         }
-        if (item.type === 'item' && item.component) {
-          const Component: any = findComponent(item.component);
-          if (!Component) {
-            console.error(`SchemaInitializer: component "${item.component}" not found`);
-            return null;
-          }
+        if (item.type === 'item' && ItemComponent) {
           if (!item.key) {
             item.key = `${item.title}-${indexA}`;
           }
           return {
             key: item.key,
-            title: item.title,
-            label: (
-              <Component
-                {...item}
-                item={{
-                  ...item,
-                  title: compile(item.title),
-                }}
-              />
-            ),
+            title: compile(item.title),
+            label: element,
           };
         }
         if (item.type === 'itemGroup') {
@@ -114,18 +112,19 @@ export function useSchemaInitializerMenuItems(
             children: item?.children.length ? getMenuItems(item.children, key) : [],
           };
         }
-        const label = compile(item.title);
+
+        const label = element || compile(item.title);
         const key = `${parentKey}-${item.title}-${indexA}`;
         return {
           key,
           label,
-          title: label,
+          title: compile(item.title),
           onClick: (info) => {
             if (info.key !== key) return;
             if (item.onClick) {
               item.onClick({ ...info, item });
             } else {
-              onClick({ ...info, item });
+              onClick?.({ ...info, item });
             }
           },
         };

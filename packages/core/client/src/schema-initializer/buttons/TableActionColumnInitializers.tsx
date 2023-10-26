@@ -17,12 +17,12 @@ export const Resizable = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
-  const { setVisible } = useSchemaInitializer();
   return (
     <SchemaInitializerActionModal
       title={t('Column width')}
       component={React.forwardRef<any, any>((props, ref) => {
         const { children, onClick, ...others } = props;
+        const { setVisible } = useSchemaInitializer();
         return (
           <SchemaInitializerItem
             ref={ref}

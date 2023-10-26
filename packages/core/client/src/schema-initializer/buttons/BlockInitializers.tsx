@@ -83,11 +83,6 @@ export const blockInitializers = new SchemaInitializer({
           title: '{{t("Markdown")}}',
           Component: 'MarkdownBlockInitializer',
         },
-        {
-          name: 'auditLogs',
-          title: '{{t("Audit logs")}}',
-          Component: 'AuditLogsBlockInitializer',
-        },
       ],
     },
   ],

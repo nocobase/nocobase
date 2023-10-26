@@ -327,7 +327,7 @@ export const addCustomFormField = new SchemaInitializer({
 
 function CustomFormFieldInitializer(props) {
   const { item } = props;
-  const { insert } = useSchemaInitializer();
+  const { insert, setVisible } = useSchemaInitializer();
   const { onAddField, setCallback } = useContext(AddCustomFormFieldButtonContext);
   const { getInterface } = useCollectionManager();
 
@@ -339,6 +339,7 @@ function CustomFormFieldInitializer(props) {
       onClick={() => {
         setCallback(() => insert);
         onAddField(interfaceOptions);
+        setVisible(false);
       }}
       {...props}
     />

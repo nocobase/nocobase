@@ -264,11 +264,6 @@ export const recordBlockInitializers = new SchemaInitializer({
           title: '{{t("Markdown")}}',
           Component: 'MarkdownBlockInitializer',
         },
-        {
-          name: 'audit-logs',
-          title: '{{t("Audit logs")}}',
-          Component: 'AuditLogsBlockInitializer',
-        },
       ],
     },
   ],
