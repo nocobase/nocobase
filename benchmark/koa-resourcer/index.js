@@ -4,7 +4,7 @@ const { middlewares } = require('@nocobase/server');
 const { Resourcer } = require('@nocobase/resourcer');
 
 const dotenv = require('dotenv');
-const { list } = require('@nocobase/actions/lib/actions/list');
+const { list, get } = require('@nocobase/actions/lib/actions');
 dotenv.config();
 
 const db = new Database({
@@ -83,12 +83,13 @@ const resourcer = new Resourcer({
 resourcer.define({
   name: 'users',
   actions: {
-    // list,
-    async list(ctx, next) {
-      const repository = db.getRepository('users');
-      ctx.body = await repository.find();
-      await next();
-    },
+    list,
+    get,
+    // async list(ctx, next) {
+    //   const repository = db.getRepository('users');
+    //   ctx.body = await repository.find();
+    //   await next();
+    // },
   },
 });
 
