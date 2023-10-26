@@ -78,7 +78,7 @@ describe('workflow > instructions > update', () => {
           collection: 'posts',
           params: {
             filter: {
-              id: `{{$jobsMapByNodeId.${n1.id}.id}}`,
+              id: `{{$jobsMapByNodeKey.${n1.key}.id}}`,
             },
             values: {
               title: 'changed',

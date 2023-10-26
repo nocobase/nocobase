@@ -309,6 +309,7 @@ export const InternalCascadeSelect = observer(
             schema={{
               ...fieldSchema,
               default: field.value,
+              title: '',
               'x-component': AssociationCascadeSelect,
               'x-component-props': {
                 ...props,

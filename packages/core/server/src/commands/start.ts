@@ -8,6 +8,10 @@ export default (app: Application) => {
     .action(async (...cliArgs) => {
       const [opts] = cliArgs;
 
+      if (app.db.closed()) {
+        await app.db.reconnect();
+      }
+
       if (opts.quickstart) {
         if (await app.isInstalled()) {
           app.log.debug('installed....');

@@ -81,7 +81,10 @@ export const useValuesFromRecord = (options) => {
   const result = useRequest(
     () =>
       Promise.resolve({
-        data: { ...omit(record, ['__parent', '__collectionName']), category: record?.category.map((v) => v.id) },
+        data: {
+          ...omit(cloneDeep(record), ['__parent', '__collectionName']),
+          category: record?.category.map((v) => v.id),
+        },
       }),
     {
       ...options,

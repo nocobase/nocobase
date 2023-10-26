@@ -2,7 +2,6 @@ import lodash from 'lodash';
 import { ModelStatic } from 'sequelize';
 import { Model } from './model';
 import { AssociationKeysToBeUpdate, BlackList, WhiteList } from './repository';
-import { isPlainObject } from '@nocobase/utils/src';
 
 type UpdateValueItem = string | number | UpdateValues;
 
@@ -100,6 +99,10 @@ export class UpdateGuard {
    * @param values
    */
   sanitize(values: UpdateValues) {
+    if (values === null || values === undefined) {
+      return values;
+    }
+
     values = lodash.clone(values);
 
     if (!this.model) {
