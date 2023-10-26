@@ -1,6 +1,7 @@
 import path from 'path';
 
 import { requireModule } from '@nocobase/utils';
+import { Transactionable } from '@nocobase/database';
 
 import Plugin from '..';
 import Processor from '../Processor';
@@ -25,7 +26,9 @@ export interface Instruction {
   // for start node in main flow (or branch) to resume when manual sub branch triggered
   resume?: Runner;
 
-  getScope?: (node: FlowNodeModel, job: any, processor: Processor) => any;
+  getScope?: (node: FlowNodeModel, data: any, processor: Processor) => any;
+
+  duplicateConfig?: (node: FlowNodeModel, options: Transactionable) => object | Promise<object>;
 }
 
 type InstructionConstructor<T> = { new (p: Plugin): T };

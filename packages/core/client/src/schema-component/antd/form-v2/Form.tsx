@@ -146,12 +146,16 @@ const WithForm = (props: WithFormProps) => {
                     variables,
                     localVariables,
                   });
+                  // 如果是 linkageRules 数组的最后一个元素
                   if (index === linkageRules.length - 1) {
-                    setTimeout(() =>
-                      linkagefields.map((v) => {
-                        v.linkageProperty = {};
-                      }),
-                    );
+                    // 等待异步操作完成
+                    await new Promise((resolve) => setTimeout(resolve, 0));
+                    // 清空 linkagefields 数组中对象的属性
+                    linkagefields.forEach((v) => {
+                      v.linkageProperty = {};
+                    });
+                    // 清空 linkagefields 数组
+                    linkagefields.length = 0;
                   }
                 }),
               );

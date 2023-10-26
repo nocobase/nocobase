@@ -73,7 +73,7 @@ export default {
     ModeConfig,
     AssigneesSelect,
   },
-  useVariables({ id, title, config }, { types, fieldNames = defaultFieldNames }) {
+  useVariables({ key, title, config }, { types, fieldNames = defaultFieldNames }) {
     const compile = useCompile();
     const { getCollectionFields } = useCollectionManager();
     const formKeys = Object.keys(config.forms ?? {});
@@ -107,7 +107,7 @@ export default {
 
     return options.length
       ? {
-          [fieldNames.value]: `${id}`,
+          [fieldNames.value]: key,
           [fieldNames.label]: title,
           [fieldNames.children]: options,
         }
@@ -131,7 +131,7 @@ export default {
               title: form.title ?? formKey,
               Component: CollectionBlockInitializer,
               collection: form.collection,
-              dataSource: `{{$jobsMapByNodeId.${node.id}.${formKey}}}`,
+              dataSource: `{{$jobsMapByNodeKey.${node.key}.${formKey}}}`,
             } as SchemaInitializerItemOptions)
           : null;
       })

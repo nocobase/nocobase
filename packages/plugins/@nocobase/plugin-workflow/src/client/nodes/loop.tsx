@@ -118,7 +118,7 @@ export default {
     // const current = useNodeContext();
     // const upstreams = useAvailableUpstreams(current);
     // find target data model by path described in `config.target`
-    // 1. get options from $context/$jobsMapByNodeId
+    // 1. get options from $context/$jobsMapByNodeKey
     // 2. route to sub-options and use as loop target options
     let targetOption: VariableOption = {
       key: 'item',
