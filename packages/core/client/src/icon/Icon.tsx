@@ -38,14 +38,14 @@ interface IconProps {
 export const Icon = (props: IconProps) => {
   const { type = '', component, ...restProps } = props;
   if (component) {
-    return <AntdIcon role="button" component={component} {...restProps} />;
+    return <AntdIcon component={component} {...restProps} />;
   }
   if (type && icons.has(type.toLowerCase())) {
     const IconComponent = icons.get(type.toLowerCase());
-    return <IconComponent role="button" {...restProps} />;
+    return <IconComponent {...restProps} />;
   }
   if (type && IconFont) {
-    return <IconFont role="button" type={type} />;
+    return <IconFont type={type} />;
   }
   return null;
 };
