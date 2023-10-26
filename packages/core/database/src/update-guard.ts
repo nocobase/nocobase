@@ -100,6 +100,9 @@ export class UpdateGuard {
    * @param values
    */
   sanitize(values: UpdateValues) {
+    if (!isPlainObject(values)) {
+      return values;
+    }
     values = lodash.clone(values);
 
     if (!this.model) {
