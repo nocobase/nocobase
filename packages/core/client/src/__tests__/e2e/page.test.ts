@@ -2,58 +2,51 @@ import { enableToConfig, expect, test } from '@nocobase/test/client';
 
 test.describe('page header', () => {
   test('disabled & enabled page header', async ({ page, mockPage }) => {
-    await mockPage({ name: 'page header' }).goto();
+    const pageTitle = 'page header';
+    await mockPage({ name: pageTitle }).goto();
     //默认开启
-    await expect(page.getByTitle('page header')).toBeVisible();
-    await page.getByTitle('page header').click();
-    await page.getByLabel('designer-page').hover();
-    await expect(page.getByRole('menuitem', { name: 'Enable page header' }).getByRole('switch')).toBeChecked();
+    await expect(page.getByTitle(pageTitle)).toBeVisible();
+    await page.getByTitle(pageTitle).click();
+    await page.getByLabel('designer-schema-settings-Page').hover();
+    await expect(page.getByLabel('Enable page header').getByRole('switch')).toBeChecked();
     //关闭
-    await page.getByRole('menuitem', { name: 'Enable page header' }).getByRole('switch').click();
-    await expect(page.getByTitle('page header')).not.toBeVisible();
-    await expect(page.getByTitle('page header')).not.toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'Enable page header' }).getByRole('switch')).not.toBeChecked();
+    await page.getByLabel('Enable page header').getByRole('switch').click();
+    await expect(await page.locator('.ant-page-header')).not.toBeVisible();
+    await expect(page.getByLabel('Enable page header').getByRole('switch')).not.toBeChecked();
     //开启
     await page.getByRole('main').locator('span').nth(1).click();
-    await page.getByLabel('designer-page').hover();
-    await page.getByRole('menuitem', { name: 'Enable page header' }).getByRole('switch').click();
-    await expect(page.getByTitle('page header')).toBeVisible();
-    await expect(page.getByTitle('page header')).toBeVisible();
+    await page.getByLabel('designer-schema-settings-Page').hover();
+    await page.getByLabel('Enable page header').getByRole('switch').click();
+    await expect(await page.locator('.ant-page-header').getByTitle(pageTitle)).toBeVisible();
   });
 });
 
 test.describe('page title', () => {
   test('disable & not disable page title', async ({ page, mockPage }) => {
-    await mockPage({ name: 'page title' }).goto();
+    const pageTitle = 'page title';
+    await mockPage({ name: pageTitle }).goto();
     //默认显示
-    await expect(page.getByTitle('page title')).toBeVisible();
-    await page.getByTitle('page title').click();
-    await page.getByLabel('designer-page').hover();
-    await expect(page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch')).toBeChecked();
+    await expect(page.getByTitle(pageTitle)).toBeVisible();
+    await page.getByTitle(pageTitle).click();
+    await page.getByLabel('designer-schema-settings-Page').hover();
+    await expect(page.getByLabel('Display page title').getByRole('switch')).toBeChecked();
     //不显示
-    await page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch').click();
+    await page.getByLabel('Display page title').getByRole('switch').click();
     await expect(page.locator('.ant-page-header')).toBeVisible();
-    await expect(page.getByTitle('page title')).not.toBeVisible();
-    await expect(page.getByTitle('page title')).not.toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch')).not.toBeChecked();
+    await expect(await page.locator('.ant-page-header').getByTitle(pageTitle)).not.toBeVisible();
+    await expect(page.getByLabel('Display page title').getByRole('switch')).not.toBeChecked();
     //开启
     await page.locator('.ant-page-header').click();
-    await page.getByLabel('designer-page').hover();
-    await page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch').click();
-    await expect(page.getByTitle('page title')).toBeVisible();
-    await expect(
-      page
-        .locator('div')
-        .filter({ hasText: /^page title$/ })
-        .nth(3),
-    ).toBeVisible();
+    await page.getByLabel('designer-schema-settings-Page').hover();
+    await page.getByLabel('Display page title').getByRole('switch').click();
+    await expect(page.locator('.ant-page-header').getByTitle(pageTitle)).toBeVisible();
   });
   test('edit page title', async ({ page, mockPage }) => {
     await mockPage({ name: 'page title1' }).goto();
 
     await expect(page.getByTitle('page title1')).toBeVisible();
     await page.getByTitle('page title1').click();
-    await page.getByLabel('designer-page').hover();
+    await page.getByLabel('designer-schema-settings-Page').hover();
     await page.getByText('Edit page title').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('page title2');
@@ -68,25 +61,24 @@ test.describe('page title', () => {
 test.describe('page tabs', () => {
   test('enable & disabled page tab', async ({ page, mockPage }) => {
     await mockPage({ name: 'page tab' }).goto();
-    await enableToConfig(page);
     await page.getByTitle('page tab').click();
-    await page.getByLabel('designer-page').hover();
+    await page.getByLabel('designer-schema-settings-Page').hover();
     //默认不启用
-    await expect(page.getByRole('menuitem', { name: 'Enable page tabs' }).getByRole('switch')).not.toBeChecked();
+    await expect(page.getByLabel('Enable page tabs').getByRole('switch')).not.toBeChecked();
     //启用标签
-    await page.getByText('Enable page tabs').click();
+    await page.getByLabel('Enable page tabs').click();
     await expect(page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'plus Add tab' })).toBeVisible();
+    await expect(page.getByLabel('schema-initializer-Page-tabs')).toBeVisible();
     await page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' }).click();
     await expect(page.getByLabel('schema-initializer-Grid-BlockInitializers')).toBeVisible();
 
     //添加新的tab
-    await page.getByRole('button', { name: 'plus Add tab' }).click();
+    await page.getByLabel('schema-initializer-Page-tabs').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('page tab 1');
     await page.getByRole('button', { name: 'OK' }).click();
     await page.getByText('page tab 1').click();
-    await page.getByRole('button', { name: 'plus Add tab' }).click();
+    await page.getByLabel('schema-initializer-Page-tabs').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('page tab 2');
     await page.getByRole('button', { name: 'OK' }).click();
@@ -106,9 +98,8 @@ test.describe('page tabs', () => {
 
     //修改tab名称
     await page.getByText('Unnamed').click();
-    await page.getByText('Unnamed').hover();
-    await page.getByRole('button', { name: 'menu', exact: true }).hover();
-    await page.getByText('Edit', { exact: true }).click();
+    await page.getByRole('button', { name: 'designer-schema-settings-Page-tab' }).click();
+    await page.getByLabel('Edit tab').click();
     await page.getByRole('textbox').fill('page tab');
     await page.getByRole('button', { name: 'OK' }).click();
 
@@ -122,18 +113,17 @@ test.describe('page tabs', () => {
     await expect(tabMenuItemActivedColor1).toBe('rgb(22, 119, 255)');
 
     //删除 tab
-    await page.getByRole('tab').getByText('page tab', { exact: true }).click();
     await page.getByRole('tab').getByText('page tab', { exact: true }).hover();
-    await page.getByRole('button', { name: 'menu', exact: true }).hover();
-    await page.getByLabel('Delete').click();
+    await page.getByRole('button', { name: 'designer-schema-settings-Page-tab' }).click();
+    await page.getByRole('button', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
     await expect(page.getByRole('tab').getByText('page tab', { exact: true })).not.toBeVisible();
     await page.getByRole('tab').getByText('page tab 1').click();
 
     //禁用标签
-    await page.getByTitle('page tab').click();
-    await page.getByLabel('designer-page').hover();
-    await page.getByRole('menuitem', { name: 'Enable page tabs' }).getByRole('switch').setChecked(false);
+    await page.locator('.ant-page-header').getByTitle('page tab').click();
+    await page.locator('.ant-page-header').getByLabel('designer-schema-settings-Page', { exact: true }).hover();
+    await page.getByLabel('Enable page tabs').getByRole('switch').setChecked(false);
     await expect(page.getByText('page tab 2')).not.toBeVisible();
   });
   test('drag page tab sorting', async ({ page, mockPage }) => {
