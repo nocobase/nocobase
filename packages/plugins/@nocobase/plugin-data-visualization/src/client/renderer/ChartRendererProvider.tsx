@@ -4,6 +4,7 @@ import React, { createContext, useContext } from 'react';
 import { parseField, removeUnparsableFilter } from '../utils';
 import { ChartDataContext } from '../block/ChartDataProvider';
 import { ConfigProvider } from 'antd';
+import { useChartFilter } from '../hooks';
 
 export type MeasureProps = {
   field: string | string[];
@@ -60,12 +61,18 @@ export const ChartRendererContext = createContext<
 export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
   const { query, config, collection, transform } = props;
   const { addChart } = useContext(ChartDataContext);
+  const { getFilter, hasFilter, appendFilter } = useChartFilter();
   const schema = useFieldSchema();
   const api = useAPIClient();
   const service = useRequest(
     (collection, query, manual) =>
       new Promise((resolve, reject) => {
         if (!(collection && query?.measures?.length)) return resolve(undefined);
+        const filterValues = getFilter();
+        const queryWithFilter =
+          manual !== 'configure' && hasFilter({ collection, query }, filterValues)
+            ? appendFilter({ collection, query }, filterValues)
+            : query;
         api
           .request({
             url: 'charts:query',
@@ -73,8 +80,8 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
             data: {
               uid: schema?.['x-uid'],
               collection,
-              ...query,
-              filter: removeUnparsableFilter(query?.filter),
+              ...queryWithFilter,
+              filter: removeUnparsableFilter(queryWithFilter.filter),
               dimensions: (query?.dimensions || []).map((item: DimensionProps) => {
                 const dimension = { ...item };
                 if (item.format && !item.alias) {

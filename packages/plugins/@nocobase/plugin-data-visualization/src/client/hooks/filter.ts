@@ -58,11 +58,10 @@ export const useChartData = () => {
 export const useChartFilter = () => {
   const { t } = useChartsTranslation();
   const { charts } = useContext(ChartDataContext);
-  const form = useForm();
   const { fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
   const { getCollection, getInterface } = useCollectionManager();
-  const { fields: fieldProps } = useContext(ChartFilterContext);
+  const { fields: fieldProps, form } = useContext(ChartFilterContext);
 
   const getChartFilterFields = (collection: CollectionOptions) => {
     const name = collection.name;
@@ -135,7 +134,7 @@ export const useChartFilter = () => {
   };
 
   const getFilter = () => {
-    const values = form.values;
+    const values = form?.values || {};
     const filter = {};
     Object.entries(values).forEach(([collection, fields]) => {
       Object.entries(fields).forEach(([field, value]) => {
@@ -156,39 +155,43 @@ export const useChartFilter = () => {
     return filter;
   };
 
+  const hasFilter = (chart: { collection: string; query: any }, filterValues: any) => {
+    const { collection, query } = chart;
+    const { parameters } = parse(query.filter || '');
+    return (
+      chart &&
+      (filterValues[collection] ||
+        (filterValues['custom'] && parameters?.find((param: { key: string }) => filterValues['custom'][param.key])))
+    );
+  };
+
+  const appendFilter = (chart: { collection: string; query: any }, filterValues: any) => {
+    const { collection, query } = chart;
+    let newQuery = { ...query };
+    if (newQuery.filter) {
+      let filter = newQuery.filter;
+      const parsed = parse(filter);
+      const { parameters } = parsed;
+      if (filterValues['custom'] && parameters?.find((param: { key: string }) => filterValues['custom'][param.key])) {
+        filter = parsed(filterValues['custom']);
+      }
+      newQuery = {
+        ...newQuery,
+        filter: {
+          $and: [filter, filterValues[collection]],
+        },
+      };
+    }
+    return newQuery;
+  };
+
   const filter = async () => {
     const filterValues = getFilter();
     const requests = Object.values(charts)
-      .filter((chart) => {
-        const { query } = chart;
-        const { parameters } = parse(query.filter || '');
-        return (
-          chart &&
-          (filterValues[chart.collection] ||
-            (filterValues['custom'] && parameters?.find((param: { key: string }) => filterValues['custom'][param.key])))
-        );
-      })
+      .filter((chart) => hasFilter(chart, filterValues))
       .map((chart) => async () => {
-        const { service, collection, query } = chart;
-        let newQuery = { ...query };
-        if (newQuery.filter) {
-          let filter = newQuery.filter;
-          const parsed = parse(filter);
-          const { parameters } = parsed;
-          if (
-            filterValues['custom'] &&
-            parameters?.find((param: { key: string }) => filterValues['custom'][param.key])
-          ) {
-            filter = parsed(filterValues['custom']);
-          }
-          newQuery = {
-            ...newQuery,
-            filter: {
-              $and: [filter, filterValues[collection]],
-            },
-          };
-        }
-        await service.runAsync(collection, newQuery, true);
+        const { service, collection } = chart;
+        await service.runAsync(collection, appendFilter(chart, filterValues), true);
       });
     await Promise.all(requests.map((request) => request()));
   };
@@ -209,6 +212,9 @@ export const useChartFilter = () => {
     filter,
     refresh,
     getChartFilterFields,
+    getFilter,
+    hasFilter,
+    appendFilter,
   };
 };
 

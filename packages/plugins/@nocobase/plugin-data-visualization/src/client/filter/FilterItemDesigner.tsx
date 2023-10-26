@@ -13,7 +13,7 @@ import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Field } from '@formily/core';
 import _ from 'lodash';
 import { ChartFilterContext } from './FilterProvider';
-import { getOptionsSchema } from './utils';
+import { getOptionsSchema, getPropsSchemaByComponent } from './utils';
 
 const EditTitle = () => {
   const field = useField<Field>();
@@ -124,37 +124,29 @@ const EditOperator = () => {
   ) : null;
 };
 
-const EditOptions = () => {
+const EditProps = () => {
   const { t } = useChartsTranslation();
   const { dn } = useDesignable();
-  const optionsSchema = getOptionsSchema();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const options = fieldSchema['x-component-props']?.options;
+  const propsSchema = getPropsSchemaByComponent(fieldSchema['x-component']);
   return (
     <SchemaSettings.ModalItem
-      key="edit-field-options"
-      title={t('Edit field options')}
+      key="edit-field-props"
+      title={t('Edit field properties')}
       schema={{
-        type: 'object',
-        title: t('Edit field options'),
-        properties: {
-          options: {
-            ...optionsSchema,
-            default: options,
-          },
-        },
+        title: t('Edit field properties'),
+        ...propsSchema,
       }}
-      onSubmit={({ options }) => {
-        field.componentProps.options = options;
-        fieldSchema['x-component-props'].options = options;
+      initialValues={field.componentProps}
+      onSubmit={(props) => {
+        field.reset();
+        field.componentProps = props;
+        fieldSchema['x-component-props'] = props;
         dn.emit('patch', {
           schema: {
             'x-uid': fieldSchema['x-uid'],
-            'x-component-props': {
-              ...fieldSchema['x-component-props'],
-              options,
-            },
+            'x-component-props': props,
           },
         });
         dn.refresh();
@@ -170,12 +162,12 @@ export const ChartFilterItemDesigner: React.FC = () => {
   const fieldSchema = useFieldSchema();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const isCustom = (fieldSchema['name'] as string).startsWith('custom.');
-  const hasOptions = fieldSchema['x-component-props']?.options;
+  const hasProps = getPropsSchemaByComponent(fieldSchema['x-component']);
   return (
     <GeneralSchemaDesigner disableInitializer>
       <EditTitle />
       <EditDescription />
-      {hasOptions && isCustom && <EditOptions />}
+      {hasProps && isCustom && <EditProps />}
       {!isCustom && <EditOperator />}
       {collectionField ? <SchemaSettings.Divider /> : null}
       <SchemaSettings.Remove

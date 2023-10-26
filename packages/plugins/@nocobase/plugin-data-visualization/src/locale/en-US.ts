@@ -28,5 +28,5 @@ export default {
   Input: 'Input',
   'Date range': 'Date range',
   'Time range': 'Time range',
-  'Edit field options': 'Edit field options',
+  'Edit field properties': 'Edit field properties',
 };

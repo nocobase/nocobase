@@ -133,7 +133,7 @@ export const ChartConfigure: React.FC<{
         }
 
         try {
-          await service.runAsync(collection, form.values.query, true);
+          await service.runAsync(collection, form.values.query, 'configure');
         } catch (e) {
           console.log(e);
         }
@@ -151,7 +151,7 @@ export const ChartConfigure: React.FC<{
     if (!visible) {
       return;
     }
-    service.run(collection, field?.decoratorProps?.query);
+    service.run(collection, field?.decoratorProps?.query, 'configure');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 

@@ -17,8 +17,8 @@ export const useChartFilterResetProps = () => {
   const { refresh } = useChartFilter();
   return {
     onClick: async () => {
-      await refresh();
       form.reset();
+      await refresh();
     },
   };
 };

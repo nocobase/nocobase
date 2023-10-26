@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useEffect, useMemo } from 'react';
 import { FilterOutlined } from '@ant-design/icons';
 import { Grid, gridRowColWrap, useDesignable, useCurrentSchema, SchemaInitializer, FormV2 } from '@nocobase/client';
 import { uid, merge } from '@formily/shared';
@@ -50,7 +50,7 @@ const createFilterSchema = () => {
 };
 
 export const ChartFilterForm: React.FC = (props) => {
-  const { addField, removeField } = useContext(ChartFilterContext);
+  const { addField, removeField, setForm } = useContext(ChartFilterContext);
   const form = useMemo(
     () =>
       createForm({
@@ -87,6 +87,8 @@ export const ChartFilterForm: React.FC = (props) => {
       }),
     [addField, removeField],
   );
+
+  useEffect(() => setForm(form), [form, setForm]);
   return <FormV2 {...props} form={form} />;
 };
 

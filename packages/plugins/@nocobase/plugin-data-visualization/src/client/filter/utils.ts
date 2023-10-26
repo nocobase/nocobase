@@ -55,17 +55,40 @@ export const getPropsSchemaByComponent = (component: string) => {
     'x-decorator': 'FormItem',
     'x-component': 'Checkbox',
   };
+  const dateFormat = {
+    type: 'string',
+    title: '{{t("Date format")}}',
+    'x-component': 'Radio.Group',
+    'x-decorator': 'FormItem',
+    default: 'YYYY-MM-DD',
+    enum: [
+      {
+        label: '{{t("Year/Month/Day")}}',
+        value: 'YYYY/MM/DD',
+      },
+      {
+        label: '{{t("Year-Month-Day")}}',
+        value: 'YYYY-MM-DD',
+      },
+      {
+        label: '{{t("Day/Month/Year")}}',
+        value: 'DD/MM/YYYY',
+      },
+    ],
+  };
   const options = getOptionsSchema();
   const propsSchema = {
     DatePicker: {
       type: 'object',
       properties: {
+        dateFormat,
         showTime,
       },
     },
     'DatePicker.RangePicker': {
       type: 'object',
       properties: {
+        dateFormat,
         showTime,
       },
     },

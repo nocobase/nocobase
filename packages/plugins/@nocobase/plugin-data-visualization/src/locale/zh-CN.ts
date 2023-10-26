@@ -82,5 +82,5 @@ export default {
   Input: '输入框',
   'Date range': '日期范围',
   'Time range': '时间范围',
-  'Edit field options': '编辑字段选项',
+  'Edit field properties': '编辑字段属性',
 };
