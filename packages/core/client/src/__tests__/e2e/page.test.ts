@@ -121,8 +121,12 @@ test.describe('page tabs', () => {
     await page.getByRole('tab').getByText('page tab 1').click();
 
     //禁用标签
-    await page.locator('.ant-page-header').getByTitle('page tab').click();
-    await page.locator('.ant-page-header').getByLabel('designer-schema-settings-Page', { exact: true }).hover();
+    await page
+      .locator('div')
+      .filter({ hasText: /^page tab$/ })
+      .nth(1)
+      .click();
+    await page.getByLabel('designer-schema-settings-Page', { exact: true }).click();
     await page.getByLabel('Enable page tabs').getByRole('switch').setChecked(false);
     await expect(page.getByText('page tab 2')).not.toBeVisible();
   });
