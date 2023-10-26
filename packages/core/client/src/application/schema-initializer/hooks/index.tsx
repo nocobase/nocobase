@@ -11,7 +11,7 @@ import { useStyles } from '../components/style';
 import { useCompile } from '../../../schema-component';
 import { SchemaInitializerItemOptions } from '../../../schema-initializer';
 
-const typeComponentMap: Record<SchemaInitializerItemType['type'], ComponentType> = {
+const typeComponentMap: Record<SchemaInitializerItemType['type'], ComponentType<any>> = {
   itemGroup: SchemaInitializerGroup,
   divider: SchemaInitializerDivider,
   subMenu: SchemaInitializerMenu,
@@ -102,7 +102,7 @@ export function useSchemaInitializerMenuItems(
             key,
             label,
             title: label,
-            className: styles.nbMenuItemGroup,
+            // className: styles.nbMenuItemGroup,
             children: item?.children.length ? getMenuItems(item.children, key) : [],
           };
         }
@@ -133,7 +133,7 @@ export function useSchemaInitializerMenuItems(
         };
       });
     },
-    [compile, findComponent, onClick, styles.nbMenuItemGroup],
+    [compile, findComponent, onClick],
   );
 
   return getMenuItems(items, name);

@@ -3,15 +3,24 @@ import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
+import { createStyles } from 'antd-style';
 import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../..';
 import { useGlobalTheme } from '../../../../global-theme';
 import { SchemaInitializerItem, SchemaInitializerV2, useSchemaInitializerV2 } from '../../../../application';
+
+const useStyles = createStyles(({ token }) => ({
+  menuItem: {
+    paddingLeft: `${token.padding}px !important`,
+    paddingRight: `${token.padding}px !important`,
+  },
+}));
 
 export const GroupItem = () => {
   const { insert } = useSchemaInitializerV2();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
+  const { styles } = useStyles();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -66,7 +75,7 @@ export const GroupItem = () => {
       ],
     });
   }, [insert, options.components, options.scope, t, theme]);
-  return <SchemaInitializerItem title={t('Group')} onClick={handleClick} />;
+  return <SchemaInitializerItem title={t('Group')} onClick={handleClick} className={styles.menuItem} />;
 };
 
 export const PageMenuItem = () => {
@@ -74,6 +83,7 @@ export const PageMenuItem = () => {
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
+  const { styles } = useStyles();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -143,7 +153,7 @@ export const PageMenuItem = () => {
       },
     });
   }, [insert, options.components, options.scope, t, theme]);
-  return <SchemaInitializerItem title={t('Page')} onClick={handleClick} />;
+  return <SchemaInitializerItem title={t('Page')} onClick={handleClick} className={styles.menuItem} />;
 };
 
 export const LinkMenuItem = () => {
@@ -151,6 +161,7 @@ export const LinkMenuItem = () => {
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
+  const { styles } = useStyles();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -212,7 +223,7 @@ export const LinkMenuItem = () => {
     });
   }, [insert, options.components, options.scope, t, theme]);
 
-  return <SchemaInitializerItem title={t('Link')} onClick={handleClick} />;
+  return <SchemaInitializerItem title={t('Link')} onClick={handleClick} className={styles.menuItem} />;
 };
 
 export const menuItemInitializer = new SchemaInitializerV2({

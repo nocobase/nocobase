@@ -1325,7 +1325,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
       },
     },
   };
-  // console.log(JSON.stringify(schema, null, 2));
+
   return schema;
 };
 
@@ -1583,7 +1583,7 @@ export const createCalendarBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
+
   return schema;
 };
 
@@ -1713,7 +1713,7 @@ export const createGanttBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
+
   return schema;
 };
 export const createKanbanBlockSchema = (options) => {

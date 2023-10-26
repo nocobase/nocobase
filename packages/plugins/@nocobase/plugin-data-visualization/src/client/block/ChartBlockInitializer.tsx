@@ -17,6 +17,7 @@ const ConfigureButton = (props) => {
   return (
     <SchemaInitializerItem
       {...props}
+      applyMenuStyle={false}
       onClick={() => {
         setCurrent({ schema: {}, field: null, collection: props.item?.name, service: null, data: undefined });
         setVisible(true);

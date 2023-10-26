@@ -1,4 +1,4 @@
-import React, { FC } from 'react';
+import React from 'react';
 import { useCompile } from '../../../schema-component';
 import { Icon } from '../../../icon';
 import { Menu } from 'antd';
@@ -15,13 +15,14 @@ export interface SchemaInitializerItemProps {
   title?: React.ReactNode;
   items?: any[];
   onClick?: (args?: any) => any;
+  applyMenuStyle?: boolean;
 }
 
 export const SchemaInitializerItem = React.forwardRef<any, SchemaInitializerItemProps>((props, ref) => {
-  const { style, name = uid(), className, items, icon, title, onClick, children } = props;
+  const { style, name = uid(), applyMenuStyle = true, className, items, icon, title, onClick, children } = props;
   const compile = useCompile();
   const childrenItems = useSchemaInitializerMenuItems(items, name || `random-${uid()}`, onClick);
-  const { styles } = useStyles();
+  const { componentCls } = useStyles();
   if (items && items.length > 0) {
     return (
       <Menu
@@ -45,12 +46,18 @@ export const SchemaInitializerItem = React.forwardRef<any, SchemaInitializerItem
   }
 
   return (
-    <div ref={ref} onClick={() => onClick?.({ item: props })} style={style} className={className}>
-      <div className={styles['nbMenuItem']}>
+    <div ref={ref} onClick={() => onClick?.({ item: props })}>
+      <div className={classNames({ [`${componentCls}-menu-item`]: applyMenuStyle }, className)} style={style}>
         {children || (
           <>
             {icon && <span>{typeof icon === 'string' ? <Icon type={icon as string} /> : icon}</span>}
-            <span className={icon ? styles['nbMenuItemContent'] : undefined}>{compile(title)}</span>
+            <span
+              className={classNames({
+                [`${componentCls}-menu-item-content`]: icon && applyMenuStyle,
+              })}
+            >
+              {compile(title)}
+            </span>
           </>
         )}
       </div>

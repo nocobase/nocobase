@@ -15,11 +15,11 @@ export interface SchemaInitializerGroupProps {
 export const SchemaInitializerGroup: FC<SchemaInitializerGroupProps> = (props) => {
   const { children, title, divider } = props;
   const compile = useCompile();
-  const { styles } = useStyles();
+  const { componentCls } = useStyles();
   return (
     <div>
       {divider && <SchemaInitializerDivider />}
-      <div className={styles.nbGroupTitle}>{compile(title)}</div>
+      <div className={`${componentCls}-group-title`}>{compile(title)}</div>
       <SchemaInitializerChildren>{children}</SchemaInitializerChildren>
     </div>
   );
