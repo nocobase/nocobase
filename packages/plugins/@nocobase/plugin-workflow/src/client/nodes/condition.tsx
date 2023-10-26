@@ -275,7 +275,7 @@ function CalculationGroup({ value, onChange }) {
           <Select
             // @ts-ignore
             role="button"
-            aria-label="select-operator-all-or-any"
+            data-testid="filter-select-all-or-any"
             value={type}
             onChange={(t) => onChange({ ...value, type: t })}
           >

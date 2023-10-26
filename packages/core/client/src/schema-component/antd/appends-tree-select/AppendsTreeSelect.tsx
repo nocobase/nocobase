@@ -1,3 +1,4 @@
+import { CloseCircleFilled } from '@ant-design/icons';
 import { Tag, TreeSelect } from 'antd';
 import type { DefaultOptionType } from 'rc-tree-select/es/TreeSelect';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -223,12 +224,14 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
     <TreeSelect
       // @ts-ignore
       role="button"
-      aria-label={`select-field${title ? `-${title}` : ''}`}
+      data-testid={`select-field${title ? `-${title}` : ''}`}
       value={filteredValue}
       placeholder={t('Select field')}
       showCheckedStrategy={TreeSelect.SHOW_ALL}
       treeDefaultExpandedKeys={valueKeys}
-      allowClear
+      allowClear={{
+        clearIcon: <CloseCircleFilled role="button" aria-label="icon-close" />,
+      }}
       treeCheckStrictly={props.multiple}
       treeCheckable={props.multiple}
       tagRender={TreeTag}

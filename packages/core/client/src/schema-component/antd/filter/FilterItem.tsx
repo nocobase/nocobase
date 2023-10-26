@@ -55,7 +55,9 @@ export const FilterItem = observer(
       <div style={style} className="nc-filter-item">
         <Space>
           <Cascader
-            data-testid="antd-cascader"
+            // @ts-ignore
+            role="button"
+            data-testid="filter-select-field"
             className={css`
               width: 160px;
             `}
@@ -67,7 +69,9 @@ export const FilterItem = observer(
             placeholder={t('Select field')}
           />
           <Select
-            data-testid="antd-select"
+            // @ts-ignore
+            role="button"
+            data-testid="filter-select-operator"
             className={css`
               min-width: 110px;
             `}

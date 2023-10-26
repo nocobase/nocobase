@@ -10,7 +10,7 @@ export const XButton = forwardRef((props: ButtonProps, ref: any) => {
   }, []);
 
   return (
-    <Button aria-label="variable" ref={ref} style={style} {...props}>
+    <Button aria-label="variable-button" ref={ref} style={style} {...props}>
       x{props.children}
     </Button>
   );

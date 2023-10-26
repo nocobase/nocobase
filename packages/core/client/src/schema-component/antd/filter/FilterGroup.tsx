@@ -58,7 +58,9 @@ export const FilterGroup = connect((props) => {
           <Trans>
             {'Meet '}
             <Select
-              data-testid="antd-select"
+              // @ts-ignore
+              role="button"
+              data-testid="filter-select-all-or-any"
               style={{ width: 'auto' }}
               value={logic}
               onChange={(value) => {
