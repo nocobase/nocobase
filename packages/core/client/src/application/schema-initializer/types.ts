@@ -1,36 +1,54 @@
 import { ISchema } from '@formily/json-schema';
-import { ButtonProps, ListProps, DropDownProps, PopoverProps } from 'antd';
+import { ButtonProps, ListProps, PopoverProps } from 'antd';
 import { ComponentType, ReactNode } from 'react';
+import type { SchemaInitializerGroupProps, SchemaInitializerItemProps, SchemaInitializerMenuProps } from './components';
 
 export type InsertType = (s: ISchema) => void;
 
-interface SchemaInitializerItemBaseType {
-  name: string | number;
+export interface ComponentCommonProps {
+  title?: string;
+  schema?: ISchema;
+}
+
+interface SchemaInitializerItemBaseType<T = {}> extends ComponentCommonProps {
+  name?: string | number;
   sort?: number;
-  Component?: string | ComponentType<any>;
+  Component?: string | ComponentType<T>;
+  componentProps?: T;
   useVisible?: () => boolean;
   [index: string]: any;
 }
 
-interface SchemaInitializerItemDividerType extends Partial<SchemaInitializerItemBaseType> {
-  type: 'divider';
-}
-
-interface SchemaInitializerItemOnlyType extends Partial<SchemaInitializerItemBaseType> {
-  type: 'item';
-}
-
-interface SchemaInitializerItemWithChildren extends Partial<SchemaInitializerItemBaseType> {
-  type?: 'itemGroup' | 'subMenu';
+interface SchemaInitializerItemBaseWithChildren<T = {}> extends SchemaInitializerItemBaseType<T> {
   children?: SchemaInitializerItemType[];
   checkChildrenLength?: boolean;
   useChildren?: () => SchemaInitializerItemType[];
 }
 
-export type SchemaInitializerItemType =
+interface SchemaInitializerItemDividerType extends SchemaInitializerItemBaseType {
+  type: 'divider';
+}
+
+interface SchemaInitializerItemOnlyType extends SchemaInitializerItemBaseType<SchemaInitializerItemProps> {
+  type: 'item';
+}
+
+interface SchemaInitializerGroupType extends SchemaInitializerItemBaseWithChildren<SchemaInitializerGroupProps> {
+  type: 'itemGroup';
+  divider?: boolean;
+}
+
+interface SchemaInitializerMenuType extends SchemaInitializerItemBaseWithChildren<SchemaInitializerMenuProps> {
+  type: 'subMenu';
+}
+
+export type SchemaInitializerItemType<T = {}> =
+  | SchemaInitializerItemBaseType<T>
+  | SchemaInitializerItemBaseWithChildren<T>
   | SchemaInitializerItemDividerType
   | SchemaInitializerItemOnlyType
-  | SchemaInitializerItemWithChildren;
+  | SchemaInitializerGroupType
+  | SchemaInitializerMenuType;
 
 // TODO: 类型需要优化
 export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = ListProps<any>> {

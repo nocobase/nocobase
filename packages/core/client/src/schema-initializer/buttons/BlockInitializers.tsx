@@ -1,5 +1,5 @@
 import { gridRowColWrap } from '../utils';
-import { SchemaInitializerGroup, SchemaInitializer } from '../../application';
+import { SchemaInitializer } from '../../application';
 
 export const blockInitializers = new SchemaInitializer({
   name: 'BlockInitializers',
@@ -11,7 +11,6 @@ export const blockInitializers = new SchemaInitializer({
     {
       name: 'data-blocks',
       title: '{{t("Data blocks")}}',
-      // Component: SchemaInitializerGroup,
       type: 'itemGroup',
       children: [
         {
@@ -58,8 +57,8 @@ export const blockInitializers = new SchemaInitializer({
     },
     {
       name: 'filter-blocks',
-      Component: SchemaInitializerGroup,
       title: '{{t("Filter blocks")}}',
+      type: 'itemGroup',
       children: [
         {
           name: 'filterForm',
@@ -75,7 +74,7 @@ export const blockInitializers = new SchemaInitializer({
     },
     {
       name: 'media',
-      Component: SchemaInitializerGroup,
+      type: 'itemGroup',
       title: '{{t("Other blocks")}}',
       children: [
         {

@@ -11,7 +11,7 @@ export interface SchemaInitializerMenuProps {
   name: string;
   onClick: (args: any) => void;
   icon: string | ReactNode;
-  children?: SchemaInitializerOptions['list'];
+  children?: SchemaInitializerOptions['items'];
 }
 
 export const SchemaInitializerMenu: FC<SchemaInitializerMenuProps> = (props) => {

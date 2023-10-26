@@ -1,26 +1,77 @@
-import React, { FC } from 'react';
-import { UseInitializerChildrenResult, useInitializerChildren } from '../hooks';
-import { SchemaInitializerItemType } from '../types';
+import React, { FC, useMemo } from 'react';
+import { pick } from 'lodash';
+
+import { ComponentCommonProps, SchemaInitializerItemType } from '../types';
+import { SchemaInitializerItemContext } from '../context';
+import { useFindComponent } from '../../../schema-component';
 
 export const SchemaInitializerChildren: FC<{ children: SchemaInitializerItemType[] }> = (props) => {
   const { children } = props;
-  const validChildren = useInitializerChildren(children);
   return (
     <>
-      {validChildren.map((item, index) => (
-        <SchemaInitializerChild key={item.name || item.key || index} {...item} />
-      ))}
+      {children
+        .sort((a, b) => (a.sort || 0) - (b.sort || 0))
+        .map((item, index) => (
+          <SchemaInitializerChild key={item.name || item.key || index} {...item} />
+        ))}
     </>
   );
 };
 
+const typeComponentMap: Record<SchemaInitializerItemType['type'], string> = {
+  itemGroup: 'SchemaInitializerGroup',
+  divider: 'SchemaInitializerDivider',
+  subMenu: 'SchemaInitializerMenu',
+  item: 'SchemaInitializerItem',
+};
 const useChildrenDefault = () => undefined;
-const SchemaInitializerChild: FC<UseInitializerChildrenResult> = (props) => {
-  const { children, useChildren = useChildrenDefault, checkChildrenLength, name, Component, ...others } = props;
+const useVisibleDefault = () => true;
+export const SchemaInitializerChild: FC<SchemaInitializerItemType> = (props) => {
+  const {
+    type,
+    Component,
+    component,
+    useVisible = useVisibleDefault,
+    children,
+    useChildren = useChildrenDefault,
+    checkChildrenLength,
+    componentProps,
+    sort: _unUse,
+    ...others
+  } = props;
   const useChildrenRes = useChildren();
+  const findComponent = useFindComponent();
+
+  // 以前的参数是小写 `component`，新的是大写 `Component`，这里做一个兼容
+  const componentVal = Component || component;
+
   const componentChildren = useChildrenRes || children;
+  const contextValue = useMemo(() => {
+    return {
+      ...others,
+      children: componentChildren,
+    };
+  }, [others, componentChildren]);
+  const visibleResult = useVisible();
+
+  if (!visibleResult) return null;
+  if (!type && !componentVal) return null;
+
+  const C = findComponent(!componentVal && type && typeComponentMap[type] ? typeComponentMap[type] : componentVal);
+  if (!C) {
+    console.error(`[nocobase]: Component ${componentVal} not found`);
+    return null;
+  }
   if (checkChildrenLength && Array.isArray(componentChildren) && componentChildren.length === 0) {
     return null;
   }
-  return React.createElement(Component, { key: name, name, ...others }, useChildrenRes || children);
+
+  const componentCommonProps: (keyof ComponentCommonProps)[] = ['schema', 'title'];
+  return (
+    <SchemaInitializerItemContext.Provider value={contextValue}>
+      <C {...contextValue} {...pick(contextValue, componentCommonProps)} {...componentProps} item={contextValue}>
+        {componentChildren}
+      </C>
+    </SchemaInitializerItemContext.Provider>
+  );
 };

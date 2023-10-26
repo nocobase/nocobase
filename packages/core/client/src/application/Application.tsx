@@ -51,7 +51,7 @@ export class Application {
   public i18n: i18next;
   public ws: WebSocketClient;
   public apiClient: APIClient;
-  public components: Record<string, ComponentType> = {
+  public components: Record<string, ComponentType<any>> = {
     ...defaultAppComponents,
     ...schemaInitializerComponents,
   };

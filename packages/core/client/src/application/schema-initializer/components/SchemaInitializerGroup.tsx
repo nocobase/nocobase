@@ -7,7 +7,7 @@ import { useStyles } from './style';
 
 export interface SchemaInitializerGroupProps {
   title: string;
-  children: SchemaInitializerOptions['list'];
+  children: SchemaInitializerOptions['items'];
   name: string;
   divider?: boolean;
 }

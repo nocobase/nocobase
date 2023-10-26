@@ -1,80 +1,23 @@
-import React, { ComponentType, ReactNode, useCallback } from 'react';
-import { SchemaInitializerItemType, SchemaInitializerOptions } from '../types';
-import { useFindComponent } from '../../../schema-component';
-import {
-  SchemaInitializerGroup,
-  SchemaInitializerMenu,
-  SchemaInitializerItem,
-  SchemaInitializerDivider,
-} from '../components';
+import React, { ReactNode, useCallback } from 'react';
+import { SchemaInitializerChild } from '../components';
 import { useCompile } from '../../../schema-component';
 import { SchemaInitializerItemOptions } from '../../../schema-initializer';
 
-const typeComponentMap: Record<SchemaInitializerItemType['type'], ComponentType<any>> = {
-  itemGroup: SchemaInitializerGroup,
-  divider: SchemaInitializerDivider,
-  subMenu: SchemaInitializerMenu,
-  item: SchemaInitializerItem,
-};
-export const useInitializerComponent = () => {
-  const findComponent = useFindComponent();
-  function findInitializerComponent(
-    type: SchemaInitializerItemType['type'],
-    Component: SchemaInitializerItemType['Component'],
-    useVisible: SchemaInitializerItemType['useVisible'],
-  ) {
-    if (!type && !Component) return null;
-    const C = !Component && type && typeComponentMap[type] ? typeComponentMap[type] : findComponent(Component);
-    if (!C) return null;
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const visibleResult = useVisible?.(); // 运行时 hook 执行顺序可以保证，因为 load 阶段已经完成全部 items 的加载，所以这里可以直接使用
-    if (useVisible && !visibleResult) return null;
-    return C;
-  }
-
-  return findInitializerComponent;
-};
-
-export type UseInitializerChildrenResult = Omit<SchemaInitializerItemType, 'sort' | 'type' | 'visible'>;
-
-export const useInitializerChildren = (children: SchemaInitializerOptions['list']): UseInitializerChildrenResult[] => {
-  const findInitializerComponent = useInitializerComponent();
-  return children
-    .sort((a, b) => (a.sort || 0) - (b.sort || 0))
-    .map((item) => {
-      const { sort: _unUse, type, Component, component, useVisible, ...others } = item;
-      return {
-        Component: findInitializerComponent(type, Component || component, useVisible),
-        item,
-        ...others,
-      };
-    })
-    .filter((item) => item.Component);
-};
-
-export function useSchemaInitializerMenuItems(
-  items: SchemaInitializerItemOptions[],
-  name?: string,
-  onClick?: (args: any) => void,
-) {
+export function useSchemaInitializerMenuItems(items: any[], name?: string, onClick?: (args: any) => void) {
   const compile = useCompile();
-  const findComponent = useFindComponent();
 
   const getMenuItems = useCallback(
     (items: SchemaInitializerItemOptions[], parentKey: string) => {
       if (!items?.length) {
         return [];
       }
-      return items.map((item, indexA) => {
-        const ItemComponent = (item as any).component || (item as any).Component;
+      return items.map((item: any, indexA) => {
+        const ItemComponent = item.component || item.Component;
         let element: ReactNode;
+        const compiledTitle = item.title ? compile(item.title) : undefined;
         if (ItemComponent) {
-          const Component = findComponent(ItemComponent);
-          if (!Component) {
-            console.error(`SchemaInitializer: component "${ItemComponent}" not found`);
-            return null;
-          }
-          element = React.createElement(Component, { ...item, title: compile((item as any).title), item });
+          element = React.createElement(SchemaInitializerChild, { ...item, title: compiledTitle });
+          if (!element) return;
         }
 
         if (item.type === 'divider') {
@@ -86,12 +29,12 @@ export function useSchemaInitializerMenuItems(
           }
           return {
             key: item.key,
-            title: compile(item.title),
+            title: compiledTitle,
             label: element,
           };
         }
         if (item.type === 'itemGroup') {
-          const label = typeof item.title === 'string' ? compile(item.title) : item.title;
+          const label = typeof item.title === 'string' ? compiledTitle : item.title;
           const key = `${parentKey}-item-group-${indexA}`;
           return {
             type: 'group',
@@ -103,7 +46,7 @@ export function useSchemaInitializerMenuItems(
           };
         }
         if (item.type === 'subMenu') {
-          const label = compile(item.title);
+          const label = compiledTitle;
           const key = `${parentKey}-sub-menu-${indexA}`;
           return {
             key,
@@ -113,12 +56,12 @@ export function useSchemaInitializerMenuItems(
           };
         }
 
-        const label = element || compile(item.title);
+        const label = element || compiledTitle;
         const key = `${parentKey}-${item.title}-${indexA}`;
         return {
           key,
           label,
-          title: compile(item.title),
+          title: compiledTitle,
           onClick: (info) => {
             if (info.key !== key) return;
             if (item.onClick) {
@@ -130,7 +73,7 @@ export function useSchemaInitializerMenuItems(
         };
       });
     },
-    [compile, findComponent, onClick],
+    [compile, onClick],
   );
 
   return getMenuItems(items, name);
