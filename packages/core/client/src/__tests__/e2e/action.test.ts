@@ -138,56 +138,57 @@ const tablePageSchema = {
 test.describe('add action & remove action', () => {
   test('add action & remove action in block', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
-    await page.getByTestId('block-item').click();
-    await page.getByTestId('configure-actions-button-of-table-block-users').click();
+    await page.getByLabel('block-item-CardItem-users-table').click();
+    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').click();
     //添加按钮
-    await page.getByRole('menuitem', { name: 'Filter' }).click();
-    await page.getByRole('menuitem', { name: 'Add new' }).click();
-    await page.getByLabel('Delete').click();
-    await page.getByTestId('configure-actions-button-of-table-block-users').hover();
+    await page.getByLabel('Enable actions-Filter').click();
+    await page.getByLabel('Enable actions-Add new').click();
+    await page.getByLabel('Enable actions-Delete').click();
+    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
     await page.getByText('Enable actions').hover();
     await page.waitForTimeout(1000); // 等待1秒钟
 
-    await expect(page.getByTestId('block-item').getByLabel('Filter', { exact: true })).toBeVisible();
-    await expect(page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' })).toBeVisible();
-    await expect(page.getByTestId('block-item').getByLabel('Delete', { exact: true })).toBeVisible();
-    await expect(await page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch').isChecked()).toBe(true);
-    await expect(await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').isChecked()).toBe(true);
-    await expect(await page.getByLabel('Delete').getByRole('switch').isChecked()).toBe(true);
+    await expect(page.getByLabel('action-Filter.Action-Filter-filter-users-table')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Add new-create-users-table')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Delete-destroy-users-table')).toBeVisible();
+    await expect(await page.getByLabel('Enable actions-Filter').getByRole('switch').isChecked()).toBe(true);
+    await expect(await page.getByLabel('Enable actions-Add new').getByRole('switch').isChecked()).toBe(true);
+    await expect(await page.getByLabel('Enable actions-Delete').getByRole('switch').isChecked()).toBe(true);
     //移除按钮
-    await page.getByRole('menuitem', { name: 'Filter' }).click();
-    await page.getByRole('menuitem', { name: 'Add new' }).click();
-    await page.getByLabel('Delete').click();
-    await expect(page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' })).not.toBeVisible();
-    await expect(page.getByTestId('block-item').getByRole('button', { name: 'Delete' })).not.toBeVisible();
-    await expect(page.getByTestId('block-item').getByLabel('Filter', { exact: true })).not.toBeVisible();
+    await page.getByLabel('Enable actions-Filter').click();
+    await page.getByLabel('Enable actions-Add new').click();
+    await page.getByLabel('Enable actions-Delete').click();
+    await expect(page.getByLabel('action-Action-Add new-create-users-table')).not.toBeVisible();
+    await expect(
+      page.getByLabel('block-item-CardItem-users-table').getByRole('button', { name: 'Delete' }),
+    ).not.toBeVisible();
+    await expect(
+      page.getByLabel('block-item-CardItem-users-table').getByLabel('Filter', { exact: true }),
+    ).not.toBeVisible();
   });
 });
 
 test.describe('action drag in block', () => {
   test('drag th action orders', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
-    await page.getByTestId('block-item').click();
-    await page.getByTestId('configure-actions-button-of-table-block-users').click();
+    await page.getByLabel('block-item-CardItem-users-table').click();
+    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').click();
     //添加按钮
-    await page.getByRole('menuitem', { name: 'Add new' }).click();
-    await page.getByLabel('Delete').click();
-    await page.getByRole('menuitem', { name: 'Refresh' }).click();
-    await page.getByTestId('configure-actions-button-of-table-block-users').hover();
+    await page.getByLabel('Enable actions-Add new').click();
+    await page.getByLabel('Enable actions-Delete').click();
+    await page.getByLabel('Enable actions-Refresh').click();
+    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
     await page.getByText('Enable actions').hover();
     await page.waitForTimeout(1000); // 等待1秒钟
 
-    const addNewBtn = page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' });
+    const addNewBtn = await page.getByLabel('action-Action-Add new-create-users-table');
     await addNewBtn.hover();
-    const addNewDrag = await page
-      .getByTestId('block-item')
-      .getByRole('button', { name: 'plus Add new' })
-      .getByLabel('designer-drag');
+    const addNewDrag = await page.getByLabel('action-Action-Add new-create-users-table').getByLabel('designer-drag');
     await addNewDrag.hover();
 
-    const delBtn = await page.getByLabel('Delete', { exact: true });
+    const delBtn = await page.getByLabel('action-Action-Delete-destroy-users-table');
     await addNewDrag.dragTo(delBtn);
-    const refreshBtn = await page.getByLabel('Refresh');
+    const refreshBtn = await page.getByLabel('action-Action-Refresh-refresh-users-table');
     await addNewBtn.hover();
     await addNewBtn.getByLabel('designer-drag').dragTo(refreshBtn);
 
@@ -203,77 +204,67 @@ test.describe('action drag in block', () => {
 test.describe('action display config', () => {
   test('editing action name,icon and color', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
-    await page.getByTestId('block-item').click();
-    await page.getByTestId('configure-actions-button-of-table-block-users').click();
+    await page.getByLabel('block-item-CardItem-users-table').click();
+    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').click();
     //添加按钮
-    await page.getByRole('menuitem', { name: 'Add new' }).click();
-    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).hover();
-    await page
-      .getByTestId('block-item')
-      .getByRole('button', { name: 'plus Add new' })
-      .getByLabel('designer-schema-settings')
-      .click();
+    await page.getByLabel('Enable actions-Add new').click();
+    await page.getByLabel('action-Action-Add new-create-users-table').hover();
+    await page.getByLabel('action-Action-Add new-create-users-table').getByLabel('designer-schema-settings').hover();
     //更新按钮图标、名称、样式
-    await page.getByText('Edit button').click();
+    await page.getByLabel('Edit button').click();
     await page.getByRole('textbox').fill('Add new1');
     await page.getByRole('button', { name: 'close', exact: true }).click();
     await page.getByRole('button', { name: 'Select icon', exact: true }).click();
     await page.getByLabel('user-add').click();
     await page.getByLabel('Danger red').check();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
-    await expect(await page.getByTestId('block-item').locator('.nb-action-bar').getByLabel('user-add')).toBeVisible();
-    await expect(page.getByTestId('block-item').locator('.nb-action-bar').locator('.ant-btn-dangerous')).toBeVisible();
+    await expect(
+      await page.getByLabel('block-item-CardItem-users-table').locator('.nb-action-bar').getByLabel('user-add'),
+    ).toBeVisible();
+    await expect(
+      page.getByLabel('block-item-CardItem-users-table').locator('.nb-action-bar').locator('.ant-btn-dangerous'),
+    ).toBeVisible();
   });
   test('action open mode ', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
-    await page.getByTestId('block-item').click();
-    await page.getByTestId('configure-actions-button-of-table-block-users').hover();
+    await page.getByLabel('block-item-CardItem-users-table').click();
+    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
     //添加按钮
-    await page.getByRole('menuitem', { name: 'Add new' }).click();
-    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).click();
-    await expect(await page.getByTestId('action-drawer')).toBeVisible();
+    await page.getByLabel('Enable actions-Add new').click();
+    await page.getByLabel('action-Action-Add new-create-users-table').click();
+    await expect(await page.locator('.ant-drawer')).toBeVisible();
 
     //更新按钮打开方式
     await page.locator('.ant-drawer-mask').click();
-    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).hover();
-    await page
-      .getByTestId('block-item')
-      .getByRole('button', { name: 'plus Add new' })
-      .getByLabel('designer-schema-settings')
-      .click();
-    await page.getByRole('menuitem', { name: 'Open mode' }).click();
+    await page.getByLabel('action-Action-Add new-create-users-table').hover();
+    await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
+    await page.getByTitle('Open mode').click();
     await page.getByRole('option', { name: 'Dialog' }).click();
-    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).click();
-    // 验证打开的组件的角色为 "dialog"
-    const drawerComponent = page.getByRole('dialog');
+    await page.getByLabel('action-Action-Add new-create-users-table').click();
+    const drawerComponent = page.getByTestId('action-modal');
     await expect(drawerComponent).toBeInViewport();
   });
   test('setting action model size', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
-    await page.getByTestId('block-item').click();
-    await page.getByTestId('configure-actions-button-of-table-block-users').hover();
+    await page.getByLabel('block-item-CardItem-users-table').click();
+    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
     //添加按钮
-    await page.getByRole('menuitem', { name: 'Add new' }).click();
-    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).click();
-    await expect(await page.getByTestId('action-drawer')).toBeVisible();
+    await page.getByLabel('Enable actions-Add new').click();
+    await page.getByLabel('action-Action-Add new-create-users-table').click();
+    await expect(await page.locator('.ant-drawer')).toBeVisible();
     await page.locator('.ant-drawer-mask').click();
     //修改尺寸
-    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).hover();
-    await page
-      .getByTestId('block-item')
-      .getByRole('button', { name: 'plus Add new ' })
-      .getByLabel('designer-schema-settings')
-      .click();
-    await page.getByRole('menuitem', { name: 'Popup size' }).click();
+    await page.getByLabel('action-Action-Add new-create-users-table').hover();
+    await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
+    await page.getByTitle('Popup size').click();
+
     //默认尺寸为Middle
-    await expect(
-      await page.getByRole('menuitem', { name: 'Popup size' }).locator('.ant-select-selection-item').innerText(),
-    ).toBe('Middle');
+    await expect(await page.getByTitle('Popup size').locator('.ant-select-selection-item').innerText()).toBe('Middle');
     //设置为large
     await page.getByRole('option', { name: 'Large' }).click();
 
-    await page.getByTestId('block-item').getByRole('button', { name: 'plus Add new' }).click();
-    const drawerItem = page.getByTestId('action-drawer');
+    await page.getByLabel('action-Action-Add new-create-users-table').click();
+    const drawerItem = await page.locator('.ant-drawer > .ant-drawer-content-wrapper');
     const drawerWidth = await drawerItem.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       const parent = element.parentElement;
@@ -289,28 +280,26 @@ test.describe('action display config', () => {
 test.describe('action linkage rule', () => {
   test('action linkage to hide', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
-    await page.getByTestId('block-item').getByRole('button', { name: 'Actions', exact: true }).hover();
     await page
-      .getByTestId('block-item')
-      .getByRole('button', { name: 'designer-drag designer-schema-settings Actions' })
-      .getByLabel('designer-schema-settings')
-      .click();
-    await page.getByRole('menuitem', { name: 'View' }).click();
-
-    await page.getByTestId('block-item').getByLabel('View').hover();
-    await page.getByLabel('View').getByLabel('designer-schema-settings').click();
-    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
+      .getByLabel('block-item-CardItem-users-table')
+      .getByRole('button', { name: 'Actions', exact: true })
+      .hover();
+    await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users').hover();
+    await page.getByLabel('Enable actions-View').click();
+    await page.getByLabel('block-item-CardItem-users-table').getByLabel('View').hover();
+    await page.getByLabel('View').getByLabel('designer-schema-settings').hover();
+    await page.getByRole('button', { name: 'Linkage rules' }).click();
     await page.getByRole('button', { name: 'plus Add linkage rule', exact: true }).click();
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('antd-cascader').getByLabel('Search').click();
+    await page.getByTestId('filter-select-field').click();
     await page.getByTitle('ID', { exact: true }).getByText('ID').click();
     await page.getByRole('spinbutton').fill('1');
     await page.getByText('Add property').click();
     await page.getByTestId('linkage-properties-select').click();
     await page.getByText('Hidden').click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.locator('.ant-modal').getByRole('button', { name: 'OK' }).click();
     //配置中，按钮显示半透明
-    const actionItem = page.getByTestId('block-item').getByLabel('View');
+    const actionItem = page.getByLabel('block-item-CardItem-users-table').getByLabel('View');
     const inputErrorBorderColor = await actionItem.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.opacity;
@@ -318,32 +307,30 @@ test.describe('action linkage rule', () => {
     await expect(inputErrorBorderColor).toBe('0.1');
     //使用中，按钮隐藏
     await page.getByRole('button', { name: 'highlight' }).click();
-    await expect(page.getByTestId('block-item').getByLabel('View')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-table').getByLabel('View')).not.toBeVisible();
   });
   test('action linkage to disabled', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
-    await page.getByTestId('block-item').getByRole('button', { name: 'Actions', exact: true }).hover();
     await page
-      .getByTestId('block-item')
-      .getByRole('button', { name: 'designer-drag designer-schema-settings Actions' })
-      .getByLabel('designer-schema-settings')
-      .click();
-    await page.getByRole('menuitem', { name: 'View' }).click();
-
-    await page.getByTestId('block-item').getByLabel('View').hover();
-    await page.getByLabel('View').getByLabel('designer-schema-settings').click();
-    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
+      .getByLabel('block-item-CardItem-users-table')
+      .getByRole('button', { name: 'Actions', exact: true })
+      .hover();
+    await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users').hover();
+    await page.getByLabel('Enable actions-View').click();
+    await page.getByLabel('block-item-CardItem-users-table').getByLabel('View').hover();
+    await page.getByLabel('View').getByLabel('designer-schema-settings').hover();
+    await page.getByRole('button', { name: 'Linkage rules' }).click();
     await page.getByRole('button', { name: 'plus Add linkage rule', exact: true }).click();
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('antd-cascader').getByLabel('Search').click();
+    await page.getByTestId('filter-select-field').click();
     await page.getByTitle('ID', { exact: true }).getByText('ID').click();
     await page.getByRole('spinbutton').fill('1');
     await page.getByText('Add property').click();
     await page.getByTestId('linkage-properties-select').click();
     await page.getByText('Disabled').click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.locator('.ant-modal').getByRole('button', { name: 'OK' }).click();
     await page.waitForTimeout(1000); // 等待1秒钟
-    const linkBtn = page.getByTestId('block-item').getByRole('button', { name: 'View', exact: true });
+    const linkBtn = page.getByLabel('block-item-CardItem-users-table').getByLabel('View');
     const linkBtnCursor = await linkBtn.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.cursor;
