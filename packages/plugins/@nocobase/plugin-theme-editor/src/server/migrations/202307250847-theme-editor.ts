@@ -1,5 +1,5 @@
 import { Migration } from '@nocobase/server';
-import { antd, compact, compactDark, dark } from '../builtinThemes';
+import { compact, compactDark, dark, defaultTheme } from '../builtinThemes';
 
 export default class ThemeEditorMigration extends Migration {
   async up() {
@@ -19,89 +19,26 @@ export default class ThemeEditorMigration extends Migration {
     });
     await this.db.sync();
 
-    // 为之前的数据添加上 uid
-    await themeRepo.update({
-      filter: {
-        'config.name': 'Default theme of antd',
-      },
-      values: {
-        config: {
-          // 更改名字
-          name: 'Default',
-        },
-        uid: 'default',
-      },
-    });
-    await themeRepo.update({
-      filter: {
-        'config.name': 'Dark',
-      },
-      values: {
-        uid: 'dark',
-      },
-    });
-    await themeRepo.update({
-      filter: {
-        'config.name': 'Compact',
-      },
-      values: {
-        uid: 'compact',
-      },
-    });
-    await themeRepo.update({
-      filter: {
-        'config.name': 'Compact dark',
-      },
-      values: {
-        uid: 'compact_dark',
-      },
-    });
+    const themes = [defaultTheme, dark, compact, compactDark];
+    const updates = [];
+    const creates = [];
 
-    // 补充默认主题
-    if (
-      !(await themeRepo.findOne({
-        filter: {
-          uid: 'default',
-        },
-      }))
-    ) {
-      await themeRepo.create({
-        values: [antd],
-      });
+    for (const theme of themes) {
+      const { uid } = theme;
+      const { name } = theme.config;
+      const filter = { 'config.name': name === 'Default' ? 'Default theme of antd' : name };
+      const values = name === 'Default' ? { uid, config: { name } } : { uid };
+      const existingTheme = await themeRepo.findOne({ filter });
+
+      if (existingTheme) {
+        updates.push(themeRepo.update({ filter, values }));
+      } else {
+        creates.push(themeRepo.create({ values: [theme] }));
+      }
     }
-    if (
-      !(await themeRepo.findOne({
-        filter: {
-          uid: 'dark',
-        },
-      }))
-    ) {
-      await themeRepo.create({
-        values: [dark],
-      });
-    }
-    if (
-      !(await themeRepo.findOne({
-        filter: {
-          uid: 'compact',
-        },
-      }))
-    ) {
-      await themeRepo.create({
-        values: [compact],
-      });
-    }
-    if (
-      !(await themeRepo.findOne({
-        filter: {
-          uid: 'compact_dark',
-        },
-      }))
-    ) {
-      await themeRepo.create({
-        values: [compactDark],
-      });
-    }
+
+    await Promise.all(updates);
+    await Promise.all(creates);
   }
 
   async down() {}
