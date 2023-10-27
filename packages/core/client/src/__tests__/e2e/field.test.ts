@@ -267,9 +267,9 @@ test.describe('field setting config ', () => {
       .getByLabel('designer-schema-settings')
       .click();
     await page.getByLabel('Required').click();
-    await page.getByTestId('configure-actions-button-of-form-block-users').click();
+    await page.getByLabel('schema-initializer-ActionBar-FormActionInitializers-users').click();
     await page.getByLabel('Enable actions-Submit').click();
-    await page.getByLabel('Submit').click();
+    await page.getByLabel('action-Action-Submit-submit-users-form').click();
     await page.waitForTimeout(1000);
     //必填校验符合预期
     await expect(
@@ -285,7 +285,10 @@ test.describe('field setting config ', () => {
     //样式符合预期
     expect(inputErrorBorderColor).toBe('rgb(255, 77, 79)');
     // 断言表单未被提交
-    expect(await page.getByTestId('form-block-field-users')).not.toHaveProperty('submitted', true);
+    expect(await page.getByLabel('block-item-CardItem-users-form').locator('form')).not.toHaveProperty(
+      'submitted',
+      true,
+    );
   });
   test('field validation rule ', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
@@ -300,29 +303,25 @@ test.describe('field setting config ', () => {
       .click();
     await page.getByText('Set validation rules').click();
     await page.getByRole('button', { name: 'plus Add validation rule' }).click();
-    await page
-      .getByRole('button', { name: 'Max length : Increase Value Decrease Value' })
-      .getByRole('spinbutton')
-      .fill('8');
+    await await page.getByLabel('block-item-InputNumber-users-Max length').getByRole('spinbutton').fill('3');
     await page.getByRole('button', { name: 'Error message' }).locator('textarea').fill(errorMessage);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
-    await page
-      .getByLabel('block-item-CollectionField-users-form-users.nickname')
-      .getByRole('textbox')
-      .fill('111111111');
+    await page.getByLabel('block-item-CollectionField-users-form-users.nickname').getByRole('textbox').fill('1111');
     const errorInfo = await page
       .getByLabel('block-item-CollectionField-users-form-users.nickname')
       .locator('.ant-formily-item-error-help');
     await expect(errorInfo).toBeVisible();
     //报错信息符合预期
     await expect(await errorInfo.innerText()).toBe(errorMessage);
-
-    await page.getByTestId('configure-actions-button-of-form-block-users').click();
+    await page.getByLabel('schema-initializer-ActionBar-FormActionInitializers-users').click();
     await page.getByLabel('Enable actions-Submit').click();
     await page.getByLabel('action-Action-Submit-submit-users-form').click();
     await page.waitForTimeout(1000);
     // 断言表单未被提交
-    expect(await page.getByTestId('form-block-field-users')).not.toHaveProperty('submitted', true);
+    expect(await page.getByLabel('block-item-CardItem-users-form').locator('form')).not.toHaveProperty(
+      'submitted',
+      true,
+    );
   });
   test('field pattern ', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
