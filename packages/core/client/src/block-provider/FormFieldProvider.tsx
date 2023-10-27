@@ -77,7 +77,7 @@ export const WithoutFormFieldResource = createContext(null);
 export const FormFieldProvider = (props) => {
   return (
     <WithoutFormFieldResource.Provider value={false}>
-      <BlockProvider data-testid="form-field-block" block={'FormField'} {...props}>
+      <BlockProvider name="form-field" block={'FormField'} {...props}>
         <InternalFormFieldProvider {...props} />
       </BlockProvider>
     </WithoutFormFieldResource.Provider>

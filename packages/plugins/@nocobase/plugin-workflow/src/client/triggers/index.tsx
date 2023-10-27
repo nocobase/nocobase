@@ -13,7 +13,7 @@ import {
   useResourceActionContext,
 } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
-import { Alert, Button, Input, Tag, message } from 'antd';
+import { Button, Input, Tag, message } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
@@ -143,7 +143,6 @@ function TriggerExecution() {
 
 export const TriggerConfig = () => {
   const api = useAPIClient();
-  const compile = useCompile();
   const { workflow, refresh } = useFlowContext();
   const [editingTitle, setEditingTitle] = useState<string>('');
   const [editingConfig, setEditingConfig] = useState(false);
@@ -206,12 +205,19 @@ export const TriggerConfig = () => {
   }
 
   return (
-    <div className={cx(styles.nodeCardClass)} onClick={onOpenDrawer}>
+    <div
+      role="button"
+      aria-label={`${titleText}-${editingTitle}`}
+      className={cx(styles.nodeCardClass)}
+      onClick={onOpenDrawer}
+    >
       <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
         <Tag color="gold">{titleText}</Tag>
       </div>
       <div>
         <Input.TextArea
+          role="button"
+          aria-label="textarea"
           value={editingTitle}
           onChange={(ev) => setEditingTitle(ev.target.value)}
           onBlur={(ev) => onChangeTitle(ev.target.value)}

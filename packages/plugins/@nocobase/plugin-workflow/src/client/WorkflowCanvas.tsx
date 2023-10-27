@@ -163,6 +163,8 @@ export function WorkflowCanvas() {
                 items: revisions
                   .sort((a, b) => b.id - a.id)
                   .map((item, index) => ({
+                    role: 'button',
+                    'aria-label': `version-${index}`,
                     key: `${item.id}`,
                     icon: item.current ? <RightOutlined /> : null,
                     className: cx({
@@ -179,7 +181,7 @@ export function WorkflowCanvas() {
                   })),
               }}
             >
-              <Button type="text">
+              <Button type="text" aria-label="version">
                 <label>{lang('Version')}</label>
                 <span>{workflow?.id ? `#${workflow.id}` : null}</span>
                 <DownOutlined />
@@ -195,14 +197,26 @@ export function WorkflowCanvas() {
           <Dropdown
             menu={{
               items: [
-                { key: 'history', label: lang('Execution history'), disabled: !workflow.allExecuted },
-                { key: 'revision', label: lang('Copy to new version'), disabled: !revisionable },
-                { key: 'delete', label: t('Delete') },
-              ],
+                {
+                  role: 'button',
+                  'aria-label': 'history',
+                  key: 'history',
+                  label: lang('Execution history'),
+                  disabled: !workflow.allExecuted,
+                },
+                {
+                  role: 'button',
+                  'aria-label': 'revision',
+                  key: 'revision',
+                  label: lang('Copy to new version'),
+                  disabled: !revisionable,
+                },
+                { role: 'button', 'aria-label': 'delete', key: 'delete', label: t('Delete') },
+              ] as any[],
               onClick: onMenuCommand,
             }}
           >
-            <Button type="text" icon={<EllipsisOutlined />} />
+            <Button aria-label="more" type="text" icon={<EllipsisOutlined />} />
           </Dropdown>
           <ActionContextProvider value={{ visible, setVisible }}>
             <SchemaComponent

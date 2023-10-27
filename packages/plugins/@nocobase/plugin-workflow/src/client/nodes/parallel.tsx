@@ -1,11 +1,12 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { css, cx } from '@nocobase/client';
+import { css } from '@nocobase/client';
 import { Button, Tooltip } from 'antd';
 import React, { useState } from 'react';
 import { NodeDefaultView } from '.';
 import { Branch } from '../Branch';
 import { useFlowContext } from '../FlowContext';
 import { RadioWithTooltip } from '../components/RadioWithTooltip';
+import { useGetAriaLabelOfAddButton } from '../hooks/useGetAriaLabelOfAddButton';
 import { NAMESPACE, lang } from '../locale';
 import useStyles from '../style';
 
@@ -59,6 +60,7 @@ export default {
       }, [])
       .sort((a, b) => a.branchIndex - b.branchIndex);
     const [branchCount, setBranchCount] = useState(Math.max(2, branches.length));
+    const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
 
     const tempBranches = Array(Math.max(0, branchCount - branches.length)).fill(null);
     const lastBranchHead = branches[branches.length - 1];
@@ -107,6 +109,7 @@ export default {
             `}
           >
             <Button
+              aria-label={getAriaLabel('add-branch')}
               icon={<PlusOutlined />}
               className={css`
                 position: relative;

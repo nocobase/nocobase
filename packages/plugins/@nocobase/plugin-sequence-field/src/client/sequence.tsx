@@ -29,7 +29,7 @@ function RuleTypeSelect(props) {
   });
 
   return (
-    <Select data-testid="antd-select" popupMatchSelectWidth={false} {...props}>
+    <Select popupMatchSelectWidth={false} {...props}>
       {Object.keys(RuleTypes).map((key) => (
         <Select.Option key={key} value={key}>
           {compile(RuleTypes[key].title)}
@@ -183,7 +183,7 @@ const RuleTypes = {
                 }) || shortValues[5];
           return (
             <fieldset>
-              <Select data-testid="antd-select" value={option.value} onChange={(v) => onChange(shortValues[v].cron)}>
+              <Select value={option.value} onChange={(v) => onChange(shortValues[v].cron)}>
                 {shortValues.map((item) => (
                   <Select.Option key={item.value} value={item.value}>
                     {lang(item.label)}

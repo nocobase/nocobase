@@ -26,7 +26,7 @@ function OrderStatusSelect() {
   const { t } = useTranslation(ns);
 
   return (
-    <Select data-testid="antd-select" style={{ minWidth: '8em' }}>
+    <Select style={{ minWidth: '8em' }}>
       {ORDER_STATUS_LIST.map((item) => (
         <Select.Option key={item.value} value={item.value}>
           {t(item.label)}

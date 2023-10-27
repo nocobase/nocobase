@@ -103,7 +103,7 @@ export const FormBlockProvider = (props) => {
     (currentCollection.name === (collection?.name || collection) && !isDetailBlock) || !currentCollection.name;
   return (
     (detailFlag || createFlag || isCusomeizeCreate) && (
-      <BlockProvider data-testid={props['data-testid'] || 'form-block'} {...props} block={'form'}>
+      <BlockProvider name={props.name || 'form'} {...props} block={'form'}>
         <FormActiveFieldsProvider name="form">
           <InternalFormBlockProvider {...props} />
         </FormActiveFieldsProvider>

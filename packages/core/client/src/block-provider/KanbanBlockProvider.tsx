@@ -108,7 +108,7 @@ export const KanbanBlockProvider = (props) => {
     params['appends'] = appends;
   }
   return (
-    <BlockProvider data-testid="kanban-block" {...props} params={params}>
+    <BlockProvider name="kanban" {...props} params={params}>
       <InternalKanbanBlockProvider {...props} params={params} />
     </BlockProvider>
   );
