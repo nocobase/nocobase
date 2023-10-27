@@ -53,7 +53,7 @@ test.describe('trigger collection events', () => {
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByLabel('dataBlocks-table', { exact: true }).hover();
     await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
-    await page.getByText('Configure columns').click();
+    await page.getByText('Configure columns').hover();
     await page.getByText(fieldDisplayName).click();
     await page.getByText('Configure actions').hover();
     await page.getByLabel('Enable actions-Add new').click();
