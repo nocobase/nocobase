@@ -28,11 +28,12 @@ export default class extends Migration {
     }
     const { db } = this.context;
 
-    const NodeRepo = db.getRepository('flow_nodes');
-    const { key } = await this.queryInterface.describeTable('flow_nodes');
+    const NodeCollection = db.getCollection('flow_nodes');
+    const NodeRepo = NodeCollection.repository;
+    const tableName = NodeCollection.getTableNameWithSchema();
     await db.sequelize.transaction(async (transaction) => {
-      if (!key) {
-        await this.queryInterface.addColumn('flow_nodes', 'key', DataTypes.STRING, {
+      if (!(await NodeCollection.getField('key').existsInDb())) {
+        await this.queryInterface.addColumn(tableName, 'key', DataTypes.STRING, {
           transaction,
         });
       }
