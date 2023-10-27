@@ -82,11 +82,11 @@ export const useChartFilter = () => {
           required: false,
           'x-designer': 'ChartFilterItemDesigner',
           'x-component': 'CollectionField',
-          'x-decorator': 'FormItem',
+          'x-decorator': 'ChartFilterFormItem',
           'x-collection-field': `${name}.${field.name}`,
           'x-component-props': {
             ...field.uiSchema?.['x-component-props'],
-            filterOperator: defaultOperator,
+            'filter-operator': defaultOperator,
           },
         };
         if (isAssocField(field)) {
@@ -97,11 +97,11 @@ export const useChartFilter = () => {
             required: false,
             'x-designer': 'ChartFilterItemDesigner',
             'x-component': 'CollectionField',
-            'x-decorator': 'FormItem',
+            'x-decorator': 'ChartFilterFormItem',
             'x-collection-field': `${name}.${field.name}`,
             'x-component-props': {
               ...field.uiSchema?.['x-component-props'],
-              filterOperator: defaultOperator,
+              'filter-operator': defaultOperator,
             },
           };
         }
@@ -111,7 +111,6 @@ export const useChartFilter = () => {
           component: 'CollectionFieldInitializer',
           remove: (schema, cb) => {
             cb(schema, {
-              removeParentsIfNoChildren: true,
               breakRemoveOn: {
                 'x-component': 'Grid',
               },

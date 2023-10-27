@@ -8,7 +8,7 @@ export const useVariableOptions = () => {
   const field = useField<any>();
   const { operator, schema } = field.data || {};
   const userVariable = useUserVariable({ schema });
-  const dateVariable = useDateVariable({ operator, schema });
+  const dateVariable = useDateVariable({ schema });
   const filterVariable = useFilterVariable();
 
   const result = useMemo(

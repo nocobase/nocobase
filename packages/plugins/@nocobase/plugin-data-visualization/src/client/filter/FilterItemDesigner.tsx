@@ -13,7 +13,8 @@ import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Field } from '@formily/core';
 import _ from 'lodash';
 import { ChartFilterContext } from './FilterProvider';
-import { getOptionsSchema, getPropsSchemaByComponent } from './utils';
+import { getPropsSchemaByComponent } from './utils';
+import { ChartFilterVariableInput } from './FilterVariableInput';
 
 const EditTitle = () => {
   const field = useField<Field>();
@@ -70,20 +71,20 @@ const EditOperator = () => {
   const interfaceConfig = getInterface(props.interface);
   const operatorList = interfaceConfig?.filterable?.operators || [];
   const defaultComponent = interfaceConfig?.default?.uiSchema?.['x-component'] || 'Input';
-  const operator = fieldSchema['x-component-props']?.filterOperator;
+  const operator = fieldSchema['x-component-props']?.['filter-operator'];
 
   const setOperatorComponent = (operator: any, component: any, props = {}) => {
     const componentProps = field.componentProps || {};
     field.component = component;
     field.componentProps = {
       ...componentProps,
-      filterOperator: operator,
+      'filter-operator': operator,
       ...props,
     };
     fieldSchema['x-component'] = component;
     fieldSchema['x-component-props'] = {
       ...fieldSchema['x-component-props'],
-      filterOperator: operator,
+      'filter-operator': operator,
       ...props,
     };
     dn.emit('patch', {
@@ -92,7 +93,7 @@ const EditOperator = () => {
         'x-component': component,
         'x-component-props': {
           ...fieldSchema['x-component-props'],
-          filterOperator: operator,
+          'filter-operator': operator,
           ...props,
         },
       },
@@ -155,6 +156,48 @@ const EditProps = () => {
   );
 };
 
+const SetDefaultValue = () => {
+  const { t } = useChartsTranslation();
+  const { dn } = useDesignable();
+  const fieldSchema = useFieldSchema();
+  return (
+    <SchemaSettings.ModalItem
+      key="set field default value"
+      title={t('Set default value')}
+      components={{
+        ChartFilterVariableInput,
+      }}
+      schema={{
+        type: 'void',
+        title: t('Set default value'),
+        properties: {
+          default: {
+            title: fieldSchema.title,
+            'x-decorator': 'FormItem',
+            'x-component': 'ChartFilterVariableInput',
+            'x-component-props': {
+              fieldSchema,
+            },
+          },
+        },
+      }}
+      onSubmit={({ default: { value } }) => {
+        fieldSchema['x-component-props'].defaultValue = value;
+        dn.emit('patch', {
+          schema: {
+            'x-uid': fieldSchema['x-uid'],
+            'x-component-props': {
+              ...fieldSchema['x-component-props'],
+              defaultValue: value,
+            },
+          },
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};
+
 export const ChartFilterItemDesigner: React.FC = () => {
   const { getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
@@ -169,6 +212,7 @@ export const ChartFilterItemDesigner: React.FC = () => {
       <EditDescription />
       {hasProps && isCustom && <EditProps />}
       {!isCustom && <EditOperator />}
+      <SetDefaultValue />
       {collectionField ? <SchemaSettings.Divider /> : null}
       <SchemaSettings.Remove
         key="remove"

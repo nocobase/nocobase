@@ -6,12 +6,14 @@ import {
   useChartFilterResetProps,
   useChartFilterCollapseProps,
 } from './FilterActionInitializers';
-import { ChartFilterGrid, ChartFilterForm } from './FilterBlockInitializer';
+import { ChartFilterGrid } from './FilterBlockInitializer';
 import { useChartsTranslation } from '../locale';
 import { css } from '@emotion/css';
 import { ChartFilterContext } from './FilterProvider';
 import { ChartFilterCheckbox } from './FilterCheckbox';
 import { ArrayItems } from '@formily/antd-v5';
+import { ChartFilterFormItem } from './FilterItemInitializers';
+import { ChartFilterForm } from './FilterForm';
 
 export const ChartFilterBlockProvider: React.FC = (props) => {
   const { t } = useChartsTranslation();
@@ -30,7 +32,14 @@ export const ChartFilterBlockProvider: React.FC = (props) => {
       `}
     >
       <SchemaComponentOptions
-        components={{ ChartFilterItemDesigner, ChartFilterForm, ChartFilterGrid, ChartFilterCheckbox, ArrayItems }}
+        components={{
+          ChartFilterItemDesigner,
+          ChartFilterForm,
+          ChartFilterGrid,
+          ChartFilterCheckbox,
+          ChartFilterFormItem,
+          ArrayItems,
+        }}
         scope={{ t, useChartFilterActionProps, useChartFilterResetProps, useChartFilterCollapseProps }}
       >
         {props.children}

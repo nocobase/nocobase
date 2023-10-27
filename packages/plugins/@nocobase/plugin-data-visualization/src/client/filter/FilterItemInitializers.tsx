@@ -1,5 +1,8 @@
 import {
+  ACLCollectionFieldProvider,
+  BlockItem,
   FormDialog,
+  HTMLEncode,
   SchemaComponent,
   SchemaComponentOptions,
   SchemaInitializer,
@@ -8,21 +11,67 @@ import {
   useDesignable,
   useGlobalTheme,
 } from '@nocobase/client';
-import React, { useCallback, useContext } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { useChartsTranslation } from '../locale';
-import { Schema, SchemaOptionsContext, observer, useForm } from '@formily/react';
+import { Schema, SchemaOptionsContext, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { useMemoizedFn } from 'ahooks';
-import { FormLayout, ArrayItems } from '@formily/antd-v5';
+import { FormLayout, FormItem } from '@formily/antd-v5';
 import { uid } from '@formily/shared';
 import { useChartData, useChartFilter } from '../hooks/filter';
 import { Alert } from 'antd';
 import { getPropsSchemaByComponent } from './utils';
+import { Field } from '@formily/core';
+import { css, cx } from '@emotion/css';
 
 const FieldComponentProps: React.FC = observer((props) => {
   const form = useForm();
   const schema = getPropsSchemaByComponent(form.values.component);
   return schema ? <SchemaComponent schema={schema} {...props} /> : null;
 });
+
+export const ChartFilterFormItem = observer(
+  (props: any) => {
+    const field = useField<Field>();
+    const schema = useFieldSchema();
+    const showTitle = schema['x-decorator-props']?.showTitle ?? true;
+    const extra = useMemo(() => {
+      return typeof field.description === 'string' ? (
+        <div
+          dangerouslySetInnerHTML={{
+            __html: HTMLEncode(field.description).split('\n').join('<br/>'),
+          }}
+        />
+      ) : (
+        field.description
+      );
+    }, [field.description]);
+    const className = useMemo(() => {
+      return cx(
+        css`
+          & .ant-space {
+            flex-wrap: wrap;
+          }
+        `,
+        {
+          [css`
+            > .ant-formily-item-label {
+              display: none;
+            }
+          `]: showTitle === false,
+        },
+      );
+    }, [showTitle]);
+
+    return (
+      <ACLCollectionFieldProvider>
+        <BlockItem className={'nb-form-item'}>
+          <FormItem className={className} {...props} extra={extra} />
+        </BlockItem>
+      </ACLCollectionFieldProvider>
+    );
+  },
+  { displayName: 'ChartFilterFormItem' },
+);
 
 export const ChartFilterCustomItemInitializer: React.FC<{
   insert?: any;
@@ -101,7 +150,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
         required: false,
         'x-designer': 'ChartFilterItemDesigner',
         'x-component': component,
-        'x-decorator': 'FormItem',
+        'x-decorator': 'ChartFilterFormItem',
         'x-component-props': props,
       }),
     );

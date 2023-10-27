@@ -1,10 +1,9 @@
-import React, { useContext, useEffect, useMemo } from 'react';
+import React, { useContext } from 'react';
 import { FilterOutlined } from '@ant-design/icons';
 import { Grid, gridRowColWrap, useDesignable, useCurrentSchema, SchemaInitializer, FormV2 } from '@nocobase/client';
 import { uid, merge } from '@formily/shared';
 import { ChartFilterContext } from './FilterProvider';
 import { css } from '@emotion/css';
-import { createForm, onFieldChange, onFieldMount, onFieldUnmount } from '@formily/core';
 
 const createFilterSchema = () => {
   return {
@@ -47,49 +46,6 @@ const createFilterSchema = () => {
       },
     },
   };
-};
-
-export const ChartFilterForm: React.FC = (props) => {
-  const { addField, removeField, setForm } = useContext(ChartFilterContext);
-  const form = useMemo(
-    () =>
-      createForm({
-        effects() {
-          const getField = (field: any) => {
-            if (field.displayName !== 'Field') {
-              return null;
-            }
-            const { name } = field.props || {};
-            return name;
-          };
-          onFieldMount('*', (field: any) => {
-            const name = getField(field);
-            if (!name) {
-              return;
-            }
-            addField(name, { title: field.title, operator: field.componentProps.filterOperator });
-          });
-          onFieldUnmount('*', (field: any) => {
-            const name = getField(field);
-            if (!name) {
-              return;
-            }
-            removeField(name);
-          });
-          onFieldChange('*', ['title'], (field: any) => {
-            const name = getField(field);
-            if (!name) {
-              return;
-            }
-            addField(name, { title: field.title, operator: field.componentProps.filterOperator });
-          });
-        },
-      }),
-    [addField, removeField],
-  );
-
-  useEffect(() => setForm(form), [form, setForm]);
-  return <FormV2 {...props} form={form} />;
 };
 
 export const ChartFilterGrid: React.FC = (props) => {

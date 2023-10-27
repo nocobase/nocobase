@@ -15,7 +15,7 @@ export const useUserVariable = ({ schema }: { schema: any }) => {
         const result = {
           key: option.name,
           value: option.name,
-          disabled: !option.children && component !== option.schema?.['x-component'],
+          // disabled: !option.children && component !== option.schema?.['x-component'],
           label: Schema.compile(option.title, { t }),
         };
         if (option.children) {

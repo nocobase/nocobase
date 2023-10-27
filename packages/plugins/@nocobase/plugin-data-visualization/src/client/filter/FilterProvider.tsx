@@ -1,7 +1,8 @@
-import React, { createContext, useState } from 'react';
+import React, { createContext, useEffect, useLayoutEffect, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
 
 export const ChartFilterContext = createContext<{
+  ready: boolean;
   enabled: boolean;
   setEnabled: (enabled: boolean) => void;
   fields: {
@@ -24,7 +25,8 @@ export const ChartFilterContext = createContext<{
 }>({} as any);
 
 export const ChartFilterProvider: React.FC = (props) => {
-  const [enabled, setEnabled] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [enabled, _setEnabled] = useState(false);
   const [fields, setFields] = useState({});
   const [collapse, setCollapse] = useState(false);
   const [form, _setForm] = useState<any>();
@@ -49,9 +51,11 @@ export const ChartFilterProvider: React.FC = (props) => {
     });
   });
   const setForm = useMemoizedFn(_setForm);
+  const setEnabled = useMemoizedFn(_setEnabled);
+  useEffect(() => setReady(true), []);
   return (
     <ChartFilterContext.Provider
-      value={{ enabled, setEnabled, fields, addField, removeField, collapse, setCollapse, form, setForm }}
+      value={{ ready, enabled, setEnabled, fields, addField, removeField, collapse, setCollapse, form, setForm }}
     >
       {props.children}
     </ChartFilterContext.Provider>

@@ -2,10 +2,9 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMemoizedFn } from 'ahooks';
 
-export const useDateVariable = ({ operator, schema }) => {
+export const useDateVariable = ({ schema }) => {
   const { t: trans } = useTranslation();
   const t = useMemoizedFn(trans);
-  const operatorValue = operator?.value || '';
   const component = schema?.['x-component'];
   const disabled = !['DatePicker', 'DatePicker.RangePicker'].includes(component);
   const dateOptions = useMemo(
@@ -14,7 +13,7 @@ export const useDateVariable = ({ operator, schema }) => {
         key: 'now',
         value: 'now',
         label: t('Now'),
-        disabled: component !== 'DatePicker' || operatorValue === '$dateBetween',
+        disabled,
       },
       {
         key: 'yesterday',
@@ -143,7 +142,7 @@ export const useDateVariable = ({ operator, schema }) => {
         disabled,
       },
     ],
-    [disabled, operatorValue, t, component],
+    [disabled, t],
   );
 
   const result = useMemo(
@@ -157,7 +156,7 @@ export const useDateVariable = ({ operator, schema }) => {
     [dateOptions, t],
   );
 
-  if (!operator || !schema) return null;
+  if (!schema) return null;
 
   return result;
 };
