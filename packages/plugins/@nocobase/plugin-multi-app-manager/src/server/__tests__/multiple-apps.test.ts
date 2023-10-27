@@ -274,7 +274,7 @@ describe('multiple apps', () => {
       values: {
         name: subAppName,
         options: {
-          plugins: [],
+          plugins: ['nocobase'],
         },
       },
       context: {
@@ -306,7 +306,7 @@ describe('multiple apps', () => {
     });
 
     await app.start();
-    await sleep(1000);
+    await sleep(5000);
     expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeTruthy();
     const appStatus = AppSupervisor.getInstance().getAppStatus(subAppName);
     expect(appStatus).toEqual('running');

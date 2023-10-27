@@ -171,7 +171,7 @@ export class PluginMultiAppManager extends Plugin {
           context: options.context,
         });
 
-        const startPromise = subApp.runAsCLI(['start', '--quickstart'], { from: 'user' });
+        const startPromise = subApp.runCommand('start', '--quickstart');
 
         if (options?.context?.waitSubAppInstall) {
           await startPromise;
@@ -227,7 +227,7 @@ export class PluginMultiAppManager extends Plugin {
 
       // must skip load on upgrade
       if (!loadButNotStart) {
-        await subApp.runCommand('start');
+        await subApp.runCommand('start', '--quickstart');
       }
     }
 
@@ -290,7 +290,7 @@ export class PluginMultiAppManager extends Plugin {
               if (!appSupervisor.hasApp(subAppInstance.name)) {
                 await AppSupervisor.getInstance().getApp(subAppInstance.name);
               } else if (appSupervisor.getAppStatus(subAppInstance.name) === 'initialized') {
-                (await AppSupervisor.getInstance().getApp(subAppInstance.name)).runCommand('start');
+                (await AppSupervisor.getInstance().getApp(subAppInstance.name)).runCommand('start', '--quickstart');
               }
             })(),
           );
