@@ -16,8 +16,6 @@ const locale = {
   'Edit based on current theme': '基于当前主题进行编辑',
   'Create a brand new theme': '创建一个全新的主题',
 
-  // 内置主题的名字
-  'Default theme of antd': 'antd 默认主题',
   Dark: '暗黑',
   Compact: '紧凑',
   'Compact dark': '紧凑暗黑',
