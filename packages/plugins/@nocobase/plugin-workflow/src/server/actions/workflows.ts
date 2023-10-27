@@ -1,6 +1,8 @@
 import actions, { Context, utils } from '@nocobase/actions';
 import { Op, Repository } from '@nocobase/database';
 
+import Plugin from '../Plugin';
+
 export async function update(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context) as Repository;
   const { filterByTk, values } = context.action.params;
@@ -51,51 +53,8 @@ export async function destroy(context: Context, next) {
   next();
 }
 
-function typeOf(value) {
-  if (Array.isArray(value)) {
-    return 'array';
-  } else if (value instanceof Date) {
-    return 'date';
-  } else if (value === null) {
-    return 'null';
-  }
-
-  return typeof value;
-}
-
-function migrateConfig(config, oldToNew) {
-  function migrate(value) {
-    switch (typeOf(value)) {
-      case 'object':
-        if (value.type === '$jobsMapByNodeId') {
-          return {
-            ...value,
-            options: {
-              ...value.options,
-              nodeId: oldToNew.get(value.options?.nodeId)?.id,
-            },
-          };
-        }
-        return Object.keys(value).reduce((result, key) => ({ ...result, [key]: migrate(value[key]) }), {});
-      case 'array':
-        return value.map((item) => migrate(item));
-      case 'string':
-        return value.replace(/({{\$jobsMapByNodeId|{{\$scopes)\.([\w-]+)/g, (_, jobVar, oldNodeId) => {
-          const newNode = oldToNew.get(Number.parseInt(oldNodeId, 10));
-          if (!newNode) {
-            throw new Error('node configurated for result is not existed');
-          }
-          return `${jobVar}.${newNode.id}`;
-        });
-      default:
-        return value;
-    }
-  }
-
-  return migrate(config);
-}
-
 export async function revision(context: Context, next) {
+  const plugin = context.app.getPlugin('workflow') as Plugin;
   const { db } = context;
   const repository = utils.getRepositoryFromParams(context);
   const { filterByTk, filter = {}, values = {} } = context.action.params;
@@ -109,6 +68,8 @@ export async function revision(context: Context, next) {
       transaction,
     });
 
+    const trigger = plugin.triggers.get(origin.type);
+
     const revisionData = filter.key
       ? {
           key: filter.key,
@@ -121,9 +82,12 @@ export async function revision(context: Context, next) {
       values: {
         title: `${origin.title} copy`,
         description: origin.description,
-        type: origin.type,
-        config: origin.config,
         ...revisionData,
+        type: origin.type,
+        config:
+          typeof trigger.duplicateConfig === 'function'
+            ? await trigger.duplicateConfig(origin, { transaction })
+            : origin.config,
       },
       transaction,
     });
@@ -136,10 +100,15 @@ export async function revision(context: Context, next) {
     const oldToNew = new Map();
     const newToOld = new Map();
     for await (const node of origin.nodes) {
+      const instruction = plugin.instructions.get(node.type);
       const newNode = await instance.createNode(
         {
           type: node.type,
-          config: node.config,
+          key: node.key,
+          config:
+            typeof instruction.duplicateConfig === 'function'
+              ? await instruction.duplicateConfig(node, { transaction })
+              : node.config,
           title: node.title,
           branchIndex: node.branchIndex,
         },
@@ -154,18 +123,11 @@ export async function revision(context: Context, next) {
       const oldNode = originalNodesMap.get(oldId);
       const newUpstream = oldNode.upstreamId ? oldToNew.get(oldNode.upstreamId) : null;
       const newDownstream = oldNode.downstreamId ? oldToNew.get(oldNode.downstreamId) : null;
-      let migratedConfig;
-      try {
-        migratedConfig = migrateConfig(oldNode.config, oldToNew);
-      } catch (err) {
-        return context.throw(400, err.message);
-      }
 
       await newNode.update(
         {
           upstreamId: newUpstream?.id ?? null,
           downstreamId: newDownstream?.id ?? null,
-          config: migratedConfig,
         },
         { transaction },
       );

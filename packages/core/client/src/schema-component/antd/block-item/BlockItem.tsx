@@ -1,29 +1,19 @@
 import { css } from '@emotion/css';
-import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
 import React from 'react';
 import { SortableItem } from '../../common';
 import { useDesigner, useProps } from '../../hooks';
-
-const getTestId = (schema) => {
-  const resource = schema?.['x-decorator-props']?.['resource'];
-  if (resource) {
-    return `${resource}-resource`;
-  }
-  const field = schema['x-collection-field'];
-  if (field) {
-    return `${field}-field`;
-  }
-  return `${schema.name}-item`;
-};
+import { useGetAriaLabelOfBlockItem } from './hooks/useGetAriaLabelOfBlockItem';
 
 export const BlockItem: React.FC<any> = (props) => {
   const { className, children } = useProps(props);
   const Designer = useDesigner();
-  const schema = useFieldSchema();
+  const { getAriaLabel } = useGetAriaLabelOfBlockItem(props.name);
+
   return (
     <SortableItem
-      data-testid={getTestId(schema)}
+      role="button"
+      aria-label={getAriaLabel()}
       className={cls(
         'nb-block-item',
         className,

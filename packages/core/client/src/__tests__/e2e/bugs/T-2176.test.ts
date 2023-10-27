@@ -214,14 +214,12 @@ const config = {
 };
 
 // fix https://nocobase.height.app/T-2176
-test.skip('BUG: Relationship block issue, menu should not display loading', async ({ page, mockPage }) => {
+test('BUG: Relationship block issue, menu should not display loading', async ({ page, mockPage }) => {
   await mockPage(config).goto();
-  await page.getByRole('row', { name: '1 View' }).getByTestId('view-action').click();
-  await page.getByTestId('action-drawer').getByRole('button', { name: 'plus Add block' }).hover();
+  await page.getByLabel('action-Action.Link-View-view-roles-table-root').click();
+  await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-roles').hover();
+  await page.waitForTimeout(300);
 
-  // TODO: 这里无论是 not.toBeVisible 还是 toBeVisible 都会通过，暂时不知道怎么解决，先跳过
   // 这个输入框不应该显示
-  await expect(page.getByPlaceholder('Search and select collection')).not.toBeVisible();
-
-  await expect(page.getByText('Relationship blocks')).not.toBeVisible();
+  await expect(page.getByPlaceholder('Search and select collection')).toBeHidden();
 });

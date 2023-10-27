@@ -157,7 +157,9 @@ function Calculation({ calculator, operands = [], onChange }) {
         useTypedConstant
       />
       <Select
-        data-testid="antd-select"
+        // @ts-ignore
+        role="button"
+        aria-label="select-operator-calc"
         value={calculator}
         onChange={(v) => onChange({ operands, calculator: v })}
         placeholder={lang('Calculator')}
@@ -205,7 +207,7 @@ function CalculationItem({ value, onChange, onRemove }) {
       ) : (
         <Calculation operands={operands} calculator={calculator} onChange={onChange} />
       )}
-      <Button data-testid="close-icon-button" onClick={onRemove} type="link" icon={<CloseCircleOutlined />} />
+      <Button aria-label="icon-close" onClick={onRemove} type="link" icon={<CloseCircleOutlined />} />
     </div>
   );
 }
@@ -270,7 +272,13 @@ function CalculationGroup({ value, onChange }) {
       >
         <Trans>
           {'Meet '}
-          <Select value={type} onChange={(t) => onChange({ ...value, type: t })}>
+          <Select
+            // @ts-ignore
+            role="button"
+            data-testid="filter-select-all-or-any"
+            value={type}
+            onChange={(t) => onChange({ ...value, type: t })}
+          >
             <Select.Option value="and">All</Select.Option>
             <Select.Option value="or">Any</Select.Option>
           </Select>
@@ -423,19 +431,8 @@ export default {
     return (
       <NodeDefaultView data={data}>
         {rejectOnFalse ? null : (
-          <div className={cx(styles.nodeSubtreeClass)}>
-            <div
-              className={cx(
-                styles.branchBlockClass,
-                css`
-                  > * > .workflow-branch-lines {
-                    > button {
-                      display: none;
-                    }
-                  }
-                `,
-              )}
-            >
+          <div className={styles.nodeSubtreeClass}>
+            <div className={styles.branchBlockClass}>
               <Branch from={data} entry={falseEntry} branchIndex={0} />
               <Branch from={data} entry={trueEntry} branchIndex={1} />
             </div>

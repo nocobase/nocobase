@@ -43,8 +43,12 @@ export const linkageMergeAction = async ({
         ...field.linkageProperty,
         required: requiredResult,
       };
-      field.required = last(field.linkageProperty?.required);
-      break;
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          field.required = last(field.linkageProperty.required);
+        });
+        resolve(void 0);
+      });
     case ActionType.InRequired:
       if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
         requiredResult.push(false);
@@ -53,8 +57,12 @@ export const linkageMergeAction = async ({
         ...field.linkageProperty,
         required: requiredResult,
       };
-      field.required = last(field.linkageProperty?.required);
-      break;
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          field.required = last(field.linkageProperty.required);
+        });
+        resolve(void 0);
+      });
     case ActionType.Visible:
     case ActionType.None:
     case ActionType.Hidden:
@@ -65,8 +73,12 @@ export const linkageMergeAction = async ({
         ...field.linkageProperty,
         display: displayResult,
       };
-      field.display = last(field.linkageProperty?.display);
-      break;
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          field.display = last(displayResult);
+        });
+        resolve(void 0);
+      });
     case ActionType.Editable:
     case ActionType.ReadOnly:
     case ActionType.ReadPretty:
@@ -77,8 +89,12 @@ export const linkageMergeAction = async ({
         ...field.linkageProperty,
         pattern: patternResult,
       };
-      field.pattern = last(field.linkageProperty.pattern);
-      break;
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          field.pattern = last(patternResult);
+        });
+        resolve(void 0);
+      });
     case ActionType.Value:
       if (
         isConditionEmpty(condition) ||

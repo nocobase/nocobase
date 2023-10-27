@@ -2,7 +2,7 @@ import { observer, RecursionField, useField, useFieldSchema, useForm } from '@fo
 import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
-import lodash from 'lodash';
+import { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useActionContext } from '../..';
@@ -22,6 +22,7 @@ import { ActionPage } from './Action.Page';
 import useStyles from './Action.style';
 import { ActionContextProvider } from './context';
 import { useA } from './hooks';
+import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
 
@@ -62,14 +63,16 @@ export const Action: ComposedAction = observer(
     const { modal } = App.useApp();
     const variables = useVariables();
     const localVariables = useLocalVariables({ currentForm: { values: record } as any });
+    const { getAriaLabel } = useGetAriaLabelOfAction(title);
+
+    let actionTitle = title || compile(fieldSchema.title);
+    actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
 
     // fix https://nocobase.height.app/T-2259
     const shouldResetRecord = ['create', 'customize:bulkUpdate', 'customize:bulkEdit', 'customize:create'].includes(
       fieldSchema['x-action'],
     );
 
-    let actionTitle = title || compile(fieldSchema.title);
-    actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
     useEffect(() => {
       field.linkageProperty = {};
       linkageRules
@@ -130,7 +133,8 @@ export const Action: ComposedAction = observer(
 
       return (
         <SortableItem
-          data-testid={`${fieldSchema['x-action'] || fieldSchema.name}-action`}
+          role="button"
+          aria-label={getAriaLabel()}
           {...others}
           loading={field?.data?.loading}
           icon={icon ? <Icon type={icon} /> : null}

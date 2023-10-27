@@ -175,7 +175,6 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
         />
       ) : (
         <Select
-          data-testid="antd-select"
           {...others}
           mode={multiple ? 'multiple' : props.mode}
           fieldNames={fieldNames}

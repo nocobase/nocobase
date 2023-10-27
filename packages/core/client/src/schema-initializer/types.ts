@@ -51,6 +51,7 @@ interface ItemOptions extends ItemCommonOptions {
 
 interface DividerOptions {
   type: 'divider';
+  key?: string;
 }
 
 export type SchemaInitializerItemComponent = (props?: SchemaInitializerItemComponentProps) => any;
