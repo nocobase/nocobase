@@ -1,5 +1,5 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { css, cx } from '@nocobase/client';
+import { css } from '@nocobase/client';
 import { Button, Tooltip } from 'antd';
 import React, { useState } from 'react';
 import { NodeDefaultView } from '.';
@@ -67,8 +67,8 @@ export default {
 
     return (
       <NodeDefaultView data={data}>
-        <div className={cx(styles.nodeSubtreeClass)}>
-          <div className={cx(styles.branchBlockClass)}>
+        <div className={styles.nodeSubtreeClass}>
+          <div className={styles.branchBlockClass}>
             {branches.map((branch) => (
               <Branch key={branch.id} from={data} entry={branch} branchIndex={branch.branchIndex} />
             ))}
@@ -102,35 +102,30 @@ export default {
               />
             ))}
           </div>
-          <div
+          <Tooltip
+            title={lang('Add branch')}
             className={css`
-              position: relative;
-              height: 2em;
+              visibility: ${workflow.executed ? 'hidden' : 'visible'};
             `}
           >
-            <Tooltip
-              title={lang('Add branch')}
+            <Button
+              aria-label={getAriaLabel('add-branch')}
+              icon={<PlusOutlined />}
               className={css`
-                visibility: ${workflow.executed ? 'hidden' : 'visible'};
-              `}
-            >
-              <Button
-                aria-label={getAriaLabel('add-branch')}
-                icon={<PlusOutlined />}
-                className={css`
-                  position: absolute;
-                  top: calc(50% - 1px);
-                  transform: translateX(-50%) rotate(45deg);
+                position: relative;
+                top: 1em;
+                transform-origin: center;
+                transform: rotate(45deg);
 
-                  .anticon {
-                    transform: rotate(-45deg);
-                  }
-                `}
-                onClick={() => setBranchCount(branchCount + 1)}
-                disabled={workflow.executed}
-              />
-            </Tooltip>
-          </div>
+                .anticon {
+                  transform-origin: center;
+                  transform: rotate(-45deg);
+                }
+              `}
+              onClick={() => setBranchCount(branchCount + 1)}
+              disabled={workflow.executed}
+            />
+          </Tooltip>
         </div>
       </NodeDefaultView>
     );

@@ -10,11 +10,13 @@ export function Branch({
   entry = null,
   branchIndex = null,
   controller = null,
+  className,
 }: {
   from?: any;
   entry?: any;
   branchIndex?: number | null;
-  controller?: any;
+  controller?: React.ReactNode;
+  className?: string;
 }) {
   const { styles } = useStyles();
   const { getAriaLabel } = useGetAriaLabelOfAddButton(from, branchIndex);
@@ -24,7 +26,7 @@ export function Branch({
   }
 
   return (
-    <div className={cx(styles.branchClass)}>
+    <div className={cx(styles.branchClass, className)}>
       <div className="workflow-branch-lines" />
       {controller}
       <AddButton aria-label={getAriaLabel()} upstream={from} branchIndex={branchIndex} />

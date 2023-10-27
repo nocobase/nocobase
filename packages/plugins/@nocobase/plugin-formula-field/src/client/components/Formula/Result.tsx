@@ -1,4 +1,4 @@
-import { onFormInputChange } from '@formily/core';
+import { onFormValuesChange } from '@formily/core';
 import { useField, useFieldSchema, useFormEffects } from '@formily/react';
 import { toJS } from '@formily/reactive';
 import type { CollectionOptions } from '@nocobase/client';
@@ -82,7 +82,7 @@ export function Result(props) {
   }, [value]);
 
   useFormEffects(() => {
-    onFormInputChange((form) => {
+    onFormValuesChange((form) => {
       if (
         (fieldSchema.name as string).indexOf('.') >= 0 ||
         !formBlockContext?.form ||
@@ -100,7 +100,7 @@ export function Result(props) {
         v = null;
       }
       if (v == null && editingValue == null) {
-        return;
+        setEditingValue(v);
       }
       setEditingValue(v);
     });

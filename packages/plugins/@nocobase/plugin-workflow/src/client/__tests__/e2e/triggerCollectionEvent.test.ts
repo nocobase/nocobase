@@ -53,7 +53,11 @@ test.describe('trigger collection events', () => {
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByLabel('dataBlocks-table', { exact: true }).hover();
     await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
-    await page.getByText('Configure columns').click();
+
+    // 移开鼠标，关闭菜单
+    await page.mouse.move(300, 0);
+
+    await page.getByText('Configure columns').hover();
     await page.getByText(fieldDisplayName).click();
     await page.getByText('Configure actions').hover();
     await page.getByLabel('Enable actions-Add new').click();
@@ -62,18 +66,16 @@ test.describe('trigger collection events', () => {
     await page.getByLabel(`action-Action-Add new-create-tt_amt_org${appendText}-table`).click();
     await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-tt_amt_org${appendText}`).hover();
     await page.getByLabel('Data blocks-Form').click();
-    await page
-      .getByLabel(`schema-initializer-Tabs-TabPaneInitializersForCreateFormBlock-tt_amt_org${appendText}`)
-      .click();
-    await page.getByRole('button', { name: 'Cancel' }).click();
-    await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-tt_amt_org${appendText}`).click();
+
+    // 移开鼠标，关闭菜单
+    await page.mouse.move(300, 0);
+
+    await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-tt_amt_org${appendText}`).hover();
     await page.getByLabel('Enable actions-Submit').click();
-    await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-tt_amt_org${appendText}`).click();
+    await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-tt_amt_org${appendText}`).hover();
     await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
-    await page
-      .getByLabel(`schema-initializer-Tabs-TabPaneInitializersForCreateFormBlock-tt_amt_org${appendText}`)
-      .click();
-    await page.getByRole('button', { name: 'Cancel' }).click();
+
+    await page.mouse.move(300, 0);
 
     // 2、测试步骤：进入“数据区块”-“添加”按钮，填写表单，点击“确定”按钮
     await page.getByTestId(`drawer-Action.Container-${collectionName}-Add record`).getByRole('textbox').click();
