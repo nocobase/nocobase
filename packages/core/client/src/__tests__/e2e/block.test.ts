@@ -550,5 +550,13 @@ test.describe('blcok template', () => {
     ).not.toBeVisible();
     await page.getByLabel('block-item-CardItem-users-table').getByLabel('action-Action-Add').click();
     await expect(await page.getByLabel('block-item-CollectionField-users-form-users.phone')).toBeVisible();
+    await page.locator('.ant-drawer-mask').click();
+
+    //删除模板
+    await page.getByTestId('settings-center-button').click();
+    await page.getByRole('button', { name: 'All plugin settings' }).click();
+    await page.getByRole('menuitem', { name: 'layout Block templates' }).click();
+    await page.getByLabel('action-Action.Link-Delete-destroy-uiSchemaTemplates-table-Users_Form').click();
+    await page.getByRole('button', { name: 'OK' }).click();
   });
 });
