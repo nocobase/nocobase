@@ -119,7 +119,6 @@ function PluginInfo(props: IPluginInfo) {
                 cancelText={t('No')}
               >
                 <a
-                  role="button"
                   onClick={(e) => {
                     e.stopPropagation();
                   }}
@@ -134,7 +133,6 @@ function PluginInfo(props: IPluginInfo) {
             aria-label="enable"
             key={'enable'}
             size={'small'}
-            aria-label="plugin-enabled"
             disabled={builtIn || error}
             onChange={async (checked, e) => {
               e.stopPropagation();
