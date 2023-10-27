@@ -15,6 +15,8 @@ export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
       try {
         if (value != null) {
           setText(JSON.stringify(value, null, space));
+        } else {
+          setText(undefined);
         }
       } catch (ex) {
         //
