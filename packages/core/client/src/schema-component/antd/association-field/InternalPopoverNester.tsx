@@ -4,6 +4,8 @@ import { observer } from '@formily/react';
 import React, { useContext, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionContext, ActionContextProvider } from '../action/context';
+import { useGetAriaLabelOfPopover } from '../action/hooks/useGetAriaLabelOfPopover';
+import { useSetAriaLabelForPopover } from '../action/hooks/useSetAriaLabelForPopover';
 import { PopoverWithStopPropagation } from '../popover';
 import { InternalNester } from './InternalNester';
 import { ReadPrettyInternalViewer } from './InternalViewer';
@@ -44,6 +46,12 @@ export const InternaPopoverNester = observer(
     const modalProps = {
       getContainer: getContainer,
     };
+    const { getAriaLabel } = useGetAriaLabelOfPopover();
+
+    if (process.env.__E2E__) {
+      useSetAriaLabelForPopover(visible);
+    }
+
     return (
       <ActionContextProvider value={{ ...ctx, modalProps }}>
         <PopoverWithStopPropagation
@@ -68,6 +76,8 @@ export const InternaPopoverNester = observer(
         </PopoverWithStopPropagation>
         {visible && (
           <div
+            role="button"
+            aria-label={getAriaLabel('mask')}
             onClick={() => setVisible(false)}
             className={css`
               position: fixed;

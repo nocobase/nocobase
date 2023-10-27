@@ -1,11 +1,12 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { css, cx } from '@nocobase/client';
+import { css } from '@nocobase/client';
 import { Button, Tooltip } from 'antd';
 import React, { useState } from 'react';
 import { NodeDefaultView } from '.';
 import { Branch } from '../Branch';
 import { useFlowContext } from '../FlowContext';
 import { RadioWithTooltip } from '../components/RadioWithTooltip';
+import { useGetAriaLabelOfAddButton } from '../hooks/useGetAriaLabelOfAddButton';
 import { NAMESPACE, lang } from '../locale';
 import useStyles from '../style';
 
@@ -59,14 +60,15 @@ export default {
       }, [])
       .sort((a, b) => a.branchIndex - b.branchIndex);
     const [branchCount, setBranchCount] = useState(Math.max(2, branches.length));
+    const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
 
     const tempBranches = Array(Math.max(0, branchCount - branches.length)).fill(null);
     const lastBranchHead = branches[branches.length - 1];
 
     return (
       <NodeDefaultView data={data}>
-        <div className={cx(styles.nodeSubtreeClass)}>
-          <div className={cx(styles.branchBlockClass)}>
+        <div className={styles.nodeSubtreeClass}>
+          <div className={styles.branchBlockClass}>
             {branches.map((branch) => (
               <Branch key={branch.id} from={data} entry={branch} branchIndex={branch.branchIndex} />
             ))}
@@ -100,34 +102,30 @@ export default {
               />
             ))}
           </div>
-          <div
+          <Tooltip
+            title={lang('Add branch')}
             className={css`
-              position: relative;
-              height: 2em;
+              visibility: ${workflow.executed ? 'hidden' : 'visible'};
             `}
           >
-            <Tooltip
-              title={lang('Add branch')}
+            <Button
+              aria-label={getAriaLabel('add-branch')}
+              icon={<PlusOutlined />}
               className={css`
-                visibility: ${workflow.executed ? 'hidden' : 'visible'};
-              `}
-            >
-              <Button
-                icon={<PlusOutlined />}
-                className={css`
-                  position: absolute;
-                  top: calc(50% - 1px);
-                  transform: translateX(-50%) rotate(45deg);
+                position: relative;
+                top: 1em;
+                transform-origin: center;
+                transform: rotate(45deg);
 
-                  .anticon {
-                    transform: rotate(-45deg);
-                  }
-                `}
-                onClick={() => setBranchCount(branchCount + 1)}
-                disabled={workflow.executed}
-              />
-            </Tooltip>
-          </div>
+                .anticon {
+                  transform-origin: center;
+                  transform: rotate(-45deg);
+                }
+              `}
+              onClick={() => setBranchCount(branchCount + 1)}
+              disabled={workflow.executed}
+            />
+          </Tooltip>
         </div>
       </NodeDefaultView>
     );

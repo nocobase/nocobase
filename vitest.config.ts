@@ -22,6 +22,7 @@ export default defineConfig({
   },
   define: {
     'process.env.__TEST__': true,
+    'process.env.__E2E__': false,
   },
   test: {
     globals: true,

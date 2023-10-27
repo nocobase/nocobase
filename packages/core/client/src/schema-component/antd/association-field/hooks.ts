@@ -149,7 +149,7 @@ export default function useServiceOptions(props) {
       ],
       '$or',
     );
-  }, [collectionField?.interface, collectionField.foreignKey, fieldSchema, fieldServiceFilter, sourceValue]);
+  }, [collectionField?.interface, collectionField?.foreignKey, fieldSchema, fieldServiceFilter, sourceValue]);
 
   return useMemo(() => {
     return {

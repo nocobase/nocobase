@@ -8,7 +8,7 @@ import { useWorkflowVariableOptions } from '../variable';
 export default {
   title: `{{t("SQL action", { ns: "${NAMESPACE}" })}}`,
   type: 'sql',
-  group: 'extended',
+  group: 'collection',
   description: `{{t("Execute a SQL statement in database.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     sql: {

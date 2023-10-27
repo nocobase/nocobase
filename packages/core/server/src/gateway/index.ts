@@ -5,6 +5,7 @@ import compression from 'compression';
 import { EventEmitter } from 'events';
 import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
+import compose from 'koa-compose';
 import { promisify } from 'node:util';
 import { resolve } from 'path';
 import qs from 'qs';
@@ -18,7 +19,6 @@ import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import { WSServer } from './ws-server';
-import compose from 'koa-compose';
 
 const compress = promisify(compression());
 
@@ -188,7 +188,7 @@ export class Gateway extends EventEmitter {
       void AppSupervisor.getInstance().bootStrapApp(handleApp);
     }
 
-    const appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
+    let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
 
     if (appStatus === 'not_found') {
       this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
@@ -198,6 +198,12 @@ export class Gateway extends EventEmitter {
     if (appStatus === 'initializing') {
       this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
       return;
+    }
+
+    if (appStatus === 'initialized') {
+      const appInstance = await AppSupervisor.getInstance().getApp(handleApp);
+      appInstance.runCommand('start', '--quickstart');
+      appStatus = AppSupervisor.getInstance().getAppStatus(handleApp);
     }
 
     const app = await AppSupervisor.getInstance().getApp(handleApp);

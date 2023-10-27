@@ -1,11 +1,11 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
-import { actions as authActions, AuthManager } from '@nocobase/auth';
+import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
-import { applyMixins, AsyncEmitter, Toposort, ToposortOptions, measureExecutionTime } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, measureExecutionTime, Toposort, ToposortOptions } from '@nocobase/utils';
 import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { IncomingMessage, Server, ServerResponse } from 'http';
@@ -23,7 +23,6 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { CronJob } from 'cron';
 import { CronJobManager } from './cron/cron-job-manager';
 
 const packageJson = require('../package.json');
@@ -49,6 +48,7 @@ export interface ApplicationOptions {
   logger?: AppLoggerOptions;
   pmSock?: string;
   name?: string;
+  authManager?: AuthManagerOptions;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -521,6 +521,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   async stop(options: any = {}) {
     this.log.debug('stop app...');
     this.setMaintainingMessage('stopping app...');
+
     if (this.stopped) {
       this.log.warn(`Application ${this.name} already stopped`);
       return;
@@ -723,6 +724,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._authManager = new AuthManager({
       authKey: 'X-Authenticator',
       default: 'basic',
+      ...(this.options.authManager || {}),
     });
 
     this.resource({

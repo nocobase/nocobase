@@ -71,7 +71,6 @@ export const ReadPrettyFormItemInitializers = (props: any) => {
   );
   return (
     <SchemaInitializer.Button
-      data-testid="configure-fields-button-of-read-pretty-form-item"
       wrap={gridRowColWrap}
       icon={'SettingOutlined'}
       items={fieldItems}

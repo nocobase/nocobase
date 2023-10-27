@@ -38,7 +38,7 @@ const useEditCategry = () => {
 
 const useValuesFromRecord = (options) => {
   const record = useRecord();
-  const result = useRequest(() => Promise.resolve({ data: { ...record } }), {
+  const result = useRequest(() => Promise.resolve({ data: cloneDeep(record) }), {
     ...options,
     manual: true,
   });

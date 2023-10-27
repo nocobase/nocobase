@@ -88,6 +88,9 @@ export const ChartV2BlockInitializer: React.FC<{
         insert({
           type: 'void',
           'x-component': 'CardItem',
+          'x-component-props': {
+            name: 'charts',
+          },
           'x-designer': 'ChartV2BlockDesigner',
           properties: {
             [uid()]: {

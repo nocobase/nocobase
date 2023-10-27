@@ -6,6 +6,10 @@ export default {
   name: 'flow_nodes',
   fields: [
     {
+      type: 'uid',
+      name: 'key',
+    },
+    {
       type: 'string',
       name: 'title',
     },

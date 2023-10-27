@@ -1,5 +1,6 @@
 import { useField, useForm } from '@formily/react';
 import { message } from 'antd';
+import cloneDeep from 'lodash/cloneDeep';
 import omit from 'lodash/omit';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,10 +24,13 @@ export const useCancelAction = () => {
 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
-  const result = useRequest(() => Promise.resolve({ data: omit(record, ['__parent', '__collectionName']) }), {
-    ...options,
-    manual: true,
-  });
+  const result = useRequest(
+    () => Promise.resolve({ data: omit(cloneDeep(record), ['__parent', '__collectionName']) }),
+    {
+      ...options,
+      manual: true,
+    },
+  );
   const ctx = useActionContext();
   useEffect(() => {
     if (ctx.visible) {

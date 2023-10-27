@@ -85,6 +85,7 @@ ChartRenderer.Designer = function Designer() {
   return (
     <GeneralSchemaDesigner disableInitializer title={title || name}>
       <SchemaSettings.Item
+        title="Configure"
         key="configure"
         onClick={async () => {
           setCurrent({ schema, field, collection: name, service, data: service.data });
@@ -94,6 +95,7 @@ ChartRenderer.Designer = function Designer() {
         {t('Configure')}
       </SchemaSettings.Item>
       <SchemaSettings.Item
+        title="Duplicate"
         key="duplicate"
         onClick={() => insertAdjacent('afterEnd', gridRowColWrap(createRendererSchema(schema?.['x-decorator-props'])))}
       >

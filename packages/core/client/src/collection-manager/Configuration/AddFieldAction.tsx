@@ -9,11 +9,11 @@ import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 import { getOptions } from './interfaces';
 
@@ -255,6 +255,8 @@ export const AddFieldAction = (props) => {
               .filter((child) => ['m2o'].includes(child.name))
               .map((child) => {
                 return {
+                  role: 'button',
+                  'aria-label': `${compile(option.label)}-${child.name}`,
                   label: compile(child.title),
                   title: compile(child.title),
                   key: child.name,
@@ -272,6 +274,8 @@ export const AddFieldAction = (props) => {
             .filter((child) => !['o2o', 'subTable', 'linkTo'].includes(child.name))
             .map((child) => {
               return {
+                role: 'button',
+                'aria-label': `${compile(option.label)}-${child.name}`,
                 label: compile(child.title),
                 title: compile(child.title),
                 key: child.name,
@@ -307,7 +311,7 @@ export const AddFieldAction = (props) => {
         <ActionContextProvider value={{ visible, setVisible }}>
           <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>
             {children || (
-              <Button icon={<PlusOutlined />} type={'primary'}>
+              <Button aria-label="Add field" icon={<PlusOutlined />} type={'primary'}>
                 {t('Add field')}
               </Button>
             )}
