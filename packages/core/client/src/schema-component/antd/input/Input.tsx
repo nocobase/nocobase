@@ -29,6 +29,8 @@ export const Input: ComposedInput = Object.assign(
       AntdInput.TextArea,
       mapProps((props, field) => {
         return {
+          role: 'button',
+          'aria-label': 'textarea',
           autoSize: {
             maxRows: 10,
             minRows: 3,

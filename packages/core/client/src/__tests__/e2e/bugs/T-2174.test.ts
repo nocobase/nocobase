@@ -714,9 +714,11 @@ const config = {
 test('BUG: should show default value option', async ({ page, mockPage }) => {
   await mockPage(config).goto();
 
-  await page.getByRole('row', { name: '1 View' }).getByText('View').click();
+  await page.getByLabel('action-Action.Link-View-view-t_ylz5vtxncxq-table-0').click();
   await page.getByText('Single select:').hover();
-  await page.getByTestId('t_ylz5vtxncxq.f_nr8xi7ezw5t-field').getByTestId('designer-schema-settings').hover();
+  await page
+    .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-t_ylz5vtxncxq-t_ylz5vtxncxq.f_nr8xi7ezw5t')
+    .hover();
 
-  await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
+  await expect(page.getByLabel('Set default value')).toBeVisible();
 });
