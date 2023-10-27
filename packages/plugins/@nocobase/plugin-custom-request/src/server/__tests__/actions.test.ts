@@ -66,5 +66,42 @@ describe('actions', () => {
       expect(res.status).toBe(200);
       expect(params).toMatchSnapshot();
     });
+
+    test('parse o2m variables correctly', async () => {
+      await repo.create({
+        values: {
+          key: 'o2m',
+          options: {
+            url: '/customRequests:test',
+            method: 'GET',
+            data: {
+              o2m: '{{ currentRecord.o2m.id }}',
+            },
+          },
+        },
+      });
+
+      const res = await resource.send({
+        filterByTk: 'o2m',
+        values: {
+          currentRecord: {
+            data: {
+              o2m: [
+                {
+                  id: 1,
+                },
+                {
+                  id: 2,
+                },
+              ],
+            },
+          },
+        },
+      });
+      expect(res.status).toBe(200);
+      expect(params).toMatchObject({
+        o2m: [1, 2],
+      });
+    });
   });
 });

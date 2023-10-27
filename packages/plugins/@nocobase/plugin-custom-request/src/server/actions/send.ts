@@ -3,6 +3,7 @@ import { parse } from '@nocobase/utils';
 
 import axios from 'axios';
 import CustomRequestPlugin from '../plugin';
+import { appendArrayColumn } from '@nocobase/evaluators';
 
 const getHeaders = (headers: Record<string, any>) => {
   return Object.keys(headers).reduce((hds, key) => {
@@ -87,17 +88,25 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     currentTime: new Date().toISOString(),
   };
 
+  const getParsedValue = (value) => {
+    const template = parse(value);
+    template.parameters.forEach(({ key }) => {
+      appendArrayColumn(variables, key);
+    });
+    return template(variables);
+  };
+
   const axiosRequestConfig = {
     baseURL: ctx.origin,
     ...options,
-    url: parse(url)(variables),
+    url: getParsedValue(url),
     headers: {
       Authorization: 'Bearer ' + ctx.getBearerToken(),
       ...getHeaders(ctx.headers),
-      ...omitNullAndUndefined(parse(arrayToObject(headers))(variables)),
+      ...omitNullAndUndefined(getParsedValue(arrayToObject(headers))),
     },
-    params: parse(arrayToObject(params))(variables),
-    data: parse(data)(variables),
+    params: getParsedValue(arrayToObject(params)),
+    data: getParsedValue(data),
   };
 
   const requestUrl = axios.getUri(axiosRequestConfig);
