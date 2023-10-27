@@ -79,8 +79,8 @@ test.describe('trigger collection events', () => {
 
     // 2、测试步骤：进入“数据区块”-“添加”按钮，填写表单，点击“确定”按钮
     const fieldData = fieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByTestId(`drawer-Action.Container-${collectionName}-Add record`).getByRole('textbox').fill(fieldData);
-    await page.getByLabel(`action-Action-Submit-submit-${collectionName}-form`).click();
+    await page.getByRole('textbox').fill(fieldData);
+    await page.getByLabel(`action-Action-Submit-submit-${collectionName}-form`, { exact: true }).click();
     await expect(page.getByText(fieldData)).toBeVisible();
 
     // 3、预期结果：数据添加成功，工作流成功触发
