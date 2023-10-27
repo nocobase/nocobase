@@ -96,6 +96,8 @@ const InternalFileManager = (props) => {
         };
       });
       setOptions(opts);
+    } else {
+      setOptions([]);
     }
   }, [value, fieldNames?.label]);
 

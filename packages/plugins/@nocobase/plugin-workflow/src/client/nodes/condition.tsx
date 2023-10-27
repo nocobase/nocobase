@@ -431,19 +431,8 @@ export default {
     return (
       <NodeDefaultView data={data}>
         {rejectOnFalse ? null : (
-          <div className={cx(styles.nodeSubtreeClass)}>
-            <div
-              className={cx(
-                styles.branchBlockClass,
-                css`
-                  > * > .workflow-branch-lines {
-                    > button {
-                      display: none;
-                    }
-                  }
-                `,
-              )}
-            >
+          <div className={styles.nodeSubtreeClass}>
+            <div className={styles.branchBlockClass}>
               <Branch from={data} entry={falseEntry} branchIndex={0} />
               <Branch from={data} entry={trueEntry} branchIndex={1} />
             </div>

@@ -110,6 +110,7 @@ const useStyles = createStyles(({ css, token }) => {
     branchBlockClass: css`
       display: flex;
       position: relative;
+      margin-top: 2em;
 
       :before {
         content: '';
@@ -329,7 +330,6 @@ const useStyles = createStyles(({ css, token }) => {
 
     conditionClass: css`
       position: relative;
-      height: 2em;
       overflow: visible;
 
       > span {

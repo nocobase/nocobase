@@ -91,12 +91,6 @@ export default {
               </div>
             </div>
           </div>
-          <div
-            className={css`
-              position: relative;
-              height: 2em;
-            `}
-          />
         </div>
       </NodeDefaultView>
     );

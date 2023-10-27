@@ -64,6 +64,7 @@ const useResource = (props: UseResourceProps) => {
   const { fieldSchema } = useActionContext();
   const isCreateAction = fieldSchema?.['x-action'] === 'create';
   const association = useAssociation(props);
+  console.log(association);
   const sourceId = useSourceId?.();
   const field = useField();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
@@ -95,6 +96,9 @@ const useResource = (props: UseResourceProps) => {
   }
   if (record[association?.sourceKey || 'id']) {
     return api.resource(resource, record[association?.sourceKey || 'id']);
+  }
+  if (record?.__parent?.[association?.sourceKey || 'id']) {
+    return api.resource(resource, record.__parent[association?.sourceKey || 'id']);
   }
   return api.resource(collection);
 };
