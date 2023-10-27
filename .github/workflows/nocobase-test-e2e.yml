@@ -16,21 +16,59 @@ on:
       - 'packages/**'
 
 jobs:
-  e2e-test:
+  e2e-test-postgres:
     strategy:
       matrix:
         node_version: ['18']
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres:11
+        # Provide the password for postgres
+        env:
+          POSTGRES_USER: nocobase
+          POSTGRES_PASSWORD: password
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node_version }}
-          cache: 'yarn'
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - uses: actions/cache@v3
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
       - run: yarn install
       - run: yarn build
       - run: npx playwright install --with-deps
-      - run: yarn test:e2e
-    timeout-minutes: 30
+      - name: Test with postgres
+        run: yarn test:e2e
+        env:
+          LOGGER_LEVEL: error
+          DB_DIALECT: postgres
+          DB_HOST: postgres
+          DB_PORT: 5432
+          DB_USER: nocobase
+          DB_PASSWORD: password
+          DB_DATABASE: nocobase
+          DB_UNDERSCORED: ${{ matrix.underscored }}
+          DB_SCHEMA: ${{ matrix.schema }}
+          COLLECTION_MANAGER_SCHEMA: ${{ matrix.collection_schema }}
+    timeout-minutes: 40
