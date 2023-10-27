@@ -4,10 +4,10 @@ import React from 'react';
 import { cx, css } from '@nocobase/client';
 
 import { Branch } from './Branch';
+import { useFlowContext } from './FlowContext';
 import { lang } from './locale';
 import useStyles from './style';
 import { TriggerConfig } from './triggers';
-import { useFlowContext } from './FlowContext';
 
 export function CanvasContent({ entry }) {
   const { styles } = useStyles();

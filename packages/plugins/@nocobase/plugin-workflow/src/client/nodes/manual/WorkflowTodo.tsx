@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
-import dayjs from 'dayjs';
 import { Space, Spin, Tag } from 'antd';
+import dayjs from 'dayjs';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import {
@@ -600,7 +600,9 @@ function Decorator({ params = {}, children }) {
       {...cm}
       collections={[...collections, nodeCollection, workflowCollection, todoCollection]}
     >
-      <TableBlockProvider {...blockProps}>{children}</TableBlockProvider>
+      <TableBlockProvider name="workflow-todo" {...blockProps}>
+        {children}
+      </TableBlockProvider>
     </CollectionManagerProvider>
   );
 }

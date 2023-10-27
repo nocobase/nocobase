@@ -1,6 +1,4 @@
-import { css } from '@emotion/css';
 import { Button, ButtonProps } from 'antd';
-import { cx } from 'antd-style';
 import React, { forwardRef, useMemo } from 'react';
 
 export const XButton = forwardRef((props: ButtonProps, ref: any) => {
@@ -12,7 +10,7 @@ export const XButton = forwardRef((props: ButtonProps, ref: any) => {
   }, []);
 
   return (
-    <Button ref={ref} style={style} {...props}>
+    <Button aria-label="variable-button" ref={ref} style={style} {...props}>
       x{props.children}
     </Button>
   );

@@ -7,6 +7,7 @@ import { SchemaInitializer, SchemaSettings } from '../..';
 import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { createDesignable, useDesignable } from '../../schema-component';
+import { useGetAriaLabelOfDesigner } from '../../schema-settings/hooks/useGetAriaLabelOfDesigner';
 
 export const Resizable = (props) => {
   const { t } = useTranslation();
@@ -53,6 +54,7 @@ export const TableActionColumnInitializers = (props: any) => {
   const { t } = useTranslation();
   const collection = useCollection();
   const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'] || {};
+  const { getAriaLabel } = useGetAriaLabelOfDesigner();
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
@@ -250,7 +252,9 @@ export const TableActionColumnInitializers = (props: any) => {
           component: Resizable,
         },
       ]}
-      component={<MenuOutlined style={{ cursor: 'pointer' }} />}
+      component={
+        <MenuOutlined role="button" aria-label={getAriaLabel('schema-settings')} style={{ cursor: 'pointer' }} />
+      }
     />
   );
 };

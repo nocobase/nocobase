@@ -148,7 +148,7 @@ export const EditCollectionField = (props) => {
 };
 
 export const EditFieldAction = (props) => {
-  const { scope, getContainer, item: record, children } = props;
+  const { scope, getContainer, item: record, children, ...otherProps } = props;
   const { getInterface, collections } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -166,10 +166,12 @@ export const EditFieldAction = (props) => {
       };
     });
   }, []);
+
   return (
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
+          {...otherProps}
           onClick={async () => {
             const { data } = await api.resource('collections.fields', record.collectionName).get({
               filterByTk: record.name,

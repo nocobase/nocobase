@@ -45,7 +45,9 @@ export const CollectionSelect = connect(
     const { t } = useTranslation();
     return (
       <Select
-        data-testid="antd-select"
+        // @ts-ignore
+        role="button"
+        data-testid="select-collection"
         placeholder={t('Select collection')}
         popupMatchSelectWidth={false}
         {...others}
