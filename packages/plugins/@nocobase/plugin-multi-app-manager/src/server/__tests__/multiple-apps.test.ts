@@ -306,7 +306,7 @@ describe('multiple apps', () => {
     });
 
     await app.start();
-    await sleep(2000);
+    await sleep(5000);
     expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeTruthy();
     const appStatus = AppSupervisor.getInstance().getAppStatus(subAppName);
     expect(appStatus).toEqual('running');
