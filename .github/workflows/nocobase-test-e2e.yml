@@ -60,7 +60,7 @@ jobs:
 
       - run: yarn install
       - run: yarn build
-      - run: npx playwright install chrome --with-deps
+      - run: npx playwright install --with-deps
       - name: Test with postgres
         run: yarn test:e2e
         env:
