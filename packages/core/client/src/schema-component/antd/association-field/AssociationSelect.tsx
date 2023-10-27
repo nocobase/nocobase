@@ -69,7 +69,6 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
       if (linkageFields?.length > 0) {
         //支持深层次子表单
         onFieldChange('*', (fieldPath: any) => {
-          console.log(fieldPath.props.name, field.props.name);
           if (linkageFields.includes(fieldPath.props.name) && field.value) {
             props.onChange(null);
             setInnerValue(null);
