@@ -103,5 +103,33 @@ describe('actions', () => {
         o2m: [1, 2],
       });
     });
+
+    test('currentRecord.id with collectionName works fine', async () => {
+      await repo.create({
+        values: {
+          key: 'test2',
+          options: {
+            method: 'GET',
+            headers: [],
+            params: [{ name: 'userId', value: '{{currentRecord.id}}' }],
+            url: '/users:get',
+            collectionName: 'users',
+            data: null,
+          },
+        },
+      });
+
+      const userId = 1;
+      const res = await resource.send({
+        filterByTk: 'test2',
+        values: {
+          currentRecord: {
+            id: userId,
+          },
+        },
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.data.id).toBe(userId);
+    });
   });
 });

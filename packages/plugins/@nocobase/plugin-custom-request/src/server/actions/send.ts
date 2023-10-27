@@ -70,18 +70,20 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   ctx.withoutDataWrapping = true;
 
   const { collectionName, url, headers = [], params = [], data = {}, ...options } = requestConfig.options;
-  let currentRecordVariables = {};
+  let currentRecordValues = {};
   if (collectionName && typeof currentRecord.id !== 'undefined') {
     const recordRepo = ctx.db.getRepository(collectionName);
-    currentRecordVariables = await recordRepo.findOne({
-      filterByTk: currentRecord.id,
-      appends: currentRecord.appends,
-    });
+    currentRecordValues = (
+      await recordRepo.findOne({
+        filterByTk: currentRecord.id,
+        appends: currentRecord.appends,
+      })
+    )?.dataValues;
   }
 
   const variables = {
     currentRecord: {
-      ...currentRecordVariables,
+      ...currentRecordValues,
       ...currentRecord.data,
     },
     currentUser: ctx.auth.user,
