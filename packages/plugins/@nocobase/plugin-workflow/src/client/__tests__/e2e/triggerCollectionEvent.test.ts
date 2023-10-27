@@ -74,10 +74,8 @@ test.describe('trigger collection events', () => {
     await page.getByLabel('Enable actions-Submit').click();
     await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-tt_amt_org${appendText}`).hover();
     await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
-    await page
-      .getByLabel(`schema-initializer-Tabs-TabPaneInitializersForCreateFormBlock-tt_amt_org${appendText}`)
-      .click();
-    await page.getByRole('button', { name: 'Cancel' }).click();
+
+    await page.mouse.move(300, 0);
 
     // 2、测试步骤：进入“数据区块”-“添加”按钮，填写表单，点击“确定”按钮
     await page.getByTestId(`drawer-Action.Container-${collectionName}-Add record`).getByRole('textbox').click();

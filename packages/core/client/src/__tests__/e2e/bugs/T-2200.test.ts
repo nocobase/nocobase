@@ -351,9 +351,8 @@ test('BUG: should be possible to change the value of the association field norma
 
   await page.getByTestId('select-object-multiple').click();
   await page.getByRole('option', { name: 'Member' }).click();
-
-  // 点击空白处，关闭下拉框。如不关闭，会挡住按钮，导致鼠标 hover 无效
-  await page.getByTestId('drawer-Action.Container-users-Edit record').click();
+  // 再次点击，关闭下拉框。
+  await page.getByTestId('select-object-multiple').click();
 
   await expect(page.getByLabel('Admin')).toBeVisible();
   await expect(page.getByLabel('Member')).toBeHidden();
@@ -361,6 +360,9 @@ test('BUG: should be possible to change the value of the association field norma
 
   await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').hover();
   await page.getByLabel('Display collection fields-Nickname').click();
+
+  await page.mouse.move(200, 0);
+
   await page.waitForTimeout(200);
   await expect(page.getByLabel('Admin')).toBeVisible();
   await expect(page.getByLabel('Member')).toBeHidden();
