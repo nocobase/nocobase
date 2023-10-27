@@ -14,11 +14,11 @@ async function waitForModalToBeHidden(page) {
 test.describe('add plugin in front', () => {
   test('add plugin npm registry,then remove plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
-    await page.getByTestId('pm-button').click();
+    await page.getByTestId('plugin-manager-button').click();
     await expect(await page.getByLabel('sample-custom-collection-template')).not.toBeVisible();
     await page.getByRole('button', { name: 'Add new' }).click();
-    await page
-      .getByRole('button', { name: '* Npm package name :' })
+    await await page
+      .getByLabel('block-item-Input-Npm package name')
       .getByRole('textbox')
       .fill('@nocobase/plugin-sample-custom-collection-template');
     await page.getByLabel('Submit').click();
@@ -55,7 +55,7 @@ test.describe('add plugin in front', () => {
 test.describe('remove plugin', () => {
   test('remove plugin,then add plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
-    await page.getByTestId('pm-button').click();
+    await page.getByTestId('plugin-manager-button').click();
     //hello插件默认安装未启用
     await page.getByPlaceholder('Search plugin').fill('hello');
     await expect(await page.getByLabel('hello')).toBeVisible();
@@ -71,7 +71,7 @@ test.describe('remove plugin', () => {
     //将删除的插件加回来
     await page.getByRole('button', { name: 'Add new' }).click();
     await page
-      .getByRole('button', { name: '* Npm package name :' })
+      .getByLabel('block-item-Input-Npm package name')
       .getByRole('textbox')
       .fill('@nocobase/plugin-sample-hello');
     await page.getByLabel('Submit').click();
@@ -97,10 +97,10 @@ test.describe('remove plugin', () => {
   });
 });
 
-test.describe('enable plugin', () => {
+test.describe('enable & disabled plugin', () => {
   test('enable plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
-    await page.getByTestId('pm-button').click();
+    await page.getByTestId('plugin-manager-button').click();
     await page.getByPlaceholder('Search plugin').fill('hello');
     await expect(await page.getByLabel('hello')).toBeVisible();
     const isActive = await page.getByLabel('hello').getByLabel('plugin-enabled').isChecked();
@@ -121,10 +121,6 @@ test.describe('enable plugin', () => {
     await page.waitForLoadState('load');
     await expect(await page.getByLabel('hello').getByLabel('plugin-enabled').isChecked()).toBe(false);
   });
-});
-
-test.describe('disable plugin', () => {
-  test('disable plugin', async ({ page, mockPage }) => {});
 });
 
 test.describe('update plugin', () => {
