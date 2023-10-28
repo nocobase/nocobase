@@ -9,7 +9,6 @@
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@ant-design/icons": "5.x",
-    "@emotion/css": "^11.7.1",
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
     "@formily/react": "2.x",
