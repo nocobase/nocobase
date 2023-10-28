@@ -1,8 +1,9 @@
 import React from 'react';
 import { MenuOutlined } from '@ant-design/icons';
-import { SchemaInitializerItem, useSchemaInitializer } from '@nocobase/client';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
 
-export const MMenuBlockInitializer = (props) => {
+export const MMenuBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
   return (
     <SchemaInitializerItem
@@ -15,7 +16,7 @@ export const MMenuBlockInitializer = (props) => {
           'x-component-props': {},
         });
       }}
-      {...props}
+      {...itemConfig}
     />
   );
 };

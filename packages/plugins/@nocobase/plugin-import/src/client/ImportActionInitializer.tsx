@@ -1,7 +1,14 @@
 import type { ISchema } from '@formily/react';
 import { Schema, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import { SchemaInitializerSwitch, css, useCollection, useDesignable, useSchemaInitializer } from '@nocobase/client';
+import {
+  SchemaInitializerSwitch,
+  css,
+  useCollection,
+  useDesignable,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+} from '@nocobase/client';
 import React from 'react';
 import { NAMESPACE } from './constants';
 import { useFields } from './useFields';
@@ -39,10 +46,10 @@ const initImportSettings = (fields) => {
   return { importColumns, explain: '' };
 };
 
-export const ImportActionInitializer = (props) => {
-  const { item } = props;
+export const ImportActionInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
-  const { exists, remove } = useCurrentSchema('importXlsx', 'x-action', item.find, item.remove);
+  const { exists, remove } = useCurrentSchema('importXlsx', 'x-action', itemConfig.find, itemConfig.remove);
   const { name } = useCollection();
   const fields = useFields(name);
   const schema: ISchema = {
@@ -170,15 +177,16 @@ export const ImportActionInitializer = (props) => {
   };
   return (
     <SchemaInitializerSwitch
+      {...itemConfig}
       checked={exists}
-      title={item.title}
+      title={itemConfig.title}
       onClick={() => {
         if (exists) {
           return remove();
         }
         schema['x-action-settings']['importSettings'] = initImportSettings(fields);
-        const s = merge(schema || {}, item.schema || {});
-        item?.schemaInitialize?.(s);
+        const s = merge(schema || {}, itemConfig.schema || {});
+        itemConfig?.schemaInitialize?.(s);
         insert(s);
       }}
     />

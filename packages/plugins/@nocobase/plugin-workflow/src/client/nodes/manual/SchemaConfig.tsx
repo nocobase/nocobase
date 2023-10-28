@@ -26,6 +26,7 @@ import {
   useSchemaOptionsContext,
   useSchemaInitializer,
   SchemaInitializerItem,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import { Registry, lodash } from '@nocobase/utils/client';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
@@ -297,15 +298,17 @@ function ManualActionDesigner(props) {
   );
 }
 
-function ContinueInitializer({ action, actionProps, ...props }) {
+function ContinueInitializer() {
+  const itemConfig = useSchemaInitializerItem();
+  const { action, actionProps, ...others } = itemConfig;
   const { insert } = useSchemaInitializer();
   return (
     <SchemaInitializerItem
-      {...props}
+      {...others}
       onClick={() => {
         insert({
           type: 'void',
-          title: props.title,
+          title: others.title,
           'x-decorator': 'ManualActionStatusProvider',
           'x-decorator-props': {
             value: action,
@@ -323,13 +326,16 @@ function ContinueInitializer({ action, actionProps, ...props }) {
   );
 }
 
-function ActionInitializer({ action, actionProps, ...props }) {
+function ActionInitializer() {
+  const itemConfig = useSchemaInitializerItem();
+  const { action, actionProps, ...others } = itemConfig;
   return (
     <InitializerWithSwitch
-      {...props}
+      {...others}
+      item={itemConfig}
       schema={{
         type: 'void',
-        title: props.title,
+        title: others.title,
         'x-decorator': 'ManualActionStatusProvider',
         'x-decorator-props': {
           value: action,

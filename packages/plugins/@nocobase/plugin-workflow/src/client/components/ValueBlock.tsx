@@ -1,17 +1,19 @@
 import { useFieldSchema } from '@formily/react';
-import { css, SchemaInitializerItem, useSchemaInitializer } from '@nocobase/client';
+import { css, SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
 import { parse } from '@nocobase/utils/client';
 import React from 'react';
 import { useFlowContext } from '../FlowContext';
 
 export const ValueBlock: (() => JSX.Element) & {
-  Initializer: (props) => JSX.Element;
+  Initializer: () => JSX.Element;
   Result: (props) => JSX.Element;
 } = () => {
   return null;
 };
 
-function Initializer({ node, resultTitle, ...props }) {
+function Initializer() {
+  const itemConfig = useSchemaInitializerItem();
+  const { node, resultTitle, ...props } = itemConfig;
   const { insert } = useSchemaInitializer();
   return (
     <SchemaInitializerItem

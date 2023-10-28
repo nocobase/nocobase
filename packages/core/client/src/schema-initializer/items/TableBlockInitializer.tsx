@@ -3,14 +3,15 @@ import { TableOutlined } from '@ant-design/icons';
 import { useCollectionManager } from '../../collection-manager';
 import { DataBlockInitializer } from './DataBlockInitializer';
 import { createTableBlockSchema } from '../utils';
-import { useSchemaInitializer } from '../../application';
+import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const TableBlockInitializer = (props) => {
+export const TableBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
   const { getCollection } = useCollectionManager();
+  const itemConfig = useSchemaInitializerItem();
   return (
     <DataBlockInitializer
-      {...props}
+      {...itemConfig}
       icon={<TableOutlined />}
       componentType={'Table'}
       onCreateBlockSchema={async ({ item }) => {

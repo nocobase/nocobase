@@ -1,7 +1,6 @@
 import React, { FC, useMemo } from 'react';
-import { pick } from 'lodash';
 
-import { ComponentCommonProps, SchemaInitializerItemType } from '../types';
+import { SchemaInitializerItemType } from '../types';
 import { SchemaInitializerItemContext } from '../context';
 import { useFindComponent } from '../../../schema-component';
 
@@ -22,7 +21,7 @@ const typeComponentMap: Record<SchemaInitializerItemType['type'], string> = {
   itemGroup: 'SchemaInitializerGroup',
   divider: 'SchemaInitializerDivider',
   subMenu: 'SchemaInitializerMenu',
-  item: 'SchemaInitializerItem',
+  item: 'SchemaInitializerItemInternal',
 };
 const useChildrenDefault = () => undefined;
 const useVisibleDefault = () => true;
@@ -66,12 +65,9 @@ export const SchemaInitializerChild: FC<SchemaInitializerItemType> = (props) => 
     return null;
   }
 
-  const componentCommonProps: (keyof ComponentCommonProps)[] = ['schema', 'title'];
   return (
     <SchemaInitializerItemContext.Provider value={contextValue}>
-      <C {...contextValue} {...pick(contextValue, componentCommonProps)} {...componentProps} item={contextValue}>
-        {componentChildren}
-      </C>
+      <C {...componentProps}>{componentChildren}</C>
     </SchemaInitializerItemContext.Provider>
   );
 };

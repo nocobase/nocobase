@@ -9,16 +9,17 @@ import { useGlobalTheme } from '../../global-theme';
 import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createCalendarBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const RecordAssociationCalendarBlockInitializer = (props) => {
-  const { item, onCreateBlockSchema, componentType, createBlockSchema, ...others } = props;
+export const RecordAssociationCalendarBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { getCollection } = useCollectionManager();
-  const field = item.field;
+  const field = itemConfig.field;
   const collection = getCollection(field.target);
   const resource = `${field.collectionName}.${field.name}`;
   const { theme } = useGlobalTheme();
@@ -101,7 +102,7 @@ export const RecordAssociationCalendarBlockInitializer = (props) => {
           );
         }
       }}
-      items={useRecordCollectionDataSourceItems('Calendar', item, field.target, resource)}
+      items={useRecordCollectionDataSourceItems('Calendar', itemConfig, field.target, resource)}
     />
   );
 };

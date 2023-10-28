@@ -4,10 +4,18 @@ import { useBlockAssociationContext, useBlockRequestContext } from '../../block-
 import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const RecordReadPrettyFormBlockInitializer = (props) => {
-  const { onCreateBlockSchema, componentType, createBlockSchema, icon = true, targetCollection, ...others } = props;
+export const RecordReadPrettyFormBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const {
+    onCreateBlockSchema,
+    componentType,
+    createBlockSchema,
+    icon = true,
+    targetCollection,
+    ...others
+  } = itemConfig;
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const currentCollection = useCollection();
@@ -15,7 +23,7 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
   const association = useBlockAssociationContext();
   const { block } = useBlockRequestContext();
   const actionInitializers =
-    block !== 'TableField' ? props.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
+    block !== 'TableField' ? itemConfig.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
 
   return (
     <SchemaInitializerItem

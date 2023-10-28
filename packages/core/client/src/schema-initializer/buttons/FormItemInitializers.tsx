@@ -74,7 +74,7 @@ export const formItemInitializers = new SchemaInitializer({
     },
     {
       title: '{{t("Add text")}}',
-      Component: 'BlockInitializer',
+      Component: 'BlockItemInitializer',
       schema: {
         type: 'void',
         'x-editable': false,
@@ -148,7 +148,7 @@ export const filterFormItemInitializers = new SchemaInitializer({
     },
     {
       title: '{{t("Add text")}}',
-      Component: 'BlockInitializer',
+      Component: 'BlockItemInitializer',
       name: 'add-text',
       schema: {
         type: 'void',

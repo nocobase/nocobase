@@ -1,4 +1,13 @@
+import { createStyles } from 'antd-style';
 import { genStyleHook } from '../../../schema-component/antd/__builtins__';
+
+export const useLocalStyle = createStyles(({ token }) => {
+  return {
+    itemContent: {
+      marginLeft: token.marginXS,
+    },
+  };
+});
 
 export const useStyles = genStyleHook('nb-schema-initializer', (token) => {
   const { componentCls } = token;
@@ -27,9 +36,6 @@ export const useStyles = genStyleHook('nb-schema-initializer', (token) => {
             borderRadius: token.borderRadiusLG,
             backgroundColor: token.colorBgTextHover,
           },
-        },
-        [`${componentCls}-menu-item-content`]: {
-          marginLeft: token.marginXS,
         },
       },
     },

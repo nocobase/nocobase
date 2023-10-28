@@ -9,12 +9,14 @@ import {
   useCollectionManager,
   useGlobalTheme,
   useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useMapTranslation } from '../locale';
 import { createMapBlockSchema, findNestedOption } from './utils';
 
-export const MapBlockInitializer = (props) => {
+export const MapBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
   const options = useContext(SchemaOptionsContext);
   const { getCollectionFieldsOptions } = useCollectionManager();
@@ -88,7 +90,7 @@ export const MapBlockInitializer = (props) => {
         );
       }}
       title={t('Map block')}
-      {...props}
+      {...itemConfig}
     />
   );
 };

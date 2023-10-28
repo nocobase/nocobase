@@ -7,19 +7,21 @@ import {
   useSchemaInitializerMenuItems,
   useCollectionDataSourceItemsV2,
   useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { ChartConfigContext } from '../configure/ChartConfigure';
 import { Menu } from 'antd';
 
-const ConfigureButton = (props) => {
+const ConfigureButton = () => {
+  const itemConfig = useSchemaInitializerItem();
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
   return (
     <SchemaInitializerItem
-      {...props}
+      {...itemConfig}
       applyMenuStyle={false}
       onClick={() => {
-        setCurrent({ schema: {}, field: null, collection: props.item?.name, service: null, data: undefined });
+        setCurrent({ schema: {}, field: null, collection: itemConfig?.name, service: null, data: undefined });
         setVisible(true);
       }}
     />
@@ -39,7 +41,7 @@ const ItemsComponent = () => {
     })
     .map((item) => ({
       ...item,
-      component: ConfigureButton,
+      Component: ConfigureButton,
     }));
 
   const menuItems = useSchemaInitializerMenuItems(items);
@@ -56,11 +58,12 @@ export const chartInitializers = new SchemaInitializer({
   ItemsComponent: ItemsComponent,
 });
 
-export const ChartV2BlockInitializer: React.FC = (props) => {
+export const ChartV2BlockInitializer: React.FC = () => {
+  const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
   return (
     <SchemaInitializerItem
-      {...props}
+      {...itemConfig}
       icon={<LineChartOutlined />}
       onClick={() => {
         insert({

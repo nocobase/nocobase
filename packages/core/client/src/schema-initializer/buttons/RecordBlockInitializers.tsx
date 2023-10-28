@@ -115,6 +115,7 @@ const useRelationFields = () => {
         Component: 'RecordAssociationBlockInitializer',
       };
     }) as any;
+
   return relationFields;
 };
 

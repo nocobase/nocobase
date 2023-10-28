@@ -32,7 +32,7 @@ const myInitializer = new SchemaInitializer({
     },
     {
       name: 'b',
-      type: 'subMenu',
+      type: 'subMenu', // 会渲染成 带 Children 的 Menu 组件
       title: 'Group B',
       children: [
         {

@@ -1,10 +1,11 @@
 import Icon from '@ant-design/icons';
 import { Menu } from 'antd';
-import React, { FC, ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import { SchemaInitializerOptions } from '../types';
 import { useCompile } from '../../../schema-component';
 import { useSchemaInitializerMenuItems } from '../hooks';
 import { uid } from '@formily/shared';
+import { useSchemaInitializerItem } from '../context';
 
 export interface SchemaInitializerMenuProps {
   title: string;
@@ -14,8 +15,8 @@ export interface SchemaInitializerMenuProps {
   children?: SchemaInitializerOptions['items'];
 }
 
-export const SchemaInitializerMenu: FC<SchemaInitializerMenuProps> = (props) => {
-  const { children, title, name = uid(), icon } = props;
+export const SchemaInitializerMenu = () => {
+  const { children, title, name = uid(), icon, ...others } = useSchemaInitializerItem<SchemaInitializerMenuProps>();
   const compile = useCompile();
   const childrenItems = useSchemaInitializerMenuItems(children, name);
 
@@ -23,6 +24,7 @@ export const SchemaInitializerMenu: FC<SchemaInitializerMenuProps> = (props) => 
     <Menu
       items={[
         {
+          ...others,
           key: name,
           label: compile(title),
           icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,

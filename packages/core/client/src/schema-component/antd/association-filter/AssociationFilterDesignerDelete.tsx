@@ -3,9 +3,10 @@ import { useFieldSchema } from '@formily/react';
 import { createDesignable, SchemaComponentContext } from '../..';
 import { useAPIClient } from '../../../api-client';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerItem } from '../../../application';
+import { SchemaInitializerItem, useSchemaInitializerItem } from '../../../application';
 
-export const AssociationFilterDesignerDelete = (props) => {
+export const AssociationFilterDesignerDelete = () => {
+  const itemConfig = useSchemaInitializerItem();
   const { refresh } = useContext(SchemaComponentContext);
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
@@ -19,7 +20,7 @@ export const AssociationFilterDesignerDelete = (props) => {
 
   return (
     <SchemaInitializerItem onClick={handleClick}>
-      <div>{props.title}</div>
+      <div>{itemConfig.title}</div>
     </SchemaInitializerItem>
   );
 };

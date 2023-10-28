@@ -102,7 +102,7 @@ export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps>
         },
       },
     };
-  }, [buttonText, schema, title, useCancelAction, useSubmitAction]);
+  }, [buttonText, component, schema, title, useCancelAction, useSubmitAction]);
 
   return <SchemaComponent schema={defaultSchema as any} />;
 };

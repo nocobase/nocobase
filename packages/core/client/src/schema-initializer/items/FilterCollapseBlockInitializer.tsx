@@ -3,16 +3,16 @@ import React from 'react';
 
 import { createCollapseBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
-import { useSchemaInitializer } from '../../application';
+import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const FilterCollapseBlockInitializer = (props) => {
-  const { item } = props;
+export const FilterCollapseBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
-  const items = item?.key === 'filterCollapseBlockInTableSelector' && [];
+  const items = itemConfig?.key === 'filterCollapseBlockInTableSelector' && [];
 
   return (
     <DataBlockInitializer
-      {...props}
+      {...itemConfig}
       icon={<TableOutlined />}
       componentType={'FilterCollapse'}
       onCreateBlockSchema={async ({ item }) => {

@@ -6,9 +6,11 @@ import {
   SchemaInitializerItemType,
   SchemaInitializerChildren,
   useApp,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import { Divider, Menu } from 'antd';
 
+// TODO：这里要加上 Context
 const ParentA: FC<{ children: SchemaInitializerItemType[] }> = ({ children }) => {
   return (
     <div>
@@ -45,9 +47,22 @@ const ParentA: FC<{ children: SchemaInitializerItemType[] }> = ({ children }) =>
 
       {/* 示例3：渲染成 Menu 形式 */}
       <div>渲染成 Menu 形式 </div>
-      <Menu items={children.map((item) => ({ key: item.name, label: React.createElement(item.Component, item) }))} />
+      <Menu
+        items={children.map((item) => ({
+          key: item.name,
+          label: React.createElement(item.Component, item.componentProps),
+        }))}
+      />
     </div>
   );
+};
+
+// 配置项的内容会被当做 props 传入到 Component 中
+// TODO: 重新完善  demo
+const Demo = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { onClick, title } = itemConfig;
+  return <div onClick={onClick}>{title}</div>;
 };
 
 const myInitializer = new SchemaInitializer({
@@ -65,8 +80,7 @@ const myInitializer = new SchemaInitializer({
           onClick: () => {
             alert('test');
           },
-          // 配置项的内容会被当做 props 传入到 Component 中
-          Component: ({ title, onClick }) => <div onClick={onClick}>{title}</div>,
+          Component: Demo,
         },
         {
           name: 'a2',

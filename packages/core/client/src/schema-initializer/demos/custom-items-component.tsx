@@ -1,9 +1,9 @@
 import React, { FC } from 'react';
-import { Application, Plugin, SchemaInitializer, InitializerItemsProps, useApp } from '@nocobase/client';
+import { Application, Plugin, SchemaInitializer, SchemaInitializerItemsProps, useApp } from '@nocobase/client';
 import { ButtonProps, Card, Divider, List, ListProps, Menu, MenuProps } from 'antd';
 
 // 自定义 Items 渲染为 Menu
-const CustomItemsMenu: FC<InitializerItemsProps<ButtonProps, Omit<MenuProps, 'items'>>> = (props) => {
+const CustomItemsMenu: FC<SchemaInitializerItemsProps<ButtonProps, Omit<MenuProps, 'items'>>> = (props) => {
   const { items, options, ...others } = props;
   return (
     <Menu
@@ -13,7 +13,7 @@ const CustomItemsMenu: FC<InitializerItemsProps<ButtonProps, Omit<MenuProps, 'it
   );
 };
 
-const CustomListGridMenu: FC<InitializerItemsProps<ButtonProps, ListProps<any>>> = (props) => {
+const CustomListGridMenu: FC<SchemaInitializerItemsProps<ButtonProps, ListProps<any>>> = (props) => {
   const { items, options, ...others } = props;
   return (
     <List

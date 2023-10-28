@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { GeneralSchemaDesigner, SchemaSettings, useCollection } from '@nocobase/client';
 
@@ -31,24 +31,36 @@ export default {
   config: {
     useInitializer({ collections }) {
       const searchValue = '';
+      const [showChildren, setShowChildren] = useState(false);
+      const children = useMemo(
+        () =>
+          collections
+            .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
+            .map((item) => ({
+              name: `createRecordForm-child-${item.name}`,
+              type: 'item',
+              title: item.title,
+              schema: {
+                collection: item.name,
+                title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
+                formType: 'create',
+                'x-designer': 'CreateFormDesigner',
+              },
+              Component: FormBlockInitializer,
+            })),
+        [collections],
+      );
       return {
         key: 'createRecordForm',
         type: 'subMenu',
         title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
-        children: collections
-          .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
-          .map((item) => ({
-            name: `createRecordForm-child-${item.name}`,
-            type: 'item',
-            title: item.title,
-            schema: {
-              collection: item.name,
-              title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
-              formType: 'create',
-              'x-designer': 'CreateFormDesigner',
-            },
-            Component: FormBlockInitializer,
-          })),
+        onMouseEnter() {
+          setShowChildren(true);
+        },
+        onMouseLeave() {
+          setShowChildren(false);
+        },
+        children: showChildren ? children : [],
       };
     },
     initializers: {

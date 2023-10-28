@@ -7,6 +7,7 @@ import {
   useCollectionManager,
   useRecordCollectionDataSourceItems,
   useSchemaInitializer,
+  useSchemaInitializerItem,
   useSchemaTemplateManager,
 } from '@nocobase/client';
 import { traverseSchema } from '../nodes/manual/utils';
@@ -64,10 +65,11 @@ function InnerCollectionBlockInitializer({ collection, dataSource, ...props }) {
   return <SchemaInitializerItem {...props} onClick={onConfirm} items={items} />;
 }
 
-export function CollectionBlockInitializer(props) {
+export function CollectionBlockInitializer() {
+  const itemConfig = useSchemaInitializerItem();
   return (
-    <CollectionProvider collection={props.collection}>
-      <InnerCollectionBlockInitializer {...props} />
+    <CollectionProvider collection={itemConfig.collection}>
+      <InnerCollectionBlockInitializer {...itemConfig} />
     </CollectionProvider>
   );
 }

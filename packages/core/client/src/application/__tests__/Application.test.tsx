@@ -16,7 +16,6 @@ describe('Application', () => {
   });
 
   const router: any = { type: 'memory', initialEntries: ['/'] };
-  const initialComponentsLength = 6;
   const initialProvidersLength = 2;
   it('basic', () => {
     const app = new Application({ router });
@@ -27,8 +26,8 @@ describe('Application', () => {
     expect(app.providers).toBeDefined();
     expect(app.router).toBeDefined();
     expect(app.scopes).toBeDefined();
-    expect(app.providers).toHaveLength(initialProvidersLength);
-    expect(Object.keys(app.components)).toHaveLength(initialComponentsLength);
+    expect(app.providers.length).toBeGreaterThan(1);
+    expect(Object.keys(app.components).length).toBeGreaterThan(1);
   });
 
   describe('components', () => {

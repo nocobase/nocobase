@@ -28,6 +28,6 @@ export const SchemaInitializerItemContext = createContext<
 >({});
 SchemaInitializerItemContext.displayName = 'SchemaInitializerItemContext';
 
-export const useSchemaInitializerItem = <T>(): T => {
+export const useSchemaInitializerItem = <T = any>(): T => {
   return React.useContext(SchemaInitializerItemContext) as T;
 };

@@ -10,7 +10,7 @@ import {
   useAssociatedFormItemInitializerFields,
   useFormItemInitializerFields,
 } from '../../../schema-initializer/utils';
-import { OpenModeSchemaItems } from '../../../schema-items';
+import { SchemaInitializerOpenModeSchemaItems } from '../../../schema-items';
 import { SchemaInitializer, useApp } from '../../../application';
 
 const gridRowColWrap = (schema: ISchema) => {
@@ -124,7 +124,7 @@ export const kanbanCardInitializers = new SchemaInitializer({
     },
     {
       name: 'open-mode',
-      Component: OpenModeSchemaItems,
+      Component: SchemaInitializerOpenModeSchemaItems,
     },
   ],
 });

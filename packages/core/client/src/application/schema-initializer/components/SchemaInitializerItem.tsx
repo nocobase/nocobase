@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { useCompile } from '../../../schema-component';
 import { Icon } from '../../../icon';
 import { Menu } from 'antd';
 import { useSchemaInitializerMenuItems } from '../hooks';
 import { uid } from '@formily/shared';
-import { useStyles } from './style';
+import { useLocalStyle, useStyles } from './style';
 import classNames from 'classnames';
+import { useSchemaInitializerItem } from '../context';
 
 export interface SchemaInitializerItemProps {
   style?: React.CSSProperties;
@@ -16,6 +17,7 @@ export interface SchemaInitializerItemProps {
   items?: any[];
   onClick?: (args?: any) => any;
   applyMenuStyle?: boolean;
+  children?: ReactNode;
 }
 
 export const SchemaInitializerItem = React.forwardRef<any, SchemaInitializerItemProps>((props, ref) => {
@@ -23,6 +25,7 @@ export const SchemaInitializerItem = React.forwardRef<any, SchemaInitializerItem
   const compile = useCompile();
   const childrenItems = useSchemaInitializerMenuItems(items, name, onClick);
   const { componentCls } = useStyles();
+  const { styles } = useLocalStyle();
   if (items && items.length > 0) {
     return (
       <Menu
@@ -52,16 +55,15 @@ export const SchemaInitializerItem = React.forwardRef<any, SchemaInitializerItem
         {children || (
           <>
             {icon && <span>{typeof icon === 'string' ? <Icon type={icon as string} /> : icon}</span>}
-            <span
-              className={classNames({
-                [`${componentCls}-menu-item-content`]: icon && applyMenuStyle,
-              })}
-            >
-              {compile(title)}
-            </span>
+            <span className={classNames({ [styles['itemContent']]: icon })}>{compile(title)}</span>
           </>
         )}
       </div>
     </div>
   );
 });
+
+export const SchemaInitializerItemInternal = () => {
+  const itemConfig = useSchemaInitializerItem();
+  return <SchemaInitializerItem {...itemConfig} />;
+};

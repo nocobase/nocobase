@@ -127,7 +127,7 @@ export const BulkEditFormItemInitializers = (props: any) => {
         {
           type: 'item',
           title: t('Add text'),
-          component: BlockInitializer,
+          component: BlockItemInitializer,
         },
       ]}
       insertPosition={insertPosition}
@@ -160,7 +160,7 @@ const bulkEditFormItemInitializers = new SchemaInitializer({
     {
       title: t('Add text'),
       name: 'add-text',
-      Component: BlockInitializer, // component 替换为 Component
+      Component: BlockItemInitializer, // component 替换为 Component
     },
   ]
 });

@@ -7,6 +7,7 @@ import {
   SchemaInitializer,
   useApp,
   useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import { observer, useField } from '@formily/react';
 import { Field } from '@formily/core';
@@ -20,17 +21,18 @@ const Hello = observer(() => {
   );
 });
 
-function Demo({ title }) {
+function Demo() {
+  const itemConfig = useSchemaInitializerItem();
   // 调用插入功能
   const { insert } = useSchemaInitializer();
   const handleClick = () => {
     insert({
       type: 'void',
-      title,
+      title: itemConfig.title,
       'x-component': 'Hello',
     });
   };
-  return <div onClick={handleClick}>{title}</div>;
+  return <div onClick={handleClick}>{itemConfig.title}</div>;
 }
 
 const myInitializer = new SchemaInitializer({

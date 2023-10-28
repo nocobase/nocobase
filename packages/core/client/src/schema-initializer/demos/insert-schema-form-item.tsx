@@ -13,6 +13,7 @@ import {
   SchemaInitializerItemType,
   SchemaInitializer,
   useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 
 const useFormItemInitializerFields = () => {
@@ -46,8 +47,9 @@ const useFormItemInitializerFields = () => {
   ] as SchemaInitializerItemType[];
 };
 
-const TextInitializer: FC = (props) => {
+const TextInitializer: FC = () => {
   const { insert } = useSchemaInitializer();
+  const itemConfig = useSchemaInitializerItem();
   return (
     <SchemaInitializerItem
       onClick={() => {
@@ -58,7 +60,7 @@ const TextInitializer: FC = (props) => {
           // 'x-editable': false,
         });
       }}
-      {...props}
+      {...itemConfig}
     />
   );
 };

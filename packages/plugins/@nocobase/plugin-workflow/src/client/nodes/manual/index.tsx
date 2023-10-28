@@ -1,4 +1,4 @@
-import { BlockInitializers, SchemaInitializerItemOptions, useCollectionManager, useCompile } from '@nocobase/client';
+import { SchemaInitializerItemOptions, useCollectionManager, useCompile } from '@nocobase/client';
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
 import { defaultFieldNames, getCollectionFieldOptions } from '../../variable';

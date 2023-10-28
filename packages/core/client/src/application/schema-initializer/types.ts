@@ -5,12 +5,20 @@ import type { SchemaInitializerGroupProps, SchemaInitializerItemProps, SchemaIni
 
 export type InsertType = (s: ISchema) => void;
 
-export interface ComponentCommonProps {
+export interface SchemaInitializerComponentCommonProps {
   title?: string;
   schema?: ISchema;
+  style?: React.CSSProperties;
+  className?: string;
 }
+export const schemaInitializerComponentCommonProps: (keyof SchemaInitializerComponentCommonProps)[] = [
+  'schema',
+  'title',
+  'style',
+  'className',
+];
 
-interface SchemaInitializerItemBaseType<T = {}> extends ComponentCommonProps {
+export interface SchemaInitializerItemBaseType<T = {}> extends SchemaInitializerComponentCommonProps {
   name?: string | number;
   sort?: number;
   Component?: string | ComponentType<T>;
@@ -19,28 +27,30 @@ interface SchemaInitializerItemBaseType<T = {}> extends ComponentCommonProps {
   [index: string]: any;
 }
 
-interface SchemaInitializerItemBaseWithChildren<T = {}> extends SchemaInitializerItemBaseType<T> {
+export interface SchemaInitializerItemBaseWithChildren<T = {}> extends SchemaInitializerItemBaseType<T> {
   children?: SchemaInitializerItemType[];
   checkChildrenLength?: boolean;
   useChildren?: () => SchemaInitializerItemType[];
 }
 
-interface SchemaInitializerItemDividerType extends SchemaInitializerItemBaseType {
+export interface SchemaInitializerItemDividerType extends SchemaInitializerItemBaseType {
   type: 'divider';
 }
 
-interface SchemaInitializerItemOnlyType extends SchemaInitializerItemBaseType<SchemaInitializerItemProps> {
+export type SchemaInitializerItemOnlyType = {
   type: 'item';
-}
+} & SchemaInitializerItemProps &
+  SchemaInitializerItemBaseType;
 
-interface SchemaInitializerGroupType extends SchemaInitializerItemBaseWithChildren<SchemaInitializerGroupProps> {
+export type SchemaInitializerGroupType = {
   type: 'itemGroup';
-  divider?: boolean;
-}
+} & SchemaInitializerItemBaseWithChildren &
+  SchemaInitializerGroupProps;
 
-interface SchemaInitializerMenuType extends SchemaInitializerItemBaseWithChildren<SchemaInitializerMenuProps> {
+export type SchemaInitializerMenuType = {
   type: 'subMenu';
-}
+} & SchemaInitializerItemBaseWithChildren &
+  SchemaInitializerMenuProps;
 
 export type SchemaInitializerItemType<T = {}> =
   | SchemaInitializerItemBaseType<T>
@@ -51,7 +61,7 @@ export type SchemaInitializerItemType<T = {}> =
   | SchemaInitializerMenuType;
 
 // TODO: 类型需要优化
-export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = ListProps<any>> {
+export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = {}> {
   title?: string;
   insertPosition?: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd';
 

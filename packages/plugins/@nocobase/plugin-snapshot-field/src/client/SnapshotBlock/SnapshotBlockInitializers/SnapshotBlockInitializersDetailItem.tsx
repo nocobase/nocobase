@@ -8,6 +8,7 @@ import {
   useBlockRequestContext,
   useSchemaInitializer,
   SchemaInitializerItem,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -60,8 +61,16 @@ export const createSnapshotBlockSchema = (options) => {
   return schema;
 };
 
-export const SnapshotBlockInitializersDetailItem = (props) => {
-  const { onCreateBlockSchema, componentType, createBlockSchema, icon = true, targetCollection, ...others } = props;
+export const SnapshotBlockInitializersDetailItem = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const {
+    onCreateBlockSchema,
+    componentType,
+    createBlockSchema,
+    icon = true,
+    targetCollection,
+    ...others
+  } = itemConfig;
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -69,7 +78,7 @@ export const SnapshotBlockInitializersDetailItem = (props) => {
   const association = useBlockAssociationContext();
   const { block } = useBlockRequestContext();
   const actionInitializers =
-    block !== 'TableField' ? props.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
+    block !== 'TableField' ? itemConfig.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
 
   return (
     <SchemaInitializerItem

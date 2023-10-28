@@ -19,7 +19,7 @@ export const bulkEditFormItemInitializers = new SchemaInitializer({
     {
       name: 'add-text',
       title: '{{t("Add text")}}',
-      Component: 'BlockInitializer',
+      Component: 'BlockItemInitializer',
       schema: {
         type: 'void',
         'x-editable': false,

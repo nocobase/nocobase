@@ -1,5 +1,5 @@
 import { useFieldSchema } from '@formily/react';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -72,24 +72,37 @@ export default {
   config: {
     useInitializer({ collections }) {
       const searchValue = '';
+      const [showChildren, setShowChildren] = useState(false);
+      const children = useMemo(
+        () =>
+          collections
+            .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
+            .map((item) => ({
+              name: `updateRecordForm-child-${item.name}`,
+              type: 'item',
+              title: item.title,
+              schema: {
+                collection: item.name,
+                title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
+                formType: 'update',
+                'x-designer': 'UpdateFormDesigner',
+              },
+              Component: FormBlockInitializer,
+            })),
+        [collections],
+      );
+
       return {
         key: 'updateRecordForm',
         type: 'subMenu',
         title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
-        children: collections
-          .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
-          .map((item) => ({
-            name: `updateRecordForm-child-${item.name}`,
-            type: 'item',
-            title: item.title,
-            schema: {
-              collection: item.name,
-              title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
-              formType: 'update',
-              'x-designer': 'UpdateFormDesigner',
-            },
-            Component: FormBlockInitializer,
-          })),
+        onMouseEnter() {
+          setShowChildren(true);
+        },
+        onMouseLeave() {
+          setShowChildren(false);
+        },
+        children: showChildren ? children : [],
       };
     },
     initializers: {

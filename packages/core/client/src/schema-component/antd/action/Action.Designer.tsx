@@ -10,7 +10,7 @@ import { RemoteSelect, useCompile, useDesignable } from '../..';
 import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
-import { OpenModeSchemaItems } from '../../../schema-items';
+import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
@@ -917,7 +917,7 @@ export const ActionDesigner = (props) => {
           fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers' && <SaveMode />}
         {isLinkageAction && <SchemaSettings.LinkageRules {...linkageRulesProps} collectionName={name} />}
         {isDuplicateAction && <DuplicationMode />}
-        <OpenModeSchemaItems openMode={isPopupAction} openSize={isPopupAction} />
+        <SchemaSettingOpenModeSchemaItems openMode={isPopupAction} openSize={isPopupAction} />
         {isUpdateModePopupAction && <UpdateMode />}
         {isValid(fieldSchema?.['x-action-settings']?.assignedValues) && <AssignedFieldValues />}
         {isValid(fieldSchema?.['x-action-settings']?.requestSettings) && <RequestSettings />}

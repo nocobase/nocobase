@@ -7,6 +7,7 @@ import {
   createFormBlockSchema,
   useRecordCollectionDataSourceItems,
   useSchemaInitializer,
+  useSchemaInitializerItem,
   useSchemaTemplateManager,
 } from '@nocobase/client';
 
@@ -62,10 +63,11 @@ function InternalFormBlockInitializer({ schema, ...others }) {
   return <SchemaInitializerItem {...others} onClick={onConfirm} items={items} />;
 }
 
-export function FormBlockInitializer(props) {
+export function FormBlockInitializer() {
+  const itemConfig = useSchemaInitializerItem();
   return (
-    <CollectionProvider collection={props.schema?.collection}>
-      <InternalFormBlockInitializer {...props} />
+    <CollectionProvider collection={itemConfig.schema?.collection}>
+      <InternalFormBlockInitializer {...itemConfig} />
     </CollectionProvider>
   );
 }

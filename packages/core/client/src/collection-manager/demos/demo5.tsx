@@ -18,6 +18,7 @@ import {
   SchemaInitializer,
   useCollectionManager,
   useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import { FormDrawer, FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
@@ -66,8 +67,8 @@ const form = createForm({
   // readPretty: true,
 });
 
-const FormItemInitializer = (props) => {
-  const { item } = props;
+const FormItemInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
   const { getInterface } = useCollectionManager();
   const schemaOptions = useContext(SchemaOptionsContext);
   const cm = useContext(CollectionManagerContext);
@@ -76,7 +77,7 @@ const FormItemInitializer = (props) => {
     <SchemaInitializerItem
       title={'add'}
       onClick={async () => {
-        const interfaceOptions = getInterface(item.fieldInterface);
+        const interfaceOptions = getInterface(itemConfig.fieldInterface);
         if (!interfaceOptions) {
           return;
         }

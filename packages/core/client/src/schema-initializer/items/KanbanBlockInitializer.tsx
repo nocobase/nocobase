@@ -10,19 +10,20 @@ import { useGlobalTheme } from '../../global-theme';
 import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { createKanbanBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
-import { useSchemaInitializer } from '../../application';
+import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const KanbanBlockInitializer = (props) => {
+export const KanbanBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const { getCollectionFields } = useCollectionManager();
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
   const { theme } = useGlobalTheme();
+  const itemConfig = useSchemaInitializerItem();
 
   return (
     <DataBlockInitializer
-      {...props}
+      {...itemConfig}
       componentType={'Kanban'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {

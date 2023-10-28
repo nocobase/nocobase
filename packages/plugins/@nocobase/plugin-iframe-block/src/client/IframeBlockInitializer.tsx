@@ -1,12 +1,13 @@
 import { FormOutlined } from '@ant-design/icons';
-import { SchemaInitializerItem, useSchemaInitializer } from '@nocobase/client';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
 import React from 'react';
 
-export const IframeBlockInitializer = (props) => {
+export const IframeBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
+  const itemConfig = useSchemaInitializerItem();
   return (
     <SchemaInitializerItem
-      {...props}
+      {...itemConfig}
       icon={<FormOutlined />}
       onClick={() => {
         insert({

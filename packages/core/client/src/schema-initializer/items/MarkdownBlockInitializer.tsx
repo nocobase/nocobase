@@ -2,15 +2,16 @@ import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
-import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const MarkdownBlockInitializer = (props) => {
+export const MarkdownBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
+  const itemConfig = useSchemaInitializerItem();
 
   return (
     <SchemaInitializerItem
-      {...props}
+      {...itemConfig}
       icon={<FormOutlined />}
       onClick={() => {
         insert({

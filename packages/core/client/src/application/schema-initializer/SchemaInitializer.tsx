@@ -1,4 +1,4 @@
-import { ButtonProps, ListProps } from 'antd';
+import { ButtonProps } from 'antd';
 import { ComponentType } from 'react';
 import React from 'react';
 import { SchemaInitializerOptions, SchemaInitializerItemType } from './types';
@@ -6,7 +6,7 @@ import { SchemaInitializerButton } from './components/SchemaInitializerButton';
 import { SchemaInitializerItems } from './components/SchemaInitializerItems';
 import { withInitializer } from './hoc';
 
-export class SchemaInitializer<P1 = ButtonProps, P2 = ListProps<any>> {
+export class SchemaInitializer<P1 = ButtonProps, P2 = {}> {
   options: SchemaInitializerOptions<P1, P2>;
   name: string;
   get items() {

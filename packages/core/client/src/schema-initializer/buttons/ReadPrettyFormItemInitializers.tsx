@@ -70,7 +70,7 @@ export const readPrettyFormItemInitializers = new SchemaInitializer({
     },
     {
       title: '{{t("Add text")}}',
-      Component: 'BlockInitializer',
+      Component: 'BlockItemInitializer',
       schema: {
         type: 'void',
         'x-editable': false,

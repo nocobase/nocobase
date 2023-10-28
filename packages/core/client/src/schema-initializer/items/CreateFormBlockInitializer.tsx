@@ -5,11 +5,12 @@ import { useBlockAssociationContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 // TODO: `SchemaInitializerItem` items
-export const CreateFormBlockInitializer = (props) => {
-  const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = props;
+export const CreateFormBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { insert } = useSchemaInitializer();
   const association = useBlockAssociationContext();

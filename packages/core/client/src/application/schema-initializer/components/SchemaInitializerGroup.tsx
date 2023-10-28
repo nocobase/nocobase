@@ -4,16 +4,16 @@ import { SchemaInitializerChildren } from './SchemaInitializerChildren';
 import { SchemaInitializerDivider } from './SchemaInitializerDivider';
 import { SchemaInitializerOptions } from '../types';
 import { useStyles } from './style';
+import { useSchemaInitializerItem } from '../context';
 
 export interface SchemaInitializerGroupProps {
   title: string;
-  children: SchemaInitializerOptions['items'];
-  name: string;
+  children?: SchemaInitializerOptions['items'];
   divider?: boolean;
 }
 
-export const SchemaInitializerGroup: FC<SchemaInitializerGroupProps> = (props) => {
-  const { children, title, divider } = props;
+export const SchemaInitializerGroup = () => {
+  const { children, title, divider } = useSchemaInitializerItem<SchemaInitializerGroupProps>();
   const compile = useCompile();
   const { componentCls } = useStyles();
   return (

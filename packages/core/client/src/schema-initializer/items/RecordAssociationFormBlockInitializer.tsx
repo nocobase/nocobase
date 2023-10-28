@@ -3,13 +3,14 @@ import { FormOutlined } from '@ant-design/icons';
 
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer } from '../../application';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const RecordAssociationFormBlockInitializer = (props) => {
-  const { item, onCreateBlockSchema, componentType, createBlockSchema, ...others } = props;
+export const RecordAssociationFormBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const field = item.field;
+  const field = itemConfig.field;
   const collection = field.target;
   const resource = `${field.collectionName}.${field.name}`;
   return (
@@ -56,7 +57,7 @@ export const RecordAssociationFormBlockInitializer = (props) => {
           );
         }
       }}
-      items={useRecordCollectionDataSourceItems('FormItem', item, collection, resource)}
+      items={useRecordCollectionDataSourceItems('FormItem', itemConfig, collection, resource)}
     />
   );
 };

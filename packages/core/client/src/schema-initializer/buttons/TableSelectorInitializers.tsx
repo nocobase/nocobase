@@ -50,7 +50,7 @@ export const tableSelectorInitializers = new SchemaInitializer({
       children: [
         {
           title: '{{t("Add text")}}',
-          Component: 'BlockInitializer',
+          Component: 'BlockItemInitializer',
           name: 'add-text',
           schema: {
             type: 'void',

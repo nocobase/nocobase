@@ -19,6 +19,7 @@ import {
   useCollectionManager,
   useRecord,
   useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import { merge, uid } from '@nocobase/utils/client';
 import lodash from 'lodash';
@@ -65,11 +66,12 @@ function CustomFormBlockProvider(props) {
   ) : null;
 }
 
-function CustomFormBlockInitializer({ ...props }) {
+function CustomFormBlockInitializer() {
   const { insert } = useSchemaInitializer();
+  const itemConfig = useSchemaInitializerItem();
   return (
     <SchemaInitializerItem
-      {...props}
+      {...itemConfig}
       onClick={() => {
         insert({
           type: 'void',
@@ -325,23 +327,23 @@ export const addCustomFormField = new SchemaInitializer({
   ItemsComponent: CustomItemsComponent,
 });
 
-function CustomFormFieldInitializer(props) {
-  const { item } = props;
+function CustomFormFieldInitializer() {
+  const itemConfig = useSchemaInitializerItem();
   const { insert, setVisible } = useSchemaInitializer();
   const { onAddField, setCallback } = useContext(AddCustomFormFieldButtonContext);
   const { getInterface } = useCollectionManager();
 
-  const interfaceOptions = getInterface(item.fieldInterface);
+  const interfaceOptions = getInterface(itemConfig.fieldInterface);
 
   return (
     <SchemaInitializerItem
-      key={item.fieldInterface}
+      key={itemConfig.fieldInterface}
       onClick={() => {
         setCallback(() => insert);
         onAddField(interfaceOptions);
         setVisible(false);
       }}
-      {...props}
+      {...itemConfig}
     />
   );
 }
