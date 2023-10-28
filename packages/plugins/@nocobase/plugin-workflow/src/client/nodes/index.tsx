@@ -50,7 +50,6 @@ export interface Instruction {
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
   component?(props): JSX.Element;
-  endding?: boolean;
   useVariables?(node, options?): VariableOption;
   useScopeVariables?(node, options?): VariableOptions;
   useInitializers?(node): SchemaInitializerItemOptions | null;
@@ -139,36 +138,13 @@ export function useUpstreamScopes(node) {
 export function Node({ data }) {
   const { styles } = useStyles();
   const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
-  const { component: Component = NodeDefaultView, endding } = instructions.get(data.type);
+  const { component: Component = NodeDefaultView } = instructions.get(data.type);
 
   return (
     <NodeContext.Provider value={data}>
       <div className={cx(styles.nodeBlockClass)}>
         <Component data={data} />
-        {!endding ? (
-          <AddButton aria-label={getAriaLabel()} upstream={data} />
-        ) : (
-          <div
-            className={css`
-              flex-grow: 1;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              width: 1px;
-              height: 6em;
-              padding: 2em 0;
-              background-color: var(--nb-box-bg);
-
-              .anticon {
-                font-size: 1.5em;
-                line-height: 100%;
-              }
-            `}
-          >
-            <CloseOutlined />
-          </div>
-        )}
+        <AddButton aria-label={getAriaLabel()} upstream={data} />
       </div>
     </NodeContext.Provider>
   );
