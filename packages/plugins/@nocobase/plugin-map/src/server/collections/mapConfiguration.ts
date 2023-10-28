@@ -1,9 +1,11 @@
-import { CollectionOptions } from '@nocobase/client';
 import { MapConfigurationCollectionName } from '../constants';
+import { defineCollection } from '@nocobase/database';
 
-export default {
+export default defineCollection({
   namespace: 'map.mapConfiguration',
-  duplicator: 'optional',
+  duplicator: {
+    dataType: 'config',
+  },
   name: MapConfigurationCollectionName,
   title: '{{t("Map Manager")}}',
   fields: [
@@ -26,4 +28,4 @@ export default {
       type: 'string',
     },
   ],
-} as CollectionOptions;
+});

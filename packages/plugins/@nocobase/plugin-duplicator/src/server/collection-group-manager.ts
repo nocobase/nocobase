@@ -1,5 +1,5 @@
 import { Application } from '@nocobase/server';
-import { CollectionGroup } from '@nocobase/database';
+import { CollectionGroup, CollectionGroupWithCollectionTitle } from '@nocobase/database';
 
 export class CollectionGroupManager {
   static collectionGroups: CollectionGroup[] = [];
@@ -8,21 +8,19 @@ export class CollectionGroupManager {
     return app.db.collectionGroupManager.getGroups();
   }
 
-  static getGroupsCollections(groups: CollectionGroup[]) {
+  static getGroupsCollections(groups: CollectionGroup[] | CollectionGroupWithCollectionTitle[]) {
     if (!groups || groups.length == 0) {
       return [];
     }
 
-    return groups.map((collectionGroup) => collectionGroup.collections).flat();
-  }
-
-  static classifyCollectionGroups(collectionGroups: CollectionGroup[]) {
-    const requiredGroups = collectionGroups.filter((collectionGroup) => collectionGroup.dumpable === 'required');
-    const optionalGroups = collectionGroups.filter((collectionGroup) => collectionGroup.dumpable === 'optional');
-
-    return {
-      requiredGroups,
-      optionalGroups,
-    };
+    return groups.flatMap((collectionGroup) => {
+      if ('name' in collectionGroup.collections[0]) {
+        // This is a CollectionGroupWithCollectionTitle type
+        return collectionGroup.collections.map((c) => c.name);
+      } else {
+        // This is a CollectionGroup type
+        return collectionGroup.collections;
+      }
+    });
   }
 }

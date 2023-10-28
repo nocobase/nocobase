@@ -2,6 +2,34 @@ import inquirer from 'inquirer';
 import { CollectionGroup } from '@nocobase/database';
 
 export default class InquireQuestionBuilder {
+  static buildInquirerDataTypeQuestions() {
+    return {
+      type: 'checkbox',
+      name: 'dataTypes',
+      message: 'Select the data types to be dumped',
+      loop: false,
+      pageSize: 20,
+      choices: [
+        {
+          name: 'meta data',
+          value: 'meta',
+          checked: true,
+          disabled: true,
+        },
+        {
+          name: 'config data',
+          value: 'config',
+          checked: true,
+        },
+        {
+          name: 'business data',
+          value: 'business',
+          checked: true,
+        },
+      ],
+    };
+  }
+
   static buildInquirerQuestions(options: {
     requiredGroups: CollectionGroup[];
     optionalGroups: CollectionGroup[];

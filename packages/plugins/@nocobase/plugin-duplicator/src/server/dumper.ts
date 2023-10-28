@@ -1,4 +1,4 @@
-import { CollectionGroup, DumpDataType } from '@nocobase/database';
+import { CollectionGroupManager as DBCollectionGroupManager, DumpDataType } from '@nocobase/database';
 import archiver from 'archiver';
 import dayjs from 'dayjs';
 import fs from 'fs';
@@ -9,7 +9,6 @@ import path from 'path';
 import stream from 'stream';
 import util from 'util';
 import { AppMigrator } from './app-migrator';
-import { CollectionGroupManager } from './collection-group-manager';
 import { FieldValueWriter } from './field-value-writer';
 import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
 
@@ -22,69 +21,31 @@ type DumpOptions = {
 export class Dumper extends AppMigrator {
   direction = 'dump' as const;
 
-  async dumpableCollections(): Promise<{
-    requiredGroups: CollectionGroup[];
-    optionalGroups: CollectionGroup[];
-    userCollections: Array<{
-      name: string;
-      title: string;
-    }>;
-  }> {
-    const appCollectionGroups = CollectionGroupManager.getGroups(this.app);
+  getCollectionsByDataTypes(dataTypes: Set<DumpDataType>): string[] {
+    return [...this.app.db.collections.values()]
+      .filter((c) => {
+        try {
+          const options = DBCollectionGroupManager.unifyDuplicatorOption(c.options.duplicator);
 
-    const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(appCollectionGroups);
-    const pluginsCollections = CollectionGroupManager.getGroupsCollections(appCollectionGroups);
-
-    const userCollections = await this.getCustomCollections();
-    return lodash.cloneDeep({
-      requiredGroups,
-      optionalGroups,
-      userCollections: await Promise.all(
-        userCollections
-          .filter((collection) => !pluginsCollections.includes(collection)) //remove collection that is in plugins
-          .map(async (name) => {
-            // map user collection to { name, title }
-
-            const collectionInstance = await this.app.db.getRepository('collections').findOne({
-              filterByTk: name,
-            });
-
-            return {
-              name,
-              title: collectionInstance.get('title'),
-            };
-          }),
-      ),
-    });
+          const dataType = options?.dataType;
+          return dataTypes.has(dataType);
+        } catch (e) {
+          throw new Error(`collection ${c.name} has invalid duplicator option`, { cause: e });
+        }
+      })
+      .map((c) => c.name);
   }
 
   async dump(options: DumpOptions) {
-    const appCollectionGroups = CollectionGroupManager.getGroups(this.app);
+    const dumpDataTypes = options.dataTypes;
+    dumpDataTypes.add('meta');
+    const dumpedCollections = lodash.uniq(this.getCollectionsByDataTypes(dumpDataTypes));
 
-    //
-    // const throughCollections = this.findThroughCollections(selectedUserCollections);
-    //
-    // const selectedOptionalGroups = optionalGroups.filter((group) => {
-    //   return selectedOptionalGroupNames.some((selectedOptionalGroupName) => {
-    //     const [namespace, functionKey] = selectedOptionalGroupName.split('.');
-    //     return group.function === functionKey && group.namespace === namespace;
-    //   });
-    // });
-    //
-    // const dumpedCollections = lodash.uniq(
-    //   [
-    //     CollectionGroupManager.getGroupsCollections(requiredGroups),
-    //     CollectionGroupManager.getGroupsCollections(selectedOptionalGroups),
-    //     selectedUserCollections,
-    //     throughCollections,
-    //   ].flat(),
-    // );
-    //
-    // for (const collection of dumpedCollections) {
-    //   await this.dumpCollection({
-    //     name: collection,
-    //   });
-    // }
+    for (const collection of dumpedCollections) {
+      await this.dumpCollection({
+        name: collection,
+      });
+    }
     //
     // const mapGroupToMetaJson = (groups) =>
     //   groups.map((group: CollectionGroup) => {
@@ -105,17 +66,19 @@ export class Dumper extends AppMigrator {
     //   selectedUserCollections: selectedUserCollections,
     // });
     //
-    // await this.dumpDb();
-    //
-    // const filePath = await this.packDumpedDir();
-    // await this.clearWorkDir();
-    // return filePath;
+
+    await this.dumpDb();
+
+    const filePath = await this.packDumpedDir();
+    await this.clearWorkDir();
+    return filePath;
   }
 
   async dumpDb() {
     const db = this.app.db;
     const dialect = db.sequelize.getDialect();
     const sqlContent = [];
+
     if (dialect === 'postgres') {
       // get user defined functions in postgres
       const functions = await db.sequelize.query(

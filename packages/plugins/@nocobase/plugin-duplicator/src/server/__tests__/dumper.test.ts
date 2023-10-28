@@ -1,6 +1,6 @@
 import { MockServer } from '@nocobase/test';
 import createApp from './index';
-import { CollectionGroupManager } from '../collection-group-manager';
+import { Dumper } from '../dumper';
 
 describe('dumper', () => {
   let app: MockServer;
@@ -12,7 +12,7 @@ describe('dumper', () => {
     await app.destroy();
   });
 
-  it('should get collection groups', async () => {
+  it('should get dumped collections by data types', async () => {
     await app.db.getRepository('collections').create({
       values: {
         name: 'test_collection',
@@ -26,8 +26,8 @@ describe('dumper', () => {
       context: {},
     });
 
-    const collectionGroups = CollectionGroupManager.getGroups(app);
-
-    console.log(collectionGroups);
+    const dumper = new Dumper(app);
+    const collections = dumper.getCollectionsByDataTypes(new Set(['business']));
+    expect(collections.includes('test_collection')).toBeTruthy();
   });
 });

@@ -3,7 +3,9 @@ import { generateNTemplate } from '../locale';
 
 export default {
   namespace: 'api-keys',
-  duplicator: 'optional',
+  duplicator: {
+    dataType: 'business',
+  },
   name: 'apiKeys',
   title: '{{t("API keys")}}',
   sortable: 'sort',

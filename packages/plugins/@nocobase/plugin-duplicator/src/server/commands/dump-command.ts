@@ -26,22 +26,15 @@ export default function addDumpCommand(app: Application) {
     });
 }
 
-async function dumpCommandAction(app) {
+async function dumpCommandAction(app: Application) {
   const dumper = new Dumper(app);
-  const { requiredGroups, optionalGroups, userCollections } = await dumper.dumpableCollections();
 
-  const questions = InquireQuestionBuilder.buildInquirerQuestions({
-    requiredGroups,
-    optionalGroups,
-    optionalCollections: userCollections,
-    direction: 'dump',
-  });
+  const questions = InquireQuestionBuilder.buildInquirerDataTypeQuestions();
 
   const results = await inquirer.prompt(questions);
 
   const { filePath } = await dumper.dump({
-    selectedOptionalGroupNames: results.collectionGroups,
-    selectedUserCollections: results.userCollections,
+    dataTypes: new Set(results.dataTypes),
   });
 
   app.log.info(`dumped to ${filePath}`);

@@ -1,7 +1,6 @@
 import Database, { Collection, MagicAttributeModel, SyncOptions, Transactionable } from '@nocobase/database';
 import lodash from 'lodash';
 import { FieldModel } from './field';
-import { async } from 'fast-glob';
 
 interface LoadOptions extends Transactionable {
   // TODO
@@ -22,9 +21,14 @@ export class CollectionModel extends MagicAttributeModel {
     let collection: Collection;
 
     const collectionOptions = {
+      namespace: 'collections.business',
+      duplicator: {
+        dataType: 'business',
+      },
       ...this.get(),
       fields: [],
     };
+
     if (this.db.hasCollection(name)) {
       collection = this.db.getCollection(name);
 

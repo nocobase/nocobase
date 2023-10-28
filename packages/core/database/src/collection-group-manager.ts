@@ -128,6 +128,14 @@ export class CollectionGroupManager {
       }
 
       const group = groups.get(groupKey);
+
+      const groupDataType = group.dataType;
+      if (groupDataType !== duplicator.dataType) {
+        throw new Error(
+          `collection ${collection.name} has invalid dataType, it conflicts with other collections in the same group, group dataType: ${groupDataType}, collection dataType: ${duplicator.dataType}`,
+        );
+      }
+
       group.collections.push(collection.name);
 
       if (duplicator.with) {

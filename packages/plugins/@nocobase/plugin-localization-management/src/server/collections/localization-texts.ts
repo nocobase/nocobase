@@ -1,8 +1,10 @@
-import { CollectionOptions } from '@nocobase/client';
+import { CollectionOptions } from '@nocobase/database';
 
 export default {
   namespace: 'localization.localization',
-  duplicator: 'optional',
+  duplicator: {
+    dataType: 'config',
+  },
   name: 'localizationTexts',
   title: '{{t("Localization Texts")}}',
   model: 'LocalizationTextModel',

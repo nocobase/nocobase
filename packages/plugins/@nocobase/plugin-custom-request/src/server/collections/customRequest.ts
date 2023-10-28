@@ -2,7 +2,7 @@ import { CollectionOptions } from '@nocobase/client';
 
 export default {
   namespace: 'custom-requests',
-  duplicator: 'optional',
+  duplicator: 'required',
   name: 'customRequests',
   title: '{{t("Custom request")}}',
   fields: [
