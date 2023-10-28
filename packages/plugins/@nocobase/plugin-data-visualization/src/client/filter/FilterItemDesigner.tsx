@@ -65,9 +65,15 @@ const EditOperator = () => {
   const { dn } = useDesignable();
   const { addField } = useContext(ChartFilterContext);
   const { getCollectionFields, getInterface } = useCollectionManager();
-  const [collection, name] = fieldName.split('.');
-  const fields = getCollectionFields(collection);
-  const props = fields.find((item) => item.name === name);
+  const [collection, target, name] = fieldName.split('.');
+  let props: any;
+  if (name) {
+    const targetFields = getCollectionFields(target);
+    props = targetFields.find((item) => item.name === name);
+  } else {
+    const fields = getCollectionFields(collection);
+    props = fields.find((item) => item.name === target);
+  }
   const interfaceConfig = getInterface(props.interface);
   const operatorList = interfaceConfig?.filterable?.operators || [];
   const defaultComponent = interfaceConfig?.default?.uiSchema?.['x-component'] || 'Input';

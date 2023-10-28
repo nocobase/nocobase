@@ -31,12 +31,13 @@ export const ChartFilterProvider: React.FC = (props) => {
   const [collapse, setCollapse] = useState(false);
   const [form, _setForm] = useState<any>();
   const addField = useMemoizedFn((name: string, props: { title: string }) => {
-    const [collection, field] = name.split('.');
+    const [collection, target, field] = name.split('.');
+    const fieldName = field ? `${target}.${field}` : target;
     setFields((fields) => ({
       ...fields,
       [collection]: {
         ...(fields[collection] || {}),
-        [field]: props,
+        [fieldName]: props,
       },
     }));
   });

@@ -60,83 +60,96 @@ export const useChartFilter = () => {
   const { charts } = useContext(ChartDataContext);
   const { fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
-  const { getCollection, getInterface } = useCollectionManager();
+  const { getCollection, getInterface, getCollectionFields } = useCollectionManager();
   const { fields: fieldProps, form } = useContext(ChartFilterContext);
 
   const getChartFilterFields = (collection: CollectionOptions) => {
-    const name = collection.name;
-    const fields = collection.fields || [];
-    const collectionTitle = Schema.compile(collection.title, { t });
-
-    return fields
-      ?.filter((field) => field?.interface && !field?.isForeignKey && getInterface(field.interface)?.filterable)
-      ?.map((field) => {
-        const fieldTitle = Schema.compile(field.uiSchema?.title || field.name, { t });
-        const interfaceConfig = getInterface(field.interface);
-        const defaultOperator = interfaceConfig?.filterable?.operators;
-        const targetCollection = getCollection(field.target);
-        let schema = {
-          type: 'string',
-          title: `${collectionTitle} / ${fieldTitle}`,
-          name: `${name}.${field.name}`,
-          required: false,
-          'x-designer': 'ChartFilterItemDesigner',
-          'x-component': 'CollectionField',
-          'x-decorator': 'ChartFilterFormItem',
-          'x-collection-field': `${name}.${field.name}`,
-          'x-component-props': {
-            ...field.uiSchema?.['x-component-props'],
-            'filter-operator': defaultOperator,
-          },
-        };
-        if (isAssocField(field)) {
-          schema = {
-            type: 'string',
-            title: `${collectionTitle} / ${fieldTitle}`,
-            name: `${name}.${field.name}`,
-            required: false,
-            'x-designer': 'ChartFilterItemDesigner',
-            'x-component': 'CollectionField',
-            'x-decorator': 'ChartFilterFormItem',
-            'x-collection-field': `${name}.${field.name}`,
-            'x-component-props': {
-              ...field.uiSchema?.['x-component-props'],
-              'filter-operator': defaultOperator,
+    const fields = getCollectionFields(collection);
+    const field2item = (field: any, collectionTitle: string, collectionName: string) => {
+      const fieldTitle = Schema.compile(field.uiSchema?.title || field.name, { t });
+      const interfaceConfig = getInterface(field.interface);
+      const defaultOperator = interfaceConfig?.filterable?.operators;
+      const targetCollection = getCollection(field.target);
+      const schema = {
+        type: 'string',
+        title: `${collectionTitle} / ${fieldTitle}`,
+        name: `${collectionName}.${field.name}`,
+        required: false,
+        'x-designer': 'ChartFilterItemDesigner',
+        'x-component': 'CollectionField',
+        'x-decorator': 'ChartFilterFormItem',
+        'x-collection-field': `${collectionName}.${field.name}`,
+        'x-component-props': {
+          ...field.uiSchema?.['x-component-props'],
+          'filter-operator': defaultOperator,
+        },
+      };
+      const resultItem = {
+        type: 'item',
+        title: field?.uiSchema?.title || field.name,
+        component: 'CollectionFieldInitializer',
+        remove: (schema, cb) => {
+          cb(schema, {
+            breakRemoveOn: {
+              'x-component': 'Grid',
             },
-          };
-        }
-        const resultItem = {
-          type: 'item',
-          title: field?.uiSchema?.title || field.name,
-          component: 'CollectionFieldInitializer',
-          remove: (schema, cb) => {
-            cb(schema, {
-              breakRemoveOn: {
-                'x-component': 'Grid',
-              },
-            });
-          },
-          schemaInitialize: (s: any) => {
-            interfaceConfig?.schemaInitialize?.(s, {
-              field,
-              block: 'FilterForm',
-              readPretty: form.readPretty,
-              action,
-              targetCollection,
-            });
-          },
-          schema,
-        } as SchemaInitializerItemOptions;
+          });
+        },
+        schemaInitialize: (s: any) => {
+          interfaceConfig?.schemaInitialize?.(s, {
+            field,
+            block: 'FilterForm',
+            readPretty: form.readPretty,
+            action,
+            targetCollection,
+          });
+        },
+        schema,
+      } as SchemaInitializerItemOptions;
 
-        return resultItem;
+      return resultItem;
+    };
+
+    const collectionTitle = Schema.compile(collection.title, { t });
+    return fields
+      ?.filter((field) => field?.interface && getInterface(field.interface)?.filterable)
+      ?.map((field) => {
+        const item = field2item(field, collectionTitle, collection.name);
+        if (!field.target) {
+          return item;
+        }
+        const targetFields = getCollectionFields(field.target);
+        const targetTitle = Schema.compile(item['title'], { t });
+        const items = targetFields
+          ?.filter(
+            (targetField) =>
+              !targetField.target && targetField?.interface && getInterface(targetField.interface)?.filterable,
+          )
+          ?.map((targetField) => {
+            return field2item(targetField, `${collectionTitle} / ${targetTitle}`, `${collection.name}.${field.target}`);
+          });
+        return {
+          type: 'subMenu',
+          title: field?.uiSchema?.title || field.name,
+          children: items,
+        } as SchemaInitializerItemOptions;
       });
   };
 
   const getFilter = () => {
+    console.log(form.values, fieldProps);
     const values = form?.values || {};
     const filter = {};
     Object.entries(values).forEach(([collection, fields]) => {
       Object.entries(fields).forEach(([field, value]) => {
+        let target: string;
+        let name: string;
+        if (typeof value === 'object') {
+          target = field;
+          name = Object.keys(value)[0];
+          field = `${target}.${name}`;
+          value = Object.values(value)[0];
+        }
         const operator = fieldProps[collection]?.[field]?.operator;
         if (!value) {
           return;
@@ -144,13 +157,18 @@ export const useChartFilter = () => {
         const op = operator?.value || '$eq';
         if (collection !== 'custom') {
           filter[collection] = filter[collection] || { $and: [] };
-          filter[collection].$and.push({ [field]: { [op]: value } });
+          if (name) {
+            filter[collection].$and.push({ [target]: { [name]: { [op]: value } } });
+          } else {
+            filter[collection].$and.push({ [field]: { [op]: value } });
+          }
         } else {
           filter[collection] = filter[collection] || {};
           filter[collection][`$nFilter.${field}`] = value;
         }
       });
     });
+    console.log(filter);
     return filter;
   };
 
