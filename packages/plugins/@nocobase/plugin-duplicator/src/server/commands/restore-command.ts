@@ -2,14 +2,29 @@ import { Application, AppSupervisor } from '@nocobase/server';
 import { Restorer } from '../restorer';
 import inquirer from 'inquirer';
 import InquireQuestionBuilder from './inquire-question-builder';
+import { DumpDataType } from '@nocobase/database';
 
 export default function addRestoreCommand(app: Application) {
   app
     .command('restore')
+    .ipc()
     .argument('<string>', 'restore file path')
     .option('-a, --app <appName>', 'sub app name if you want to restore into a sub app')
-    .option('-f, --force', 'force restore without warning')
+    .option('-f, --force', 'force restore')
+    .option(
+      '-d, --dataType <dataType>',
+      'meta/config/business',
+      (value, previous) => {
+        return previous.concat([value]);
+      },
+      [],
+    )
     .action(async (restoreFilePath, options) => {
+      // should confirm data will be overwritten
+      if (!options.force) {
+        return;
+      }
+
       let importApp = app;
 
       if (options.app) {
@@ -37,12 +52,25 @@ export default function addRestoreCommand(app: Application) {
         importApp = subApp;
       }
 
-      // should confirm data will be overwritten
-      if (!options.force && !(await restoreWarning())) {
-        return;
+      const dataTypes: Set<string> = new Set(options.dataType);
+      dataTypes.add('meta');
+
+      for (const dataType of dataTypes) {
+        if (!['meta', 'config', 'business'].includes(dataType)) {
+          app.log.error(`dataType only support meta/config/business`);
+          return;
+        }
       }
 
-      await restoreActionCommand(importApp, restoreFilePath);
+      const restorer = new Restorer(importApp, {
+        backUpFilePath: restoreFilePath,
+      });
+
+      await restorer.restore({
+        dataTypes: dataTypes as Set<DumpDataType>,
+      });
+
+      await app.restart();
     });
 }
 
@@ -68,6 +96,7 @@ async function restoreActionCommand(app: Application, restoreFilePath: string) {
   const restorer = new Restorer(app, {
     backUpFilePath: restoreFilePath,
   });
+
   const restoreMeta = await restorer.parseBackupFile();
 
   let { dataTypes } = restoreMeta;
