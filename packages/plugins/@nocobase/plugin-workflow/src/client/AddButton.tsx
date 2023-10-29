@@ -56,7 +56,7 @@ export function AddButton(props: AddButtonProps) {
           })),
         };
       });
-  }, [instructionList]);
+  }, [branchIndex, instructionList, upstream, workflow]);
   const resource = useMemo(() => {
     if (!workflow) {
       return null;

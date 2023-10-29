@@ -185,14 +185,13 @@ const useStyles = createStyles(({ css, token }) => {
 
       .end-sign {
         position: relative;
-        flex-grow: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         width: 0;
-        height: 6em;
-        padding: 2em 0;
+        height: 4em;
+        padding: 1em 0;
         border-left: 1px dashed ${token.colorBgLayout};
 
         .anticon {
