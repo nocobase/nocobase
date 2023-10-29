@@ -141,6 +141,9 @@ export const useChartFilter = () => {
     const filter = {};
     Object.entries(values).forEach(([collection, fields]) => {
       Object.entries(fields).forEach(([field, value]) => {
+        if (!value) {
+          return;
+        }
         let target: string;
         let name: string;
         if (typeof value === 'object') {
@@ -150,9 +153,6 @@ export const useChartFilter = () => {
           value = Object.values(value)[0];
         }
         const operator = fieldProps[collection]?.[field]?.operator;
-        if (!value) {
-          return;
-        }
         const op = operator?.value || '$eq';
         if (collection !== 'custom') {
           filter[collection] = filter[collection] || { $and: [] };

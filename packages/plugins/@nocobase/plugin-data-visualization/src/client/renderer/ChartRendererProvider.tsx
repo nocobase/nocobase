@@ -113,7 +113,7 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
       }),
     {
       defaultParams: [collection, query],
-      ready,
+      ready: ready && (!enabled || !!form),
     },
   );
 
