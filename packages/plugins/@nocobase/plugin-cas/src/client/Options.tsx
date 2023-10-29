@@ -15,7 +15,7 @@ export const Options = () => {
           autoSignup: {
             'x-decorator': 'FormItem',
             type: 'boolean',
-            title: '{{t("Sign up automatically when the user does not exist")}}',
+            'x-content': '{{t("Sign up automatically when the user does not exist")}}',
             'x-component': 'Checkbox',
           },
           casUrl: {

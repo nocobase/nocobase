@@ -18,7 +18,7 @@ export const Options = () => {
               allowSignup: {
                 'x-decorator': 'FormItem',
                 type: 'boolean',
-                title: '{{t("Allow to sign up")}}',
+                'x-content': '{{t("Allow to sign up")}}',
                 'x-component': 'Checkbox',
                 'x-component-props': {
                   defaultChecked: true,

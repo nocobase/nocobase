@@ -38,8 +38,9 @@ const collection = {
       name: 'authType',
       uiSchema: {
         type: 'string',
-        title: '{{t("Auth Type")}}',
+        title: '{{t("Auth type")}}',
         'x-component': 'Select',
+        'x-disabled': true,
         dataSource: '{{ types }}',
         required: true,
       },
@@ -69,7 +70,7 @@ const collection = {
       name: 'enabled',
       uiSchema: {
         type: 'boolean',
-        title: '{{t("Enabled")}}',
+        'x-content': '{{t("Enabled the auth type")}}',
         'x-component': 'Checkbox',
       },
     },
@@ -108,6 +109,7 @@ export const createFormSchema: ISchema = {
         authType: {
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
+          'x-disabled': true,
           'x-component-props': {
             options: '{{ types }}',
           },
@@ -123,6 +125,9 @@ export const createFormSchema: ISchema = {
         enabled: {
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
+          'x-decorator-props': {
+            marginBottom: 0,
+          },
         },
         options: {
           type: 'object',
@@ -299,6 +304,7 @@ export const authenticatorsSchema: ISchema = {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
           'x-component': 'Table.Column',
+          title: '{{t("Enabled")}}',
           properties: {
             enabled: {
               type: 'boolean',
