@@ -29,7 +29,9 @@ export default function addDumpCommand(app: Application) {
 async function dumpCommandAction(app: Application) {
   const dumper = new Dumper(app);
 
-  const questions = InquireQuestionBuilder.buildInquirerDataTypeQuestions();
+  const questions = InquireQuestionBuilder.buildInquirerDataTypeQuestions({
+    direction: 'dump',
+  });
 
   const results = await inquirer.prompt(questions);
 

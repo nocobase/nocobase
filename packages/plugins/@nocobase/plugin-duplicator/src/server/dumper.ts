@@ -22,50 +22,56 @@ export class Dumper extends AppMigrator {
   direction = 'dump' as const;
 
   getCollectionsByDataTypes(dataTypes: Set<DumpDataType>): string[] {
+    const dumpableCollectionsGroupByDataTypes = this.collectionsGroupByDataTypes();
+
+    return [...dataTypes].reduce((acc, key) => {
+      return acc.concat(dumpableCollectionsGroupByDataTypes[key] || []);
+    }, []);
+  }
+
+  dumpableCollections() {
     return [...this.app.db.collections.values()]
-      .filter((c) => {
+      .map((c) => {
         try {
           const options = DBCollectionGroupManager.unifyDuplicatorOption(c.options.duplicator);
 
-          const dataType = options?.dataType;
-          return dataTypes.has(dataType);
+          return {
+            name: c.name,
+            dataType: options?.dataType,
+          };
         } catch (e) {
           throw new Error(`collection ${c.name} has invalid duplicator option`, { cause: e });
         }
       })
-      .map((c) => c.name);
+      .filter(({ dataType }) => {
+        return !!dataType;
+      });
+  }
+
+  collectionsGroupByDataTypes() {
+    const grouped = lodash.groupBy(this.dumpableCollections(), 'dataType');
+
+    return Object.fromEntries(Object.entries(grouped).map(([key, value]) => [key, value.map((item) => item.name)]));
   }
 
   async dump(options: DumpOptions) {
     const dumpDataTypes = options.dataTypes;
     dumpDataTypes.add('meta');
-    const dumpedCollections = lodash.uniq(this.getCollectionsByDataTypes(dumpDataTypes));
+
+    const dumpableCollectionsGroupByDataTypes = this.collectionsGroupByDataTypes();
+
+    const dumpedCollections = this.getCollectionsByDataTypes(dumpDataTypes);
 
     for (const collection of dumpedCollections) {
       await this.dumpCollection({
         name: collection,
       });
     }
-    //
-    // const mapGroupToMetaJson = (groups) =>
-    //   groups.map((group: CollectionGroup) => {
-    //     const data = {
-    //       ...group,
-    //     };
-    //
-    //     if (group.delayRestore) {
-    //       data['delayRestore'] = true;
-    //     }
-    //
-    //     return data;
-    //   });
-    //
-    // await this.dumpMeta({
-    //   requiredGroups: mapGroupToMetaJson(requiredGroups),
-    //   selectedOptionalGroups: mapGroupToMetaJson(selectedOptionalGroups),
-    //   selectedUserCollections: selectedUserCollections,
-    // });
-    //
+
+    await this.dumpMeta({
+      dumpableCollectionsGroupByDataTypes,
+      dataTypes: [...dumpDataTypes],
+    });
 
     await this.dumpDb();
 
@@ -86,7 +92,7 @@ export class Dumper extends AppMigrator {
                 p.proname                 AS function_name,
                 pg_get_functiondef(p.oid) AS def
          FROM pg_proc p
-                LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
+                  LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
          WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')
          ORDER BY function_schema,
                   function_name;`,
@@ -118,7 +124,7 @@ export class Dumper extends AppMigrator {
                 v.viewname   AS view_name,
                 v.definition AS view_definition
          FROM pg_views v
-                JOIN
+                  JOIN
               pg_namespace n ON v.schemaname = n.nspname
          WHERE n.nspname NOT IN ('information_schema', 'pg_catalog')
          ORDER BY schema_name,

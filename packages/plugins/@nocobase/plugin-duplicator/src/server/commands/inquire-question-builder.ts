@@ -2,31 +2,55 @@ import inquirer from 'inquirer';
 import { CollectionGroup } from '@nocobase/database';
 
 export default class InquireQuestionBuilder {
-  static buildInquirerDataTypeQuestions() {
-    return {
-      type: 'checkbox',
-      name: 'dataTypes',
-      message: 'Select the data types to be dumped',
-      loop: false,
-      pageSize: 20,
-      choices: [
-        {
-          name: 'meta data',
-          value: 'meta',
-          checked: true,
-          disabled: true,
-        },
-        {
+  static buildInquirerDataTypeQuestions(options: { direction: 'dump' | 'restore'; dataTypes?: Set<string> }) {
+    const choices: any = [
+      {
+        name: 'meta data',
+        value: 'meta',
+        checked: true,
+        disabled: true,
+      },
+    ];
+
+    if (options.direction === 'dump') {
+      choices.push({
+        name: 'config data',
+        value: 'config',
+        checked: true,
+      });
+      choices.push({
+        name: 'business data',
+        value: 'business',
+        checked: true,
+      });
+    }
+
+    if (options.direction === 'restore') {
+      if (options.dataTypes.has('config')) {
+        choices.push({
           name: 'config data',
           value: 'config',
           checked: true,
-        },
-        {
+        });
+      }
+
+      if (options.dataTypes.has('business')) {
+        choices.push({
           name: 'business data',
           value: 'business',
           checked: true,
-        },
-      ],
+        });
+      }
+    }
+
+    return {
+      type: 'checkbox',
+      name: 'dataTypes',
+      message:
+        options.direction === 'dump' ? 'Select the data types to be dumped' : 'Select the data types to be restored',
+      loop: false,
+      pageSize: 20,
+      choices,
     };
   }
 

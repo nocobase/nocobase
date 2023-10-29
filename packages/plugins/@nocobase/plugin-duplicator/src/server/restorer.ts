@@ -3,10 +3,14 @@ import fs from 'fs';
 import fsPromises from 'fs/promises';
 import path from 'path';
 import { AppMigrator, AppMigratorOptions } from './app-migrator';
-import { CollectionGroupManager } from './collection-group-manager';
 import { FieldValueWriter } from './field-value-writer';
 import { readLines, sqlAdapter } from './utils';
 import { Application } from '@nocobase/server';
+import { DumpDataType } from '@nocobase/database';
+
+type RestoreOptions = {
+  dataTypes: Set<DumpDataType>;
+};
 
 export class Restorer extends AppMigrator {
   direction = 'restore' as const;
@@ -44,7 +48,7 @@ export class Restorer extends AppMigrator {
     return await this.getImportMeta();
   }
 
-  async restore(options: { selectedOptionalGroupNames: string[]; selectedUserCollections: string[] }) {
+  async restore(options: RestoreOptions) {
     await this.decompressBackup(this.backUpFilePath);
     await this.importCollections(options);
     await this.importDb();
@@ -105,11 +109,7 @@ export class Restorer extends AppMigrator {
     return JSON.parse(await fsPromises.readFile(metaFile, 'utf8')) as any;
   }
 
-  async importCollections(options: {
-    ignore?: string | string[];
-    selectedOptionalGroupNames: string[];
-    selectedUserCollections: string[];
-  }) {
+  async importCollections(options: RestoreOptions) {
     const importCollection = async (collectionName: string) => {
       const collectionMetaPath = path.resolve(this.workDir, 'collections', collectionName, 'meta');
 
@@ -142,17 +142,27 @@ export class Restorer extends AppMigrator {
     // reload app
     await this.app.reload();
 
-    const { requiredGroups, selectedOptionalGroups } = await this.parseBackupFile();
+    const { dumpableCollectionsGroupByDataTypes } = await this.parseBackupFile();
 
-    const delayGroups = [...requiredGroups, ...selectedOptionalGroups].filter((group) => group.delay);
-    const delayCollections = CollectionGroupManager.getGroupsCollections(delayGroups);
+    // const delayGroups = [...requiredGroups, ...selectedOptionalGroups].filter((group) => group.delay);
+    // const delayCollections = CollectionGroupManager.getGroupsCollections(delayGroups);
+    //
 
-    // import required plugins collections
-    for (const collectionName of CollectionGroupManager.getGroupsCollections(requiredGroups).filter(
-      (i) => !delayCollections.includes(i) && i != 'applicationPlugins',
-    )) {
+    // import meta collections
+    const metaCollections = dumpableCollectionsGroupByDataTypes.meta;
+    for (const collectionName of metaCollections) {
+      if (collectionName === 'applicationPlugins') {
+        continue;
+      }
+
       await importCollection(collectionName);
     }
+
+    // for (const collectionName of CollectionGroupManager.getGroupsCollections(requiredGroups).filter(
+    //   (i) => !delayCollections.includes(i) && i != 'applicationPlugins',
+    // )) {
+    //   await importCollection(collectionName);
+    // }
 
     // load imported collections into database object
     await (this.app.db.getRepository('collections') as any).load();
@@ -165,36 +175,36 @@ export class Restorer extends AppMigrator {
       },
     });
 
-    const userCollections = options.selectedUserCollections || [];
-    const throughCollections = this.findThroughCollections(userCollections);
-
-    const customCollections = [
-      ...CollectionGroupManager.getGroupsCollections(
-        selectedOptionalGroups.filter((group) => {
-          return options.selectedOptionalGroupNames.some((selectedOptionalGroupName) => {
-            const [namespace, functionKey] = selectedOptionalGroupName.split('.');
-            return group.function === functionKey && group.namespace === namespace;
-          });
-        }),
-      ),
-      ...userCollections,
-      ...throughCollections,
-    ];
+    // const userCollections = options.selectedUserCollections || [];
+    // const throughCollections = this.findThroughCollections(userCollections);
+    //
+    // const customCollections = [
+    //   ...CollectionGroupManager.getGroupsCollections(
+    //     selectedOptionalGroups.filter((group) => {
+    //       return options.selectedOptionalGroupNames.some((selectedOptionalGroupName) => {
+    //         const [namespace, functionKey] = selectedOptionalGroupName.split('.');
+    //         return group.function === functionKey && group.namespace === namespace;
+    //       });
+    //     }),
+    //   ),
+    //   ...userCollections,
+    //   ...throughCollections,
+    // ];
 
     // import custom collections
-    for (const collectionName of customCollections) {
-      await importCollection(collectionName);
-    }
+    // for (const collectionName of customCollections) {
+    //   await importCollection(collectionName);
+    // }
 
     // import delay groups
-    const appGroups = CollectionGroupManager.getGroups(this.app);
-
-    for (const collectionGroup of delayGroups) {
-      const appCollectionGroup = appGroups.find(
-        (group) => group.namespace === collectionGroup.name && group.function === collectionGroup.function,
-      );
-      await appCollectionGroup.delayRestore(this);
-    }
+    // const appGroups = CollectionGroupManager.getGroups(this.app);
+    //
+    // for (const collectionGroup of delayGroups) {
+    //   const appCollectionGroup = appGroups.find(
+    //     (group) => group.namespace === collectionGroup.name && group.function === collectionGroup.function,
+    //   );
+    //   await appCollectionGroup.delayRestore(this);
+    // }
 
     await this.emitAsync('restoreCollectionsFinished');
   }
