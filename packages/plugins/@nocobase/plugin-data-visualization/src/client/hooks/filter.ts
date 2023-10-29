@@ -151,6 +151,9 @@ export const useChartFilter = () => {
           name = Object.keys(value)[0];
           field = `${target}.${name}`;
           value = Object.values(value)[0];
+          if (!value) {
+            return;
+          }
         }
         const operator = fieldProps[collection]?.[field]?.operator;
         const op = operator?.value || '$eq';
