@@ -1,19 +1,14 @@
-import { mockServer, MockServer } from '@nocobase/test';
+import { MockServer } from '@nocobase/test';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
-import { promisify } from 'util';
-
-const closeFileAsync = promisify(fs.close);
+import createApp from './index';
 
 describe('duplicator api', () => {
   let app: MockServer;
+
   beforeEach(async () => {
-    app = mockServer();
-    app.plugin(require('../server').default, { name: 'duplicator' });
-    app.plugin('error-handler');
-    app.plugin('collection-manager');
-    await app.loadAndInstall({ clean: true });
+    app = await createApp();
   });
 
   afterEach(async () => {
@@ -43,5 +38,17 @@ describe('duplicator api', () => {
     });
 
     expect(restoreResponse.status).toBe(200);
+  });
+
+  it('should get dumpable collections', async () => {
+    const response = await app.agent().get('/duplicator:dumpableCollections');
+
+    expect(response.status).toBe(200);
+
+    const body = response.body;
+
+    expect(body['meta']).toBeTruthy();
+    expect(body['config']).toBeTruthy();
+    expect(body['business']).toBeTruthy();
   });
 });

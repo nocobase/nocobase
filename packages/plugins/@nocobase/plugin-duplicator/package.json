@@ -23,7 +23,8 @@
     "koa-send": "^5.0.1",
     "mkdirp": "^1.0.4",
     "react": "^18.2.0",
-    "tar": "^6.1.13"
+    "tar": "^6.1.13",
+    "object-path": "^0.11.8"
   },
   "peerDependencies": {
     "@nocobase/client": "0.x",

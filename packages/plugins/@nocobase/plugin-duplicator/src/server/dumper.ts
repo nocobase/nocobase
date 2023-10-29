@@ -37,6 +37,7 @@ export class Dumper extends AppMigrator {
 
           return {
             name: c.name,
+            options: c.options,
             dataType: options?.dataType,
           };
         } catch (e) {
@@ -92,7 +93,7 @@ export class Dumper extends AppMigrator {
                 p.proname                 AS function_name,
                 pg_get_functiondef(p.oid) AS def
          FROM pg_proc p
-                  LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
+                LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
          WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')
          ORDER BY function_schema,
                   function_name;`,
@@ -124,7 +125,7 @@ export class Dumper extends AppMigrator {
                 v.viewname   AS view_name,
                 v.definition AS view_definition
          FROM pg_views v
-                  JOIN
+                JOIN
               pg_namespace n ON v.schemaname = n.nspname
          WHERE n.nspname NOT IN ('information_schema', 'pg_catalog')
          ORDER BY schema_name,
