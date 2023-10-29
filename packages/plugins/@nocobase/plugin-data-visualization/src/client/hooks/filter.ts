@@ -146,7 +146,7 @@ export const useChartFilter = () => {
         }
         let target: string;
         let name: string;
-        if (typeof value === 'object') {
+        if (typeof value === 'object' && !Array.isArray(value)) {
           target = field;
           name = Object.keys(value)[0];
           field = `${target}.${name}`;

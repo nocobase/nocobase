@@ -104,14 +104,14 @@ export const processData = (selectedFields: FieldOption[], data: any[], scope: a
 export const removeUnparsableFilter = (filter: any) => {
   if (typeof filter === 'object' && filter !== null) {
     if (Array.isArray(filter)) {
-      const newLogic = filter.filter((condition) => removeUnparsableFilter(condition));
+      const newLogic = filter.map((condition) => removeUnparsableFilter(condition)).filter(Boolean);
       return newLogic.length > 0 ? newLogic : null;
     } else {
       const newLogic = {};
       for (const key in filter) {
-        const newCondition = removeUnparsableFilter(filter[key]);
-        if (newCondition !== null) {
-          newLogic[key] = newCondition;
+        const value = removeUnparsableFilter(filter[key]);
+        if (value !== null && value !== undefined && !(typeof value === 'object' && Object.keys(value).length === 0)) {
+          newLogic[key] = value;
         }
       }
       return Object.keys(newLogic).length > 0 ? newLogic : null;
