@@ -144,25 +144,24 @@ export class Restorer extends AppMigrator {
 
     const { dumpableCollectionsGroupByDataTypes } = await this.parseBackupFile();
 
-    // const delayGroups = [...requiredGroups, ...selectedOptionalGroups].filter((group) => group.delay);
-    // const delayCollections = CollectionGroupManager.getGroupsCollections(delayGroups);
-    //
-
     // import meta collections
     const metaCollections = dumpableCollectionsGroupByDataTypes.meta;
+
+    const delayCollections = [];
+
     for (const collectionName of metaCollections) {
       if (collectionName === 'applicationPlugins') {
         continue;
       }
 
+      const collection = this.app.db.getCollection(collectionName);
+      if (collection.options.duplicator['delayRestore']) {
+        delayCollections.push(collectionName);
+        continue;
+      }
+
       await importCollection(collectionName);
     }
-
-    // for (const collectionName of CollectionGroupManager.getGroupsCollections(requiredGroups).filter(
-    //   (i) => !delayCollections.includes(i) && i != 'applicationPlugins',
-    // )) {
-    //   await importCollection(collectionName);
-    // }
 
     // load imported collections into database object
     await (this.app.db.getRepository('collections') as any).load();
@@ -175,36 +174,26 @@ export class Restorer extends AppMigrator {
       },
     });
 
-    // const userCollections = options.selectedUserCollections || [];
-    // const throughCollections = this.findThroughCollections(userCollections);
-    //
-    // const customCollections = [
-    //   ...CollectionGroupManager.getGroupsCollections(
-    //     selectedOptionalGroups.filter((group) => {
-    //       return options.selectedOptionalGroupNames.some((selectedOptionalGroupName) => {
-    //         const [namespace, functionKey] = selectedOptionalGroupName.split('.');
-    //         return group.function === functionKey && group.namespace === namespace;
-    //       });
-    //     }),
-    //   ),
-    //   ...userCollections,
-    //   ...throughCollections,
-    // ];
+    if (options.dataTypes.has('config')) {
+      const configCollections = dumpableCollectionsGroupByDataTypes.config;
 
-    // import custom collections
-    // for (const collectionName of customCollections) {
-    //   await importCollection(collectionName);
-    // }
+      for (const collectionName of configCollections) {
+        await importCollection(collectionName);
+      }
+    }
 
-    // import delay groups
-    // const appGroups = CollectionGroupManager.getGroups(this.app);
-    //
-    // for (const collectionGroup of delayGroups) {
-    //   const appCollectionGroup = appGroups.find(
-    //     (group) => group.namespace === collectionGroup.name && group.function === collectionGroup.function,
-    //   );
-    //   await appCollectionGroup.delayRestore(this);
-    // }
+    if (options.dataTypes.has('business')) {
+      const businessCollections = dumpableCollectionsGroupByDataTypes.business;
+
+      for (const collectionName of businessCollections) {
+        await importCollection(collectionName);
+      }
+    }
+
+    for (const collectionName of delayCollections) {
+      const delayRestore = this.app.db.getCollection(collectionName).options.duplicator['delayRestore'];
+      await delayRestore(this);
+    }
 
     await this.emitAsync('restoreCollectionsFinished');
   }

@@ -42,13 +42,11 @@ export default defineCollection({
         name: 'sequences',
         clear: false,
         rowCondition(row) {
-          const results = sequencesAttributes.some((attributes) => {
+          return sequencesAttributes.some((attributes) => {
             return (
               row.collection === attributes.collection && row.field === attributes.field && row.key === attributes.key
             );
           });
-
-          return results;
         },
       });
     },
