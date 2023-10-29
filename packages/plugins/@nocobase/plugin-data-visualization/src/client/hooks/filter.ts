@@ -68,7 +68,7 @@ export const useChartFilter = () => {
     const field2item = (field: any, collectionTitle: string, collectionName: string) => {
       const fieldTitle = Schema.compile(field.uiSchema?.title || field.name, { t });
       const interfaceConfig = getInterface(field.interface);
-      const defaultOperator = interfaceConfig?.filterable?.operators;
+      const defaultOperator = interfaceConfig?.filterable?.operators?.[0];
       const targetCollection = getCollection(field.target);
       const schema = {
         type: 'string',
@@ -126,7 +126,7 @@ export const useChartFilter = () => {
               !targetField.target && targetField?.interface && getInterface(targetField.interface)?.filterable,
           )
           ?.map((targetField) => {
-            return field2item(targetField, `${collectionTitle} / ${targetTitle}`, `${collection.name}.${field.target}`);
+            return field2item(targetField, `${collectionTitle} / ${targetTitle}`, `${collection.name}.${field.name}`);
           });
         return {
           type: 'subMenu',
@@ -137,7 +137,6 @@ export const useChartFilter = () => {
   };
 
   const getFilter = () => {
-    console.log(form.values, fieldProps);
     const values = form?.values || {};
     const filter = {};
     Object.entries(values).forEach(([collection, fields]) => {
@@ -168,7 +167,6 @@ export const useChartFilter = () => {
         }
       });
     });
-    console.log(filter);
     return filter;
   };
 
