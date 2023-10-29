@@ -325,11 +325,11 @@ test.describe('block title', () => {
     await page
       .getByLabel('block-item-CardItem-users-table')
       .getByRole('button', { name: 'designer-schema-settings' })
-      .click();
-    await page.getByText('Edit block title').click();
-    await page.getByRole('textbox').click();
-    await page.getByRole('textbox').fill('block title');
-    await page.getByRole('button', { name: 'OK' }).click();
+      .hover();
+    await page.getByLabel('Edit block title').click();
+    await page.getByLabel('block-item-Input-users-Block title').click();
+    await page.getByLabel('block-item-Input-users-Block title').getByRole('textbox').fill('block title');
+    await page.locator('.ant-modal').getByRole('button', { name: 'OK' }).click();
     await expect(page.getByLabel('block-item-CardItem-users-table').locator('.ant-card-head')).toBeVisible();
     await expect(await page.getByLabel('block-item-CardItem-users-table').locator('.ant-card-head').innerText()).toBe(
       'block title',
