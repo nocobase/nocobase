@@ -15,36 +15,8 @@ describe('duplicator api', () => {
     await app.destroy();
   });
 
-  it('should get collection groups', async () => {
-    await app.db.getRepository('collections').create({
-      values: {
-        name: 'test_collection',
-        title: '测试Collection',
-        fields: [
-          {
-            name: 'test_field1',
-            type: 'string',
-          },
-        ],
-      },
-      context: {},
-    });
-
-    const collectionGroupsResponse = await app.agent().resource('duplicator').dumpableCollections();
-    expect(collectionGroupsResponse.status).toBe(200);
-
-    const data = collectionGroupsResponse.body;
-
-    expect(data['requiredGroups']).toBeTruthy();
-    expect(data['optionalGroups']).toBeTruthy();
-    expect(data['userCollections']).toBeTruthy();
-  });
-
   it('should request dump api', async () => {
-    const dumpResponse = await app.agent().post('/duplicator:dump').send({
-      selectedCollectionGroups: [],
-      selectedUserCollections: [],
-    });
+    const dumpResponse = await app.agent().post('/duplicator:dump').send({});
 
     expect(dumpResponse.status).toBe(200);
   });

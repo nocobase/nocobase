@@ -1,12 +1,12 @@
 import { Dumper } from '../dumper';
 import send from 'koa-send';
 import { getApp } from './get-app';
+import { DumpDataType } from '@nocobase/database';
 
 export default async function dumpAction(ctx, next) {
   const data = <
     {
-      selectedOptionalGroupNames: string[];
-      selectedUserCollections: string[];
+      dataTypes: string[];
       app?: string;
     }
   >ctx.request.body;
@@ -15,7 +15,9 @@ export default async function dumpAction(ctx, next) {
 
   const dumper = new Dumper(app);
 
-  const { filePath, dirname } = await dumper.dump(data);
+  const { filePath, dirname } = await dumper.dump({
+    dataTypes: new Set(data.dataTypes) as Set<DumpDataType>,
+  });
 
   await send(ctx, filePath.replace(dirname, ''), {
     root: dirname,
