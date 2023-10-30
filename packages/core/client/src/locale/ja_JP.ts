@@ -502,7 +502,6 @@ export default {
   "Dynamic value": "動的値",
   "Current user": "現在のユーザー",
   "Current record": "現在のレコード",
-  "Current parent record": "現在の親レコード",
   "Popup close method": "ポップアップを閉じる方法",
   "Automatic close": "自動で閉じる",
   "Manually close": "手動で閉じる",
