@@ -1,35 +1,32 @@
-import { SettingsCenterProvider } from '@nocobase/client';
-import { Card } from 'antd';
-import React, { FC } from 'react';
-
-const DuplicatorPanel = () => {
-  return (
-    <Card bordered={false}>
-      <div>hello world</div>
-    </Card>
-  );
-};
+import { SettingsCenterProvider, CollectionManagerContext, CurrentAppInfoProvider } from '@nocobase/client';
+import React, { FC, useContext } from 'react';
+import { useDuplicatorTranslation } from './locale';
+import { Configuration } from './Configuration';
 
 export const DuplicatorProvider: FC = function (props) {
+  const ctx = useContext(CollectionManagerContext);
+  const { t } = useDuplicatorTranslation();
   return (
-    <SettingsCenterProvider
-      settings={
-        {
-          // duplicator: {
-          //   title: '应用导入导出',
-          //   icon: 'CloudDownloadOutlined',
-          //   tabs: {
-          //     tab1: {
-          //       title: '应用导入导出',
-          //       component: DuplicatorPanel,
-          //     },
-          //   },
-          // },
-        }
-      }
-    >
-      {props.children}
-    </SettingsCenterProvider>
+    <CurrentAppInfoProvider>
+      <SettingsCenterProvider
+        settings={{
+          duplicator: {
+            title: t('Backup & Restore'),
+            icon: 'ApiOutlined',
+            tabs: {
+              configuration: {
+                title: t('Configuration'),
+                component: Configuration,
+              },
+            },
+          },
+        }}
+      >
+        <CollectionManagerContext.Provider value={{ ...ctx, interfaces: { ...ctx.interfaces } }}>
+          {props.children}
+        </CollectionManagerContext.Provider>
+      </SettingsCenterProvider>
+    </CurrentAppInfoProvider>
   );
 };
 
