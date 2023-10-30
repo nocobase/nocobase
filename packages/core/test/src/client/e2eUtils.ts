@@ -165,7 +165,7 @@ class NocoPage {
   }
 }
 
-export const test = base.extend<{
+const _test = base.extend<{
   mockPage: (config?: PageConfig) => NocoPage;
   createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
 }>({
@@ -204,6 +204,11 @@ export const test = base.extend<{
       await deleteCollections(collectionsName);
     }
   },
+});
+
+export const test = Object.assign(_test, {
+  /** 只运行在 postgres 数据库中 */
+  pgOnly: process.env.DB_DIALECT == 'postgres' ? _test : _test.skip,
 });
 
 const getStorageItem = (key: string, storageState: any) => {

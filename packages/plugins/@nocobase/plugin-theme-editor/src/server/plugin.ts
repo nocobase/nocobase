@@ -1,12 +1,21 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { antd, compact, compactDark, dark } from './builtinThemes';
+import { resolve } from 'path';
+import { compact, compactDark, dark, defaultTheme } from './builtinThemes';
 
 export class ThemeEditorPlugin extends Plugin {
   theme: any;
 
   afterAdd() {}
 
-  beforeLoad() {}
+  async beforeLoad() {
+    this.db.addMigrations({
+      namespace: 'theme-editor',
+      directory: resolve(__dirname, './migrations'),
+      context: {
+        plugin: this,
+      },
+    });
+  }
 
   async load() {
     this.db.collection({
@@ -26,9 +35,13 @@ export class ThemeEditorPlugin extends Plugin {
           type: 'boolean',
           name: 'isBuiltIn',
         },
+        {
+          type: 'uid',
+          name: 'uid',
+        },
       ],
     });
-    this.app.acl.allow('themeConfig', 'list', 'loggedIn');
+    this.app.acl.allow('themeConfig', 'list', 'public');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.themeConfig`,
       actions: ['themeConfig:*'],
@@ -44,7 +57,7 @@ export class ThemeEditorPlugin extends Plugin {
 
     if ((await themeRepo.count()) === 0) {
       await themeRepo.create({
-        values: [antd, dark, compact, compactDark],
+        values: [defaultTheme, dark, compact, compactDark],
       });
     }
   }

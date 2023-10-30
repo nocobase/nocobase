@@ -1,10 +1,11 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useField, useFieldSchema } from '@formily/react';
 import { css } from '@emotion/css';
-import { SchemaSettings } from '../../../schema-settings';
+import { useField, useFieldSchema } from '@formily/react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDesignable } from '../../hooks';
 import { useRecord } from '../../../record-provider';
+import { SchemaSettings } from '../../../schema-settings';
+import { useDesignable } from '../../hooks';
+import { useIsBlockInPage } from './hooks/useIsBlockInPage';
 
 const FixedBlockContext = React.createContext<{
   setFixedBlock: (value: string | false) => void;
@@ -70,10 +71,10 @@ export const FixedBlockDesignerItem = () => {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
-  const record = useRecord();
   const { inFixedBlock } = useFixedBlock();
+  const { isBlockInPage } = useIsBlockInPage();
 
-  if (Object.keys(record).length || !inFixedBlock) {
+  if (!isBlockInPage() || !inFixedBlock) {
     return null;
   }
   return (

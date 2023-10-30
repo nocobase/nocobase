@@ -101,6 +101,7 @@ export default {
     };
   },
   initializers: {},
+  actionTriggerable: true,
 };
 
 function getFormValues({

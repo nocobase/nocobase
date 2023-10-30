@@ -64,6 +64,7 @@ const useResource = (props: UseResourceProps) => {
   const { fieldSchema } = useActionContext();
   const isCreateAction = fieldSchema?.['x-action'] === 'create';
   const association = useAssociation(props);
+  console.log(association);
   const sourceId = useSourceId?.();
   const field = useField();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
@@ -95,6 +96,9 @@ const useResource = (props: UseResourceProps) => {
   }
   if (record[association?.sourceKey || 'id']) {
     return api.resource(resource, record[association?.sourceKey || 'id']);
+  }
+  if (record?.__parent?.[association?.sourceKey || 'id']) {
+    return api.resource(resource, record.__parent[association?.sourceKey || 'id']);
   }
   return api.resource(collection);
 };
@@ -282,29 +286,49 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   return props.children;
 };
 
-export const BlockProvider = (props) => {
-  const { collection, association } = props;
+const BlockContext = createContext<{
+  /** 用以区分区块的标识 */
+  name: string;
+}>(null);
+
+export const useBlockContext = () => {
+  return useContext(BlockContext);
+};
+
+export const BlockProvider = (props: {
+  name: string;
+  resource: any;
+  collection?: any;
+  association?: any;
+  params?: any;
+  children?: any;
+}) => {
+  const { collection, association, name } = props;
   const resource = useResource(props);
   const params = useMemo(() => ({ ...props.params }), [props.params]);
   const { appends, updateAssociationValues } = useAssociationNames();
+  const blockValue = useMemo(() => ({ name }), [name]);
+
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
 
   return (
-    <MaybeCollectionProvider collection={collection}>
-      <BlockAssociationContext.Provider value={association}>
-        <BlockResourceContext.Provider value={resource}>
-          <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
-            <SharedFilterProvider {...props} params={params}>
-              <FilterBlockRecord {...props} params={params}>
-                <div data-testid={props['data-testid']}>{props.children}</div>
-              </FilterBlockRecord>
-            </SharedFilterProvider>
-          </BlockRequestProvider>
-        </BlockResourceContext.Provider>
-      </BlockAssociationContext.Provider>
-    </MaybeCollectionProvider>
+    <BlockContext.Provider value={blockValue}>
+      <MaybeCollectionProvider collection={collection}>
+        <BlockAssociationContext.Provider value={association}>
+          <BlockResourceContext.Provider value={resource}>
+            <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
+              <SharedFilterProvider {...props} params={params}>
+                <FilterBlockRecord {...props} params={params}>
+                  {props.children}
+                </FilterBlockRecord>
+              </SharedFilterProvider>
+            </BlockRequestProvider>
+          </BlockResourceContext.Provider>
+        </BlockAssociationContext.Provider>
+      </MaybeCollectionProvider>
+    </BlockContext.Provider>
   );
 };
 

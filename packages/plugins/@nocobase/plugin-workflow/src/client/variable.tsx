@@ -30,13 +30,14 @@ export type OptionsOfUseVariableOptions = {
     children?: string;
   };
   appends?: string[] | null;
+  depth?: number;
 };
 
 export const defaultFieldNames = { label: 'label', value: 'value', children: 'children' } as const;
 
 export const nodesOptions = {
   label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-  value: '$jobsMapByNodeId',
+  value: '$jobsMapByNodeKey',
   useOptions(options: OptionsOfUseVariableOptions) {
     const current = useNodeContext();
     const upstreams = useAvailableUpstreams(current);
@@ -75,8 +76,8 @@ export const scopeOptions = {
       const subOptions = instruction.useScopeVariables?.(node, options);
       if (subOptions) {
         result.push({
-          key: node.id.toString(),
-          [fieldNames.value]: node.id.toString(),
+          key: node.key,
+          [fieldNames.value]: node.key,
           [fieldNames.label]: node.title ?? `#${node.id}`,
           [fieldNames.children]: subOptions,
         });
@@ -167,17 +168,20 @@ function getNextAppends(field, appends: string[] | null): string[] | null {
   return appends.filter((item) => item.startsWith(fieldPrefix)).map((item) => item.replace(fieldPrefix, ''));
 }
 
-function filterTypedFields({ fields, types, appends, compile, getCollectionFields }) {
+function filterTypedFields({ fields, types, appends, depth = 1, compile, getCollectionFields }) {
   return fields.filter((field) => {
     const match = types?.length ? types.some((type) => matchFieldType(field, type)) : true;
     if (isAssociationField(field)) {
       if (appends === null) {
+        if (!depth) {
+          return false;
+        }
         return (
           match ||
           filterTypedFields({
             fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
             types,
-            // depth: depth - 1,
+            depth: depth - 1,
             appends,
             compile,
             getCollectionFields,
@@ -286,6 +290,7 @@ function loadChildren(option) {
     collection: option.field.target,
     types: option.types,
     appends,
+    depth: option.depth - 1,
     ...this,
   });
   option.loadChildren = null;
@@ -306,6 +311,7 @@ export function getCollectionFieldOptions(options): VariableOption[] {
     collection,
     types,
     appends = [],
+    depth = 1,
     compile,
     getCollectionFields,
     fieldNames = defaultFieldNames,
@@ -317,7 +323,7 @@ export function getCollectionFieldOptions(options): VariableOption[] {
   const result: VariableOption[] = filterTypedFields({
     fields: computedFields,
     types,
-    // depth,
+    depth,
     appends,
     compile,
     getCollectionFields,
@@ -335,7 +341,7 @@ export function getCollectionFieldOptions(options): VariableOption[] {
       isLeaf,
       loadChildren: isLeaf ? null : boundLoadChildren,
       field,
-      // depth,
+      depth,
       appends,
       types,
     };

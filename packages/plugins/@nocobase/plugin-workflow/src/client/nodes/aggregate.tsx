@@ -29,6 +29,7 @@ function useAssociatedFields() {
       .useOptions({
         types: [matchToManyField],
         appends: null,
+        depth: 4,
       })
       ?.filter(Boolean);
     return {
@@ -345,7 +346,7 @@ export default {
     ValueBlock,
     AssociatedConfig,
   },
-  useVariables({ id, title }, { types, fieldNames = defaultFieldNames }) {
+  useVariables({ key, title }, { types, fieldNames = defaultFieldNames }) {
     if (
       types &&
       !types.some((type) => type in BaseTypeSets || Object.values(BaseTypeSets).some((set) => set.has(type)))
@@ -353,7 +354,7 @@ export default {
       return null;
     }
     return {
-      [fieldNames.value]: `${id}`,
+      [fieldNames.value]: key,
       [fieldNames.label]: title,
     };
   },

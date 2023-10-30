@@ -220,20 +220,22 @@ export const CreateAction = observer(
     }, [JSON.stringify(linkageRules), values]);
     return (
       <div className={actionDesignerCss}>
-        {FinallyButton({
-          inheritsCollections,
-          linkageFromForm,
-          allowAddToCurrent,
-          props,
-          componentType,
-          menu,
-          onClick,
-          collection,
-          icon,
-          field,
-          form,
-          designable,
-        })}
+        <FinallyButton
+          {...{
+            inheritsCollections,
+            linkageFromForm,
+            allowAddToCurrent,
+            props,
+            componentType,
+            menu,
+            onClick,
+            collection,
+            icon,
+            field,
+            form,
+            designable,
+          }}
+        />
       </div>
     );
   },
@@ -271,6 +273,7 @@ function FinallyButton({
     if (!linkageFromForm) {
       return allowAddToCurrent === undefined || allowAddToCurrent ? (
         <Dropdown.Button
+          aria-label={props['aria-label']}
           danger={props.danger}
           type={componentType}
           icon={<DownOutlined />}
@@ -289,7 +292,7 @@ function FinallyButton({
       ) : (
         <Dropdown menu={menu}>
           {
-            <Button icon={icon} type={componentType} danger={props.danger}>
+            <Button aria-label={props['aria-label']} icon={icon} type={componentType} danger={props.danger}>
               {props.children} <DownOutlined />
             </Button>
           }
@@ -298,6 +301,7 @@ function FinallyButton({
     }
     return (
       <Button
+        aria-label={props['aria-label']}
         type={componentType}
         disabled={field.disabled}
         danger={props.danger}
@@ -321,6 +325,7 @@ function FinallyButton({
 
   return (
     <Button
+      aria-label={props['aria-label']}
       type={componentType}
       disabled={field.disabled}
       danger={props.danger}
