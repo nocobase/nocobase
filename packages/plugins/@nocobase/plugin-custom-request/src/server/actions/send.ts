@@ -30,6 +30,19 @@ const omitNullAndUndefined = (obj: any) => {
   }, {});
 };
 
+const CurrentUserVariableRegExp = /{{\s*(currentUser[^}]+)\s*}}/g;
+
+const getCurrentUserAppends = (str: string, user) => {
+  const matched = str.matchAll(CurrentUserVariableRegExp);
+  return Array.from(matched).map((item) => {
+    const keys = item?.[1].split('.') || [];
+    const appendKey = keys[1];
+    if (keys.length > 2 && !Reflect.has(user || {}, appendKey)) {
+      return appendKey;
+    }
+  });
+};
+
 export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) {
   const { filterByTk, resourceName, values = {} } = ctx.action.params;
   const {
@@ -73,12 +86,29 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   let currentRecordValues = {};
   if (collectionName && typeof currentRecord.id !== 'undefined') {
     const recordRepo = ctx.db.getRepository(collectionName);
-    currentRecordValues = (
-      await recordRepo.findOne({
-        filterByTk: currentRecord.id,
-        appends: currentRecord.appends,
-      })
-    )?.dataValues;
+    currentRecordValues =
+      (
+        await recordRepo.findOne({
+          filterByTk: currentRecord.id,
+          appends: currentRecord.appends,
+        })
+      )?.toJSON() || {};
+  }
+
+  let currentUser = ctx.auth.user;
+
+  const userAppends = getCurrentUserAppends(
+    JSON.stringify(url) + JSON.stringify(headers) + JSON.stringify(params) + JSON.stringify(data),
+    ctx.auth.user,
+  );
+  if (userAppends.length) {
+    currentUser =
+      (
+        await ctx.db.getRepository('users').findOne({
+          filterByTk: ctx.auth.user.id,
+          appends: userAppends,
+        })
+      )?.toJSON() || {};
   }
 
   const variables = {
@@ -86,7 +116,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
       ...currentRecordValues,
       ...currentRecord.data,
     },
-    currentUser: ctx.auth.user,
+    currentUser,
     currentTime: new Date().toISOString(),
   };
 

@@ -12,7 +12,7 @@ describe('actions', () => {
   beforeAll(async () => {
     app = mockServer({
       registerActions: true,
-      acl: false,
+      acl: true,
       plugins: ['users', 'auth', 'acl', 'custom-request'],
     });
 
@@ -20,7 +20,8 @@ describe('actions', () => {
     db = app.db;
     repo = db.getRepository('customRequests');
     agent = app.agent();
-    resource = agent.resource('customRequests');
+    resource = (agent.set('X-Role', 'admin') as any).resource('customRequests');
+    await agent.login(1);
   });
 
   describe('send', () => {
@@ -130,6 +131,30 @@ describe('actions', () => {
       });
       expect(res.status).toBe(200);
       expect(res.body.data.id).toBe(userId);
+    });
+
+    test('currentUser with association data', async () => {
+      await repo.create({
+        values: {
+          key: 'currentUser-with-association-data',
+          options: {
+            method: 'POST',
+            headers: [],
+            data: {
+              a: '{{currentUser.roles.name}}',
+              b: '{{currentUser.roles.title}}',
+              c: '{{currentUser.roles.rolesUsers.userId}}',
+            },
+            url: '/customRequests:test',
+          },
+        },
+      });
+
+      const res = await resource.send({
+        filterByTk: 'currentUser-with-association-data',
+      });
+      expect(res.status).toBe(200);
+      expect(params).toMatchSnapshot();
     });
   });
 });
