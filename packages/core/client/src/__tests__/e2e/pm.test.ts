@@ -38,7 +38,7 @@ test.describe('add plugin in front', () => {
     //将添加的插件删除
     await page.getByLabel('sample-custom-collection-template').getByText('Remove').click();
     await page.getByRole('button', { name: 'Yes' }).click();
-    await page.waitForTimeout(2000); // 等待1秒钟
+    await page.waitForTimeout(2000); // 等待2秒钟
     //等待页面刷新结束
     await waitForModalToBeHidden(page);
     await page.waitForLoadState('load');
@@ -118,8 +118,4 @@ test.describe('enable & disabled plugin', () => {
     await page.waitForLoadState('load');
     await expect(await page.getByLabel('Hello').getByLabel('enable').isChecked()).toBe(false);
   });
-});
-
-test.describe('update plugin', () => {
-  test('update plugin', async ({ page, mockPage }) => {});
 });
