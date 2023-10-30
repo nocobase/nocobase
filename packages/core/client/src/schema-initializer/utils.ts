@@ -878,21 +878,14 @@ export const useCollectionDataSourceItemsV2 = (componentName) => {
   const { collections, getCollectionFields } = useCollectionManager();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
 
-  return [
-    {
-      key: 'tableBlock',
-      type: 'itemGroup',
-      title: null,
-      children: getChildren({
-        collections,
-        getCollectionFields,
-        componentName,
-        searchValue: '',
-        getTemplatesByCollection,
-        t,
-      }),
-    },
-  ];
+  return getChildren({
+    collections,
+    getCollectionFields,
+    componentName,
+    searchValue: '',
+    getTemplatesByCollection,
+    t,
+  });
 };
 
 export const createDetailsBlockSchema = (options) => {
