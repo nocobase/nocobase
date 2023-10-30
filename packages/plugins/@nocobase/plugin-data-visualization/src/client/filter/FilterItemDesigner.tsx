@@ -3,6 +3,7 @@ import {
   EditDescription,
   GeneralSchemaDesigner,
   SchemaSettings,
+  VariablesContext,
   useCollection,
   useCollectionManager,
   useCompile,
@@ -13,8 +14,9 @@ import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Field } from '@formily/core';
 import _ from 'lodash';
 import { ChartFilterContext } from './FilterProvider';
-import { getPropsSchemaByComponent } from './utils';
+import { getPropsSchemaByComponent, setDefaultValue } from './utils';
 import { ChartFilterVariableInput } from './FilterVariableInput';
+import { useChartFilter } from '../hooks';
 
 const EditTitle = () => {
   const field = useField<Field>();
@@ -157,7 +159,11 @@ const EditProps = () => {
 const SetDefaultValue = () => {
   const { t } = useChartsTranslation();
   const { dn } = useDesignable();
+  const variables = useContext(VariablesContext);
+  const field = useField<Field>();
   const fieldSchema = useFieldSchema();
+  const { getTranslatedTitle } = useChartFilter();
+  const title = getTranslatedTitle(fieldSchema.title);
   return (
     <SchemaSettings.ModalItem
       key="set field default value"
@@ -170,7 +176,7 @@ const SetDefaultValue = () => {
         title: t('Set default value'),
         properties: {
           default: {
-            title: fieldSchema.title,
+            title,
             'x-decorator': 'FormItem',
             'x-component': 'ChartFilterVariableInput',
             'x-component-props': {
@@ -180,6 +186,7 @@ const SetDefaultValue = () => {
         },
       }}
       onSubmit={({ default: { value } }) => {
+        field.componentProps.defaultValue = value;
         fieldSchema['x-component-props'].defaultValue = value;
         dn.emit('patch', {
           schema: {
@@ -191,6 +198,8 @@ const SetDefaultValue = () => {
           },
         });
         dn.refresh();
+        field.setValue(null);
+        setDefaultValue(field, variables);
       }}
     />
   );

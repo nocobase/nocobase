@@ -1,11 +1,13 @@
-import React, { useContext, useEffect, useMemo } from 'react';
+import React, { memo, useContext, useEffect, useMemo } from 'react';
 import { createForm, onFieldInit, onFieldMount, onFieldUnmount } from '@formily/core';
 import { ChartFilterContext } from './FilterProvider';
 import { FormV2, VariablesContext } from '@nocobase/client';
-import { transformValue } from './utils';
+import { setDefaultValue } from './utils';
+import { useChartFilter } from '../hooks';
 
-export const ChartFilterForm: React.FC = (props) => {
+export const ChartFilterForm: React.FC = memo((props) => {
   const { addField, removeField, setForm } = useContext(ChartFilterContext);
+  const { getTranslatedTitle } = useChartFilter();
   const variables = useContext(VariablesContext);
   const form = useMemo(
     () =>
@@ -32,18 +34,13 @@ export const ChartFilterForm: React.FC = (props) => {
             }
             addField(name, { title: field.title, operator: field.componentProps['filter-operator'] });
 
-            // parse default value
-            const defaultValue = field.componentProps.defaultValue;
-            const isVariable =
-              typeof defaultValue === 'string' && defaultValue?.startsWith('{{$') && defaultValue?.endsWith('}}');
-            if (!isVariable) {
-              field.setInitialValue(defaultValue);
-            } else {
-              field.loading = true;
-              const value = await variables.parseVariable(defaultValue);
-              field.setInitialValue(transformValue(value, field.componentProps));
-              field.loading = false;
+            // parse field title
+            if (field.title.includes('/')) {
+              field.title = getTranslatedTitle(field.title);
             }
+
+            // parse default value
+            setDefaultValue(field, variables);
           });
           onFieldUnmount('*', (field: any) => {
             const name = getField(field);
@@ -54,9 +51,9 @@ export const ChartFilterForm: React.FC = (props) => {
           });
         },
       }),
-    [addField, removeField, variables],
+    [],
   );
 
   useEffect(() => setForm(form), [form, setForm]);
   return <FormV2 {...props} form={form} />;
-};
+});

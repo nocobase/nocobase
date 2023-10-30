@@ -154,4 +154,19 @@ export const transformValue = (value: any, props: any) => {
     }
     return [moment2str(start, props), moment2str(end, props)];
   }
+  return value;
+};
+
+export const setDefaultValue = async (field: any, variables: any) => {
+  const defaultValue = field.componentProps.defaultValue;
+  const isVariable =
+    typeof defaultValue === 'string' && defaultValue?.startsWith('{{$') && defaultValue?.endsWith('}}');
+  if (!isVariable) {
+    field.setInitialValue(defaultValue);
+  } else {
+    field.loading = true;
+    const value = await variables.parseVariable(defaultValue);
+    field.setInitialValue(transformValue(value, field.componentProps));
+    field.loading = false;
+  }
 };

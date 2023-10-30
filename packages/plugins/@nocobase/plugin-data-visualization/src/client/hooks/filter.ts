@@ -1,4 +1,4 @@
-import { SchemaInitializerItemOptions, useActionContext, useCollectionManager } from '@nocobase/client';
+import { SchemaInitializerItemOptions, i18n, useActionContext, useCollectionManager } from '@nocobase/client';
 import { useContext, useMemo } from 'react';
 import { ChartDataContext } from '../block/ChartDataProvider';
 import { CollectionOptions } from '@nocobase/database';
@@ -56,7 +56,6 @@ export const useChartData = () => {
 };
 
 export const useChartFilter = () => {
-  const { t } = useChartsTranslation();
   const { charts } = useContext(ChartDataContext);
   const { fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
@@ -66,7 +65,7 @@ export const useChartFilter = () => {
   const getChartFilterFields = (collection: CollectionOptions) => {
     const fields = getCollectionFields(collection);
     const field2item = (field: any, collectionTitle: string, collectionName: string) => {
-      const fieldTitle = Schema.compile(field.uiSchema?.title || field.name, { t });
+      const fieldTitle = field.uiSchema?.title || field.name;
       const interfaceConfig = getInterface(field.interface);
       const defaultOperator = interfaceConfig?.filterable?.operators?.[0];
       const targetCollection = getCollection(field.target);
@@ -110,7 +109,7 @@ export const useChartFilter = () => {
       return resultItem;
     };
 
-    const collectionTitle = Schema.compile(collection.title, { t });
+    const collectionTitle = collection.title;
     return fields
       ?.filter((field) => field?.interface && getInterface(field.interface)?.filterable)
       ?.map((field) => {
@@ -119,7 +118,7 @@ export const useChartFilter = () => {
           return item;
         }
         const targetFields = getCollectionFields(field.target);
-        const targetTitle = Schema.compile(item['title'], { t });
+        const targetTitle = item['title'];
         const items = targetFields
           ?.filter(
             (targetField) =>
@@ -220,6 +219,13 @@ export const useChartFilter = () => {
     await Promise.all(requests.map((request) => request()));
   };
 
+  const getTranslatedTitle = useMemoizedFn((title: string) => {
+    return title
+      .split(' / ')
+      .map((item: string) => i18n.t(Schema.compile(item, { t: i18n.t })))
+      .join(' / ');
+  });
+
   return {
     filter,
     refresh,
@@ -227,6 +233,7 @@ export const useChartFilter = () => {
     getFilter,
     hasFilter,
     appendFilter,
+    getTranslatedTitle,
   };
 };
 
