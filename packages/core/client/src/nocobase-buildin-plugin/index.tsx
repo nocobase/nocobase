@@ -220,11 +220,11 @@ export class NocoBaseBuildInPlugin extends Plugin {
       path: '/admin',
       Component: 'AdminLayout',
     });
-    this.router.add('admin.page', {
+    this.router.add('admin.popup', {
       path: '/admin/:pageId/popups/:popupId/records/*',
       Component: PopupSchemaComponent,
     });
-    this.router.add('admin.popup', {
+    this.router.add('admin.page', {
       path: '/admin/:name',
       Component: 'RouteSchemaComponent',
     });
