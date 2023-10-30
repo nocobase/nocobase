@@ -6,7 +6,8 @@ export const useDateVariable = ({ schema }) => {
   const { t: trans } = useTranslation();
   const t = useMemoizedFn(trans);
   const component = schema?.['x-component'];
-  const disabled = !['DatePicker', 'DatePicker.RangePicker'].includes(component);
+  // const disabled = !['DatePicker', 'DatePicker.RangePicker'].includes(component);
+  const disabled = false;
   const dateOptions = useMemo(
     () => [
       {
