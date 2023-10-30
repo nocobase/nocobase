@@ -138,6 +138,12 @@ export const runNocoBase = async (options?: CommonOptions<any>) => {
     return { awaitForNocoBase };
   }
 
+  if (!process.env.APP_BASE_URL.includes('localhost')) {
+    return {
+      awaitForNocoBase: async () => {},
+    };
+  }
+
   // 加上 -f 会清空数据库
   console.log('yarn nocobase install -f');
   await runCommand('yarn', ['nocobase', 'install', '-f'], options);
