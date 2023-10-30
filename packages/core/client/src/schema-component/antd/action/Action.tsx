@@ -5,8 +5,10 @@ import classnames from 'classnames';
 import { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useActionContext } from '../..';
 import { useDesignable } from '../../';
+import { useCollection } from '../../../collection-manager';
 import { Icon } from '../../../icon';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
@@ -54,6 +56,9 @@ export const Action: ComposedAction = observer(
     const compile = useCompile();
     const form = useForm();
     const record = useRecord();
+    const params = useParams();
+    const navigate = useNavigate();
+    const collection = useCollection();
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const disabled = form.disabled || field.disabled || field.data?.disabled || props.disabled;
@@ -64,7 +69,6 @@ export const Action: ComposedAction = observer(
     const variables = useVariables();
     const localVariables = useLocalVariables({ currentForm: { values: record } as any });
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
-
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
 
@@ -93,6 +97,7 @@ export const Action: ComposedAction = observer(
 
     const handleButtonClick = useCallback(
       (e: React.MouseEvent) => {
+        console.log('handleButtonClick');
         if (isPortalInBody(e.target as Element)) {
           return;
         }
@@ -102,6 +107,11 @@ export const Action: ComposedAction = observer(
 
         if (!disabled) {
           const onOk = () => {
+            if (openMode === 'page') {
+              const innerSchema = Object.values(fieldSchema.properties)[0];
+              navigate(`/admin/${params.name}/popups/${innerSchema['x-uid']}/records/${collection.name}/${record.id}`);
+              return;
+            }
             onClick?.(e);
             setVisible(true);
             run();

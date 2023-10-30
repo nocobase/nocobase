@@ -1,9 +1,13 @@
+import { ShareAltOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
+import { Tabs as AntdTabs, App, Button, Space, TabPaneProps, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
+import { useParams } from 'react-router-dom';
+import { useCollection } from '../../../collection-manager';
 import { Icon } from '../../../icon';
+import { useRecord } from '../../../record-provider';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
 import { useDesignable } from '../../hooks';
@@ -11,13 +15,26 @@ import { useDesigner } from '../../hooks/useDesigner';
 import { useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
 
+const getSubAppName = () => {
+  const match = window.location.pathname.match(/^\/apps\/([^/]*)\/?/);
+  if (!match) {
+    return '';
+  }
+  return match[1];
+};
+
 export const Tabs: any = observer(
   (props: TabsProps) => {
+    const { message } = App.useApp();
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
     const { designable } = useDesignable();
     const contextProps = useTabsContext();
     const { PaneRoot = React.Fragment as React.FC<any> } = contextProps;
+
+    const record = useRecord();
+    const params = useParams();
+    const collection = useCollection();
 
     const items = useMemo(() => {
       const result = fieldSchema.mapProperties((schema, key: string) => {
@@ -40,7 +57,31 @@ export const Tabs: any = observer(
         <AntdTabs
           {...contextProps}
           destroyInactiveTabPane
-          tabBarExtraContent={render()}
+          tabBarExtraContent={
+            <Space>
+              {render()}
+              {!params.popupId && (
+                <Button
+                  onClick={() => {
+                    if (params['*']) {
+                      return;
+                    }
+                    const app = getSubAppName();
+                    const url = `${location.protocol}//${location.host}/${app ? `/apps/${app}` : ''}admin/${
+                      params.name
+                    }/popups/${fieldSchema.parent['x-uid']}/records/${collection.name}${
+                      record.id ? `/${record.id}` : ''
+                    }`;
+                    navigator.clipboard.writeText(url);
+                    message.success('Copied');
+                  }}
+                  icon={<ShareAltOutlined />}
+                >
+                  Share
+                </Button>
+              )}
+            </Space>
+          }
           style={props.style}
           items={items}
         />
