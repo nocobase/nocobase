@@ -35,7 +35,7 @@ const sidebar = {
       children: [
         '/welcome/introduction',
         '/welcome/introduction/features',
-        '/welcome/introduction/when',
+        '/welcome/introduction/why',
         // '/welcome/introduction/learning-guide',
       ],
     },
@@ -123,20 +123,12 @@ const sidebar = {
       'title.TR-TR': 'Temel Kavramlar',
       type: 'group',
       children: [
-        '/manual/core-concepts/a-b-c',
         '/manual/core-concepts/collections',
         '/manual/core-concepts/blocks',
         '/manual/core-concepts/actions',
         '/manual/core-concepts/menus',
         '/manual/core-concepts/containers',
       ],
-    },
-    {
-      title: 'Blocks Guide',
-      'title.zh-CN': '区块指南',
-      'title.TR-TR': 'Blok Rehberi',
-      type: 'group',
-      children: ['/manual/blocks-guide/charts'],
     },
   ],
   '/development': [

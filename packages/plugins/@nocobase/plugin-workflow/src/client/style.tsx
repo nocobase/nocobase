@@ -182,6 +182,23 @@ const useStyles = createStyles(({ css, token }) => {
           width: 50%;
         }
       }
+
+      .end-sign {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 0;
+        height: 4em;
+        padding: 1em 0;
+        border-left: 1px dashed ${token.colorBgLayout};
+
+        .anticon {
+          font-size: 1.5em;
+          line-height: 100%;
+        }
+      }
     `,
 
     nodeBlockClass: css`
