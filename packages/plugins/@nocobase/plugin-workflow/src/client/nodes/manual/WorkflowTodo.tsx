@@ -1,8 +1,9 @@
-import { css } from '@emotion/css';
-import { observer, useField, useFieldSchema, useForm } from '@formily/react';
-import dayjs from 'dayjs';
-import { Space, Spin, Tag } from 'antd';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { observer, useField, useFieldSchema, useForm } from '@formily/react';
+import { Space, Spin, Tag } from 'antd';
+import dayjs from 'dayjs';
+
+import { css } from '@nocobase/client';
 
 import {
   CollectionManagerProvider,
@@ -600,7 +601,9 @@ function Decorator({ params = {}, children }) {
       {...cm}
       collections={[...collections, nodeCollection, workflowCollection, todoCollection]}
     >
-      <TableBlockProvider {...blockProps}>{children}</TableBlockProvider>
+      <TableBlockProvider name="workflow-todo" {...blockProps}>
+        {children}
+      </TableBlockProvider>
     </CollectionManagerProvider>
   );
 }

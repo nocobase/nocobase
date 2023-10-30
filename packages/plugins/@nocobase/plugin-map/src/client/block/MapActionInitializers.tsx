@@ -3,7 +3,6 @@ import { SchemaInitializer, useCollection } from '@nocobase/client';
 // 表格操作配置
 export const mapActionInitializers = new SchemaInitializer({
   name: 'MapActionInitializers',
-  'data-testid': 'configure-actions-button-of-map-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {

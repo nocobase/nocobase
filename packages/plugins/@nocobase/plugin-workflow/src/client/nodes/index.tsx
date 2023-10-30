@@ -21,6 +21,7 @@ import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { StatusButton } from '../components/StatusButton';
 import { JobStatusOptionsMap } from '../constants';
+import { useGetAriaLabelOfAddButton } from '../hooks/useGetAriaLabelOfAddButton';
 import { lang } from '../locale';
 import useStyles from '../style';
 import { VariableOption, VariableOptions } from '../variable';
@@ -49,7 +50,6 @@ export interface Instruction {
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
   component?(props): JSX.Element;
-  endding?: boolean;
   useVariables?(node, options?): VariableOption;
   useScopeVariables?(node, options?): VariableOptions;
   useInitializers?(node): SchemaInitializerItemOptions | null;
@@ -137,36 +137,14 @@ export function useUpstreamScopes(node) {
 
 export function Node({ data }) {
   const { styles } = useStyles();
-  const { component: Component = NodeDefaultView, endding } = instructions.get(data.type);
+  const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
+  const { component: Component = NodeDefaultView } = instructions.get(data.type);
 
   return (
     <NodeContext.Provider value={data}>
       <div className={cx(styles.nodeBlockClass)}>
         <Component data={data} />
-        {!endding ? (
-          <AddButton upstream={data} />
-        ) : (
-          <div
-            className={css`
-              flex-grow: 1;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              width: 1px;
-              height: 6em;
-              padding: 2em 0;
-              background-color: var(--nb-box-bg);
-
-              .anticon {
-                font-size: 1.5em;
-                line-height: 100%;
-              }
-            `}
-          >
-            <CloseOutlined />
-          </div>
-        )}
+        <AddButton aria-label={getAriaLabel()} upstream={data} />
       </div>
     </NodeContext.Provider>
   );
@@ -336,13 +314,20 @@ export function NodeDefaultView(props) {
 
   return (
     <div className={cx(styles.nodeClass, `workflow-node-type-${data.type}`)}>
-      <div className={cx(styles.nodeCardClass, { configuring: editingConfig })} onClick={onOpenDrawer}>
+      <div
+        role="button"
+        aria-label={`${typeTitle}-${editingTitle}`}
+        className={cx(styles.nodeCardClass, { configuring: editingConfig })}
+        onClick={onOpenDrawer}
+      >
         <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
           <Tag>{typeTitle}</Tag>
           <span className="workflow-node-id">{data.id}</span>
         </div>
         <div>
           <Input.TextArea
+            role="button"
+            aria-label="textarea"
             disabled={workflow.executed}
             value={editingTitle}
             onChange={(ev) => setEditingTitle(ev.target.value)}

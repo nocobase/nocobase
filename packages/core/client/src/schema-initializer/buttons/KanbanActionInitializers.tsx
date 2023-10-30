@@ -3,7 +3,6 @@ import { SchemaInitializer } from '../../application';
 
 export const kanbanActionInitializers = new SchemaInitializer({
   name: 'KanbanActionInitializers',
-  'data-testid': 'configure-actions-button-of-kanban-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {

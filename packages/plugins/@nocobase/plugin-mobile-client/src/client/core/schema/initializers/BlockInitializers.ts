@@ -3,7 +3,6 @@ import { generateNTemplate } from '../../../locale';
 
 export const mBlockInitializers = new SchemaInitializer({
   name: 'MBlockInitializers',
-  'data-testid': 'add-block-button-in-mobile-page',
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',
   wrap: gridRowColWrap,

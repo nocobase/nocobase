@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { SchemaInitializer, SchemaInitializerChildren } from '../../application';
 import { useCompile } from '../../schema-component';
 import {
   gridRowColWrap,
@@ -10,7 +11,6 @@ import {
   useFormItemInitializerFields,
   useInheritsFormItemInitializerFields,
 } from '../utils';
-import { SchemaInitializerChildren, SchemaInitializer } from '../../application';
 
 const ParentCollectionFields = () => {
   const inheritFields = useInheritsFormItemInitializerFields();
@@ -50,7 +50,6 @@ const AssociatedFields = () => {
 // 表单里配置字段
 export const formItemInitializers = new SchemaInitializer({
   name: 'FormItemInitializers',
-  'data-testid': 'configure-fields-button-of-form-item',
   wrap: gridRowColWrap,
   icon: 'SettingOutlined',
   title: '{{t("Configure fields")}}',
@@ -124,7 +123,6 @@ export const FilterAssociatedFields = () => {
 
 export const filterFormItemInitializers = new SchemaInitializer({
   name: 'FilterFormItemInitializers',
-  'data-testid': 'configure-fields-button-of-filter-form-item',
   wrap: gridRowColWrap,
   icon: 'SettingOutlined',
   title: '{{t("Configure fields")}}',

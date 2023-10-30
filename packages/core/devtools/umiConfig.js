@@ -41,6 +41,7 @@ function getUmiConfig() {
       'process.env.APP_ENV': process.env.APP_ENV,
       'process.env.VERSION': packageJson.version,
       'process.env.WEBSOCKET_URL': process.env.WEBSOCKET_URL,
+      'process.env.__E2E__': process.env.__E2E__,
     },
     // only proxy when using `umi dev`
     // if the assets are built, will not proxy

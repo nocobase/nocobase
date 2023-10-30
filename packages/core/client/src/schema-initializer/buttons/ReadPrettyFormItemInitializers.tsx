@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { SchemaInitializer, SchemaInitializerChildren } from '../../application';
 import { useCompile } from '../../schema-component';
 import {
   gridRowColWrap,
@@ -7,7 +8,6 @@ import {
   useFormItemInitializerFields,
   useInheritsFormItemInitializerFields,
 } from '../utils';
-import { SchemaInitializerChildren, SchemaInitializer } from '../../application';
 
 const ParentCollectionFields = () => {
   const inheritFields = useInheritsFormItemInitializerFields();
@@ -46,7 +46,6 @@ const AssociatedFields = () => {
 
 export const readPrettyFormItemInitializers = new SchemaInitializer({
   name: 'ReadPrettyFormItemInitializers',
-  'data-testid': 'configure-fields-button-of-read-pretty-form-item',
   wrap: gridRowColWrap,
   icon: 'SettingOutlined',
   title: '{{t("Configure fields")}}',

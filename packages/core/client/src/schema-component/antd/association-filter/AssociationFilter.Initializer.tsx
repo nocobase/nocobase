@@ -1,10 +1,9 @@
+import { SchemaInitializer } from '../../../application';
 import { useAssociatedFields } from '../../../filter-provider/utils';
 import { SchemaInitializerItemOptions } from '../../../schema-initializer';
-import { SchemaInitializer } from '../../../application';
 
 export const associationFilterInitializer = new SchemaInitializer({
   name: 'AssociationFilter.Initializer',
-  'data-testid': 'configure-fields-button-of-association-filter',
   style: {
     marginTop: 16,
   },

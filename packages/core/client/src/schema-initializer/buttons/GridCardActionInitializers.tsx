@@ -4,7 +4,6 @@ import { useCollection } from '../../collection-manager';
 // 表单的操作配置
 export const gridCardActionInitializers = new SchemaInitializer({
   name: 'GridCardActionInitializers',
-  'data-testid': 'configure-actions-button-of-grid-card-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -83,7 +82,6 @@ export const gridCardActionInitializers = new SchemaInitializer({
 
 export const gridCardItemActionInitializers = new SchemaInitializer({
   name: 'GridCardItemActionInitializers',
-  'data-testid': 'configure-actions-button-of-grid-card-item',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [

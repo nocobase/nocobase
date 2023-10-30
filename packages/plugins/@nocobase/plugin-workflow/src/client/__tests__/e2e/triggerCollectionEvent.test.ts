@@ -1,7 +1,7 @@
 import { expect, test } from '@nocobase/test/client';
-import { CreateWorkFlow, EditWorkFlow } from './pageobject/workFlow';
 import { dayjs } from '@nocobase/utils';
-import { e2e_GeneralFormsTable, appendJsonCollectionName, generateRandomLetters } from './pageobject/e2eTemplateJson';
+import { appendJsonCollectionName, e2e_GeneralFormsTable, generateRandomLetters } from './pageobject/e2eTemplateJson';
+import { CreateWorkFlow } from './pageobject/workFlow';
 
 test.describe('trigger collection events', () => {
   test('add data to trigger collection events', async ({ page, mockPage }) => {
@@ -26,80 +26,73 @@ test.describe('trigger collection events', () => {
     //配置工作流
     await page.goto('/admin/settings/workflow/workflows');
     await page.waitForLoadState('networkidle');
-    await page.getByTestId('create-action').click();
+    await page.getByLabel('action-Action-Add new-workflows').click();
     const createWorkFlow = new CreateWorkFlow(page);
     const workFlowName = caseTitle + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await createWorkFlow.name.fill(workFlowName);
     await createWorkFlow.triggerType.click();
     await page.getByTitle('Collection event').getByText('Collection event').click();
-    await page.getByTestId('submit-action').click();
-    await expect(page.getByText(workFlowName)).toBeAttached();
+    await page.getByLabel('action-Action-Submit-workflows').click();
+    await expect(page.getByText(workFlowName)).toBeVisible();
 
     //配置工作流触发器
-    await page
-      .getByRole('row', { name: '1 ' + workFlowName + ' Collection event Off 0 Configure Edit Duplicate Delete' })
-      .getByRole('link')
-      .click();
+    await page.getByLabel(`action-WorkflowLink-Configure-workflows-${workFlowName}`).click();
     await page.getByRole('button', { name: 'Configure' }).click();
-    await page.getByTestId('antd-select').getByLabel('Search').click();
-    await page.getByText('自动>组织[普通表]').click();
-    await page.getByTestId('mode-item').getByLabel('Search').click();
+    await page.getByTestId('select-collection').getByLabel('Search').click();
+    await page.getByText(collectionDisplayName).click();
+    await page.getByTestId('select-single').getByLabel('Search').click();
     await page.getByText('After record added', { exact: true }).click();
-    await page.getByTestId('submit-action').click();
+    await page.getByLabel('action-Action-Submit-workflows').click();
     await page.getByRole('link', { name: 'Workflow' }).click();
-    await page
-      .getByRole('row', { name: '1 ' + workFlowName + ' Collection event Off 0 Configure Edit Duplicate Delete' })
-      .getByTestId('update-action')
-      .click();
-    await page.getByTestId('enabled-item').getByLabel('On').check();
-    await page.getByTestId('submit-action').click();
+    await page.getByLabel(`action-Action.Link-Edit-workflows-${workFlowName}`).click();
+    await page.getByLabel('On', { exact: true }).check();
+    await page.getByLabel('action-Action-Submit-workflows').click();
 
     //配置录入数据区块
     await newPage.goto();
-    await page.getByRole('button', { name: 'plus Add block' }).hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
-    await page.getByRole('menuitem', { name: collectionDisplayName }).click();
-    await page.getByRole('button', { name: 'setting Configure columns' }).click();
-    await page.getByRole('menuitem', { name: fieldDisplayName }).getByRole('switch').click();
-    await page.getByRole('button', { name: 'setting Configure actions' }).hover();
-    await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
-    await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-    await page.getByRole('button', { name: 'setting Configure columns' }).hover();
-    await page.getByRole('button', { name: 'Add new' }).click();
-    await page.getByLabel('Add new').getByRole('button', { name: 'plus Add block' }).hover();
-    await page.getByRole('menuitem', { name: 'form Form' }).click();
-    await page.getByRole('button', { name: 'plus Add tab' }).click();
-    await page.getByRole('button', { name: 'Cancel' }).click();
-    await page.getByLabel('Add new').getByRole('button', { name: 'setting Configure actions' }).click();
-    await page.getByRole('group').getByText('Submit').click();
-    await page.getByRole('button', { name: 'setting Configure fields' }).click();
-    await page.getByRole('menuitem', { name: fieldDisplayName }).getByRole('switch').click();
-    await page.getByRole('button', { name: 'plus Add tab' }).click();
-    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('dataBlocks-table', { exact: true }).hover();
+    await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+
+    // 移开鼠标，关闭菜单
+    await page.mouse.move(300, 0);
+
+    await page.getByText('Configure columns').hover();
+    await page.getByText(fieldDisplayName).click();
+    await page.getByText('Configure actions').hover();
+    await page.getByLabel('Enable actions-Add new').click();
+    await expect(page.getByLabel('Enable actions-Add new').getByRole('switch')).toBeEnabled();
+
+    await page.getByLabel(`action-Action-Add new-create-tt_amt_org${appendText}-table`).click();
+    await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-tt_amt_org${appendText}`).hover();
+    await page.getByLabel('Data blocks-Form').click();
+
+    // 移开鼠标，关闭菜单
+    await page.mouse.move(300, 0);
+
+    await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-tt_amt_org${appendText}`).hover();
+    await page.getByLabel('Enable actions-Submit').click();
+    await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-tt_amt_org${appendText}`).hover();
+    await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+
+    await page.mouse.move(300, 0);
 
     // 2、测试步骤：进入“数据区块”-“添加”按钮，填写表单，点击“确定”按钮
-    await page
-      .getByTestId(collectionName + '.' + fieldName + '-field')
-      .getByRole('textbox')
-      .click();
     const fieldData = fieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page
-      .getByTestId(collectionName + '.' + fieldName + '-field')
-      .getByRole('textbox')
-      .fill(fieldData);
-    await page.getByRole('button', { name: 'Submit' }).click();
-    await expect(page.getByText(fieldData)).toBeAttached();
+    await page.getByRole('textbox').fill(fieldData);
+    await page.getByLabel(`action-Action-Submit-submit-${collectionName}-form`, { exact: true }).click();
+    await expect(page.getByText(fieldData)).toBeVisible();
 
     // 3、预期结果：数据添加成功，工作流成功触发
-    await expect(page.getByText(fieldData)).toBeAttached();
+    await expect(page.getByText(fieldData)).toBeVisible();
     await page.goto('/admin/settings/workflow/workflows');
-    await expect(page.getByRole('table').locator('a').filter({ hasText: '1' })).toBeAttached();
+    await expect(page.getByRole('table').locator('a').filter({ hasText: '1' })).toBeVisible();
 
     // 4、后置处理：删除工作流
-    await page.getByTestId('filter-action').click();
+    await page.getByLabel('action-Filter.Action-Filter-filter-workflows').click();
     await page.getByRole('textbox').fill(workFlowName);
     await page.getByRole('button', { name: 'Submit' }).click();
-    await page.getByRole('cell', { name: 'Configure Edit Duplicate Delete' }).getByTestId('delete-action').click();
+    await page.getByLabel(`action-Action.Link-Delete-workflows-${workFlowName}`).click();
     await page.getByRole('button', { name: 'OK' }).click();
     await expect(page.getByText(workFlowName)).toBeHidden();
   });

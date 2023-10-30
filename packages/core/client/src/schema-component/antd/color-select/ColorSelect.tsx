@@ -23,9 +23,9 @@ export const ColorSelect = connect(
   (props) => {
     const compile = useCompile();
     return (
-      <Select data-testid="antd-select" {...props}>
-        {Object.keys(colors).map((color) => (
-          <Select.Option value={color}>
+      <Select {...props}>
+        {Object.keys(colors).map((color, index) => (
+          <Select.Option key={index} value={color}>
             <Tag color={color}>{compile(colors[color] || colors.default)}</Tag>
           </Select.Option>
         ))}

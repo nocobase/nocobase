@@ -14,6 +14,8 @@ import {
   InitializerWithSwitch,
   SchemaComponent,
   SchemaComponentContext,
+  SchemaInitializer,
+  SchemaInitializerItem,
   SchemaInitializerItemOptions,
   SchemaSettings,
   VariableScopeProvider,
@@ -22,11 +24,9 @@ import {
   useCompile,
   useFormActiveFields,
   useFormBlockContext,
-  SchemaInitializer,
-  useSchemaOptionsContext,
   useSchemaInitializer,
-  SchemaInitializerItem,
   useSchemaInitializerItem,
+  useSchemaOptionsContext,
 } from '@nocobase/client';
 import { Registry, lodash } from '@nocobase/utils/client';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
@@ -115,7 +115,6 @@ function SimpleDesigner() {
 
 export const addBlockButton = new SchemaInitializer({
   name: 'AddBlockButton',
-  'data-testid': 'add-block-button-in-workflow',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',
   items: [
@@ -234,7 +233,9 @@ function AssignedFieldValues() {
 
   return (
     <>
-      <SchemaSettings.Item onClick={() => setOpen(true)}>{title}</SchemaSettings.Item>
+      <SchemaSettings.Item title={title} onClick={() => setOpen(true)}>
+        {title}
+      </SchemaSettings.Item>
       <Modal
         width={'50%'}
         title={title}
@@ -355,7 +356,6 @@ function ActionInitializer() {
 
 export const addActionButton = new SchemaInitializer({
   name: 'AddActionButton',
-  'data-testid': 'configure-actions-add-action-button',
   title: '{{t("Configure actions")}}',
   items: [
     {

@@ -1,10 +1,9 @@
 import { useCollection } from '../..';
-import { gridRowColWrap } from '../utils';
 import { SchemaInitializer } from '../../application';
+import { gridRowColWrap } from '../utils';
 
 export const tableSelectorInitializers = new SchemaInitializer({
   name: 'TableSelectorInitializers',
-  'data-testid': 'configure-columns-button-of-table-block',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',

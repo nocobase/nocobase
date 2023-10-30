@@ -1,9 +1,8 @@
-import { gridRowColWrap } from '../utils';
 import { SchemaInitializer } from '../../application';
+import { gridRowColWrap } from '../utils';
 
 export const recordFormBlockInitializers = new SchemaInitializer({
   name: 'RecordFormBlockInitializers',
-  'data-testid': 'add-block-button-in-record-form-block',
   title: '{{ t("Add block") }}',
   icon: 'PlusOutlined',
   wrap: gridRowColWrap,

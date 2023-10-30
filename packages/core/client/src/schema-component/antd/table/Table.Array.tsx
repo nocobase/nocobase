@@ -134,14 +134,14 @@ const useDefDataSource = (options, props) => {
   }, options);
 };
 
-const SortHandle = () => {
-  return <MenuOutlined className={'drag-handle'} style={{ cursor: 'grab' }} />;
+const SortHandle = (props) => {
+  return <MenuOutlined className={'drag-handle'} style={{ cursor: 'grab' }} {...props} />;
 };
 
 const TableIndex = (props) => {
-  const { index } = props;
+  const { index, ...otherProps } = props;
   return (
-    <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }}>
+    <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }} {...otherProps}>
       {index + 1}
     </div>
   );
@@ -181,6 +181,11 @@ export const TableArray: React.FC<any> = observer(
             selectedRowKeys,
             onChange(selectedRowKeys: any[]) {
               setSelectedRowKeys(selectedRowKeys);
+            },
+            getCheckboxProps: (record: any) => {
+              return {
+                'aria-label': `checkbox-${record.name}`,
+              };
             },
             renderCell: (checked, record, index, originNode) => {
               const current = props?.pagination?.current;
@@ -228,8 +233,10 @@ export const TableArray: React.FC<any> = observer(
                       `,
                     )}
                   >
-                    {dragSort && <SortHandle />}
-                    {showIndex && <TableIndex index={index} />}
+                    {dragSort && <SortHandle role="button" aria-label={`sort-handle-${record?.name || index}`} />}
+                    {showIndex && (
+                      <TableIndex role="button" aria-label={`table-index-${record?.name || index}`} index={index} />
+                    )}
                   </div>
                   <div
                     className={classNames(

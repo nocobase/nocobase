@@ -341,30 +341,30 @@ const config = {
 };
 
 // fix https://nocobase.height.app/T-2200
-test.skip('BUG: should be possible to change the value of the association field normally', async ({
-  page,
-  mockPage,
-}) => {
+test('BUG: should be possible to change the value of the association field normally', async ({ page, mockPage }) => {
   await mockPage(config).goto();
 
-  await page.getByTestId('table-block').getByText('Edit').click();
-  await expect(page.getByTestId('antd-select').getByText('AdminMemberRoot')).toBeVisible();
+  await page.getByLabel('action-Action.Link-Edit-update-users-table-0').click();
+  await expect(page.getByLabel('Admin')).toBeVisible();
+  await expect(page.getByLabel('Member')).toBeVisible();
+  await expect(page.getByLabel('Root')).toBeVisible();
 
-  await page.getByTestId('antd-select').getByText('AdminMemberRoot').click();
+  await page.getByTestId('select-object-multiple').click();
   await page.getByRole('option', { name: 'Member' }).click();
+  // 再次点击，关闭下拉框。
+  await page.getByTestId('select-object-multiple').click();
 
-  // 点击空白处，关闭下拉框。如不关闭，会挡住按钮，导致鼠标 hover 无效
-  await page
-    .getByTestId('action-drawer')
-    .locator('div')
-    .filter({ hasText: 'EditAdd tabRoles:AdminRoot Configure fieldsConfigure actionsAdd block' })
-    .nth(2)
-    .click();
+  await expect(page.getByLabel('Admin')).toBeVisible();
+  await expect(page.getByLabel('Member')).toBeHidden();
+  await expect(page.getByLabel('Root')).toBeVisible();
 
-  await expect(page.getByTestId('antd-select').getByText('AdminRoot')).toBeVisible();
+  await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').hover();
+  await page.getByLabel('Display collection fields-Nickname').click();
 
-  await page.getByTestId('configure-fields-button-of-form-item-users').hover();
-  await page.getByRole('menuitem', { name: 'Nickname' }).click();
+  await page.mouse.move(200, 0);
+
   await page.waitForTimeout(200);
-  await expect(page.getByTestId('antd-select').getByText('AdminRoot')).toBeVisible();
+  await expect(page.getByLabel('Admin')).toBeVisible();
+  await expect(page.getByLabel('Member')).toBeHidden();
+  await expect(page.getByLabel('Root')).toBeVisible();
 });

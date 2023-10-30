@@ -1,12 +1,12 @@
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
+import { createStyles } from 'antd-style';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createStyles } from 'antd-style';
 import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../..';
+import { SchemaInitializer, SchemaInitializerItem, useSchemaInitializer } from '../../../../application';
 import { useGlobalTheme } from '../../../../global-theme';
-import { SchemaInitializerItem, SchemaInitializer, useSchemaInitializer } from '../../../../application';
 
 const useStyles = createStyles(({ token }) => ({
   menuItem: {

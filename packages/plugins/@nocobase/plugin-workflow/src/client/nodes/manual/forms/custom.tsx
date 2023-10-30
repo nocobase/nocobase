@@ -11,10 +11,10 @@ import {
   FormBlockContext,
   RecordProvider,
   SchemaComponent,
+  SchemaInitializer,
   SchemaInitializerItem,
   SchemaInitializerItemOptions,
   SchemaInitializerItems,
-  SchemaInitializer,
   gridRowColWrap,
   useCollectionManager,
   useRecord,
@@ -320,7 +320,6 @@ const CustomItemsComponent = (props) => {
 
 export const addCustomFormField = new SchemaInitializer({
   name: 'AddCustomFormField',
-  'data-testid': 'configure-fields-button-of-add-custom-form-field',
   wrap: gridRowColWrap,
   insertPosition: 'beforeEnd',
   title: "{{t('Configure fields')}}",

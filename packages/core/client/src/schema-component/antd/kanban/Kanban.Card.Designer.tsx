@@ -5,13 +5,14 @@ import { Space } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
+import { SchemaInitializer, useApp } from '../../../application';
 import { createDesignable, useDesignable } from '../../../schema-component';
 import {
   useAssociatedFormItemInitializerFields,
   useFormItemInitializerFields,
 } from '../../../schema-initializer/utils';
 import { SchemaInitializerOpenModeSchemaItems } from '../../../schema-items';
-import { SchemaInitializer, useApp } from '../../../application';
+import { useGetAriaLabelOfDesigner } from '../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
 
 const gridRowColWrap = (schema: ISchema) => {
   schema['x-read-pretty'] = true;
@@ -42,6 +43,7 @@ const gridRowColWrap = (schema: ISchema) => {
 export const KanbanCardDesigner = () => {
   const { designable } = useDesignable();
   const app = useApp();
+  const { getAriaLabel } = useGetAriaLabelOfDesigner();
   if (!designable) {
     return null;
   }
@@ -88,7 +90,13 @@ export const kanbanCardInitializers = new SchemaInitializer({
       dn.insertBeforeEnd(schema);
     };
   },
-  Component: () => <MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />,
+  Component: () => (
+    <MenuOutlined
+      role="button"
+      aria-label={getAriaLabel('schema-initializer')}
+      style={{ cursor: 'pointer', fontSize: 12 }}
+    />
+  ),
   items: [
     {
       type: 'itemGroup',

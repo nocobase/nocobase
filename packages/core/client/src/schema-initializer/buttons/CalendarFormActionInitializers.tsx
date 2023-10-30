@@ -4,7 +4,6 @@ import { SchemaInitializer } from '../../application';
 // 表单的操作配置
 export const calendarFormActionInitializers = new SchemaInitializer({
   name: 'CalendarFormActionInitializers',
-  'data-testid': 'configure-actions-button-of-calendar-form',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   style: {

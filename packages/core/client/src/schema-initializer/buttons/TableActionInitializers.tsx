@@ -5,7 +5,6 @@ import { SchemaInitializer } from '../../application';
 // 表格操作配置
 export const tableActionInitializers = new SchemaInitializer({
   name: 'TableActionInitializers',
-  'data-testid': 'configure-actions-button-of-table-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {

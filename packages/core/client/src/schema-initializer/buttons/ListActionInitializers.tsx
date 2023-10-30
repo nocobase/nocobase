@@ -4,7 +4,6 @@ import { useCollection } from '../../collection-manager';
 // 表单的操作配置
 export const listActionInitializers = new SchemaInitializer({
   name: 'ListActionInitializers',
-  'data-testid': 'configure-actions-button-of-list-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -87,7 +86,6 @@ export const listActionInitializers = new SchemaInitializer({
 
 export const listItemActionInitializers = new SchemaInitializer({
   name: 'ListItemActionInitializers',
-  'data-testid': 'configure-actions-button-of-list-item',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [

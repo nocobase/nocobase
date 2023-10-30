@@ -1,13 +1,13 @@
 import { useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { SchemaInitializer, SchemaInitializerChildren } from '../../application';
 import { useCompile } from '../../schema-component';
 import {
   useAssociatedTableColumnInitializerFields,
   useInheritsTableColumnInitializerFields,
   useTableColumnInitializerFields,
 } from '../utils';
-import { SchemaInitializerChildren, SchemaInitializer } from '../../application';
 
 // 表格列配置
 const ParentCollectionFields = () => {
@@ -47,7 +47,6 @@ const AssociatedFields = () => {
 
 export const tableColumnInitializers = new SchemaInitializer({
   name: 'TableColumnInitializers',
-  'data-testid': 'configure-columns-button-of-table-block',
   insertPosition: 'beforeEnd',
   icon: 'SettingOutlined',
   title: '{{t("Configure columns")}}',

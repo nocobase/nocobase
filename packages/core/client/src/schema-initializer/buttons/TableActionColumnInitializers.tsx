@@ -3,15 +3,16 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAPIClient } from '../../api-client';
 import {
+  SchemaInitializer,
   SchemaInitializerActionModal,
   SchemaInitializerItem,
-  SchemaInitializer,
   useSchemaInitializer,
 } from '../../application';
-import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { createDesignable, useDesignable } from '../../schema-component';
+import { useGetAriaLabelOfDesigner } from '../../schema-settings/hooks/useGetAriaLabelOfDesigner';
 
 export const Resizable = () => {
   const { t } = useTranslation();
@@ -96,7 +97,10 @@ export const tableActionColumnInitializers = new SchemaInitializer({
       dn.insertBeforeEnd(schema);
     };
   },
-  Component: () => <MenuOutlined style={{ cursor: 'pointer' }} />,
+  Component: () => {
+    const { getAriaLabel } = useGetAriaLabelOfDesigner();
+    return <MenuOutlined role="button" aria-label={getAriaLabel('schema-settings')} style={{ cursor: 'pointer' }} />;
+  },
   items: [
     {
       type: 'itemGroup',

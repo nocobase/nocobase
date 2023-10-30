@@ -2,11 +2,13 @@ import { useForm } from '@formily/react';
 import React, { useMemo } from 'react';
 import { SchemaComponent, useActionContext, useDesignable, useRecordIndex } from '../..';
 import { SchemaInitializer } from '../../application';
+import { useGetAriaLabelOfSchemaInitializer } from '../hooks/useGetAriaLabelOfSchemaInitializer';
 
 export const TabPaneInitializers = (props?: any) => {
   const { designable, insertBeforeEnd } = useDesignable();
   const { isCreate, isBulkEdit, options } = props;
   const { gridInitializer } = options;
+  const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
 
   const useSubmitAction = () => {
     const form = useForm();
@@ -61,6 +63,7 @@ export const TabPaneInitializers = (props?: any) => {
               color: 'var(--colorSettings)',
             },
             type: 'dashed',
+            'aria-label': getAriaLabel(),
           },
           title: '{{t("Add tab")}}',
           properties: {

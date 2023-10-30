@@ -57,7 +57,7 @@ export const GridCardBlockProvider = (props) => {
   }, [parsedFilter, params]);
 
   return (
-    <BlockProvider data-testid="grid-card-block" {...props} params={paramsWithFilter}>
+    <BlockProvider name="grid-card" {...props} params={paramsWithFilter}>
       <InternalGridCardBlockProvider {...props} />
     </BlockProvider>
   );

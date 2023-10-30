@@ -1,8 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { SchemaInitializer, SchemaInitializerChildren } from '../../application';
 import { useCompile } from '../../schema-component';
 import { gridRowColWrap, useCustomFormItemInitializerFields, useInheritsFormItemInitializerFields } from '../utils';
-import { SchemaInitializerChildren, SchemaInitializer } from '../../application';
 
 // 表单里配置字段
 const ParentCollectionFields = () => {
@@ -25,7 +25,6 @@ const ParentCollectionFields = () => {
 
 export const customFormItemInitializers = new SchemaInitializer({
   name: 'CustomFormItemInitializers',
-  'data-testid': 'configure-fields-button-of-custom-form-item',
   wrap: gridRowColWrap,
   icon: 'SettingOutlined',
   title: '{{t("Configure fields")}}',

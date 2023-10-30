@@ -1,9 +1,8 @@
-import { gridRowColWrap } from '../utils';
 import { SchemaInitializer } from '../../application';
+import { gridRowColWrap } from '../utils';
 
 export const blockInitializers = new SchemaInitializer({
   name: 'BlockInitializers',
-  'data-testid': 'add-block-button-in-page',
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',
   wrap: gridRowColWrap,
