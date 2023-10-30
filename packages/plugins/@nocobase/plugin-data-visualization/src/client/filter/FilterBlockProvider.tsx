@@ -5,6 +5,8 @@ import {
   useChartFilterActionProps,
   useChartFilterResetProps,
   useChartFilterCollapseProps,
+  ChartFilterCollapseDesigner,
+  ChartFilterActionDesigner,
 } from './FilterActionInitializers';
 import { ChartFilterGrid } from './FilterBlockInitializer';
 import { useChartsTranslation } from '../locale';
@@ -39,6 +41,8 @@ export const ChartFilterBlockProvider: React.FC = (props) => {
           ChartFilterCheckbox,
           ChartFilterFormItem,
           ArrayItems,
+          ChartFilterCollapseDesigner,
+          ChartFilterActionDesigner,
         }}
         scope={{ t, useChartFilterActionProps, useChartFilterResetProps, useChartFilterCollapseProps }}
       >

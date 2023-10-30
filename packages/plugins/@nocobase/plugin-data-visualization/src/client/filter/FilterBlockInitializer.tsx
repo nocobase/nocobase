@@ -4,6 +4,7 @@ import { Grid, gridRowColWrap, useDesignable, useCurrentSchema, SchemaInitialize
 import { uid, merge } from '@formily/shared';
 import { ChartFilterContext } from './FilterProvider';
 import { css } from '@emotion/css';
+import { theme } from 'antd';
 
 const createFilterSchema = () => {
   return {
@@ -19,9 +20,6 @@ const createFilterSchema = () => {
       [uid()]: {
         type: 'void',
         'x-component': 'ChartFilterForm',
-        'x-component-props': {
-          layout: 'inline',
-        },
         properties: {
           grid: {
             type: 'void',
@@ -49,13 +47,16 @@ const createFilterSchema = () => {
 };
 
 export const ChartFilterGrid: React.FC = (props) => {
-  const { collapse } = useContext(ChartFilterContext);
+  const {
+    collapse: { collapsed },
+  } = useContext(ChartFilterContext);
+  const { token } = theme.useToken();
   return (
     <div
       className={css`
         .ant-nb-grid {
           overflow: hidden;
-          height: ${collapse ? '44px' : 'auto'};
+          height: ${collapsed ? `${token.controlHeight * 2}px` : 'auto'};
         }
       `}
     >

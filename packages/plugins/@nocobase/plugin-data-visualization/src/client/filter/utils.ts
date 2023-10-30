@@ -1,3 +1,6 @@
+import { moment2str } from '@nocobase/utils';
+import dayjs from 'dayjs';
+
 export const getOptionsSchema = () => {
   const options = {
     title: '{{t("Options")}}',
@@ -130,4 +133,25 @@ export const getPropsSchemaByComponent = (component: string) => {
     },
   };
   return propsSchema[component];
+};
+
+export const transformValue = (value: any, props: any) => {
+  if (!value) {
+    return value;
+  }
+  if (dayjs.isDayjs(value)) {
+    if (!props.showTime) {
+      value = value.startOf('day');
+    }
+    return moment2str(value, props);
+  }
+  if (Array.isArray(value) && value.length && dayjs.isDayjs(value[0])) {
+    let start = value[0];
+    let end = value[1];
+    if (props.showTime) {
+      start = start.startOf('day');
+      end = end.endOf('day');
+    }
+    return [moment2str(start, props), moment2str(end, props)];
+  }
 };

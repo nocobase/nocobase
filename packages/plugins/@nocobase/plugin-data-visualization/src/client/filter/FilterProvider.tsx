@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useLayoutEffect, useState } from 'react';
+import React, { createContext, useEffect, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
 
 export const ChartFilterContext = createContext<{
@@ -18,8 +18,11 @@ export const ChartFilterContext = createContext<{
   };
   addField: (name: string, field: { title: string; operator?: string }) => void;
   removeField: (name: string) => void;
-  collapse: boolean;
-  setCollapse: (collapsed: boolean) => void;
+  collapse: {
+    collapsed: boolean;
+    row: number;
+  };
+  setCollapse: (opts: { collapsed?: boolean; row?: number }) => void;
   form: any;
   setForm: (form: any) => void;
 }>({} as any);
@@ -28,7 +31,7 @@ export const ChartFilterProvider: React.FC = (props) => {
   const [ready, setReady] = useState(false);
   const [enabled, _setEnabled] = useState(false);
   const [fields, setFields] = useState({});
-  const [collapse, setCollapse] = useState(false);
+  const [collapse, _setCollapse] = useState({ collapsed: false, row: 1 });
   const [form, _setForm] = useState<any>();
   const addField = useMemoizedFn((name: string, props: { title: string }) => {
     const [collection, target, field] = name.split('.');
@@ -53,6 +56,12 @@ export const ChartFilterProvider: React.FC = (props) => {
   });
   const setForm = useMemoizedFn(_setForm);
   const setEnabled = useMemoizedFn(_setEnabled);
+  const setCollapse = ({ collapsed, row }: { collapsed?: boolean; row?: number }) => {
+    _setCollapse((collapse) => ({
+      collapsed: collapsed !== undefined ? collapsed : collapse.collapsed,
+      row: row !== undefined ? row : collapse.row,
+    }));
+  };
   useEffect(() => setReady(true), []);
   return (
     <ChartFilterContext.Provider

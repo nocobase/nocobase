@@ -1,8 +1,8 @@
-import { SchemaInitializerItemOptions, isAssocField, useActionContext, useCollectionManager } from '@nocobase/client';
+import { SchemaInitializerItemOptions, useActionContext, useCollectionManager } from '@nocobase/client';
 import { useContext, useMemo } from 'react';
 import { ChartDataContext } from '../block/ChartDataProvider';
 import { CollectionOptions } from '@nocobase/database';
-import { Schema, useForm } from '@formily/react';
+import { Schema } from '@formily/react';
 import { useChartsTranslation } from '../locale';
 import { ChartFilterContext } from '../filter/FilterProvider';
 import { useMemoizedFn } from 'ahooks';
@@ -141,19 +141,13 @@ export const useChartFilter = () => {
     const filter = {};
     Object.entries(values).forEach(([collection, fields]) => {
       Object.entries(fields).forEach(([field, value]) => {
-        if (!value) {
-          return;
-        }
         let target: string;
         let name: string;
-        if (typeof value === 'object' && !Array.isArray(value)) {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
           target = field;
           name = Object.keys(value)[0];
           field = `${target}.${name}`;
           value = Object.values(value)[0];
-          if (!value) {
-            return;
-          }
         }
         const operator = fieldProps[collection]?.[field]?.operator;
         const op = operator?.value || '$eq';

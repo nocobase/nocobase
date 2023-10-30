@@ -1,9 +1,11 @@
-import { useField, useForm } from '@formily/react';
-import { ActionInitializer } from '@nocobase/client';
+import { useForm } from '@formily/react';
+import { Action, ActionInitializer, GeneralSchemaDesigner, SchemaSettings } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useChartFilter } from '../hooks/filter';
 import { ChartFilterContext } from './FilterProvider';
 import { useChartsTranslation } from '../locale';
+import { DownOutlined } from '@ant-design/icons';
+import { Divider } from 'antd';
 
 export const useChartFilterActionProps = () => {
   const { filter } = useChartFilter();
@@ -14,25 +16,65 @@ export const useChartFilterActionProps = () => {
 
 export const useChartFilterResetProps = () => {
   const form = useForm();
-  const { refresh } = useChartFilter();
+  const { filter } = useChartFilter();
   return {
     onClick: async () => {
       form.reset();
-      await refresh();
+      await filter();
     },
   };
 };
 
 export const useChartFilterCollapseProps = () => {
-  const { collapse, setCollapse } = useContext(ChartFilterContext);
+  const {
+    collapse: { collapsed },
+    setCollapse,
+  } = useContext(ChartFilterContext);
+
   const { t } = useChartsTranslation();
-  const field = useField();
   return {
-    onClick: () => {
-      setCollapse(!collapse);
-      field.componentProps.title = collapse ? t('Collapse') : t('Expand');
-    },
+    onClick: () => setCollapse({ collapsed: !collapsed }),
+    title: (
+      <>
+        <DownOutlined rotate={!collapsed ? 180 : 0} /> {!collapsed ? t('Collapse') : t('Expand')}
+      </>
+    ),
   };
+};
+
+export const ChartFilterCollapseDesigner: React.FC = (props: any) => {
+  const { t } = useChartsTranslation();
+  return (
+    <GeneralSchemaDesigner {...props} disableInitializer>
+      <SchemaSettings.Remove
+        breakRemoveOn={(s) => {
+          return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
+        }}
+        confirm={{
+          title: t('Delete action'),
+        }}
+      />
+    </GeneralSchemaDesigner>
+  );
+};
+
+export const ChartFilterActionDesigner: React.FC = (props: any) => {
+  const { buttonEditorProps, ...restProps } = props;
+  const { t } = useChartsTranslation();
+  return (
+    <GeneralSchemaDesigner {...restProps} disableInitializer>
+      <Action.Designer.ButtonEditor {...buttonEditorProps} />
+      <SchemaSettings.Divider />
+      <SchemaSettings.Remove
+        breakRemoveOn={(s) => {
+          return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
+        }}
+        confirm={{
+          title: t('Delete action'),
+        }}
+      />
+    </GeneralSchemaDesigner>
+  );
 };
 
 const ChartFilterActionInitializer = (props) => {
@@ -40,7 +82,7 @@ const ChartFilterActionInitializer = (props) => {
     title: '{{ t("Filter") }}',
     'x-action': 'submit',
     'x-component': 'Action',
-    'x-designer': 'Action.Designer',
+    'x-designer': 'ChartFilterActionDesigner',
     'x-component-props': {
       type: 'primary',
       useProps: '{{ useChartFilterActionProps }}',
@@ -54,7 +96,7 @@ const ChartFilterResetInitializer = (props) => {
     title: '{{ t("Reset") }}',
     'x-action': 'reset',
     'x-component': 'Action',
-    'x-designer': 'Action.Designer',
+    'x-designer': 'ChartFilterActionDesigner',
     'x-component-props': {
       useProps: '{{ useChartFilterResetProps }}',
     },
@@ -67,10 +109,11 @@ const ChartFilterCollapseInitializer = (props) => {
     title: `{{ t("Collapse") }}`,
     'x-action': 'collapse',
     'x-component': 'Action',
-    'x-designer': 'Action.Designer',
     'x-component-props': {
+      type: 'link',
       useProps: '{{ useChartFilterCollapseProps }}',
     },
+    'x-designer': 'ChartFilterCollapseDesigner',
   };
   return <ActionInitializer {...props} schema={schema} />;
 };

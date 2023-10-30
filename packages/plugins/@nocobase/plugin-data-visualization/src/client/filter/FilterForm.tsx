@@ -1,7 +1,8 @@
 import React, { useContext, useEffect, useMemo } from 'react';
-import { createForm, onFieldChange, onFieldInit, onFieldMount, onFieldUnmount } from '@formily/core';
+import { createForm, onFieldInit, onFieldMount, onFieldUnmount } from '@formily/core';
 import { ChartFilterContext } from './FilterProvider';
 import { FormV2, VariablesContext } from '@nocobase/client';
+import { transformValue } from './utils';
 
 export const ChartFilterForm: React.FC = (props) => {
   const { addField, removeField, setForm } = useContext(ChartFilterContext);
@@ -36,11 +37,11 @@ export const ChartFilterForm: React.FC = (props) => {
             const isVariable =
               typeof defaultValue === 'string' && defaultValue?.startsWith('{{$') && defaultValue?.endsWith('}}');
             if (!isVariable) {
-              field.setValue(defaultValue);
+              field.setInitialValue(defaultValue);
             } else {
               field.loading = true;
               const value = await variables.parseVariable(defaultValue);
-              field.setValue(value);
+              field.setInitialValue(transformValue(value, field.componentProps));
               field.loading = false;
             }
           });
