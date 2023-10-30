@@ -31,7 +31,7 @@ https://docs.nocobase.com/
 Contact Us:  
 hello@nocobase.com
 
-## Why NocoBase is different
+## Distinctive features
 
 ### 1. Model-driven, separate "user interface" from "data structure"
 
