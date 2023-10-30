@@ -34,13 +34,15 @@ const CurrentUserVariableRegExp = /{{\s*(currentUser[^}]+)\s*}}/g;
 
 const getCurrentUserAppends = (str: string, user) => {
   const matched = str.matchAll(CurrentUserVariableRegExp);
-  return Array.from(matched).map((item) => {
-    const keys = item?.[1].split('.') || [];
-    const appendKey = keys[1];
-    if (keys.length > 2 && !Reflect.has(user || {}, appendKey)) {
-      return appendKey;
-    }
-  });
+  return Array.from(matched)
+    .map((item) => {
+      const keys = item?.[1].split('.') || [];
+      const appendKey = keys[1];
+      if (keys.length > 2 && !Reflect.has(user || {}, appendKey)) {
+        return appendKey;
+      }
+    })
+    .filter(Boolean);
 };
 
 export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) {
@@ -87,12 +89,10 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   if (collectionName && typeof currentRecord.id !== 'undefined') {
     const recordRepo = ctx.db.getRepository(collectionName);
     currentRecordValues =
-      (
-        await recordRepo.findOne({
-          filterByTk: currentRecord.id,
-          appends: currentRecord.appends,
-        })
-      )?.toJSON() || {};
+      (await recordRepo.findOne({
+        filterByTk: currentRecord.id,
+        appends: currentRecord.appends,
+      })) || {};
   }
 
   let currentUser = ctx.auth.user;
@@ -103,12 +103,10 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   );
   if (userAppends.length) {
     currentUser =
-      (
-        await ctx.db.getRepository('users').findOne({
-          filterByTk: ctx.auth.user.id,
-          appends: userAppends,
-        })
-      )?.toJSON() || {};
+      (await ctx.db.getRepository('users').findOne({
+        filterByTk: ctx.auth.user.id,
+        appends: userAppends,
+      })) || {};
   }
 
   const variables = {
