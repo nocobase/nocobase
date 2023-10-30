@@ -58,7 +58,7 @@ const checkServer = async (duration = 1000, max = 60 * 10) => {
       }
 
       axios
-        .get(`http://localhost:${process.env.APP_PORT}/api/__health_check`)
+        .get(`${process.env.APP_BASE_URL}/api/__health_check`)
         .then((response) => {
           if (response.status === 200) {
             clearInterval(timer);
@@ -86,7 +86,7 @@ const checkUI = async (duration = 1000, max = 60 * 10) => {
       }
 
       axios
-        .get(`http://localhost:${process.env.APP_PORT}/__umi/api/bundle-status`)
+        .get(`${process.env.APP_BASE_URL}/__umi/api/bundle-status`)
         .then((response) => {
           if (response.data.bundleStatus.done) {
             clearInterval(timer);
@@ -136,6 +136,12 @@ export const runNocoBase = async (options?: CommonOptions<any>) => {
     console.log(`yarn start -d -p ${process.env.APP_PORT}`);
     await runCommand('yarn', ['start', '-d', `-p ${process.env.APP_PORT}`], options);
     return { awaitForNocoBase };
+  }
+
+  if (!process.env.APP_BASE_URL.includes('localhost')) {
+    return {
+      awaitForNocoBase: async () => {},
+    };
   }
 
   // 加上 -f 会清空数据库
