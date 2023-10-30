@@ -3,7 +3,7 @@ import React from 'react';
 import {
   CollectionProvider,
   SchemaInitializerItem,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItemType,
   useCollectionManager,
   useRecordCollectionDataSourceItems,
   useSchemaInitializer,
@@ -16,7 +16,7 @@ function InnerCollectionBlockInitializer({ collection, dataSource, ...props }) {
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { getCollection } = useCollectionManager();
-  const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemOptions[];
+  const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemType[];
   const resolvedCollection = getCollection(collection);
 
   async function onConfirm({ item }) {

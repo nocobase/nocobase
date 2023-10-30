@@ -1,13 +1,13 @@
 import React, { ReactNode, useCallback } from 'react';
 import { SchemaInitializerChild } from '../components';
 import { useCompile } from '../../../schema-component';
-import { SchemaInitializerItemOptions } from '../../../schema-initializer';
+import { SchemaInitializerItemType } from '../types';
 
 export function useSchemaInitializerMenuItems(items: any[], name?: string, onClick?: (args: any) => void) {
   const compile = useCompile();
 
   const getMenuItems = useCallback(
-    (items: SchemaInitializerItemOptions[], parentKey: string) => {
+    (items: SchemaInitializerItemType[], parentKey: string) => {
       if (!items?.length) {
         return [];
       }

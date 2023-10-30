@@ -1,7 +1,7 @@
 import { Schema, useFieldSchema } from '@formily/react';
-import { SchemaInitializerItemOptions, useCollection, useCollectionManager } from '../..';
+import { useCollection, useCollectionManager } from '../..';
 import { gridRowColWrap } from '../utils';
-import { SchemaInitializer, useSchemaInitializer } from '../../application';
+import { SchemaInitializer, SchemaInitializerItemType, useSchemaInitializer } from '../../application';
 
 const recursiveParent = (schema: Schema) => {
   if (!schema) return null;
@@ -143,7 +143,7 @@ const useDetailCollections = (props) => {
         actionInitializers,
       };
     }),
-  ) as SchemaInitializerItemOptions[];
+  ) as SchemaInitializerItemType[];
   return detailCollections;
 };
 
@@ -171,7 +171,7 @@ const useFormCollections = (props) => {
         actionInitializers,
       };
     }),
-  ) as SchemaInitializerItemOptions[];
+  ) as SchemaInitializerItemType[];
 
   return formCollections;
 };

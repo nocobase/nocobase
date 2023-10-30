@@ -3,7 +3,7 @@ import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerItemOptions, useFormActiveFields, useFormBlockContext } from '../';
+import { SchemaInitializerItemType, useFormActiveFields, useFormBlockContext } from '../';
 import { CollectionFieldOptions, FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
@@ -141,7 +141,7 @@ export const useTableColumnInitializerFields = () => {
         },
         field,
         schema,
-      } as SchemaInitializerItemOptions;
+      } as SchemaInitializerItemType;
     });
 };
 
@@ -189,13 +189,13 @@ export const useAssociatedTableColumnInitializerFields = () => {
             },
             field: subField,
             schema,
-          } as SchemaInitializerItemOptions;
+          } as SchemaInitializerItemType;
         });
       return {
         type: 'subMenu',
         title: field.uiSchema?.title,
         children: items,
-      } as SchemaInitializerItemOptions;
+      } as SchemaInitializerItemType;
     });
 
   return groups;
@@ -260,7 +260,7 @@ export const useInheritsTableColumnInitializerFields = () => {
             },
             field: k,
             schema,
-          } as SchemaInitializerItemOptions;
+          } as SchemaInitializerItemType;
         }),
     };
   });
@@ -317,7 +317,7 @@ export const useFormItemInitializerFields = (options?: any) => {
           });
         },
         schema,
-      } as SchemaInitializerItemOptions;
+      } as SchemaInitializerItemType;
       if (block == 'Kanban') {
         resultItem['find'] = (schema: Schema, key: string, action: string) => {
           const s = findSchema(schema, 'x-component', block);
@@ -384,7 +384,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
           });
         },
         schema,
-      } as SchemaInitializerItemOptions;
+      } as SchemaInitializerItemType;
 
       return resultItem;
     });
@@ -443,14 +443,14 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
               });
             },
             schema,
-          } as SchemaInitializerItemOptions;
+          } as SchemaInitializerItemType;
         });
 
       return {
         type: 'subMenu',
         title: field.uiSchema?.title,
         children: items,
-      } as SchemaInitializerItemOptions;
+      } as SchemaInitializerItemType;
     });
   return groups;
 };
@@ -481,7 +481,7 @@ const getItem = (
           ]),
         )
         .filter(Boolean),
-    } as SchemaInitializerItemOptions;
+    } as SchemaInitializerItemType;
   }
 
   if (isAssocField(field)) return null;
@@ -506,7 +506,7 @@ const getItem = (
     Component: 'CollectionFieldInitializer',
     remove: removeGridFormItem,
     schema,
-  } as SchemaInitializerItemOptions;
+  } as SchemaInitializerItemType;
 };
 
 // 筛选表单相关
@@ -568,7 +568,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
               });
             },
             schema,
-          } as SchemaInitializerItemOptions;
+          } as SchemaInitializerItemType;
         }),
     };
   });
@@ -622,7 +622,7 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
               });
             },
             schema,
-          } as SchemaInitializerItemOptions;
+          } as SchemaInitializerItemType;
         }),
     };
   });
@@ -667,7 +667,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
           });
         },
         schema,
-      } as SchemaInitializerItemOptions;
+      } as SchemaInitializerItemType;
     });
 };
 
@@ -713,7 +713,7 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
               });
             },
             schema,
-          } as SchemaInitializerItemOptions;
+          } as SchemaInitializerItemType;
         }),
     [fields],
   );

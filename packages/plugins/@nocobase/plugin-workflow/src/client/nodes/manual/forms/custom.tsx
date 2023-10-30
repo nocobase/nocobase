@@ -13,7 +13,7 @@ import {
   SchemaComponent,
   SchemaInitializer,
   SchemaInitializerItem,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItemType,
   SchemaInitializerItems,
   gridRowColWrap,
   useCollectionManager,
@@ -181,7 +181,7 @@ function getOptions(interfaces) {
     }));
 }
 
-function useCommonInterfaceInitializers(): SchemaInitializerItemOptions[] {
+function useCommonInterfaceInitializers(): SchemaInitializerItemType[] {
   const { interfaces } = useCollectionManager();
   const options = getOptions(interfaces);
 

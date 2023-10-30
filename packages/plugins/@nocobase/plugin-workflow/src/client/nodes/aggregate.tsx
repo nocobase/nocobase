@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 import {
   SchemaComponentContext,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItemType,
   useCollectionDataSource,
   useCollectionManager,
   useCompile,
@@ -358,7 +358,7 @@ export default {
       [fieldNames.label]: title,
     };
   },
-  useInitializers(node): SchemaInitializerItemOptions | null {
+  useInitializers(node): SchemaInitializerItemType | null {
     if (!node.config.collection) {
       return null;
     }

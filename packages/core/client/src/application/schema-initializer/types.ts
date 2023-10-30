@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/json-schema';
-import { ButtonProps, ListProps, PopoverProps } from 'antd';
+import { ButtonProps, PopoverProps } from 'antd';
 import { ComponentType, ReactNode } from 'react';
 import type { SchemaInitializerGroupProps, SchemaInitializerItemProps, SchemaInitializerMenuProps } from './components';
 

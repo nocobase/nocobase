@@ -2,7 +2,7 @@ import { ArrayItems } from '@formily/antd-v5';
 
 import {
   SchemaComponentContext,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItemType,
   useCollectionDataSource,
   useCollectionManager,
   useCompile,
@@ -117,7 +117,7 @@ export default {
 
     return result;
   },
-  useInitializers(node): SchemaInitializerItemOptions | null {
+  useInitializers(node): SchemaInitializerItemType | null {
     if (!node.config.collection || node.config.multiple) {
       return null;
     }

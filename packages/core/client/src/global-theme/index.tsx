@@ -14,7 +14,7 @@ interface ThemeItem {
   isBuiltIn?: boolean;
 }
 
-const GlobalThemeContext = createContext<{
+interface GlobalThemeContextProps {
   theme: ThemeConfig;
   setTheme: React.Dispatch<React.SetStateAction<ThemeConfig>>;
   setCurrentSettingTheme: (theme: ThemeConfig) => void;
@@ -22,10 +22,12 @@ const GlobalThemeContext = createContext<{
   setCurrentEditingTheme: (themeItem: ThemeItem) => void;
   getCurrentEditingTheme: () => ThemeItem;
   isDarkTheme: boolean;
-}>(null);
+}
+
+const GlobalThemeContext = createContext<GlobalThemeContextProps>(null);
 
 export const useGlobalTheme = () => {
-  return React.useContext(GlobalThemeContext) || { theme: {} };
+  return React.useContext(GlobalThemeContext) || ({ theme: {}, isDarkTheme: false } as GlobalThemeContextProps);
 };
 
 export const GlobalThemeProvider = ({ children, theme: themeFromProps }) => {

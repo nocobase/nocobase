@@ -3,7 +3,6 @@ import * as items from './items';
 
 export * from './buttons';
 export * from './items';
-export * from './types';
 export {
   createFilterFormBlockSchema,
   createFormBlockSchema,

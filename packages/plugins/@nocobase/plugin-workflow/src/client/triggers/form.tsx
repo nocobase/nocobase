@@ -1,6 +1,6 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import {
-  SchemaInitializerItemOptions,
+  SchemaInitializerItemType,
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
@@ -86,7 +86,7 @@ export default {
     });
     return result;
   },
-  useInitializers(config): SchemaInitializerItemOptions | null {
+  useInitializers(config): SchemaInitializerItemType | null {
     if (!config.collection) {
       return null;
     }

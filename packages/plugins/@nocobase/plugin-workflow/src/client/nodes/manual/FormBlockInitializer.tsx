@@ -3,7 +3,7 @@ import React from 'react';
 import {
   CollectionProvider,
   SchemaInitializerItem,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItemType,
   createFormBlockSchema,
   useRecordCollectionDataSourceItems,
   useSchemaInitializer,
@@ -19,7 +19,7 @@ import { NAMESPACE } from '../../locale';
 function InternalFormBlockInitializer({ schema, ...others }) {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { insert } = useSchemaInitializer();
-  const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemOptions[];
+  const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemType[];
   async function onConfirm({ item }) {
     const template = item.template ? await getTemplateSchemaByMode(item) : null;
     const result = createFormBlockSchema({

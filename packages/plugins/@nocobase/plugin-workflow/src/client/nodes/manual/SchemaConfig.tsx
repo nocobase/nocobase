@@ -16,7 +16,7 @@ import {
   SchemaComponentContext,
   SchemaInitializer,
   SchemaInitializerItem,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItemType,
   SchemaSettings,
   VariableScopeProvider,
   gridRowColWrap,
@@ -59,7 +59,7 @@ export type FormType = {
 export type ManualFormType = {
   title: string;
   config: {
-    useInitializer: ({ collections }?: { collections: any[] }) => SchemaInitializerItemOptions;
+    useInitializer: ({ collections }?: { collections: any[] }) => SchemaInitializerItemType;
     initializers?: {
       [key: string]: React.FC;
     };
@@ -84,7 +84,7 @@ manualFormTypes.register('customForm', customRecordForm);
 manualFormTypes.register('createForm', createRecordForm);
 manualFormTypes.register('updateForm', updateRecordForm);
 
-function useTriggerInitializers(): SchemaInitializerItemOptions | null {
+function useTriggerInitializers(): SchemaInitializerItemType | null {
   const { workflow } = useFlowContext();
   const trigger = useTrigger();
   return trigger.useInitializers ? trigger.useInitializers(workflow.config) : null;
@@ -369,7 +369,6 @@ export const addActionButton = new SchemaInitializer({
     },
     {
       name: JOB_STATUS.REJECTED,
-      type: 'item',
       title: `{{t("Terminate the process", { ns: "${NAMESPACE}" })}}`,
       Component: ActionInitializer,
       action: JOB_STATUS.REJECTED,

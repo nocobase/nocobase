@@ -4,7 +4,7 @@ import { ISchema, useForm } from '@formily/react';
 import {
   ActionContextProvider,
   SchemaComponent,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItemType,
   css,
   cx,
   useAPIClient,
@@ -59,7 +59,7 @@ export interface Trigger {
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  useInitializers?(config): SchemaInitializerItemOptions | null;
+  useInitializers?(config): SchemaInitializerItemType | null;
   initializers?: any;
   actionTriggerable?: boolean;
 }

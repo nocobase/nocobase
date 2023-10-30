@@ -90,13 +90,16 @@ export const kanbanCardInitializers = new SchemaInitializer({
       dn.insertBeforeEnd(schema);
     };
   },
-  Component: () => (
-    <MenuOutlined
-      role="button"
-      aria-label={getAriaLabel('schema-initializer')}
-      style={{ cursor: 'pointer', fontSize: 12 }}
-    />
-  ),
+  Component: () => {
+    const { getAriaLabel } = useGetAriaLabelOfDesigner();
+    return (
+      <MenuOutlined
+        role="button"
+        aria-label={getAriaLabel('schema-initializer')}
+        style={{ cursor: 'pointer', fontSize: 12 }}
+      />
+    );
+  },
   items: [
     {
       type: 'itemGroup',

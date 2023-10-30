@@ -1,6 +1,5 @@
-import { SchemaInitializer } from '../../../application';
+import { SchemaInitializer, SchemaInitializerItemType } from '../../../application';
 import { useAssociatedFields } from '../../../filter-provider/utils';
-import { SchemaInitializerItemOptions } from '../../../schema-initializer';
 
 export const associationFilterInitializer = new SchemaInitializer({
   name: 'AssociationFilter.Initializer',
@@ -16,7 +15,7 @@ export const associationFilterInitializer = new SchemaInitializer({
       useChildren() {
         const associatedFields = useAssociatedFields();
         const useProps = '{{useAssociationFilterProps}}';
-        const children: SchemaInitializerItemOptions[] = associatedFields.map((field) => ({
+        const children: SchemaInitializerItemType[] = associatedFields.map((field) => ({
           type: 'item',
           name: field.key,
           title: field.uiSchema?.title,

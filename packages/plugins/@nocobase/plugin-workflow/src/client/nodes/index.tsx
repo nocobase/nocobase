@@ -3,7 +3,7 @@ import { ISchema, useForm } from '@formily/react';
 import {
   ActionContextProvider,
   SchemaComponent,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItemType,
   css,
   cx,
   useAPIClient,
@@ -52,7 +52,7 @@ export interface Instruction {
   component?(props): JSX.Element;
   useVariables?(node, options?): VariableOption;
   useScopeVariables?(node, options?): VariableOptions;
-  useInitializers?(node): SchemaInitializerItemOptions | null;
+  useInitializers?(node): SchemaInitializerItemType | null;
   initializers?: { [key: string]: any };
   isAvailable?(ctx: object): boolean;
 }

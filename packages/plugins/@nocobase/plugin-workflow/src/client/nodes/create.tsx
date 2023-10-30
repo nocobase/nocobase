@@ -1,9 +1,4 @@
-import {
-  SchemaInitializerItemOptions,
-  useCollectionDataSource,
-  useCollectionManager,
-  useCompile,
-} from '@nocobase/client';
+import { SchemaInitializerItemType, useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
 
 import { appends, collection, values } from '../schemas/collection';
 import CollectionFieldset from '../components/CollectionFieldset';
@@ -72,7 +67,7 @@ export default {
 
     return result;
   },
-  useInitializers(node): SchemaInitializerItemOptions | null {
+  useInitializers(node): SchemaInitializerItemType | null {
     if (!node.config.collection) {
       return null;
     }
