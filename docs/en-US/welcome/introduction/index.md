@@ -1,6 +1,6 @@
 # Introduction
 
-![](https://nocobase.oss-cn-beijing.aliyuncs.com/bbcedd403d31cd1ccc4e9709581f5c2f.png)  
+![NocoBase](https://nocobase-file.oss-cn-beijing.aliyuncs.com/main-l.png)
 
 **Note:** 📌
 
@@ -8,47 +8,21 @@ NocoBase is in early stage of development and is subject to frequent changes, pl
 
 ## What is NocoBase
 
-NocoBase is a scalability-first, open-source no-code development platform. No programming required, build your own collaboration platform, management system with NocoBase in hours.
+NocoBase is a scalability-first, open-source no-code development platform.   
+Instead of investing years of time and millions of dollars in research and development, deploy NocoBase in a few minutes and you'll have a private, controllable, and extremely scalable no-code development platform!
 
-Homepage:
+Homepage:  
 https://www.nocobase.com/  
 
-Online Demo:
+Online Demo:  
 https://demo.nocobase.com/new
 
-Contact Us:
+Documents:  
+https://docs.nocobase.com/
+
+Contact Us:  
 hello@nocobase.com
 
-## Features
-
-- **Open source and free**
-    - Apache-2.0 & AGPL-3.0 licensed
-    - Full code ownership, private deployment, private and secure data
-    - Free to expand and develop for actual needs
-    - Good ecological support
-- **Strong no-code capability**
-    - Data Model
-        - Create independent data models using dozens of field types such as text, number, attachment, and various association relationships such as one-to-one, one-to-many, etc.
-    - Block
-        - Display and manipulate data within a page using a free combination of block types such as tables, forms, kanban, calendars, details, etc.
-    - Action
-        - Support filtering, exporting, adding, deleting, modifying, viewing and other operations to process data, which can be extended to more types.
-    - ACL
-        - Role-based control of user's system configuration rights, data action rights and menu access rights.
-    - Workflow
-        - Repetitive tasks are replaced by automation to increase efficiency. Manual approval is required for important matters.
-- **Built for extended development**
-    - Microkernel architecture, flexible and easy to extend, with a robust plug-in system
-    - Node.js-based, with popular frameworks and technologies, including Koa, Sequelize, React, Formily, Ant Design, etc.
-    - Progressive development, easy for getting-started, friendly to newcomers
-    - No binding, no strong dependencies, can be used in any combination or extensions, can be used in existing projects
-
-## Architecture
-
-![](https://www.nocobase.com/images/NocoBaseMindMapLite.png)
-
-[Click here to view the full image](https://www.nocobase.com/images/NocoBaseMindMap.png)
-
-## Business Services
+## Commercial Version & Business Services
 
 If you need commercial version and commercial services, please feel free to contact us by email: hello@nocobase.com
