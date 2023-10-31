@@ -21,36 +21,59 @@ type DumpOptions = {
 export class Dumper extends AppMigrator {
   direction = 'dump' as const;
 
-  getCollectionsByDataTypes(dataTypes: Set<DumpDataType>): string[] {
-    const dumpableCollectionsGroupByDataTypes = this.collectionsGroupByDataTypes();
+  async getCollectionsByDataTypes(dataTypes: Set<DumpDataType>): Promise<string[]> {
+    const dumpableCollectionsGroupByDataTypes = await this.collectionsGroupByDataTypes();
 
     return [...dataTypes].reduce((acc, key) => {
       return acc.concat(dumpableCollectionsGroupByDataTypes[key] || []);
     }, []);
   }
 
-  dumpableCollections() {
-    return [...this.app.db.collections.values()]
-      .map((c) => {
-        try {
-          const options = DBCollectionGroupManager.unifyDuplicatorOption(c.options.duplicator);
+  async dumpableCollections() {
+    return (
+      await Promise.all(
+        [...this.app.db.collections.values()].map(async (c) => {
+          try {
+            const options = DBCollectionGroupManager.unifyDuplicatorOption(c.options.duplicator);
+            let origin = c.origin;
+            let originTitle = origin;
 
-          return {
-            name: c.name,
-            options: c.options,
-            dataType: options?.dataType,
-          };
-        } catch (e) {
-          throw new Error(`collection ${c.name} has invalid duplicator option`, { cause: e });
-        }
-      })
-      .filter(({ dataType }) => {
-        return !!dataType;
-      });
+            // plugin collections
+            if (origin.startsWith('plugin:')) {
+              const plugin = this.app.pm.get(origin.replace(/^plugin:/, ''));
+              const pluginInfo = await plugin.toJSON();
+              originTitle = pluginInfo.displayName;
+              origin = pluginInfo.packageName;
+            }
+
+            // user collections
+            if (origin === 'collection-manager') {
+              originTitle = 'user';
+              origin = 'user';
+            }
+
+            return {
+              name: c.name,
+              options: c.options,
+              dataType: options?.dataType,
+              origin: {
+                name: origin,
+                title: originTitle,
+              },
+            };
+          } catch (e) {
+            console.error(e);
+            throw new Error(`collection ${c.name} has invalid duplicator option`, { cause: e });
+          }
+        }),
+      )
+    ).filter(({ dataType }) => {
+      return !!dataType;
+    });
   }
 
-  collectionsGroupByDataTypes() {
-    const grouped = lodash.groupBy(this.dumpableCollections(), 'dataType');
+  async collectionsGroupByDataTypes() {
+    const grouped = lodash.groupBy(await this.dumpableCollections(), 'dataType');
 
     return Object.fromEntries(Object.entries(grouped).map(([key, value]) => [key, value.map((item) => item.name)]));
   }
@@ -59,9 +82,9 @@ export class Dumper extends AppMigrator {
     const dumpDataTypes = options.dataTypes;
     dumpDataTypes.add('meta');
 
-    const dumpableCollectionsGroupByDataTypes = this.collectionsGroupByDataTypes();
+    const dumpableCollectionsGroupByDataTypes = await this.collectionsGroupByDataTypes();
 
-    const dumpedCollections = this.getCollectionsByDataTypes(dumpDataTypes);
+    const dumpedCollections = await this.getCollectionsByDataTypes(dumpDataTypes);
 
     for (const collection of dumpedCollections) {
       await this.dumpCollection({

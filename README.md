@@ -1,6 +1,6 @@
-English | [中文](./README.zh-CN.md) | [Türkçe](./README.tr-TR.md)
+English | [中文](./README.zh-CN.md)
  
-![](https://nocobase.oss-cn-beijing.aliyuncs.com/bbcedd403d31cd1ccc4e9709581f5c2f.png)  
+![NocoBase](https://nocobase-file.oss-cn-beijing.aliyuncs.com/main-l.png)
 
 **Note:** 📌
 
@@ -14,13 +14,10 @@ NocoBase is in early stage of development and is subject to frequent changes, pl
 - [v0.11: New client application, plugin and router - 2023/07/08](http://docs.nocobase.com/welcome/release/v11-changelog)
 - [v0.10: Update instructions - 2023/06/23](http://docs.nocobase.com/welcome/release/v10-changelog)
 
-## We are hiring
-
-We are looking for full-time, remote product design and development colleagues to join the team. If you have a strong interest in NocoBase, please feel free to email us at hello@nocobase.com.
-
 ## What is NocoBase
 
-NocoBase is a scalability-first, open-source no-code development platform. No programming required, build your own collaboration platform, management system with NocoBase in hours.
+NocoBase is a scalability-first, open-source no-code development platform.   
+Instead of investing years of time and millions of dollars in research and development, deploy NocoBase in a few minutes and you'll have a private, controllable, and extremely scalable no-code development platform!
 
 Homepage:  
 https://www.nocobase.com/  
@@ -31,52 +28,30 @@ https://demo.nocobase.com/new
 Documents:  
 https://docs.nocobase.com/
 
-
 Contact Us:  
 hello@nocobase.com
 
-## Who is NocoBase for
+## Distinctive features
 
-NocoBase is designed for you if you have the following needs.
+### 1. Model-driven, separate "user interface" from "data structure"
 
-- Develop an internal management system
-- Meet most of your business needs with no-code development
-- No-code development is simple enough for non-developers; flexible enough to be close to native development
-- Can be very easy to extend
-- Private deployment with full control of code and data
-- Free to use or pay for more technical support
+Most form-, table-, or process-driven no-code products create data structures directly in the user interface, such as Airtable, where adding a new column to a table is adding a new field. This has the advantage of simplicity of use, but the disadvantage of limited functionality and flexibility to meet the needs of more complex scenarios.
 
-## Why NocoBase is different
+NocoBase adopts the design idea of separating the data structure from the user interface, allowing you to create any number of blocks (data views) for the data collections, with different type, styles, content, and actions in each block. This balances the simplicity of no-code operation with the flexibility of native development.
 
-### 1. Separate "data structure" and "user interface"
-
-Most form-, table-, or process-driven codeless products create data structures directly in the user interface, such as Airtable, where adding a new column to a table is adding a new field. This has the advantage of simplicity of use, but the disadvantage of limited functionality and flexibility to meet the needs of more complex scenarios.
-
-NocoBase adopts the design idea of separating the data structure from the user interface, allowing you to create any number of blocks (data views) for the data collections, with different type, styles, content, and actions in each block. This takes into account the simplicity of codeless operation, but also the flexibility like native development.
-
-![2.collection-block.png](https://nocobase.oss-cn-beijing.aliyuncs.com/25506f38365436d11847b32fc8533bc9.png)
+![model](https://nocobase-file.oss-cn-beijing.aliyuncs.com/model-l.png)
 
 ### 2. What you see is what you get
 
-NocoBase enables the development of complex and distinctive business systems, but this does not mean that complex and specialized operations are required. With a single click, configuration options can be displayed on the usage interface, which means that administrators with system configuration rights can configure the user interface directly with WYSIWYG operations.
+NocoBase enables the development of complex and distinctive business systems, but this does not mean that complex and specialized operations are required. With a single click, configuration options are displayed on the usage interface, and administrators with system configuration privileges can directly configure the user interface in a WYSIWYG manner.
 
-![2.user-root.gif](https://nocobase.oss-cn-beijing.aliyuncs.com/7991441ff35f05c49e0d72c2a23fa33b.gif)
+![wysiwyg](https://nocobase-file.oss-cn-beijing.aliyuncs.com/wysiwyg.gif)
 
-### 3. Everything is a plugin
+### 3. Functions as plugins
 
-NocoBase adopts plugin architecture, all new features can be implemented by developing and installing plugins. In the future, we will build a plug-in marketplace where extending functionality is as easy as installing an APP on your phone.
+NocoBase adopts plugin architecture, all new functions can be realized by developing and installing plugins, and expanding the functions is as easy as installing an APP on your phone.
 
-![](https://www.nocobase.com/images/NocoBaseMindMapLite.png)
-
-[Click to view the full image](https://www.nocobase.com/images/NocoBaseMindMap.png)
-
-## Business Services
-
-If you need commercial version and commercial services, please feel free to contact us by email: hello@nocobase.com
-
-Also by WeChat：  
-
-![](https://www.nocobase.com/images/wechat.png)  
+![plugins](https://nocobase-file.oss-cn-beijing.aliyuncs.com/plugins-l.png)
 
 ## Installation
 

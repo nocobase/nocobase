@@ -1,5 +1,6 @@
 import { Context, Next } from '@nocobase/actions';
 import { Collection, Repository } from '@nocobase/database';
+import { uid } from '@nocobase/utils';
 import xlsx from 'node-xlsx';
 import XLSX from 'xlsx';
 import { namespace } from '../../';
@@ -39,12 +40,14 @@ class Importer {
     if (typeof columns === 'string') {
       columns = JSON.parse(columns);
     }
-    this.columns = columns.map((column) => {
-      return {
-        ...column,
-        field: this.collection.fields.get(column.dataIndex[0]),
-      };
-    });
+    this.columns = columns
+      .map((column) => {
+        return {
+          ...column,
+          field: this.collection.fields.get(column.dataIndex[0]),
+        };
+      })
+      .filter((col) => col.field);
     const str = this.columns.map((column) => column.defaultTitle).join('||');
     for (const row of rows) {
       if (this.hasHeaderRow()) {
@@ -152,7 +155,7 @@ export async function importXlsx(ctx: Context, next: Next) {
   ctx.body = {
     rows: xlsx.build([
       {
-        name: ctx.file.originalname,
+        name: `${uid()}.xlsx`,
         data: [importer.headerRow].concat(failure),
       },
     ]),

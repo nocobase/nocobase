@@ -25,6 +25,7 @@ export default class Duplicator extends Plugin {
         if (ctx.action.actionName !== 'upload') {
           return next();
         }
+
         const storage = multer.diskStorage({
           destination: os.tmpdir(), // 获取临时目录
           filename: function (req, file, cb) {

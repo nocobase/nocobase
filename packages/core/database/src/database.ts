@@ -5,6 +5,7 @@ import { EventEmitter } from 'events';
 import { backOff } from 'exponential-backoff';
 import glob from 'glob';
 import lodash from 'lodash';
+import { nanoid } from 'nanoid';
 import { basename, isAbsolute, resolve } from 'path';
 import semver from 'semver';
 import {
@@ -40,6 +41,7 @@ import QueryInterface from './query-interface/query-interface';
 import buildQueryInterface from './query-interface/query-interface-builder';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
+import { SqlCollection } from './sql-collection/sql-collection';
 import {
   AfterDefineCollectionListener,
   BeforeDefineCollectionListener,
@@ -70,8 +72,6 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
-import { SqlCollection } from './sql-collection/sql-collection';
-import { nanoid } from 'nanoid';
 
 export type MergeOptions = merge.Options;
 
@@ -441,10 +441,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return dialect.includes(this.sequelize.getDialect());
   }
 
-  escapeId(identifier: string) {
-    return this.inDialect('mysql') ? `\`${identifier}\`` : `"${identifier}"`;
-  }
-
   /**
    * Add collection to database
    * @param options
@@ -608,9 +604,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   buildFieldValueParser<T extends BaseValueParser>(field: Field, ctx: any) {
-    const Parser = this.fieldValueParsers.has(field.type)
-      ? this.fieldValueParsers.get(field.type)
-      : this.fieldValueParsers.get('default');
+    const Parser =
+      field && this.fieldValueParsers.has(field.type)
+        ? this.fieldValueParsers.get(field.type)
+        : this.fieldValueParsers.get('default');
     const parser = new Parser(field, ctx);
     return parser as T;
   }
@@ -867,7 +864,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       if (module.extend) {
         this.extendCollection(module.collectionOptions, module.mergeOptions);
       } else {
-        const collection = this.collection(module);
+        const collection = this.collection({
+          ...module,
+          origin: options.from,
+        });
 
         if (options.from) {
           this.importedFrom.set(options.from, [...(this.importedFrom.get(options.from) || []), collection.name]);

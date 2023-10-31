@@ -1,5 +1,5 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { resolve } from 'path';
+import path, { resolve } from 'path';
 import { compact, compactDark, dark, defaultTheme } from './builtinThemes';
 
 export class ThemeEditorPlugin extends Plugin {
@@ -18,30 +18,9 @@ export class ThemeEditorPlugin extends Plugin {
   }
 
   async load() {
-    this.db.collection({
-      name: 'themeConfig',
-      fields: [
-        // 主题配置内容，一个 JSON 字符串
-        {
-          type: 'json',
-          name: 'config',
-        },
-        // 主题是否可选
-        {
-          type: 'boolean',
-          name: 'optional',
-        },
-        {
-          type: 'boolean',
-          name: 'isBuiltIn',
-        },
-        {
-          type: 'uid',
-          name: 'uid',
-        },
-      ],
-    });
+    await this.importCollections(path.resolve(__dirname, './collections'));
     this.app.acl.allow('themeConfig', 'list', 'public');
+
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.themeConfig`,
       actions: ['themeConfig:*'],

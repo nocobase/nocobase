@@ -110,10 +110,18 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    * @default 'options'
    */
   magicAttribute?: string;
-
   tree?: string;
-
   template?: string;
+
+  /**
+   * where is the collection from
+   *
+   * values
+   * - 'plugin' - collection is from plugin
+   * - 'core' - collection is from core
+   * - 'user' - collection is from user
+   */
+  origin?: string;
 
   [key: string]: any;
 }
@@ -169,6 +177,10 @@ export class Collection<
 
   get name() {
     return this.options.name;
+  }
+
+  get origin() {
+    return this.options.origin || 'core';
   }
 
   get titleField() {
@@ -638,12 +650,14 @@ export class Collection<
     });
 
     for (const model of models) {
-      await model.sync(syncOptions || {
-        force: false,
-        alter: {
-          drop: false,
+      await model.sync(
+        syncOptions || {
+          force: false,
+          alter: {
+            drop: false,
+          },
         },
-      });
+      );
     }
   }
 
