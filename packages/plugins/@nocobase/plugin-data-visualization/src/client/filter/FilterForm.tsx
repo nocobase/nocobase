@@ -1,4 +1,4 @@
-import React, { memo, useContext, useEffect, useMemo } from 'react';
+import React, { memo, useContext, useEffect, useMemo, useRef } from 'react';
 import { createForm, onFieldInit, onFieldMount, onFieldUnmount } from '@formily/core';
 import { ChartFilterContext } from './FilterProvider';
 import { FormV2, VariablesContext } from '@nocobase/client';
@@ -8,7 +8,8 @@ import { useChartFilter } from '../hooks';
 export const ChartFilterForm: React.FC = memo((props) => {
   const { addField, removeField, setForm } = useContext(ChartFilterContext);
   const { getTranslatedTitle } = useChartFilter();
-  const variables = useContext(VariablesContext);
+  const variables = useRef<any>(null);
+  variables.current = useContext(VariablesContext);
   const form = useMemo(
     () =>
       createForm({
@@ -51,7 +52,7 @@ export const ChartFilterForm: React.FC = memo((props) => {
           });
         },
       }),
-    [],
+    [addField, getTranslatedTitle, removeField, variables],
   );
 
   useEffect(() => setForm(form), [form, setForm]);

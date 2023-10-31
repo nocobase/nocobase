@@ -22,7 +22,7 @@ export const ChartFilterBlockProvider: React.FC = (props) => {
   const { setEnabled } = useContext(ChartFilterContext);
   useEffect(() => {
     setEnabled(true);
-  }, []);
+  }, [setEnabled]);
   return (
     <div
       className={css`
