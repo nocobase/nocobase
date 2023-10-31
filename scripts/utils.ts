@@ -44,7 +44,7 @@ function checkPort(port) {
 /**
  * 检查服务是否启动成功
  */
-const checkServer = async (duration = 1000, max = 60) => {
+const checkServer = async (duration = 1000, max = 60 * 10) => {
   return new Promise((resolve, reject) => {
     let count = 0;
     const timer = setInterval(async () => {
@@ -58,7 +58,7 @@ const checkServer = async (duration = 1000, max = 60) => {
       }
 
       axios
-        .get(`http://localhost:${process.env.APP_PORT}/api/__health_check`)
+        .get(`${process.env.APP_BASE_URL}/api/__health_check`)
         .then((response) => {
           if (response.status === 200) {
             clearInterval(timer);
@@ -76,7 +76,7 @@ const checkServer = async (duration = 1000, max = 60) => {
  * 检查 UI 是否启动成功
  * @param duration
  */
-const checkUI = async (duration = 1000, max = 60) => {
+const checkUI = async (duration = 1000, max = 60 * 10) => {
   return new Promise((resolve, reject) => {
     let count = 0;
     const timer = setInterval(async () => {
@@ -86,7 +86,7 @@ const checkUI = async (duration = 1000, max = 60) => {
       }
 
       axios
-        .get(`http://localhost:${process.env.APP_PORT}/__umi/api/bundle-status`)
+        .get(`${process.env.APP_BASE_URL}/__umi/api/bundle-status`)
         .then((response) => {
           if (response.data.bundleStatus.done) {
             clearInterval(timer);
@@ -136,6 +136,12 @@ export const runNocoBase = async (options?: CommonOptions<any>) => {
     console.log(`yarn start -d -p ${process.env.APP_PORT}`);
     await runCommand('yarn', ['start', '-d', `-p ${process.env.APP_PORT}`], options);
     return { awaitForNocoBase };
+  }
+
+  if (!process.env.APP_BASE_URL.includes('localhost')) {
+    return {
+      awaitForNocoBase: async () => {},
+    };
   }
 
   // 加上 -f 会清空数据库

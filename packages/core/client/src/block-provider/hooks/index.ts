@@ -95,47 +95,6 @@ export function getFormValues({
   }
 
   return form.values;
-  const values = {};
-  for (const key in form.values) {
-    if (fieldNames.includes(key)) {
-      const collectionField = getField(key);
-      if (filterByTk) {
-        if (field.added && !field.added.has(key)) {
-          continue;
-        }
-        if (['subTable', 'o2m', 'o2o', 'oho', 'obo', 'm2o'].includes(collectionField.interface)) {
-          values[key] = form.values[key];
-          continue;
-        }
-      }
-      const items = form.values[key];
-      if (['linkTo', 'm2o', 'm2m'].includes(collectionField.interface)) {
-        const targetKey = collectionField.targetKey || 'id';
-        if (resource instanceof TableFieldResource) {
-          if (Array.isArray(items)) {
-            values[key] = filterValue(items);
-          } else if (items && typeof items === 'object') {
-            values[key] = filterValue(items);
-          } else {
-            values[key] = items;
-          }
-        } else {
-          if (Array.isArray(items)) {
-            values[key] = items.map((item) => item[targetKey]);
-          } else if (items && typeof items === 'object') {
-            values[key] = items[targetKey];
-          } else {
-            values[key] = items;
-          }
-        }
-      } else {
-        values[key] = form.values[key];
-      }
-    } else {
-      values[key] = form.values[key];
-    }
-  }
-  return values;
 }
 
 export const useCreateActionProps = () => {
@@ -153,7 +112,7 @@ export const useCreateActionProps = () => {
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const { getActiveFieldsName } = useFormActiveFields() || {};
-
+  const { t } = useTranslation();
   const action = actionField.componentProps.saveMode || 'create';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
   return {
@@ -205,8 +164,8 @@ export const useCreateActionProps = () => {
       // const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
       if (addChild) {
         const treeParentField = getTreeParentField();
-        values[treeParentField?.name ?? 'parent'] = currentRecord;
-        values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord.id;
+        values[treeParentField?.name ?? 'parent'] = currentRecord?.__parent;
+        values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord?.__parent?.id;
       }
       actionField.data = field.data || {};
       actionField.data.loading = true;
@@ -228,6 +187,8 @@ export const useCreateActionProps = () => {
         __parent?.service?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
+          message.success(t('Saved successfully'));
+          await form.reset();
           return;
         }
         if (onSuccess?.manualClose) {
@@ -246,6 +207,7 @@ export const useCreateActionProps = () => {
           });
         } else {
           message.success(compile(onSuccess?.successMessage));
+          await form.reset();
           if (onSuccess?.redirecting && onSuccess?.redirectTo) {
             if (isURL(onSuccess.redirectTo)) {
               window.location.href = onSuccess.redirectTo;
@@ -1040,10 +1002,9 @@ export const useDetailPrintActionProps = () => {
       * {
         margin: 0;
       }
-      div.ant-formily-layout>div:first-child {
+      :not(.ant-formily-item-control-content-component) > div.ant-formily-layout>div:first-child {
         overflow: hidden; height: 0;
       }
-
     }`,
   });
   return {

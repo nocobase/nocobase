@@ -67,7 +67,7 @@ export const ListBlockProvider = (props) => {
   }, [parsedFilter, params]);
 
   return (
-    <BlockProvider data-testid="list-block" {...props} params={paramsWithFilter}>
+    <BlockProvider name="list" {...props} params={paramsWithFilter}>
       <InternalListBlockProvider {...props} />
     </BlockProvider>
   );

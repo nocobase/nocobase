@@ -5,6 +5,7 @@ import { EventEmitter } from 'events';
 import { backOff } from 'exponential-backoff';
 import glob from 'glob';
 import lodash from 'lodash';
+import { nanoid } from 'nanoid';
 import { basename, isAbsolute, resolve } from 'path';
 import semver from 'semver';
 import {
@@ -40,6 +41,7 @@ import QueryInterface from './query-interface/query-interface';
 import buildQueryInterface from './query-interface/query-interface-builder';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { Repository } from './repository';
+import { SqlCollection } from './sql-collection/sql-collection';
 import {
   AfterDefineCollectionListener,
   BeforeDefineCollectionListener,
@@ -73,6 +75,7 @@ import { ViewCollection } from './view-collection';
 import { CollectionSnapshotManager } from './collection-snapshot/manager';
 import { SqlCollection } from './sql-collection/sql-collection';
 import { nanoid } from 'nanoid';
+
 
 export type MergeOptions = merge.Options;
 
@@ -619,9 +622,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   buildFieldValueParser<T extends BaseValueParser>(field: Field, ctx: any) {
-    const Parser = this.fieldValueParsers.has(field.type)
-      ? this.fieldValueParsers.get(field.type)
-      : this.fieldValueParsers.get('default');
+    const Parser =
+      field && this.fieldValueParsers.has(field.type)
+        ? this.fieldValueParsers.get(field.type)
+        : this.fieldValueParsers.get('default');
     const parser = new Parser(field, ctx);
     return parser as T;
   }

@@ -89,13 +89,12 @@ export default {
     FilterDynamicComponent,
     SchemaComponentContext,
   },
-  useVariables({ id, title, config }, options) {
+  useVariables({ key: name, title, config }, options) {
     const compile = useCompile();
     const { getCollectionFields } = useCollectionManager();
     // const depth = config?.params?.appends?.length
     //   ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1)
     //   : 0;
-    const name = `${id}`;
     const [result] = getCollectionFieldOptions({
       // collection: config.collection,
       // depth: options?.depth ?? depth,
@@ -128,7 +127,7 @@ export default {
       title: node.title ?? `#${node.id}`,
       component: CollectionBlockInitializer,
       collection: node.config.collection,
-      dataSource: `{{$jobsMapByNodeId.${node.id}}}`,
+      dataSource: `{{$jobsMapByNodeKey.${node.key}}}`,
     };
   },
   initializers: {},

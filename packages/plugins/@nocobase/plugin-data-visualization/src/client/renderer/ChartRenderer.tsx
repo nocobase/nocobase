@@ -10,12 +10,12 @@ import {
 import { Empty, Result, Spin, Typography } from 'antd';
 import React, { useContext } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { useChart } from '../chart/group';
 import { ChartConfigContext } from '../configure/ChartConfigure';
 import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
 import { useChartsTranslation } from '../locale';
 import { createRendererSchema, getField } from '../utils';
 import { ChartRendererContext } from './ChartRendererProvider';
-import { useChart } from '../chart/group';
 const { Paragraph, Text } = Typography;
 
 export const ChartRenderer: React.FC & {
@@ -83,6 +83,7 @@ ChartRenderer.Designer = function Designer() {
   return (
     <GeneralSchemaDesigner disableInitializer title={title || name}>
       <SchemaSettings.Item
+        title="Configure"
         key="configure"
         onClick={() => {
           setCurrent({ schema, field, collection: name, service, data: service?.data });
@@ -92,6 +93,7 @@ ChartRenderer.Designer = function Designer() {
         {t('Configure')}
       </SchemaSettings.Item>
       <SchemaSettings.Item
+        title="Duplicate"
         key="duplicate"
         onClick={() => insertAdjacent('afterEnd', gridRowColWrap(createRendererSchema(schema?.['x-decorator-props'])))}
       >

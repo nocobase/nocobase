@@ -868,7 +868,7 @@ describe('workflow > instructions > manual', () => {
         type: 'calculation',
         config: {
           engine: 'math.js',
-          expression: `{{$jobsMapByNodeId.${n1.id}.f1.number}} + 1`,
+          expression: `{{$jobsMapByNodeKey.${n1.key}.f1.number}} + 1`,
         },
         upstreamId: n1.id,
       });

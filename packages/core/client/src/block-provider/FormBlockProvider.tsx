@@ -43,7 +43,6 @@ const InternalFormBlockProvider = (props) => {
   if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
     return <Spin />;
   }
-
   let content = (
     <div ref={formBlockRef}>
       <RenderChildrenWithDataTemplates form={form} />
@@ -57,7 +56,7 @@ const InternalFormBlockProvider = (props) => {
     );
   } else if (
     formBlockValue.type === 'create' &&
-    // 点击关系表格区块的 Add new 按钮，在弹窗中新增的表单区块，是不需要重置 record 的。在这里用 record 是否为空来判断
+    // 关系表单区块的 record 应该是空的，因为其是一个创建数据的表单；
     !_.isEmpty(_.omit(record, ['__parent', '__collectionName'])) &&
     // association 不为空，说明是关系区块
     association
@@ -97,7 +96,6 @@ export const FormBlockProvider = (props) => {
   if (isDetailBlock) {
     detailFlag = true;
     if (!designable && __collection) {
-      console.log(__collection === collection);
       detailFlag = __collection === collection;
     }
   }
@@ -105,7 +103,7 @@ export const FormBlockProvider = (props) => {
     (currentCollection.name === (collection?.name || collection) && !isDetailBlock) || !currentCollection.name;
   return (
     (detailFlag || createFlag || isCusomeizeCreate) && (
-      <BlockProvider data-testid={props['data-testid'] || 'form-block'} {...props} block={'form'}>
+      <BlockProvider name={props.name || 'form'} {...props} block={'form'}>
         <FormActiveFieldsProvider name="form">
           <InternalFormBlockProvider {...props} />
         </FormActiveFieldsProvider>
@@ -127,7 +125,7 @@ export const useFormBlockProps = () => {
     if (addChild) {
       ctx.form?.query('parent').take((field) => {
         field.disabled = true;
-        field.value = new Proxy({ ...record }, {});
+        field.value = new Proxy({ ...record?.__parent }, {});
       });
     }
   });

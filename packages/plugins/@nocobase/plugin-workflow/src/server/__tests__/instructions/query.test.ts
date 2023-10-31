@@ -130,7 +130,7 @@ describe('workflow > instructions > query', () => {
           collection: 'posts',
           params: {
             filter: {
-              title: `{{$jobsMapByNodeId.${n1.id}.data.title}}`,
+              title: `{{$jobsMapByNodeKey.${n1.key}.data.title}}`,
             },
           },
         },

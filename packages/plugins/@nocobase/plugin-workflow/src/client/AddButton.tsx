@@ -10,9 +10,11 @@ import useStyles from './style';
 interface AddButtonProps {
   upstream;
   branchIndex?: number | null;
+  [key: string]: any;
 }
 
-export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
+export function AddButton(props: AddButtonProps) {
+  const { upstream, branchIndex = null } = props;
   const compile = useCompile();
   const api = useAPIClient();
   const { workflow, refresh } = useFlowContext() ?? {};
@@ -38,11 +40,15 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
           ...group,
           type: 'group',
           children: groupInstructions.map((item) => ({
+            role: 'button',
+            'aria-label': item.type,
             key: item.type,
             label: item.title,
             type: item.options ? 'subMenu' : null,
             children: item.options
               ? item.options.map((option) => ({
+                  role: 'button',
+                  'aria-label': option.key,
                   key: option.key,
                   label: option.label,
                 }))
@@ -50,7 +56,7 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
           })),
         };
       });
-  }, [instructionList]);
+  }, [branchIndex, instructionList, upstream, workflow]);
   const resource = useMemo(() => {
     if (!workflow) {
       return null;
@@ -108,7 +114,7 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
           }
         `}
       >
-        <Button shape="circle" icon={<PlusOutlined />} />
+        <Button aria-label={props['aria-label'] || 'add-button'} shape="circle" icon={<PlusOutlined />} />
       </Dropdown>
     </div>
   );
