@@ -10,7 +10,8 @@ const locale = {
   'Select the data to be restored':'Select the data to be restored',
   'Learn more':'Learn more',
   'Start backup':'Start backup',
-  'Start restore':'Start restore'
+  'Start restore':'Start restore',
+  'Backed up successfully':'Backed up successfully'
 };
 
 export default locale;

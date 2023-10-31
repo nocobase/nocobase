@@ -3,22 +3,31 @@ import { Button, Card, Form, Tabs, message, Modal, Table, Upload, Result } from 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { UploadProps } from 'antd';
-import { InboxOutlined } from '@ant-design/icons';
+import { saveAs } from 'file-saver';
+import { InboxOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useDuplicatorTranslation, generateNTemplate } from './locale';
-
-interface BaseConfigurationProps {
-  type: 'backup' | 'restore';
-}
+import { t } from 'tar';
+const { Dragger } = Upload;
 const ActionType = [
   { label: generateNTemplate('Backup'), value: 'backup' },
   { label: generateNTemplate('Restore'), value: 'restore' },
 ];
 const options = [
-  { label: generateNTemplate('System metadata'), value: 'meta' },
+  { label: generateNTemplate('System metadata'), value: 'meta', disabled: true },
   { label: generateNTemplate('System config'), value: 'config' },
   { label: generateNTemplate('Business data'), value: 'business' },
 ];
+function extractFileName(contentDispositionHeader) {
+  console.log(contentDispositionHeader);
+  const regex = '/filename="([^"]+)"/';
+  const match = contentDispositionHeader.match(regex);
 
+  if (match && match.length > 1) {
+    return match[1];
+  } else {
+    return null;
+  }
+}
 const LearnMore: React.FC = () => {
   const { t } = useDuplicatorTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -118,59 +127,33 @@ const LearnMore: React.FC = () => {
   );
 };
 
-const { Dragger } = Upload;
-
-const props: UploadProps = {
-  name: 'file',
-  multiple: true,
-  action: 'https://run.mocky.io/v3/435e224c-44fb-4773-9faf-380c5e6a2188',
-  onChange(info) {
-    const { status } = info.file;
-    if (status !== 'uploading') {
-      console.log(info.file, info.fileList);
-    }
-    if (status === 'done') {
-      message.success(`${info.file.name} file uploaded successfully.`);
-    } else if (status === 'error') {
-      message.error(`${info.file.name} file upload failed.`);
-    }
-  },
-  onDrop(e) {
-    console.log('Dropped files', e.dataTransfer.files);
-  },
-};
-
-const RestoreUpload: React.FC = () => (
-  <Dragger {...props}>
-    <p className="ant-upload-drag-icon">
-      <InboxOutlined />
-    </p>
-    <p className="ant-upload-text">Click or drag file to this area to upload</p>
-    <p className="ant-upload-hint">
-      Support for a single or bulk upload. Strictly prohibited from uploading company data or other banned files.
-    </p>
-  </Dragger>
-);
-
 const BackupConfiguration = () => {
   const { t } = useDuplicatorTranslation();
   const compile = useCompile();
   const apiClient = useAPIClient();
-  const [dataTypes, setBackupData] = useState<any[]>(['']);
+  const [open, setOpen] = useState(false);
+  const [dataTypes, setBackupData] = useState<any[]>(['meta']);
+  const [fileData, setFileData] = useState(null);
   const resource = useMemo(() => {
     return apiClient.resource('duplicator');
   }, [apiClient]);
-  const handleStartUp = () => {
+  const handleStartBackUp = () => {
+    setOpen(true);
     resource
       .dump({
         values: { dataTypes },
       })
       .then((res) => {
         console.log(res);
+        setFileData(res);
       })
       .catch((err) => {});
   };
-
+  const handleDownload = () => {
+    const blob = new Blob([fileData?.data], { type: fileData?.headers?.['content-type'] });
+    const filename = extractFileName(fileData?.headers?.['content-disposition']);
+    saveAs(blob, filename);
+  };
   return (
     <Card bordered={false}>
       <strong style={{ fontWeight: 600, display: 'block', marginBottom: 8 }}>
@@ -183,23 +166,94 @@ const BackupConfiguration = () => {
           options={compile(options)}
           style={{ flexDirection: 'column' }}
           onChange={(checkValue) => setBackupData(checkValue)}
+          defaultValue={dataTypes}
         />
       </div>
-      <Button type="primary" onClick={handleStartUp}>
+      <Modal open={open} footer={null} onCancel={() => setOpen(false)}>
+        <div>
+          {!fileData ? (
+            <Result icon={<LoadingOutlined />} title="Backing up" subTitle="message..." />
+          ) : (
+            <Result
+              status="success"
+              title={t('Backed up successfully')}
+              extra={[
+                <Button type="primary" key="download" onClick={handleDownload}>
+                  {t('Download')}
+                </Button>,
+              ]}
+            />
+          )}
+        </div>
+      </Modal>
+      <Button type="primary" onClick={handleStartBackUp}>
         {t('Start backup')}
       </Button>
     </Card>
   );
 };
 
+const RestoreUpload = (props: any) => {
+  const { setRestoreData } = props;
+  const { t } = useDuplicatorTranslation();
+  const uploadProps: UploadProps = {
+    name: 'file',
+    multiple: true,
+    action: '/duplicator:upload',
+    onChange(info) {
+      const { status } = info.file;
+      if (status !== 'uploading') {
+        console.log(info.file, info.fileList);
+      }
+      if (status === 'done') {
+        message.success(`${info.file.name} file uploaded successfully.`);
+      } else if (status === 'error') {
+        message.error(`${info.file.name} file upload failed.`);
+      }
+    },
+    onDrop(e) {
+      console.log('Dropped files', e.dataTransfer.files);
+    },
+  };
+
+  return (
+    <Dragger {...uploadProps}>
+      <p className="ant-upload-drag-icon">
+        <InboxOutlined />
+      </p>
+      <p className="ant-upload-text"> {t('Click or drag file to this area to upload')}</p>
+      <p className="ant-upload-hint">
+        {t(
+          ' Support for a single or bulk upload. Strictly prohibited from uploading company data or other banned files.',
+        )}
+      </p>
+    </Dragger>
+  );
+};
+
 const RestoreConfiguration = () => {
   const { t } = useDuplicatorTranslation();
   const compile = useCompile();
-
+  const apiClient = useAPIClient();
+  const [dataTypes, setBackupData] = useState<any[]>(['meta']);
+  const [restoreData, setRestoreData] = useState(null);
+  const resource = useMemo(() => {
+    return apiClient.resource('duplicator');
+  }, [apiClient]);
+  const handleStartRestore = () => {
+    resource
+      .restore({
+        values: { dataTypes },
+      })
+      .then((res) => {
+        console.log(res);
+      })
+      .catch((err) => {});
+  };
   return (
     <div>
       <Card bordered={false}>
-        <RestoreUpload />
+        <RestoreUpload setRestoreData={setRestoreData} />
       </Card>
       <br />
       <br />
@@ -209,9 +263,11 @@ const RestoreConfiguration = () => {
           ):
         </strong>
         <div style={{ lineHeight: 2, marginBottom: 16 }}>
-          <Checkbox.Group options={compile(options)} style={{ flexDirection: 'column' }} />
+          <Checkbox.Group options={compile(options)} style={{ flexDirection: 'column' }} defaultValue={dataTypes} />
         </div>
-        <Button type="primary">{t('Start restore')}</Button>
+        <Button type="primary" onClick={handleStartRestore} disabled={!restoreData}>
+          {t('Start restore')}
+        </Button>
       </Card>
     </div>
   );
