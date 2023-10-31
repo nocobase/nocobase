@@ -1,8 +1,9 @@
 import winston, { Logger } from 'winston';
 import path from 'path';
 import chalk from 'chalk';
-import 'winston-daily-rotate-file';
 import { SystemLoggerOptions } from './system-logger';
+import 'winston-daily-rotate-file';
+import type { DailyRotateFileTransportOptions } from 'winston-daily-rotate-file';
 const DEFAULT_DELIMITER = '|';
 
 interface LoggerOptions extends Omit<winston.LoggerOptions, 'transports'> {
@@ -64,6 +65,22 @@ const escapeFormat: winston.Logform.Format = winston.format((info) => {
   return { ...info, message };
 })();
 
+export const Transports = {
+  console: (options?: winston.transports.ConsoleTransportOptions) => new winston.transports.Console(options),
+  file: (options?: winston.transports.FileTransportOptions) =>
+    new winston.transports.File({
+      maxsize: Number(process.env.LOGGER_MAX_SIZE) || 1024 * 1024 * 20,
+      maxFiles: Number(process.env.LOGGER_MAX_FILES) || 10,
+      ...options,
+    }),
+  dailyRotateFile: (options?: DailyRotateFileTransportOptions) =>
+    new winston.transports.DailyRotateFile({
+      maxSize: Number(process.env.LOGGER_MAX_SIZE),
+      maxFiles: Number(process.env.LOGGER_MAX_FILES) || '14d',
+      ...options,
+    }),
+};
+
 const getTransports = (options: LoggerOptions) => {
   const { filename } = options;
   let { transports: configTransports, path: dirname } = options;
@@ -86,25 +103,21 @@ const getTransports = (options: LoggerOptions) => {
     );
   const transports = {
     console: () =>
-      new winston.transports.Console({
+      Transports.console({
         format: format(
           winston.format((info) => ({ logfile: filename, level: info.level, timestamp: info.timestamp, ...info }))(),
         ),
       }),
     file: () =>
-      new winston.transports.File({
+      Transports.file({
         dirname,
         filename: `${filename}.log`,
-        maxsize: Number(process.env.LOGGER_MAX_SIZE) || 1024 * 1024 * 20,
-        maxFiles: Number(process.env.LOGGER_MAX_FILES) || 10,
         format: format(),
       }),
     dailyRotateFile: () =>
-      new winston.transports.DailyRotateFile({
+      Transports.dailyRotateFile({
         dirname,
         filename: `${filename}_%DATE%.log`,
-        maxSize: Number(process.env.LOGGER_MAX_SIZE),
-        maxFiles: Number(process.env.LOGGER_MAX_FILES) || '14d',
         format: format(),
       }),
   };
