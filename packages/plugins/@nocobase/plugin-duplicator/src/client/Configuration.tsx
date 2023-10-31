@@ -122,7 +122,6 @@ const LearnMore: React.FC = () => {
       },
     },
   ];
-  console.log(dataSource?.meta, dataSource?.config, dataSource?.business);
   return (
     <>
       <a onClick={showModal}>{t('Learn more')}</a>
@@ -155,7 +154,6 @@ const BackupConfiguration = () => {
         values: { dataTypes },
       })
       .then((res) => {
-        console.log(res);
         setFileData(res);
       })
       .catch((err) => {
@@ -165,7 +163,6 @@ const BackupConfiguration = () => {
   const handleDownload = () => {
     const blob = new Blob([fileData?.data], { type: fileData?.headers?.['content-type'] });
     const filename = extractFileName(fileData?.headers?.['content-disposition']);
-    console.log(filename, fileData?.headers?.['content-disposition']);
     saveAs(blob, filename);
   };
   return (
@@ -214,6 +211,7 @@ const RestoreUpload = (props: any) => {
     name: 'file',
     multiple: true,
     action: '/duplicator:upload',
+    contentType: 'application/octet-stream',
     onChange(info) {
       const { status } = info.file;
       if (status !== 'uploading') {
