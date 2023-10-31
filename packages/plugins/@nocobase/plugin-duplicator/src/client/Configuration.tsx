@@ -72,12 +72,11 @@ const LearnMore: React.FC = () => {
   const { t } = useDuplicatorTranslation();
   const apiClient = useAPIClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const resource = useMemo(() => {
-    return apiClient.resource('duplicator');
-  }, [apiClient]);
   const showModal = async () => {
-    const data = await resource.dumpableCollections();
-    console.log(data);
+    const data = await apiClient.request({
+      url: 'duplicator:dumpableCollections',
+      method: 'get',
+    });
     setIsModalOpen(true);
   };
 
