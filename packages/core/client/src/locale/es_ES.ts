@@ -603,7 +603,7 @@ export default {
     "Dynamic value": "Valor dinámico",
     "Current user": "Usuario actual",
     "Current record": "Registro actual",
-    "Current parent record": "Registro padre actual",
+    "Parent record": "Registro padre",
     "Current time": "Hora actual",
     "System variables": "Variables del sistema",
     "Date variables": "Variables de fecha",
