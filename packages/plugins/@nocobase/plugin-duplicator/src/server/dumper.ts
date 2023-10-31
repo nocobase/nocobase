@@ -21,8 +21,8 @@ type DumpOptions = {
 export class Dumper extends AppMigrator {
   direction = 'dump' as const;
 
-  getCollectionsByDataTypes(dataTypes: Set<DumpDataType>): string[] {
-    const dumpableCollectionsGroupByDataTypes = this.collectionsGroupByDataTypes();
+  async getCollectionsByDataTypes(dataTypes: Set<DumpDataType>): Promise<string[]> {
+    const dumpableCollectionsGroupByDataTypes = await this.collectionsGroupByDataTypes();
 
     return [...dataTypes].reduce((acc, key) => {
       return acc.concat(dumpableCollectionsGroupByDataTypes[key] || []);
@@ -77,7 +77,7 @@ export class Dumper extends AppMigrator {
 
     const dumpableCollectionsGroupByDataTypes = await this.collectionsGroupByDataTypes();
 
-    const dumpedCollections = this.getCollectionsByDataTypes(dumpDataTypes);
+    const dumpedCollections = await this.getCollectionsByDataTypes(dumpDataTypes);
 
     for (const collection of dumpedCollections) {
       await this.dumpCollection({
