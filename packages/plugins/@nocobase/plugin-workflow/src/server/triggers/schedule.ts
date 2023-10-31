@@ -424,7 +424,7 @@ export default class ScheduleTrigger extends Trigger {
   }
 
   init() {
-    if (this.plugin.app.name !== 'main') {
+    if (this.plugin.app.getPlugin('multi-app-share-collection').enabled && this.plugin.app.name !== 'main') {
       return;
     }
 

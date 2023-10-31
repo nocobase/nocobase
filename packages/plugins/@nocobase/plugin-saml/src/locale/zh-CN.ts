@@ -22,4 +22,8 @@ export default {
   'Sign in button name, which will be displayed on the sign in page': '登录按钮名称，将在登录页中显示',
   Copied: '已复制',
   Usage: '使用',
+  'Use this field to bind the user': '使用此字段绑定用户',
+  'Sign up automatically when the user does not exist': '用户不存在时自动注册',
+  'Username must be 2-16 characters in length (excluding @.<>"\'/)': '用户名必须为2-16个字符并且不包含@.<>"\'/）',
+  'User not found': '用户不存在',
 };

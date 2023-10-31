@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useCurrentAppInfo } from '../../appInfo';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { Action, useAttach, useCompile } from '../../schema-component';
+import { Input } from '../../schema-component/antd/input';
 import {
   isDeleteButtonDisabled,
   useBulkDestroyActionAndRefreshCM,
@@ -24,8 +25,8 @@ import { EditCollectionField } from './EditFieldAction';
 import { OverridingCollectionField } from './OverridingCollectionField';
 import { collection } from './schemas/collectionFields';
 import { SyncFieldsAction } from './SyncFieldsAction';
+import { SyncSQLFieldsAction } from './SyncSQLFieldsAction';
 import { ViewCollectionField } from './ViewInheritedField';
-import { Input } from '../../schema-component/antd/input';
 
 const indentStyle = css`
   .ant-table {
@@ -104,6 +105,7 @@ const CurrentFields = (props) => {
         return isTitleField(record) ? (
           <Tooltip title={t(titlePrompt)} placement="right" overlayInnerStyle={{ textAlign: 'center' }}>
             <Switch
+              aria-label={`switch-title-field-${record.name}`}
               size="small"
               loading={record.name === loadingRecord?.name}
               checked={record.name === (titleField || 'id')}
@@ -135,7 +137,7 @@ const CurrentFields = (props) => {
         return (
           <RecordProvider record={record}>
             <Space>
-              <EditCollectionField type="primary" />
+              <EditCollectionField role="button" aria-label={`edit-button-${record.name}`} type="primary" />
               <Action.Link {...deleteProps} />
             </Space>
           </RecordProvider>
@@ -152,6 +154,12 @@ const CurrentFields = (props) => {
       dataSource={props.fields}
       rowSelection={{
         type: 'checkbox',
+        // @ts-ignore
+        getCheckboxProps(record) {
+          return {
+            'aria-label': `checkbox-${record.name}`,
+          };
+        },
         onChange: (selectedRowKeys) => {
           setState((state) => {
             return {
@@ -419,6 +427,7 @@ export const CollectionFields = () => {
           >
             <Action {...deleteProps} />
             <SyncFieldsAction {...syncProps} />
+            <SyncSQLFieldsAction refreshCMList={refreshAsync} />
             <AddCollectionField {...addProps} />
           </Space>
           <Table

@@ -15,6 +15,7 @@ export * from './ConfigurationTabs';
 export * from './AddCategoryAction';
 export * from './EditCategoryAction';
 export * from './SyncFieldsAction';
+export * from './SyncSQLFieldsAction';
 
 registerValidateFormats({
   uid: /^[A-Za-z0-9][A-Za-z0-9_-]*$/,

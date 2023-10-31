@@ -38,6 +38,7 @@ export const Sortable = (props: any) => {
   return React.createElement(
     component || 'div',
     {
+      role: 'none',
       ...others,
       className: cx('nb-sortable-designer', props.className),
       ref: setNodeRef,
@@ -93,12 +94,7 @@ export const SortableItem: React.FC<SortableItemProps> = observer(
 
 export const DragHandler = (props) => {
   const { draggable } = useContext(SortableContext);
-  const { isDragging, attributes, listeners, setNodeRef, transform } = draggable;
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined;
+  const { attributes, listeners, setNodeRef } = draggable;
 
   return (
     <div
@@ -118,13 +114,12 @@ export const DragHandler = (props) => {
           zIndex: 1,
           // backgroundColor: '#333',
           lineHeight: 0,
-          height: 2,
-          width: 2,
           fontSize: 0,
           display: 'inline-block',
         }}
         {...listeners}
         {...attributes}
+        role="none"
       >
         <span style={{ cursor: 'move', fontSize: 14 }}>{props.children}</span>
       </div>

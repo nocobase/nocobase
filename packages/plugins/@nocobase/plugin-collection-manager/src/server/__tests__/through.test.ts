@@ -119,8 +119,11 @@ describe('collections repository', () => {
     const app2 = mockServer({
       database: {
         tablePrefix: 'through_',
+        database: app1.db.options.database,
+        storage: app1.db.options.storage,
       },
     });
+
     app2.plugin(PluginErrorHandler, { name: 'error-handler' });
     app2.plugin(Plugin, { name: 'collection-manager' });
     await app2.load();

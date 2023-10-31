@@ -19,7 +19,7 @@ const postgres = {
   boolean: 'boolean',
 
   json: ['json', 'array'],
-  jsonb: ['jsonb', 'array'],
+  jsonb: ['json', 'array', 'jsonb'],
 };
 
 const mysql = {

@@ -14,7 +14,7 @@ export const PluginManagerLink = () => {
   return (
     <Tooltip title={t('Plugin manager')}>
       <Button
-        data-testid={'pm-button'}
+        data-testid={'plugin-manager-button'}
         icon={<ApiOutlined />}
         title={t('Plugin manager')}
         onClick={() => {
@@ -48,11 +48,13 @@ export const SettingsCenterDropdown = () => {
     return {
       items: [
         ...bookmarkTabs.map((tab) => ({
+          role: 'button',
           key: `/admin/settings/${tab.path}`,
           label: compile(tab.title),
         })),
         { type: 'divider' },
         {
+          role: 'button',
           key: '/admin/settings',
           label: t('All plugin settings'),
         },
@@ -67,6 +69,7 @@ export const SettingsCenterDropdown = () => {
     <ActionContextProvider value={{ visible, setVisible }}>
       <Dropdown placement="bottom" menu={menu}>
         <Button
+          data-testid="settings-center-button"
           icon={<SettingOutlined />}
           // title={t('All plugin settings')}
         />

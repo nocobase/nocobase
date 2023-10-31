@@ -11,10 +11,16 @@ export type FieldConfigProps = Partial<{
 export type AnySchemaProperties = SchemaProperties<any, any, any, any, any, any, any, any>;
 export type ConfigProps = FieldConfigProps | AnySchemaProperties | (() => AnySchemaProperties);
 
+export type Config =
+  | (ConfigProps & {
+      property?: string;
+    })
+  | string;
+
 const selectField = ({ name, title, required, defaultValue }: FieldConfigProps) => {
   return {
-    [name]: {
-      title: lang(title),
+    [name || 'field']: {
+      title: lang(title || 'Field'),
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
@@ -27,8 +33,8 @@ const selectField = ({ name, title, required, defaultValue }: FieldConfigProps) 
 
 const booleanField = ({ name, title, defaultValue = false }: FieldConfigProps) => {
   return {
-    [name]: {
-      'x-content': lang(title),
+    [name || 'field']: {
+      'x-content': lang(title || 'Field'),
       type: 'boolean',
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
@@ -40,4 +46,7 @@ const booleanField = ({ name, title, defaultValue = false }: FieldConfigProps) =
 export default {
   field: selectField,
   booleanField,
+  xField: (props: FieldConfigProps) => selectField({ name: 'xField', title: 'xField', required: true, ...props }),
+  yField: (props: FieldConfigProps) => selectField({ name: 'yField', title: 'yField', required: true, ...props }),
+  seriesField: (props: FieldConfigProps) => selectField({ name: 'seriesField', title: 'seriesField', ...props }),
 };

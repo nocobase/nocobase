@@ -155,7 +155,8 @@ export const parseBuilder = async (ctx: Context, next: Next) => {
       include,
       group,
       order,
-      limit: limit > 2000 ? 2000 : limit,
+      limit: limit || 2000,
+      subQuery: false,
       raw: true,
     },
     fieldMap,
@@ -167,7 +168,7 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
   const { collection: collectionName, measures, dimensions, orders, filter } = ctx.action.params.values as QueryParams;
   const collection = ctx.db.getCollection(collectionName);
   const fields = collection.fields;
-  const underscored = ctx.db.options.underscored;
+  const underscored = collection.options.underscored;
   const models: {
     [target: string]: {
       type: string;
@@ -328,9 +329,8 @@ export const query = async (ctx: Context, next: Next) => {
       parseBuilder,
       queryData,
       postProcess,
-    ])(ctx, async () => {});
+    ])(ctx, next);
   } catch (err) {
     ctx.throw(500, err);
   }
-  await next();
 };

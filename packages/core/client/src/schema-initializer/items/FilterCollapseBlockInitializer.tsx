@@ -1,11 +1,13 @@
-import React from 'react';
 import { TableOutlined } from '@ant-design/icons';
+import React from 'react';
 
-import { DataBlockInitializer } from './DataBlockInitializer';
 import { createCollapseBlockSchema } from '../utils';
+import { DataBlockInitializer } from './DataBlockInitializer';
 
 export const FilterCollapseBlockInitializer = (props) => {
-  const { insert } = props;
+  const { insert, item } = props;
+  const items = item?.key === 'filterCollapseBlockInTableSelector' && [];
+
   return (
     <DataBlockInitializer
       {...props}
@@ -19,6 +21,7 @@ export const FilterCollapseBlockInitializer = (props) => {
         });
         insert(schema);
       }}
+      items={items}
     />
   );
 };

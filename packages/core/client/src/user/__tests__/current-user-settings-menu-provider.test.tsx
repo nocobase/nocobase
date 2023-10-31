@@ -1,6 +1,6 @@
 import React from 'react';
 import { render } from 'testUtils';
-import AppContextProvider from '../../test/AppContextProvider';
+import AppContextProvider from '../../testUtils/AppContextProvider';
 import { SettingsMenu } from '../CurrentUser';
 import { useCurrentUserSettingsMenu } from '../CurrentUserSettingsMenuProvider';
 

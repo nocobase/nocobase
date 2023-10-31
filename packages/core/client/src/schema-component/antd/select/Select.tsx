@@ -1,9 +1,9 @@
-import { LoadingOutlined } from '@ant-design/icons';
+import { CloseCircleFilled, CloseOutlined, LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid, toArr } from '@formily/shared';
 import { isPlainObject } from '@nocobase/utils/client';
 import type { SelectProps } from 'antd';
-import { Select as AntdSelect, Empty, Spin } from 'antd';
+import { Select as AntdSelect, Empty, Spin, Tag } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
 import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
@@ -43,9 +43,14 @@ const ObjectSelect = (props: Props) => {
 
   return (
     <AntdSelect
+      // @ts-ignore
+      role="button"
+      data-testid={`select-object-${mode}`}
       value={toValue(value)}
       defaultValue={toValue(defaultValue)}
-      allowClear
+      allowClear={{
+        clearIcon: <CloseCircleFilled role="button" aria-label="icon-close-select" />,
+      }}
       labelInValue
       notFoundContent={loading ? <Spin /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
       options={options}
@@ -71,6 +76,19 @@ const ObjectSelect = (props: Props) => {
         }
       }}
       mode={mode}
+      tagRender={(props) => {
+        return (
+          // @ts-ignore
+          <Tag
+            role="button"
+            aria-label={props.label}
+            closeIcon={<CloseOutlined role="button" aria-label="icon-close-tag" />}
+            {...props}
+          >
+            {props.label}
+          </Tag>
+        );
+      }}
       {...others}
     />
   );
@@ -108,13 +126,31 @@ const InternalSelect = connect(
     };
     return (
       <AntdSelect
+        // @ts-ignore
+        role="button"
+        data-testid={`select-${mode || 'single'}`}
         showSearch
         filterOption={filterOption}
-        allowClear
+        allowClear={{
+          clearIcon: <CloseCircleFilled role="button" aria-label="icon-close-select" />,
+        }}
         popupMatchSelectWidth={false}
         notFoundContent={loading ? <Spin /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
         value={toValue(value)}
         defaultValue={toValue(defaultValue)}
+        tagRender={(props) => {
+          return (
+            // @ts-ignore
+            <Tag
+              role="button"
+              aria-label={props.label}
+              closeIcon={<CloseOutlined role="button" aria-label="icon-close-tag" />}
+              {...props}
+            >
+              {props.label}
+            </Tag>
+          );
+        }}
         {...others}
         onChange={(changed) => {
           props.onChange?.(changed === undefined ? null : changed);

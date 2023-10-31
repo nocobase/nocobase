@@ -1,11 +1,9 @@
 import { FormItem, FormLayout } from '@formily/antd-v5';
 import { SchemaInitializerItemOptions, Variable, css, defaultFieldNames, useCollectionManager } from '@nocobase/client';
 import { Evaluator, evaluators, getOptions } from '@nocobase/evaluators/client';
-import { parse } from '@nocobase/utils/client';
 import { Radio } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFlowContext } from '../FlowContext';
 import { RadioWithTooltip } from '../components/RadioWithTooltip';
 import { ValueBlock } from '../components/ValueBlock';
 import { renderEngineReference } from '../components/renderEngineReference';
@@ -167,32 +165,11 @@ export default {
       });
       return <Variable.Input scope={scope} {...props} />;
     },
-    CalculationResult({ dataSource }) {
-      const { execution } = useFlowContext();
-      if (!execution) {
-        return lang('Calculation result');
-      }
-      const result = parse(dataSource)({
-        $jobsMapByNodeId: (execution.jobs ?? []).reduce(
-          (map, job) => Object.assign(map, { [job.nodeId]: job.result }),
-          {},
-        ),
-      });
-
-      return (
-        <pre
-          className={css`
-            margin: 0;
-          `}
-        >
-          {JSON.stringify(result, null, 2)}
-        </pre>
-      );
-    },
     RadioWithTooltip,
     DynamicConfig,
+    ValueBlock,
   },
-  useVariables({ id, title }, { types, fieldNames = defaultFieldNames }) {
+  useVariables({ key, title }, { types, fieldNames = defaultFieldNames }) {
     if (
       types &&
       !types.some((type) => type in BaseTypeSets || Object.values(BaseTypeSets).some((set) => set.has(type)))
@@ -200,7 +177,7 @@ export default {
       return null;
     }
     return {
-      [fieldNames.value]: `${id}`,
+      [fieldNames.value]: key,
       [fieldNames.label]: title,
     };
   },

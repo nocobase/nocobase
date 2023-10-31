@@ -13,7 +13,7 @@ import {
   useResourceActionContext,
 } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
-import { Alert, Button, Input, Tag, message } from 'antd';
+import { Button, Input, Tag, message } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
@@ -61,6 +61,7 @@ export interface Trigger {
   components?: { [key: string]: any };
   useInitializers?(config): SchemaInitializerItemOptions | null;
   initializers?: any;
+  actionTriggerable?: boolean;
 }
 
 export const triggers = new Registry<Trigger>();
@@ -142,7 +143,6 @@ function TriggerExecution() {
 
 export const TriggerConfig = () => {
   const api = useAPIClient();
-  const compile = useCompile();
   const { workflow, refresh } = useFlowContext();
   const [editingTitle, setEditingTitle] = useState<string>('');
   const [editingConfig, setEditingConfig] = useState(false);
@@ -205,12 +205,19 @@ export const TriggerConfig = () => {
   }
 
   return (
-    <div className={cx(styles.nodeCardClass)} onClick={onOpenDrawer}>
+    <div
+      role="button"
+      aria-label={`${titleText}-${editingTitle}`}
+      className={cx(styles.nodeCardClass)}
+      onClick={onOpenDrawer}
+    >
       <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
         <Tag color="gold">{titleText}</Tag>
       </div>
       <div>
         <Input.TextArea
+          role="button"
+          aria-label="textarea"
           value={editingTitle}
           onChange={(ev) => setEditingTitle(ev.target.value)}
           onBlur={(ev) => onChangeTitle(ev.target.value)}
@@ -242,23 +249,7 @@ export const TriggerConfig = () => {
                   form,
                 },
                 properties: {
-                  ...(executed
-                    ? {
-                        alert: {
-                          'x-component': Alert,
-                          'x-component-props': {
-                            type: 'warning',
-                            showIcon: true,
-                            message: `{{t("Trigger in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
-                            className: css`
-                              width: 100%;
-                              font-size: 85%;
-                              margin-bottom: 2em;
-                            `,
-                          },
-                        },
-                      }
-                    : trigger.description
+                  ...(trigger.description
                     ? {
                         description: {
                           type: 'void',
@@ -327,9 +318,10 @@ export function useTrigger() {
 }
 
 export function getTriggersOptions() {
-  return Array.from(triggers.getEntities()).map(([value, { title }]) => ({
+  return Array.from(triggers.getEntities()).map(([value, { title, ...options }]) => ({
     value,
     label: title,
     color: 'gold',
+    options,
   }));
 }

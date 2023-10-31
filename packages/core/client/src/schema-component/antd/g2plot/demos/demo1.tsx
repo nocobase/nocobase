@@ -7,7 +7,7 @@ import {
   SchemaComponentProvider,
 } from '@nocobase/client';
 import React from 'react';
-import { mockAPIClient } from '../../../../test';
+import { mockAPIClient } from '../../../../testUtils';
 
 const { apiClient, mockRequest } = mockAPIClient();
 

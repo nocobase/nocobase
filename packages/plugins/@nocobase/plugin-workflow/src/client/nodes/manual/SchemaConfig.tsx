@@ -1,13 +1,15 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { FormProvider, ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
-import { FormLayout } from '@formily/antd-v5';
 import { Alert, Button, Modal, Space } from 'antd';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
   Action,
   ActionContextProvider,
+  DefaultValueProvider,
+  FormActiveFieldsProvider,
   GeneralSchemaDesigner,
   InitializerWithSwitch,
   SchemaComponent,
@@ -18,22 +20,24 @@ import {
   SchemaSettings,
   VariableScopeProvider,
   gridRowColWrap,
+  useCollectionManager,
   useCompile,
+  useFormActiveFields,
   useFormBlockContext,
   useSchemaOptionsContext,
 } from '@nocobase/client';
 import { Registry, lodash } from '@nocobase/utils/client';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
-import { JOB_STATUS } from '../../constants';
 import { useFlowContext } from '../../FlowContext';
+import { JOB_STATUS } from '../../constants';
 import { NAMESPACE, lang } from '../../locale';
 import { useTrigger } from '../../triggers';
+import { useWorkflowVariableOptions } from '../../variable';
 import { DetailsBlockProvider } from './DetailsBlockProvider';
 import { FormBlockProvider } from './FormBlockProvider';
 import createRecordForm from './forms/create';
 import customRecordForm from './forms/custom';
 import updateRecordForm from './forms/update';
-import { useWorkflowVariableOptions } from '../../variable';
 
 type ValueOf<T> = T[keyof T];
 
@@ -53,7 +57,7 @@ export type FormType = {
 export type ManualFormType = {
   title: string;
   config: {
-    useInitializer: () => SchemaInitializerItemOptions;
+    useInitializer: ({ collections }?: { collections: any[] }) => SchemaInitializerItemOptions;
     initializers?: {
       [key: string]: React.FC;
     };
@@ -108,6 +112,7 @@ function SimpleDesigner() {
 }
 
 function AddBlockButton(props: any) {
+  const { collections } = useCollectionManager();
   const current = useNodeContext();
   const nodes = useAvailableUpstreams(current);
   const triggerInitializers = [useTriggerInitializers()].filter(Boolean);
@@ -146,7 +151,7 @@ function AddBlockButton(props: any) {
       title: '{{t("Form")}}',
       children: Array.from(manualFormTypes.getValues()).map((item: ManualFormType) => {
         const { useInitializer: getInitializer } = item.config;
-        return getInitializer();
+        return getInitializer({ collections });
       }),
     },
     {
@@ -169,33 +174,35 @@ function AssignedFieldValues() {
   const ctx = useContext(SchemaComponentContext);
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-  const scope = useWorkflowVariableOptions({ fieldNames: { label: 'title', value: 'name' } });
+  const scope = useWorkflowVariableOptions();
   const [open, setOpen] = useState(false);
-  const [initialSchema, setInitialSchema] = useState(fieldSchema?.['x-action-settings']?.assignedValues?.schema ?? {
-    type: 'void',
-    'x-component': 'Grid',
-    'x-initializer': 'CustomFormItemInitializers',
-    properties: {},
-  });
+  const [initialSchema, setInitialSchema] = useState(
+    fieldSchema?.['x-action-settings']?.assignedValues?.schema ?? {
+      type: 'void',
+      'x-component': 'Grid',
+      'x-initializer': 'CustomFormItemInitializers',
+      properties: {},
+    },
+  );
   const [schema, setSchema] = useState<Schema>(null);
   const { components } = useSchemaOptionsContext();
   useEffect(() => {
-    setSchema(new Schema({
-      properties: {
-        grid: initialSchema
-      },
-    }));
+    setSchema(
+      new Schema({
+        properties: {
+          grid: initialSchema,
+        },
+      }),
+    );
   }, [initialSchema]);
-  const form = useMemo(
-    () => {
-      const initialValues = fieldSchema?.['x-action-settings']?.assignedValues?.values;
-      return createForm({
-        initialValues: lodash.cloneDeep(initialValues),
-        values: lodash.cloneDeep(initialValues),
-      });
-    },
-    [],
-  );
+  const form = useMemo(() => {
+    const initialValues = fieldSchema?.['x-action-settings']?.assignedValues?.values;
+    return createForm({
+      initialValues: lodash.cloneDeep(initialValues),
+      values: lodash.cloneDeep(initialValues),
+    });
+  }, []);
+  const upLevelActiveFields = useFormActiveFields();
 
   const title = t('Assign field values');
 
@@ -220,7 +227,7 @@ function AssignedFieldValues() {
 
   return (
     <>
-      <SchemaSettings.Item onClick={() => setOpen(true)}>
+      <SchemaSettings.Item title={title} onClick={() => setOpen(true)}>
         {title}
       </SchemaSettings.Item>
       <Modal
@@ -231,30 +238,40 @@ function AssignedFieldValues() {
         footer={
           <Space>
             <Button onClick={onCancel}>{t('Cancel')}</Button>
-            <Button type="primary" onClick={onSubmit}>{t('Submit')}</Button>
+            <Button type="primary" onClick={onSubmit}>
+              {t('Submit')}
+            </Button>
           </Space>
         }
       >
-        <VariableScopeProvider scope={scope}>
-          <FormProvider form={form}>
-            <FormLayout layout={'vertical'}>
-              <Alert message={lang('Values preset in this form will override user submitted ones when continue or reject.')} />
-              <br />
-              {open && schema && (
-                <SchemaComponentContext.Provider
-                  value={{
-                    ...ctx,
-                    refresh() {
-                      setInitialSchema(lodash.get(schema.toJSON(), 'properties.grid'));
-                    }
-                  }}
-                >
-                  <SchemaComponent schema={schema} components={components} />
-                </SchemaComponentContext.Provider>
-              )}
-            </FormLayout>
-          </FormProvider>
-        </VariableScopeProvider>
+        <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
+          <VariableScopeProvider scope={scope}>
+            <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
+              <FormProvider form={form}>
+                <FormLayout layout={'vertical'}>
+                  <Alert
+                    message={lang(
+                      'Values preset in this form will override user submitted ones when continue or reject.',
+                    )}
+                  />
+                  <br />
+                  {open && schema && (
+                    <SchemaComponentContext.Provider
+                      value={{
+                        ...ctx,
+                        refresh() {
+                          setInitialSchema(lodash.get(schema.toJSON(), 'properties.grid'));
+                        },
+                      }}
+                    >
+                      <SchemaComponent schema={schema} components={components} />
+                    </SchemaComponentContext.Provider>
+                  )}
+                </FormLayout>
+              </FormProvider>
+            </FormActiveFieldsProvider>
+          </VariableScopeProvider>
+        </DefaultValueProvider>
       </Modal>
     </>
   );

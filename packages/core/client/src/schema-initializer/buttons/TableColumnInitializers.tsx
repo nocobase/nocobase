@@ -12,7 +12,7 @@ import {
 
 // 表格列配置
 export const TableColumnInitializers = (props: any) => {
-  const { items = [], action = true } = props;
+  const { action = true } = props;
   const { t } = useTranslation();
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -37,7 +37,7 @@ export const TableColumnInitializers = (props: any) => {
           {
             type: 'itemGroup',
             title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
-            children: Object.values(inherit)[0].filter((v) => !v?.field?.isForeignKey),
+            children: Object.values(inherit)[0].filter((v: any) => !v?.field?.isForeignKey),
           },
         );
     });

@@ -165,7 +165,7 @@ export default {
     },
     ignoreFail: {
       type: 'boolean',
-      title: `{{t("Ignore fail request and continue workflow", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Ignore failed request and continue workflow", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
     },

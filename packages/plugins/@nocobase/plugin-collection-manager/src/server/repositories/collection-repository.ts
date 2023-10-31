@@ -18,9 +18,7 @@ export class CollectionRepository extends Repository {
 
   async load(options: LoadOptions = {}) {
     const { filter, skipExist } = options;
-    this.database.logger.info('start load collections', { submodule: 'CollectionRepository', function: 'load' });
     const instances = (await this.find({ filter, appends: ['fields'] })) as CollectionModel[];
-    this.database.logger.info('end load collections', { submodule: 'CollectionRepository', function: 'load' });
 
     const graphlib = CollectionsGraph.graphlib();
 
@@ -120,8 +118,6 @@ export class CollectionRepository extends Repository {
       this.app.setMaintainingMessage(`load ${collectionName} collection fields`);
       await nameMap[collectionName].loadFields({ includeFields: skipField });
     }
-
-    this.database.logger.info('finished load collection', { submodule: 'CollectionRepository', function: 'load' });
   }
 
   async db2cm(collectionName: string) {

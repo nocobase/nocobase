@@ -1,7 +1,36 @@
 import lodash from 'lodash';
 import { FindOptions, Repository } from '../../repository';
+import Database from '../../database';
+import { Collection } from '../../collection';
 
 export class AdjacencyListRepository extends Repository {
+  static queryParentSQL(options: {
+    db: Database;
+    nodeIds: any[];
+    collection: Collection;
+    foreignKey: string;
+    targetKey: string;
+  }) {
+    const { collection, db, nodeIds } = options;
+    const tableName = collection.quotedTableName();
+    const { foreignKey, targetKey } = options;
+    const foreignKeyField = collection.model.rawAttributes[foreignKey].field;
+    const targetKeyField = collection.model.rawAttributes[targetKey].field;
+
+    const queryInterface = db.sequelize.getQueryInterface();
+    const q = queryInterface.quoteIdentifier.bind(queryInterface);
+    return `WITH RECURSIVE cte AS (
+      SELECT ${q(targetKeyField)}, ${q(foreignKeyField)}
+      FROM ${tableName}
+      WHERE ${q(targetKeyField)} IN (${nodeIds.join(',')})
+      UNION ALL
+      SELECT t.${q(targetKeyField)}, t.${q(foreignKeyField)}
+      FROM ${tableName} AS t
+      INNER JOIN cte ON t.${q(targetKeyField)} = cte.${q(foreignKeyField)}
+      )
+      SELECT ${q(targetKeyField)} AS ${q(targetKey)}, ${q(foreignKeyField)} AS ${q(foreignKey)} FROM cte`;
+  }
+
   async update(options): Promise<any> {
     return super.update({
       ...(options || {}),

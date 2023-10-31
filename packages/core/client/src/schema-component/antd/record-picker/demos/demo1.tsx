@@ -19,7 +19,7 @@ import {
   TableV2,
 } from '@nocobase/client';
 import React from 'react';
-import { mainCollections, mockAPIClient } from '../../../../test';
+import { mainCollections, mockAPIClient } from '../../../../testUtils';
 import data from './mockData';
 
 const { apiClient, mockRequest } = mockAPIClient();

@@ -73,7 +73,7 @@ const InternalGanttBlockProvider = (props) => {
 export const GanttBlockProvider = (props) => {
   const params = { filter: props.params.filter, tree: true, paginate: false, sort: props.fieldNames.start };
   return (
-    <BlockProvider {...props} params={params}>
+    <BlockProvider name="gantt" {...props} params={params}>
       <TableBlockProvider {...props} params={params}>
         <InternalGanttBlockProvider {...props} />
       </TableBlockProvider>
@@ -91,7 +91,7 @@ export const useGanttBlockProps = () => {
   const { getPrimaryKey, name, template, writableView } = useCollection();
   const { parseAction } = useACLRoleContext();
   const primaryKey = getPrimaryKey();
-  const checkPermassion = (record) => {
+  const checkPermission = (record) => {
     const actionPath = `${name}:update`;
     const schema = {};
     const recordPkValue = record?.[primaryKey];
@@ -106,13 +106,13 @@ export const useGanttBlockProps = () => {
     ctx.field.data = tasksData;
   };
   const expandAndCollapseAll = (flag) => {
-    const data = formatData(ctx.service.data?.data, ctx.fieldNames, [], undefined, flag, checkPermassion);
+    const data = formatData(ctx.service.data?.data, ctx.fieldNames, [], undefined, flag, checkPermission);
     setTasks(data);
     ctx.field.data = data;
   };
   useEffect(() => {
     if (!ctx?.service?.loading) {
-      const data = formatData(ctx.service.data?.data, ctx.fieldNames, [], undefined, false, checkPermassion);
+      const data = formatData(ctx.service.data?.data, ctx.fieldNames, [], undefined, false, checkPermission);
       setTasks(data);
       ctx.field.data = data;
     }

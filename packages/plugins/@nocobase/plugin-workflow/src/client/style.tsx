@@ -44,6 +44,11 @@ const useStyles = createStyles(({ css, token }) => {
         align-items: center;
         padding: 2em;
 
+        > .ant-alert {
+          margin-bottom: 2em;
+          font-size: 85%;
+        }
+
         .end {
           cursor: default;
 
@@ -105,6 +110,7 @@ const useStyles = createStyles(({ css, token }) => {
     branchBlockClass: css`
       display: flex;
       position: relative;
+      margin-top: 2em;
 
       :before {
         content: '';
@@ -176,6 +182,23 @@ const useStyles = createStyles(({ css, token }) => {
           width: 50%;
         }
       }
+
+      .end-sign {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 0;
+        height: 4em;
+        padding: 1em 0;
+        border-left: 1px dashed ${token.colorBgLayout};
+
+        .anticon {
+          font-size: 1.5em;
+          line-height: 100%;
+        }
+      }
     `,
 
     nodeBlockClass: css`
@@ -208,7 +231,7 @@ const useStyles = createStyles(({ css, token }) => {
         box-shadow: ${token.boxShadow};
 
         .workflow-node-remove-button {
-          opacity: 1;
+          display: block;
         }
       }
 
@@ -217,12 +240,11 @@ const useStyles = createStyles(({ css, token }) => {
       }
 
       .workflow-node-remove-button {
+        display: none;
         position: absolute;
         right: 0.5em;
         top: 0.5em;
         color: ${token.colorText};
-        opacity: 0;
-        transition: opacity 0.3s ease;
 
         &[disabled] {
           display: none;
@@ -261,7 +283,7 @@ const useStyles = createStyles(({ css, token }) => {
         box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.25);
 
         .workflow-node-remove-button {
-          opacity: 1;
+          display: block;
         }
       }
     `,
@@ -325,7 +347,6 @@ const useStyles = createStyles(({ css, token }) => {
 
     conditionClass: css`
       position: relative;
-      height: 2em;
       overflow: visible;
 
       > span {

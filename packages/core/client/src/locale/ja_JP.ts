@@ -627,6 +627,7 @@ export default {
   "Sync successfully":"同期成功",
   "Sync from form fields":"フォームフィールドの同期",
   "Select all": "すべて選択",
+  "Cascade Select":"カスケード選択",
   "New plugin": "新しいプラグイン",
   "Upgrade": "アップグレード",
   "Dependencies check failed": "依存関係のチェックに失敗しました",

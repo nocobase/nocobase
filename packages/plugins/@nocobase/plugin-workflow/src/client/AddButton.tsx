@@ -1,5 +1,5 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { cx, css, useAPIClient, useCompile } from '@nocobase/client';
+import { css, useAPIClient, useCompile } from '@nocobase/client';
 import { Button, Dropdown, MenuProps } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { useFlowContext } from './FlowContext';
@@ -10,9 +10,11 @@ import useStyles from './style';
 interface AddButtonProps {
   upstream;
   branchIndex?: number | null;
+  [key: string]: any;
 }
 
-export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
+export function AddButton(props: AddButtonProps) {
+  const { upstream, branchIndex = null } = props;
   const compile = useCompile();
   const api = useAPIClient();
   const { workflow, refresh } = useFlowContext() ?? {};
@@ -28,17 +30,25 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
     ]
       .filter((group) => instructionList.filter((item) => item.group === group.key).length)
       .map((group) => {
-        const groupInstructions = instructionList.filter((item) => item.group === group.key);
+        const groupInstructions = instructionList.filter(
+          (item) =>
+            item.group === group.key &&
+            (item.isAvailable ? item.isAvailable({ workflow, upstream, branchIndex }) : true),
+        );
 
         return {
           ...group,
           type: 'group',
           children: groupInstructions.map((item) => ({
+            role: 'button',
+            'aria-label': item.type,
             key: item.type,
             label: item.title,
             type: item.options ? 'subMenu' : null,
             children: item.options
               ? item.options.map((option) => ({
+                  role: 'button',
+                  'aria-label': option.key,
                   key: option.key,
                   label: option.label,
                 }))
@@ -46,7 +56,7 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
           })),
         };
       });
-  }, [instructionList]);
+  }, [branchIndex, instructionList, upstream, workflow]);
   const resource = useMemo(() => {
     if (!workflow) {
       return null;
@@ -98,13 +108,13 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
         menu={menu}
         disabled={workflow.executed}
         overlayClassName={css`
-          .ant-dropdown-menu-root{
+          .ant-dropdown-menu-root {
             max-height: 30em;
             overflow-y: auto;
           }
         `}
       >
-        <Button shape="circle" icon={<PlusOutlined />} />
+        <Button aria-label={props['aria-label'] || 'add-button'} shape="circle" icon={<PlusOutlined />} />
       </Dropdown>
     </div>
   );

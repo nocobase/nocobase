@@ -1,0 +1,15 @@
+{
+  "name": "@nocobase/plugin-sample-add-custom-charts",
+  "version": "0.14.0-alpha.7",
+  "main": "dist/server/index.js",
+  "devDependencies": {
+    "echarts": "^5.4.3",
+    "echarts-for-react": "^3.0.2"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/plugin-data-visualization": "0.x"
+  }
+}

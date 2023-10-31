@@ -46,6 +46,7 @@ export const useGetFilterFieldOptions = () => {
       target: field.target,
       title: field?.uiSchema?.title || field.name,
       schema: field?.uiSchema,
+      interface: field.interface,
       operators:
         operators?.filter?.((operator) => {
           return !operator?.visible || operator.visible(field);

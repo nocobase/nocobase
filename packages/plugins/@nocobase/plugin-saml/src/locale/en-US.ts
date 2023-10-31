@@ -20,4 +20,9 @@ export default {
   'Are you sure you want to delete it?': 'Are you sure you want to delete it?',
   'Sign in button name, which will be displayed on the sign in page':
     'Sign in button name, which will be displayed on the sign in page',
+  'Use this field to bind the user': 'Use this field to bind the user',
+  'Sign up automatically when the user does not exist': 'Sign up automatically when the user does not exist',
+  'Username must be 2-16 characters in length (excluding @.<>"\'/)':
+    'Username must be 2-16 characters in length (excluding @.<>"\'/)',
+  'User not found': 'User not found',
 };

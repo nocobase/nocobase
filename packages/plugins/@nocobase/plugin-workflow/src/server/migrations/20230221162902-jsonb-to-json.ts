@@ -30,22 +30,6 @@ export default class extends Migration {
         },
         { transaction },
       );
-      await queryInterface.changeColumn(
-        db.getCollection('executions').model.getTableName(),
-        'context',
-        {
-          type: DataTypes.JSON,
-        },
-        { transaction },
-      );
-      await queryInterface.changeColumn(
-        db.getCollection('jobs').model.getTableName(),
-        'result',
-        {
-          type: DataTypes.JSON,
-        },
-        { transaction },
-      );
     });
   }
 }

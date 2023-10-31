@@ -3,15 +3,17 @@ import { FieldOption } from '../hooks';
 import { QueryProps } from '../renderer';
 import { parseField } from '../utils';
 import { ISchema } from '@formily/react';
-import configs, { AnySchemaProperties, ConfigProps } from './configs';
+import configs, { AnySchemaProperties, Config } from './configs';
+import { Transformer } from '../block/transformers';
 
 export type RenderProps = {
-  data: any[];
+  data: Record<string, any>[];
   general: any;
   advanced: any;
   fieldProps: {
-    [field: string]: FieldOption & {
-      transformer: (val: any) => string;
+    [field: string]: {
+      label: string;
+      transformer: Transformer;
     };
   };
 };
@@ -21,21 +23,6 @@ export interface ChartType {
   title: string;
   component: React.FC<any>;
   schema: ISchema;
-  infer: (
-    fields: FieldOption[],
-    {
-      measures,
-      dimensions,
-    }: {
-      measures?: QueryProps['measures'];
-      dimensions?: QueryProps['dimensions'];
-    },
-  ) => {
-    xField: FieldOption;
-    yField: FieldOption;
-    seriesField: FieldOption;
-    yFields: FieldOption[];
-  };
   init?: (
     fields: FieldOption[],
     query: {
@@ -46,38 +33,25 @@ export interface ChartType {
     general?: any;
     advanced?: any;
   };
-  /**
-   * getProps
-   * Accept the information that the chart component needs to render,
-   * process it and return the props of the chart component.
-   */
-  getProps: (props: RenderProps) => any;
+  render: (props: RenderProps) => React.FC<any>;
   getReference?: () => {
     title: string;
     link: string;
   };
-  render: (props: RenderProps) => React.FC<any>;
 }
-
-type Config = (
-  | (ConfigProps & {
-      property?: string;
-    })
-  | string
-)[];
 
 export type ChartProps = {
   name: string;
   title: string;
   component: React.FC<any>;
-  config?: Config;
+  config?: Config[];
 };
 
 export class Chart implements ChartType {
   name: string;
   title: string;
   component: React.FC<any>;
-  config: Config;
+  config: Config[];
   configs = new Map<string, Function>();
 
   constructor({ name, title, component, config }: ChartProps) {
@@ -184,7 +158,12 @@ export class Chart implements ChartType {
     return { xField, yField, seriesField, yFields };
   }
 
-  getProps(props: RenderProps) {
+  /**
+   * getProps
+   * Accept the information that the chart component needs to render,
+   * process it and return the props of the chart component.
+   */
+  getProps(props: RenderProps): any {
     return props;
   }
 

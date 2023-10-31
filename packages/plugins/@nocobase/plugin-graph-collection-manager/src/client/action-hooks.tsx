@@ -8,15 +8,15 @@ import {
   useCompile,
   useRequest,
 } from '@nocobase/client';
-import { error } from '@nocobase/utils/client';
+import { error, lodash } from '@nocobase/utils/client';
 import { Select, message } from 'antd';
-import { lodash } from '@nocobase/utils/client';
+import cloneDeep from 'lodash/cloneDeep';
 import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GraphCollectionContext } from './components/CollectionNodeProvder';
 
 export const useValuesFromRecord = (options, data) => {
-  const result = useRequest(() => Promise.resolve({ data }), {
+  const result = useRequest(() => Promise.resolve({ data: cloneDeep(data) }), {
     ...options,
     manual: true,
   });

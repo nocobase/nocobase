@@ -5,7 +5,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import omit from 'lodash/omit';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useRequest } from '../../api-client';
+import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
@@ -79,7 +79,13 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
   const result = useRequest(
-    () => Promise.resolve({ data: { ...omit(record, ['__parent']), category: record?.category.map((v) => v.id) } }),
+    () =>
+      Promise.resolve({
+        data: {
+          ...omit(cloneDeep(record), ['__parent', '__collectionName']),
+          category: record?.category.map((v) => v.id),
+        },
+      }),
     {
       ...options,
       manual: true,
@@ -100,11 +106,16 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
-  const { [targetKey]: filterByTk } = useRecord();
+  const { [targetKey]: filterByTk, template } = useRecord();
+  const api = useAPIClient();
+  const collectionResource = template === 'sql' ? api.resource('sqlCollection') : resource;
   return {
     async run() {
       await form.submit();
-      await resource.update({ filterByTk, values: omit(form.values, ['fields']) });
+      await collectionResource.update({
+        filterByTk,
+        values: template === 'sql' ? form.values : omit(form.values, ['fields']),
+      });
       ctx.setVisible(false);
       await form.reset();
       refresh();
@@ -119,7 +130,7 @@ export const EditCollection = (props) => {
 };
 
 export const EditCollectionAction = (props) => {
-  const { scope, getContainer, item: record, children } = props;
+  const { scope, getContainer, item: record, children, ...otherProps } = props;
   const { getTemplate } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -130,6 +141,7 @@ export const EditCollectionAction = (props) => {
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
+          {...otherProps}
           onClick={async () => {
             const templateConf = getTemplate(record.template);
             const schema = getSchema(

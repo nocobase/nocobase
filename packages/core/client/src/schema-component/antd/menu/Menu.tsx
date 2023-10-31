@@ -8,6 +8,7 @@ import {
   useField,
   useFieldSchema,
 } from '@formily/react';
+import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
 import { Menu as AntdMenu, MenuProps } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
@@ -194,10 +195,14 @@ const HeaderMenu = ({
   const items = useMemo(() => {
     const designerBtn = {
       key: 'x-designer-button',
-      disabled: true,
       style: { padding: '0 8px', order: 9999 },
-      label: render({ 'data-testid': 'add-menu-item-button-in-header', style: { background: 'none' } }),
+      label: render({
+        'aria-label': 'schema-initializer-Menu-header',
+        'aria-disabled': false,
+        style: { background: 'none' },
+      }),
       notdelete: true,
+      disabled: true,
     };
     const result = getMenuItems(() => {
       return children;
@@ -216,7 +221,12 @@ const HeaderMenu = ({
         {...others}
         className={headerMenuClass}
         onSelect={(info: any) => {
-          const s = schema.properties[info.key];
+          const s = schema.properties?.[info.key];
+
+          if (!s) {
+            return;
+          }
+
           if (mode === 'mix') {
             if (s['x-component'] !== 'Menu.SubMenu') {
               onSelect?.(info);
@@ -273,7 +283,7 @@ const SideMenu = ({
 
   const items = useMemo(() => {
     const result = getMenuItems(() => {
-      return <RecursionField schema={sideMenuSchema} onlyRenderProperties />;
+      return <RecursionField key={uid()} schema={sideMenuSchema} onlyRenderProperties />;
     });
 
     if (designable) {
@@ -281,7 +291,8 @@ const SideMenu = ({
         key: 'x-designer-button',
         disabled: true,
         label: render({
-          'data-testid': 'add-menu-item-button-in-side',
+          'aria-label': 'schema-initializer-Menu-side',
+          'aria-disabled': false,
           insert: (s) => {
             const dn = createDesignable({
               t,
@@ -480,7 +491,12 @@ Menu.Item = observer(
         label: (
           <SchemaContext.Provider value={schema}>
             <FieldContext.Provider value={field}>
-              <SortableItem className={designerCss} removeParentsIfNoChildren={false}>
+              <SortableItem
+                role="button"
+                aria-label={t(field.title)}
+                className={designerCss}
+                removeParentsIfNoChildren={false}
+              >
                 <Icon type={icon} />
                 <span
                   style={{

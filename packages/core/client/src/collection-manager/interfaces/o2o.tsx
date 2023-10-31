@@ -178,7 +178,6 @@ export const o2o: IField = {
       // },
     ],
   },
-  invariable: true,
 };
 
 export const oho: IField = {
@@ -349,7 +348,6 @@ export const oho: IField = {
       // },
     ],
   },
-  invariable: true,
 };
 
 export const obo: IField = {
@@ -402,7 +400,8 @@ export const obo: IField = {
       schema['x-component-props']['size'] = 'small';
     }
 
-    if (targetCollection?.titleField && schema['x-component-props']) {
+    if (targetCollection?.titleField) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
@@ -524,5 +523,4 @@ export const obo: IField = {
       // },
     ],
   },
-  invariable: true,
 };

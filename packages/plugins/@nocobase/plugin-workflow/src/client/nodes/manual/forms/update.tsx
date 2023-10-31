@@ -1,5 +1,5 @@
-import React from 'react';
 import { useFieldSchema } from '@formily/react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -7,15 +7,14 @@ import {
   SchemaSettings,
   useCollection,
   useCollectionFilterOptions,
-  useCollectionManager,
   useDesignable,
 } from '@nocobase/client';
 
-import { NAMESPACE } from '../../../locale';
-import { findSchema } from '../utils';
-import { ManualFormType } from '../SchemaConfig';
 import { FilterDynamicComponent } from '../../../components/FilterDynamicComponent';
+import { NAMESPACE } from '../../../locale';
 import { FormBlockInitializer } from '../FormBlockInitializer';
+import { ManualFormType } from '../SchemaConfig';
+import { findSchema } from '../utils';
 
 function UpdateFormDesigner() {
   const { name, title } = useCollection();
@@ -71,26 +70,37 @@ function UpdateFormDesigner() {
 export default {
   title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
   config: {
-    useInitializer() {
-      const { collections } = useCollectionManager();
+    useInitializer({ collections }) {
       return {
         key: 'updateRecordForm',
         type: 'subMenu',
         title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
-        children: collections
-          .filter((item) => !item.hidden)
-          .map((item) => ({
-            key: `updateForm-${item.name}`,
-            type: 'item',
-            title: item.title,
-            schema: {
-              collection: item.name,
-              title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
-              formType: 'update',
-              'x-designer': 'UpdateFormDesigner',
+        children: [
+          {
+            key: 'updateRecordForm-child',
+            type: 'itemGroup',
+            style: {
+              maxHeight: '48vh',
+              overflowY: 'auto',
             },
-            component: FormBlockInitializer,
-          })),
+            loadChildren: ({ searchValue }) => {
+              return collections
+                .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
+                .map((item) => ({
+                  key: `updateRecordForm-child-${item.name}`,
+                  type: 'item',
+                  title: item.title,
+                  schema: {
+                    collection: item.name,
+                    title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
+                    formType: 'update',
+                    'x-designer': 'UpdateFormDesigner',
+                  },
+                  component: FormBlockInitializer,
+                }));
+            },
+          },
+        ],
       };
     },
     initializers: {

@@ -199,9 +199,10 @@ describe('Eager loading tree', () => {
       rootAttributes: findOptions.attributes,
       includeOption: findOptions.include,
       db: db,
+      rootQueryOptions: findOptions,
     });
 
-    await eagerLoadingTree.load(users.map((item) => item.id));
+    await eagerLoadingTree.load();
     const root = eagerLoadingTree.root;
 
     const u1 = root.instances.find((item) => item.get('name') === 'u1');
@@ -250,9 +251,10 @@ describe('Eager loading tree', () => {
       rootAttributes: findOptions.attributes,
       includeOption: findOptions.include,
       db: db,
+      rootQueryOptions: findOptions,
     });
 
-    await eagerLoadingTree.load([1, 2]);
+    await eagerLoadingTree.load();
 
     const root = eagerLoadingTree.root;
     const u1 = root.instances.find((item) => item.get('name') === 'u1');
@@ -301,9 +303,10 @@ describe('Eager loading tree', () => {
       rootAttributes: findOptions.attributes,
       includeOption: findOptions.include,
       db: db,
+      rootQueryOptions: findOptions,
     });
 
-    await eagerLoadingTree.load(users.map((item) => item.id));
+    await eagerLoadingTree.load();
 
     const root = eagerLoadingTree.root;
     const u1 = root.instances.find((item) => item.get('name') === 'u1');
@@ -357,9 +360,10 @@ describe('Eager loading tree', () => {
       rootAttributes: findOptions.attributes,
       includeOption: findOptions.include,
       db: db,
+      rootQueryOptions: findOptions,
     });
 
-    await eagerLoadingTree.load([1, 2]);
+    await eagerLoadingTree.load();
 
     const root = eagerLoadingTree.root;
     const p1 = root.instances.find((item) => item.get('title') === 'p1');
@@ -420,8 +424,10 @@ describe('Eager loading tree', () => {
       rootAttributes: findOptions.attributes,
       includeOption: findOptions.include,
       db: db,
+      rootQueryOptions: findOptions,
     });
-    await eagerLoadingTree.load([1, 2]);
+
+    await eagerLoadingTree.load();
     const root = eagerLoadingTree.root;
 
     const p1 = root.instances.find((item) => item.get('title') === 'p1');
@@ -523,6 +529,7 @@ describe('Eager loading tree', () => {
       rootAttributes: findOptions.attributes,
       includeOption: findOptions.include,
       db: db,
+      rootQueryOptions: findOptions,
     });
 
     expect(eagerLoadingTree.root.children).toHaveLength(1);
@@ -530,7 +537,7 @@ describe('Eager loading tree', () => {
     expect(eagerLoadingTree.root.children[0].children[0].model).toBe(Tag.model);
     expect(eagerLoadingTree.root.children[0].children[0].children[0].model).toBe(TagCategory.model);
 
-    await eagerLoadingTree.load((await User.model.findAll()).map((item) => item[User.model.primaryKeyAttribute]));
+    await eagerLoadingTree.load();
 
     expect(eagerLoadingTree.root.instances).toHaveLength(2);
     const u1 = eagerLoadingTree.root.instances.find((item) => item.get('name') === 'u1');
