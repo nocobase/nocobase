@@ -17,12 +17,8 @@ export default class ThemeEditorMigration extends Migration {
     }
 
     const collection = this.db.getCollection('themeConfig');
-    if (!collection.hasField('uid')) {
-      collection.addField('uid', {
-        type: 'uid',
-      });
-    }
-    collection.sync();
+
+    await collection.sync();
 
     const themes = {
       [defaultTheme.uid]: defaultTheme,
