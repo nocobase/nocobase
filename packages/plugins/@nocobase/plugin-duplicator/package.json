@@ -24,7 +24,8 @@
     "mkdirp": "^1.0.4",
     "react": "^18.2.0",
     "tar": "^6.1.13",
-    "object-path": "^0.11.8"
+    "object-path": "^0.11.8",
+    "content-disposition": "^0.5.4"
   },
   "peerDependencies": {
     "@nocobase/client": "0.x",

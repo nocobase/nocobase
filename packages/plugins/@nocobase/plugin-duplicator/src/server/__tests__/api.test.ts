@@ -19,6 +19,9 @@ describe('duplicator api', () => {
     const dumpResponse = await app.agent().post('/duplicator:dump').send({});
 
     expect(dumpResponse.status).toBe(200);
+    // should response file name
+    const headers = dumpResponse.headers;
+    expect(headers['content-disposition']).toBeTruthy();
     const filePath = path.resolve(os.tmpdir(), 'dump.nbdump');
 
     fs.writeFileSync(filePath, dumpResponse.body);
