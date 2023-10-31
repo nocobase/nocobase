@@ -89,10 +89,12 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   if (collectionName && typeof currentRecord.id !== 'undefined') {
     const recordRepo = ctx.db.getRepository(collectionName);
     currentRecordValues =
-      (await recordRepo.findOne({
-        filterByTk: currentRecord.id,
-        appends: currentRecord.appends,
-      })) || {};
+      (
+        await recordRepo.findOne({
+          filterByTk: currentRecord.id,
+          appends: currentRecord.appends,
+        })
+      )?.toJSON() || {};
   }
 
   let currentUser = ctx.auth.user;
@@ -103,10 +105,12 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   );
   if (userAppends.length) {
     currentUser =
-      (await ctx.db.getRepository('users').findOne({
-        filterByTk: ctx.auth.user.id,
-        appends: userAppends,
-      })) || {};
+      (
+        await ctx.db.getRepository('users').findOne({
+          filterByTk: ctx.auth.user.id,
+          appends: userAppends,
+        })
+      )?.toJSON() || {};
   }
 
   const variables = {
