@@ -1,0 +1,13 @@
+{
+  "name": "@codenula/plugin-smtp",
+  "version": "1.0.0",
+  "main": "dist/server/index.js",
+  "dependencies": {
+    "string-template":"1.0.0"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  }
+}

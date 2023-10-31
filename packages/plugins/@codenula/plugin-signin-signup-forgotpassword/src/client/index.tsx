@@ -19,10 +19,7 @@ import './assets/icomoon/icomoon.css';
 import CustomSigninPage from './pages/CustomSigninPage';
 import CustomSignupPage from './pages/CustomSignupPage';
 import CustomForgotPasswordPage from './pages/CustomForgotPasswordPage';
-import Home from './pages/SigninOptions';
-import SigninOptions from './pages/SigninOptions';
-import SignupOptions from './pages/SignupOptions';
-import ForgotPasswordOptions from './pages/ForgotPasswordOptions';
+import EmailBody from './components/EmailBody';
 
 export const SigninSignupInitializer = (props) => {
   const { insert } = props;
@@ -62,20 +59,24 @@ const SigninSignpProviderNew = React.memo((props) => {
     <SettingsCenterProvider
       settings={{
         'signin-signup-forgotpassword': {
-          title: 'Signin/Signup/Forgot-password options',
+          title: 'Email templates',
           icon: 'ApiOutlined',
           tabs: {
             tab1: {
-              title: 'Signin options',
-              component: () => <SigninOptions />,
+              title: 'Signin',
+              component: () => <EmailBody page="signinEmail" subject="signinEmailSubject" />,
             },
             tab2: {
-              title: 'Signup options',
-              component: () => <SignupOptions />,
+              title: 'Signup',
+              component: () => <EmailBody page="signupEmail" subject="signupEmailSubject" />,
             },
             tab3: {
-              title: 'Forgot password options',
-              component: () => <ForgotPasswordOptions />,
+              title: 'Confirm reset password ',
+              component: () => <EmailBody page="confirmForgotPasswordEmail" subject="confirmForgotPasswordEmailSubject" />,
+            },
+            tab4: {
+              title: 'Reset password success ',
+              component: () => <EmailBody page="forgotPasswordEmail" subject="forgotPasswordEmailSubject" />,
             },
           },
         },

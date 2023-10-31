@@ -1,14 +1,21 @@
-import { SignupPage } from '@nocobase/client';
+import { SignupPage,SchemaComponent } from '@nocobase/client';
 import React from 'react';
 
 import LogoImg from '../assets/logo.svg';
 import ArrowImg from '../assets/arrow-r.svg';
 import CodenulaImg from '../assets/logo-codenula.png';
 import RightImg from '../assets/image-login-right.png';
+import { signupSchema } from '../schema';
 
 import { useCustomSignup } from '../hooks';
 
 const CustomSignupPage = (props) => {
+  const signinLink = `/signin`;
+const allowSignUp = true
+  const useBasicSignUp = () => {
+    
+    return useCustomSignup()
+  };
   return (
     <div>
       <section className="login-box">
@@ -27,7 +34,11 @@ const CustomSignupPage = (props) => {
                     </p>
                   </div>
                   <div className="signupform">
-                    <SignupPage {...props} scope={{ useSignup: useCustomSignup }} />
+                    {/* <SignupPage {...props} scope={{ useSignup: useCustomSignup }} /> */}
+                    <SchemaComponent
+                      schema={signupSchema}
+                      scope={{ useBasicSignUp, allowSignUp, signinLink }}
+                    />
                   </div>
                 </div>
               </div>

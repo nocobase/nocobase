@@ -1,50 +1,108 @@
+import { ISchema, useForm } from '@formily/react';
+import { uid } from '@formily/shared';
+import { useWorkflowVariableOptions } from '@nocobase/plugin-workflow/client';
+import { ArrayItems } from '@formily/antd-v5';
+import { Variable,css} from '@nocobase/client';
 import React from 'react';
 
-export default {
-    title: `{{t("HTTP request", { ns: "workflow" })}}`,
-    type: 'request',
-    group: 'extended',
-    description: `{{t("Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.", { ns: "workflow" })}}`,
-    fieldset: {
-     
+export const bodySchema = {
+  fieldset: {
+    subject: {
+      type: 'string',
+      title: 'Email Subject',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+    },
+    body: {
+      type: 'string',
+      title: `{{t("Email Body", { ns: "sdf" })}}`,
+      'x-decorator': 'FormItem',
+      'x-decorator-props': {},
+      'x-component': 'Variable.RawTextArea',
+      'x-component-props': {
+        changeOnSelect: true,
+        autoSize: {
+          minRows: 10,
+        },
+        placeholder: `{{t("Input request data", { ns: "sdf" })}}`,
+      },
+      description: `{{t("Only support standard JSON data", { ns: "sdf" })}}`,
+    },
+    components:{
+      RequestBody() {
+       
       
-     
-     
-      data: {
-        type: 'string',
-        title: `{{t("Body", { ns: "workflow" })}}`,
-        'x-decorator': 'FormItem',
-        'x-decorator-props': {},
-        'x-component': 'RequestBody',
-        'x-component-props': {
-          changeOnSelect: true,
-          autoSize: {
-            minRows: 10,
+        const scope = [
+          { key: 'key', label: 'username', value: 'username' },
+          { key: 'key', label: 'email', value: 'email' },
+          { key: 'key', label: 'phone', value: 'phone' },
+        ];
+        return <Variable.RawTextArea scope={scope} />;
+      }
+    }
+  
+  },
+  
+};
+
+export const emailSchema: ISchema = {
+  type: 'object',
+  properties: {
+    [uid()]: {
+      'x-decorator': 'Form',
+      'x-decorator-props': {
+        useValues: '{{ useEmailValues }}',
+      },
+      'x-component': 'div',
+      type: 'void',
+      title: 'Email body',
+      
+      properties: {
+        
+        subject: {
+          type: 'string',
+          title: 'Email Subject',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+        body: {
+          type: 'string',
+          title: `{{t("Email Body", { ns: "sdf" })}}`,
+          'x-decorator': 'FormItem',
+          'x-decorator-props': {},
+          'x-component': 'RichText',
+          'x-component-props': {
+            changeOnSelect: true,
+            autoSize: {
+              minRows: 10,
+            },
+            placeholder: `{{t("Input request data", { ns: "sdf" })}}`,
           },
-          placeholder: `{{t("Input request data", { ns: "workflow" })}}`,
+          description: `{{t("Only support standard JSON data", { ns: "sdf" })}}`,
         },
-        description: `{{t("Only support standard JSON data", { ns: "workflow" })}}`,
-      },
-      timeout: {
-        type: 'number',
-        title: `{{t("Timeout config", { ns: "workflow" })}}`,
-        'x-decorator': 'FormItem',
-        'x-decorator-props': {},
-        'x-component': 'InputNumber',
-        'x-component-props': {
-          addonAfter: `{{t("ms", { ns: "workflow" })}}`,
-          min: 1,
-          step: 1000,
-          defaultValue: 5000,
+        
+
+
+        footer1: {
+          type: 'void',
+          'x-component': 'ActionBar',
+          'x-component-props': {
+            layout: 'one-column',
+          },
+          properties: {
+            send: {
+              title: '{{t("Set value")}}',
+              'x-component': 'Action',
+              'x-component-props': {
+                type: 'primary',
+                htmlType: 'submit',
+                useAction: '{{ useSetValue }}',
+              },
+            },
+          },
         },
-      },
-      ignoreFail: {
-        type: 'boolean',
-        title: `{{t("Ignore fail request and continue workflow", { ns: "workflow" })}}`,
-        'x-decorator': 'FormItem',
-        'x-component': 'Checkbox',
       },
     },
-    
-  
-  };
+  },
+};
+

@@ -12,7 +12,7 @@ export const CustomForgotPasswordPage = () => {
   const { authType, name, options } = { authType: 'Email/Password', name: 'basic', options: {} };
   const signupPages = useContext(SignupPageContext);
   const allowSignUp = true;
-  const signupLink = `/signup?authType=${authType}&name=${name}`;
+  const signinLink = `/signin`;
   const forgotPasswordLink = `/forgotPassword?authType=${authType}&name=${name}`;
 
   const useBasicSignIn = () => {
@@ -42,7 +42,7 @@ export const CustomForgotPasswordPage = () => {
                     scope={{
                       useBasicSignIn,
                       allowSignUp,
-                      signupLink,
+                      signinLink,
                       forgotPasswordLink,
                       useForgotPasswordEmailSubmit,
                     }}

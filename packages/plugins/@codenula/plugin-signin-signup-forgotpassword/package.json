@@ -1,8 +1,12 @@
 {
   "name": "@codenula/plugin-signin-signup-forgotpassword",
-  "version": "0.14.0-alpha.6",
+  "version": "1.0.0",
   "main": "dist/server/index.js",
-  "dependencies": {},
+  "dependencies": {
+    "template-strings":"0.0.6",
+    "string-template":"1.0.0",
+    "react-quill":"2.0.0"
+  },
   "peerDependencies": {
     "@nocobase/client": "0.x",
     "@nocobase/server": "0.x",

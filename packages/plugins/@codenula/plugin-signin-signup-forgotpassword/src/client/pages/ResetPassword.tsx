@@ -19,27 +19,6 @@ const passwordForm: ISchema = {
   name: 'passwordForm',
   'x-component': 'FormV2',
   properties: {
-    // email: {
-    //   type: 'string',
-    //   'x-component': 'Input',
-    //   'x-validator': `{{(value) => {
-    //     if (!value) {
-    //       return "Please enter your username or email";
-    //     }
-    //     if (value.includes('@')) {
-    //       if (!/^[\\w-]+(\\.[\\w-]+)*@[\\w-]+(\\.[\\w-]+)+$/.test(value)) {
-    //         return "Please enter a valid email";
-    //       }
-    //     } else {
-    //       return /^[^@.<>"'/]{2,16}$/.test(value) || "Please enter a valid username";
-    //     }
-    //   }}}`,
-    //   'x-decorator': 'FormItem',
-    //   'x-component-props': {
-    //     placeholder: '{{"Enter your email"}}',
-    //     style: { backgroundColor: '#e7f0fe', color: 'blue', height: '50px', padding: '10px 19px' },
-    //   },
-    // },
     password: {
       type: 'string',
       'x-component': 'Password',
@@ -110,10 +89,18 @@ const useEmailSubmit = () => {
         .request({
           url: 'users:resetpassword',
           method: 'post',
-          data: values,
+          data: { email: values.email, resetToken: values.resetToken, password: values.password },
         })
-        .then((res) => {
+        .then(async (res) => {
           console.log(res);
+          await api.request({
+            url: 'email:authEmail',
+            method: 'post',
+            data: {
+              email: values.email,
+              page: ['forgotPasswordEmail', 'forgotPasswordEmailSubject'],
+            },
+          });
           window.location.replace('/');
         })
         .catch((err) => console.log(err));
