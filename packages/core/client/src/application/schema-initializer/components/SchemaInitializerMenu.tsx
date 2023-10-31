@@ -6,6 +6,7 @@ import { useCompile } from '../../../schema-component';
 import { useSchemaInitializerMenuItems } from '../hooks';
 import { uid } from '@formily/shared';
 import { useSchemaInitializerItem } from '../context';
+import { useStyles } from './style';
 
 export interface SchemaInitializerMenuProps {
   title: string;
@@ -19,6 +20,7 @@ export const SchemaInitializerMenu = () => {
   const { children, title, name = uid(), icon, ...others } = useSchemaInitializerItem<SchemaInitializerMenuProps>();
   const compile = useCompile();
   const childrenItems = useSchemaInitializerMenuItems(children, name);
+  const { componentCls } = useStyles();
 
   return (
     <Menu
@@ -28,6 +30,7 @@ export const SchemaInitializerMenu = () => {
           key: name,
           label: compile(title),
           icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
+          popupClassName: `${componentCls}-menu-sub`,
           children: childrenItems,
         },
       ]}

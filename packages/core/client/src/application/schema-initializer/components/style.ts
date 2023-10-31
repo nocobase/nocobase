@@ -1,13 +1,4 @@
-import { createStyles } from 'antd-style';
 import { genStyleHook } from '../../../schema-component/antd/__builtins__';
-
-export const useLocalStyle = createStyles(({ token }) => {
-  return {
-    itemContent: {
-      marginLeft: token.marginXS,
-    },
-  };
-});
 
 export const useStyles = genStyleHook('nb-schema-initializer', (token) => {
   const { componentCls } = token;
@@ -38,6 +29,14 @@ export const useStyles = genStyleHook('nb-schema-initializer', (token) => {
           },
         },
       },
+    },
+    [`${componentCls}-menu-sub`]: {
+      ul: {
+        maxHeight: '50vh !important',
+      },
+    },
+    [`${componentCls}-item-content`]: {
+      marginLeft: token.marginXS,
     },
   };
 });

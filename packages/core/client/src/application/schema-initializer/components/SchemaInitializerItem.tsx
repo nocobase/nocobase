@@ -4,7 +4,7 @@ import { Icon } from '../../../icon';
 import { Menu } from 'antd';
 import { useSchemaInitializerMenuItems } from '../hooks';
 import { uid } from '@formily/shared';
-import { useLocalStyle, useStyles } from './style';
+import { useStyles } from './style';
 import classNames from 'classnames';
 import { useSchemaInitializerItem } from '../context';
 
@@ -25,7 +25,6 @@ export const SchemaInitializerItem = React.forwardRef<any, SchemaInitializerItem
   const compile = useCompile();
   const childrenItems = useSchemaInitializerMenuItems(items, name, onClick);
   const { componentCls } = useStyles();
-  const { styles } = useLocalStyle();
   if (items && items.length > 0) {
     return (
       <Menu
@@ -54,8 +53,8 @@ export const SchemaInitializerItem = React.forwardRef<any, SchemaInitializerItem
       <div className={classNames({ [`${componentCls}-menu-item`]: applyMenuStyle }, className)} style={style}>
         {children || (
           <>
-            {icon && <span>{typeof icon === 'string' ? <Icon type={icon as string} /> : icon}</span>}
-            <span className={classNames({ [styles['itemContent']]: icon })}>{compile(title)}</span>
+            {icon && typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
+            <span className={classNames({ [`${componentCls}-item-content`]: icon })}>{compile(title)}</span>
           </>
         )}
       </div>
