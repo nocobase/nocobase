@@ -23,7 +23,6 @@ export class PresetNocoBase extends Plugin {
     'duplicator',
     'iframe-block',
     'formula-field',
-    'charts',
     'data-visualization',
     'auth',
     'sms-auth',
@@ -31,6 +30,7 @@ export class PresetNocoBase extends Plugin {
   ];
 
   localPlugins = [
+    // ['charts', '0.9.1-alpha.2'],
     ['audit-logs', '0.7.1-alpha.4'],
     ['sample-hello', '0.8.0-alpha.4'],
     ['multi-app-manager', '0.7.0-alpha.1'],
