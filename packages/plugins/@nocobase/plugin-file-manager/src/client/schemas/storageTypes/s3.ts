@@ -12,6 +12,8 @@ export default {
       'x-component': 'CollectionField',
       'x-decorator': 'FormItem',
       'x-disabled': '{{ !createOnly }}',
+      required: true,
+      default: '{{ useNewId("s_") }}',
       description:
         '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
     },
