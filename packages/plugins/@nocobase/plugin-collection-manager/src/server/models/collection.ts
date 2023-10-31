@@ -25,6 +25,7 @@ export class CollectionModel extends MagicAttributeModel {
       duplicator: {
         dataType: 'business',
       },
+      origin: 'collection-manager',
       ...this.get(),
       fields: [],
     };

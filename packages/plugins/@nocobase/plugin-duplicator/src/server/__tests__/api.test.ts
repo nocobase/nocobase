@@ -43,6 +43,20 @@ describe('duplicator api', () => {
   });
 
   it('should get dumpable collections', async () => {
+    await app.db.getCollection('collections').repository.create({
+      values: {
+        name: 'test',
+        title: '测试',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+            title: '标题',
+          },
+        ],
+      },
+      context: {},
+    });
     const response = await app.agent().get('/duplicator:dumpableCollections');
 
     expect(response.status).toBe(200);
@@ -52,6 +66,16 @@ describe('duplicator api', () => {
     expect(body['meta']).toBeTruthy();
     expect(body['config']).toBeTruthy();
     expect(body['business']).toBeTruthy();
-    console.log(JSON.stringify(body, null, 2));
+
+    const testCollectionInfo = body['business'].find((item: any) => item.name === 'test');
+
+    expect(testCollectionInfo).toMatchObject({
+      name: 'test',
+      dataType: 'business',
+      origin: {
+        name: 'user',
+        title: 'user',
+      },
+    });
   });
 });

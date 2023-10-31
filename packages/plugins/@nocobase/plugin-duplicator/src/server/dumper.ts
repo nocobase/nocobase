@@ -38,11 +38,18 @@ export class Dumper extends AppMigrator {
             let origin = c.origin;
             let originTitle = origin;
 
+            // plugin collections
             if (origin.startsWith('plugin:')) {
               const plugin = this.app.pm.get(origin.replace(/^plugin:/, ''));
               const pluginInfo = await plugin.toJSON();
               originTitle = pluginInfo.displayName;
               origin = pluginInfo.packageName;
+            }
+
+            // user collections
+            if (origin === 'collection-manager') {
+              originTitle = 'user';
+              origin = 'user';
             }
 
             return {
