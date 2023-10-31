@@ -72,11 +72,14 @@ const LearnMore: React.FC = () => {
   const { t } = useDuplicatorTranslation();
   const apiClient = useAPIClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [dataSource, setDataSource] = useState<any>();
   const showModal = async () => {
     const data = await apiClient.request({
       url: 'duplicator:dumpableCollections',
       method: 'get',
     });
+    setDataSource(data?.data);
+    console.log(data?.data);
     setIsModalOpen(true);
   };
 
@@ -94,10 +97,10 @@ const LearnMore: React.FC = () => {
       dataIndex: 'plugin',
       key: 'plugin',
       width: '50%',
-      render: (plugin) => {
+      render: (_, { origin: plugin }) => {
         return (
           <div>
-            {plugin.displayName}
+            {plugin.title}
             <br />
             <div style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>{plugin.name}</div>
           </div>
@@ -108,10 +111,10 @@ const LearnMore: React.FC = () => {
       title: 'Collection',
       dataIndex: 'collection',
       key: 'collection',
-      render: (collection) => {
+      render: (_, collection) => {
         return (
           <div>
-            {collection.title}
+            {collection.name}
             <br />
             <div style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>{collection.name}</div>
           </div>
@@ -119,17 +122,17 @@ const LearnMore: React.FC = () => {
       },
     },
   ];
-
+  console.log(dataSource?.meta, dataSource?.config, dataSource?.business);
   return (
     <>
       <a onClick={showModal}>{t('Learn more')}</a>
       <Modal width={800} open={isModalOpen} footer={null} onOk={handleOk} onCancel={handleCancel}>
         <h3> {t('System metadata')}</h3>
-        <Table bordered size={'small'} columns={columns} />
+        <Table bordered size={'small'} dataSource={dataSource?.meta} columns={columns} />
         <h3>{t('System config')}</h3>
-        <Table bordered size={'small'} columns={columns} />
+        <Table bordered size={'small'} dataSource={dataSource?.config} columns={columns} />
         <h3>{t('Business data')}</h3>
-        <Table bordered size={'small'} columns={columns} />
+        <Table bordered size={'small'} dataSource={dataSource?.business} columns={columns} />
       </Modal>
     </>
   );
