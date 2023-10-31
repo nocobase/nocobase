@@ -30,9 +30,19 @@ The Numbers to Words plugin helps you convert numbers to words (in  English). It
 
 ## Installation
 
--There are two ways of installing this plugin,
-1)Enable using GUI -> Go to Plugin Manager > find @codenula/plugin-numbers-to-words > enable
-2)Enable using terminal -> Enter the following cmd to enable plugin "yarn pm enable @codenula/plugin-numbers-to-words"
+There are two ways to install the Numbers to Words plugin:
+
+1. **Enable using GUI:**
+    1. Go to Plugin Manager.
+    2. Find `@codenula/plugin-numbers-to-words`.
+    3. Enable the plugin.
+
+2. **Enable using terminal:**
+    1. Enter the following command to enable the plugin:
+
+        ```
+        yarn pm enable @codenula/plugin-numbers-to-words
+        ```
 
 ## License
 
