@@ -20,7 +20,7 @@ export const SchemaInitializerMenu = () => {
   const { children, title, name = uid(), icon, ...others } = useSchemaInitializerItem<SchemaInitializerMenuProps>();
   const compile = useCompile();
   const childrenItems = useSchemaInitializerMenuItems(children, name);
-  const { componentCls } = useStyles();
+  const { componentCls, hashId } = useStyles();
 
   return (
     <Menu
@@ -30,7 +30,7 @@ export const SchemaInitializerMenu = () => {
           key: name,
           label: compile(title),
           icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
-          popupClassName: `${componentCls}-menu-sub`,
+          popupClassName: `${hashId} ${componentCls}-menu-sub`,
           children: childrenItems,
         },
       ]}
