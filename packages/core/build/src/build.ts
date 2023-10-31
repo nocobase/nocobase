@@ -1,30 +1,26 @@
-import { Package } from '@lerna/package';
-import chalk from 'chalk';
 import execa from 'execa';
+import chalk from 'chalk';
 import path from 'path';
-import { buildCjs } from './buildCjs';
-import { buildClient } from './buildClient';
-import { buildDeclaration } from './buildDeclaration';
-import { buildPlugin } from './buildPlugin';
 import {
-  CORE_APP,
-  CORE_CLIENT,
   PACKAGES_PATH,
-  ROOT_PATH,
-  getCjsPackages,
   getPluginPackages,
+  CORE_CLIENT,
+  CORE_APP,
+  getCjsPackages,
   getPresetsPackages,
+  ROOT_PATH,
 } from './constant';
-import { tarPlugin } from './tarPlugin';
-import { PkgLog, UserConfig, getPackageJson, getPkgLog, getUserConfig, toUnixPath } from './utils';
+import { buildClient } from './buildClient';
+import { buildCjs } from './buildCjs';
+import { buildPlugin } from './buildPlugin';
+import { buildDeclaration } from './buildDeclaration';
+import { PkgLog, getPkgLog, toUnixPath, getPackageJson, getUserConfig, UserConfig } from './utils';
 import { getPackages } from './utils/getPackages';
+import { Package } from '@lerna/package';
+import { tarPlugin } from './tarPlugin'
 
 export async function build(pkgs: string[]) {
   process.env.NODE_ENV = 'production';
-  if (process.env.CI) {
-    // @ts-ignore
-    process.env.__E2E__ = true;
-  }
 
   const packages = getPackages(pkgs);
   if (packages.length === 0) {
