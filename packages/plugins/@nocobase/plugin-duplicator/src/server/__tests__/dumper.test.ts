@@ -27,7 +27,7 @@ describe('dumper', () => {
     });
 
     const dumper = new Dumper(app);
-    const collections = dumper.getCollectionsByDataTypes(new Set(['business']));
+    const collections = await dumper.getCollectionsByDataTypes(new Set(['business']));
     expect(collections.includes('test_collection')).toBeTruthy();
   });
 
