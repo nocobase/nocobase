@@ -28,7 +28,6 @@ describe('duplicator api', () => {
 
     const packageInfoResponse = await app.agent().post('/duplicator:upload').attach('file', filePath);
 
-    console.log(packageInfoResponse.body);
     expect(packageInfoResponse.status).toBe(200);
     const data = packageInfoResponse.body.data;
 
@@ -53,5 +52,6 @@ describe('duplicator api', () => {
     expect(body['meta']).toBeTruthy();
     expect(body['config']).toBeTruthy();
     expect(body['business']).toBeTruthy();
+    console.log(JSON.stringify(body, null, 2));
   });
 });

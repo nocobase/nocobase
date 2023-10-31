@@ -17,6 +17,21 @@ describe('collection', () => {
     await db.close();
   });
 
+  it('should set collection origin option', async () => {
+    const Test = db.collection({
+      name: 'test',
+    });
+
+    expect(Test.origin).toEqual('core');
+
+    const Test1 = db.collection({
+      name: 'test1',
+      origin: 'plugin:@nocobase/acl',
+    });
+
+    expect(Test1.origin).toEqual('plugin:@nocobase/acl');
+  });
+
   it('should remove sequelize model prototype methods after field remove', async () => {
     db.collection({
       name: 'tags',

@@ -1,6 +1,6 @@
 import { Dumper } from '../dumper';
 import { getApp } from './get-app';
-import objectPath from 'object-path';
+import lodash from 'lodash';
 
 export default async function dumpableCollections(ctx, next) {
   ctx.withoutDataWrapping = true;
@@ -8,28 +8,17 @@ export default async function dumpableCollections(ctx, next) {
   const app = await getApp(ctx, ctx.request.query.app);
   const dumper = new Dumper(app);
 
-  const dumpableCollections = dumper.dumpableCollections();
+  const dumpableCollections = await dumper.dumpableCollections();
 
-  const results = {};
-
-  for (const collection of dumpableCollections) {
-    let namespace = collection.options.namespace || 'core';
-    if (namespace.includes('.')) {
-      namespace = namespace.split('.')[0];
-    }
-
-    const dataType = collection.dataType;
-
-    const collectionInfo = {
-      name: collection.name,
-    };
-
-    objectPath.set(results, `${dataType}.${namespace}`, [
-      ...(objectPath.get(results, `${dataType}.${namespace}`) || []),
-      collectionInfo,
-    ]);
-  }
-
-  ctx.body = results;
+  ctx.body = lodash.groupBy(
+    dumpableCollections.map((c) => {
+      return {
+        name: c.name,
+        dataType: c.dataType,
+        origin: c.origin,
+      };
+    }),
+    'dataType',
+  );
   await next();
 }

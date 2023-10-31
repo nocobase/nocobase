@@ -30,4 +30,15 @@ describe('dumper', () => {
     const collections = dumper.getCollectionsByDataTypes(new Set(['business']));
     expect(collections.includes('test_collection')).toBeTruthy();
   });
+
+  it('should get dumped collections with origin option', async () => {
+    const dumper = new Dumper(app);
+    const dumpableCollections = await dumper.dumpableCollections();
+    const applicationPlugins = dumpableCollections.find(({ name }) => name === 'applicationPlugins');
+
+    expect(applicationPlugins.origin).toMatchObject({
+      title: 'core',
+      name: 'core',
+    });
+  });
 });

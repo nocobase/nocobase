@@ -441,10 +441,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return dialect.includes(this.sequelize.getDialect());
   }
 
-  escapeId(identifier: string) {
-    return this.inDialect('mysql') ? `\`${identifier}\`` : `"${identifier}"`;
-  }
-
   /**
    * Add collection to database
    * @param options
@@ -867,7 +863,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       if (module.extend) {
         this.extendCollection(module.collectionOptions, module.mergeOptions);
       } else {
-        const collection = this.collection(module);
+        const collection = this.collection({
+          ...module,
+          origin: options.from,
+        });
 
         if (options.from) {
           this.importedFrom.set(options.from, [...(this.importedFrom.get(options.from) || []), collection.name]);

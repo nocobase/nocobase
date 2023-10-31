@@ -29,28 +29,44 @@ export class Dumper extends AppMigrator {
     }, []);
   }
 
-  dumpableCollections() {
-    return [...this.app.db.collections.values()]
-      .map((c) => {
-        try {
-          const options = DBCollectionGroupManager.unifyDuplicatorOption(c.options.duplicator);
+  async dumpableCollections() {
+    return (
+      await Promise.all(
+        [...this.app.db.collections.values()].map(async (c) => {
+          try {
+            const options = DBCollectionGroupManager.unifyDuplicatorOption(c.options.duplicator);
+            let origin = c.origin;
+            let originTitle = origin;
 
-          return {
-            name: c.name,
-            options: c.options,
-            dataType: options?.dataType,
-          };
-        } catch (e) {
-          throw new Error(`collection ${c.name} has invalid duplicator option`, { cause: e });
-        }
-      })
-      .filter(({ dataType }) => {
-        return !!dataType;
-      });
+            if (origin.startsWith('plugin:')) {
+              const plugin = this.app.pm.get(origin.replace(/^plugin:/, ''));
+              const pluginInfo = await plugin.toJSON();
+              originTitle = pluginInfo.displayName;
+              origin = pluginInfo.packageName;
+            }
+
+            return {
+              name: c.name,
+              options: c.options,
+              dataType: options?.dataType,
+              origin: {
+                name: origin,
+                title: originTitle,
+              },
+            };
+          } catch (e) {
+            console.error(e);
+            throw new Error(`collection ${c.name} has invalid duplicator option`, { cause: e });
+          }
+        }),
+      )
+    ).filter(({ dataType }) => {
+      return !!dataType;
+    });
   }
 
-  collectionsGroupByDataTypes() {
-    const grouped = lodash.groupBy(this.dumpableCollections(), 'dataType');
+  async collectionsGroupByDataTypes() {
+    const grouped = lodash.groupBy(await this.dumpableCollections(), 'dataType');
 
     return Object.fromEntries(Object.entries(grouped).map(([key, value]) => [key, value.map((item) => item.name)]));
   }
@@ -59,7 +75,7 @@ export class Dumper extends AppMigrator {
     const dumpDataTypes = options.dataTypes;
     dumpDataTypes.add('meta');
 
-    const dumpableCollectionsGroupByDataTypes = this.collectionsGroupByDataTypes();
+    const dumpableCollectionsGroupByDataTypes = await this.collectionsGroupByDataTypes();
 
     const dumpedCollections = this.getCollectionsByDataTypes(dumpDataTypes);
 
