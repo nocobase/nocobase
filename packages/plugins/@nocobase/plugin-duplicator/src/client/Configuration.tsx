@@ -6,7 +6,7 @@ import type { UploadProps } from 'antd';
 import { saveAs } from 'file-saver';
 import { InboxOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useDuplicatorTranslation, generateNTemplate } from './locale';
-import { t } from 'tar';
+
 const { Dragger } = Upload;
 const ActionType = [
   { label: generateNTemplate('Backup'), value: 'backup' },
@@ -18,16 +18,60 @@ const options = [
   { label: generateNTemplate('Business data'), value: 'business' },
 ];
 function extractFileName(contentDispositionHeader) {
-  console.log(contentDispositionHeader);
-  const regex = '/filename="([^"]+)"/';
+  const regex = /filename="([^"]+)"/;
   const match = contentDispositionHeader.match(regex);
-
   if (match && match.length > 1) {
     return match[1];
   } else {
     return null;
   }
 }
+function useUploadProps<UploadProps>({ serviceErrorMessage, ...props }) {
+  const onChange = (param) => {
+    props.onChange?.(param);
+  };
+
+  const api = useAPIClient(); // 初始化 API 客户端
+
+  return {
+    ...props,
+    customRequest({ action, data, file, filename, headers, onError, onProgress, onSuccess, withCredentials }) {
+      return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        if (data) {
+          Object.keys(data).forEach((key) => {
+            formData.append(key, data[key]);
+          });
+        }
+        formData.append(filename, file);
+        // eslint-disable-next-line promise/catch-or-return
+        api.axios
+          .post(action, formData, {
+            withCredentials,
+            headers,
+            onUploadProgress: ({ total, loaded }) => {
+              onProgress({ percent: Math.round((loaded / total) * 100).toFixed(2) }, file);
+            },
+          })
+          .then(({ data }) => {
+            onSuccess(data, file);
+            resolve(data); // 将结果传递给外部的 .then()
+          })
+          .catch((error) => {
+            onError(error);
+            reject(error); // 将错误传递给外部的 .catch()
+          })
+          .finally(() => {
+            // 可以在这里添加 .finally() 的逻辑
+          });
+      });
+    },
+    onChange,
+  };
+}
+
+export default useUploadProps;
+
 const LearnMore: React.FC = () => {
   const { t } = useDuplicatorTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -147,11 +191,14 @@ const BackupConfiguration = () => {
         console.log(res);
         setFileData(res);
       })
-      .catch((err) => {});
+      .catch((err) => {
+        setOpen(false);
+      });
   };
   const handleDownload = () => {
     const blob = new Blob([fileData?.data], { type: fileData?.headers?.['content-type'] });
     const filename = extractFileName(fileData?.headers?.['content-disposition']);
+    console.log(filename, fileData?.headers?.['content-disposition']);
     saveAs(blob, filename);
   };
   return (
@@ -172,7 +219,7 @@ const BackupConfiguration = () => {
       <Modal open={open} footer={null} onCancel={() => setOpen(false)}>
         <div>
           {!fileData ? (
-            <Result icon={<LoadingOutlined />} title="Backing up" subTitle="message..." />
+            <Result icon={<LoadingOutlined />} title="Backing up" />
           ) : (
             <Result
               status="success"
@@ -217,7 +264,7 @@ const RestoreUpload = (props: any) => {
   };
 
   return (
-    <Dragger {...uploadProps}>
+    <Dragger {...useUploadProps(uploadProps)}>
       <p className="ant-upload-drag-icon">
         <InboxOutlined />
       </p>
