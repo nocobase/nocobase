@@ -241,7 +241,7 @@ test.describe('action display config', () => {
     await page.getByTitle('Open mode').click();
     await page.getByRole('option', { name: 'Dialog' }).click();
     await page.getByLabel('action-Action-Add new-create-users-table').click();
-    const drawerComponent = page.getByTestId('action-modal');
+    const drawerComponent = page.getByTestId('modal-Action.Container-users-Add record');
     await expect(drawerComponent).toBeInViewport();
   });
   test('setting action model size', async ({ page, mockPage }) => {
