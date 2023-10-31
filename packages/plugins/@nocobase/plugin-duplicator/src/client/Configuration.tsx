@@ -208,10 +208,8 @@ const RestoreUpload = (props: any) => {
   const { setRestoreData } = props;
   const { t } = useDuplicatorTranslation();
   const uploadProps: UploadProps = {
-    name: 'file',
     multiple: true,
     action: '/duplicator:upload',
-    contentType: 'application/octet-stream',
     onChange(info) {
       const { status } = info.file;
       if (status !== 'uploading') {
