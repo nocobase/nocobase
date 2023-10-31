@@ -145,7 +145,7 @@ export const FormButtonLinkageRuleAction = observer(
       <div style={{ marginBottom: 8 }}>
         <Space>
           <Select
-            data-testid="linkage-properties-select"
+            data-testid="select-linkage-properties"
             popupMatchSelectWidth={false}
             value={operator}
             options={operators}

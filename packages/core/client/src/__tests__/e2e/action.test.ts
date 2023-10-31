@@ -295,7 +295,7 @@ test.describe('action linkage rule', () => {
     await page.getByTitle('ID', { exact: true }).getByText('ID').click();
     await page.getByRole('spinbutton').fill('1');
     await page.getByText('Add property').click();
-    await page.getByTestId('linkage-properties-select').click();
+    await page.getByTestId('select-linkage-properties').click();
     await page.getByText('Hidden').click();
     await page.locator('.ant-modal').getByRole('button', { name: 'OK' }).click();
     //配置中，按钮显示半透明
@@ -326,7 +326,7 @@ test.describe('action linkage rule', () => {
     await page.getByTitle('ID', { exact: true }).getByText('ID').click();
     await page.getByRole('spinbutton').fill('1');
     await page.getByText('Add property').click();
-    await page.getByTestId('linkage-properties-select').click();
+    await page.getByTestId('select-linkage-properties').click();
     await page.getByText('Disabled').click();
     await page.locator('.ant-modal').getByRole('button', { name: 'OK' }).click();
     await page.waitForTimeout(1000); // 等待1秒钟
