@@ -26,57 +26,58 @@ function extractFileName(contentDispositionHeader) {
     return null;
   }
 }
-function useUploadProps<UploadProps>({ serviceErrorMessage, ...props }) {
+function useUploadProps(props: UploadProps) {
   const onChange = (param) => {
     props.onChange?.(param);
   };
 
-  const api = useAPIClient(); // 初始化 API 客户端
+  const api = useAPIClient();
 
   return {
     ...props,
     customRequest({ action, data, file, filename, headers, onError, onProgress, onSuccess, withCredentials }) {
-      return new Promise((resolve, reject) => {
-        const formData = new FormData();
-        if (data) {
-          Object.keys(data).forEach((key) => {
-            formData.append(key, data[key]);
-          });
-        }
-        formData.append(filename, file);
-        // eslint-disable-next-line promise/catch-or-return
-        api.axios
-          .post(action, formData, {
-            withCredentials,
-            headers,
-            onUploadProgress: ({ total, loaded }) => {
-              onProgress({ percent: Math.round((loaded / total) * 100).toFixed(2) }, file);
-            },
-          })
-          .then(({ data }) => {
-            onSuccess(data, file);
-            resolve(data); // 将结果传递给外部的 .then()
-          })
-          .catch((error) => {
-            onError(error);
-            reject(error); // 将错误传递给外部的 .catch()
-          })
-          .finally(() => {
-            // 可以在这里添加 .finally() 的逻辑
-          });
-      });
+      const formData = new FormData();
+      if (data) {
+        Object.keys(data).forEach((key) => {
+          formData.append(key, data[key]);
+        });
+      }
+      formData.append(filename, file);
+      // eslint-disable-next-line promise/catch-or-return
+      api.axios
+        .post(action, formData, {
+          withCredentials,
+          headers,
+          onUploadProgress: ({ total, loaded }) => {
+            onProgress({ percent: Math.round((loaded / total) * 100).toFixed(2) }, file);
+          },
+        })
+        .then(({ data }) => {
+          onSuccess(data, file);
+        })
+        .catch(onError)
+        .finally(() => {});
+
+      return {
+        abort() {
+          console.log('upload progress is aborted.');
+        },
+      };
     },
     onChange,
   };
 }
 
-export default useUploadProps;
-
 const LearnMore: React.FC = () => {
   const { t } = useDuplicatorTranslation();
+  const apiClient = useAPIClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const showModal = () => {
+  const resource = useMemo(() => {
+    return apiClient.resource('duplicator');
+  }, [apiClient]);
+  const showModal = async () => {
+    const data = await resource.dumpableCollections();
+    console.log(data);
     setIsModalOpen(true);
   };
 
@@ -87,42 +88,6 @@ const LearnMore: React.FC = () => {
   const handleCancel = () => {
     setIsModalOpen(false);
   };
-
-  const dataSource = [
-    {
-      key: '1',
-      plugin: {
-        displayName: 'Hello',
-        name: '@nocobase/plugin-hello',
-      },
-      collection: {
-        title: 'Collection 1',
-        name: 'collection1',
-      },
-    },
-    {
-      key: '2',
-      plugin: {
-        displayName: 'ACL',
-        name: '@nocobase/plugin-acl',
-      },
-      collection: {
-        title: 'Collection 2',
-        name: 'collection2',
-      },
-    },
-    {
-      key: '3',
-      plugin: {
-        displayName: 'API keys',
-        name: '@nocobase/plugin-api-keys',
-      },
-      collection: {
-        title: 'Collection 3',
-        name: 'collection3',
-      },
-    },
-  ];
 
   const columns = [
     {
@@ -161,11 +126,11 @@ const LearnMore: React.FC = () => {
       <a onClick={showModal}>{t('Learn more')}</a>
       <Modal width={800} open={isModalOpen} footer={null} onOk={handleOk} onCancel={handleCancel}>
         <h3> {t('System metadata')}</h3>
-        <Table bordered size={'small'} dataSource={dataSource} columns={columns} />
+        <Table bordered size={'small'} columns={columns} />
         <h3>{t('System config')}</h3>
-        <Table bordered size={'small'} dataSource={dataSource} columns={columns} />
+        <Table bordered size={'small'} columns={columns} />
         <h3>{t('Business data')}</h3>
-        <Table bordered size={'small'} dataSource={dataSource} columns={columns} />
+        <Table bordered size={'small'} columns={columns} />
       </Modal>
     </>
   );
