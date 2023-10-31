@@ -1,5 +1,5 @@
 import { useCollection } from '../..';
-import { SchemaInitializer } from '../../application';
+import { SchemaInitializer } from '../../application/schema-initializer';
 
 const useVisibleCollection = () => {
   const collection = useCollection();

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer, SchemaInitializerChildren } from '../../application';
+import { SchemaInitializerChildren } from '../../application';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { useCompile } from '../../schema-component';
 import {
   gridRowColWrap,

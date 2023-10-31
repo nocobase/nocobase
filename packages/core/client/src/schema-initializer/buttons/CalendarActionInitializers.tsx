@@ -1,5 +1,5 @@
 import { useCollection } from '../../';
-import { SchemaInitializer } from '../../application';
+import { SchemaInitializer } from '../../application/schema-initializer';
 
 // 日历的操作配置
 export const calendarActionInitializers = new SchemaInitializer({

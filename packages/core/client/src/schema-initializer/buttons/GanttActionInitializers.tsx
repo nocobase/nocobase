@@ -1,6 +1,6 @@
 import { useFieldSchema } from '@formily/react';
 import { useCollection } from '../../';
-import { SchemaInitializer } from '../../application';
+import { SchemaInitializer } from '../../application/schema-initializer';
 
 export const ganttActionInitializers = new SchemaInitializer({
   name: 'GanttActionInitializers',

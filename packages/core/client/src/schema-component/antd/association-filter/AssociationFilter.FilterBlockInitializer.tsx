@@ -1,4 +1,4 @@
-import { SchemaInitializer } from '../../../application';
+import { SchemaInitializer } from '../../../application/schema-initializer';
 import { useOptionalFieldList } from '../../../block-provider/hooks';
 import { useAssociatedFields } from '../../../filter-provider/utils';
 

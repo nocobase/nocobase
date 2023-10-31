@@ -5,7 +5,8 @@ import { createStyles } from 'antd-style';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../..';
-import { SchemaInitializer, SchemaInitializerItem, useSchemaInitializer } from '../../../../application';
+import { SchemaInitializerItem, useSchemaInitializer } from '../../../../application';
+import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
 import { useGlobalTheme } from '../../../../global-theme';
 
 const useStyles = createStyles(({ token }) => ({

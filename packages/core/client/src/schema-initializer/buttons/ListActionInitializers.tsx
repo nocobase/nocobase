@@ -1,4 +1,4 @@
-import { SchemaInitializer } from '../../application';
+import { SchemaInitializer } from '../../application/schema-initializer';
 import { useCollection } from '../../collection-manager';
 
 // 表单的操作配置

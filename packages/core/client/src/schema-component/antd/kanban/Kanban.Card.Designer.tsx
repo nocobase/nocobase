@@ -5,7 +5,8 @@ import { Space } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
-import { SchemaInitializer, useApp } from '../../../application';
+import { useApp } from '../../../application';
+import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
 import { createDesignable, useDesignable } from '../../../schema-component';
 import {
   useAssociatedFormItemInitializerFields,

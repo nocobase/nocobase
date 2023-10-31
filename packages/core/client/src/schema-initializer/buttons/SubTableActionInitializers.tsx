@@ -1,4 +1,4 @@
-import { SchemaInitializer } from '../../application';
+import { SchemaInitializer } from '../../application/schema-initializer';
 
 // 表格操作配置
 export const subTableActionInitializers = new SchemaInitializer({

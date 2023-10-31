@@ -118,22 +118,8 @@ const Root = () => {
   );
 };
 
-class MyPlugin extends Plugin {
-  async load() {
-    // 注册路由
-    this.app.router.add('root', {
-      path: '/',
-      Component: Root,
-    });
-  }
-}
-
 const app = new Application({
-  router: {
-    type: 'memory',
-    initialEntries: ['/'],
-  },
-  plugins: [MyPlugin],
+  providers: [Root],
 });
 
 export default app.getRootComponent();

@@ -10,7 +10,8 @@ import { AssociationFilterBlockDesigner } from './AssociationFilter.BlockDesigne
 import { AssociationFilterItem } from './AssociationFilter.Item';
 import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer';
 import { AssociationFilterProvider } from './AssociationFilterProvider';
-import { Plugin, useApp } from '../../../application';
+import { useApp } from '../../../application';
+import { Plugin } from '../../../application/Plugin';
 import { associationFilterFilterBlockInitializer } from './AssociationFilter.FilterBlockInitializer';
 import { associationFilterInitializer } from './AssociationFilter.Initializer';
 

@@ -4,15 +4,11 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
-import {
-  SchemaInitializer,
-  SchemaInitializerActionModal,
-  SchemaInitializerItem,
-  useSchemaInitializer,
-} from '../../application';
+import { SchemaInitializerActionModal, SchemaInitializerItem, useSchemaInitializer } from '../../application';
 import { useCollection } from '../../collection-manager';
 import { createDesignable, useDesignable } from '../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../schema-settings/hooks/useGetAriaLabelOfDesigner';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 
 export const Resizable = () => {
   const { t } = useTranslation();

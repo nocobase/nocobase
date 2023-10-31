@@ -1,4 +1,4 @@
-import { Plugin } from '../../../application';
+import { Plugin } from '../../../application/Plugin';
 import { Action } from '../action';
 import { Kanban } from './Kanban';
 import { KanbanCard } from './Kanban.Card';

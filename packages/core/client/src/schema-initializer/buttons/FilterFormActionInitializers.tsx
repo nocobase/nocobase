@@ -1,4 +1,4 @@
-import { SchemaInitializer } from '../../application';
+import { SchemaInitializer } from '../../application/schema-initializer';
 
 // 表单的操作配置
 export const filterFormActionInitializers = new SchemaInitializer({

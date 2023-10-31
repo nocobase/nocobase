@@ -1,5 +1,5 @@
-import { SchemaInitializer } from '../../application';
 import { gridRowColWrap, useCustomBulkEditFormItemInitializerFields } from '../utils';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 
 export const bulkEditFormItemInitializers = new SchemaInitializer({
   name: 'BulkEditFormItemInitializers',

@@ -1,5 +1,5 @@
 import { gridRowColWrap } from '../utils';
-import { SchemaInitializer } from '../../application';
+import { SchemaInitializer } from '../../application/schema-initializer';
 
 export const createFormBulkEditBlockInitializers = new SchemaInitializer({
   name: 'CreateFormBulkEditBlockInitializers',
