@@ -304,7 +304,6 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
       'process.env.__TEST__': false,
-      // 因为 CI 中的 E2E 测试是基于生成环境的，所以 build 时需要设置 __E2E__ 为 true
       'process.env.__E2E__': !!process.env.CI,
     },
     logLevel: 'warn',
