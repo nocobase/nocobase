@@ -211,7 +211,7 @@ describe('workflow > instructions > request', () => {
         values: { title },
       });
 
-      await sleep(500);
+      await sleep(1);
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();

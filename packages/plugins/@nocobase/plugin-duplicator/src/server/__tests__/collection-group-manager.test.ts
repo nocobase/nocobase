@@ -23,7 +23,7 @@ describe('collection group manager', () => {
     expect(collectionGroups.map((i) => i.function)).toMatchObject(['server', 'core']);
 
     expect(collectionGroups.find((i) => i.function === 'core')).toMatchObject({
-      namespace: 'collection-manager.core',
+      namespace: 'collection-manager',
       function: 'core',
       collections: ['collectionCategory', 'collectionCategories', 'collections', 'fields'].map((name) => {
         const collection = app.db.getCollection(name);

@@ -41,7 +41,7 @@ pgOnly()('enable plugin', () => {
   });
 });
 
-describe('collection sync after main', () => {
+pgOnly()('collection sync after main', () => {
   let mainApp: MockServer;
 
   beforeEach(async () => {
@@ -109,7 +109,7 @@ describe('collection sync after main', () => {
   });
 });
 
-describe('collection sync', () => {
+pgOnly()('collection sync', () => {
   let mainDb: Database;
   let mainApp: MockServer;
 

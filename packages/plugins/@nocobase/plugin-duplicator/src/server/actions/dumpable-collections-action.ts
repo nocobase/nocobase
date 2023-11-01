@@ -16,6 +16,7 @@ export default async function dumpableCollections(ctx, next) {
         name: c.name,
         dataType: c.dataType,
         origin: c.origin,
+        title: c.title,
       };
     }),
     'dataType',
