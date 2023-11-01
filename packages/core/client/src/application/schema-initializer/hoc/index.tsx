@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ComponentType, useCallback } from 'react';
 import { Popover } from 'antd';
 import { ISchema, observer } from '@formily/react';
@@ -10,8 +10,8 @@ import { useSchemaInitializerStyles } from '../components/style';
 
 const defaultWrap = (s: ISchema) => s;
 
-export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
-  const WithInitializer = observer((props: SchemaInitializerOptions) => {
+export function withInitializer<T>(C: ComponentType<T>) {
+  const WithInitializer = observer((props: SchemaInitializerOptions<T>) => {
     const { designable, insertAdjacent } = useDesignable();
     const {
       insert,
@@ -23,6 +23,8 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
       popoverProps,
       children,
       noPopover,
+      style,
+      componentProps,
     } = props;
 
     // 插入 schema 的能力
@@ -40,6 +42,15 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
 
     const { wrapSSR, hashId, componentCls } = useSchemaInitializerStyles();
     const [visible, setVisible] = useState(false);
+
+    const cProps = useMemo(
+      () => ({
+        options: props,
+        style,
+        ...componentProps,
+      }),
+      [componentProps, props, style],
+    );
 
     // designable 为 false 时，不渲染
     if (!designable && propsDesignable !== true) {

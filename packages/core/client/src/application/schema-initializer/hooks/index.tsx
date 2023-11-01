@@ -89,11 +89,6 @@ export function useSchemaInitializerMenuItems(items: any[], name?: string, onCli
 
 const InitializerComponent: FC<SchemaInitializerOptions<any, any>> = React.memo((options) => {
   const Component: any = options.Component || SchemaInitializerButton;
-  const componentProps = {
-    ...options.componentProps,
-    options,
-    style: options.style,
-  };
 
   const ItemsComponent: any = options.ItemsComponent || SchemaInitializerItems;
   const itemsComponentProps: any = {
@@ -103,12 +98,11 @@ const InitializerComponent: FC<SchemaInitializerOptions<any, any>> = React.memo(
     style: options.itemsComponentStyle,
   };
 
-  return React.createElement(
-    withInitializer(Component, componentProps),
-    options,
-    React.createElement(ItemsComponent, itemsComponentProps),
-  );
+  const C = useMemo(() => withInitializer(Component), [Component]);
+
+  return React.createElement(C, options, React.createElement(ItemsComponent, itemsComponentProps));
 });
+InitializerComponent.displayName = 'InitializerComponent';
 
 export function useSchemaInitializerRender<P1 = ButtonProps, P2 = {}>(
   name: string,
@@ -137,8 +131,6 @@ export function useSchemaInitializerRender<P1 = ButtonProps, P2 = {}>(
     return {
       exists: true,
       render: (props?: SchemaInitializerOptions<P1, P2>) =>
-        React.createElement(InitializerComponent, { ...initializer.options, ...options, ...props }),
-      Component: (props?: SchemaInitializerOptions<P1, P2>) =>
         React.createElement(InitializerComponent, { ...initializer.options, ...options, ...props }),
     };
   }, [initializer, name, options]);
