@@ -1,76 +1,77 @@
 
-English | [中文](./README.zh-CN.md)
+
  
-![NocoBase](https://nocobase-file.oss-cn-beijing.aliyuncs.com/main-l.png)
 
-**Note:** 📌
 
-NocoBase is in early stage of development and is subject to frequent changes, please use caution in production environments.
 
-## Recent major updates
 
-- [v0.14: New plugin manager, supports adding plugins through UI - 2023/09/11](https://docs.nocobase.com/welcome/release/v14-changelog)
-- [v0.13: New application status flow - 2023/08/24](https://docs.nocobase.com/welcome/release/v13-changelog)
-- [v0.12: New plugin build tool - 2023/08/01](https://docs.nocobase.com/welcome/release/v12-changelog)
-- [v0.11: New client application, plugin and router - 2023/07/08](http://docs.nocobase.com/welcome/release/v11-changelog)
-- [v0.10: Update instructions - 2023/06/23](http://docs.nocobase.com/welcome/release/v10-changelog)
 
-## What is NocoBase
 
-NocoBase is a scalability-first, open-source no-code development platform.   
-Instead of investing years of time and millions of dollars in research and development, deploy NocoBase in a few minutes and you'll have a private, controllable, and extremely scalable no-code development platform!
+## What is Number-to-words plugin?
 
-Homepage:  
-https://www.nocobase.com/  
+The Numbers to Words plugin helps you convert numbers to words (in  English). It can also convert numbers to currency and apply decimal checks, making it ideal for a wide range of applications.
 
-Online Demo:  
-https://demo.nocobase.com/new
 
-Documents:  
-https://docs.nocobase.com/
 
-Contact Us:  
-hello@nocobase.com
 
 ## Distinctive features
 
-### 1. Model-driven, separate "user interface" from "data structure"
+### 1. Currency check
+-The plugin can also convert the converted number to a specific currency. For example, if the input number is 5000 and the desired currency is USD, the plugin would convert it to "five thousand dollars".
 
-Most form-, table-, or process-driven no-code products create data structures directly in the user interface, such as Airtable, where adding a new column to a table is adding a new field. This has the advantage of simplicity of use, but the disadvantage of limited functionality and flexibility to meet the needs of more complex scenarios.
 
-NocoBase adopts the design idea of separating the data structure from the user interface, allowing you to create any number of blocks (data views) for the data collections, with different type, styles, content, and actions in each block. This balances the simplicity of no-code operation with the flexibility of native development.
+![NocoBase](https://github.com/codenuladev/codenula/blob/a7d6bf066c03b9d0ebc47ea48f89df6adca3df28/Capturefields2.PNG)
 
-![model](https://nocobase-file.oss-cn-beijing.aliyuncs.com/model-l.png)
 
-### 2. What you see is what you get
+### 2. Decimal check
+-The plugin can also apply decimal checks to the converted number. For example, if the input number is 5000.50, the plugin would convert it to "five thousand dollars and fifty cents".
 
-NocoBase enables the development of complex and distinctive business systems, but this does not mean that complex and specialized operations are required. With a single click, configuration options are displayed on the usage interface, and administrators with system configuration privileges can directly configure the user interface in a WYSIWYG manner.
 
-![wysiwyg](https://nocobase-file.oss-cn-beijing.aliyuncs.com/wysiwyg.gif)
 
-### 3. Functions as plugins
 
-NocoBase adopts plugin architecture, all new functions can be realized by developing and installing plugins, and expanding the functions is as easy as installing an APP on your phone.
-
-![plugins](https://nocobase-file.oss-cn-beijing.aliyuncs.com/plugins-l.png)
 
 ## Installation
 
-NocoBase supports three installation methods:
+There are two ways to install the Numbers to Words plugin:
 
-- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/docker-compose">Installing With Docker (👍Recommended)</a>
+1. **Enable using GUI:**
+    1. Go to Plugin Manager.
+    2. Find `@codenula/plugin-numbers-to-words`.
+    3. Enable the plugin.
 
-  Suitable for no-code scenarios, no code to write. When upgrading, just download the latest image and reboot.
+2. **Enable using terminal:**
+    1. Enter the following command to enable the plugin:
 
-- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/create-nocobase-app">Installing from create-nocobase-app CLI</a>
+        ```
+        yarn pm enable @codenula/plugin-numbers-to-words
+        ```
+## Usage
 
-  The business code of the project is completely independent and supports low-code development.
+After enabling the plugin follow the below steps to use the plugin
 
-- <a target="_blank" href="https://docs.nocobase.com/welcome/getting-started/installation/git-clone">Installing from Git source code</a>
-
-  If you want to experience the latest unreleased version, or want to participate in the contribution, you need to make changes and debug on the source code, it is recommended to choose this installation method, which requires a high level of development skills, and if the code has been updated, you can git pull the latest code.
-
+1. **Selecting numberToWords from field Type:**
+![wysiwyg](https://github.com/codenuladev/codenula/blob/c4a173d033a8e5aec0e21df8ebb5da453e0f52d4/dropdown%20ss.PNG)
+    1. Go to your collection and click on `configure fields`.
+    2. Click on `Add Fields` Button.
+    3. Find `numbersToWords` and click on it.
+    4. Set a field display name and field name.
+    5. Select currency options from the dropdown.
+    6. Write an Expression using existing fields (sum1+sum2).
+    7. Select Calculation engine
+    8. Click on submit.
+    ![wysiwyg](https://github.com/codenuladev/codenula/blob/32bf5c6f8da588352610cbde1810eedd49230fbc/options.PNG) 
+3. **Using in UI Editor:**
+   ![wysiwyg](hhttps://github.com/codenuladev/codenula/blob/68ae65fac06bbe1259b9d89897c1f49c9547b0c3/demo.PNG)
+    1. Select UI editor tab from top bar.
+    2. Click on `Add Block` and select Form > {Your colection name}
+    3. Click on configure fields inside the form block
+    4. Enable all the fields that you configured
+       ![wysiwyg](https://github.com/codenuladev/codenula/blob/c4a173d033a8e5aec0e21df8ebb5da453e0f52d4/form2.PNG)
+    5. Enter some number inside the fields you want to operate on.
+       
+       
 ## License
 
 - [Core packages](https://github.com/nocobase/nocobase/tree/main/packages/core) are [Apache 2.0 licensed](./LICENSE-APACHE-2.0).
 - [Plugins packages](https://github.com/nocobase/nocobase/tree/main/packages/plugins) are [AGPL 3.0 licensed](./LICENSE-AGPL).
+
