@@ -221,6 +221,8 @@ const RestoreUpload = (props: any) => {
       }
       if (status === 'done') {
         message.success(`${info.file.name} file uploaded successfully.`);
+        console.log(info);
+        setRestoreData(info.file.response?.data);
       } else if (status === 'error') {
         message.error(`${info.file.name} file upload failed.`);
       }
@@ -249,7 +251,7 @@ const RestoreConfiguration = () => {
   const { t } = useDuplicatorTranslation();
   const compile = useCompile();
   const apiClient = useAPIClient();
-  const [dataTypes, setBackupData] = useState<any[]>(['meta']);
+  const [dataTypes, setDataTypes] = useState<any[]>(['meta']);
   const [restoreData, setRestoreData] = useState(null);
   const resource = useMemo(() => {
     return apiClient.resource('duplicator');
@@ -258,7 +260,7 @@ const RestoreConfiguration = () => {
   const handleStartRestore = () => {
     resource
       .restore({
-        values: { dataTypes },
+        values: { dataTypes, key: restoreData.key },
       })
       .then((res) => {
         console.log(res);
@@ -278,7 +280,16 @@ const RestoreConfiguration = () => {
           ):
         </strong>
         <div style={{ lineHeight: 2, marginBottom: 16 }}>
-          <Checkbox.Group options={compile(options)} style={{ flexDirection: 'column' }} defaultValue={dataTypes} />
+          <Checkbox.Group
+            options={compile(
+              options.filter((v) => {
+                return restoreData?.meta?.dataTypes?.includes(v.value);
+              }),
+            )}
+            style={{ flexDirection: 'column' }}
+            defaultValue={dataTypes}
+            onChange={(checkValue) => setDataTypes(checkValue)}
+          />
         </div>
         <Button type="primary" onClick={handleStartRestore} disabled={!restoreData}>
           {t('Start restore')}
