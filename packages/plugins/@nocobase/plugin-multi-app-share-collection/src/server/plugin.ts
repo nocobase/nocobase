@@ -31,7 +31,7 @@ class SubAppPlugin extends Plugin {
 
     for (const group of collectionGroups) {
       if (sharedCollectionGroups.includes(group.namespace)) {
-        sharedCollectionGroupsCollections.push(...group.collections);
+        sharedCollectionGroupsCollections.push(...group.collections.map((item) => item.name));
       }
     }
 

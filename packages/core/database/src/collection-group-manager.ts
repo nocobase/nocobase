@@ -82,7 +82,7 @@ export class CollectionGroupManager {
         continue;
       }
 
-      const [_, groupFunc] = groupKey.split('.');
+      const [namespace, groupFunc] = groupKey.split('.');
 
       if (!groupFunc) {
         skipped.push({
@@ -114,7 +114,7 @@ export class CollectionGroupManager {
       // if group not exists, create it
       if (!groups.has(groupKey)) {
         const group: CollectionGroup = {
-          namespace: groupKey,
+          namespace: namespace,
           function: groupFunc,
           collections: duplicator.with ? castArray(duplicator.with) : [],
           dataType: duplicator.dataType,
