@@ -4,7 +4,7 @@ import { mockDatabase } from './index';
 import { IdentifierError } from '../errors/identifier-error';
 
 const pgOnly = () => (process.env.DB_DIALECT == 'postgres' ? it : it.skip);
-describe('collection', () => {
+pgOnly()('collection', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -244,7 +244,7 @@ describe('collection', () => {
   });
 });
 
-describe('collection sync', () => {
+pgOnly()('collection sync', () => {
   let db: Database;
 
   beforeEach(async () => {
