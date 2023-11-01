@@ -1,6 +1,6 @@
 {
   "name": "@codenula/plugin-numbers-to-words",
-  "version": "0.14.0-alpha.7",
+  "version": "1.0.0",
   "main": "dist/server/index.js",
   "devDependencies": {
     "@formily/antd-v5": "1.x",
