@@ -145,25 +145,28 @@ const BackupConfiguration = () => {
   const [open, setOpen] = useState(false);
   const [dataTypes, setBackupData] = useState<any[]>(['meta']);
   const [fileData, setFileData] = useState(null);
-  const resource = useMemo(() => {
-    return apiClient.resource('duplicator');
-  }, [apiClient]);
   const handleStartBackUp = () => {
     setOpen(true);
-    resource
-      .dump({
-        values: { dataTypes },
+    apiClient
+      .request({
+        url: 'duplicator:dump',
+        method: 'post',
+        data: {
+          dataTypes,
+        },
+        responseType: 'blob',
       })
-      .then((res) => {
-        setFileData(res);
+      .then((response) => {
+        setFileData(response);
       })
       .catch((err) => {
         setOpen(false);
       });
   };
   const handleDownload = () => {
-    const blob = new Blob([fileData?.data], { type: fileData?.headers?.['content-type'] });
-    const filename = extractFileName(fileData?.headers?.['content-disposition']);
+    const blob = new Blob([fileData?.data]);
+    const match = /filename="(.+)"/.exec(fileData?.headers?.['content-disposition'] || '');
+    const filename = match ? match[1] : 'duplicator.nbump';
     saveAs(blob, filename);
   };
   return (
