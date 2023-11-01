@@ -7,6 +7,8 @@ import { i18n } from '../../../i18n';
 import { CollectionOptions } from '../../types';
 import { CollectionCategory } from '../components/CollectionCategory';
 import { CollectionTemplate } from '../components/CollectionTemplate';
+import { DeleteCollection } from '../components/DeleteCollection';
+
 const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
 };
@@ -153,7 +155,7 @@ export const collectionTableSchema: ISchema = {
             useAction: '{{ cm.useBulkDestroyActionAndRefreshCM }}',
             confirm: {
               title: "{{t('Delete record')}}",
-              content: "{{t('Are you sure you want to delete it?')}}",
+              content: DeleteCollection,
             },
           },
         },
@@ -313,7 +315,7 @@ export const collectionTableSchema: ISchema = {
                   'x-component-props': {
                     confirm: {
                       title: "{{t('Delete record')}}",
-                      content: "{{t('Are you sure you want to delete it?')}}",
+                      content: DeleteCollection,
                     },
                     useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
                   },

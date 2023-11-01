@@ -710,5 +710,7 @@ export default {
   'Form data templates': 'Modelos de dados do formulário',
   "Data template": "Modelo de dados",
   "Not found":"Não encontrado",
-  "Add":"Adicionar"
+  "Add":"Adicionar",
+  'Automatically delete objects relying on this collection, and objects relying on those objects':
+  'Excluir automaticamente objetos que dependem desta tabela, bem como objetos que dependem desses objetos',
 };
