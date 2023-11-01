@@ -12,7 +12,7 @@ export const kanbanActionInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: "{{t('Enable actions')}}",
-      name: 'enable-actions',
+      name: 'enableActions',
       children: [
         {
           name: 'filter',
@@ -23,7 +23,7 @@ export const kanbanActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'add-new',
+          name: 'addNew',
           title: "{{t('Add new')}}",
           Component: 'CreateActionInitializer',
           schema: {

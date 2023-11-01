@@ -16,7 +16,7 @@ export const readPrettyFormActionInitializers = new SchemaInitializer({
   items: [
     {
       type: 'itemGroup',
-      name: 'enable-actions',
+      name: 'enableActions',
       title: '{{t("Enable actions")}}',
       children: [
         {
@@ -67,6 +67,7 @@ export const readPrettyFormActionInitializers = new SchemaInitializer({
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
@@ -125,7 +126,7 @@ export const readPrettyFormActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'update-record',
+          name: 'updateRecord',
           title: '{{t("Update record")}}',
           Component: 'CustomizeActionInitializer',
           schema: {
@@ -150,7 +151,7 @@ export const readPrettyFormActionInitializers = new SchemaInitializer({
           visible: useVisibleCollection,
         },
         {
-          name: 'custom-request',
+          name: 'customRequest',
           title: '{{t("Custom request")}}',
           Component: 'CustomRequestInitializer',
           useVisible: useVisibleCollection,

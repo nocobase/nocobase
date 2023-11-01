@@ -33,11 +33,11 @@ export const customFormItemInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: '{{t("Configure fields")}}',
-      name: 'configure-fields',
+      name: 'configureFields',
       useChildren: useCustomFormItemInitializerFields,
     },
     {
-      name: 'parent-collection-fields',
+      name: 'parentCollectionFields',
       Component: ParentCollectionFields,
     },
   ],

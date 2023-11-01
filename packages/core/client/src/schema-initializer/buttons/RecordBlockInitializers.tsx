@@ -1,8 +1,8 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import { useCollection, useCollectionManager } from '../..';
-import { gridRowColWrap } from '../utils';
 import { SchemaInitializerItemType, useSchemaInitializer } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
+import { gridRowColWrap } from '../utils';
 
 const recursiveParent = (schema: Schema) => {
   if (!schema) return null;
@@ -242,13 +242,13 @@ export const recordBlockInitializers = new SchemaInitializer({
   items: [
     {
       type: 'itemGroup',
-      name: 'current-record-blocks',
+      name: 'currentRecordBlocks',
       title: '{{t("Current record blocks")}}',
       useChildren: useRecordBlocks,
     },
     {
       type: 'itemGroup',
-      name: 'relationship-blocks',
+      name: 'relationshipBlocks',
       title: '{{t("Relationship blocks")}}',
       useChildren: useRelationFields,
       useVisible() {
@@ -258,7 +258,7 @@ export const recordBlockInitializers = new SchemaInitializer({
     },
     {
       type: 'itemGroup',
-      name: 'other-blocks',
+      name: 'otherBlocks',
       title: '{{t("Other blocks")}}',
       children: [
         {

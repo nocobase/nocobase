@@ -53,22 +53,24 @@ export const readPrettyFormItemInitializers = new SchemaInitializer({
   items: [
     {
       type: 'itemGroup',
-      name: 'display-fields',
+      name: 'displayFields',
       title: '{{t("Display fields")}}',
       useChildren: useFormItemInitializerFields,
     },
     {
-      name: 'parent-collection-fields',
+      name: 'parentCollectionFields',
       Component: ParentCollectionFields,
     },
     {
-      name: 'association-fields',
+      name: 'associationFields',
       Component: AssociatedFields,
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
+      name: 'addText',
       title: '{{t("Add text")}}',
       Component: 'BlockItemInitializer',
       schema: {

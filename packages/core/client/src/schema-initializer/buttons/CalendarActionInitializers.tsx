@@ -11,7 +11,7 @@ export const calendarActionInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: '{{t("Enable actions")}}',
-      name: 'enable-actions',
+      name: 'enableActions',
       children: [
         {
           name: 'today',
@@ -25,7 +25,7 @@ export const calendarActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'turn-pages',
+          name: 'turnPages',
           title: '{{t("Turn pages")}}',
           Component: 'ActionInitializer',
           schema: {
@@ -47,7 +47,7 @@ export const calendarActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'select-view',
+          name: 'selectView',
           title: '{{t("Select view")}}',
           Component: 'ActionInitializer',
           schema: {
@@ -67,7 +67,7 @@ export const calendarActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'add-new',
+          name: 'addNew',
           title: '{{ t("Add new") }}',
           Component: 'CreateActionInitializer',
           schema: {

@@ -69,21 +69,22 @@ export const tableColumnInitializers = new SchemaInitializer({
   },
   items: [
     {
-      name: 'display-fields',
+      name: 'displayFields',
       type: 'itemGroup',
       title: '{{t("Display fields")}}',
       // children: DisplayFields,
       useChildren: useTableColumnInitializerFields,
     },
     {
-      name: 'parent-collection-fields',
+      name: 'parentCollectionFields',
       Component: ParentCollectionFields,
     },
     {
-      name: 'association-fields',
+      name: 'associationFields',
       Component: AssociatedFields,
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {

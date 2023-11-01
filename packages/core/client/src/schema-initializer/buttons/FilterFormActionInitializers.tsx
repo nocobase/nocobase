@@ -9,7 +9,7 @@ export const filterFormActionInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: '{{t("Enable actions")}}',
-      name: 'enable-actions',
+      name: 'enableActions',
       children: [
         {
           name: 'filter',

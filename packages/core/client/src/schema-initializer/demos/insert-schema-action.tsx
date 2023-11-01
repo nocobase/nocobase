@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Action,
   ActionBar,
@@ -10,6 +9,7 @@ import {
   SchemaInitializer,
   useApp,
 } from '@nocobase/client';
+import React from 'react';
 
 const addActionInitializer = new SchemaInitializer({
   name: 'AddAction',
@@ -19,10 +19,12 @@ const addActionInitializer = new SchemaInitializer({
   style: { marginLeft: 8 },
   items: [
     {
+      name: 'enableActions',
       type: 'itemGroup',
       title: 'Enable actions',
       children: [
         {
+          name: 'create',
           title: 'Create',
           Component: 'ActionInitializer',
           schema: {
@@ -34,6 +36,7 @@ const addActionInitializer = new SchemaInitializer({
           },
         },
         {
+          name: 'update',
           title: 'Update',
           Component: 'ActionInitializer',
           schema: {

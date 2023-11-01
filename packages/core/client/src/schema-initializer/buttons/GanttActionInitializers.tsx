@@ -4,7 +4,6 @@ import { SchemaInitializer } from '../../application/schema-initializer';
 
 export const ganttActionInitializers = new SchemaInitializer({
   name: 'GanttActionInitializers',
-  'data-testid': 'configure-actions-button-of-gantt-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -13,7 +12,7 @@ export const ganttActionInitializers = new SchemaInitializer({
   items: [
     {
       type: 'itemGroup',
-      name: 'enable-actions',
+      name: 'enableActions',
       title: "{{t('Enable actions')}}",
       children: [
         {
@@ -28,7 +27,7 @@ export const ganttActionInitializers = new SchemaInitializer({
         {
           type: 'item',
           title: "{{t('Add new')}}",
-          name: 'add-new',
+          name: 'addNew',
           Component: 'CreateActionInitializer',
           schema: {
             'x-align': 'right',
@@ -82,6 +81,7 @@ export const ganttActionInitializers = new SchemaInitializer({
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
       useVisible() {
         const collection = useCollection();
@@ -97,7 +97,7 @@ export const ganttActionInitializers = new SchemaInitializer({
           type: 'item',
           title: '{{t("Bulk update")}}',
           Component: 'CustomizeActionInitializer',
-          name: 'bulk-update',
+          name: 'bulkUpdate',
           schema: {
             type: 'void',
             title: '{{ t("Bulk update") }}',
@@ -128,7 +128,7 @@ export const ganttActionInitializers = new SchemaInitializer({
         {
           type: 'item',
           title: '{{t("Bulk edit")}}',
-          name: 'bulk-edit',
+          name: 'bulkEdit',
           Component: 'CustomizeBulkEditActionInitializer',
           schema: {
             'x-align': 'right',
@@ -142,7 +142,7 @@ export const ganttActionInitializers = new SchemaInitializer({
         {
           type: 'item',
           title: '{{t("Add record")}}',
-          name: 'add-record',
+          name: 'addRecord',
           Component: 'CustomizeAddRecordActionInitializer',
           schema: {
             'x-align': 'right',

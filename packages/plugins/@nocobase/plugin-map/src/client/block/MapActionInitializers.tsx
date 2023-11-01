@@ -12,7 +12,7 @@ export const mapActionInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: "{{t('Enable actions')}}",
-      name: 'enable-actions',
+      name: 'enableActions',
       children: [
         {
           name: 'filter',
@@ -23,7 +23,7 @@ export const mapActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'add-new',
+          name: 'addNew',
           title: "{{t('Add new')}}",
           Component: 'CreateActionInitializer',
           schema: {
@@ -49,6 +49,7 @@ export const mapActionInitializers = new SchemaInitializer({
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
       useVisible() {
         const collection = useCollection();
@@ -61,7 +62,7 @@ export const mapActionInitializers = new SchemaInitializer({
       name: 'customize',
       children: [
         {
-          name: 'bulk-update',
+          name: 'bulkUpdate',
           title: '{{t("Bulk update")}}',
           Component: 'CustomizeActionInitializer',
           schema: {
@@ -92,7 +93,7 @@ export const mapActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'bulk-edit',
+          name: 'bulkEdit',
           title: '{{t("Bulk edit")}}',
           Component: 'CustomizeBulkEditActionInitializer',
           schema: {

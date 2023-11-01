@@ -120,7 +120,7 @@ export const addBlockButton = new SchemaInitializer({
   items: [
     {
       type: 'itemGroup',
-      name: 'data-blocks',
+      name: 'dataBlocks',
       title: '{{t("Data blocks")}}',
       checkChildrenLength: true,
       useChildren() {
@@ -163,7 +163,7 @@ export const addBlockButton = new SchemaInitializer({
     },
     {
       type: 'itemGroup',
-      name: 'other-blocks',
+      name: 'otherBlocks',
       title: '{{t("Other blocks")}}',
       children: [
         {
@@ -359,7 +359,7 @@ export const addActionButton = new SchemaInitializer({
   title: '{{t("Configure actions")}}',
   items: [
     {
-      name: JOB_STATUS.RESOLVED,
+      name: 'jobStatusResolved',
       title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
       Component: ContinueInitializer,
       action: JOB_STATUS.RESOLVED,
@@ -368,7 +368,7 @@ export const addActionButton = new SchemaInitializer({
       },
     },
     {
-      name: JOB_STATUS.REJECTED,
+      name: 'jobStatusRejected',
       title: `{{t("Terminate the process", { ns: "${NAMESPACE}" })}}`,
       Component: ActionInitializer,
       action: JOB_STATUS.REJECTED,
@@ -377,7 +377,7 @@ export const addActionButton = new SchemaInitializer({
       },
     },
     {
-      name: JOB_STATUS.PENDING,
+      name: 'jobStatusPending',
       title: `{{t("Save temporarily", { ns: "${NAMESPACE}" })}}`,
       Component: ActionInitializer,
       action: JOB_STATUS.PENDING,

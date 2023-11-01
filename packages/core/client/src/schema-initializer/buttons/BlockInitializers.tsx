@@ -1,5 +1,5 @@
-import { gridRowColWrap } from '../utils';
 import { SchemaInitializer } from '../../application/schema-initializer';
+import { gridRowColWrap } from '../utils';
 
 export const blockInitializers = new SchemaInitializer({
   name: 'BlockInitializers',
@@ -8,7 +8,7 @@ export const blockInitializers = new SchemaInitializer({
   wrap: gridRowColWrap,
   items: [
     {
-      name: 'data-blocks',
+      name: 'dataBlocks',
       title: '{{t("Data blocks")}}',
       type: 'itemGroup',
       children: [
@@ -28,12 +28,12 @@ export const blockInitializers = new SchemaInitializer({
           Component: 'DetailsBlockInitializer',
         },
         {
-          name: 'List',
+          name: 'list',
           title: '{{t("List")}}',
           Component: 'ListBlockInitializer',
         },
         {
-          name: 'GridCard',
+          name: 'gridCard',
           title: '{{t("Grid Card")}}',
           Component: 'GridCardBlockInitializer',
         },
@@ -48,14 +48,14 @@ export const blockInitializers = new SchemaInitializer({
           Component: 'KanbanBlockInitializer',
         },
         {
-          name: 'Gantt',
+          name: 'gantt',
           title: '{{t("Gantt")}}',
           Component: 'GanttBlockInitializer',
         },
       ],
     },
     {
-      name: 'filter-blocks',
+      name: 'filterBlocks',
       title: '{{t("Filter blocks")}}',
       type: 'itemGroup',
       children: [

@@ -1,4 +1,5 @@
-import React from 'react';
+import { ISchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import {
   Action,
   ActionBar,
@@ -9,8 +10,7 @@ import {
   SchemaComponentProvider,
   SchemaInitializer,
 } from '@nocobase/client';
-import { uid } from '@formily/shared';
-import { ISchema } from '@formily/react';
+import React from 'react';
 
 const addActionButton = new SchemaInitializer({
   name: 'AddActionButton',
@@ -23,10 +23,10 @@ const addActionButton = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: 'Enable actions',
-      name: 'enable-actions',
+      name: 'enableActions',
       children: [
         {
-          name: 'action-1',
+          name: 'action1',
           title: '{{t("Action 1")}}',
           Component: 'ActionInitializer',
           schema: {
@@ -37,7 +37,7 @@ const addActionButton = new SchemaInitializer({
           },
         },
         {
-          name: 'action-2',
+          name: 'action2',
           title: '{{t("Action 2")}}',
           Component: 'ActionInitializer',
           schema: {

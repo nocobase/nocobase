@@ -1,5 +1,5 @@
-import { gridRowColWrap, useCustomBulkEditFormItemInitializerFields } from '../utils';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
+import { gridRowColWrap, useCustomBulkEditFormItemInitializerFields } from '../utils';
 
 export const bulkEditFormItemInitializers = new SchemaInitializer({
   name: 'BulkEditFormItemInitializers',
@@ -8,15 +8,17 @@ export const bulkEditFormItemInitializers = new SchemaInitializer({
   title: '{{t("Configure fields")}}',
   items: [
     {
+      name: 'displayFields',
       type: 'itemGroup',
       title: '{{t("Display fields")}}',
       useChildren: useCustomBulkEditFormItemInitializerFields,
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
-      name: 'add-text',
+      name: 'addText',
       title: '{{t("Add text")}}',
       Component: 'BlockItemInitializer',
       schema: {

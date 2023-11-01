@@ -1,6 +1,6 @@
 import {
-  SchemaInitializerChildren,
   SchemaInitializer,
+  SchemaInitializerChildren,
   useAssociatedTableColumnInitializerFields,
   useCompile,
   useInheritsTableColumnInitializerFields,
@@ -67,20 +67,21 @@ export const auditLogsTableColumnInitializers = new SchemaInitializer({
   },
   items: [
     {
+      name: 'displayFields',
       type: 'itemGroup',
       title: '{{t("Display fields")}}',
       useChildren: useTableColumnInitializerFields,
     },
     {
-      name: 'parent-collection-fields',
+      name: 'parentCollectionFields',
       Component: ParentCollectionFields,
     },
     {
-      name: 'association-fields',
+      name: 'associationFields',
       Component: AssociatedFields,
     },
     {
-      name: 'action-column',
+      name: 'actionColumn',
       title: '{{t("Action column")}}',
       Component: 'AuditLogsTableActionColumnInitializer',
     },
