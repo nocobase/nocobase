@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 
-import { GeneralSchemaDesigner, SchemaSettings, useCollection } from '@nocobase/client';
+import { GeneralSchemaDesigner, SchemaSettings, useCollection, useMenuSearch } from '@nocobase/client';
 
 import { NAMESPACE } from '../../../locale';
 import { FormBlockInitializer } from '../FormBlockInitializer';
@@ -30,37 +30,35 @@ export default {
   title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
   config: {
     useInitializer({ collections }) {
-      const searchValue = '';
-      const [showChildren, setShowChildren] = useState(false);
-      const children = useMemo(
+      const childItems = useMemo(
         () =>
-          collections
-            .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
-            .map((item) => ({
-              name: `createRecordForm-child-${item.name}`,
-              type: 'item',
-              title: item.title,
-              schema: {
-                collection: item.name,
-                title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
-                formType: 'create',
-                'x-designer': 'CreateFormDesigner',
-              },
-              Component: FormBlockInitializer,
-            })),
+          collections.map((item) => ({
+            name: `createRecordForm-child-${item.name}`,
+            type: 'item',
+            title: item.title,
+            label: item.label,
+            schema: {
+              collection: item.name,
+              title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
+              formType: 'create',
+              'x-designer': 'CreateFormDesigner',
+            },
+            Component: FormBlockInitializer,
+          })),
         [collections],
       );
+      const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
+      const searchedChildren = useMenuSearch(childItems, isOpenSubMenu, true);
       return {
         key: 'createRecordForm',
         type: 'subMenu',
         title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
-        onMouseEnter() {
-          setShowChildren(true);
+        componentProps: {
+          onOpenChange(keys) {
+            setIsOpenSubMenu(keys.length > 0);
+          },
         },
-        onMouseLeave() {
-          setShowChildren(false);
-        },
-        children: showChildren ? children : [],
+        children: searchedChildren,
       };
     },
     initializers: {

@@ -59,8 +59,12 @@ export function useSchemaInitializerMenuItems(items: any[], name?: string, onCli
             children: item?.children.length ? getMenuItems(item.children, key) : [],
           };
         }
+        if (item.isMenuType) {
+          const { isMenuType, ...menuData } = item;
+          return menuData;
+        }
 
-        const label = element || compiledTitle;
+        const label = element || compiledTitle || item.label;
         const key = `${parentKey}-${item.title}-${indexA}`;
         return {
           key,

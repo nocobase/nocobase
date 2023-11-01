@@ -1,6 +1,6 @@
 import Icon from '@ant-design/icons';
 import { Menu } from 'antd';
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useMemo } from 'react';
 import { SchemaInitializerOptions } from '../types';
 import { useCompile } from '../../../schema-component';
 import { useSchemaInitializerMenuItems } from '../hooks';
@@ -16,25 +16,23 @@ export interface SchemaInitializerMenuProps {
   children?: SchemaInitializerOptions['items'];
 }
 
-export const SchemaInitializerMenu = () => {
+export const SchemaInitializerMenu = (props) => {
   const { children, title, name = uid(), icon, ...others } = useSchemaInitializerItem<SchemaInitializerMenuProps>();
+  const { children: _unUse, ...otherProps } = props;
   const compile = useCompile();
   const childrenItems = useSchemaInitializerMenuItems(children, name);
   const { componentCls, hashId } = useStyles();
-
-  return (
-    <Menu
-      selectedKeys={[]}
-      items={[
-        {
-          ...others,
-          key: name,
-          label: compile(title),
-          icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
-          popupClassName: `${hashId} ${componentCls}-menu-sub`,
-          children: childrenItems,
-        },
-      ]}
-    ></Menu>
-  );
+  const items = useMemo(() => {
+    return [
+      {
+        ...others,
+        key: name,
+        label: compile(title),
+        icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
+        popupClassName: `${hashId} ${componentCls}-menu-sub`,
+        children: childrenItems,
+      },
+    ];
+  }, [childrenItems, compile, componentCls, hashId, icon, name, others, title]);
+  return <Menu selectedKeys={[]} items={items} {...otherProps}></Menu>;
 };

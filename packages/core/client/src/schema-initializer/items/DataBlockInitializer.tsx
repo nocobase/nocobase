@@ -75,7 +75,7 @@ const LoadingItem = ({ loadMore, maxHeight }) => {
     const checkLoadMore = function () {
       if (!container) return;
       // 判断滚动是否到达底部
-      if (container.scrollHeight - container.scrollTop === container.clientHeight) {
+      if (Math.floor(container.scrollHeight - container.scrollTop - container.clientHeight) === 0) {
         // 到达底部，执行加载更多的操作
         loadMore();
       }
@@ -84,13 +84,13 @@ const LoadingItem = ({ loadMore, maxHeight }) => {
     // 监听滚动，滚动到底部触发加载更多
     if (container) {
       container.addEventListener('scroll', checkLoadMore);
-      container.style.maxHeight = `${maxHeight}px`;
+      container.style.height = `${maxHeight}px`;
     }
 
     return () => {
       if (container) {
         container.removeEventListener('scroll', checkLoadMore);
-        delete container.style.maxHeight;
+        delete container.style.height;
       }
     };
   }, [loadMore, maxHeight]);
@@ -102,10 +102,9 @@ const LoadingItem = ({ loadMore, maxHeight }) => {
   );
 };
 
-function useSearch(items: any[], isOpenSubMenu: boolean) {
+export function useMenuSearch(items: any[], isOpenSubMenu: boolean, showType?: boolean) {
   const [searchValue, setSearchValue] = useState('');
   const [count, setCount] = useState(STEP);
-
   useEffect(() => {
     if (isOpenSubMenu) {
       setSearchValue('');
@@ -116,7 +115,7 @@ function useSearch(items: any[], isOpenSubMenu: boolean) {
   const searchedItems = useMemo(() => {
     if (!searchValue) return items;
     const lowerSearchValue = searchValue.toLocaleLowerCase();
-    return items.filter((item) => item?.label && String(item.label).toLocaleLowerCase().includes(lowerSearchValue));
+    return items.filter((item) => item.label && String(item.label).toLocaleLowerCase().includes(lowerSearchValue));
   }, [searchValue, items]);
 
   const shouldLoadMore = useMemo(() => searchedItems.length > count, [count, searchedItems]);
@@ -128,60 +127,73 @@ function useSearch(items: any[], isOpenSubMenu: boolean) {
 
   // 最终的返回结果
   const resultItems = useMemo<MenuProps['items']>(() => {
-    const res: MenuProps['items'] = [
+    // isMenuType 为了 `useSchemaInitializerMenuItems()` 里面处理判断标识的
+    const res: any[] = [
       // 开头：搜索框
-      {
-        key: 'search-items',
-        label: (
-          <SearchCollections
-            value={searchValue}
-            onChange={(val: string) => {
-              setCount(STEP);
-              setSearchValue(val);
-            }}
-          />
-        ),
-        onClick({ domEvent }) {
-          domEvent.stopPropagation();
+      Object.assign(
+        {
+          key: 'search',
+          label: (
+            <SearchCollections
+              value={searchValue}
+              onChange={(val: string) => {
+                setCount(STEP);
+                setSearchValue(val);
+              }}
+            />
+          ),
+          onClick({ domEvent }) {
+            domEvent.stopPropagation();
+          },
         },
-      },
+        showType ? { isMenuType: true } : {},
+      ),
     ];
 
     // 中间：搜索的数据
     if (limitedSearchedItems.length > 0) {
       // 有搜索结果
       res.push(...limitedSearchedItems);
-
       if (shouldLoadMore) {
-        res.push({
-          key: 'loading-more',
-          label: (
-            <LoadingItem
-              maxHeight={STEP * MENU_ITEM_HEIGHT}
-              loadMore={() => {
-                setCount((count) => count + STEP);
-              }}
-            />
+        res.push(
+          Object.assign(
+            {
+              key: 'load-more',
+              label: (
+                <LoadingItem
+                  maxHeight={STEP * MENU_ITEM_HEIGHT}
+                  loadMore={() => {
+                    setCount((count) => count + STEP);
+                  }}
+                />
+              ),
+            },
+            showType ? { isMenuType: true } : {},
           ),
-        });
+        );
       }
     } else {
       // 搜索结果为空
-      res.push({
-        key: 'empty',
-        style: {
-          height: 150,
-        },
-        label: (
-          <div onClick={(e) => e.stopPropagation()}>
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
-          </div>
+      res.push(
+        Object.assign(
+          {
+            key: 'empty',
+            style: {
+              height: 150,
+            },
+            label: (
+              <div onClick={(e) => e.stopPropagation()}>
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              </div>
+            ),
+          },
+          showType ? { isMenuType: true } : {},
         ),
-      });
+      );
     }
 
     return res;
-  }, [limitedSearchedItems, searchValue, shouldLoadMore]);
+  }, [limitedSearchedItems, searchValue, shouldLoadMore, showType]);
 
   return resultItems;
 }
@@ -220,7 +232,7 @@ export const DataBlockInitializer = (props) => {
   const menuChildren = useMemo(() => items || defaultItems, [items, defaultItems]);
   const childItems = useSchemaInitializerMenuItems(menuChildren, name, onClick);
   const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
-  const searchedChildren = useSearch(childItems, isOpenSubMenu);
+  const searchedChildren = useMenuSearch(childItems, isOpenSubMenu);
   const compiledMenuItems = useMemo(
     () => [
       {

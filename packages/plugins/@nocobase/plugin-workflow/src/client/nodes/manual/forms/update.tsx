@@ -8,6 +8,7 @@ import {
   useCollection,
   useCollectionFilterOptions,
   useDesignable,
+  useMenuSearch,
 } from '@nocobase/client';
 
 import { FilterDynamicComponent } from '../../../components/FilterDynamicComponent';
@@ -71,38 +72,35 @@ export default {
   title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
   config: {
     useInitializer({ collections }) {
-      const searchValue = '';
-      const [showChildren, setShowChildren] = useState(false);
-      const children = useMemo(
+      const childItems = useMemo(
         () =>
-          collections
-            .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
-            .map((item) => ({
-              name: `updateRecordForm-child-${item.name}`,
-              type: 'item',
-              title: item.title,
-              schema: {
-                collection: item.name,
-                title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
-                formType: 'update',
-                'x-designer': 'UpdateFormDesigner',
-              },
-              Component: FormBlockInitializer,
-            })),
+          collections.map((item) => ({
+            name: `updateRecordForm-child-${item.name}`,
+            type: 'item',
+            title: item.title,
+            label: item.label,
+            schema: {
+              collection: item.name,
+              title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
+              formType: 'update',
+              'x-designer': 'UpdateFormDesigner',
+            },
+            Component: FormBlockInitializer,
+          })),
         [collections],
       );
-
+      const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
+      const searchedChildren = useMenuSearch(childItems, isOpenSubMenu, true);
       return {
         key: 'updateRecordForm',
         type: 'subMenu',
         title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
-        onMouseEnter() {
-          setShowChildren(true);
+        componentProps: {
+          onOpenChange(keys) {
+            setIsOpenSubMenu(keys.length > 0);
+          },
         },
-        onMouseLeave() {
-          setShowChildren(false);
-        },
-        children: showChildren ? children : [],
+        children: searchedChildren,
       };
     },
     initializers: {
