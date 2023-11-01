@@ -56,11 +56,15 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - run: yarn install
-      - run: yarn build
+      - name: yarn build
+        run: yarn build
+        env:
+          __E2E__: true
       - run: npx playwright install --with-deps
       - name: Test with postgres
         run: yarn test:e2e
         env:
+          __E2E__: true
           LOGGER_LEVEL: error
           DB_DIALECT: postgres
           DB_HOST: postgres

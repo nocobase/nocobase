@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-custom-request",
-  "version": "0.14.0-alpha.7",
+  "version": "0.14.0-alpha.8",
   "main": "dist/server/index.js",
   "displayName": "Custom request",
   "displayName.zh-CN": "自定义请求",
@@ -9,10 +9,10 @@
   "devDependencies": {
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
-    "react-i18next": "^11.15.1",
-    "react-router-dom": "6.x",
     "antd": "5.x",
-    "lodash": "4.x"
+    "lodash": "4.x",
+    "react-i18next": "^11.15.1",
+    "react-router-dom": "6.x"
   },
   "peerDependencies": {
     "@nocobase/client": "0.x",
