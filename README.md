@@ -1,6 +1,6 @@
 
  
-![NocoBase](https://nocobase-file.oss-cn-beijing.aliyuncs.com/main-l.png)
+![NocoBase](https://github.com/codenuladev/codenula/blob/a7d6bf066c03b9d0ebc47ea48f89df6adca3df28/Capturefields2.PNG)
 
 
 
