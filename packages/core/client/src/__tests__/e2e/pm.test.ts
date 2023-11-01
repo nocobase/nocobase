@@ -34,7 +34,7 @@ test.describe('add plugin in front', () => {
     });
     await page.waitForLoadState('load');
     await page.getByPlaceholder('Search plugin').fill('sample-custom-collection-template');
-    await expect(await page.getByLabel('sample-custom-collection-template')).toBeVisible();
+    await expect(page.getByLabel('sample-custom-collection-template')).toBeVisible();
     //将添加的插件删除
     await page.getByLabel('sample-custom-collection-template').getByText('Remove').click();
     await page.getByRole('button', { name: 'Yes' }).click();
@@ -55,7 +55,7 @@ test.describe('remove plugin', () => {
     await page.getByTestId('plugin-manager-button').click();
     //hello插件默认安装未启用
     await page.getByPlaceholder('Search plugin').fill('Hello');
-    await expect(await page.getByLabel('Hello')).toBeVisible();
+    await expect(page.getByLabel('Hello')).toBeVisible();
     const isActive = await page.getByLabel('Hello').getByLabel('enable').isChecked();
     await expect(isActive).toBe(false);
     //将hello插件remove
@@ -84,7 +84,7 @@ test.describe('remove plugin', () => {
     });
     await page.waitForLoadState('load');
     await page.getByPlaceholder('Search plugin').fill('hello');
-    await expect(await page.getByLabel('Hello')).toBeVisible();
+    await expect(page.getByLabel('Hello')).toBeVisible();
     //已启用的插件不能remove，如ACL
     await page.getByPlaceholder('Search plugin').fill('ACL');
     await expect(await page.getByLabel('ACL')).toBeVisible();
@@ -99,7 +99,7 @@ test.describe('enable & disabled plugin', () => {
     await mockPage().goto();
     await page.getByTestId('plugin-manager-button').click();
     await page.getByPlaceholder('Search plugin').fill('hello');
-    await expect(await page.getByLabel('Hello')).toBeVisible();
+    await expect(page.getByLabel('Hello')).toBeVisible();
     const isActive = await page.getByLabel('Hello').getByLabel('enable').isChecked();
     await expect(isActive).toBe(false);
     //激活插件

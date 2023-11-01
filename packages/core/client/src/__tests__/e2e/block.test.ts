@@ -298,7 +298,6 @@ test.describe('add block & delete block', () => {
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').click();
     await page.getByLabel('dataBlocks-table', { exact: true }).click();
     await page.getByLabel('dataBlocks-table-Users').click();
-    await page.getByLabel('dataBlocks-table-Users').hover();
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
     await expect(page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users')).toBeVisible();
     await expect(await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-users')).toBeVisible();
