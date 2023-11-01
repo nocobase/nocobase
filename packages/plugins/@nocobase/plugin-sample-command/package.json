@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-command",
-  "version": "0.14.0-alpha.7",
+  "version": "0.14.0-alpha.8",
   "main": "./dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "0.x",
