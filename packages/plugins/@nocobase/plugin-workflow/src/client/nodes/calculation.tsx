@@ -1,5 +1,5 @@
 import { FormItem, FormLayout } from '@formily/antd-v5';
-import { SchemaInitializerItemType, Variable, css, defaultFieldNames, useCollectionManager } from '@nocobase/client';
+import { SchemaInitializerItemType, Variable, defaultFieldNames, useCollectionManager } from '@nocobase/client';
 import { Evaluator, evaluators, getOptions } from '@nocobase/evaluators/client';
 import { Radio } from 'antd';
 import React from 'react';
@@ -183,6 +183,7 @@ export default {
   },
   useInitializers(node): SchemaInitializerItemType {
     return {
+      name: node.title ?? `#${node.id}`,
       type: 'item',
       title: node.title ?? `#${node.id}`,
       Component: ValueBlock.Initializer,

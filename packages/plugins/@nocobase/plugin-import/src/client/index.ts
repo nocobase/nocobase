@@ -34,9 +34,9 @@ export class ImportPlugin extends Plugin {
     };
 
     const tableActionInitializers = this.app.schemaInitializerManager.get('TableActionInitializers');
-    tableActionInitializers?.add('enable-actions.import', initializerData);
+    tableActionInitializers?.add('enableActions.import', initializerData);
     const ganttActionInitializers = this.app.schemaInitializerManager.get('GanttActionInitializers');
-    ganttActionInitializers?.add('enable-actions.import', initializerData);
+    ganttActionInitializers?.add('enableActions.import', initializerData);
   }
 }
 

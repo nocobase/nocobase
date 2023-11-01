@@ -8,12 +8,12 @@ import {
   useCompile,
 } from '@nocobase/client';
 
-import { appends, collection, filter, pagination, sort } from '../schemas/collection';
-import { NAMESPACE } from '../locale';
+import { useForm } from '@formily/react';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
+import { NAMESPACE } from '../locale';
+import { appends, collection, filter, pagination, sort } from '../schemas/collection';
 import { getCollectionFieldOptions, useWorkflowVariableOptions } from '../variable';
-import { useForm } from '@formily/react';
 
 export default {
   title: `{{t("Query record", { ns: "${NAMESPACE}" })}}`,
@@ -123,6 +123,7 @@ export default {
     }
 
     return {
+      name: node.title ?? `#${node.id}`,
       type: 'item',
       title: node.title ?? `#${node.id}`,
       Component: CollectionBlockInitializer,

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 
 import { GeneralSchemaDesigner, SchemaSettings, useCollection, useMenuSearch } from '@nocobase/client';
 
+import _ from 'lodash';
 import { NAMESPACE } from '../../../locale';
 import { FormBlockInitializer } from '../FormBlockInitializer';
 import { ManualFormType } from '../SchemaConfig';
@@ -33,7 +34,7 @@ export default {
       const childItems = useMemo(
         () =>
           collections.map((item) => ({
-            name: `createRecordForm-child-${item.name}`,
+            name: _.camelCase(`createRecordForm-child-${item.name}`),
             type: 'item',
             title: item.title,
             label: item.label,
@@ -50,6 +51,7 @@ export default {
       const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
       const searchedChildren = useMenuSearch(childItems, isOpenSubMenu, true);
       return {
+        name: 'createRecordForm',
         key: 'createRecordForm',
         type: 'subMenu',
         title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,

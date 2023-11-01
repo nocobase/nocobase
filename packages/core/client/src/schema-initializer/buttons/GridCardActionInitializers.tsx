@@ -134,6 +134,7 @@ export const gridCardItemActionInitializers = new SchemaInitializer({
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {

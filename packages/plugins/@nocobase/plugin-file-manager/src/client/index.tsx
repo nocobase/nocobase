@@ -12,7 +12,7 @@ export class FileManagerPlugin extends Plugin {
     });
 
     const tableActionInitializers = this.app.schemaInitializerManager.get('TableActionInitializers');
-    tableActionInitializers?.add('enable-actions.upload', {
+    tableActionInitializers?.add('enableActions.upload', {
       title: "{{t('Upload')}}",
       Component: 'UploadActionInitializer',
       schema: {

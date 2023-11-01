@@ -245,6 +245,7 @@ export const useInheritsTableColumnInitializerFields = () => {
             },
           };
           return {
+            name: k?.uiSchema?.title || k.name,
             type: 'item',
             title: k?.uiSchema?.title || k.name,
             Component: 'TableCollectionFieldInitializer',
@@ -370,6 +371,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         };
       }
       const resultItem = {
+        name: field?.uiSchema?.title || field.name,
         type: 'item',
         title: field?.uiSchema?.title || field.name,
         Component: 'CollectionFieldInitializer',
@@ -430,6 +432,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
           };
           return {
+            name: subField?.uiSchema?.title || subField.name,
             type: 'item',
             title: subField?.uiSchema?.title || subField.name,
             Component: 'CollectionFieldInitializer',
@@ -501,6 +504,7 @@ const getItem = (
   };
 
   return {
+    name: field.uiSchema?.title || field.name,
     type: 'item',
     title: field.uiSchema?.title || field.name,
     Component: 'CollectionFieldInitializer',
@@ -555,6 +559,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
             'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
           };
           return {
+            name: field?.uiSchema?.title || field.name,
             type: 'item',
             title: field?.uiSchema?.title || field.name,
             Component: 'CollectionFieldInitializer',
@@ -609,6 +614,7 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
             'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
           };
           return {
+            name: field?.uiSchema?.title || field.name,
             type: 'item',
             title: field?.uiSchema?.title || field.name,
             Component: 'CollectionFieldInitializer',
@@ -654,6 +660,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
         'x-collection-field': `${name}.${field.name}`,
       };
       return {
+        name: field?.uiSchema?.title || field.name,
         type: 'item',
         title: field?.uiSchema?.title || field.name,
         Component: 'CollectionFieldInitializer',
@@ -700,6 +707,7 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
             'x-collection-field': `${name}.${field.name}`,
           };
           return {
+            name: field?.uiSchema?.title || field.name,
             type: 'item',
             title: field?.uiSchema?.title || field.name,
             Component: 'CollectionFieldInitializer',

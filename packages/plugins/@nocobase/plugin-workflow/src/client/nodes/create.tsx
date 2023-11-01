@@ -1,11 +1,10 @@
 import { SchemaInitializerItemType, useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
 
-import { appends, collection, values } from '../schemas/collection';
+import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import CollectionFieldset from '../components/CollectionFieldset';
 import { NAMESPACE } from '../locale';
-import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
+import { appends, collection, values } from '../schemas/collection';
 import { getCollectionFieldOptions } from '../variable';
-import { FieldsSelect } from '../components/FieldsSelect';
 
 export default {
   title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
@@ -73,6 +72,7 @@ export default {
     }
 
     return {
+      name: node.title ?? `#${node.id}`,
       type: 'item',
       title: node.title ?? `#${node.id}`,
       Component: CollectionBlockInitializer,

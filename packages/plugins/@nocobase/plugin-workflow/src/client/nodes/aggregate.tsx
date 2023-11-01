@@ -364,6 +364,7 @@ export default {
     }
 
     return {
+      name: node.title ?? `#${node.id}`,
       type: 'item',
       title: node.title ?? `#${node.id}`,
       Component: ValueBlock.Initializer,

@@ -11,6 +11,7 @@ import {
   useMenuSearch,
 } from '@nocobase/client';
 
+import _ from 'lodash';
 import { FilterDynamicComponent } from '../../../components/FilterDynamicComponent';
 import { NAMESPACE } from '../../../locale';
 import { FormBlockInitializer } from '../FormBlockInitializer';
@@ -75,7 +76,7 @@ export default {
       const childItems = useMemo(
         () =>
           collections.map((item) => ({
-            name: `updateRecordForm-child-${item.name}`,
+            name: _.camelCase(`updateRecordForm-child-${item.name}`),
             type: 'item',
             title: item.title,
             label: item.label,
@@ -92,6 +93,7 @@ export default {
       const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
       const searchedChildren = useMenuSearch(childItems, isOpenSubMenu, true);
       return {
+        name: 'updateRecordForm',
         key: 'updateRecordForm',
         type: 'subMenu',
         title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
