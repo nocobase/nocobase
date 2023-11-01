@@ -36,7 +36,7 @@ export function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean
       define: {
         'process.env.NODE_ENV': JSON.stringify('production'),
         'process.env.__TEST__': false,
-        'process.env.__E2E__': false,
+        'process.env.__E2E__': process.env.__E2E__ ? true : false,
       },
       build: {
         minify: false,
