@@ -15,12 +15,12 @@ export class AuditLogsPlugin extends Plugin {
 
     const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
     const recordBlockInitializers = this.app.schemaInitializerManager.get('RecordBlockInitializers');
-    const auditLogs: SchemaInitializerItemType = {
+    const auditLogs: Omit<SchemaInitializerItemType, 'name'> = {
       title: '{{t("Audit logs")}}',
       Component: 'AuditLogsBlockInitializer',
     };
-    blockInitializers.add('media.audit-logs', auditLogs);
-    recordBlockInitializers.add('other-blocks.audit-logs', auditLogs);
+    blockInitializers.add('media.auditLogs', auditLogs);
+    recordBlockInitializers.add('otherBlocks.auditLogs', auditLogs);
   }
 }
 

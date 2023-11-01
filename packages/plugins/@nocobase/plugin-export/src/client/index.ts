@@ -22,10 +22,10 @@ export class ExportPlugin extends Plugin {
     };
 
     const tableActionInitializers = this.app.schemaInitializerManager.get('TableActionInitializers');
-    tableActionInitializers?.add('enable-actions.export', initializerData);
+    tableActionInitializers?.add('enableActions.export', initializerData);
 
     const ganttActionInitializers = this.app.schemaInitializerManager.get('GanttActionInitializers');
-    ganttActionInitializers?.add('enable-actions.export', initializerData);
+    ganttActionInitializers?.add('enableActions.export', initializerData);
   }
 }
 

@@ -1,11 +1,11 @@
 import { SchemaInitializerItemType, useCollectionManager, useCompile } from '@nocobase/client';
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
-import { defaultFieldNames, getCollectionFieldOptions } from '../../variable';
 import { NAMESPACE } from '../../locale';
-import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
-import { ModeConfig } from './ModeConfig';
+import { defaultFieldNames, getCollectionFieldOptions } from '../../variable';
 import { AssigneesSelect } from './AssigneesSelect';
+import { ModeConfig } from './ModeConfig';
+import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
 
 const MULTIPLE_ASSIGNED_MODE = {
   SINGLE: Symbol('single'),
@@ -127,6 +127,7 @@ export default {
 
         return fields.length
           ? ({
+              name: form.title ?? formKey,
               type: 'item',
               title: form.title ?? formKey,
               Component: CollectionBlockInitializer,
@@ -139,6 +140,7 @@ export default {
 
     return forms.length
       ? {
+          name: 'forms',
           key: 'forms',
           type: 'subMenu',
           title: node.title,

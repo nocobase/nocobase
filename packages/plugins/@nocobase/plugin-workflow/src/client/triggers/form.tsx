@@ -92,6 +92,7 @@ export default {
     }
 
     return {
+      name: 'triggerData',
       type: 'item',
       key: 'triggerData',
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,

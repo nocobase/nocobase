@@ -124,6 +124,7 @@ const useDetailCollections = (props) => {
   const { actionInitializers, childrenCollections, collection } = props;
   const detailCollections = [
     {
+      name: collection.name,
       key: collection.name,
       type: 'item',
       title: collection?.title || collection.name,
@@ -135,6 +136,7 @@ const useDetailCollections = (props) => {
   ].concat(
     childrenCollections.map((c) => {
       return {
+        name: c.name,
         key: c.name,
         type: 'item',
         title: c?.title || c.name,
@@ -152,6 +154,7 @@ const useFormCollections = (props) => {
   const { actionInitializers, childrenCollections, collection } = props;
   const formCollections = [
     {
+      name: collection.name,
       key: collection.name,
       type: 'item',
       title: collection?.title || collection.name,
@@ -163,6 +166,7 @@ const useFormCollections = (props) => {
   ].concat(
     childrenCollections.map((c) => {
       return {
+        name: c.name,
         key: c.name,
         type: 'item',
         title: c?.title || c.name,
