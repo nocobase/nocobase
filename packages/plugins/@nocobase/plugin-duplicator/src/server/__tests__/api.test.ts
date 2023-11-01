@@ -35,7 +35,7 @@ describe('duplicator api', () => {
     expect(data['meta']).toBeTruthy();
 
     const restoreResponse = await app.agent().post('/duplicator:restore').send({
-      restoreKey: data['key'],
+      key: data['key'],
       dataTypes: data['meta']['dataTypes'],
     });
 

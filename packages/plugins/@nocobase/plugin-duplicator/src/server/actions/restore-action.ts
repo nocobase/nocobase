@@ -4,11 +4,11 @@ import path from 'path';
 import { getApp } from './get-app';
 
 export async function restoreAction(ctx, next) {
-  const { restoreKey, dataTypes } = ctx.request.body;
+  const { key, dataTypes } = ctx.request.body;
   const appName = ctx.request.body.app;
 
   const tmpDir = os.tmpdir();
-  const filePath = path.resolve(tmpDir, restoreKey);
+  const filePath = path.resolve(tmpDir, key);
 
   const app = await getApp(ctx, appName);
 
