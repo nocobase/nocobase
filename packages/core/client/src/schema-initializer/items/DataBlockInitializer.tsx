@@ -115,7 +115,13 @@ export function useMenuSearch(items: any[], isOpenSubMenu: boolean, showType?: b
   const searchedItems = useMemo(() => {
     if (!searchValue) return items;
     const lowerSearchValue = searchValue.toLocaleLowerCase();
-    return items.filter((item) => item.label && String(item.label).toLocaleLowerCase().includes(lowerSearchValue));
+    return items.filter(
+      (item) =>
+        (item.label || item.title) &&
+        String(item.label || item.title)
+          .toLocaleLowerCase()
+          .includes(lowerSearchValue),
+    );
   }, [searchValue, items]);
 
   const shouldLoadMore = useMemo(() => searchedItems.length > count, [count, searchedItems]);
