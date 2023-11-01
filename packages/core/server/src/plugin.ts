@@ -117,7 +117,9 @@ export abstract class Plugin<O = any> implements PluginInterface {
       };
     }
 
-    const file = await fs.promises.realpath(resolve(process.env.NODE_MODULES_PATH, packageName));
+    const file = await fs.promises.realpath(
+      resolve(process.env.NODE_MODULES_PATH || resolve(process.cwd(), 'node_modules'), packageName),
+    );
     const lastUpdated = (await fs.promises.stat(file)).ctime;
     const others = await checkAndGetCompatible(packageName);
     return {
