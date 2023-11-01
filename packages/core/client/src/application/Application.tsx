@@ -15,12 +15,12 @@ import { PluginManager, PluginType } from './PluginManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
+import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
+import * as schemaInitializerComponents from './schema-initializer/components';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import type { RequireJS } from './utils/requirejs';
 import { getRequireJs } from './utils/requirejs';
-import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
-import * as schemaInitializerComponents from './schema-initializer/components';
 
 declare global {
   interface Window {
@@ -51,7 +51,7 @@ export class Application {
   public i18n: i18next;
   public ws: WebSocketClient;
   public apiClient: APIClient;
-  public components: Record<string, ComponentType<any>> = {
+  public components: Record<string, ComponentType<any> | any> = {
     ...defaultAppComponents,
     ...schemaInitializerComponents,
   };
