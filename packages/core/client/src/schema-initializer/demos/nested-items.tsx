@@ -5,8 +5,9 @@ import {
   SchemaInitializer,
   SchemaInitializerItemType,
   SchemaInitializerChildren,
-  useApp,
   useSchemaInitializerItem,
+  SchemaInitializerChild,
+  useSchemaInitializerRender,
 } from '@nocobase/client';
 import { Divider, Menu } from 'antd';
 
@@ -21,7 +22,9 @@ const ParentA: FC<{ children: SchemaInitializerItemType[] }> = ({ children }) =>
 
       {/* 示例1：直接渲染 */}
       <div>直接渲染</div>
-      {children.map((item) => React.createElement(item.Component, { key: item.name, ...item }))}
+      {children.map((item) => (
+        <SchemaInitializerChild key={item.name} {...item}></SchemaInitializerChild>
+      ))}
 
       <Divider dashed />
 
@@ -38,7 +41,7 @@ const ParentA: FC<{ children: SchemaInitializerItemType[] }> = ({ children }) =>
           return (
             <li key={item.name}>
               <div>name: {item.name}</div>
-              {React.createElement(item.Component, { key: item.name, ...item })}
+              <SchemaInitializerChild key={item.name} {...item}></SchemaInitializerChild>
             </li>
           );
         })}
@@ -50,7 +53,7 @@ const ParentA: FC<{ children: SchemaInitializerItemType[] }> = ({ children }) =>
       <Menu
         items={children.map((item) => ({
           key: item.name,
-          label: React.createElement(item.Component, item.componentProps),
+          label: <SchemaInitializerChild key={item.name} {...item}></SchemaInitializerChild>,
         }))}
       />
     </div>
@@ -96,11 +99,8 @@ const myInitializer = new SchemaInitializer({
 });
 
 const Root = () => {
-  const app = useApp();
-
-  // 渲染 schema initializer
-  const element = app.schemaInitializerManager.render('MyInitializer');
-  return <div>{element}</div>;
+  const { render } = useSchemaInitializerRender('MyInitializer');
+  return <div>{render()}</div>;
 };
 
 class MyPlugin extends Plugin {

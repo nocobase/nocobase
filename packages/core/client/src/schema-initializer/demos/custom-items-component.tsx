@@ -1,5 +1,11 @@
 import React, { FC } from 'react';
-import { Application, Plugin, SchemaInitializer, SchemaInitializerItemsProps, useApp } from '@nocobase/client';
+import {
+  Application,
+  Plugin,
+  SchemaInitializer,
+  SchemaInitializerItemsProps,
+  useSchemaInitializerRender,
+} from '@nocobase/client';
 import { ButtonProps, Card, Divider, List, ListProps, Menu, MenuProps } from 'antd';
 
 // 自定义 Items 渲染为 Menu
@@ -52,8 +58,7 @@ const myInitializer = new SchemaInitializer({
 });
 
 const Root = () => {
-  const app = useApp();
-  const { exists, render } = app.schemaInitializerManager.getRender('MyInitializer');
+  const { exists, render } = useSchemaInitializerRender('MyInitializer');
   if (!exists) return null;
   return (
     <div>

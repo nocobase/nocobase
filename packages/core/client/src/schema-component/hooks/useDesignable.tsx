@@ -576,7 +576,6 @@ export class Designable {
 export function useFindComponent() {
   const schemaOptions = useContext(SchemaOptionsContext);
   const components = useMemo(() => schemaOptions?.components || {}, [schemaOptions]);
-
   const find = (component: string | ComponentType) => {
     if (!component) {
       return null;
@@ -586,7 +585,7 @@ export function useFindComponent() {
     }
     const res = get(components, component);
     if (!res) {
-      console.error(`[nocobase]: ${component} not found`);
+      console.error(`[nocobase]: Component "${component}" not found`);
     }
     return res;
   };

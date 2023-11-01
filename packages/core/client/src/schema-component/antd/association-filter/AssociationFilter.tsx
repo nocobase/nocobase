@@ -10,21 +10,17 @@ import { AssociationFilterBlockDesigner } from './AssociationFilter.BlockDesigne
 import { AssociationFilterItem } from './AssociationFilter.Item';
 import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer';
 import { AssociationFilterProvider } from './AssociationFilterProvider';
-import { useApp } from '../../../application';
+import { useSchemaInitializerRender } from '../../../application';
 import { Plugin } from '../../../application/Plugin';
 import { associationFilterFilterBlockInitializer } from './AssociationFilter.FilterBlockInitializer';
 import { associationFilterInitializer } from './AssociationFilter.Initializer';
 
 export const AssociationFilter = (props) => {
   const { token } = useToken();
-  const app = useApp();
   const Designer = useDesigner();
   const filedSchema = useFieldSchema();
 
-  const { render } = app.schemaInitializerManager.getRender(
-    filedSchema['x-initializer'],
-    filedSchema['x-initializer-props'],
-  );
+  const { render } = useSchemaInitializerRender(filedSchema['x-initializer'], filedSchema['x-initializer-props']);
 
   return (
     <DndContext>

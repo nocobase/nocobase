@@ -1,5 +1,5 @@
 import React from 'react';
-import { Application, Plugin, SchemaInitializer, useApp } from '@nocobase/client';
+import { Application, Plugin, SchemaInitializer, useSchemaInitializerRender } from '@nocobase/client';
 
 const myInitializer = new SchemaInitializer({
   name: 'MyInitializer',
@@ -21,10 +21,8 @@ const myInitializer = new SchemaInitializer({
 });
 
 const Root = () => {
-  const app = useApp();
-  // 渲染 schema initializer
-  const element = app.schemaInitializerManager.render('MyInitializer');
-  return <div>{element}</div>;
+  const { render } = useSchemaInitializerRender('MyInitializer');
+  return <div>{render()}</div>;
 };
 
 class MyPlugin extends Plugin {

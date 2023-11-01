@@ -264,40 +264,15 @@ class MyPlugin extends Plugin {
 
 #### 使用方式变更
 
-之前使用 `useSchemaInitializer` 的方式进行渲染。例如：
+之前使用 `useSchemaInitializer` 的方式进行渲染，现在需要改为 `useSchemaInitializerRender`，并且参数需要增加 `x-initializer-props`。例如：
 
-```tsx
-const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+```diff
+- const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
++ const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
 
 render();
 render({ style: { marginLeft: 8 } })
 ```
 
-新的方式需要改为：
-
-```tsx
-const app = useApp();
-
-const { render } = app.schemaInitializerManager.getRender(
-  fieldSchema['x-initializer'], // 定义时 name 的值
-  fieldSchema['x-initializer-props'], //可以覆盖 new SchemaInitializer() 时参数
-);
-
-return <div>
-  { render() }
-  { render({ style: { marginLeft: 8 } }) }
-</div>
-```
-
-当然为了简化使用，我们也提供了直接渲染为元素的方法：
-
-```tsx
-const element = app.schemaInitializerManager.render(
-  fieldSchema['x-initializer'],
-  fieldSchema['x-initializer-props']
-);
-
-return <div>{element}</div>
-```
 
 更多说明可以参考 [SchemaInitializer 文档](https://client.docs.nocobase.com/client/schema-initializer)。

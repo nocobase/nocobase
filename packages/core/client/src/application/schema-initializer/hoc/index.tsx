@@ -61,7 +61,6 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
           <Popover
             {...popoverProps}
             open={visible}
-            defaultOpen={visible}
             onOpenChange={setVisible}
             content={wrapSSR(
               <div

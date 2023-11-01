@@ -5,9 +5,9 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   SchemaInitializer,
-  useApp,
   useSchemaInitializer,
   useSchemaInitializerItem,
+  useSchemaInitializerRender,
 } from '@nocobase/client';
 import { observer, useField } from '@formily/react';
 import { Field } from '@formily/core';
@@ -39,7 +39,7 @@ const myInitializer = new SchemaInitializer({
   name: 'MyInitializer',
   title: 'Add Block',
   // 插入位置
-  insertPosition: 'beforeBegin',
+  insertPosition: 'beforeEnd',
   items: [
     {
       name: 'a',
@@ -55,21 +55,32 @@ const myInitializer = new SchemaInitializer({
 });
 
 const AddBlockButton = observer(() => {
-  const app = useApp();
-  const element = app.schemaInitializerManager.render('MyInitializer');
-  return element;
+  const { render } = useSchemaInitializerRender('MyInitializer');
+  return render();
 });
+
+const Page = observer(
+  (props) => {
+    return (
+      <div>
+        {props.children}
+        <AddBlockButton />
+      </div>
+    );
+  },
+  { displayName: 'Page' },
+);
 
 const Root = () => {
   return (
     <div>
       <SchemaComponentProvider designable>
         <SchemaComponent
-          components={{ Hello, AddBlockButton }}
+          components={{ Page, Hello, AddBlockButton }}
           schema={{
             type: 'void',
             name: 'page',
-            'x-component': 'div',
+            'x-component': 'Page',
             properties: {
               hello1: {
                 type: 'void',
@@ -80,10 +91,6 @@ const Root = () => {
                 type: 'void',
                 title: 'Test2',
                 'x-component': 'Hello',
-              },
-              initializer: {
-                type: 'void',
-                'x-component': 'AddBlockButton',
               },
             },
           }}

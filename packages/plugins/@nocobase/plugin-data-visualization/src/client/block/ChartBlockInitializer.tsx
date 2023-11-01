@@ -31,7 +31,7 @@ const ConfigureButton = () => {
 const ItemsComponent = () => {
   const collections = useCollectionDataSourceItemsV2('Chart');
   const { allowAll, parseAction } = useACLRoleContext();
-  const items: any = collections[0].children
+  const items: any = collections
     .filter((item) => {
       if (allowAll) {
         return true;

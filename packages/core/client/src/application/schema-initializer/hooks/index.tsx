@@ -1,7 +1,11 @@
-import React, { ReactNode, useCallback } from 'react';
-import { SchemaInitializerChild } from '../components';
+import React, { FC, ReactNode, useCallback, useMemo } from 'react';
+import { SchemaInitializerChild, SchemaInitializerItems } from '../components';
 import { useCompile } from '../../../schema-component';
-import { SchemaInitializerItemType } from '../types';
+import { SchemaInitializerItemType, SchemaInitializerOptions } from '../types';
+import { useApp } from '../../hooks';
+import { ButtonProps } from 'antd';
+import { SchemaInitializerButton } from '../components/SchemaInitializerButton';
+import { withInitializer } from '../hoc';
 
 export function useSchemaInitializerMenuItems(items: any[], name?: string, onClick?: (args: any) => void) {
   const compile = useCompile();
@@ -77,4 +81,63 @@ export function useSchemaInitializerMenuItems(items: any[], name?: string, onCli
   );
 
   return getMenuItems(items, name);
+}
+
+const InitializerComponent: FC<SchemaInitializerOptions<any, any>> = React.memo((options) => {
+  const Component: any = options.Component || SchemaInitializerButton;
+  const componentProps = {
+    ...options.componentProps,
+    options,
+    style: options.style,
+  };
+
+  const ItemsComponent: any = options.ItemsComponent || SchemaInitializerItems;
+  const itemsComponentProps: any = {
+    ...options.itemsComponentProps,
+    options,
+    items: options.items,
+    style: options.itemsComponentStyle,
+  };
+
+  return React.createElement(
+    withInitializer(Component, componentProps),
+    options,
+    React.createElement(ItemsComponent, itemsComponentProps),
+  );
+});
+
+export function useSchemaInitializerRender<P1 = ButtonProps, P2 = {}>(
+  name: string,
+  options?: SchemaInitializerOptions<P1, P2>,
+) {
+  const app = useApp();
+  const initializer = useMemo(
+    () => app.schemaInitializerManager.get<P1, P2>(name),
+    [app.schemaInitializerManager, name],
+  );
+  const res = useMemo(() => {
+    if (!name) {
+      return {
+        exists: false,
+        render: () => null,
+      };
+    }
+
+    if (!initializer) {
+      console.error(`[nocobase]: SchemaInitializer "${name}" not found`);
+      return {
+        exists: false,
+        render: () => null,
+      };
+    }
+    return {
+      exists: true,
+      render: (props?: SchemaInitializerOptions<P1, P2>) =>
+        React.createElement(InitializerComponent, { ...initializer.options, ...options, ...props }),
+      Component: (props?: SchemaInitializerOptions<P1, P2>) =>
+        React.createElement(InitializerComponent, { ...initializer.options, ...options, ...props }),
+    };
+  }, [initializer, name, options]);
+
+  return res;
 }

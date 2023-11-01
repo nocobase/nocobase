@@ -8,6 +8,7 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   SchemaInitializer,
+  useApp,
 } from '@nocobase/client';
 
 const addActionInitializer = new SchemaInitializer({
@@ -49,11 +50,12 @@ const addActionInitializer = new SchemaInitializer({
 });
 
 const Root = () => {
+  const app = useApp();
   return (
     <div>
       <SchemaComponentProvider designable>
         <SchemaComponent
-          components={{ ActionBar, Action, ActionInitializer }}
+          components={{ ActionBar, Action, ActionInitializer, ...app.components }}
           schema={{
             type: 'void',
             name: 'page',

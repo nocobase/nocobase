@@ -1,4 +1,4 @@
-import { ButtonProps, ListProps } from 'antd';
+import { ButtonProps } from 'antd';
 import { Application } from '../Application';
 import { SchemaInitializer } from './SchemaInitializer';
 import { SchemaInitializerOptions } from './types';
@@ -29,37 +29,5 @@ export class SchemaInitializerManager {
 
   remove(name: string) {
     delete this.initializers[name];
-  }
-
-  render<P1 = ButtonProps, P2 = {}>(name: string, options?: SchemaInitializerOptions<P1, P2>) {
-    if (!name) return null;
-    const initializer = this.get<P1, P2>(name);
-    if (!initializer) {
-      console.error(`[nocobase]: SchemaInitializer "${name}" not found`);
-      return null;
-    }
-    return initializer.render(options);
-  }
-
-  getRender<P1 = ButtonProps, P2 = {}>(name: string, options?: SchemaInitializerOptions<P1, P2>) {
-    if (!name) {
-      return {
-        exists: false,
-        render: () => null,
-      };
-    }
-
-    const initializer = this.get<P1, P2>(name);
-    if (!initializer) {
-      console.error(`[nocobase]: SchemaInitializer "${name}" not found`);
-      return {
-        exists: false,
-        render: () => null,
-      };
-    }
-    return {
-      exists: true,
-      render: initializer.getRender(options),
-    };
   }
 }

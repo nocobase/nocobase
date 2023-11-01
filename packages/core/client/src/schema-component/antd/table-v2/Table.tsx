@@ -14,7 +14,13 @@ import { default as classNames, default as cls } from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable, useTableSize } from '../..';
-import { RecordIndexProvider, RecordProvider, useApp, useTableBlockContext, useTableSelectorContext } from '../../../';
+import {
+  RecordIndexProvider,
+  RecordProvider,
+  useSchemaInitializerRender,
+  useTableBlockContext,
+  useTableSelectorContext,
+} from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useToken } from '../__builtins__';
 import { SubFormProvider } from '../association-field/hooks';
@@ -29,13 +35,9 @@ const useArrayField = (props) => {
 const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => {
   const field = useArrayField(props);
   const schema = useFieldSchema();
-  const app = useApp();
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
-  const { exists, render } = app.schemaInitializerManager.getRender(
-    schema['x-initializer'],
-    schema['x-initializer-props'],
-  );
+  const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
   const columns = schema
     .reduceProperties((buf, s) => {
       if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {

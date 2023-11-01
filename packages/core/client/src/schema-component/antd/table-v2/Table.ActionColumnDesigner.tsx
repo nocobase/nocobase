@@ -2,14 +2,13 @@ import { DragOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import React from 'react';
-import { useApp } from '../../../application';
+import { useSchemaInitializerRender } from '../../../application';
 import { DragHandler } from '../../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
 
 export const TableActionColumnDesigner = (props: any) => {
   const fieldSchema = useFieldSchema();
-  const app = useApp();
-  const element = app.schemaInitializerManager.render(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
+  const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
   return (
     <div className={'general-schema-designer'}>
@@ -18,7 +17,7 @@ export const TableActionColumnDesigner = (props: any) => {
           <DragHandler>
             <DragOutlined role="button" aria-label={getAriaLabel('drag-handler')} />
           </DragHandler>
-          {element}
+          {render()}
         </Space>
       </div>
     </div>

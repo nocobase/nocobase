@@ -5,7 +5,7 @@ import { Space } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
-import { useApp } from '../../../application';
+import { useSchemaInitializerRender } from '../../../application';
 import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
 import { createDesignable, useDesignable } from '../../../schema-component';
 import {
@@ -43,17 +43,16 @@ const gridRowColWrap = (schema: ISchema) => {
 
 export const KanbanCardDesigner = () => {
   const { designable } = useDesignable();
-  const app = useApp();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
+  const { render } = useSchemaInitializerRender('KanbanCardInitializers');
   if (!designable) {
     return null;
   }
-  const element = app.schemaInitializerManager.render('KanbanCardInitializers');
   return (
     <div className={'general-schema-designer'}>
       <div className={'general-schema-designer-icons'}>
         <Space size={2} align={'center'}>
-          {element}
+          {render()}
         </Space>
       </div>
     </div>

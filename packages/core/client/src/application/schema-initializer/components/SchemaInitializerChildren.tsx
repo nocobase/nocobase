@@ -40,7 +40,6 @@ export const SchemaInitializerChild: FC<SchemaInitializerItemType> = (props) => 
   } = props;
   const useChildrenRes = useChildren();
   const findComponent = useFindComponent();
-
   // 以前的参数是小写 `component`，新的是大写 `Component`，这里做一个兼容
   const componentVal = Component || component;
 
@@ -58,7 +57,6 @@ export const SchemaInitializerChild: FC<SchemaInitializerItemType> = (props) => 
 
   const C = findComponent(!componentVal && type && typeComponentMap[type] ? typeComponentMap[type] : componentVal);
   if (!C) {
-    console.error(`[nocobase]: Component ${componentVal} not found`);
     return null;
   }
   if (checkChildrenLength && Array.isArray(componentChildren) && componentChildren.length === 0) {

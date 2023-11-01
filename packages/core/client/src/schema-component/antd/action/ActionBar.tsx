@@ -5,7 +5,7 @@ import React, { CSSProperties, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { DndContext } from '../../common';
 import { useDesignable, useProps } from '../../hooks';
-import { useApp } from '../../../application';
+import { useSchemaInitializerRender } from '../../../application';
 
 interface ActionBarContextForceProps {
   layout?: 'one-column' | 'tow-columns';
@@ -51,11 +51,7 @@ export const ActionBar = observer(
     const { forceProps = {} } = useActionBarContext();
     const { layout = 'tow-columns', style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;
     const fieldSchema = useFieldSchema();
-    const app = useApp();
-    const { render } = app.schemaInitializerManager.getRender(
-      fieldSchema['x-initializer'],
-      fieldSchema['x-initializer-props'],
-    );
+    const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
     const { designable } = useDesignable();
 
     if (layout === 'one-column') {

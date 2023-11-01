@@ -1,5 +1,11 @@
 import React from 'react';
-import { Application, Plugin, SchemaInitializer, useApp } from '@nocobase/client';
+import {
+  Application,
+  Plugin,
+  SchemaComponentPlugin,
+  SchemaInitializer,
+  useSchemaInitializerRender,
+} from '@nocobase/client';
 
 const myInitializer = new SchemaInitializer({
   name: 'MyInitializer',
@@ -52,9 +58,8 @@ const myInitializer = new SchemaInitializer({
 });
 
 const Root = () => {
-  const app = useApp();
-  const initializer = app.schemaInitializerManager.get('MyInitializer');
-  return <div>{initializer.render()}</div>;
+  const { render } = useSchemaInitializerRender('MyInitializer');
+  return <div>{render()}</div>;
 };
 
 class MyPlugin extends Plugin {
@@ -72,7 +77,7 @@ const app = new Application({
     type: 'memory',
     initialEntries: ['/'],
   },
-  plugins: [MyPlugin],
+  plugins: [MyPlugin, SchemaComponentPlugin],
 });
 
 export default app.getRootComponent();

@@ -14,6 +14,7 @@ import {
   SchemaInitializer,
   useSchemaInitializer,
   useSchemaInitializerItem,
+  useSchemaInitializerRender,
 } from '@nocobase/client';
 
 const useFormItemInitializerFields = () => {
@@ -89,11 +90,11 @@ const addFormItemInitializer = new SchemaInitializer({
 });
 
 const Page = (props) => {
-  const element = app.schemaInitializerManager.render('AddFormItem');
+  const { render } = useSchemaInitializerRender('AddFormItem');
   return (
     <div>
       {props.children}
-      {element}
+      {render()}
     </div>
   );
 };

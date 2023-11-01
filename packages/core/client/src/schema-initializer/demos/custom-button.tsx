@@ -1,5 +1,5 @@
 import React from 'react';
-import { Application, Plugin, SchemaInitializer, useApp } from '@nocobase/client';
+import { Application, Plugin, SchemaInitializer, useSchemaInitializerRender } from '@nocobase/client';
 import { PlusOutlined } from '@ant-design/icons';
 import { Divider, Avatar, AvatarProps } from 'antd';
 
@@ -25,8 +25,7 @@ const myInitializer = new SchemaInitializer<AvatarProps>({
 });
 
 const Root = () => {
-  const app = useApp();
-  const { exists, render } = app.schemaInitializerManager.getRender('MyInitializer');
+  const { exists, render } = useSchemaInitializerRender('MyInitializer');
   if (!exists) return null;
   return (
     <div>
@@ -41,7 +40,7 @@ const Root = () => {
       </div>
       <Divider />
       <div>
-        <div>不使用 dropdown</div>
+        <div>不使用 Popover</div>
         {render({ noPopover: true, componentProps: { onClick: () => alert('test') } })}
       </div>
     </div>
