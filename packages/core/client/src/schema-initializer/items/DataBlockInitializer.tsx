@@ -238,6 +238,7 @@ export const DataBlockInitializer = (props) => {
   );
   return (
     <Menu
+      selectedKeys={[]} // 选中效果去掉
       onOpenChange={(keys) => {
         setIsOpenSubMenu(keys.length > 0);
       }}

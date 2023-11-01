@@ -24,6 +24,7 @@ export const SchemaInitializerMenu = () => {
 
   return (
     <Menu
+      selectedKeys={[]}
       items={[
         {
           ...others,

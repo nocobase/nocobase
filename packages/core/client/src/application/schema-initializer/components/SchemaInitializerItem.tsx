@@ -28,6 +28,7 @@ export const SchemaInitializerItem = React.forwardRef<any, SchemaInitializerItem
   if (items && items.length > 0) {
     return (
       <Menu
+        selectedKeys={[]}
         ref={ref}
         items={[
           {
