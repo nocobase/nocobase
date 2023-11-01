@@ -58,7 +58,7 @@ After enabling the plugin follow the below steps to use the plugin
     6. Write an Expression using existing fields (sum1+sum2).
     7. Select Calculation engine
     8. Click on submit.
-    ![wysiwyg](https://github.com/codenuladev/codenula/blob/c4a173d033a8e5aec0e21df8ebb5da453e0f52d4/dropdown%20ss.PNG) 
+    ![wysiwyg](https://github.com/codenuladev/codenula/blob/32bf5c6f8da588352610cbde1810eedd49230fbc/options.PNG) 
 3. **Using in UI Editor:**
    ![wysiwyg](hhttps://github.com/codenuladev/codenula/blob/68ae65fac06bbe1259b9d89897c1f49c9547b0c3/demo.PNG)
     1. Select UI editor tab from top bar.
