@@ -73,6 +73,7 @@ const LearnMore: React.FC = () => {
   const apiClient = useAPIClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [dataSource, setDataSource] = useState<any>();
+  const compile = useCompile();
   const showModal = async () => {
     const data = await apiClient.request({
       url: 'duplicator:dumpableCollections',
@@ -93,7 +94,7 @@ const LearnMore: React.FC = () => {
 
   const columns = [
     {
-      title: 'Plugin',
+      title: t('Plugin'),
       dataIndex: 'plugin',
       key: 'plugin',
       width: '50%',
@@ -108,13 +109,13 @@ const LearnMore: React.FC = () => {
       },
     },
     {
-      title: 'Collection',
+      title: t('Collection'),
       dataIndex: 'collection',
       key: 'collection',
       render: (_, collection) => {
         return (
           <div>
-            {collection.name}
+            {compile(collection.title)}
             <br />
             <div style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>{collection.name}</div>
           </div>
@@ -250,6 +251,7 @@ const RestoreConfiguration = () => {
   const resource = useMemo(() => {
     return apiClient.resource('duplicator');
   }, [apiClient]);
+
   const handleStartRestore = () => {
     resource
       .restore({

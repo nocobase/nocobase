@@ -12,4 +12,5 @@ export default {
   'Start backup': 'バックアップの開始',
   'Start restore': 'リストアを開始',
   'Backed up successfully': 'バックアップ成功',
+  Plugin: 'プラグイン',
 };

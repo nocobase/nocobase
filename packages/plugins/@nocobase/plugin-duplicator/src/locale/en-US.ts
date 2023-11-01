@@ -5,13 +5,14 @@ const locale = {
   'Backup & Restore': 'Backup & Restore',
   Backup: 'Backup',
   Restore: 'Restore',
-  Configuration:'Configuration',
-  'Select the data to be backed up':'Select the data to be backed up',
-  'Select the data to be restored':'Select the data to be restored',
-  'Learn more':'Learn more',
-  'Start backup':'Start backup',
-  'Start restore':'Start restore',
-  'Backed up successfully':'Backed up successfully'
+  Configuration: 'Configuration',
+  'Select the data to be backed up': 'Select the data to be backed up',
+  'Select the data to be restored': 'Select the data to be restored',
+  'Learn more': 'Learn more',
+  'Start backup': 'Start backup',
+  'Start restore': 'Start restore',
+  'Backed up successfully': 'Backed up successfully',
+  Plugin: 'Plugin',
 };
 
 export default locale;

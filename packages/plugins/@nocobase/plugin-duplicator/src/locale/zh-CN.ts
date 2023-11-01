@@ -13,8 +13,10 @@ export default {
   Restore: '还原',
   Configuration: '配置',
   'Select the data to be backed up': '选择备份的数据',
-  'Select the data to be restored':'选择还原的数据',
+  'Select the data to be restored': '选择还原的数据',
   'Learn more': '了解更多',
-  'Start backup':'开始备份',
-  'Start restore':'开始还原'
+  'Start backup': '开始备份',
+  'Start restore': '开始还原',
+  'Backed up successfully': '备份成功',
+  Plugin: '插件',
 };

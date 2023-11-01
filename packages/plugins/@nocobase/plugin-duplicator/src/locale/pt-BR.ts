@@ -12,6 +12,7 @@ const locale = {
   'Start restore': 'Iniciar a Restauração',
   'Start backup': 'Iniciar a cópia de segurança',
   'Backed up successfully': 'Cópia de segurança bem sucedida',
+  'Plugin':'Plugins'
 };
 
 export default locale;
