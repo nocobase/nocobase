@@ -19,9 +19,9 @@ test.describe('File manager', () => {
     await createLocalStorage.title.fill(caseTitle);
     const storageName = caseNum + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await createLocalStorage.storageName.fill(storageName);
-    await createLocalStorage.storagebaseURL.fill('/storage/uploadsFM02AA');
-    await createLocalStorage.destination.fill('storage/uploadsFM02AA');
-    // await createLocalStorage.path.fill('');
+    // await createLocalStorage.storagebaseURL.fill('/storage/uploadsFM02AA');
+    // await createLocalStorage.destination.fill('storage/uploadsFM02AA');
+    // // await createLocalStorage.path.fill('');
     // await createLocalStorage.defaultStorage.check();
     // await createLocalStorage.deleteRecordRetentionFile.check();
     await page.getByLabel('action-Action-Submit-storages').click();
