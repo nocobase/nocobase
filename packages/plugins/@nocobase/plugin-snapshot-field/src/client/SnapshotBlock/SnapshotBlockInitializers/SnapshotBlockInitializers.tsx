@@ -10,7 +10,7 @@ export const snapshotBlockInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: '{{t("Current record blocks")}}',
-      name: 'current-record-blocks',
+      name: 'currentRecordBlocks',
       children: [
         {
           name: 'details',
@@ -23,7 +23,7 @@ export const snapshotBlockInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: '{{t("Other blocks")}}',
-      name: 'other-blocks',
+      name: 'otherBlocks',
       children: [
         {
           name: 'markdown',

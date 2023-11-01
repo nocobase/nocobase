@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Application,
   Plugin,
@@ -6,6 +5,7 @@ import {
   SchemaInitializer,
   useSchemaInitializerRender,
 } from '@nocobase/client';
+import React from 'react';
 
 const myInitializer = new SchemaInitializer({
   name: 'MyInitializer',
@@ -20,7 +20,7 @@ const myInitializer = new SchemaInitializer({
       useChildren() {
         return [
           {
-            name: 'a-1',
+            name: 'a1',
             type: 'item',
             title: 'A 1',
             onClick: () => {
@@ -28,7 +28,7 @@ const myInitializer = new SchemaInitializer({
             },
           },
           {
-            name: 'a-2',
+            name: 'a2',
             type: 'item',
             title: 'A 2',
           },
@@ -36,6 +36,7 @@ const myInitializer = new SchemaInitializer({
       },
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {

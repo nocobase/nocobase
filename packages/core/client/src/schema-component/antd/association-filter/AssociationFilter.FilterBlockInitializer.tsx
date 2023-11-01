@@ -10,7 +10,7 @@ export const associationFilterFilterBlockInitializer = new SchemaInitializer({
   items: [
     {
       type: 'itemGroup',
-      name: 'association-fields',
+      name: 'associationFields',
       title: '{{t("Association fields")}}',
       useChildren() {
         const associatedFields = useAssociatedFields();
@@ -38,6 +38,7 @@ export const associationFilterFilterBlockInitializer = new SchemaInitializer({
       },
     },
     {
+      name: 'choicesFields',
       type: 'itemGroup',
       title: '{{t("Choices fields")}}',
       checkChildrenLength: true,

@@ -104,7 +104,7 @@ export const kanbanCardInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: '{{t("Display fields")}}',
-      name: 'display-fields',
+      name: 'displayFields',
       useChildren() {
         const fields = useFormItemInitializerFields({
           readPretty: true,
@@ -117,7 +117,7 @@ export const kanbanCardInitializers = new SchemaInitializer({
       type: 'itemGroup',
       divider: true,
       title: '{{t("Display association fields")}}',
-      name: 'display-association-fields',
+      name: 'displayAssociationFields',
       checkChildrenLength: true,
       useChildren() {
         const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Kanban' });
@@ -125,16 +125,17 @@ export const kanbanCardInitializers = new SchemaInitializer({
       },
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
       title: '{{t("Display field title")}}',
-      name: 'display-field-title',
+      name: 'displayFieldTitle',
       Component: 'Kanban.Card.Designer.TitleSwitch',
       enable: true,
     },
     {
-      name: 'open-mode',
+      name: 'openMode',
       Component: SchemaInitializerOpenModeSchemaItems,
     },
   ],

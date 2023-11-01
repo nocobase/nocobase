@@ -1,12 +1,12 @@
-import React, { ReactNode } from 'react';
-import { useCompile } from '../../../schema-component';
-import { Icon } from '../../../icon';
-import { Menu } from 'antd';
-import { useSchemaInitializerMenuItems } from '../hooks';
 import { uid } from '@formily/shared';
-import { useStyles } from './style';
+import { Menu } from 'antd';
 import classNames from 'classnames';
+import React, { ReactNode } from 'react';
+import { Icon } from '../../../icon';
+import { useCompile } from '../../../schema-component';
 import { useSchemaInitializerItem } from '../context';
+import { useSchemaInitializerMenuItems } from '../hooks';
+import { useStyles } from './style';
 
 export interface SchemaInitializerItemProps {
   style?: React.CSSProperties;

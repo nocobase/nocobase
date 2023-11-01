@@ -1,4 +1,8 @@
-import React, { useContext } from 'react';
+import { FormDrawer, FormLayout } from '@formily/antd-v5';
+import { createForm } from '@formily/core';
+import { ISchema } from '@formily/json-schema';
+import { FormContext, SchemaOptionsContext } from '@formily/react';
+import { uid } from '@formily/shared';
 import {
   AntdSchemaComponentProvider,
   Application,
@@ -14,18 +18,14 @@ import {
   Plugin,
   SchemaComponent,
   SchemaComponentOptions,
-  SchemaInitializerItem,
   SchemaInitializer,
+  SchemaInitializerItem,
   useCollectionManager,
   useSchemaInitializer,
   useSchemaInitializerItem,
 } from '@nocobase/client';
-import { FormDrawer, FormLayout } from '@formily/antd-v5';
-import { createForm } from '@formily/core';
-import { ISchema } from '@formily/json-schema';
-import { FormContext, SchemaOptionsContext } from '@formily/react';
-import { uid } from '@formily/shared';
 import { cloneDeep } from 'lodash';
+import React, { useContext } from 'react';
 
 const collection: any = {
   name: 'posts',
@@ -137,7 +137,7 @@ const addFieldButton = new SchemaInitializer({
       title: 'Field interfaces',
       children: [
         {
-          name: 'single-text',
+          name: 'singleText',
           title: 'Single text',
           fieldInterface: 'input',
           Component: FormItemInitializer,

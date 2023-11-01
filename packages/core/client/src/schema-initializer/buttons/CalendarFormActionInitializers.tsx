@@ -12,7 +12,7 @@ export const calendarFormActionInitializers = new SchemaInitializer({
   items: [
     {
       type: 'itemGroup',
-      name: 'enable-actions',
+      name: 'enableActions',
       title: '{{t("Enable actions")}}',
       children: [
         {
@@ -45,7 +45,7 @@ export const calendarFormActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'delete-event',
+          name: 'deleteEvent',
           title: '{{t("Delete Event")}}',
           Component: 'DeleteEventActionInitializer',
           schema: {
@@ -68,6 +68,7 @@ export const calendarFormActionInitializers = new SchemaInitializer({
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
@@ -126,7 +127,7 @@ export const calendarFormActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'update-record',
+          name: 'updateRecord',
           title: '{{t("Update record")}}',
           Component: 'CustomizeActionInitializer',
           schema: {
@@ -153,7 +154,7 @@ export const calendarFormActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'custom-request',
+          name: 'customRequest',
           title: '{{t("Custom request")}}',
           Component: 'CustomRequestInitializer',
           useVisible() {

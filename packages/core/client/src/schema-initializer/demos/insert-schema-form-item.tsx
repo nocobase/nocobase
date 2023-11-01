@@ -1,21 +1,21 @@
-import React, { FC } from 'react';
 import {
   Application,
   CollectionFieldInitializer,
   Form,
   FormItem,
-  SchemaInitializerItem,
   Input,
   Markdown,
   Plugin,
   SchemaComponent,
   SchemaComponentProvider,
-  SchemaInitializerItemType,
   SchemaInitializer,
+  SchemaInitializerItem,
+  SchemaInitializerItemType,
   useSchemaInitializer,
   useSchemaInitializerItem,
   useSchemaInitializerRender,
 } from '@nocobase/client';
+import React, { FC } from 'react';
 
 const useFormItemInitializerFields = () => {
   return [
@@ -79,10 +79,11 @@ const addFormItemInitializer = new SchemaInitializer({
       useChildren: useFormItemInitializerFields,
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
-      name: 'add-text',
+      name: 'addText',
       title: 'Add text',
       Component: TextInitializer,
     },

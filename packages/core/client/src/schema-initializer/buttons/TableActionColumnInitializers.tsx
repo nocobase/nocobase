@@ -5,10 +5,10 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
 import { SchemaInitializerActionModal, SchemaInitializerItem, useSchemaInitializer } from '../../application';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { useCollection } from '../../collection-manager';
 import { createDesignable, useDesignable } from '../../schema-component';
 import { useGetAriaLabelOfDesigner } from '../../schema-settings/hooks/useGetAriaLabelOfDesigner';
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 
 export const Resizable = () => {
   const { t } = useTranslation();
@@ -147,7 +147,7 @@ export const tableActionColumnInitializers = new SchemaInitializer({
         {
           type: 'item',
           title: '{{t("Add child")}}',
-          name: 'add-children',
+          name: 'addChildren',
           Component: 'CreateChildInitializer',
           schema: {
             'x-component': 'Action.Link',
@@ -179,6 +179,7 @@ export const tableActionColumnInitializers = new SchemaInitializer({
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
@@ -240,7 +241,7 @@ export const tableActionColumnInitializers = new SchemaInitializer({
         {
           type: 'item',
           title: '{{t("Update record")}}',
-          name: 'update-record',
+          name: 'updateRecord',
           Component: 'CustomizeActionInitializer',
           schema: {
             title: '{{t("Update record")}}',
@@ -269,7 +270,7 @@ export const tableActionColumnInitializers = new SchemaInitializer({
         {
           type: 'item',
           title: '{{t("Custom request")}}',
-          name: 'custom-request',
+          name: 'customRequest',
           Component: 'CustomizeActionInitializer',
           schema: {
             title: '{{ t("Custom request") }}',
@@ -296,11 +297,12 @@ export const tableActionColumnInitializers = new SchemaInitializer({
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
       type: 'item',
-      name: 'column-width',
+      name: 'columnWidth',
       title: 't("Column width")',
       Component: Resizable,
     },

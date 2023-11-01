@@ -10,7 +10,7 @@ export const recordFormBlockInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: '{{ t("Data blocks") }}',
-      name: 'data-blocks',
+      name: 'dataBlocks',
       children: [
         {
           name: 'form',
@@ -22,7 +22,7 @@ export const recordFormBlockInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: '{{t("Other blocks")}}',
-      name: 'other-blocks',
+      name: 'otherBlocks',
       children: [
         {
           name: 'markdown',

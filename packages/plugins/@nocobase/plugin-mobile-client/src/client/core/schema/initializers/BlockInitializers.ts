@@ -8,12 +8,12 @@ export const mBlockInitializers = new SchemaInitializer({
   wrap: gridRowColWrap,
   items: [
     {
-      name: 'data-blocks',
+      name: 'dataBlocks',
       type: 'itemGroup',
       title: '{{t("Data blocks")}}',
       children: [
         {
-          name: 'grid-card',
+          name: 'gridCard',
           type: 'item',
           title: '{{t("Grid Card")}}',
           Component: 'GridCardBlockInitializer',
@@ -39,14 +39,14 @@ export const mBlockInitializers = new SchemaInitializer({
           Component: 'CalendarBlockInitializer',
         },
         {
-          name: 'map-block',
+          name: 'mapBlock',
           title: generateNTemplate('Map'),
           Component: 'MapBlockInitializer',
         },
       ],
     },
     {
-      mame: 'other-blocks',
+      name: 'otherBlocks',
       type: 'itemGroup',
       title: '{{t("Other blocks")}}',
       children: [

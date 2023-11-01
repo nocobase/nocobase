@@ -3,7 +3,7 @@ import { SchemaInitializer } from '../../application/schema-initializer';
 
 // TODO(refactor): should be moved to workflow plugin
 const formTriggerWorkflowActionInitializerV2: SchemaInitializerItemType = {
-  name: 'submit-to-workflow',
+  name: 'submitToWorkflow',
   title: '{{t("Submit to workflow", { ns: "workflow" })}}',
   Component: 'CustomizeActionInitializer',
   schema: {
@@ -35,7 +35,7 @@ export const formActionInitializers = new SchemaInitializer({
   items: [
     {
       type: 'itemGroup',
-      name: 'enable-actions',
+      name: 'enableActions',
       title: '{{t("Enable actions")}}',
       children: [
         {
@@ -49,6 +49,7 @@ export const formActionInitializers = new SchemaInitializer({
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
@@ -57,7 +58,7 @@ export const formActionInitializers = new SchemaInitializer({
       title: '{{t("Customize")}}',
       children: [
         {
-          name: 'save-record',
+          name: 'saveRecord',
           title: '{{t("Save record")}}',
           Component: 'CustomizeActionInitializer',
           schema: {
@@ -86,7 +87,7 @@ export const formActionInitializers = new SchemaInitializer({
         },
         formTriggerWorkflowActionInitializerV2,
         {
-          name: 'custom-request',
+          name: 'customRequest',
           title: '{{t("Custom request")}}',
           Component: 'CustomRequestInitializer',
         },
@@ -103,7 +104,7 @@ export const createFormActionInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: '{{t("Enable actions")}}',
-      name: 'enable-actions',
+      name: 'enableActions',
       children: [
         {
           name: 'submit',
@@ -116,6 +117,7 @@ export const createFormActionInitializers = new SchemaInitializer({
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
@@ -124,7 +126,7 @@ export const createFormActionInitializers = new SchemaInitializer({
       name: 'customize',
       children: [
         {
-          name: 'save-record',
+          name: 'saveRecord',
           title: '{{t("Save record")}}',
           Component: 'CustomizeActionInitializer',
           schema: {
@@ -153,7 +155,7 @@ export const createFormActionInitializers = new SchemaInitializer({
         },
         formTriggerWorkflowActionInitializerV2,
         {
-          name: 'custom-request',
+          name: 'customRequest',
           title: '{{t("Custom request")}}',
           Component: 'CustomRequestInitializer',
         },
@@ -170,7 +172,7 @@ export const updateFormActionInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: '{{t("Enable actions")}}',
-      name: 'enable-actions',
+      name: 'enableActions',
       children: [
         {
           name: 'submit',
@@ -183,6 +185,7 @@ export const updateFormActionInitializers = new SchemaInitializer({
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
@@ -241,7 +244,7 @@ export const updateFormActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'save-record',
+          name: 'saveRecord',
           title: '{{t("Save record")}}',
           Component: 'CustomizeActionInitializer',
           schema: {
@@ -271,7 +274,7 @@ export const updateFormActionInitializers = new SchemaInitializer({
         formTriggerWorkflowActionInitializerV2,
         {
           type: 'item',
-          name: 'custom-request',
+          name: 'customRequest',
           title: '{{t("Custom request")}}',
           Component: 'CustomRequestInitializer',
         },
@@ -288,7 +291,7 @@ export const bulkEditFormActionInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: '{{t("Enable actions")}}',
-      name: 'enable-actions',
+      name: 'enableActions',
       children: [
         {
           name: 'submit',
@@ -301,6 +304,7 @@ export const bulkEditFormActionInitializers = new SchemaInitializer({
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
@@ -359,7 +363,7 @@ export const bulkEditFormActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'save-record',
+          name: 'saveRecord',
           title: '{{t("Save record")}}',
           Component: 'CustomizeActionInitializer',
           schema: {
@@ -386,7 +390,7 @@ export const bulkEditFormActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'custom-request',
+          name: 'customRequest',
           title: '{{t("Custom request")}}',
           Component: 'CustomRequestInitializer',
         },

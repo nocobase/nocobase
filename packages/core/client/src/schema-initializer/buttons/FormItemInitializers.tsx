@@ -57,22 +57,24 @@ export const formItemInitializers = new SchemaInitializer({
   items: [
     {
       type: 'itemGroup',
-      name: 'display-fields',
+      name: 'displayFields',
       title: '{{t("Display fields")}}',
       useChildren: useFormItemInitializerFields,
     },
     {
-      name: 'parent-collection-fields',
+      name: 'parentCollectionFields',
       Component: ParentCollectionFields,
     },
     {
-      name: 'association-fields',
+      name: 'associationFields',
       Component: AssociatedFields,
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
+      name: 'addText',
       title: '{{t("Add text")}}',
       Component: 'BlockItemInitializer',
       schema: {
@@ -130,25 +132,26 @@ export const filterFormItemInitializers = new SchemaInitializer({
   items: [
     {
       type: 'itemGroup',
-      name: 'display-fields',
+      name: 'displayFields',
       title: '{{t("Display fields")}}',
       useChildren: useFilterFormItemInitializerFields,
     },
     {
-      name: 'parent-collection-fields',
+      name: 'parentCollectionFields',
       Component: FilterParentCollectionFields,
     },
     {
-      name: 'association-fields',
+      name: 'associationFields',
       Component: FilterAssociatedFields,
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
       title: '{{t("Add text")}}',
       Component: 'BlockItemInitializer',
-      name: 'add-text',
+      name: 'addText',
       schema: {
         type: 'void',
         'x-editable': false,

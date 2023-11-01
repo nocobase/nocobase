@@ -1,6 +1,6 @@
 import { SchemaInitializerItemType } from '../../../application';
-import { useAssociatedFields } from '../../../filter-provider/utils';
 import { SchemaInitializer } from '../../../application/schema-initializer';
+import { useAssociatedFields } from '../../../filter-provider/utils';
 
 export const associationFilterInitializer = new SchemaInitializer({
   name: 'AssociationFilter.Initializer',
@@ -11,6 +11,7 @@ export const associationFilterInitializer = new SchemaInitializer({
   title: '{{t("Configure fields")}}',
   items: [
     {
+      name: 'associationFields',
       type: 'itemGroup',
       title: '{{t("Association fields")}}',
       useChildren() {
@@ -41,9 +42,11 @@ export const associationFilterInitializer = new SchemaInitializer({
       },
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
+      name: 'delete',
       type: 'item',
       title: '{{t("Delete")}}',
       Component: 'AssociationFilterDesignerDelete',

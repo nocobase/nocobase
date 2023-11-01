@@ -1,12 +1,13 @@
-import React, { FC } from 'react';
+import React from 'react';
 import { useCompile } from '../../../schema-component';
+import { useSchemaInitializerItem } from '../context';
+import { SchemaInitializerOptions } from '../types';
 import { SchemaInitializerChildren } from './SchemaInitializerChildren';
 import { SchemaInitializerDivider } from './SchemaInitializerDivider';
-import { SchemaInitializerOptions } from '../types';
 import { useStyles } from './style';
-import { useSchemaInitializerItem } from '../context';
 
 export interface SchemaInitializerGroupProps {
+  name: string;
   title: string;
   children?: SchemaInitializerOptions['items'];
   divider?: boolean;

@@ -19,7 +19,7 @@ export const schemaInitializerComponentCommonProps: (keyof SchemaInitializerComp
 ];
 
 export interface SchemaInitializerItemBaseType<T = {}> extends SchemaInitializerComponentCommonProps {
-  name?: string | number;
+  name: string;
   sort?: number;
   Component?: string | ComponentType<T>;
   componentProps?: T;

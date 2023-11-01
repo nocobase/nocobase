@@ -36,10 +36,12 @@ export const auditLogsTableActionColumnInitializers = new SchemaInitializer({
   },
   items: [
     {
+      name: 'enableActions',
       type: 'itemGroup',
       title: '{{t("Enable actions")}}',
       children: [
         {
+          name: 'view',
           type: 'item',
           title: '{{t("View")}}',
           Component: 'AuditLogsViewActionInitializer',
@@ -52,9 +54,11 @@ export const auditLogsTableActionColumnInitializers = new SchemaInitializer({
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
+      name: 'columnWidth',
       type: 'item',
       title: '{{t("Column width")}}',
       Component: Resizable,

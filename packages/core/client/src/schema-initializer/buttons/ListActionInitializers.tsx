@@ -12,7 +12,7 @@ export const listActionInitializers = new SchemaInitializer({
   items: [
     {
       type: 'itemGroup',
-      name: 'enable-actions',
+      name: 'enableActions',
       title: "{{t('Enable actions')}}",
       children: [
         {
@@ -24,7 +24,7 @@ export const listActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'add-new',
+          name: 'addNew',
           title: "{{t('Add new')}}",
           Component: 'CreateActionInitializer',
           schema: {
@@ -91,7 +91,7 @@ export const listItemActionInitializers = new SchemaInitializer({
   items: [
     {
       type: 'itemGroup',
-      name: 'enable-actions',
+      name: 'enableActions',
       title: '{{t("Enable actions")}}',
       children: [
         {
@@ -138,6 +138,7 @@ export const listItemActionInitializers = new SchemaInitializer({
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
@@ -196,7 +197,7 @@ export const listItemActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'update-record',
+          name: 'updateRecord',
           title: '{{t("Update record")}}',
           Component: 'CustomizeActionInitializer',
           schema: {
@@ -224,7 +225,7 @@ export const listItemActionInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'custom-request',
+          name: 'customRequest',
           title: '{{t("Custom request")}}',
           Component: 'CustomRequestInitializer',
           schema: {

@@ -23,7 +23,7 @@ export const tableSelectorInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: '{{t("Filter blocks")}}',
-      name: 'filter-blocks',
+      name: 'filterBlocks',
       useChildren() {
         const { name } = useCollection();
         return [
@@ -45,12 +45,12 @@ export const tableSelectorInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: '{{t("Other blocks")}}',
-      name: 'other-blocks',
+      name: 'otherBlocks',
       children: [
         {
           title: '{{t("Add text")}}',
           Component: 'BlockItemInitializer',
-          name: 'add-text',
+          name: 'addText',
           schema: {
             type: 'void',
             'x-editable': false,

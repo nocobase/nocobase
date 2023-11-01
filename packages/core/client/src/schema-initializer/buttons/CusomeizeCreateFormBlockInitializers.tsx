@@ -1,5 +1,5 @@
-import { gridRowColWrap } from '../utils';
 import { SchemaInitializer } from '../../application/schema-initializer';
+import { gridRowColWrap } from '../utils';
 
 export const cusomeizeCreateFormBlockInitializers = new SchemaInitializer({
   name: 'CusomeizeCreateFormBlockInitializers',
@@ -10,7 +10,7 @@ export const cusomeizeCreateFormBlockInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: '{{t("Data blocks")}}',
-      name: 'data-blocks',
+      name: 'dataBlocks',
       children: [
         {
           name: 'form',
@@ -23,7 +23,7 @@ export const cusomeizeCreateFormBlockInitializers = new SchemaInitializer({
     {
       type: 'itemGroup',
       title: '{{t("Other blocks")}}',
-      name: 'other-blocks',
+      name: 'otherBlocks',
       children: [
         {
           name: 'markdown',

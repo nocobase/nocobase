@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Application,
   Plugin,
@@ -6,6 +5,7 @@ import {
   SchemaInitializer,
   useSchemaInitializerRender,
 } from '@nocobase/client';
+import React from 'react';
 
 const myInitializer = new SchemaInitializer({
   name: 'MyInitializer',
@@ -18,7 +18,7 @@ const myInitializer = new SchemaInitializer({
       title: 'Group a', // group 标题
       children: [
         {
-          name: 'a-1',
+          name: 'a1',
           type: 'item', // 渲染成 Div + title 的组件
           title: 'A 1',
           // 其他属性
@@ -27,13 +27,14 @@ const myInitializer = new SchemaInitializer({
           },
         },
         {
-          name: 'a-2',
+          name: 'a2',
           type: 'item',
           title: 'A 2',
         },
       ],
     },
     {
+      name: 'divider',
       type: 'divider', //  会渲染成分割线
     },
     {
@@ -42,7 +43,7 @@ const myInitializer = new SchemaInitializer({
       title: 'Group B',
       children: [
         {
-          name: 'b-1',
+          name: 'b1',
           type: 'item',
           title: 'B 1',
           onClick: () => {
@@ -50,7 +51,7 @@ const myInitializer = new SchemaInitializer({
           },
         },
         {
-          name: 'b-2',
+          name: 'b2',
           type: 'item',
           title: 'B 2',
         },
