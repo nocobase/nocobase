@@ -71,6 +71,7 @@ describe('duplicator api', () => {
 
     expect(testCollectionInfo).toMatchObject({
       name: 'test',
+      title: '测试',
       dataType: 'business',
       origin: {
         name: 'user',

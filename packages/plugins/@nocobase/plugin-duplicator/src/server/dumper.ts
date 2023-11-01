@@ -54,6 +54,7 @@ export class Dumper extends AppMigrator {
 
             return {
               name: c.name,
+              title: c.options.title || c.name,
               options: c.options,
               dataType: options?.dataType,
               origin: {
