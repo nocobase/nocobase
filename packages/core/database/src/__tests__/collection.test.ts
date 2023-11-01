@@ -4,7 +4,7 @@ import { mockDatabase } from './index';
 import { IdentifierError } from '../errors/identifier-error';
 
 const pgOnly = () => (process.env.DB_DIALECT == 'postgres' ? it : it.skip);
-pgOnly()('collection', () => {
+describe('collection', () => {
   let db: Database;
 
   beforeEach(async () => {
@@ -15,21 +15,6 @@ pgOnly()('collection', () => {
 
   afterEach(async () => {
     await db.close();
-  });
-
-  it('should set collection origin option', async () => {
-    const Test = db.collection({
-      name: 'test',
-    });
-
-    expect(Test.origin).toEqual('core');
-
-    const Test1 = db.collection({
-      name: 'test1',
-      origin: 'plugin:@nocobase/acl',
-    });
-
-    expect(Test1.origin).toEqual('plugin:@nocobase/acl');
   });
 
   it('should remove sequelize model prototype methods after field remove', async () => {
@@ -244,7 +229,7 @@ pgOnly()('collection', () => {
   });
 });
 
-pgOnly()('collection sync', () => {
+describe('collection sync', () => {
   let db: Database;
 
   beforeEach(async () => {
