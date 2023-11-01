@@ -6,7 +6,7 @@ import { ISchema, observer } from '@formily/react';
 import { useDesignable } from '../../../schema-component';
 import { SchemaInitializerOptions } from '../types';
 import { SchemaInitializerContext } from '../context';
-import { useStyles } from '../components/style';
+import { useSchemaInitializerStyles } from '../components/style';
 
 const defaultWrap = (s: ISchema) => s;
 
@@ -38,7 +38,7 @@ export function withInitializer<T>(C: ComponentType<T>, cProps: T) {
       [insertCallback, wrap, insertAdjacent, insertPosition, onSuccess],
     );
 
-    const { wrapSSR, hashId, componentCls } = useStyles();
+    const { wrapSSR, hashId, componentCls } = useSchemaInitializerStyles();
     const [visible, setVisible] = useState(false);
 
     // designable 为 false 时，不渲染

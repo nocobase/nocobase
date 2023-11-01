@@ -7,3 +7,4 @@ export * from './SchemaInitializerDivider';
 export * from './SchemaInitializerItems';
 export * from './SchemaInitializerActionModal';
 export * from './SchemaInitializerSelect';
+export * from './style';

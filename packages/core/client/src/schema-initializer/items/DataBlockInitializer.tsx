@@ -1,7 +1,7 @@
 import Icon, { TableOutlined } from '@ant-design/icons';
-import { Divider, Empty, Input, Menu, MenuProps, Spin } from 'antd';
+import { Divider, Empty, Input, MenuProps, Spin } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSchemaInitializer, useSchemaInitializerMenuItems } from '../../application';
+import { SchemaInitializerInternalMenu, useSchemaInitializer, useSchemaInitializerMenuItems } from '../../application';
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCollectionDataSourceItemsV2 } from '../utils';
@@ -248,9 +248,9 @@ export const DataBlockInitializer = (props) => {
     ],
     [name, compile, title, icon, searchedChildren, onClick, props],
   );
+
   return (
-    <Menu
-      selectedKeys={[]} // 选中效果去掉
+    <SchemaInitializerInternalMenu
       onOpenChange={(keys) => {
         setIsOpenSubMenu(keys.length > 0);
       }}

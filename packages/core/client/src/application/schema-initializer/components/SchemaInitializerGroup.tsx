@@ -1,9 +1,9 @@
-import React, { FC } from 'react';
+import React from 'react';
 import { useCompile } from '../../../schema-component';
 import { SchemaInitializerChildren } from './SchemaInitializerChildren';
 import { SchemaInitializerDivider } from './SchemaInitializerDivider';
 import { SchemaInitializerOptions } from '../types';
-import { useStyles } from './style';
+import { useSchemaInitializerStyles } from './style';
 import { useSchemaInitializerItem } from '../context';
 
 export interface SchemaInitializerGroupProps {
@@ -15,7 +15,7 @@ export interface SchemaInitializerGroupProps {
 export const SchemaInitializerGroup = () => {
   const { children, title, divider } = useSchemaInitializerItem<SchemaInitializerGroupProps>();
   const compile = useCompile();
-  const { componentCls } = useStyles();
+  const { componentCls } = useSchemaInitializerStyles();
   return (
     <div>
       {divider && <SchemaInitializerDivider />}
