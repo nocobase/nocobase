@@ -206,6 +206,9 @@ const RestoreUpload = (props: any) => {
     multiple: false,
     action: '/duplicator:upload',
     onChange(info) {
+      if (info.fileList.length > 1) {
+        info.fileList.splice(0, info.fileList.length - 1); // 只保留一个文件
+      }
       const { status } = info.file;
       if (status !== 'uploading') {
         console.log(info.file, info.fileList);
