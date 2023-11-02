@@ -7,3 +7,23 @@ exports[`actions send currentRecord.data 1`] = `
   "username": "testname",
 }
 `;
+
+exports[`actions send currentUser with association data 1`] = `
+{
+  "a": [
+    "member",
+    "root",
+    "admin",
+  ],
+  "b": [
+    "{{t("Member")}}",
+    "{{t("Root")}}",
+    "{{t("Admin")}}",
+  ],
+  "c": [
+    1,
+    1,
+    1,
+  ],
+}
+`;
