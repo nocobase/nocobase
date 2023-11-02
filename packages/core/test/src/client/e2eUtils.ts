@@ -181,6 +181,7 @@ const _test = base.extend<{
   page: Page;
   mockPage: (config?: PageConfig) => NocoPage;
   createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
+  deletePage: (pageName: string) => Promise<void>;
 }>({
   page: async ({ page: _page }, use) => {
     const page: Page = Object.create(_page);
@@ -226,6 +227,16 @@ const _test = base.extend<{
     if (collectionsName.length) {
       await deleteCollections(collectionsName);
     }
+  },
+  deletePage: async ({ page }, use) => {
+    const deletePage = async (pageName: string) => {
+      await page.getByText(pageName, { exact: true }).hover();
+      await page.getByRole('button', { name: 'designer-schema-settings-' }).hover();
+      await page.getByRole('button', { name: 'Delete', exact: true }).click();
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
+    };
+
+    await use(deletePage);
   },
 });
 
