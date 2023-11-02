@@ -16,9 +16,6 @@ export function CanvasContent({ entry }) {
 
   return (
     <div className="workflow-canvas-wrapper">
-      <div className="workflow-canvas-zoomer">
-        <Slider vertical reverse defaultValue={100} step={10} min={10} value={zoom} onChange={setZoom} />
-      </div>
       <div className="workflow-canvas" style={{ zoom: zoom / 100 }}>
         <div
           className={cx(
@@ -46,6 +43,9 @@ export function CanvasContent({ entry }) {
             <div className={styles.terminalClass}>{lang('End')}</div>
           </div>
         </div>
+      </div>
+      <div className="workflow-canvas-zoomer">
+        <Slider vertical reverse defaultValue={100} step={10} min={10} value={zoom} onChange={setZoom} />
       </div>
     </div>
   );
