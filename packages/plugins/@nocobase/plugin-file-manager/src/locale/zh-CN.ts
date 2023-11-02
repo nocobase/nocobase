@@ -23,7 +23,7 @@ export default {
   'Tencent COS': '腾讯云 COS',
   Region: '区域',
   Bucket: '存储桶',
-  Path: '相对路径',
+  Path: '路径',
   Filename: '文件名',
   'Will be used for API': '将用于 API',
   'Default storage will be used when not selected': '留空将使用默认存储空间',
