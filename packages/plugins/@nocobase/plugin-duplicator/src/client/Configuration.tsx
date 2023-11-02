@@ -26,7 +26,7 @@ function extractFileName(contentDispositionHeader) {
     return null;
   }
 }
-function useUploadProps(props: UploadProps) {
+function useUploadProps(props: UploadProps): UploadProps {
   const onChange = (param) => {
     props.onChange?.(param);
   };
