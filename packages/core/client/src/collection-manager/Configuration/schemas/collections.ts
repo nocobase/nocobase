@@ -7,7 +7,6 @@ import { i18n } from '../../../i18n';
 import { CollectionOptions } from '../../types';
 import { CollectionCategory } from '../components/CollectionCategory';
 import { CollectionTemplate } from '../components/CollectionTemplate';
-import { DeleteCollection } from '../components/DeleteCollection';
 
 const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
@@ -149,14 +148,10 @@ export const collectionTableSchema: ISchema = {
         delete: {
           type: 'void',
           title: '{{ t("Delete") }}',
-          'x-component': 'Action',
+          'x-component': 'DeleteCollection',
           'x-component-props': {
-            icon: 'DeleteOutlined',
-            useAction: '{{ cm.useBulkDestroyActionAndRefreshCM }}',
-            confirm: {
-              title: "{{t('Delete record')}}",
-              content: DeleteCollection,
-            },
+            role: 'button',
+            isBulk: true,
           },
         },
         create: {
@@ -311,13 +306,11 @@ export const collectionTableSchema: ISchema = {
                 delete: {
                   type: 'void',
                   title: '{{ t("Delete") }}',
-                  'x-component': 'Action.Link',
+                  'x-component': 'DeleteCollection',
                   'x-component-props': {
-                    confirm: {
-                      title: "{{t('Delete record')}}",
-                      content: DeleteCollection,
-                    },
-                    useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
+                    role: 'button',
+                    'aria-label': '{{ "delete-button-" + $record.name }}',
+                    type: 'primary',
                   },
                 },
               },
