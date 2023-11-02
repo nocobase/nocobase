@@ -201,11 +201,6 @@ export class Dumper extends AppMigrator {
     // @ts-ignore
     const columns: string[] = [...new Set(lodash.map(collection.model.tableAttributes, 'field'))];
 
-    if (columns.length == 0) {
-      this.app.log.warn(`collection ${collectionName} has no columns`);
-      return;
-    }
-
     const collectionDataDir = path.resolve(dir, 'collections', collectionName);
 
     await fsPromises.mkdir(collectionDataDir, { recursive: true });

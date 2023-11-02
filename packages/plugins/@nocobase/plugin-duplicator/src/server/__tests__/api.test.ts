@@ -16,7 +16,23 @@ describe('duplicator api', () => {
   });
 
   it('should request dump and restore api', async () => {
-    const dumpResponse = await app.agent().post('/duplicator:dump').send({});
+    await app.db.getCollection('collections').repository.create({
+      values: {
+        name: 'test',
+        title: '测试',
+        autoGenId: false,
+        timestamps: false,
+        fields: [],
+      },
+      context: {},
+    });
+
+    const dumpResponse = await app
+      .agent()
+      .post('/duplicator:dump')
+      .send({
+        dataTypes: ['meta', 'config', 'business'],
+      });
 
     expect(dumpResponse.status).toBe(200);
     // should response file name

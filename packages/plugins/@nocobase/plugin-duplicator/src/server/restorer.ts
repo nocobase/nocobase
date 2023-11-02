@@ -224,6 +224,13 @@ export class Restorer extends AppMigrator {
     const addSchemaTableName = db.utils.addSchema(meta.tableName);
     const tableName = db.utils.quoteTable(meta.tableName);
 
+    const columns = meta['columns'];
+
+    if (columns.length == 0) {
+      app.logger.info(`${collectionName} has no columns`);
+      return;
+    }
+
     if (options.clear !== false) {
       // truncate old data
       let sql = `TRUNCATE TABLE ${tableName}`;
@@ -243,8 +250,6 @@ export class Restorer extends AppMigrator {
       app.logger.info(`${collectionName} has no data to import`);
       return;
     }
-
-    const columns = meta['columns'];
 
     const fields = columns
       .map((column) => [column, collection.getField(column)])
