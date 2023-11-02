@@ -396,6 +396,7 @@ export class Collection<
       const queryInterface = this.db.sequelize.getQueryInterface();
       await queryInterface.dropTable(this.getTableNameWithSchema(), options);
     }
+
     return this.remove();
   }
 
