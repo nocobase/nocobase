@@ -3,6 +3,7 @@ import { parse } from '@nocobase/utils';
 
 import axios from 'axios';
 import CustomRequestPlugin from '../plugin';
+import { appendArrayColumn } from '@nocobase/evaluators';
 
 const getHeaders = (headers: Record<string, any>) => {
   return Object.keys(headers).reduce((hds, key) => {
@@ -27,6 +28,21 @@ const omitNullAndUndefined = (obj: any) => {
     }
     return acc;
   }, {});
+};
+
+const CurrentUserVariableRegExp = /{{\s*(currentUser[^}]+)\s*}}/g;
+
+const getCurrentUserAppends = (str: string, user) => {
+  const matched = str.matchAll(CurrentUserVariableRegExp);
+  return Array.from(matched)
+    .map((item) => {
+      const keys = item?.[1].split('.') || [];
+      const appendKey = keys[1];
+      if (keys.length > 2 && !Reflect.has(user || {}, appendKey)) {
+        return appendKey;
+      }
+    })
+    .filter(Boolean);
 };
 
 export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) {
@@ -69,35 +85,62 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
   ctx.withoutDataWrapping = true;
 
   const { collectionName, url, headers = [], params = [], data = {}, ...options } = requestConfig.options;
-  let currentRecordVariables = {};
+  let currentRecordValues = {};
   if (collectionName && typeof currentRecord.id !== 'undefined') {
     const recordRepo = ctx.db.getRepository(collectionName);
-    currentRecordVariables = await recordRepo.findOne({
-      filterByTk: currentRecord.id,
-      appends: currentRecord.appends,
-    });
+    currentRecordValues =
+      (
+        await recordRepo.findOne({
+          filterByTk: currentRecord.id,
+          appends: currentRecord.appends,
+        })
+      )?.toJSON() || {};
+  }
+
+  let currentUser = ctx.auth.user;
+
+  const userAppends = getCurrentUserAppends(
+    JSON.stringify(url) + JSON.stringify(headers) + JSON.stringify(params) + JSON.stringify(data),
+    ctx.auth.user,
+  );
+  if (userAppends.length) {
+    currentUser =
+      (
+        await ctx.db.getRepository('users').findOne({
+          filterByTk: ctx.auth.user.id,
+          appends: userAppends,
+        })
+      )?.toJSON() || {};
   }
 
   const variables = {
     currentRecord: {
-      ...currentRecordVariables,
+      ...currentRecordValues,
       ...currentRecord.data,
     },
-    currentUser: ctx.auth.user,
+    currentUser,
     currentTime: new Date().toISOString(),
+  };
+
+  const getParsedValue = (value) => {
+    const template = parse(value);
+    template.parameters.forEach(({ key }) => {
+      appendArrayColumn(variables, key);
+    });
+    return template(variables);
   };
 
   const axiosRequestConfig = {
     baseURL: ctx.origin,
     ...options,
-    url: parse(url)(variables),
+    url: getParsedValue(url),
     headers: {
       Authorization: 'Bearer ' + ctx.getBearerToken(),
       ...getHeaders(ctx.headers),
-      ...omitNullAndUndefined(parse(arrayToObject(headers))(variables)),
+      ...omitNullAndUndefined(getParsedValue(arrayToObject(headers))),
     },
-    params: parse(arrayToObject(params))(variables),
-    data: parse(data)(variables),
+    params: getParsedValue(arrayToObject(params)),
+    data: getParsedValue(data),
   };
 
   const requestUrl = axios.getUri(axiosRequestConfig);
