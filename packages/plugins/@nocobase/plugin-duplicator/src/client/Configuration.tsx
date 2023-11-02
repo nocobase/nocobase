@@ -1,6 +1,6 @@
 import { useAPIClient, useCompile, Checkbox } from '@nocobase/client';
-import { Button, Card, Form, Tabs, message, Modal, Table, Upload, Result } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import { Button, Card, Tabs, message, Modal, Table, Upload, Result } from 'antd';
+import React, { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { UploadProps } from 'antd';
 import { saveAs } from 'file-saver';
@@ -17,15 +17,6 @@ const options = [
   { label: generateNTemplate('System config'), value: 'config' },
   { label: generateNTemplate('Business data'), value: 'business' },
 ];
-function extractFileName(contentDispositionHeader) {
-  const regex = /filename="([^"]+)"/;
-  const match = contentDispositionHeader.match(regex);
-  if (match && match.length > 1) {
-    return match[1];
-  } else {
-    return null;
-  }
-}
 function useUploadProps(props: UploadProps): any {
   const onChange = (param) => {
     props.onChange?.(param);
