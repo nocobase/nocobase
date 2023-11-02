@@ -64,7 +64,6 @@ export function RawTextArea(props): JSX.Element {
               &:not(:hover) {
                 border-right-color: transparent;
                 border-top-color: transparent;
-                border-bottom-color: transparent;
               }
               background-color: transparent;
             `

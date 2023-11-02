@@ -168,7 +168,7 @@ export const FileStoragePane = () => {
     <Card bordered={false}>
       <SchemaComponent
         components={{ StorageOptions, CreateStorage, EditStorage }}
-        scope={{ storageTypes, xStyleProcessDesc }}
+        scope={{ useNewId: (prefix) => `${prefix}${uid()}`, storageTypes, xStyleProcessDesc }}
         schema={storageSchema}
       />
     </Card>

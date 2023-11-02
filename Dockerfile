@@ -3,6 +3,9 @@ ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
+ARG PLUGINS_DIRS
+
+ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
