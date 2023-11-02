@@ -6,7 +6,7 @@ export const CollectionManagerContext = createContext<CollectionManagerOptions>(
   interfaces: {},
 });
 
-export const CollectionContext = createContext<CollectionOptions>({});
+export const CollectionContext = createContext<CollectionOptions>({} as CollectionOptions);
 
 export const CollectionFieldContext = createContext<CollectionFieldOptions>({});
 

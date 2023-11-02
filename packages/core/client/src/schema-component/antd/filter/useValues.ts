@@ -3,9 +3,22 @@ import { merge } from '@formily/shared';
 import flat, { unflatten } from 'flat';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
-import { useContext, useEffect } from 'react';
-import { FilterContext } from './context';
+import { useCallback, useContext, useEffect, useMemo } from 'react';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { FilterContext } from './context';
+
+interface UseValuesReturn {
+  fields: any[];
+  collectionField: any;
+  dataIndex: string[];
+  operators: any[];
+  operator: any;
+  schema: any;
+  value: any;
+  setDataIndex: (dataIndex: string[]) => void;
+  setOperator: (operatorValue: string) => void;
+  setValue: (value: any) => void;
+}
 
 // import { useValues } from './useValues';
 const findOption = (dataIndex = [], options) => {
@@ -21,21 +34,27 @@ const findOption = (dataIndex = [], options) => {
   return option;
 };
 
-export const useValues = () => {
-  const field = useField<any>();
+export const useValues = (): UseValuesReturn => {
   const { name } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
-  const ctx: any = useContext(FilterContext) || {};
-  const { options } = ctx;
-  const data2value = () => {
+  const field = useField<any>();
+  const { options, collectionName, field: ctxField } = useContext(FilterContext) || {};
+  const values: object = flat(field.value || {});
+  const path = Object.keys(values).shift() || '';
+
+  const collectionField = useMemo(() => {
+    const [fieldPath = ''] = path.split('.$');
+    return getCollectionJoinField(`${collectionName || name}.${fieldPath}`);
+  }, [name, path]);
+
+  const data2value = useCallback(() => {
     field.value = flat.unflatten({
       [`${field.data.dataIndex?.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
     });
-  };
+  }, [field]);
+
   const value2data = () => {
     field.data = field.data || {};
-    const values: object = flat(field.value || {});
-    const path = Object.keys(values).shift() || '';
     if (!path || !options) {
       return;
     }
@@ -50,20 +69,20 @@ export const useValues = () => {
       const fieldNames = dataIndex.concat();
       fieldNames.pop();
       const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
-      ctx.field.collectionName = targetField?.target;
+      ctxField.collectionName = targetField?.target;
     } else {
-      ctx.field.collectionName = null;
+      ctxField.collectionName = null;
     }
     field.data.operators = operators;
     field.data.operator = operator;
     field.data.schema = merge(option?.schema, operator?.schema);
     field.data.value = get(unflatten(field.value), `${fieldPath}.$${operatorValue}`);
   };
+
   useEffect(value2data, [field.path]);
-  return {
-    fields: options,
-    ...(field?.data || {}),
-    setDataIndex(dataIndex) {
+
+  const setDataIndex = useCallback(
+    (dataIndex) => {
       const option = findOption(dataIndex, options);
       const operator = option?.operators?.[0];
       field.data = field.data || {};
@@ -77,14 +96,18 @@ export const useValues = () => {
         const fieldNames = dataIndex.concat();
         fieldNames.pop();
         const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
-        ctx.field.collectionName = targetField?.target;
+        ctxField.collectionName = targetField?.target;
       } else {
-        ctx.field.collectionName = null;
+        ctxField.collectionName = null;
       }
       field.data.value = operator?.noValue ? operator.default || true : undefined;
       data2value();
     },
-    setOperator(operatorValue) {
+    [data2value, field, options],
+  );
+
+  const setOperator = useCallback(
+    (operatorValue) => {
       const operator = field.data?.operators?.find?.((item) => item.value === operatorValue);
       field.data.operator = operator;
       const option = findOption(field.data.dataIndex, options);
@@ -94,9 +117,23 @@ export const useValues = () => {
       field.data.value = operator.noValue ? operator.default || true : undefined;
       data2value();
     },
-    setValue(value) {
+    [data2value, field.data, options],
+  );
+
+  const setValue = useCallback(
+    (value) => {
       field.data.value = value;
       data2value();
     },
+    [data2value, field.data],
+  );
+
+  return {
+    fields: options,
+    ...(field?.data || {}),
+    collectionField,
+    setDataIndex,
+    setOperator,
+    setValue,
   };
 };

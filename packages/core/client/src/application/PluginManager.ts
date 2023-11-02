@@ -73,11 +73,11 @@ export class PluginManager {
 
   get<T extends typeof Plugin>(PluginClass: T): InstanceType<T>;
   get<T extends {}>(name: string): T;
-  get(name: any) {
-    if (typeof name === 'string') {
-      return this.pluginsAliases[name];
+  get(nameOrPluginClass: any) {
+    if (typeof nameOrPluginClass === 'string') {
+      return this.pluginsAliases[nameOrPluginClass];
     }
-    return this.pluginInstances.get(name);
+    return this.pluginInstances.get(nameOrPluginClass.default || nameOrPluginClass);
   }
 
   private getInstance<T>(plugin: typeof Plugin, opts?: T) {

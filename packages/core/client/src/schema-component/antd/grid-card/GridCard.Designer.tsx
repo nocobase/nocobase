@@ -4,13 +4,13 @@ import { Slider } from 'antd';
 import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useCollectionFilterOptions, useSortFields } from '../../../collection-manager';
+import { useFormBlockContext } from '../../../block-provider';
+import { useCollection, useSortFields } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { SchemaComponentOptions } from '../../core';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { defaultColumnCount, gridSizes, pageSizeOptions, screenSizeMaps, screenSizeTitleMaps } from './options';
 
 const columnCountMarks = [1, 2, 3, 4, 6, 8, 12, 24].reduce((obj, cur) => {
@@ -23,11 +23,10 @@ export const GridCardDesigner = () => {
   const template = useSchemaTemplate();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
+  const { form } = useFormBlockContext();
   const field = useField();
-  const dataSource = useCollectionFilterOptions(name);
   const { dn } = useDesignable();
   const sortFields = useSortFields(name);
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const columnCount = field.decoratorProps.columnCount || defaultColumnCount;
@@ -94,25 +93,10 @@ export const GridCardDesigner = () => {
             });
           }}
         />
-        <SchemaSettings.ModalItem
-          title={t('Set the data scope')}
-          schema={
-            {
-              type: 'object',
-              title: t('Set the data scope'),
-              properties: {
-                filter: {
-                  default: defaultFilter,
-                  // title: '数据范围',
-                  enum: dataSource,
-                  'x-component': 'Filter',
-                  'x-component-props': {
-                    dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                  },
-                },
-              },
-            } as ISchema
-          }
+        <SchemaSettings.DataScope
+          collectionName={name}
+          defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+          form={form}
           onSubmit={({ filter }) => {
             filter = removeNullCondition(filter);
             _.set(fieldSchema, 'x-decorator-props.params.filter', filter);

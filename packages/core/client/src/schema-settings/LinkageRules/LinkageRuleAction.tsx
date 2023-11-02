@@ -4,7 +4,7 @@ import { TreeSelect } from '@formily/antd-v5';
 import { observer } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Select, Space } from 'antd';
-import React, { useContext, useState } from 'react';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';
 import { DynamicComponent } from './DynamicComponent';
@@ -110,40 +110,57 @@ export const FormButtonLinkageRuleAction = observer(
     const { value, options } = props;
     const { t } = useTranslation();
     const compile = useCompile();
-    const [editFalg, setEditFlag] = useState(false);
+    const [editFlag, setEditFlag] = useState(false);
     const remove = useContext(RemoveActionContext);
     const { schema, operator, setOperator, setValue } = useValues(options);
-    const operators = [
-      { label: t('Visible'), value: ActionType.Visible, schema: {} },
-      { label: t('Hidden'), value: ActionType.Hidden, schema: {} },
-      { label: t('Disabled'), value: ActionType.Disabled, schema: {} },
-      { label: t('Enabled'), value: ActionType.Active, schema: {} },
-    ];
+    const operators = useMemo(
+      () =>
+        compile([
+          { label: t('Visible'), value: ActionType.Visible, schema: {} },
+          { label: t('Hidden'), value: ActionType.Hidden, schema: {} },
+          { label: t('Disabled'), value: ActionType.Disabled, schema: {} },
+          { label: t('Enabled'), value: ActionType.Active, schema: {} },
+        ]),
+      [compile, t],
+    );
+
+    const onChange = useCallback(
+      (value) => {
+        const flag = [ActionType.Value].includes(value);
+        setEditFlag(flag);
+        setOperator(value);
+      },
+      [setOperator],
+    );
+
+    const onChangeValue = useCallback(
+      (value) => {
+        setValue(value);
+      },
+      [setValue],
+    );
+
+    const closeStyle = useMemo(() => ({ color: '#bfbfbf' }), []);
+
     return (
       <div style={{ marginBottom: 8 }}>
         <Space>
           <Select
             popupMatchSelectWidth={false}
             value={operator}
-            options={compile(operators)}
-            onChange={(value) => {
-              const flag = [ActionType.Value].includes(value);
-              setEditFlag(flag);
-              setOperator(value);
-            }}
+            options={operators}
+            onChange={onChange}
             placeholder={t('action')}
           />
-          {editFalg &&
+          {editFlag &&
             React.createElement(DynamicComponent, {
               value,
               schema,
-              onChange(value) {
-                setValue(value);
-              },
+              onChange: onChangeValue,
             })}
           {!props.disabled && (
             <a data-testid="close-icon-button">
-              <CloseCircleOutlined onClick={() => remove()} style={{ color: '#bfbfbf' }} />
+              <CloseCircleOutlined onClick={remove} style={closeStyle} />
             </a>
           )}
         </Space>

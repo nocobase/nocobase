@@ -7,21 +7,18 @@ import { useFormVariable } from '../VariableInput/hooks/useFormVariable';
 import { useIterationVariable } from '../VariableInput/hooks/useIterationVariable';
 
 export const ChildDynamicComponent = observer(
-  (props: { rootCollection: string; form: any; onChange; value; default; collectionField }) => {
-    const { form, rootCollection, onChange, value, collectionField } = props;
+  (props: { rootCollection: string; onChange; value; default; collectionField }) => {
+    const { rootCollection, onChange, value, collectionField } = props;
     const fieldSchema = useFieldSchema();
-    const formVariabele = useFormVariable({ blockForm: form, rootCollection });
-    const iterationVariabele = useIterationVariable({
-      blockForm: form,
-      currentCollection: collectionField.collectionName,
-      rootCollection,
+    const formVariable = useFormVariable({ collectionName: rootCollection, collectionField });
+    const iterationVariable = useIterationVariable({
+      currentCollection: collectionField?.collectionName,
+      schema: collectionField?.uiSchema,
+      collectionField,
     });
 
     const compile = useCompile();
-    const result = useMemo(
-      () => [formVariabele, iterationVariabele].filter(Boolean),
-      [formVariabele, iterationVariabele],
-    );
+    const result = useMemo(() => [formVariable, iterationVariable].filter(Boolean), [formVariable, iterationVariable]);
     const scope = compile(result);
     useEffect(() => {
       onChange(fieldSchema.default);

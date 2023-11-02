@@ -303,6 +303,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
     mode: 'production',
     define: {
       'process.env.NODE_ENV': JSON.stringify('production'),
+      'process.env.__TEST__': false,
     },
     logLevel: 'warn',
     build: {

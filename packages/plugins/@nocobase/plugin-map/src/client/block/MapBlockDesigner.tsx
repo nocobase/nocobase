@@ -6,9 +6,9 @@ import {
   SchemaSettings,
   mergeFilter,
   useCollection,
-  useCollectionFilterOptions,
   useCollectionManager,
   useDesignable,
+  useFormBlockContext,
   useSchemaTemplate,
 } from '@nocobase/client';
 import lodash from 'lodash';
@@ -21,13 +21,12 @@ export const MapBlockDesigner = () => {
   const { name, title } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const dataSource = useCollectionFilterOptions(name);
+  const { form } = useFormBlockContext();
   const { service } = useMapBlockContext();
   const { t } = useMapTranslation();
   const { dn } = useDesignable();
   const { getCollectionFieldsOptions } = useCollectionManager();
   const collection = useCollection();
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
   const defaultZoom = fieldSchema?.['x-component-props']?.['zoom'] || 13;
@@ -116,23 +115,10 @@ export const MapBlockDesigner = () => {
           dn.refresh();
         }}
       ></SchemaSettings.ModalItem>
-      <SchemaSettings.ModalItem
-        title={t('Set the data scope')}
-        schema={
-          {
-            type: 'object',
-            title: t('Set the data scope'),
-            properties: {
-              filter: {
-                default: defaultFilter,
-                // title: '数据范围',
-                enum: dataSource,
-                'x-component': 'Filter',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema
-        }
+      <SchemaSettings.DataScope
+        collectionName={name}
+        defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           const params = field.decoratorProps.params || {};
           params.filter = filter;

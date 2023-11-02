@@ -190,7 +190,7 @@ describe('multiple apps', () => {
 
     expect(AppSupervisor.getInstance().hasApp(name)).toBeFalsy();
 
-    Gateway.getInstance().appSelector = () => name;
+    Gateway.getInstance().addAppSelectorMiddleware((ctx) => (ctx.resolvedAppName = name));
 
     await AppSupervisor.getInstance().getApp(name);
 

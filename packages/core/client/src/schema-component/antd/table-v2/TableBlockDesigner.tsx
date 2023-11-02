@@ -1,31 +1,28 @@
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useTableBlockContext } from '../../../block-provider';
+import { useFormBlockContext, useTableBlockContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
+import { useSortFields } from '../../../collection-manager/action-hooks';
 import { FilterBlockType } from '../../../filter-provider/utils';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
-import { useCompile, useDesignable } from '../../hooks';
+import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { FixedBlockDesignerItem } from '../page';
-import { FilterDynamicComponent } from './FilterDynamicComponent';
 
 export const TableBlockDesigner = () => {
   const { name, title, sortable } = useCollection();
   const { getCollectionField, getCollection } = useCollectionManager();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const dataSource = useCollectionFilterOptions(name);
+  const { form } = useFormBlockContext();
   const sortFields = useSortFields(name);
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const compile = useCompile();
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const supportTemplate = !fieldSchema?.['x-decorator-props']?.disableTemplate;
@@ -45,23 +42,6 @@ export const TableBlockDesigner = () => {
   const { dragSort, resource } = field.decoratorProps;
   const collectionField = resource && getCollectionField(resource);
   const treeCollection = resource?.includes('.') ? getCollection(collectionField?.target)?.tree : !!collection?.tree;
-  const dataScopeSchema = useMemo(() => {
-    return {
-      type: 'object',
-      title: t('Set the data scope'),
-      properties: {
-        filter: {
-          default: defaultFilter,
-          // title: '数据范围',
-          enum: compile(dataSource),
-          'x-component': 'Filter',
-          'x-component-props': {
-            dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-          },
-        },
-      },
-    } as ISchema;
-  }, [dataSource, defaultFilter]);
   const onDataScopeSubmit = useCallback(
     ({ filter }) => {
       filter = removeNullCondition(filter);
@@ -81,7 +61,7 @@ export const TableBlockDesigner = () => {
         },
       });
     },
-    [field],
+    [dn, field.decoratorProps, fieldSchema, service],
   );
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
@@ -124,7 +104,12 @@ export const TableBlockDesigner = () => {
         />
       )}
       <FixedBlockDesignerItem />
-      <SchemaSettings.ModalItem title={t('Set the data scope')} schema={dataScopeSchema} onSubmit={onDataScopeSubmit} />
+      <SchemaSettings.DataScope
+        collectionName={name}
+        defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
+        onSubmit={onDataScopeSubmit}
+      />
       {!dragSort && (
         <SchemaSettings.ModalItem
           title={t('Set default sorting rules')}

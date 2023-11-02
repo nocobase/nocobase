@@ -1,17 +1,30 @@
 import { createForm, onFieldValueChange } from '@formily/core';
 import { FieldContext, FormContext } from '@formily/react';
 import { merge } from '@formily/shared';
-import React, { useContext, useMemo } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
+import { CollectionFieldOptions } from '../../../collection-manager';
 import { SchemaComponent } from '../../core';
 import { useComponent } from '../../hooks';
 import { FilterContext } from './context';
 
-const isDateComponent = {
-  'DatePicker.RangePicker': true,
-  DatePicker: true,
-};
+export interface DynamicComponentProps {
+  value: any;
+  /**
+   * `Filter` 组件左侧选择的字段
+   */
+  collectionField: CollectionFieldOptions;
+  onChange: (value: any) => void;
+  renderSchemaComponent: () => React.JSX.Element;
+}
 
-export const DynamicComponent = (props) => {
+interface Props {
+  schema: any;
+  value: any;
+  collectionField: CollectionFieldOptions;
+  onChange: (value: any) => void;
+}
+
+export const DynamicComponent = (props: Props) => {
   const { dynamicComponent, disabled } = useContext(FilterContext);
   const component = useComponent(dynamicComponent);
   const form = useMemo(() => {
@@ -26,8 +39,8 @@ export const DynamicComponent = (props) => {
         });
       },
     });
-  }, [JSON.stringify(props.schema), JSON.stringify(props.value)]);
-  const renderSchemaComponent = () => {
+  }, [JSON.stringify(props.value)]);
+  const renderSchemaComponent = useCallback(() => {
     return (
       <FieldContext.Provider value={null}>
         <SchemaComponent
@@ -47,13 +60,14 @@ export const DynamicComponent = (props) => {
         />
       </FieldContext.Provider>
     );
-  };
+  }, [props.schema]);
   return (
     <FormContext.Provider value={form}>
       <div data-testid="dynamic-component-filter-item">
         {component
-          ? React.createElement(component, {
+          ? React.createElement<DynamicComponentProps>(component, {
               value: props.value,
+              collectionField: props.collectionField,
               onChange: props?.onChange,
               renderSchemaComponent,
             })

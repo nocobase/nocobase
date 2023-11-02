@@ -39,7 +39,7 @@ export const TableColumnInitializers = (props: any) => {
           {
             type: 'itemGroup',
             title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
-            children: Object.values(inherit)[0].filter((v) => !v?.field?.isForeignKey),
+            children: Object.values(inherit)[0].filter((v: any) => !v?.field?.isForeignKey),
           },
         );
     });

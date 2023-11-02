@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  timeout: 20 * 1000,
+  timeout: 30 * 1000,
 
   // Look for test files in the "tests" directory, relative to this configuration file.
   testDir: 'packages',

@@ -1,8 +1,8 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
-import dayjs from 'dayjs';
 import { Divider, SelectProps, Tag } from 'antd';
-import _, { uniqBy } from 'lodash';
+import dayjs from 'dayjs';
+import { uniqBy } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
@@ -127,7 +127,7 @@ const InternalRemoteSelect = connect(
         },
       },
       {
-        manual: manual && Object.prototype.toString.call(value) === '[object Object]',
+        manual,
         debounceWait: wait,
       },
     );
@@ -194,6 +194,7 @@ const InternalRemoteSelect = connect(
       }
       firstRun.current = true;
     };
+
     return (
       <Select
         open={open}

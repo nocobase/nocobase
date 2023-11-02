@@ -178,7 +178,6 @@ export const o2o: IField = {
       // },
     ],
   },
-  invariable: true,
 };
 
 export const oho: IField = {
@@ -349,7 +348,6 @@ export const oho: IField = {
       // },
     ],
   },
-  invariable: true,
 };
 
 export const obo: IField = {
@@ -524,5 +522,4 @@ export const obo: IField = {
       // },
     ],
   },
-  invariable: true,
 };

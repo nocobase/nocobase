@@ -6,11 +6,10 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { GeneralSchemaDesigner, SchemaSettings } from '../..';
-import { mergeFilter } from '../../../block-provider';
-import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
+import { mergeFilter, useFormBlockContext } from '../../../block-provider';
+import { useCollectionManager } from '../../../collection-manager';
 import { removeNullCondition, useCompile, useDesignable } from '../../../schema-component';
 import { ITemplate } from '../../../schema-component/antd/form-v2/Templates';
-import { FilterDynamicComponent } from '../../../schema-component/antd/table-v2/FilterDynamicComponent';
 
 export const Designer = observer(
   () => {
@@ -24,13 +23,13 @@ export const Designer = observer(
       formSchema: ISchema;
       data?: ITemplate;
     };
+    const { form } = useFormBlockContext();
 
     // 在这里读取 resource 的值，当 resource 变化时，会触发该组件的更新
     const collectionName = field.componentProps.service.resource;
 
     const collection = getCollection(collectionName);
     const collectionFields = getCollectionFields(collectionName);
-    const dataSource = useCollectionFilterOptions(collectionName);
 
     if (!data) {
       error('data is required');
@@ -63,25 +62,10 @@ export const Designer = observer(
 
     return (
       <GeneralSchemaDesigner draggable={false}>
-        <SchemaSettings.ModalItem
-          title={t('Set the data scope')}
-          schema={
-            {
-              type: 'object',
-              title: t('Set the data scope'),
-              properties: {
-                filter: {
-                  default: getFilter(),
-                  // title: '数据范围',
-                  enum: dataSource,
-                  'x-component': 'Filter',
-                  'x-component-props': {
-                    dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                  },
-                },
-              },
-            } as ISchema
-          }
+        <SchemaSettings.DataScope
+          collectionName={collectionName}
+          defaultFilter={getFilter()}
+          form={form}
           onSubmit={({ filter }) => {
             setFilter(filter);
 

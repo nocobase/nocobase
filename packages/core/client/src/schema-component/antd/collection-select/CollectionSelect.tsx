@@ -27,7 +27,7 @@ function useOptions({ filter, isTableOid }: CollectionSelectProps) {
     : collections;
   const filtered =
     typeof filter === 'function'
-      ? (inheritCollections || currentCollections).filter(filter)
+      ? ((inheritCollections || currentCollections) as any[]).filter(filter)
       : inheritCollections || currentCollections;
   return filtered
     .filter((item) => !item.hidden)

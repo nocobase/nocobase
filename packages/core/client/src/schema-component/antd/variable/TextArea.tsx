@@ -222,7 +222,7 @@ export function TextArea(props) {
     }
     const nextRange = new Range();
     if (changed) {
-      setChanged(false);
+      // setChanged(false);
       if (range.join() === '-1,0,-1,0') {
         return;
       }
@@ -399,6 +399,10 @@ export function TextArea(props) {
 
 async function preloadOptions(scope, value) {
   const options = cloneDeep(scope ?? []);
+
+  // 重置正则的匹配位置
+  VARIABLE_RE.lastIndex = 0;
+
   for (let matcher; (matcher = VARIABLE_RE.exec(value ?? '')); ) {
     const keys = matcher[1].split('.');
 

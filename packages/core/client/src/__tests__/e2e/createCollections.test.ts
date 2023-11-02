@@ -253,4 +253,12 @@ test.describe('createCollections', () => {
     await expect(page.getByRole('menuitem', { name: 'collection1' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'collection2' })).toBeVisible();
   });
+
+  test('no page, just create collections', async ({ page, createCollections }) => {
+    await createCollections(pageConfig.collections);
+    await page.goto('/admin/settings/collection-manager/collections');
+
+    await expect(page.getByText('collection1')).toBeVisible();
+    await expect(page.getByText('collection2')).toBeVisible();
+  });
 });

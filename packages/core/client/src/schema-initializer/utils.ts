@@ -1,8 +1,9 @@
+import { Field, Form } from '@formily/core';
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useContext, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BlockRequestContext, SchemaInitializerItemOptions } from '..';
+import { SchemaInitializerItemOptions, useFormActiveFields, useFormBlockContext } from '../';
 import { CollectionFieldOptions, FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
@@ -744,7 +745,10 @@ const recursiveParent = (schema: Schema) => {
 };
 
 export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema) => {
+  const { removeActiveFieldName } = useFormActiveFields() || {};
+  const { form }: { form: Form } = useFormBlockContext();
   let fieldSchema = useFieldSchema();
+
   if (!fieldSchema?.['x-initializer']) {
     const recursiveInitializerSchema = recursiveParent(fieldSchema);
     if (recursiveInitializerSchema) {
@@ -753,16 +757,15 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   }
   const { remove } = useDesignable();
   const schema = find(fieldSchema, key, action);
-  const ctx = useContext(BlockRequestContext);
   return {
     schema,
     exists: !!schema,
     remove() {
-      if (ctx.field) {
-        ctx.field.data = ctx.field.data || {};
-        ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
-        ctx.field.data.activeFields.delete(schema.name);
-      }
+      removeActiveFieldName?.(schema.name);
+      form?.query(schema.name).forEach((field: Field) => {
+        field.setInitialValue?.(null);
+        field.reset?.();
+      });
       schema && rm(schema, remove);
     },
   };

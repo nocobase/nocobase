@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { Field } from '@formily/core';
+import { Field, GeneralField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
 import { Col, Row } from 'antd';
@@ -24,7 +24,16 @@ import { useAssociationNames } from './hooks';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
-export const BlockRequestContext = createContext<any>({});
+export const BlockRequestContext = createContext<{
+  block?: string;
+  props?: any;
+  field?: GeneralField;
+  service?: any;
+  resource?: any;
+  allowedActions?: any;
+  __parent?: any;
+  updateAssociationValues?: any[];
+}>({});
 
 export const useBlockResource = () => {
   return useContext(BlockResourceContext);
@@ -56,7 +65,7 @@ const useResource = (props: UseResourceProps) => {
   const isCreateAction = fieldSchema?.['x-action'] === 'create';
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
-  const field = useField<Field>();
+  const field = useField();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   const __parent = useContext(BlockRequestContext);
   if (block === 'TableField') {
@@ -96,7 +105,7 @@ const useActionParams = (props) => {
   return { ...props.params, ...params };
 };
 
-export const useResourceAction = (props, opts = {}) => {
+const useResourceAction = (props, opts = {}) => {
   /**
    * fieldName: 来自 TableFieldProvider
    */
@@ -168,7 +177,7 @@ export const MaybeCollectionProvider = (props) => {
 };
 
 export const BlockRequestProvider = (props) => {
-  const field = useField();
+  const field = useField<Field>();
   const resource = useBlockResource();
   const [allowedActions, setAllowedActions] = useState({});
 

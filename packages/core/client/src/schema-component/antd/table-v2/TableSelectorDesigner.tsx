@@ -3,27 +3,25 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useTableSelectorContext } from '../../../block-provider';
+import { useFormBlockContext, useTableSelectorContext } from '../../../block-provider';
+import { recursiveParent } from '../../../block-provider/TableSelectorProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
+import { useSortFields } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { FilterDynamicComponent } from './FilterDynamicComponent';
-import { recursiveParent } from '../../../block-provider/TableSelectorProvider';
 
 export const TableSelectorDesigner = () => {
   const { name, title } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const dataSource = useCollectionFilterOptions(name);
+  const { form } = useFormBlockContext();
   const sortFields = useSortFields(name);
   const { service, extraFilter } = useTableSelectorContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
@@ -43,25 +41,10 @@ export const TableSelectorDesigner = () => {
   const { dragSort } = field.decoratorProps;
   return (
     <GeneralSchemaDesigner template={template} title={title || name} disableInitializer>
-      <SchemaSettings.ModalItem
-        title={t('Set the data scope')}
-        schema={
-          {
-            type: 'object',
-            title: t('Set the data scope'),
-            properties: {
-              filter: {
-                default: defaultFilter,
-                // title: '数据范围',
-                enum: dataSource,
-                'x-component': 'Filter',
-                'x-component-props': {
-                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                },
-              },
-            },
-          } as ISchema
-        }
+      <SchemaSettings.DataScope
+        collectionName={name}
+        defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};

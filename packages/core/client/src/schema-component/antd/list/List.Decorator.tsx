@@ -38,7 +38,7 @@ const InternalListBlockProvider = (props) => {
                 line-height: 34px;
               }
               .ant-formily-item-feedback-layout-loose {
-                display: inline;
+                margin-bottom: 12px;
               }
             `)}
           >
