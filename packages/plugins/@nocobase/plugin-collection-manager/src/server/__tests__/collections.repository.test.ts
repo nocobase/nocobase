@@ -1,4 +1,4 @@
-import Database, { Collection as DBCollection, HasManyRepository } from '@nocobase/database';
+import Database, { Collection as DBCollection, CollectionGroupManager, HasManyRepository } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '.';
 import CollectionManagerPlugin, { CollectionRepository } from '../index';
@@ -18,6 +18,52 @@ describe('collections repository', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should create collection with optional duplicator option', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'tests',
+        duplicator: {
+          dumpable: 'optional',
+        },
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const testsCollection = db.getCollection('tests');
+
+    const duplicator = CollectionGroupManager.unifyDuplicatorOption(testsCollection.options.duplicator);
+    expect(duplicator.dataType).toEqual('business');
+  });
+
+  it('should create collection with required duplicator option', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'tests',
+        duplicator: {
+          dumpable: 'required',
+        },
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const testsCollection = db.getCollection('tests');
+
+    const duplicator = CollectionGroupManager.unifyDuplicatorOption(testsCollection.options.duplicator);
+    expect(duplicator.dataType).toEqual('meta');
   });
 
   it('should create through table when pending fields', async () => {

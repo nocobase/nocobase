@@ -22,13 +22,14 @@ export class CollectionModel extends MagicAttributeModel {
 
     const collectionOptions = {
       namespace: 'collections.business',
-      duplicator: {
-        dataType: 'business',
-      },
       origin: 'collection-manager',
       ...this.get(),
       fields: [],
     };
+
+    if (!collectionOptions.duplicator?.dataType) {
+      lodash.set(collectionOptions, 'duplicator.dataType', 'business');
+    }
 
     if (this.db.hasCollection(name)) {
       collection = this.db.getCollection(name);

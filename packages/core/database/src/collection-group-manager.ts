@@ -48,10 +48,7 @@ export class CollectionGroupManager {
       }
     }
 
-    if ('dumpable' in duplicatorOption) {
-      if (duplicatorOption.dumpable === 'optional') {
-        throw new Error('optional collection must have dataType specified');
-      }
+    if ('dumpable' in duplicatorOption && duplicatorOption.dumpable === 'required') {
       const { dumpable, ...rest } = duplicatorOption;
       return {
         ...rest,
@@ -66,7 +63,7 @@ export class CollectionGroupManager {
       };
     }
 
-    return undefined;
+    throw new Error('invalid duplicator option');
   }
 
   // get all collection groups
