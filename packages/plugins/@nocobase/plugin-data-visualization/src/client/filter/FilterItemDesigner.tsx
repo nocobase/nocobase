@@ -67,9 +67,27 @@ const EditOperator = () => {
   const { dn } = useDesignable();
   const { addField } = useContext(ChartFilterContext);
   const { getInterface, getCollectionJoinField } = useCollectionManager();
-  const props = getCollectionJoinField(fieldName);
-  const interfaceConfig = getInterface(props?.interface);
-  const operatorList = interfaceConfig?.filterable?.operators || [];
+  let props = getCollectionJoinField(fieldName);
+  let interfaceConfig = getInterface(props?.interface);
+  let operatorList = interfaceConfig?.filterable?.operators || [];
+  if (!operatorList.length) {
+    const names = fieldName.split('.');
+    const name = names.pop();
+    props = getCollectionJoinField(names.join('.'));
+    if (!props) {
+      return null;
+    }
+    interfaceConfig = getInterface(props.interface);
+    if (!interfaceConfig) {
+      return null;
+    }
+    const children = interfaceConfig?.filterable.children || [];
+    const child = children.find((item: any) => item.name === name);
+    operatorList = child?.operators || [];
+  }
+  if (!operatorList.length) {
+    return null;
+  }
   const defaultComponent = interfaceConfig?.default?.uiSchema?.['x-component'] || 'Input';
   const operator = fieldSchema['x-component-props']?.['filter-operator'];
 
@@ -100,7 +118,7 @@ const EditOperator = () => {
     });
   };
 
-  return operatorList.length ? (
+  return (
     <SchemaSettings.SelectItem
       key="operator"
       title={t('Operator')}
@@ -122,7 +140,7 @@ const EditOperator = () => {
         dn.refresh();
       }}
     />
-  ) : null;
+  );
 };
 
 const EditProps = () => {
