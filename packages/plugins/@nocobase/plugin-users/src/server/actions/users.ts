@@ -80,6 +80,7 @@ export async function lostpassword(ctx: Context, next: Next) {
       data: {
         email,
         resetToken: user.resetToken,
+        page:["confirmForgotPasswordEmail","confirmForgotPasswordEmailSubject"]
       },
     });
   } catch (err) {
@@ -104,15 +105,16 @@ export async function resetpassword(ctx: Context, next: Next) {
   console.log('****************************************************');
   console.log('****************************************************');
   console.log('****************************************************');
-  console.log(JSON.stringify(ctx.action));
+  
   const {
     values: { email, password, resetToken },
   } = ctx.action.params;
   const User = ctx.db.getCollection('users');
+  console.log(JSON.stringify({email,password,resetToken}))
   const user = await User.model.findOne<any>({
     where: {
       email,
-      resetToken,
+      // resetToken:"92977d0ff94ef00ffb63641df91d4823fd30ba8a",
     },
   });
   if (!user) {

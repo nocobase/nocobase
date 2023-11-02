@@ -1,6 +1,9 @@
 import { css } from '@emotion/css';
 import { useForm } from '@formily/react';
 import { Space, Tabs } from 'antd';
+import axios from 'axios';
+import { Method } from 'axios';
+import cloneDeep from 'lodash/cloneDeep';
 import React, {
   FunctionComponent,
   FunctionComponentElement,
@@ -63,7 +66,30 @@ export const useSignIn = (authenticator) => {
   return {
     async run() {
       await form.submit();
-      await api.auth.signIn(form.values, authenticator);
+      const values = cloneDeep(form.values);
+
+      const response = await api.auth.signIn(form.values, authenticator);
+
+      const token = response.data.data.token;
+      const authorizationToken = `Bearer ${token}`;
+      console.log(values);
+      const config = {
+        url: '/api/email:authEmail',
+        method: 'POST' as Method,
+        headers: {
+          Authorization: authorizationToken,
+        },
+        data: {
+          email: values.account,
+          page: ['signinEmail', 'signinEmailSubject'],
+        },
+      };
+      try {
+        const response = await axios(config);
+      } catch (err) {
+        window.alert('error occurred');
+        console.log(err);
+      }
       await refreshAsync();
       redirect();
     },

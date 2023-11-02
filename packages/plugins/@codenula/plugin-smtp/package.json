@@ -1,11 +1,9 @@
 {
-  "name": "@codenula/plugin-signin-signup-forgotpassword",
+  "name": "@codenula/plugin-smtp",
   "version": "1.0.0",
   "main": "dist/server/index.js",
   "dependencies": {
-    "template-strings":"0.0.6",
-    "string-template":"1.0.0",
-    "react-quill":"2.0.0"
+    "string-template":"1.0.0"
   },
   "peerDependencies": {
     "@nocobase/client": "0.x",

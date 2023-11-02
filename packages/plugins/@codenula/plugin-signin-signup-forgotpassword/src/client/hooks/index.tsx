@@ -1,6 +1,7 @@
 import { useSignup, useAPIClient } from '@nocobase/client';
 import cloneDeep from 'lodash/cloneDeep';
 import { useForm } from '@formily/react';
+import message from 'antd';
 
 export const useForgotPasswordEmailSubmit = () => {
   const form = useForm();
@@ -32,6 +33,7 @@ export const useForgotPasswordEmailSubmit = () => {
 export const useCustomSignup = () => {
   const { run } = useSignup();
   const form = useForm();
+  const api = useAPIClient();
   return {
     async run() {
       console.log('useCustomSignup');
