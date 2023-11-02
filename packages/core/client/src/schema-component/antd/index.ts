@@ -42,6 +42,7 @@ export * from './radio';
 export * from './record-picker';
 export * from './remote-select';
 export * from './rich-text';
+export * from './rich-text-v2';
 export * from './select';
 export * from './space';
 export * from './table';

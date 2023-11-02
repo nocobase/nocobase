@@ -7,6 +7,7 @@ import { useForm } from '@formily/react';
 import axios from 'axios';
 import { Method } from 'axios';
 import cloneDeep from 'lodash/cloneDeep';
+import CryptoJS from 'crypto-js';
 
 export const SignupPageContext = createContext<{
   [authType: string]: {
@@ -41,17 +42,23 @@ export const useSignup = (props?: UseSignupProps) => {
   const form = useForm();
   const api = useAPIClient();
   const { t } = useTranslation();
+
+  const encryptedString = CryptoJS.AES.encrypt('somerandomstring', 'secret').toString();
+  // const token: string = process.env.REACT_APP_SECRET_KEY;
+  // console.log(token);
+
   return {
     async run() {
       await form.submit();
       const response = await api.auth.signUp(form.values, props?.authenticator);
-      const authorizationToken = `Bearer ${process.env.EMAIL_TOKEN}`;
+
       const values = cloneDeep(form.values);
+
       const config = {
-        url: '/api/email:authEmail',
+        url: '/api/email:signupEmail',
         method: 'POST' as Method,
         headers: {
-          Authorization: authorizationToken,
+          Authorization: `Bearer ${encryptedString}`,
         },
         data: {
           email: values.email,
@@ -59,9 +66,9 @@ export const useSignup = (props?: UseSignupProps) => {
         },
       };
       try {
-        const response = await axios(config);
+        await axios(config);
       } catch (err) {
-        window.alert('error occurred');
+        window.alert('signup mail error');
         console.log(err);
       }
 

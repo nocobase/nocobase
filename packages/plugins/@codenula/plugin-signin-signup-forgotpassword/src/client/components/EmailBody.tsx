@@ -19,7 +19,7 @@ import axios from 'axios';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { RichText } from '@nocobase/client';
-
+import { RichTextV2 } from '@nocobase/client';
 const useEmailValues = (options) => {
   const { visible } = useActionContext();
   const result = useEmailValuesRequest();
@@ -44,41 +44,28 @@ function RequestBody() {
   return <Variable.RawTextArea scope={scope} />;
 }
 const EmailBody = (props) => {
+  const ref = React.useRef(null);
   const api = useAPIClient();
   const [items, setItems] = useState([]);
   const [formData, setFormData] = React.useState({ subject: '', body: '' });
   const fetchExistingData = async () => {
+    
+    //values for setting data dynamically
+    const bodyProperty = props.page;
+    const subjectProperty = props.page + 'Subject';
     api
       .request({
         url: 'custom-email-body:get?filterByTk=1',
         method: 'post',
       })
       .then((res) => {
-        console.log(res.data);
-        if (props.page === 'signinEmail') {
-          setFormData({
-            body: res.data.data.signinEmail,
-            subject: res.data.data.signinEmailSubject,
-          });
-        } else if (props.page === 'signupEmail') {
-          setFormData({
-            body: res.data.data.signupEmail,
-            subject: res.data.data.signupEmailSubject,
-          });
-        } else if (props.page === 'forgotPasswordEmail') {
-          console.log({
-            subject: res.data.data.forgotPasswordEmailSubject,
-          });
-          setFormData({
-            body: res.data.data.forgotPasswordEmail,
-            subject: res.data.data.forgotPasswordEmailSubject,
-          });
-        } else {
-          setFormData({
-            body: res.data.data.confirmForgotPasswordEmail,
-            subject: res.data.data.confirmForgotPasswordEmailSubject,
-          });
-        }
+        //used to enter data in Rich Text component without losing value
+        ref.current = res.data.data[subjectProperty];
+
+        setFormData({
+          body: res.data.data[bodyProperty],
+          subject: res.data.data[subjectProperty],
+        });
       })
       .catch((err) => console.log(err));
   };
@@ -122,11 +109,12 @@ const EmailBody = (props) => {
   useEffect(() => {
     fetchUserDataField();
     fetchExistingData();
+    return () => {
+      ref.current = null;
+    };
   }, []);
 
   const handleSubmit = () => {
-
-    
     api
       .request({
         url: 'custom-email-body:update/1',
@@ -196,6 +184,14 @@ const EmailBody = (props) => {
   //     label: 'email',
   //   },
   // ];
+  console.log(formData);
+  const handleRichTextValues = (value) => {
+    if (formData.subject) {
+      setFormData({ ...formData, body: value });
+    } else {
+      setFormData({ subject: ref.current, body: value });
+    }
+  };
   return (
     <div>
       {/* <SchemaComponent schema={emailSchema} scope={{ useSetValue, useEmailValues }} /> */}
@@ -275,7 +271,8 @@ const EmailBody = (props) => {
           </Dropdown>
         </Form.Item> */}
         <Form.Item label="Body">
-          <RichText value={formData.body} onChange={(value) => setFormData({ ...formData, body: value })} />
+          {/* <RichText value={formData.body} onChange={handleRichTextValues} /> */}
+          <RichTextV2/>
 
           <Dropdown menu={{ items, onClick }} placement="bottom" className="dropdown-x">
             <Button>X</Button>
