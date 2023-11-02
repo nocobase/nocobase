@@ -212,7 +212,6 @@ const RestoreUpload = (props: any) => {
       }
       if (status === 'done') {
         message.success(`${info.file.name} file uploaded successfully.`);
-        console.log(info);
         setRestoreData(info.file.response?.data);
       } else if (status === 'error') {
         message.error(`${info.file.name} file upload failed.`);
@@ -229,11 +228,6 @@ const RestoreUpload = (props: any) => {
         <InboxOutlined />
       </p>
       <p className="ant-upload-text"> {t('Click or drag file to this area to upload')}</p>
-      <p className="ant-upload-hint">
-        {t(
-          ' Support for a single or bulk upload. Strictly prohibited from uploading company data or other banned files.',
-        )}
-      </p>
     </Dragger>
   );
 };
@@ -249,14 +243,9 @@ const RestoreConfiguration = () => {
   }, [apiClient]);
 
   const handleStartRestore = () => {
-    resource
-      .restore({
-        values: { dataTypes, key: restoreData.key },
-      })
-      .then((res) => {
-        console.log(res);
-      })
-      .catch((err) => {});
+    resource.restore({
+      values: { dataTypes, key: restoreData.key },
+    });
   };
   return (
     <div>
@@ -273,8 +262,8 @@ const RestoreConfiguration = () => {
         <div style={{ lineHeight: 2, marginBottom: 16 }}>
           <Checkbox.Group
             options={compile(
-              options.filter((v) => {
-                return restoreData?.meta?.dataTypes?.includes(v.value);
+              options.map((v) => {
+                return { ...v, disabled: !restoreData?.meta?.dataTypes?.includes(v.value) || v.disabled };
               }),
             )}
             style={{ flexDirection: 'column' }}
