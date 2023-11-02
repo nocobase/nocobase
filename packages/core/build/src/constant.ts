@@ -26,7 +26,7 @@ export const EsbuildSupportExts = [
 ];
 export const ROOT_PATH = path.join(__dirname, '../../../../');
 export const PACKAGES_PATH = path.join(ROOT_PATH, 'packages');
-export const PLUGINS_DIR = ['plugins', 'samples']
+export const PLUGINS_DIR = ['plugins', 'samples', 'pro-plugins']
   .concat((process.env.PLUGINS_DIRS || '').split(','))
   .filter(Boolean)
   .map((name) => path.join(PACKAGES_PATH, name));
