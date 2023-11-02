@@ -5,7 +5,7 @@ import { useCompile } from '../../../schema-component';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { SchemaInitializerOptions } from '../types';
 
-export const SchemaInitializerButton: FC<SchemaInitializerOptions> = (props) => {
+export const SchemaInitializerButton: FC<SchemaInitializerOptions> = React.memo((props) => {
   const { style, options, ...others } = props;
   const compile = useCompile();
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
@@ -25,4 +25,5 @@ export const SchemaInitializerButton: FC<SchemaInitializerOptions> = (props) => 
       {compile(options.title)}
     </Button>
   );
-};
+});
+SchemaInitializerButton.displayName = 'SchemaInitializerButton(memo)';

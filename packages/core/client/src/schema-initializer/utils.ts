@@ -886,14 +886,18 @@ export const useCollectionDataSourceItemsV2 = (componentName) => {
   const { collections, getCollectionFields } = useCollectionManager();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
 
-  return getChildren({
-    collections,
-    getCollectionFields,
-    componentName,
-    searchValue: '',
-    getTemplatesByCollection,
-    t,
-  });
+  const res = useMemo(() => {
+    return getChildren({
+      collections,
+      getCollectionFields,
+      componentName,
+      searchValue: '',
+      getTemplatesByCollection,
+      t,
+    });
+  }, [collections, componentName, getCollectionFields, getTemplatesByCollection, t]);
+
+  return res;
 };
 
 export const createDetailsBlockSchema = (options) => {
