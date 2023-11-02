@@ -45,10 +45,14 @@ export const parseVariables = async (ctx, next) => {
       return ctx.db.getFieldByPath(`${resourceName}.${fieldPath}`);
     },
     vars: {
+      // @deprecated
       $system: {
         now: new Date().toISOString(),
       },
+      // @deprecated
       $date: getDateVars(),
+      // 新的命名方式，防止和 formily 内置变量冲突
+      $nDate: getDateVars(),
       $user: getUser(ctx),
     },
   });

@@ -40,7 +40,7 @@ const PreviewCom = (props) => {
     sourceCollections.forEach((item) => {
       const collection = getCollection(item);
       const inherits = getInheritCollections(item);
-      const result = inherits.map((v) => {
+      const result: any[] = inherits.map((v) => {
         const fields = getParentCollectionFields(v, item);
         return {
           type: 'group',
@@ -59,7 +59,7 @@ const PreviewCom = (props) => {
       const children = collection.fields
         .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
         ?.map((v) => {
-          return { value: v.name, label: t(v.uiSchema?.title) };
+          return { value: v.name, key: v.name, label: t(v.uiSchema?.title) };
         })
         .concat(result);
       data.push({
@@ -148,7 +148,6 @@ const PreviewCom = (props) => {
           <Tag>{text}</Tag>
         ) : (
           <Select
-            data-testid="antd-select"
             defaultValue={text}
             popupMatchSelectWidth={false}
             style={{ width: '100%' }}
@@ -174,7 +173,6 @@ const PreviewCom = (props) => {
           text
         ) : (
           <Select
-            data-testid="antd-select"
             defaultValue={text}
             style={{ width: '100%' }}
             popupMatchSelectWidth={false}

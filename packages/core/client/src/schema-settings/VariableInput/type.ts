@@ -22,6 +22,7 @@ export interface FieldOption {
   target?: string;
   title?: string;
   schema?: Schema;
+  interface?: string;
   operators?: Operator[];
   children?: FieldOption[];
 }

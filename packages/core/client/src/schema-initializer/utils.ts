@@ -1,8 +1,9 @@
+import { Field, Form } from '@formily/core';
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useContext, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BlockRequestContext, SchemaInitializerItemOptions } from '..';
+import { SchemaInitializerItemOptions, useFormActiveFields, useFormBlockContext } from '../';
 import { CollectionFieldOptions, FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
@@ -405,6 +406,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
         ?.map((subField) => {
           const interfaceConfig = getInterface(subField.interface);
           const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
+          const isAssociationField = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(subField?.type);
           const schema = {
             type: 'string',
             name: `${field.name}.${subField.name}`,
@@ -414,10 +416,12 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
             'x-read-pretty': readPretty,
             'x-component-props': {
               'pattern-disable': block === 'Form' && readPretty,
-              fieldNames: {
-                label: isFileCollection ? 'preview' : 'id',
-                value: 'id',
-              },
+              fieldNames: isAssociationField
+                ? {
+                    label: isFileCollection ? 'preview' : 'id',
+                    value: 'id',
+                  }
+                : undefined,
             },
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
@@ -744,7 +748,10 @@ const recursiveParent = (schema: Schema) => {
 };
 
 export const useCurrentSchema = (action: string, key: string, find = findSchema, rm = removeSchema) => {
+  const { removeActiveFieldName } = useFormActiveFields() || {};
+  const { form }: { form: Form } = useFormBlockContext();
   let fieldSchema = useFieldSchema();
+
   if (!fieldSchema?.['x-initializer']) {
     const recursiveInitializerSchema = recursiveParent(fieldSchema);
     if (recursiveInitializerSchema) {
@@ -753,16 +760,15 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   }
   const { remove } = useDesignable();
   const schema = find(fieldSchema, key, action);
-  const ctx = useContext(BlockRequestContext);
   return {
     schema,
     exists: !!schema,
     remove() {
-      if (ctx.field) {
-        ctx.field.data = ctx.field.data || {};
-        ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
-        ctx.field.data.activeFields.delete(schema.name);
-      }
+      removeActiveFieldName?.(schema.name);
+      form?.query(schema.name).forEach((field: Field) => {
+        field.setInitialValue?.(null);
+        field.reset?.();
+      });
       schema && rm(schema, remove);
     },
   };
@@ -847,7 +853,6 @@ export const useCollectionDataSourceItems = (componentName) => {
 
   return [
     {
-      key: 'tableBlock',
       type: 'itemGroup',
       title: null,
       children: [],
@@ -1397,6 +1402,7 @@ export const createCollapseBlockSchema = (options) => {
       associationFilterStyle: {
         width: '100%',
       },
+      name: 'filter-collapse',
     },
     'x-designer': 'AssociationFilter.BlockDesigner',
     'x-component': 'CardItem',
@@ -1432,7 +1438,7 @@ export const createTableSelectorSchema = (options) => {
       ...others,
     },
     'x-designer': 'TableSelectorDesigner',
-    'x-component': 'BlockItem',
+    'x-component': 'CardItem',
     properties: {
       actions: {
         type: 'void',
@@ -1802,7 +1808,7 @@ const getChildren = ({
 }: {
   collections: any[];
   getCollectionFields: (name: any) => CollectionFieldOptions[];
-  componentName: any;
+  componentName: string;
   searchValue: string;
   getTemplatesByCollection: (collectionName: string, resourceName?: string) => any;
   t;

@@ -257,7 +257,12 @@ export const AddCollectionAction = (props) => {
           type: 'divider',
         });
       }
-      result.push({ label: compile(item.title), key: item.name });
+      result.push({
+        role: 'button',
+        'aria-label': `create-collection-${item.name}`,
+        label: compile(item.title),
+        key: item.name,
+      });
     });
     return result;
   }, [collectionTemplates]);
@@ -284,7 +289,7 @@ export const AddCollectionAction = (props) => {
       <ActionContextProvider value={{ visible, setVisible }}>
         <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>
           {children || (
-            <Button icon={<PlusOutlined />} type={'primary'}>
+            <Button aria-label="Create collection" icon={<PlusOutlined />} type={'primary'}>
               {t('Create collection')} <DownOutlined />
             </Button>
           )}

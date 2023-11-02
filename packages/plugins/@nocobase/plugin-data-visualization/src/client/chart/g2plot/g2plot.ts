@@ -1,4 +1,4 @@
-import { Chart, ChartProps, RenderProps } from '../chart';
+import { Chart, ChartProps, ChartType, RenderProps } from '../chart';
 import { FieldOption } from '../../hooks';
 import { QueryProps } from '../../renderer';
 import configs from './configs';
@@ -14,19 +14,7 @@ export class G2PlotChart extends Chart {
     this.addConfigs(configs);
   }
 
-  init(
-    fields: FieldOption[],
-    {
-      measures,
-      dimensions,
-    }: {
-      measures?: QueryProps['measures'];
-      dimensions?: QueryProps['dimensions'];
-    },
-  ): {
-    general?: any;
-    advanced?: any;
-  } {
+  init: ChartType['init'] = (fields, { measures, dimensions }) => {
     const { xField, yField, seriesField } = this.infer(fields, { measures, dimensions });
     return {
       general: {
@@ -35,7 +23,7 @@ export class G2PlotChart extends Chart {
         seriesField: seriesField?.value,
       },
     };
-  }
+  };
 
   getProps({ data, general, advanced, fieldProps }: RenderProps) {
     const meta = {};

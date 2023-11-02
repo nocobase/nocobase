@@ -46,6 +46,12 @@ const schema = {
         'x-component': 'Input',
         required: true,
       },
+      thumbnailRule: {
+        title: 'Thumbnail rule',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
     },
   },
   'tx-cos': {

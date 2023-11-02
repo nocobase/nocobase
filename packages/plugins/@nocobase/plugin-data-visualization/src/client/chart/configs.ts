@@ -46,4 +46,7 @@ const booleanField = ({ name, title, defaultValue = false }: FieldConfigProps) =
 export default {
   field: selectField,
   booleanField,
+  xField: (props: FieldConfigProps) => selectField({ name: 'xField', title: 'xField', required: true, ...props }),
+  yField: (props: FieldConfigProps) => selectField({ name: 'yField', title: 'yField', required: true, ...props }),
+  seriesField: (props: FieldConfigProps) => selectField({ name: 'seriesField', title: 'seriesField', ...props }),
 };

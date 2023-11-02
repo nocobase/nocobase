@@ -1,10 +1,11 @@
-import { uid } from '@nocobase/utils';
+import { Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
 import compression from 'compression';
 import { EventEmitter } from 'events';
 import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
+import compose from 'koa-compose';
 import { promisify } from 'node:util';
 import { resolve } from 'path';
 import qs from 'qs';
@@ -27,6 +28,7 @@ export interface IncomingRequest {
 }
 
 export type AppSelector = (req: IncomingRequest) => string | Promise<string>;
+export type AppSelectorMiddleware = (ctx: AppSelectorMiddlewareContext, next: () => Promise<void>) => void;
 
 interface StartHttpServerOptions {
   port: number;
@@ -38,12 +40,18 @@ interface RunOptions {
   mainAppOptions: ApplicationOptions;
 }
 
+export interface AppSelectorMiddlewareContext {
+  req: IncomingRequest;
+  resolvedAppName: string | null;
+}
+
 export class Gateway extends EventEmitter {
   private static instance: Gateway;
   /**
    * use main app as default app to handle request
    */
-  appSelector: AppSelector;
+  selectorMiddlewares: Toposort<AppSelectorMiddleware> = new Toposort<AppSelectorMiddleware>();
+
   public server: http.Server | null = null;
   public ipcSocketServer: IPCSocketServer | null = null;
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
@@ -73,18 +81,28 @@ export class Gateway extends EventEmitter {
   }
 
   public reset() {
-    this.setAppSelector(async (req) => {
-      const appName = qs.parse(parse(req.url).query)?.__appName;
-      if (appName) {
-        return appName;
-      }
+    this.selectorMiddlewares = new Toposort<AppSelectorMiddleware>();
 
-      if (req.headers['x-app']) {
-        return req.headers['x-app'];
-      }
+    this.addAppSelectorMiddleware(
+      async (ctx: AppSelectorMiddlewareContext, next) => {
+        const { req } = ctx;
+        const appName = qs.parse(parse(req.url).query)?.__appName as string | null;
 
-      return null;
-    });
+        if (appName) {
+          ctx.resolvedAppName = appName;
+        }
+
+        if (req.headers['x-app']) {
+          ctx.resolvedAppName = req.headers['x-app'];
+        }
+
+        await next();
+      },
+      {
+        tag: 'core',
+        group: 'core',
+      },
+    );
 
     if (this.server) {
       this.server.close();
@@ -97,8 +115,12 @@ export class Gateway extends EventEmitter {
     }
   }
 
-  setAppSelector(selector: AppSelector) {
-    this.appSelector = selector;
+  addAppSelectorMiddleware(middleware: AppSelectorMiddleware, options?: ToposortOptions) {
+    if (this.selectorMiddlewares.nodes.some((existingFunc) => existingFunc.toString() === middleware.toString())) {
+      return;
+    }
+
+    this.selectorMiddlewares.add(middleware, options);
     this.emit('appSelectorChanged');
   }
 
@@ -163,10 +185,10 @@ export class Gateway extends EventEmitter {
     const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
 
     if (!hasApp) {
-      AppSupervisor.getInstance().bootStrapApp(handleApp);
+      void AppSupervisor.getInstance().bootStrapApp(handleApp);
     }
 
-    const appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
+    let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
 
     if (appStatus === 'not_found') {
       this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
@@ -176,6 +198,12 @@ export class Gateway extends EventEmitter {
     if (appStatus === 'initializing') {
       this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
       return;
+    }
+
+    if (appStatus === 'initialized') {
+      const appInstance = await AppSupervisor.getInstance().getApp(handleApp);
+      appInstance.runCommand('start', '--quickstart');
+      appStatus = AppSupervisor.getInstance().getAppStatus(handleApp);
     }
 
     const app = await AppSupervisor.getInstance().getApp(handleApp);
@@ -194,8 +222,25 @@ export class Gateway extends EventEmitter {
     app.callback()(req, res);
   }
 
+  getAppSelectorMiddlewares() {
+    return this.selectorMiddlewares;
+  }
+
   async getRequestHandleAppName(req: IncomingRequest) {
-    return (await this.appSelector(req)) || 'main';
+    const appSelectorMiddlewares = this.selectorMiddlewares.sort();
+
+    const ctx: AppSelectorMiddlewareContext = {
+      req,
+      resolvedAppName: null,
+    };
+
+    await compose(appSelectorMiddlewares)(ctx);
+
+    if (!ctx.resolvedAppName) {
+      ctx.resolvedAppName = 'main';
+    }
+
+    return ctx.resolvedAppName;
   }
 
   getCallback() {

@@ -8,6 +8,8 @@ import { useTranslation } from 'react-i18next';
 import {
   Action,
   ActionContextProvider,
+  DefaultValueProvider,
+  FormActiveFieldsProvider,
   GeneralSchemaDesigner,
   InitializerWithSwitch,
   SchemaComponent,
@@ -20,6 +22,7 @@ import {
   gridRowColWrap,
   useCollectionManager,
   useCompile,
+  useFormActiveFields,
   useFormBlockContext,
   useSchemaOptionsContext,
 } from '@nocobase/client';
@@ -164,22 +167,14 @@ function AddBlockButton(props: any) {
     },
   ] as SchemaInitializerItemOptions[];
 
-  return (
-    <SchemaInitializer.Button
-      data-testid="add-block-button-in-workflow"
-      {...props}
-      wrap={gridRowColWrap}
-      items={items}
-      title="{{t('Add block')}}"
-    />
-  );
+  return <SchemaInitializer.Button {...props} wrap={gridRowColWrap} items={items} title="{{t('Add block')}}" />;
 }
 
 function AssignedFieldValues() {
   const ctx = useContext(SchemaComponentContext);
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-  const scope = useWorkflowVariableOptions({ fieldNames: { label: 'title', value: 'name' } });
+  const scope = useWorkflowVariableOptions();
   const [open, setOpen] = useState(false);
   const [initialSchema, setInitialSchema] = useState(
     fieldSchema?.['x-action-settings']?.assignedValues?.schema ?? {
@@ -207,6 +202,7 @@ function AssignedFieldValues() {
       values: lodash.cloneDeep(initialValues),
     });
   }, []);
+  const upLevelActiveFields = useFormActiveFields();
 
   const title = t('Assign field values');
 
@@ -231,7 +227,9 @@ function AssignedFieldValues() {
 
   return (
     <>
-      <SchemaSettings.Item onClick={() => setOpen(true)}>{title}</SchemaSettings.Item>
+      <SchemaSettings.Item title={title} onClick={() => setOpen(true)}>
+        {title}
+      </SchemaSettings.Item>
       <Modal
         width={'50%'}
         title={title}
@@ -246,28 +244,34 @@ function AssignedFieldValues() {
           </Space>
         }
       >
-        <VariableScopeProvider scope={scope}>
-          <FormProvider form={form}>
-            <FormLayout layout={'vertical'}>
-              <Alert
-                message={lang('Values preset in this form will override user submitted ones when continue or reject.')}
-              />
-              <br />
-              {open && schema && (
-                <SchemaComponentContext.Provider
-                  value={{
-                    ...ctx,
-                    refresh() {
-                      setInitialSchema(lodash.get(schema.toJSON(), 'properties.grid'));
-                    },
-                  }}
-                >
-                  <SchemaComponent schema={schema} components={components} />
-                </SchemaComponentContext.Provider>
-              )}
-            </FormLayout>
-          </FormProvider>
-        </VariableScopeProvider>
+        <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
+          <VariableScopeProvider scope={scope}>
+            <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
+              <FormProvider form={form}>
+                <FormLayout layout={'vertical'}>
+                  <Alert
+                    message={lang(
+                      'Values preset in this form will override user submitted ones when continue or reject.',
+                    )}
+                  />
+                  <br />
+                  {open && schema && (
+                    <SchemaComponentContext.Provider
+                      value={{
+                        ...ctx,
+                        refresh() {
+                          setInitialSchema(lodash.get(schema.toJSON(), 'properties.grid'));
+                        },
+                      }}
+                    >
+                      <SchemaComponent schema={schema} components={components} />
+                    </SchemaComponentContext.Provider>
+                  )}
+                </FormLayout>
+              </FormProvider>
+            </FormActiveFieldsProvider>
+          </VariableScopeProvider>
+        </DefaultValueProvider>
       </Modal>
     </>
   );
@@ -341,7 +345,6 @@ function ActionInitializer({ action, actionProps, ...props }) {
 function AddActionButton(props) {
   return (
     <SchemaInitializer.Button
-      data-testid="configure-actions-add-action-button"
       {...props}
       items={[
         {

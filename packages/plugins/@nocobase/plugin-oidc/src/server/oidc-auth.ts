@@ -1,6 +1,7 @@
 import { AuthConfig, BaseAuth } from '@nocobase/auth';
 import { Issuer } from 'openid-client';
 import { cookieName } from '../constants';
+import { AuthModel } from '@nocobase/plugin-auth';
 
 export class OIDCAuth extends BaseAuth {
   constructor(config: AuthConfig) {
@@ -63,27 +64,42 @@ export class OIDCAuth extends BaseAuth {
     });
     const userInfo: { [key: string]: any } = await client.userinfo(tokens.access_token);
     const mappedUserInfo = this.mapField(userInfo);
-    const { nickname, name, sub, email, phone } = mappedUserInfo;
-    const username = nickname || name || sub;
-    // Compatible processing
-    // When email is provided, use email to find user
-    // If found, associate the user with the current authenticator
-    if (email) {
-      const user = await this.userRepository.findOne({
+    const { nickname, username, name, sub, email, phone } = mappedUserInfo;
+    const authenticator = this.authenticator as AuthModel;
+    let user = await authenticator.findUser(sub);
+    if (user) {
+      return user;
+    }
+    // Bind existed user
+    const { userBindField = 'email' } = this.getOptions();
+    if (userBindField === 'email' && email) {
+      user = await this.userRepository.findOne({
         filter: { email },
       });
-      if (user) {
-        await this.authenticator.addUser(user, {
-          through: {
-            uuid: sub,
-          },
-        });
-        return user;
-      }
+    } else if (userBindField === 'username' && username) {
+      user = await this.userRepository.findOne({
+        filter: { username },
+      });
     }
-
-    return await this.authenticator.findOrCreateUser(sub, {
-      nickname: username,
+    if (user) {
+      await authenticator.addUser(user.id, {
+        through: {
+          uuid: sub,
+        },
+      });
+      return user;
+    }
+    // Create new user
+    const { autoSignup } = this.options?.public || {};
+    if (!autoSignup) {
+      throw new Error('User not found');
+    }
+    if (username && !this.validateUsername(username)) {
+      throw new Error('Username must be 2-16 characters in length (excluding @.<>"\'/)');
+    }
+    return await authenticator.newUser(sub, {
+      username: username ?? null,
+      nickname: nickname || name || username || sub,
       email: email ?? null,
       phone: phone ?? null,
     });

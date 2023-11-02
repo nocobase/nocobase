@@ -336,7 +336,6 @@ describe('repository find', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
-
     User = db.collection<{ id: number; name: string }, { name: string }>({
       name: 'users',
       fields: [

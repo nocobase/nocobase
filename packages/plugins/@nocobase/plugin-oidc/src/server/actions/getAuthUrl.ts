@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import { cookieName } from '../../constants';
 
 export const getAuthUrl = async (ctx: Context, next: Next) => {
+  const app = ctx.app.name;
   const auth = ctx.auth as OIDCAuth;
   const client = await auth.createOIDCClient();
   const { scope } = auth.getOptions();
@@ -16,7 +17,7 @@ export const getAuthUrl = async (ctx: Context, next: Next) => {
     response_type: 'code',
     scope: scope || 'openid email profile',
     redirect_uri: auth.getRedirectUri(),
-    state: `token=${token}&name=${ctx.headers['x-authenticator']}`,
+    state: `token=${token}&name=${ctx.headers['x-authenticator']}&app=${app}`,
   });
 
   return next();

@@ -57,7 +57,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
         );
         const text = getLabelFormatValue(compile(labelUiSchema), val, true);
         return (
-          <Fragment key={`${record.id}_${index}`}>
+          <Fragment key={`${record?.id}_${index}`}>
             <span>
               {snapshot ? (
                 text

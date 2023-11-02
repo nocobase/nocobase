@@ -21,5 +21,4 @@ export default {
   properties: {
     ...defaultProps,
   },
-  invariable: true,
 } as IField;

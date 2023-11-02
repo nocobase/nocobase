@@ -5,12 +5,12 @@ import classNames from 'classnames';
 // @ts-ignore
 import { isEmpty } from 'lodash';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useCollection } from '../collection-manager';
 import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
 import { useCompile, useDesignable } from '../schema-component/hooks';
 import { SearchCollections } from './SearchCollections';
+import { useGetAriaLabelOfSchemaInitializer } from './hooks/useGetAriaLabelOfSchemaInitializer';
 import { useStyles } from './style';
 import {
   SchemaInitializerButtonProps,
@@ -252,7 +252,7 @@ SchemaInitializer.Button = observer(
     const { Component: CollectComponent, getMenuItem, clean } = useMenuItem();
     const menuItems = useRef([]);
     const { styles } = useStyles();
-    const { name } = useCollection();
+    const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
 
     const changeMenu = (v: boolean) => {
       setVisible(v);
@@ -268,10 +268,6 @@ SchemaInitializer.Button = observer(
       return null;
     }
 
-    if (others['data-testid'] && name) {
-      others['data-testid'] = `${others['data-testid']}-${name}`;
-    }
-
     const buttonDom = component || (
       <Button
         type={'dashed'}
@@ -281,6 +277,7 @@ SchemaInitializer.Button = observer(
           ...style,
         }}
         {...others}
+        aria-label={others['aria-label'] || getAriaLabel()}
         icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
       >
         {compile(props.children || props.title)}
@@ -295,14 +292,20 @@ SchemaInitializer.Button = observer(
       }
     };
 
-    const renderItems = (items: any) => {
+    const renderItems = (items: any, parentKey: string) => {
       return items
         .filter((v: any) => {
           return v && (v?.visible ? v.visible() : true);
         })
         ?.map((item: any, indexA: number) => {
+          // 防止 key 属性无限累加
+          item = { ...item };
+
           if (item.type === 'divider') {
-            return { type: 'divider', key: item.key || `item-${indexA}` };
+            return {
+              type: 'divider',
+              key: getKey(item.key || `divider-${indexA}`, parentKey),
+            };
           }
           if (item.type === 'item' && item.component) {
             const Component = findComponent(item.component);
@@ -310,9 +313,9 @@ SchemaInitializer.Button = observer(
               error(`SchemaInitializer: component "${item.component}" not found`);
               return null;
             }
-            if (!item.key) {
-              item.key = `${item.title}-${indexA}`;
-            }
+
+            item.key = getKey(item.key || compile(item.title) || item.component, parentKey);
+
             return getMenuItem(() => {
               return (
                 <SchemaInitializerItemContext.Provider
@@ -338,29 +341,37 @@ SchemaInitializer.Button = observer(
           }
           if (item.type === 'itemGroup') {
             const label = isString(item.title) ? compile(item.title) : item.title;
+            const key = getKey(item.key || label, parentKey);
             return {
               type: 'group',
-              key: item.key || `item-group-${indexA}`,
+              key,
               label,
               title: label,
               style: item.style,
-              loadChildren: isEmpty(item.children)
-                ? ({ searchValue } = { searchValue: '' }) => renderItems(item.loadChildren?.({ searchValue }) || [])
-                : null,
-              children: isEmpty(item.children) ? [] : renderItems(item.children),
+              loadChildren:
+                isEmpty(item.children) && item.loadChildren
+                  ? ({ searchValue } = { searchValue: '' }) =>
+                      renderItems(item.loadChildren({ searchValue }) || [], key)
+                  : null,
+              children: isEmpty(item.children) ? [] : renderItems(item.children, key),
             };
           }
           if (item.type === 'subMenu') {
-            const label = compile(item.title);
+            const label = isString(item.title) ? compile(item.title) : item.title;
+            const key = getKey(item.key || label, parentKey);
             return {
-              key: item.key || `item-group-${indexA}`,
+              role: 'button',
+              'aria-label': item.key || label,
+              key,
               label,
               title: label,
               popupClassName: styles.nbMenuItemSubMenu,
-              loadChildren: isEmpty(item.children)
-                ? ({ searchValue } = { searchValue: '' }) => renderItems(item.loadChildren?.({ searchValue }) || [])
-                : null,
-              children: isEmpty(item.children) ? [] : renderItems(item.children),
+              loadChildren:
+                isEmpty(item.children) && item.loadChildren
+                  ? ({ searchValue } = { searchValue: '' }) =>
+                      renderItems(item.loadChildren({ searchValue }) || [], key)
+                  : null,
+              children: isEmpty(item.children) ? [] : renderItems(item.children, key),
             };
           }
         })
@@ -369,7 +380,7 @@ SchemaInitializer.Button = observer(
 
     if (visible) {
       clean();
-      menuItems.current = renderItems(items);
+      menuItems.current = renderItems(items, '');
     }
 
     const dropdownRender = () => (
@@ -423,41 +434,48 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
       }
       return items.map((item, indexA) => {
         if (item.type === 'divider') {
-          return { type: 'divider', key: `divider-${indexA}` };
+          return { type: 'divider', key: getKey(item.key || `divider-${indexA}`, parentKey) };
         }
         if (item.type === 'itemGroup') {
           const label = isString(item.title) ? compile(item.title) : item.title;
-          const key = `${parentKey}-item-group-${indexA}`;
+          const key = getKey(item.key || label, parentKey);
           return {
             type: 'group',
             key,
             label,
             title: label,
             className: styles.nbMenuItemGroup,
-            loadChildren: isEmpty(item.children)
-              ? ({ searchValue } = { searchValue: '' }) =>
-                  renderMenuItem(item.loadChildren?.({ searchValue }) || [], key)
-              : null,
+            loadChildren:
+              isEmpty(item.children) && item.loadChildren
+                ? ({ searchValue } = { searchValue: '' }) =>
+                    renderMenuItem(item.loadChildren({ searchValue }) || [], key)
+                : null,
             children: isEmpty(item.children) ? [] : renderMenuItem(item.children, key),
           } as MenuProps['items'][0] & { loadChildren?: ({ searchValue }?: { searchValue: string }) => any[] };
         }
         if (item.type === 'subMenu') {
-          const label = compile(item.title);
-          const key = `${parentKey}-sub-menu-${indexA}`;
+          const label = isString(item.title) ? compile(item.title) : item.title;
+          const key = getKey(item.key || label, parentKey);
           return {
+            role: 'button',
+            'aria-label': key,
             key,
             label,
             title: label,
-            loadChildren: isEmpty(item.children)
-              ? ({ searchValue } = { searchValue: '' }) =>
-                  renderMenuItem(item.loadChildren?.({ searchValue }) || [], key)
-              : null,
+            loadChildren:
+              isEmpty(item.children) && item.loadChildren
+                ? ({ searchValue } = { searchValue: '' }) =>
+                    renderMenuItem(item.loadChildren({ searchValue }) || [], key)
+                : null,
             children: isEmpty(item.children) ? [] : renderMenuItem(item.children, key),
           } as MenuProps['items'][0] & { loadChildren?: ({ searchValue }?: { searchValue: string }) => any[] };
         }
-        const label = compile(item.title);
+        const label = isString(item.title) ? compile(item.title) : item.title;
+        const key = getKey(item.key || label, parentKey);
         return {
-          key: `${parentKey}-${item.title}-${indexA}`,
+          role: 'button',
+          'aria-label': key,
+          key,
           label,
           title: label,
           onClick: (info) => {
@@ -472,6 +490,8 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
     };
 
     const item = {
+      role: 'button',
+      'aria-label': info.key,
       key: info.key,
       label: isString(children) ? compile(children) : children,
       icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
@@ -484,6 +504,8 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
 
   const label = isString(children) ? compile(children) : children;
   const item = {
+    role: 'button',
+    'aria-label': info.key,
     key: info.key,
     label,
     title: label,
@@ -605,8 +627,24 @@ SchemaInitializer.SwitchItem = (props) => {
   return (
     <SchemaInitializer.Item onClick={props.onClick}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        {props.title} <Switch style={{ marginLeft: 20 }} size={'small'} checked={props.checked} />
+        <label>{props.title}</label>
+        <Switch disabled={props.disabled} style={{ marginLeft: 20 }} size={'small'} checked={props.checked} />
       </div>
     </SchemaInitializer.Item>
   );
 };
+
+function getKey(key: string, parentKey: string) {
+  if (parentKey && key) {
+    return `${parentKey}-${key}`;
+  }
+  if (!parentKey && !key) {
+    return '';
+  }
+  if (!parentKey) {
+    return key;
+  }
+  if (!key) {
+    return parentKey;
+  }
+}

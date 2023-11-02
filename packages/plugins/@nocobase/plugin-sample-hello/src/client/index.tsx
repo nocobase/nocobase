@@ -39,13 +39,22 @@ export const HelloBlockInitializer = (props) => {
 
 const HelloProvider = React.memo((props) => {
   const items = useContext<any>(SchemaInitializerContext);
-  const children = items.BlockInitializers.items[1].children;
-  children.push({
-    key: 'hello',
-    type: 'item',
-    title: '{{t("Hello block")}}',
-    component: 'HelloBlockInitializer',
-  });
+  const mediaItems = items.BlockInitializers.items.find((item) => item.key === 'media');
+
+  if (process.env.NODE_ENV !== 'production' && !mediaItems) {
+    throw new Error('media block initializer not found');
+  }
+
+  const children = mediaItems.children;
+  if (!children.find((item) => item.key === 'hello')) {
+    children.push({
+      key: 'hello',
+      type: 'item',
+      title: '{{t("Hello block")}}',
+      component: 'HelloBlockInitializer',
+    });
+  }
+
   return (
     <SettingsCenterProvider
       settings={{

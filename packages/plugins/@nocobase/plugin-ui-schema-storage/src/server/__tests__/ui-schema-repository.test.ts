@@ -1,5 +1,5 @@
 import { Collection, Database } from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
+import { MockServer, mockServer } from '@nocobase/test';
 import { SchemaNode } from '../dao/ui_schema_node_dao';
 import UiSchemaRepository from '../repository';
 import PluginUiSchema from '../server';
@@ -194,6 +194,34 @@ describe('ui_schema repository', () => {
       'x-uid': 'root',
       'x-async': false,
     });
+  });
+
+  it('should create a copy', async () => {
+    const s = await repository.insert({
+      'x-uid': 'n1',
+      name: 'a',
+      type: 'object',
+      properties: {
+        b: {
+          'x-uid': 'n2',
+          type: 'object',
+          properties: {
+            c: { 'x-uid': 'n3' },
+          },
+        },
+        d: {
+          'x-uid': 'n4',
+          properties: {
+            e: {
+              'x-uid': 'n5',
+            },
+          },
+        },
+      },
+    });
+    const s2 = await repository.duplicate(s['x-uid']);
+    expect(s2.name).toEqual(s.name);
+    expect(s2['x-uid']).not.toEqual(s['x-uid']);
   });
 
   describe('schema', () => {

@@ -4,14 +4,16 @@ import { QueryProps } from '../renderer';
 import { parseField } from '../utils';
 import { ISchema } from '@formily/react';
 import configs, { AnySchemaProperties, Config } from './configs';
+import { Transformer } from '../block/transformers';
 
 export type RenderProps = {
-  data: any[];
+  data: Record<string, any>[];
   general: any;
   advanced: any;
   fieldProps: {
-    [field: string]: FieldOption & {
-      transformer: (val: any) => string;
+    [field: string]: {
+      label: string;
+      transformer: Transformer;
     };
   };
 };
@@ -161,7 +163,7 @@ export class Chart implements ChartType {
    * Accept the information that the chart component needs to render,
    * process it and return the props of the chart component.
    */
-  getProps(props: RenderProps) {
+  getProps(props: RenderProps): any {
     return props;
   }
 

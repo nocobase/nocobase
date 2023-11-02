@@ -1,6 +1,6 @@
-[English](./README.md) | 简体中文 | [Türkçe](./README.tr-TR.md)
+[English](./README.md) | 简体中文
  
-![](https://www.nocobase.com/images/demo/11.png)  
+![NocoBase](https://nocobase-file.oss-cn-beijing.aliyuncs.com/main-l.png)
 
 **注意:** 📌
 
@@ -14,14 +14,10 @@ NocoBase 正处在早期开发阶段，可能变动频繁，请谨慎用于生�
 - [v0.11: 全新的客户端 Application、Plugin 和 Router - 2023/07/08](https://docs-cn.nocobase.com/welcome/release/v11-changelog)
 - [v0.10: Update instructions - 2023/06/23](https://docs-cn.nocobase.com/welcome/release/v10-changelog)
 
-## 我们在招聘
-
-我们在寻找全职、远程的产品设计、开发、测试的新同事加入团队，如果你对 NocoBase 有强烈的兴趣，欢迎给我们发邮件：hello@nocobase.com
-
 ## NocoBase 是什么
 
 NocoBase 是一个极易扩展的开源无代码开发平台。
-无需编程，使用 NocoBase 搭建自己的协作平台、管理系统，只需要几个小时。 
+不必投入几年时间、数百万资金研发，花几分钟时间部署 NocoBase，马上拥有一个私有、可控、极易扩展的无代码开发平台。
 
 中文官网：  
 https://cn.nocobase.com/
@@ -32,48 +28,26 @@ https://demo-cn.nocobase.com/new
 文档：  
 https://docs-cn.nocobase.com/
 
-## 适用场景
-
-如果你有以下需求，NocoBase 就是为你设计的：
-
-- 开发组织内部管理系统
-- 通过无代码开发，满足大部分业务需求
-- 无代码开发在操作上足够简单，满足非开发人员；在功能上足够灵活，接近原生开发
-- 可以非常方便的进行扩展开发
-- 私有部署，掌控全部代码和数据
-- 可免费使用，也可以付费获得更多技术支持
-
 ## 与众不同之处
 
-### 1. “数据结构”与“使用界面”分离
+### 1. 模型驱动，“数据结构”与“使用界面”分离
 
 多数以表单、表格或者流程驱动的无代码产品都是在使用界面上直接创建数据结构，比如 Airtable 在表格里新增一列就是新增一个字段。这样的好处是使用简单，不足是功能和灵活性受限，难以满足较复杂场景的需求。
 
 NocoBase 采用数据结构与使用界面分离的设计思路，可以为数据表创建任意数量、任意形态的区块（数据视图），每个区块里可以定义不同的样式、文案、操作。这样既兼顾了无代码的简单操作，又具备了原生开发的灵活性。
 
-![2.collection-block.png](https://nocobase.oss-cn-beijing.aliyuncs.com/25506f38365436d11847b32fc8533bc9.png)
+![model](https://nocobase-file.oss-cn-beijing.aliyuncs.com/model-l.png)
 
 ### 2. 所见即所得
-NocoBase 可以开发复杂和有特色的业务系统，但这并不意味着需要复杂和专业的操作。只需一次点击，就可以在使用界面上显示出配置选项，这意味着具备系统配置权限的管理员可以用所见即所得的操作方式，直接配置用户的使用界面。
+NocoBase 可以开发复杂和有特色的业务系统，但这并不意味着需要复杂和专业的操作。只需一次点击，就可以在使用界面上显示出配置选项，具备系统配置权限的管理员可以用所见即所得的操作方式，直接配置用户的使用界面。
 
-![2.user-root.gif](https://nocobase.oss-cn-beijing.aliyuncs.com/7991441ff35f05c49e0d72c2a23fa33b.gif)
+![wysiwyg](https://nocobase-file.oss-cn-beijing.aliyuncs.com/wysiwyg.gif)
 
 ### 3. 功能即插件
 
-NocoBase 采用插件化架构，所有新功能都可以通过开发和安装插件来实现。未来我们将搭建插件市场，扩展功能就像在手机上安装 APP 一样简单。
+NocoBase 采用插件化架构，所有新功能都可以通过开发和安装插件来实现，扩展功能就像在手机上安装 APP 一样简单。
 
-![](https://www.nocobase.com/images/NocoBaseMindMapLite.png)
-
-[点此查看完整图片](https://www.nocobase.com/images/NocoBaseMindMap.png)
-
-## 商业服务
-
-如果你需要商业版本和商业服务，欢迎通过邮件联系我们：hello@nocobase.com  
-
-也可以添加我们的微信，沟通商业合作或者加入用户交流群：  
-
-![](https://www.nocobase.com/images/wechat.png)  
-
+![plugins](https://nocobase-file.oss-cn-beijing.aliyuncs.com/plugins-l.png)
 
 ## 安装
 

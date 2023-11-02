@@ -45,7 +45,7 @@ interface CollectionSetting {
    * Records can be sorted
    * @default true
    */
-  sortable?: boolean;
+  sortable?: boolean | string;
   /**
    * @default false
    */
@@ -60,13 +60,13 @@ interface CollectionSetting {
     interface: string;
     name: string;
     unique?: boolean;
-    uiSchema: {
+    uiSchema?: {
       type?: string;
       title?: string;
       required?: boolean;
       'x-component'?: string;
       'x-read-pretty'?: boolean;
-      'x-validator'?: string;
+      'x-validator'?: any;
       'x-component-props'?: Record<string, any>;
       [key: string]: any;
     };
@@ -129,10 +129,10 @@ class NocoPage {
 
   async init() {
     if (this.options?.collections?.length) {
-      const collections: any = deleteKeyOfCollection(this.options.collections);
+      const collections: any = omitSomeFields(this.options.collections);
       this.collectionsName = collections.map((item) => item.name);
 
-      await createCollections(this.page, collections);
+      await createCollections(collections);
 
       // 默认为每个 collection 生成 3 条数据
       await createFakerData(collections);
@@ -165,7 +165,10 @@ class NocoPage {
   }
 }
 
-export const test = base.extend<{ mockPage: (config?: PageConfig) => NocoPage }>({
+const _test = base.extend<{
+  mockPage: (config?: PageConfig) => NocoPage;
+  createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
+}>({
   mockPage: async ({ page }, use) => {
     // 保证每个测试运行时 faker 的随机值都是一样的
     faker.seed(1);
@@ -184,11 +187,33 @@ export const test = base.extend<{ mockPage: (config?: PageConfig) => NocoPage }>
       await nocoPage.destroy();
     }
   },
+  createCollections: async ({ page }, use) => {
+    let collectionsName = [];
+
+    const _createCollections = async (collectionSettings: CollectionSetting | CollectionSetting[]) => {
+      collectionSettings = omitSomeFields(
+        Array.isArray(collectionSettings) ? collectionSettings : [collectionSettings],
+      );
+      collectionsName = collectionSettings.map((item) => item.name);
+      await createCollections(collectionSettings);
+    };
+
+    await use(_createCollections);
+
+    if (collectionsName.length) {
+      await deleteCollections(collectionsName);
+    }
+  },
+});
+
+export const test = Object.assign(_test, {
+  /** 只运行在 postgres 数据库中 */
+  pgOnly: process.env.DB_DIALECT == 'postgres' ? _test : _test.skip,
 });
 
 const getStorageItem = (key: string, storageState: any) => {
   return storageState.origins
-    .find((item) => item.origin === `http://localhost:${process.env.APP_PORT}`)
+    .find((item) => item.origin === process.env.APP_BASE_URL)
     ?.localStorage.find((item) => item.name === key)?.value;
 };
 
@@ -223,12 +248,10 @@ const createPage = async (page: Page, options?: CreatePageOptions) => {
   });
 
   const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
+  const headers = getHeaders(state);
 
   const systemSettings = await api.get(`/api/systemSettings:get/1`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
   });
 
   const pageUid = uid();
@@ -237,9 +260,7 @@ const createPage = async (page: Page, options?: CreatePageOptions) => {
   if (systemSettings.ok()) {
     const { data } = await systemSettings.json();
     const result = await api.post(`/api/uiSchemas:insertAdjacent/${data.options.adminSchemaUid}?position=beforeEnd`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
       data: {
         schema: {
           _isJSONSchemaObject: true,
@@ -304,43 +325,10 @@ const deletePage = async (pageUid: string) => {
   });
 
   const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
+  const headers = getHeaders(state);
 
   const result = await api.post(`/api/uiSchemas:remove/${pageUid}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!result.ok()) {
-    throw new Error(await result.text());
-  }
-};
-
-const createCollection = async (collectionSetting: CollectionSetting) => {
-  const api = await request.newContext({
-    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
-  });
-
-  const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
-  const defaultCollectionSetting: Partial<CollectionSetting> = {
-    template: 'general',
-    logging: true,
-    autoGenId: true,
-    createdBy: true,
-    updatedBy: true,
-    createdAt: true,
-    updatedAt: true,
-    sortable: true,
-    view: false,
-  };
-
-  const result = await api.post(`/api/collections:create`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    data: Object.assign(defaultCollectionSetting, collectionSetting),
+    headers,
   });
 
   if (!result.ok()) {
@@ -354,13 +342,11 @@ const deleteCollections = async (collectionNames: string[]) => {
   });
 
   const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
+  const headers = getHeaders(state);
   const params = collectionNames.map((name) => `filterByTk[]=${name}`).join('&');
 
   const result = await api.post(`/api/collections:destroy?${params}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
   });
 
   if (!result.ok()) {
@@ -369,15 +355,15 @@ const deleteCollections = async (collectionNames: string[]) => {
 };
 
 /**
- * 如果不删除 key 会报错
+ * 删除一些不需要的字段，如 key
  * @param collectionSettings
  * @returns
  */
-const deleteKeyOfCollection = (collectionSettings: CollectionSetting[]) => {
+export const omitSomeFields = (collectionSettings: CollectionSetting[]): any[] => {
   return collectionSettings.map((collection) => {
     return {
       ..._.omit(collection, ['key']),
-      fields: collection.fields.map((field) => _.omit(field, ['key'])),
+      fields: collection.fields.map((field) => _.omit(field, ['key', 'collectionName'])),
     };
   });
 };
@@ -388,13 +374,36 @@ const deleteKeyOfCollection = (collectionSettings: CollectionSetting[]) => {
  * @param collectionSettings
  * @returns
  */
-const createCollections = async (page: Page, collectionSettings: CollectionSetting[]) => {
-  // TODO: 这里如果改成并发创建的话性能会更好，但是会出现只创建一个 collection 的情况，暂时不知道原因
-  for (const item of collectionSettings) {
-    await createCollection(item);
+const createCollections = async (collectionSettings: CollectionSetting | CollectionSetting[]) => {
+  const api = await request.newContext({
+    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+  });
+
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  // const defaultCollectionSetting: Partial<CollectionSetting> = {
+  //   template: 'general',
+  //   logging: true,
+  //   autoGenId: true,
+  //   createdBy: true,
+  //   updatedBy: true,
+  //   createdAt: true,
+  //   updatedAt: true,
+  //   sortable: true,
+  //   view: false,
+  // };
+
+  collectionSettings = Array.isArray(collectionSettings) ? collectionSettings : [collectionSettings];
+
+  const result = await api.post(`/api/collections:create`, {
+    headers,
+    // data: collectionSettings.map((item) => Object.assign(defaultCollectionSetting, item)),
+    data: collectionSettings.filter((item) => !['users', 'roles'].includes(item.name)),
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
   }
-  // @ts-ignore
-  page._collectionNames = collectionSettings.map((item) => item.name);
 };
 
 /**
@@ -409,12 +418,12 @@ const generateFakerData = (collectionSetting: CollectionSetting) => {
     input: () => faker.lorem.words(),
     textarea: () => faker.lorem.paragraph(),
     richText: () => faker.lorem.paragraph(),
-    phone: () => faker.phone.number('1##########'),
+    phone: () => faker.phone.number(),
     email: () => faker.internet.email(),
     url: () => faker.internet.url(),
-    integer: () => faker.datatype.number(),
-    number: () => faker.datatype.number(),
-    percent: () => faker.datatype.float(),
+    integer: () => faker.number.int(),
+    number: () => faker.number.int(),
+    percent: () => faker.number.float(),
     password: () => faker.internet.password(),
     color: () => faker.internet.color(),
     icon: () => 'checkcircleoutlined',
@@ -446,14 +455,12 @@ const createFakerData = async (collectionSettings: CollectionSetting[]) => {
   });
 
   const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
+  const headers = getHeaders(state);
 
   for (const item of collectionSettings) {
     const data = generateFakerData(item);
     const result = await api.post(`/api/${item.name}:create`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
       form: data,
     });
 
@@ -470,4 +477,43 @@ export async function enableToConfig(page: Page) {
   if (!(await page.getByRole('button', { name: 'plus Add menu item' }).isVisible())) {
     await page.getByRole('button', { name: 'highlight' }).click();
   }
+}
+
+function getHeaders(storageState: any) {
+  const headers: any = {};
+  const token = getStorageItem('NOCOBASE_TOKEN', storageState);
+  const auth = getStorageItem('NOCOBASE_AUTH', storageState);
+  const subAppName = new URL(process.env.APP_BASE_URL).pathname.match(/^\/apps\/([^/]*)\/*/)?.[1];
+  const hostName = new URL(process.env.APP_BASE_URL).host;
+  const locale = getStorageItem('NOCOBASE_LOCALE', storageState);
+  const timezone = '+08:00';
+  const withAclMeta = 'true';
+  const role = getStorageItem('NOCOBASE_ROLE', storageState);
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  if (auth) {
+    headers['X-Authenticator'] = auth;
+  }
+  if (subAppName) {
+    headers['X-App'] = subAppName;
+  }
+  if (hostName) {
+    headers['X-Hostname'] = hostName;
+  }
+  if (locale) {
+    headers['X-Locale'] = locale;
+  }
+  if (timezone) {
+    headers['X-Timezone'] = timezone;
+  }
+  if (withAclMeta) {
+    headers['X-With-Acl-Meta'] = withAclMeta;
+  }
+  if (role) {
+    headers['X-Role'] = role;
+  }
+
+  return headers;
 }

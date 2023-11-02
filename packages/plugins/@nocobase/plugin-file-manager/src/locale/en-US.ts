@@ -17,5 +17,6 @@ export default {
   Bucket: 'Bucket',
   Path: 'Path',
   Filename: 'Filename',
+  'See more': 'See more',
   'Will be used for API': 'Will be used for API',
 };

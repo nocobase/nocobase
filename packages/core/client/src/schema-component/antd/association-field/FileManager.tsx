@@ -96,6 +96,8 @@ const InternalFileManager = (props) => {
         };
       });
       setOptions(opts);
+    } else {
+      setOptions([]);
     }
   }, [value, fieldNames?.label]);
 
@@ -110,7 +112,7 @@ const InternalFileManager = (props) => {
   const pickerProps = {
     size: 'small',
     fieldNames,
-    multiple: ['o2m', 'm2m'].includes(collectionField?.interface),
+    multiple: ['o2m', 'm2m'].includes(collectionField?.interface) && multiple,
     association: {
       target: collectionField?.target,
     },
@@ -167,7 +169,7 @@ const InternalFileManager = (props) => {
         }}
       >
         <RecordPickerProvider {...pickerProps}>
-          <CollectionProvider name={collectionField.target}>
+          <CollectionProvider name={collectionField?.target}>
             <FormProvider>
               <TableSelectorParamsProvider params={{ filter: getFilter() }}>
                 <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps }}>

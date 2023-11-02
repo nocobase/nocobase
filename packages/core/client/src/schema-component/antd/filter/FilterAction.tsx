@@ -1,6 +1,7 @@
 import { css } from '@emotion/css';
 import { createForm, Field, Form } from '@formily/core';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
+import { flatten, unflatten } from '@nocobase/utils/client';
 import { Button, Space } from 'antd';
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -112,10 +113,12 @@ const SaveConditions = () => {
       onClick={() => {
         const defaultValue = { ...form.values.filter };
         fieldSchema.default = defaultValue;
+
         dn.emit('patch', {
           schema: {
             'x-uid': fieldSchema['x-uid'],
-            default: defaultValue,
+            // undefined 会在转成 JSON 时被删除，这里转成 null 是为了防止被删除
+            default: undefinedToNull(defaultValue),
           },
         });
         dn.refresh();
@@ -125,3 +128,20 @@ const SaveConditions = () => {
     </Button>
   );
 };
+
+/**
+ * 将一个对象中所有值为 undefined 的属性转换为值为 null 的
+ * @param value
+ * @returns
+ */
+function undefinedToNull(value) {
+  const flat = flatten(value);
+
+  Object.keys(flat).forEach((key) => {
+    if (flat[key] === undefined) {
+      flat[key] = null;
+    }
+  });
+
+  return unflatten(flat);
+}

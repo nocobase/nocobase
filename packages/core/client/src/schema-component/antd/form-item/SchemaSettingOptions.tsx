@@ -382,7 +382,7 @@ export const EditComponent = () => {
   const fieldModeOptions = useFieldModeOptions();
   const isAssociationField = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collectionField?.type);
   const targetCollection = getCollection(collectionField?.target);
-  const isFileField = isFileCollection(targetCollection);
+  const isFileField = isFileCollection(targetCollection as any);
 
   return isAssociationField && fieldModeOptions ? (
     <SchemaSettings.SelectItem

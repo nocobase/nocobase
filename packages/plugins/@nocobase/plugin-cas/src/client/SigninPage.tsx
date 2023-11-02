@@ -1,41 +1,32 @@
-import { Authenticator, useAPIClient, useRedirect, useCurrentUserContext } from '@nocobase/client';
+import { Authenticator } from '@nocobase/client';
 import React, { useEffect } from 'react';
 import { LoginOutlined } from '@ant-design/icons';
-import { Button, Space, App } from 'antd';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Button, Space, message } from 'antd';
+import { useLocation } from 'react-router-dom';
+import { getSubAppName } from '@nocobase/sdk';
 
 export const SigninPage = (props: { authenticator: Authenticator }) => {
-  const { message } = App.useApp();
-  const api = useAPIClient();
-  const navigate = useNavigate();
-  const redirect = useRedirect();
   const location = useLocation();
-  const { refreshAsync } = useCurrentUserContext();
 
   const authenticator = props.authenticator;
 
+  const app = getSubAppName() || 'main';
   const login = async () => {
-    window.location.replace(`/api/cas:login?authenticator=${authenticator.name}`);
-    redirect();
+    window.location.replace(`/api/cas:login?authenticator=${authenticator.name}&__appName=${app}`);
   };
 
   useEffect(() => {
-    const usp = new URLSearchParams(location.search);
-    if (usp.get('authenticator') === authenticator.name) {
-      api.auth
-        .signIn({}, authenticator.name)
-        .then(async () => {
-          await refreshAsync();
-          redirect();
-        })
-        .catch((error) => {
-          navigate({
-            pathname: location.pathname,
-          });
-          message.error(error.message);
-        });
+    const params = new URLSearchParams(location.search);
+    const name = params.get('authenticator');
+    const error = params.get('error');
+    if (name !== authenticator.name) {
+      return;
     }
-  }, [location.search, authenticator.name]);
+    if (error) {
+      message.error(error);
+      return;
+    }
+  });
 
   return (
     <Space direction="vertical" style={{ display: 'flex' }}>

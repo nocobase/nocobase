@@ -1,8 +1,8 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
-import dayjs from 'dayjs';
 import { Divider, SelectProps, Tag } from 'antd';
-import _, { uniqBy } from 'lodash';
+import dayjs from 'dayjs';
+import { uniqBy } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
@@ -76,19 +76,27 @@ const InternalRemoteSelect = connect(
                       const option = targetField.uiSchema.enum.find((i) => i.value === item);
                       if (option) {
                         return (
-                          <Tag key={index} color={option.color} style={{ marginRight: 3 }}>
+                          <Tag role="button" key={index} color={option.color} style={{ marginRight: 3 }}>
                             {option?.label || item}
                           </Tag>
                         );
                       } else {
-                        return <Tag key={item}>{item}</Tag>;
+                        return (
+                          <Tag role="button" key={item}>
+                            {item}
+                          </Tag>
+                        );
                       }
                     })
                     .reverse();
                 } else {
                   const item = targetField.uiSchema.enum.find((i) => i.value === label);
                   if (item) {
-                    label = <Tag color={item.color}>{item.label}</Tag>;
+                    label = (
+                      <Tag role="button" color={item.color}>
+                        {item.label}
+                      </Tag>
+                    );
                   }
                 }
               }
@@ -127,7 +135,7 @@ const InternalRemoteSelect = connect(
         },
       },
       {
-        manual: manual && Object.prototype.toString.call(value) === '[object Object]',
+        manual,
         debounceWait: wait,
       },
     );
@@ -184,7 +192,7 @@ const InternalRemoteSelect = connect(
       }
       const valueOptions =
         (v != null && (Array.isArray(v) ? v : [{ ...v, [fieldNames.value]: v[fieldNames.value] || v }])) || [];
-      return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
+      return uniqBy(data?.data?.concat(valueOptions ?? []), fieldNames.value);
     }, [value, defaultValue, data?.data, fieldNames.value]);
     const onDropdownVisibleChange = (visible) => {
       setOpen(visible);
@@ -194,6 +202,7 @@ const InternalRemoteSelect = connect(
       }
       firstRun.current = true;
     };
+
     return (
       <Select
         open={open}

@@ -2,14 +2,16 @@ import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 import { TinyColor } from '@ctrl/tinycolor';
 import { SortableContext, SortableContextProps, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
-import { ArrayField, Field } from '@formily/core';
+import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
-import { action, reaction } from '@formily/reactive';
+import { action } from '@formily/reactive';
+import { uid } from '@formily/shared';
+import { isPortalInBody } from '@nocobase/utils/client';
 import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
@@ -21,15 +23,16 @@ import {
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useToken } from '../__builtins__';
+import { SubFormProvider } from '../association-field/hooks';
 import { ColumnFieldProvider } from './components/ColumnFieldProvider';
-import { extractIndex, isCollectionFieldComponent, isColumnComponent, isPortalInBody } from './utils';
+import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 
 const useArrayField = (props) => {
   const field = useField<ArrayField>();
   return (props.field || field) as ArrayField;
 };
 
-const useTableColumns = (props) => {
+const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => {
   const field = useArrayField(props);
   const schema = useFieldSchema();
   const { schemaInWhitelist } = useACLFieldWhitelist();
@@ -59,17 +62,21 @@ const useTableColumns = (props) => {
         render: (v, record) => {
           const index = field.value?.indexOf(record);
           return (
-            <RecordIndexProvider index={record.__index || index}>
-              <RecordProvider record={record}>
-                <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
-                  <RecursionField
-                    basePath={field.address.concat(record.__index || index)}
-                    schema={s}
-                    onlyRenderProperties
-                  />
-                </ColumnFieldProvider>
-              </RecordProvider>
-            </RecordIndexProvider>
+            <SubFormProvider value={record}>
+              <RecordIndexProvider index={record.__index || index}>
+                <RecordProvider record={record}>
+                  <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
+                    <span role="button">
+                      <RecursionField
+                        basePath={field.address.concat(record.__index || index)}
+                        schema={s}
+                        onlyRenderProperties
+                      />
+                    </span>
+                  </ColumnFieldProvider>
+                </RecordProvider>
+              </RecordIndexProvider>
+            </SubFormProvider>
           );
         },
       } as TableColumnProps<any>;
@@ -103,6 +110,7 @@ const useTableColumns = (props) => {
                   deleteCount: 1,
                 });
                 field.value.splice(index, 1);
+                field.initialValue?.splice(index, 1);
                 return field.onInput(field.value);
               });
             }}
@@ -152,16 +160,17 @@ const SortableRow = (props) => {
 };
 
 const SortHandle = (props) => {
+  const { id, ...otherProps } = props;
   const { listeners } = useSortable({
-    id: props.id,
+    id,
   });
-  return <MenuOutlined {...listeners} style={{ cursor: 'grab' }} />;
+  return <MenuOutlined {...otherProps} {...listeners} style={{ cursor: 'grab' }} />;
 };
 
 const TableIndex = (props) => {
-  const { index } = props;
+  const { index, ...otherProps } = props;
   return (
-    <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }}>
+    <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }} {...otherProps}>
       {index}
     </div>
   );
@@ -184,28 +193,22 @@ const usePaginationProps = (pagination1, pagination2) => {
   return result.total <= result.pageSize ? false : result;
 };
 
-const useValidator = (validator: (value: any) => string) => {
-  const field = useField<Field>();
-  useEffect(() => {
-    const dispose = reaction(
-      () => field.value,
-      (value) => {
-        const message = validator(value);
-        field.setFeedback({
-          type: 'error',
-          code: 'ValidateError',
-          messages: message ? [message] : [],
-        });
-      },
-    );
-    return () => {
-      dispose();
-    };
-  }, []);
-};
-
 export const Table: any = observer(
-  (props: any) => {
+  (props: {
+    useProps?: () => any;
+    onChange?: (pagination, filters, sorter, extra) => void;
+    onRowSelectionChange?: (selectedRowKeys: any[], selectedRows: any[]) => void;
+    onRowDragEnd?: (e: { from: any; to: any }) => void;
+    onClickRow?: (record: any, setSelectedRow: (selectedRow: any[]) => void, selectedRow: any[]) => void;
+    pagination?: any;
+    showIndex?: boolean;
+    dragSort?: boolean;
+    rowKey?: string | ((record: any) => string);
+    rowSelection?: any;
+    required?: boolean;
+    onExpand?: (flag: boolean, record: any) => void;
+    isSubTable?: boolean;
+  }) => {
     const { token } = useToken();
     const { pagination: pagination1, useProps, onChange, ...others1 } = props;
     const { pagination: pagination2, onClickRow, ...others2 } = useProps?.() || {};
@@ -233,6 +236,7 @@ export const Table: any = observer(
     const [selectedRow, setSelectedRow] = useState([]);
     const dataSource = field?.value?.slice?.()?.filter?.(Boolean) || [];
     const isRowSelect = rowSelection?.type !== 'none';
+    const defaultRowKeyMap = useRef(new Map());
     let onRow = null,
       highlightRow = '';
 
@@ -306,7 +310,7 @@ export const Table: any = observer(
                   const toIndex = e.over?.data.current?.sortable?.index;
                   const from = field.value[fromIndex] || e.active;
                   const to = field.value[toIndex] || e.over;
-                  field.move(fromIndex, toIndex);
+                  void field.move(fromIndex, toIndex);
                   onRowDragEnd({ from, to });
                 }}
               >
@@ -341,8 +345,29 @@ export const Table: any = observer(
       };
     }, [field, onRowDragEnd, dragSort]);
 
+    /**
+     * 为没有设置 key 属性的 record 生成一个唯一的 key
+     * 1. rowKey 的默认值是 “key”，所以先判断有没有 record.key；
+     * 2. 如果没有就生成一个唯一的 key，并以 record 的值作为索引；
+     * 3. 这样下次就能取到对应的 key 的值；
+     *
+     * 这里有效的前提是：数组中对应的 record 的引用不会发生改变。
+     *
+     * @param record
+     * @returns
+     */
     const defaultRowKey = (record: any) => {
-      return field.value?.indexOf?.(record);
+      if (record.key) {
+        return record.key;
+      }
+
+      if (defaultRowKeyMap.current.has(record)) {
+        return defaultRowKeyMap.current.get(record);
+      }
+
+      const key = uid();
+      defaultRowKeyMap.current.set(record, key);
+      return key;
     };
 
     const getRowKey = (record: any) => {
@@ -364,6 +389,11 @@ export const Table: any = observer(
               setSelectedRowKeys(selectedRowKeys);
               onRowSelectionChange?.(selectedRowKeys, selectedRows);
             },
+            getCheckboxProps(record) {
+              return {
+                'aria-label': `checkbox`,
+              };
+            },
             renderCell: (checked, record, index, originNode) => {
               if (!dragSort && !showIndex) {
                 return originNode;
@@ -380,6 +410,8 @@ export const Table: any = observer(
               }
               return (
                 <div
+                  role="button"
+                  aria-label={`table-index-${index}`}
                   className={classNames(
                     checked ? 'checked' : null,
                     css`

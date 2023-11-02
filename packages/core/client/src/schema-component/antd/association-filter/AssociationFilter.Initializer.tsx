@@ -49,7 +49,6 @@ export const AssociationFilterInitializer = () => {
 
   return (
     <SchemaInitializer.Button
-      data-testid="configure-fields-button-of-association-filter"
       className={css`
         margin-top: 16px;
       `}

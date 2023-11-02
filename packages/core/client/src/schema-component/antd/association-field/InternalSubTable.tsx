@@ -4,7 +4,7 @@ import { RecursionField, SchemaOptionsContext, observer, useField, useFieldSchem
 import React, { useEffect } from 'react';
 import { ACLCollectionProvider, useACLActionParamsContext } from '../../../acl';
 import { CollectionProvider } from '../../../collection-manager';
-import { useSchemaOptionsContext } from '../../../schema-component';
+import { FormItem, useSchemaOptionsContext } from '../../../schema-component';
 import Select from '../select/Select';
 import { useAssociationFieldContext, useInsertSchema } from './hooks';
 import schema from './schema';
@@ -24,8 +24,9 @@ export const InternalSubTable = observer(
     const option = useSchemaOptionsContext();
     const components = {
       ...option.components,
-      'Radio.Group': (props) => <Select data-testid="antd-select" {...props} />,
-      'Checkbox.Group': (props) => <Select data-testid="antd-select" multiple={true} mode="multiple" {...props} />,
+      FormItem,
+      'Radio.Group': Select,
+      'Checkbox.Group': (props) => <Select multiple={true} mode="multiple" {...props} />,
     };
     return (
       <CollectionProvider name={options.target}>
