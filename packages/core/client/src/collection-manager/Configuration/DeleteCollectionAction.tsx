@@ -61,7 +61,11 @@ export const DeleteCollectionAction = (props) => {
                   getContainer: '{{ getContainer }}',
                   className: css`
                     .ant-modal-body {
-                      margin-left: 34px;
+                      margin-left: 35px;
+                      margin-bottom: 35px;
+                      .ant-checkbox-wrapper {
+                        height: 25px;
+                      }
                     }
                   `,
                 },
