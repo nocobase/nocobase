@@ -163,7 +163,6 @@ class NocoPage {
   async goto() {
     await this.waitForInit;
     await this.page.goto(this.url);
-    await enableToConfig(this.page);
   }
 
   async destroy() {
@@ -179,9 +178,20 @@ class NocoPage {
 }
 
 const _test = base.extend<{
+  page: Page;
   mockPage: (config?: PageConfig) => NocoPage;
   createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
 }>({
+  page: async ({ page: _page }, use) => {
+    const page: Page = Object.create(_page);
+    page.goto = async function goto(url: string, options?: any) {
+      const result = await _page.goto(url, options);
+      await enableToConfig(_page);
+      return result;
+    };
+
+    await use(page);
+  },
   mockPage: async ({ page }, use) => {
     // 保证每个测试运行时 faker 的随机值都是一样的
     faker.seed(1);
