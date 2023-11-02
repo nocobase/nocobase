@@ -17,11 +17,11 @@ test.describe('File manager', () => {
 
     const createLocalStorage = new CreateLocalStorage(page);
     await createLocalStorage.title.fill(caseTitle);
-    const storageName = caseNum + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
+    const storageName = caseNum + dayjs().format('YYYYMMDDHHmmssSSS').toString();
     await createLocalStorage.storageName.fill(storageName);
-    await createLocalStorage.storagebaseURL.fill('/storage/uploadsFM02AA');
-    await createLocalStorage.destination.fill('storage/uploadsFM02AA');
-    // await createLocalStorage.path.fill('');
+    // await createLocalStorage.storagebaseURL.fill('/storage/uploadsFM02AA');
+    // await createLocalStorage.destination.fill('storage/uploadsFM02AA');
+    // // await createLocalStorage.path.fill('');
     // await createLocalStorage.defaultStorage.check();
     // await createLocalStorage.deleteRecordRetentionFile.check();
     await page.getByLabel('action-Action-Submit-storages').click();
@@ -30,7 +30,7 @@ test.describe('File manager', () => {
     // 2、测试步骤：点击“文件管理器”-“编辑”按钮，编辑标题，点击“确定”按钮
     await page.getByText('Edit').nth(2).click();
     const editLocalStorage = new EditLocalStorage(page);
-    caseTitle = caseTitle + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
+    caseTitle = caseTitle + dayjs().format('YYYYMMDDHHmmssSSS').toString();
     await editLocalStorage.title.fill(caseTitle);
     // await editLocalStorage.path.fill('');
     // await editLocalStorage.defaultStorage.check();

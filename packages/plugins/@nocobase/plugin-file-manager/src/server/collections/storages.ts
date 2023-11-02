@@ -16,7 +16,7 @@ export default {
     {
       title: '英文标识',
       // comment: '英文标识，用于代码层面配置',
-      type: 'string',
+      type: 'uid',
       name: 'name',
       unique: true,
     },
