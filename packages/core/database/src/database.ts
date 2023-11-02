@@ -73,9 +73,6 @@ import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
 import { CollectionSnapshotManager } from './collection-snapshot/manager';
-import { SqlCollection } from './sql-collection/sql-collection';
-import { nanoid } from 'nanoid';
-
 
 export type MergeOptions = merge.Options;
 
@@ -183,25 +180,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
   tableNameCollectionMap = new Map<string, Collection>();
   context: any = {};
   queryInterface: QueryInterface;
-
-  _instanceId: string;
-
   utils = new DatabaseUtils(this);
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
-
   importedFrom = new Map<string, Array<string>>();
-
   modelHook: ModelHook;
   version: DatabaseVersion;
-
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
-
   logger: Logger;
-
   collectionGroupManager = new CollectionGroupManager(this);
   collectionSnapshotManager = new CollectionSnapshotManager(this);
-
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
   constructor(options: DatabaseOptions) {
@@ -316,6 +304,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.initListener();
     patchSequelizeQueryInterface(this);
   }
+
+  _instanceId: string;
 
   get instanceId() {
     return this._instanceId;
@@ -717,7 +707,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
     if (schema) {
       const tableNames = (
         await this.sequelize.query(
-          `SELECT table_name FROM information_schema.tables WHERE table_schema = '${schema}' AND table_type LIKE '%TABLE' AND table_name != 'spatial_ref_sys';`,
+          `SELECT table_name
+           FROM information_schema.tables
+           WHERE table_schema = '${schema}'
+             AND table_type LIKE '%TABLE'
+             AND table_name != 'spatial_ref_sys';`,
           {
             raw: true,
             type: 'SHOWTABLES',
