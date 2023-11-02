@@ -383,7 +383,7 @@ export class Collection<
   }
 
   remove() {
-    this.context.database.removeCollection(this.name);
+    return this.context.database.removeCollection(this.name);
   }
 
   async removeFromDb(options?: QueryInterfaceDropTableOptions) {
@@ -396,7 +396,7 @@ export class Collection<
       const queryInterface = this.db.sequelize.getQueryInterface();
       await queryInterface.dropTable(this.getTableNameWithSchema(), options);
     }
-    this.remove();
+    return this.remove();
   }
 
   async existsInDb(options?: Transactionable) {
@@ -613,12 +613,14 @@ export class Collection<
     });
 
     for (const model of models) {
-      await model.sync(syncOptions || {
-        force: false,
-        alter: {
-          drop: false,
+      await model.sync(
+        syncOptions || {
+          force: false,
+          alter: {
+            drop: false,
+          },
         },
-      });
+      );
     }
   }
 
