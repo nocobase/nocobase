@@ -86,7 +86,16 @@ interface CollectionSetting {
   }>;
 }
 
-interface PageConfig {
+export interface PageConfig {
+  /**
+   * 页面类型
+   * @default 'page'
+   */
+  type?: 'group' | 'page' | 'link';
+  /**
+   * type 为 link 时，表示跳转的链接
+   */
+  url?: string;
   /**
    * 用户可见的页面名称
    * @default uid()
@@ -110,6 +119,8 @@ interface PageConfig {
 }
 
 interface CreatePageOptions {
+  type?: PageConfig['type'];
+  url?: PageConfig['url'];
   name?: string;
   pageSchema?: any;
 }
@@ -141,8 +152,10 @@ class NocoPage {
     }
 
     this.uid = await createPage(this.page, {
+      type: this.options?.type,
       name: this.options?.name,
       pageSchema: this.options?.pageSchema,
+      url: this.options?.url,
     });
     this.url = `${this.options?.basePath || '/admin/'}${this.uid}`;
   }
@@ -242,11 +255,26 @@ const updateUidOfPageSchema = (uiSchema: any) => {
  * 在 NocoBase 中创建一个页面
  */
 const createPage = async (page: Page, options?: CreatePageOptions) => {
-  const { name, pageSchema } = options || {};
+  const { type = 'page', url, name, pageSchema } = options || {};
   const api = await request.newContext({
     storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
   });
-
+  const typeToSchema = {
+    group: {
+      'x-component': 'Menu.SubMenu',
+      'x-component-props': {},
+    },
+    page: {
+      'x-component': 'Menu.Item',
+      'x-component-props': {},
+    },
+    link: {
+      'x-component': 'Menu.URL',
+      'x-component-props': {
+        href: url,
+      },
+    },
+  };
   const state = await api.storageState();
   const headers = getHeaders(state);
 
@@ -259,6 +287,7 @@ const createPage = async (page: Page, options?: CreatePageOptions) => {
 
   if (systemSettings.ok()) {
     const { data } = await systemSettings.json();
+
     const result = await api.post(`/api/uiSchemas:insertAdjacent/${data.options.adminSchemaUid}?position=beforeEnd`, {
       headers,
       data: {
@@ -267,9 +296,8 @@ const createPage = async (page: Page, options?: CreatePageOptions) => {
           version: '2.0',
           type: 'void',
           title: name || pageUid,
-          'x-component': 'Menu.Item',
+          ...typeToSchema[type],
           'x-decorator': 'ACLMenuItemProvider',
-          'x-component-props': {},
           'x-server-hooks': [
             { type: 'onSelfCreate', method: 'bindMenuToRole' },
             { type: 'onSelfSave', method: 'extractTextToLocale' },
