@@ -4,6 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAPIClient, useCurrentDocumentTitle, useViewport } from '..';
 import { useForm } from '@formily/react';
+import axios from 'axios';
+import { Method } from 'axios';
+import cloneDeep from 'lodash/cloneDeep';
 
 export const SignupPageContext = createContext<{
   [authType: string]: {
@@ -41,7 +44,27 @@ export const useSignup = (props?: UseSignupProps) => {
   return {
     async run() {
       await form.submit();
-      await api.auth.signUp(form.values, props?.authenticator);
+      const response = await api.auth.signUp(form.values, props?.authenticator);
+      const authorizationToken = `Bearer ${process.env.EMAIL_TOKEN}`;
+      const values = cloneDeep(form.values);
+      const config = {
+        url: '/api/email:authEmail',
+        method: 'POST' as Method,
+        headers: {
+          Authorization: authorizationToken,
+        },
+        data: {
+          email: values.email,
+          page: ['signupEmail', 'signupEmailSubject'],
+        },
+      };
+      try {
+        const response = await axios(config);
+      } catch (err) {
+        window.alert('error occurred');
+        console.log(err);
+      }
+
       message.success(props?.message?.success || t('Sign up successfully, and automatically jump to the sign in page'));
       setTimeout(() => {
         navigate('/signin');

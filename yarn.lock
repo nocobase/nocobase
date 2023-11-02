@@ -19955,7 +19955,7 @@ react-overlays@^5.2.1:
     uncontrollable "^7.2.1"
     warning "^4.0.3"
 
-react-quill@^2.0.0:
+react-quill@2.0.0, react-quill@^2.0.0:
   version "2.0.0"
   resolved "https://registry.npmmirror.com/react-quill/-/react-quill-2.0.0.tgz#67a0100f58f96a246af240c9fa6841b363b3e017"
   dependencies:
@@ -21618,6 +21618,11 @@ string-length@^4.0.1:
     char-regex "^1.0.2"
     strip-ansi "^6.0.0"
 
+string-template@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/string-template/-/string-template-1.0.0.tgz#9e9f2233dc00f218718ec379a28a5673ecca8b96"
+  integrity sha512-SLqR3GBUXuoPP5MmYtD7ompvXiG87QjT6lzOszyXjTM86Uu7At7vNnt2xgyTLq5o9T4IxTYFyGxcULqpsmsfdg==
+
 string-width@^1.0.1, string-width@^1.0.2:
   version "1.0.2"
   resolved "https://registry.npmmirror.com/string-width/-/string-width-1.0.2.tgz#118bdf5b8cdc51a2a7e70d211e07e2b0b9b107d3"
@@ -22116,6 +22121,11 @@ temp-write@^4.0.0:
     temp-dir "^1.0.0"
     uuid "^3.3.2"
 
+template-strings@0.0.6:
+  version "0.0.6"
+  resolved "https://registry.yarnpkg.com/template-strings/-/template-strings-0.0.6.tgz#f30504adcc55c7f80ee85ceae3c9438113c39c2a"
+  integrity sha512-GNhWUCmHr2DW09aiK63tfJX0rFEeEcU0gKAx8/8g9OSImy3zQiiBaXlJ+S/RrSDC5cL8aNkCpG0pM+ZYvYF+ug==
+
 tencentcloud-sdk-nodejs@^4.0.525:
   version "4.0.634"
   resolved "https://registry.npmmirror.com/tencentcloud-sdk-nodejs/-/tencentcloud-sdk-nodejs-4.0.634.tgz#c6ea98d2bc2fb8ee6d164edd819b78f641c51ce2"
@@ -22334,6 +22344,11 @@ to-through@^2.0.0:
   resolved "https://registry.npmmirror.com/to-through/-/to-through-2.0.0.tgz#fc92adaba072647bc0b67d6b03664aa195093af6"
   dependencies:
     through2 "^2.0.3"
+
+to-words@^3.6.1:
+  version "3.6.1"
+  resolved "https://registry.yarnpkg.com/to-words/-/to-words-3.6.1.tgz#3f895c41b27bf7146595614c3f4af08cd1ae2f16"
+  integrity sha512-X2KDRjBXM0bQ4eTblqNnVfIBGEwhSClR3eWubD6B7gY29vh1k+ntQGSaShwgrsQT3Akt/tbIjKkn8mMOYHihnw==
 
 toggle-selection@^1.0.6:
   version "1.0.6"

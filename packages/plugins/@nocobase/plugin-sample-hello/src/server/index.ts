@@ -12,7 +12,13 @@ export class HelloPlugin extends Plugin {
       name: 'testHello',
       actions: {
         async getInfo(ctx, next) {
-          ctx.body = `Hello hello!`;
+          const postRepo = ctx.db.getRepository('users');
+          const data = await postRepo.find({
+            filter:{
+              id:1
+            }
+          });
+          ctx.body = data;
           next();
         },
       },

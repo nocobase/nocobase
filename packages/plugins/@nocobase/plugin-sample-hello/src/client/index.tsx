@@ -10,6 +10,7 @@ import { Card } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HelloDesigner } from './HelloDesigner';
+import SampleDisplay from './SampleDisplay';
 
 export const HelloBlockInitializer = (props) => {
   const { insert } = props;
@@ -17,17 +18,21 @@ export const HelloBlockInitializer = (props) => {
   return (
     <SchemaInitializer.Item
       {...props}
-      icon={<TableOutlined />}
       onClick={() => {
         insert({
           type: 'void',
           'x-component': 'CardItem',
           'x-designer': 'HelloDesigner',
           properties: {
-            hello: {
+            // hello: {
+            //   type: 'void',
+            //   'x-component': 'div',
+            //   'x-content': 'Hello World',
+            // },
+            customHello: {
               type: 'void',
-              'x-component': 'div',
-              'x-content': 'Hello World',
+              'x-component': 'CardItem',
+              'x-content': 'custom hello world',
             },
           },
         });
@@ -64,13 +69,15 @@ const HelloProvider = React.memo((props) => {
           tabs: {
             tab1: {
               title: 'Hello tab',
-              component: () => <Card bordered={false}>Hello Settings</Card>,
+              component: () => <SampleDisplay />,
             },
+          
           },
         },
       }}
     >
       <SchemaComponentOptions components={{ HelloDesigner, HelloBlockInitializer }}>
+        {/* This renders the UI */}
         <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
       </SchemaComponentOptions>
     </SettingsCenterProvider>
