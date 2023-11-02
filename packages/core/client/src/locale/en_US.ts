@@ -791,6 +791,6 @@ export default {
   Execute: 'Execute',
   'Please use a valid SELECT or WITH AS statement': 'Please use a valid SELECT or WITH AS statement',
   'Please confirm the SQL statement first': 'Please confirm the SQL statement first',
-  'Automatically delete objects relying on this collection, and objects relying on those objects':
-    'Automatically delete objects relying on this collection, and objects relying on those objects',
+  'Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects':
+    'Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects',
 };

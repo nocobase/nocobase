@@ -711,6 +711,6 @@ export default {
   "Data template": "Modelo de dados",
   "Not found":"Não encontrado",
   "Add":"Adicionar",
-  'Automatically delete objects relying on this collection, and objects relying on those objects':
+  'Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects':
   'Excluir automaticamente objetos que dependem desta tabela, bem como objetos que dependem desses objetos',
 };

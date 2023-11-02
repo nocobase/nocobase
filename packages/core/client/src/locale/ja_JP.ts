@@ -696,6 +696,6 @@ export default {
   Author: '著者',
   'Plugin loading failed. Please check the server logs.':
     'プラグインのロードに失敗しました。サーバーログを確認してください。',
-  'Automatically delete objects relying on this collection, and objects relying on those objects':
+  'Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects':
     'テーブルに依存するオブジェクト、およびそれらに依存するオブジェクトを自動的に削除する',
 };
