@@ -310,7 +310,7 @@ const SideMenu = ({
     }
 
     return result;
-  }, [render, sideMenuSchema, designable, loading]);
+  }, [getMenuItems, designable, sideMenuSchema, render, t, api, refresh]);
 
   if (loading) {
     return null;
