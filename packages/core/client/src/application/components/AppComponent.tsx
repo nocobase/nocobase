@@ -23,7 +23,7 @@ export const AppComponent: FC<AppComponentProps> = observer((props) => {
   if (app.error?.code === 'LOAD_ERROR') return app.renderComponent('AppError', { app });
 
   return (
-    <ErrorBoundary FallbackComponent={app.getComponent<FallbackProps>('ErrorFallback')} onError={handleErrors}>
+    <ErrorBoundary FallbackComponent={app.getComponent<FallbackProps>('AppError')} onError={handleErrors}>
       <ApplicationContext.Provider value={app}>
         {app.maintained && app.maintaining && app.renderComponent('AppMaintainingDialog', { app })}
         {app.renderComponent('AppMain')}
