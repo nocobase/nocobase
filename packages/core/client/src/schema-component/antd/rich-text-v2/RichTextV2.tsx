@@ -7,17 +7,39 @@ import { useStyles } from './style';
 import { RichTextHOC } from './RichTextHOC';
 import { Input } from 'antd';
 import { Switch } from 'antd';
+import './style.css'
 
 export const RichTextV2 = connect(
   (props) => {
-    var stringToHTML 
+    var stringToHTML;
     // const RichTextWithValue = RichTextHOC(RichTextV2);
-    const [richTextToggle, setRichTextToggle] = React.useState(false);
+    const [isTextToggled, setIsTextToggled] = React.useState(false);
     const [values, setValues] = React.useState('');
+    const [customHTML, setCustomHTML] = React.useState('');
 
     const { wrapSSR, hashId, componentCls } = useStyles();
     const modules = {
-      toolbar: [['bold', 'italic', 'underline', 'link'], [{ list: 'ordered' }, { list: 'bullet' }], ['clean']],
+      toolbar: [
+        ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
+        ['blockquote', 'code-block','tables'],
+      
+        [{ 'header': 1 }, { 'header': 2 }],               // custom button values
+          
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
+        [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
+        [{ 'direction': 'rtl' }],                         // text direction
+      
+        [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
+        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+       
+      
+        [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
+        [{ 'font': [] }],
+        [{ 'align': [] }],
+      
+        ['clean']                                         // remove formatting button
+      ],
     };
     const formats = [
       'header',
@@ -31,45 +53,45 @@ export const RichTextV2 = connect(
       'indent',
       'link',
       'image',
+      'background',
+      'color',
+      'font',
+      'code',
+      'size',
+      'strike',
+      'script',
+      'align',
+      'direction',
+      'tables'
     ];
     const { value, defaultValue, onChange, disabled } = props;
     const resultValue = isVariable(value || defaultValue) ? undefined : value || defaultValue || '';
-    const onChangeText = (values) => {
+    const onRichTextChange = (values) => {
+      console.log('rich text rendered');
       setValues(values);
     };
-    console.log(values);
 
     function handleCheck(value) {
       console.log('toggle value', value);
-      setRichTextToggle(value);
+      setIsTextToggled(value);
     }
-    function convertStringToHtml(event) {
-   
-      setValues(event.target.value)
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(event.target.value, 'text/html');
-      console.log(doc);
-
-      //if the rich text is read only
-      if(richTextToggle){
-        stringToHTML = doc
-        console.log("string to html",stringToHTML)
-      }
+    function onTextChange(event) {
+      setValues(event.target.value);
     }
-    
+    console.log(values);
     return wrapSSR(
       <>
         <div>
-          {/* <ReactQuill
+          <ReactQuill
             className={`${componentCls} ${hashId}`}
             modules={modules}
             formats={formats}
             value={values}
-            onChange={onChangeText}
-            readOnly={richTextToggle}
-          /> */}
+            onChange={!isTextToggled ? onRichTextChange : () => null}
+            readOnly={isTextToggled}
+          />
           <div>
-            <Input.TextArea value={values} disabled={!richTextToggle} onChange={convertStringToHtml} />
+            <Input.TextArea  rows={8} value={values} disabled={!isTextToggled} onChange={onTextChange} />
           </div>
           <div>
             <Switch checkedChildren="switch to rich text" unCheckedChildren="switch to html" onChange={handleCheck} />
