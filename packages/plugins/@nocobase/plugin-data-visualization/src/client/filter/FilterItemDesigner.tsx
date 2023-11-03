@@ -23,6 +23,7 @@ const EditTitle = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useChartsTranslation();
   const { dn } = useDesignable();
+  const { setField } = useContext(ChartFilterContext);
 
   return (
     <SchemaSettings.ModalItem
@@ -52,6 +53,7 @@ const EditTitle = () => {
             },
           });
         }
+        setField(fieldSchema.name as string, { title });
         dn.refresh();
       }}
     />
@@ -65,7 +67,7 @@ const EditOperator = () => {
   const field = useField<Field>();
   const { t } = useChartsTranslation();
   const { dn } = useDesignable();
-  const { addField } = useContext(ChartFilterContext);
+  const { setField } = useContext(ChartFilterContext);
   const { getInterface, getCollectionJoinField } = useCollectionManager();
   let props = getCollectionJoinField(fieldName);
   let interfaceConfig = getInterface(props?.interface);
@@ -136,7 +138,7 @@ const EditOperator = () => {
           setOperatorComponent(operator, defaultComponent);
         }
 
-        addField(fieldName, { title: field.title, operator });
+        setField(fieldName, { operator });
         dn.refresh();
       }}
     />

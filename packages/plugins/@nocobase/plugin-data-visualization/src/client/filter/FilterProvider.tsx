@@ -14,7 +14,7 @@ export const ChartFilterContext = createContext<{
       };
     };
   };
-  addField: (name: string, field: { title: string; operator?: string }) => void;
+  setField: (name: string, field: { title?: string; operator?: string }) => void;
   removeField: (name: string) => void;
   collapse: {
     collapsed: boolean;
@@ -31,10 +31,13 @@ export const ChartFilterProvider: React.FC = (props) => {
   const [fields, setFields] = useState({});
   const [collapse, _setCollapse] = useState({ collapsed: false, row: 1 });
   const [form, _setForm] = useState<any>();
-  const addField = useMemoizedFn((name: string, props: { title: string }) => {
+  const setField = useMemoizedFn((name: string, props: { title?: string; operator?: string }) => {
     setFields((fields) => ({
       ...fields,
-      [name]: props,
+      [name]: {
+        ...(fields[name] || {}),
+        ...props,
+      },
     }));
   });
   const removeField = useMemoizedFn((name: string) => {
@@ -57,7 +60,7 @@ export const ChartFilterProvider: React.FC = (props) => {
   useEffect(() => setReady(true), []);
   return (
     <ChartFilterContext.Provider
-      value={{ ready, enabled, setEnabled, fields, addField, removeField, collapse, setCollapse, form, setForm }}
+      value={{ ready, enabled, setEnabled, fields, setField, removeField, collapse, setCollapse, form, setForm }}
     >
       {props.children}
     </ChartFilterContext.Provider>

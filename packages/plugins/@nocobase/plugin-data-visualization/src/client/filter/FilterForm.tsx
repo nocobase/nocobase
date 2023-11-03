@@ -6,7 +6,7 @@ import { setDefaultValue } from './utils';
 import { useChartFilter } from '../hooks';
 
 export const ChartFilterForm: React.FC = memo((props) => {
-  const { addField, removeField, setForm } = useContext(ChartFilterContext);
+  const { setField, removeField, setForm } = useContext(ChartFilterContext);
   const { getTranslatedTitle } = useChartFilter();
   const variables = useRef<any>(null);
   variables.current = useContext(VariablesContext);
@@ -33,7 +33,7 @@ export const ChartFilterForm: React.FC = memo((props) => {
             if (!name) {
               return;
             }
-            addField(name, { title: field.title, operator: field.componentProps['filter-operator'] });
+            setField(name, { title: field.title, operator: field.componentProps['filter-operator'] });
 
             // parse field title
             if (field.title.includes('/')) {
@@ -52,7 +52,7 @@ export const ChartFilterForm: React.FC = memo((props) => {
           });
         },
       }),
-    [addField, getTranslatedTitle, removeField, variables],
+    [setField, getTranslatedTitle, removeField, variables],
   );
 
   useEffect(() => setForm(form), [form, setForm]);
