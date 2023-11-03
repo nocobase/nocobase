@@ -161,7 +161,7 @@ export const setDefaultValue = async (field: any, variables: any) => {
   const defaultValue = field.componentProps.defaultValue;
   const isVariable =
     typeof defaultValue === 'string' && defaultValue?.startsWith('{{$') && defaultValue?.endsWith('}}');
-  if (!isVariable) {
+  if (!isVariable || !variables) {
     field.setInitialValue(defaultValue);
   } else {
     field.loading = true;

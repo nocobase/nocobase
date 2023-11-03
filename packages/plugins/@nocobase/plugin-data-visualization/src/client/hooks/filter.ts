@@ -330,16 +330,14 @@ export const useChartFilter = () => {
 export const useFilterVariable = () => {
   const { t: trans } = useChartsTranslation();
   const t = useMemoizedFn(trans);
-  const {
-    enabled,
-    fields: { custom = [] },
-  } = useContext(ChartFilterContext);
-  const options = Object.entries(custom)
-    .filter(([_, value]) => value)
+  const { enabled, fields } = useContext(ChartFilterContext);
+  const options = Object.entries(fields)
+    .filter(([name, value]) => name.startsWith('custom.') && value)
     .map(([name, { title }]) => {
+      const value = name.replace(/^custom\./, '');
       return {
-        key: name,
-        value: name,
+        key: value,
+        value,
         label: title,
       };
     });

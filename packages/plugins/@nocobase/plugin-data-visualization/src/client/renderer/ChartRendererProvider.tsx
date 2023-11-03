@@ -69,7 +69,9 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
   const service = useRequest(
     (collection, query, manual) =>
       new Promise((resolve, reject) => {
+        // Check if the chart is configured
         if (!(collection && query?.measures?.length)) return resolve(undefined);
+        // If the filter block is enabled, the filter form is required to be rendered
         if (enabled && !form) return resolve(undefined);
         const filterValues = getFilter();
         const queryWithFilter =
@@ -113,6 +115,8 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
       }),
     {
       defaultParams: [collection, query],
+      // Wait until CharrFilterProvider is rendered and check the status of the filter form
+      // since the filter parameters should be applied if the filter block is enabled
       ready: ready && (!enabled || !!form),
     },
   );

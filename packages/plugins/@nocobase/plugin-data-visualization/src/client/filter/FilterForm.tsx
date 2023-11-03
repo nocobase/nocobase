@@ -41,7 +41,7 @@ export const ChartFilterForm: React.FC = memo((props) => {
             }
 
             // parse default value
-            setDefaultValue(field, variables);
+            setDefaultValue(field, variables.current);
           });
           onFieldUnmount('*', (field: any) => {
             const name = getField(field);
