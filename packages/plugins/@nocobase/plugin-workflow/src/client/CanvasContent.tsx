@@ -27,7 +27,14 @@ export function CanvasContent({ entry }) {
         >
           <div className={styles.branchClass}>
             {workflow?.executed ? (
-              <Alert type="warning" message={lang('Executed workflow cannot be modified')} showIcon />
+              <Alert
+                type="warning"
+                message={lang('Executed workflow cannot be modified')}
+                showIcon
+                className={css`
+                  margin-bottom: 1em;
+                `}
+              />
             ) : null}
             <TriggerConfig />
             <div
