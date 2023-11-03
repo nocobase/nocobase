@@ -59,12 +59,20 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
       const intervalTime = end.diff(start, 'millisecond', true);
 
       const dateM = dayjs(date);
-      const startDate = dateM.clone().startOf('month');
-      const endDate = startDate.clone().endOf('month');
+      let startDate = dateM.clone().startOf('month');
+      let endDate = startDate.clone().endOf('month');
+
+      /**
+       * view === month 时，会显示当月日程
+       * 但这个日历一般情况下需要展示 6w * 7d 的日程，总共 42 天
+       * 假设 10.1 号是星期六，我们需要将日程的开始时间调整为这一周的星期一，也就是 9.25 号
+       * 而结束时间需要调整为 10.31 号这一周的星期日，也就是 10.5 号
+       */
       if (view === 'month') {
-        startDate.startOf('week');
-        endDate.endOf('week');
+        startDate = startDate.startOf('week');
+        endDate = endDate.endOf('week');
       }
+
       const push = (eventStart: Dayjs = start.clone()) => {
         // 必须在这个月的开始时间和结束时间，且在日程的开始时间之后
         if (eventStart.isBefore(start) || !eventStart.isBetween(startDate, endDate)) {
