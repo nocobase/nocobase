@@ -57,7 +57,7 @@ export const GridCardActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'sql';
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
