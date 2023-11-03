@@ -61,8 +61,7 @@ export const useChartFilter = () => {
   const { charts } = useContext(ChartDataContext);
   const { fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
-  const { getCollection, getInterface, getCollectionFields, getCollectionField, getCollectionJoinField } =
-    useCollectionManager();
+  const { getCollection, getInterface, getCollectionFields, getCollectionJoinField } = useCollectionManager();
   const { fields: fieldProps, form } = useContext(ChartFilterContext);
 
   const getChartFilterFields = (collection: CollectionOptions) => {
@@ -174,7 +173,7 @@ export const useChartFilter = () => {
       if (field.target && depth > 2) {
         return;
       }
-      if (children?.length) {
+      if (children?.length && field.interface !== 'chinaRegion') {
         const items = children.map((child: any) =>
           children2item(child, `${title} / ${fieldTitle}`, `${name}.${field.name}`),
         );

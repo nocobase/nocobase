@@ -23,7 +23,7 @@ export const useUserVariable = ({ schema }: { schema: any }) => {
         }
         return result;
       }),
-    [t, component],
+    [t],
   );
   const children = useMemo(() => getOptions(options), [getOptions, options]);
   const result = useMemo(

@@ -31,6 +31,7 @@ export const ChartFilterVariableInput: React.FC<any> = (props) => {
   return (
     <Variable.Input
       {...componentProps}
+      fieldNames={{}}
       value={value?.value}
       scope={options}
       onChange={(v: any) => {
