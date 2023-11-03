@@ -8,6 +8,9 @@ import { RichTextHOC } from './RichTextHOC';
 import { Input } from 'antd';
 import { Switch } from 'antd';
 import './style.css'
+import {useEffect} from 'react';
+
+
 
 export const RichTextV2 = connect(
   (props) => {
