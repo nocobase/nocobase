@@ -106,7 +106,7 @@ const WithForm = (props: WithFormProps) => {
     return () => {
       form.removeEffects(id);
     };
-  }, [props.disabled]);
+  }, [form, props.disabled, setFormValueChanged]);
 
   useEffect(() => {
     const id = uid();

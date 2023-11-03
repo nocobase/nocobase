@@ -1,9 +1,8 @@
 import { ArrayItems } from '@formily/antd-v5';
-import React from 'react';
 
-import { Variable } from '@nocobase/client';
+import { defaultFieldNames } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
-import { useWorkflowVariableOptions } from '../variable';
+import { WorkflowVariableInput } from '../variable';
 
 export default {
   title: `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`,
@@ -66,9 +65,8 @@ export default {
               value: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Variable.Input',
+                'x-component': 'WorkflowVariableInput',
                 'x-component-props': {
-                  scope: '{{useWorkflowVariableOptions()}}',
                   useTypedConstant: true,
                 },
               },
@@ -112,9 +110,8 @@ export default {
               value: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Variable.Input',
+                'x-component': 'WorkflowVariableInput',
                 'x-component-props': {
-                  scope: '{{useWorkflowVariableOptions()}}',
                   useTypedConstant: true,
                 },
               },
@@ -140,7 +137,7 @@ export default {
       title: `{{t("Body", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
-      'x-component': 'RequestBody',
+      'x-component': 'WorkflowVariableJSON',
       'x-component-props': {
         changeOnSelect: true,
         autoSize: {
@@ -171,14 +168,15 @@ export default {
     },
   },
   view: {},
-  scope: {
-    useWorkflowVariableOptions,
-  },
+  scope: {},
   components: {
     ArrayItems,
-    RequestBody(props) {
-      const scope = useWorkflowVariableOptions();
-      return <Variable.JSON scope={scope} {...props} />;
-    },
+    WorkflowVariableInput,
+  },
+  useVariables({ key, title }, { types, fieldNames = defaultFieldNames }) {
+    return {
+      [fieldNames.value]: key,
+      [fieldNames.label]: title,
+    };
   },
 };
