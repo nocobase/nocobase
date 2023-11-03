@@ -101,7 +101,7 @@ test.describe('enable & disabled plugin', () => {
     await page.getByPlaceholder('Search plugin').fill('hello');
     await expect(page.getByLabel('Hello')).toBeVisible();
     const isActive = await page.getByLabel('Hello').getByLabel('enable').isChecked();
-    await expect(isActive).toBe(false);
+    expect(isActive).toBe(false);
     //激活插件
     await page.getByLabel('Hello').getByLabel('enable').click();
     await page.waitForTimeout(1000); // 等待1秒钟

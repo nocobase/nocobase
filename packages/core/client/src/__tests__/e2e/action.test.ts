@@ -146,14 +146,12 @@ test.describe('add action & remove action', () => {
     await page.getByLabel('Enable actions-Delete').click();
     await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
     await page.getByText('Enable actions').hover();
-    await page.waitForTimeout(1000); // 等待1秒钟
-
     await expect(page.getByLabel('action-Filter.Action-Filter-filter-users-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Add new-create-users-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Delete-destroy-users-table')).toBeVisible();
-    await expect(await page.getByLabel('Enable actions-Filter').getByRole('switch').isChecked()).toBe(true);
-    await expect(await page.getByLabel('Enable actions-Add new').getByRole('switch').isChecked()).toBe(true);
-    await expect(await page.getByLabel('Enable actions-Delete').getByRole('switch').isChecked()).toBe(true);
+    await expect(page.getByLabel('Enable actions-Filter').getByRole('switch')).toBeChecked();
+    await expect(page.getByLabel('Enable actions-Add new').getByRole('switch')).toBeChecked();
+    await expect(page.getByLabel('Enable actions-Delete').getByRole('switch')).toBeChecked();
     //移除按钮
     await page.getByLabel('Enable actions-Filter').click();
     await page.getByLabel('Enable actions-Add new').click();
@@ -165,6 +163,9 @@ test.describe('add action & remove action', () => {
     await expect(
       page.getByLabel('block-item-CardItem-users-table').getByLabel('Filter', { exact: true }),
     ).not.toBeVisible();
+    await expect(page.getByLabel('Enable actions-Filter').getByRole('switch')).not.toBeChecked();
+    await expect(page.getByLabel('Enable actions-Add new').getByRole('switch')).not.toBeChecked();
+    await expect(page.getByLabel('Enable actions-Delete').getByRole('switch')).not.toBeChecked();
   });
 });
 

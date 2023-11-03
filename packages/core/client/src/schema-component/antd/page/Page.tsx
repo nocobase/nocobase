@@ -79,7 +79,6 @@ export const Page = (props) => {
         >
           {!disablePageHeader && (
             <AntdPageHeader
-              aria-lebel={t(pageHeaderTitle || ' ')}
               className={classNames('pageHeaderCss', pageHeaderTitle || enablePageTabs ? '' : 'height0')}
               ghost={false}
               // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
