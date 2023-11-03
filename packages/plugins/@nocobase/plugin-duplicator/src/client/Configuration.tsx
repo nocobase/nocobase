@@ -119,11 +119,11 @@ const LearnMore: React.FC = () => {
       <a onClick={showModal}>{t('Learn more')}</a>
       <Modal width={800} open={isModalOpen} footer={null} onOk={handleOk} onCancel={handleCancel}>
         <h3> {t('System metadata')}</h3>
-        <Table bordered size={'small'} dataSource={dataSource?.meta} columns={columns} />
+        <Table bordered size={'small'} dataSource={dataSource?.meta} columns={columns} scroll={{ y: 300 }} />
         <h3>{t('System config')}</h3>
-        <Table bordered size={'small'} dataSource={dataSource?.config} columns={columns} />
+        <Table bordered size={'small'} dataSource={dataSource?.config} columns={columns} scroll={{ y: 300 }} />
         <h3>{t('Business data')}</h3>
-        <Table bordered size={'small'} dataSource={dataSource?.business} columns={columns} />
+        <Table bordered size={'small'} dataSource={dataSource?.business} columns={columns} scroll={{ y: 300 }} />
       </Modal>
     </>
   );
