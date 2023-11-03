@@ -1,11 +1,24 @@
 import { Context, Next } from '@nocobase/actions';
-import { COOKIE_KEY_AUTHENTICATOR, COOKIE_KEY_TICKET } from '../../constants';
+import { AppSupervisor } from '@nocobase/server';
+import { CASAuth } from '../auth';
 
 export const service = async (ctx: Context, next: Next) => {
-  const { params } = ctx.action;
-  ctx.cookies.set(COOKIE_KEY_TICKET, params.ticket, {
-    httpOnly: true,
-  });
-  ctx.redirect(`/signin?authenticator=${ctx.cookies.get(COOKIE_KEY_AUTHENTICATOR)}`);
+  const { authenticator, __appName: appName } = ctx.action.params;
+
+  let prefix = '';
+  if (appName && appName !== 'main') {
+    const appSupervisor = AppSupervisor.getInstance();
+    if (appSupervisor?.runningMode !== 'single') {
+      prefix = `/apps/${appName}`;
+    }
+  }
+
+  const auth = (await ctx.app.authManager.get(authenticator, ctx)) as CASAuth;
+  try {
+    const { token } = await auth.signIn();
+    ctx.redirect(`${prefix}/admin?authenticator=${authenticator}&token=${token}`);
+  } catch (error) {
+    ctx.redirect(`${prefix}/signin?authenticator=${authenticator}&error=${error.message}`);
+  }
   return next();
 };

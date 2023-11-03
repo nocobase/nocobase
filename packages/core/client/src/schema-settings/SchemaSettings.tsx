@@ -19,15 +19,17 @@ import {
   Space,
   Switch,
 } from 'antd';
-import _, { cloneDeep } from 'lodash';
+import _, { cloneDeep, get, set } from 'lodash';
 import React, {
   ReactNode,
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   // @ts-ignore
   useTransition as useReactTransition,
+  useRef,
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -63,7 +65,7 @@ import {
   useRecord,
   useSortFields,
 } from '..';
-import { BlockRequestContext, useFormBlockContext, useTableBlockContext } from '../block-provider';
+import { BlockRequestContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
 import {
   FormActiveFieldsProvider,
   findFilterTargets,
@@ -77,7 +79,7 @@ import {
   isSameCollection,
   useSupportedBlocks,
 } from '../filter-provider/utils';
-import { FlagProvider } from '../flag-provider';
+import { FlagProvider, useFlag } from '../flag-provider';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 import { DynamicComponentProps } from '../schema-component/antd/filter/DynamicComponent';
@@ -146,10 +148,10 @@ interface ModalItemProps {
 
 type SchemaSettingsNested = {
   Remove?: React.FC<RemoveProps>;
-  Item?: React.FC<MenuItemProps>;
+  Item?: React.FC<MenuItemProps & { name?: string }>;
   Divider?: React.FC;
   Popup?: React.FC<MenuItemProps & { schema?: ISchema }>;
-  SwitchItem?: React.FC<SwitchItemProps>;
+  SwitchItem?: React.FC<SwitchItemProps & { name?: string }>;
   CascaderItem?: React.FC<CascaderProps<any> & Omit<MenuItemProps, 'title'> & { title: any }>;
   DataScope?: React.FC<DataScopeProps>;
   ModalItem: React.FC<ModalItemProps>;
@@ -241,6 +243,7 @@ SchemaSettings.Template = function Template(props) {
   if (template) {
     return (
       <SchemaSettings.Item
+        title="Convert reference to duplicate"
         onClick={async () => {
           const schema = await copyTemplateSchema(template);
           const removed = tdn.removeWithoutEmit();
@@ -259,6 +262,7 @@ SchemaSettings.Template = function Template(props) {
   }
   return (
     <SchemaSettings.Item
+      title="Save as template"
       onClick={async () => {
         setVisible(false);
         const { title } = collectionName ? getCollection(collectionName) : { title: '' };
@@ -366,6 +370,7 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
   if (template) {
     return (
       <SchemaSettings.Item
+        title="Convert reference to duplicate"
         onClick={async () => {
           const schema = await copyTemplateSchema(template);
           const templateSchema = findBlockTemplateSchema(fieldSchema);
@@ -402,6 +407,7 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
   }
   return (
     <SchemaSettings.Item
+      title="Save as block template"
       onClick={async () => {
         setVisible(false);
         const { title } = getCollection(collectionName);
@@ -473,15 +479,27 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
   );
 };
 
-SchemaSettings.Item = function Item(props) {
+SchemaSettings.Item = function Item(props: {
+  title: string;
+  name?: string;
+  children?: ReactNode;
+  eventKey?: string;
+  onClick?: (e: any) => void;
+}) {
   const { pushMenuItem } = useCollectMenuItems();
   const { collectMenuItem } = useCollectMenuItem();
-  const { eventKey } = props;
-  const key = useMemo(() => uid(), []);
+  const { eventKey, title, name } = props;
+
+  if (process.env.NODE_ENV !== 'production' && !title) {
+    throw new Error('SchemaSettings.Item must have a title');
+  }
+
   const item = {
-    ..._.omit(props, ['children']),
-    key,
-    eventKey: (eventKey as any) || key,
+    role: 'button',
+    'aria-label': name || title,
+    key: title,
+    ..._.omit(props, ['children', 'name']),
+    eventKey: eventKey as any,
     onClick: (info) => {
       info.domEvent.preventDefault();
       info.domEvent.stopPropagation();
@@ -518,6 +536,8 @@ SchemaSettings.SubMenu = function SubMenu(props) {
   const { pushMenuItem } = useCollectMenuItems();
   const key = useMemo(() => uid(), []);
   const item = {
+    role: 'button',
+    'aria-label': props.title,
     key,
     label: props.title,
     title: props.title,
@@ -553,13 +573,14 @@ SchemaSettings.Remove = function Remove(props: any) {
 
   return (
     <SchemaSettings.Item
+      title="Delete"
       eventKey="remove"
       onClick={() => {
         modal.confirm({
           title: t('Delete block'),
           content: t('Are you sure you want to delete it?'),
           ...confirm,
-          onOk() {
+          async onOk() {
             const options = {
               removeParentsIfNoChildren,
               breakRemoveOn,
@@ -569,10 +590,11 @@ SchemaSettings.Remove = function Remove(props: any) {
               fieldSchema['required'] = false;
             }
             if (template && ctx?.dn) {
-              ctx?.dn.remove(null, options);
+              await ctx?.dn.remove(null, options);
             } else {
-              dn.remove(null, options);
+              await dn.remove(null, options);
             }
+            await confirm?.onOk?.();
             delete form.values[fieldSchema.name];
             removeActiveFieldName?.(fieldSchema.name as string);
             if (field?.setInitialValue && field?.reset) {
@@ -634,6 +656,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
       return (
         <SchemaSettings.SwitchItem
           key={block.uid}
+          name={compile(block.collection.title)}
           title={title}
           checked={targets.some((target) => target.uid === block.uid)}
           onChange={(checked) => {
@@ -664,6 +687,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
     return (
       <SchemaSettings.SelectItem
         key={block.uid}
+        name={compile(block.collection.title)}
         title={title}
         value={target?.field || ''}
         options={[
@@ -713,7 +737,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
       {Content.length ? (
         Content
       ) : (
-        <SchemaSettings.Item>
+        <SchemaSettings.Item title="empty">
           <Empty
             style={{ width: 160, padding: '0 1em' }}
             description={emptyDescription}
@@ -726,39 +750,11 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
 };
 
 SchemaSettings.SelectItem = function SelectItem(props) {
-  const { title, options, value, onChange, openOnHover, onClick: _onClick, ...others } = props;
-  const [open, setOpen] = useState(false);
-
-  const onClick = (...args) => {
-    setOpen(false);
-    _onClick?.(...args);
-  };
-  const onMouseEnter = useCallback(() => setOpen(true), []);
-
-  // 鼠标 hover 时，打开下拉框
-  const moreProps = openOnHover
-    ? {
-        onMouseEnter,
-        open,
-      }
-    : {};
+  const { title, name, options, value, onChange, onClick, ...others } = props;
 
   return (
-    <SchemaSettings.Item {...others}>
-      <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
-        {title}
-        <Select
-          data-testid="antd-select"
-          popupMatchSelectWidth={false}
-          bordered={false}
-          defaultValue={value}
-          onChange={(...arg) => (setOpen(false), onChange(...arg))}
-          options={options}
-          style={{ textAlign: 'right', minWidth: 100 }}
-          onClick={onClick}
-          {...moreProps}
-        />
-      </div>
+    <SchemaSettings.Item name={name} title={title} role="none" aria-label="" {...others}>
+      <SelectWithTitle {...{ name, title, defaultValue: value, onChange, options, onClick }} />
     </SchemaSettings.Item>
   );
 };
@@ -766,7 +762,7 @@ SchemaSettings.SelectItem = function SelectItem(props) {
 SchemaSettings.CascaderItem = (props: CascaderProps<any> & { title: any }) => {
   const { title, options, value, onChange, ...others } = props;
   return (
-    <SchemaSettings.Item {...(others as any)}>
+    <SchemaSettings.Item title={title} {...(others as any)}>
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Cascader
@@ -789,10 +785,12 @@ interface SwitchItemProps extends Omit<MenuItemProps, 'onChange'> {
 }
 
 SchemaSettings.SwitchItem = function SwitchItem(props) {
-  const { title, onChange, ...others } = props;
+  const { title, onChange, name, ...others } = props;
   const [checked, setChecked] = useState(!!props.checked);
   return (
     <SchemaSettings.Item
+      name={name}
+      title={title}
       {...others}
       onClick={() => {
         onChange?.(!checked);
@@ -814,6 +812,7 @@ SchemaSettings.PopupItem = function PopupItem(props) {
   return (
     <ActionContextProvider value={{ visible, setVisible }}>
       <SchemaSettings.Item
+        title={props.title}
         {...others}
         onClick={() => {
           // actx.setVisible(false);
@@ -834,7 +833,7 @@ SchemaSettings.PopupItem = function PopupItem(props) {
 };
 
 SchemaSettings.ActionModalItem = React.memo((props: any) => {
-  const { title, onSubmit, initialValues, initialSchema, schema, modalTip, components, ...others } = props;
+  const { title, onSubmit, initialValues, initialSchema, schema, modalTip, components, scope, ...others } = props;
   const [visible, setVisible] = useState(false);
   const [schemaUid, setSchemaUid] = useState<string>(props.uid);
   const { t } = useTranslation();
@@ -854,9 +853,14 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
     [initialValues],
   );
 
+  useEffect(() => {
+    form.setInitialValues(cloneDeep(initialValues));
+  }, [JSON.stringify(initialValues || {})]);
+
   const cancelHandler = useCallback(() => {
     setVisible(false);
-  }, []);
+    form.reset();
+  }, [form]);
 
   const submitHandler = useCallback(async () => {
     await form.submit();
@@ -871,16 +875,22 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
       await api.resource('uiSchemas').insert({ values: initialSchema });
       setSchemaUid(initialSchema['x-uid']);
     }
-
+    if (typeof others?.beforeOpen === 'function') {
+      others?.beforeOpen?.();
+    }
     ctx.setVisible(false);
     setVisible(true);
   }, [api, ctx, dn, fieldSchema, initialSchema, schemaUid]);
 
   const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLLIElement>): void => e.stopPropagation(), []);
-
   return (
     <>
-      <SchemaSettings.Item {...others} onClick={openAssignedFieldValueHandler} onKeyDown={onKeyDown}>
+      <SchemaSettings.Item
+        title={compile(title)}
+        {...others}
+        onClick={openAssignedFieldValueHandler}
+        onKeyDown={onKeyDown}
+      >
         {props.children || props.title}
       </SchemaSettings.Item>
       {createPortal(
@@ -905,8 +915,10 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
               <FormLayout layout={'vertical'}>
                 {modalTip && <Alert message={modalTip} />}
                 {modalTip && <br />}
-                {visible && schemaUid && <RemoteSchemaComponent noForm components={components} uid={schemaUid} />}
-                {visible && schema && <SchemaComponent components={components} schema={schema} />}
+                {visible && schemaUid && (
+                  <RemoteSchemaComponent noForm components={components} scope={scope} uid={schemaUid} />
+                )}
+                {visible && schema && <SchemaComponent components={components} scope={scope} schema={schema} />}
               </FormLayout>
             </FormProvider>
           </FormActiveFieldsProvider>
@@ -945,6 +957,7 @@ SchemaSettings.ModalItem = function ModalItem(props: ModalItemProps) {
   }
   return (
     <SchemaSettings.Item
+      title={schema.title || title}
       {...others}
       onClick={async () => {
         const values = asyncGetInitialValues ? await asyncGetInitialValues() : initialValues;
@@ -1046,17 +1059,56 @@ SchemaSettings.BlockTitleItem = function BlockTitleItem() {
 };
 
 SchemaSettings.DefaultSortingRules = function DefaultSortingRules(props) {
-  const { sort, sortFields, onSubmit } = props;
+  const { path = 'x-component-props.params.sort' } = props;
   const { t } = useTranslation();
+  const { dn } = useDesignable();
+
+  const fieldSchema = useFieldSchema();
+  const field = useField();
+  const title = props.title || t('Set default sorting rules');
+  const { name } = useCollection();
+  const defaultSort = get(fieldSchema, path) || [];
+  const sort = defaultSort?.map((item: string) => {
+    return item.startsWith('-')
+      ? {
+          field: item.substring(1),
+          direction: 'desc',
+        }
+      : {
+          field: item,
+          direction: 'asc',
+        };
+  });
+  const sortFields = useSortFields(props.name || name);
+
+  const onSubmit = async ({ sort }) => {
+    if (props?.onSubmit) {
+      return props.onSubmit({ sort });
+    }
+    const value = sort.map((item) => {
+      return item.direction === 'desc' ? `-${item.field}` : item.field;
+    });
+    set(
+      field,
+      path.replace('x-component-props', 'componentProps').replace('x-decorator-props', 'decoratorProps'),
+      value,
+    );
+
+    set(fieldSchema, path, value);
+    await dn.emit('patch', {
+      schema: fieldSchema,
+    });
+    return props.onSubmitAfter?.();
+  };
 
   return (
     <SchemaSettings.ModalItem
-      title={t('Set default sorting rules')}
+      title={title}
       components={{ ArrayItems }}
       schema={
         {
           type: 'object',
-          title: t('Set default sorting rules'),
+          title,
           properties: {
             sort: {
               type: 'array',
@@ -1140,8 +1192,8 @@ SchemaSettings.LinkageRules = function LinkageRules(props) {
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const record = useRecord();
-
-  const type = ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
+  const { type: formBlockType } = useFormBlockType();
+  const type = props?.type || ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
   const schema = useMemo<ISchema>(
     () => ({
@@ -1163,6 +1215,7 @@ SchemaSettings.LinkageRules = function LinkageRules(props) {
                 variables,
                 localVariables,
                 record,
+                formBlockType,
               };
             },
           },
@@ -1540,6 +1593,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchem
   const record = useRecord();
   const { form } = useFormBlockContext();
   const currentFormFields = useCollectionFilterOptions(collection);
+  const { isInSubForm, isInSubTable } = useFlag() || {};
 
   const { name } = collection;
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
@@ -1581,7 +1635,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchem
         FormLayout,
         VariableInput: (props) => {
           return (
-            <FlagProvider isInSetDefaultValueDialog={true}>
+            <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable} isInSetDefaultValueDialog>
               <VariableInput {...props} />
             </FlagProvider>
           );
@@ -1810,6 +1864,7 @@ SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const { getAllCollectionsInheritChain } = useCollectionManager();
+  const { isInSubForm, isInSubTable } = useFlag() || {};
 
   const dynamicComponent = (props: DynamicComponentProps) => {
     return (
@@ -1840,7 +1895,13 @@ SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
           properties: {
             filter: {
               enum: props.collectionFilterOption || options,
-              'x-decorator': BaseVariableProvider,
+              'x-decorator': (props) => (
+                <BaseVariableProvider {...props}>
+                  <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable}>
+                    {props.children}
+                  </FlagProvider>
+                </BaseVariableProvider>
+              ),
               'x-decorator-props': {
                 isDisabled,
               },
@@ -1867,6 +1928,54 @@ export const isSystemField = (collectionField: CollectionFieldOptions, getInterf
 export const isPatternDisabled = (fieldSchema: Schema) => {
   return fieldSchema?.['x-component-props']?.['pattern-disable'] == true;
 };
+
+function SelectWithTitle({
+  name,
+  title,
+  defaultValue,
+  onChange,
+  options,
+  onClick,
+}: {
+  name?: string;
+  title?: any;
+  defaultValue?: any;
+  options?: any;
+  onChange?: (...args: any[]) => void;
+  onClick?: (...args: any[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const timerRef = useRef<any>(null);
+
+  return (
+    <div
+      role="button"
+      aria-label={name || title}
+      style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}
+      onClick={() => setOpen((v) => !v)}
+      onMouseLeave={() => {
+        timerRef.current = setTimeout(() => {
+          setOpen(false);
+        }, 200);
+      }}
+    >
+      {title}
+      <Select
+        open={open}
+        popupMatchSelectWidth={false}
+        bordered={false}
+        defaultValue={defaultValue}
+        onChange={onChange}
+        options={options}
+        style={{ textAlign: 'right', minWidth: 100 }}
+        onClick={onClick}
+        onMouseEnter={() => {
+          clearTimeout(timerRef.current);
+        }}
+      />
+    </div>
+  );
+}
 
 function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
   const result = fieldSchema?.default ?? collectionField?.defaultValue;

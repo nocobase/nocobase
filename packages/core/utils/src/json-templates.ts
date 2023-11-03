@@ -3,7 +3,7 @@
 //
 // Created by Curran Kelleher and Chrostophe Serafin.
 // Contributions from Paul Brewer and Javier Blanco Martinez.
-import objectPath from 'object-path';
+import { get } from 'lodash';
 import dedupe from 'dedupe';
 
 // An enhanced version of `typeof` that handles arrays and dates as well.
@@ -91,7 +91,7 @@ const parseString = (() => {
         context = context || {};
         return matches.reduce((result, match, i) => {
           const parameter = parameters[i];
-          let value = objectPath.get(context, parameter.key);
+          let value = get(context, parameter.key);
 
           if (typeof value === 'undefined') {
             value = parameter.defaultValue;

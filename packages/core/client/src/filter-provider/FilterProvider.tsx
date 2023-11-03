@@ -61,6 +61,11 @@ export const FilterBlockProvider: React.FC = ({ children }) => {
   return <FilterContext.Provider value={{ dataBlocks, setDataBlocks }}>{children}</FilterContext.Provider>;
 };
 
+/**
+ * 用于收集记录当前页面中的数据区块的信息
+ * @param param0
+ * @returns
+ */
 export const FilterBlockRecord = ({
   children,
   params,

@@ -2,7 +2,6 @@ import { useCollection } from '../../collection-manager';
 
 // 表单的操作配置
 export const GridCardActionInitializers = {
-  'data-testid': 'configure-actions-button-of-grid-card-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -140,7 +139,6 @@ export const GridCardActionInitializers = {
 };
 
 export const GridCardItemActionInitializers = {
-  'data-testid': 'configure-actions-button-of-grid-card-item',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [
@@ -279,23 +277,9 @@ export const GridCardItemActionInitializers = {
         {
           type: 'item',
           title: '{{t("Custom request")}}',
-          component: 'CustomizeActionInitializer',
+          component: 'CustomRequestInitializer',
           schema: {
-            title: '{{ t("Custom request") }}',
-            'x-component': 'Action.Link',
             'x-action': 'customize:table:request',
-            'x-designer': 'Action.Designer',
-            'x-action-settings': {
-              requestSettings: {},
-              onSuccess: {
-                manualClose: false,
-                redirecting: false,
-                successMessage: '{{t("Request success")}}',
-              },
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeRequestActionProps }}',
-            },
           },
           visible: function useVisible() {
             const collection = useCollection();

@@ -30,11 +30,15 @@ function ExecutionStatusOption(props) {
 }
 
 export function ExecutionStatusSelect({ ...props }) {
+  const mode = props.multiple ? 'multiple' : null;
+
   return (
     <Select
-      data-testid="antd-select"
+      // @ts-ignore
+      role="button"
+      data-testid={`select-${mode || 'single'}`}
       {...props}
-      mode={props.multiple ? 'multiple' : null}
+      mode={mode}
       optionLabelProp="label"
       tagRender={LabelTag}
     >

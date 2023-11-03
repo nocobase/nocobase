@@ -108,7 +108,7 @@ export interface CollectionContext {
 
 export class Collection<
   TModelAttributes extends {} = any,
-  TCreationAttributes extends {} = TModelAttributes
+  TCreationAttributes extends {} = TModelAttributes,
 > extends EventEmitter {
   options: CollectionOptions;
   context: CollectionContext;
@@ -613,7 +613,12 @@ export class Collection<
     });
 
     for (const model of models) {
-      await model.sync(syncOptions);
+      await model.sync(syncOptions || {
+        force: false,
+        alter: {
+          drop: false,
+        },
+      });
     }
   }
 

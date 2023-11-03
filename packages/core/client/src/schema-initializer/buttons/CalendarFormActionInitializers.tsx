@@ -2,7 +2,6 @@ import { useCollection } from '../..';
 
 // 表单的操作配置
 export const CalendarFormActionInitializers = {
-  'data-testid': 'configure-actions-button-of-calendar-form',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   style: {
@@ -153,25 +152,7 @@ export const CalendarFormActionInitializers = {
         {
           type: 'item',
           title: '{{t("Custom request")}}',
-          component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{ t("Custom request") }}',
-            'x-component': 'Action',
-            'x-action': 'customize:form:request',
-            'x-designer': 'Action.Designer',
-            'x-action-settings': {
-              requestSettings: {},
-              skipValidator: false,
-              onSuccess: {
-                manualClose: false,
-                redirecting: false,
-                successMessage: '{{t("Request success")}}',
-              },
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeRequestActionProps }}',
-            },
-          },
+          component: 'CustomRequestInitializer',
           visible: function useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';

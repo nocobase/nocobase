@@ -17,6 +17,7 @@ import * as formilyShared from '@formily/shared';
 import * as formilyValidator from '@formily/validator';
 import * as nocobaseEvaluators from '@nocobase/evaluators/client';
 import * as nocobaseClientUtils from '@nocobase/utils/client';
+import * as nocobaseSDK from '@nocobase/sdk';
 import { dayjs } from '@nocobase/utils/client';
 import * as ahooks from 'ahooks';
 import * as antd from 'antd';
@@ -72,6 +73,7 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   requirejs.define('@nocobase/client/client', () => nocobaseClient);
   requirejs.define('@nocobase/evaluators', () => nocobaseEvaluators);
   requirejs.define('@nocobase/evaluators/client', () => nocobaseEvaluators);
+  requirejs.define('@nocobase/sdk', () => nocobaseSDK);
 
   // dnd-kit 相关
   requirejs.define('@dnd-kit/accessibility', () => dndKitAccessibility);

@@ -165,7 +165,7 @@ class NocoPage {
   }
 }
 
-export const test = base.extend<{
+const _test = base.extend<{
   mockPage: (config?: PageConfig) => NocoPage;
   createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
 }>({
@@ -206,9 +206,14 @@ export const test = base.extend<{
   },
 });
 
+export const test = Object.assign(_test, {
+  /** 只运行在 postgres 数据库中 */
+  pgOnly: process.env.DB_DIALECT == 'postgres' ? _test : _test.skip,
+});
+
 const getStorageItem = (key: string, storageState: any) => {
   return storageState.origins
-    .find((item) => item.origin === `http://localhost:${process.env.APP_PORT}`)
+    .find((item) => item.origin === process.env.APP_BASE_URL)
     ?.localStorage.find((item) => item.name === key)?.value;
 };
 
@@ -243,12 +248,10 @@ const createPage = async (page: Page, options?: CreatePageOptions) => {
   });
 
   const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
+  const headers = getHeaders(state);
 
   const systemSettings = await api.get(`/api/systemSettings:get/1`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
   });
 
   const pageUid = uid();
@@ -257,9 +260,7 @@ const createPage = async (page: Page, options?: CreatePageOptions) => {
   if (systemSettings.ok()) {
     const { data } = await systemSettings.json();
     const result = await api.post(`/api/uiSchemas:insertAdjacent/${data.options.adminSchemaUid}?position=beforeEnd`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
       data: {
         schema: {
           _isJSONSchemaObject: true,
@@ -324,12 +325,10 @@ const deletePage = async (pageUid: string) => {
   });
 
   const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
+  const headers = getHeaders(state);
 
   const result = await api.post(`/api/uiSchemas:remove/${pageUid}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
   });
 
   if (!result.ok()) {
@@ -343,13 +342,11 @@ const deleteCollections = async (collectionNames: string[]) => {
   });
 
   const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
+  const headers = getHeaders(state);
   const params = collectionNames.map((name) => `filterByTk[]=${name}`).join('&');
 
   const result = await api.post(`/api/collections:destroy?${params}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
   });
 
   if (!result.ok()) {
@@ -383,7 +380,7 @@ const createCollections = async (collectionSettings: CollectionSetting | Collect
   });
 
   const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
+  const headers = getHeaders(state);
   // const defaultCollectionSetting: Partial<CollectionSetting> = {
   //   template: 'general',
   //   logging: true,
@@ -399,9 +396,7 @@ const createCollections = async (collectionSettings: CollectionSetting | Collect
   collectionSettings = Array.isArray(collectionSettings) ? collectionSettings : [collectionSettings];
 
   const result = await api.post(`/api/collections:create`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
     // data: collectionSettings.map((item) => Object.assign(defaultCollectionSetting, item)),
     data: collectionSettings.filter((item) => !['users', 'roles'].includes(item.name)),
   });
@@ -460,14 +455,12 @@ const createFakerData = async (collectionSettings: CollectionSetting[]) => {
   });
 
   const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
+  const headers = getHeaders(state);
 
   for (const item of collectionSettings) {
     const data = generateFakerData(item);
     const result = await api.post(`/api/${item.name}:create`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
       form: data,
     });
 
@@ -484,4 +477,43 @@ export async function enableToConfig(page: Page) {
   if (!(await page.getByRole('button', { name: 'plus Add menu item' }).isVisible())) {
     await page.getByRole('button', { name: 'highlight' }).click();
   }
+}
+
+function getHeaders(storageState: any) {
+  const headers: any = {};
+  const token = getStorageItem('NOCOBASE_TOKEN', storageState);
+  const auth = getStorageItem('NOCOBASE_AUTH', storageState);
+  const subAppName = new URL(process.env.APP_BASE_URL).pathname.match(/^\/apps\/([^/]*)\/*/)?.[1];
+  const hostName = new URL(process.env.APP_BASE_URL).host;
+  const locale = getStorageItem('NOCOBASE_LOCALE', storageState);
+  const timezone = '+08:00';
+  const withAclMeta = 'true';
+  const role = getStorageItem('NOCOBASE_ROLE', storageState);
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  if (auth) {
+    headers['X-Authenticator'] = auth;
+  }
+  if (subAppName) {
+    headers['X-App'] = subAppName;
+  }
+  if (hostName) {
+    headers['X-Hostname'] = hostName;
+  }
+  if (locale) {
+    headers['X-Locale'] = locale;
+  }
+  if (timezone) {
+    headers['X-Timezone'] = timezone;
+  }
+  if (withAclMeta) {
+    headers['X-With-Acl-Meta'] = withAclMeta;
+  }
+  if (role) {
+    headers['X-Role'] = role;
+  }
+
+  return headers;
 }

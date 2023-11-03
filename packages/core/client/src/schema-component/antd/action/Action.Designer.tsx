@@ -1,8 +1,8 @@
 import { ArrayTable } from '@formily/antd-v5';
-import { onFieldValueChange, onFieldInputValueChange } from '@formily/core';
+import { onFieldValueChange, onFieldInputValueChange, onFieldInit } from '@formily/core';
 import { connect, ISchema, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Alert, Tree as AntdTree } from 'antd';
+import { Alert, Tree as AntdTree, ModalProps } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +17,7 @@ import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
+import { usePlugin } from '../../../application/hooks';
 
 const Tree = connect(
   AntdTree,
@@ -68,12 +69,12 @@ const MenuGroup = (props) => {
   );
 };
 
-function ButtonEditor() {
+function ButtonEditor(props) {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const isLink = fieldSchema['x-component'] === 'Action.Link';
+  const isLink = props?.isLink || fieldSchema['x-component'] === 'Action.Link';
 
   return (
     <SchemaSettings.ModalItem
@@ -557,6 +558,7 @@ function AssignedFieldValues() {
       <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
         <SchemaSettings.ActionModalItem
           title={t('Assign field values')}
+          maskClosable={false}
           initialSchema={initialSchema}
           initialValues={fieldSchema?.['x-action-settings']?.assignedValues}
           modalTip={tips[actionType]}
@@ -620,7 +622,6 @@ function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-
   return (
     <SchemaSettings.ModalItem
       title={t('After successful submission')}
@@ -638,7 +639,6 @@ function AfterSuccess() {
             },
             manualClose: {
               title: t('Popup close method'),
-              default: false,
               enum: [
                 { label: t('Automatic close'), value: false },
                 { label: t('Manually close'), value: true },
@@ -649,7 +649,6 @@ function AfterSuccess() {
             },
             redirecting: {
               title: t('Then'),
-              default: false,
               enum: [
                 { label: t('Stay on current page'), value: false },
                 { label: t('Redirect to'), value: true },
@@ -688,7 +687,11 @@ function AfterSuccess() {
   );
 }
 
-function RemoveButton() {
+function RemoveButton(
+  props: {
+    onConfirmOk?: ModalProps['onOk'];
+  } = {},
+) {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const isDeletable = fieldSchema?.parent['x-component'] === 'CollectionField';
@@ -703,6 +706,7 @@ function RemoveButton() {
           }}
           confirm={{
             title: t('Delete action'),
+            onOk: props.onConfirmOk,
           }}
         />
       </>
@@ -710,7 +714,7 @@ function RemoveButton() {
   );
 }
 
-function FormWorkflowSelect(props) {
+function WorkflowSelect({ types, ...props }) {
   const index = ArrayTable.useIndex();
   const { setValuesIn } = useForm();
   const baseCollection = useCollection();
@@ -742,7 +746,7 @@ function FormWorkflowSelect(props) {
         action: 'list',
         params: {
           filter: {
-            type: 'form',
+            type: types,
             enabled: true,
             'config.collection': workflowCollection,
           },
@@ -757,6 +761,8 @@ function WorkflowConfig() {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const { name: collection } = useCollection();
+  const workflowPlugin = usePlugin('workflow') as any;
+  const workflowTypes = workflowPlugin.getTriggersOptions().filter((item) => item.options.actionTriggerable);
   const description = {
     submit: t('Workflow will be triggered after submitting succeeded.', { ns: 'workflow' }),
     'customize:save': t('Workflow will be triggered after saving succeeded.', { ns: 'workflow' }),
@@ -774,7 +780,7 @@ function WorkflowConfig() {
       components={{
         Alert,
         ArrayTable,
-        FormWorkflowSelect,
+        WorkflowSelect,
       }}
       schema={
         {
@@ -835,13 +841,14 @@ function WorkflowConfig() {
                       workflowKey: {
                         type: 'number',
                         'x-decorator': 'FormItem',
-                        'x-component': 'FormWorkflowSelect',
+                        'x-component': 'WorkflowSelect',
                         'x-component-props': {
                           placeholder: t('Select workflow', { ns: 'workflow' }),
                           fieldNames: {
                             label: 'title',
                             value: 'key',
                           },
+                          types: workflowTypes.map((item) => item.value),
                         },
                         required: true,
                       },
@@ -856,7 +863,6 @@ function WorkflowConfig() {
                     properties: {
                       remove: {
                         type: 'void',
-                        'x-decorator': 'FormItem',
                         'x-component': 'ArrayTable.Remove',
                       },
                     },
@@ -889,7 +895,7 @@ function WorkflowConfig() {
 }
 
 export const ActionDesigner = (props) => {
-  const { modalTip, linkageAction, ...restProps } = props;
+  const { modalTip, linkageAction, removeButtonProps, buttonEditorProps, linkageRulesProps, ...restProps } = props;
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
   const { getChildrenCollections } = useCollectionManager();
@@ -906,10 +912,10 @@ export const ActionDesigner = (props) => {
   return (
     <GeneralSchemaDesigner {...restProps} disableInitializer draggable={isDraggable}>
       <MenuGroup>
-        <ButtonEditor />
+        <ButtonEditor {...buttonEditorProps} />
         {fieldSchema['x-action'] === 'submit' &&
           fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers' && <SaveMode />}
-        {isLinkageAction && <SchemaSettings.LinkageRules collectionName={name} />}
+        {isLinkageAction && <SchemaSettings.LinkageRules {...linkageRulesProps} collectionName={name} />}
         {isDuplicateAction && <DuplicationMode />}
         <OpenModeSchemaItems openMode={isPopupAction} openSize={isPopupAction} />
         {isUpdateModePopupAction && <UpdateMode />}
@@ -918,10 +924,10 @@ export const ActionDesigner = (props) => {
         {isValid(fieldSchema?.['x-action-settings']?.skipValidator) && <SkipValidation />}
         {isValid(fieldSchema?.['x-action-settings']?.['onSuccess']) && <AfterSuccess />}
         {isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows) && <WorkflowConfig />}
-
+        {restProps.children}
         {isChildCollectionAction && <SchemaSettings.EnableChildCollections collectionName={name} />}
 
-        {<RemoveButton />}
+        {fieldSchema?.['x-action-settings']?.removable !== false && <RemoveButton {...removeButtonProps} />}
       </MenuGroup>
     </GeneralSchemaDesigner>
   );

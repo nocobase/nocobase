@@ -1,9 +1,12 @@
-import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
+import React from 'react';
 import { createFilterFormBlockSchema } from '../utils';
 import { FilterBlockInitializer } from './FilterBlockInitializer';
 
 export const FilterFormBlockInitializer = (props) => {
+  const { item } = props;
+  const items = item?.key === 'filterFormBlockInTableSelector' && [];
+
   return (
     <FilterBlockInitializer
       {...props}
@@ -20,6 +23,7 @@ export const FilterFormBlockInitializer = (props) => {
         return s;
       }}
       createBlockSchema={createFilterFormBlockSchema}
+      items={items}
     />
   );
 };

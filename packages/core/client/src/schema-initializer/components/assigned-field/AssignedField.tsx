@@ -134,7 +134,6 @@ export const AssignedField = (props: AssignedFieldProps) => {
     },
     [JSON.stringify(_.omit(props, 'value'))],
   );
-
   return (
     <VariableInput
       form={form}

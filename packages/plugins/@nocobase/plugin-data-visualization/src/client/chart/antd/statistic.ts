@@ -1,9 +1,7 @@
 import { AntdChart } from './antd';
 import { Statistic as AntdStatistic } from 'antd';
 import { lang } from '../../locale';
-import { FieldOption } from '../../hooks';
-import { QueryProps } from '../../renderer';
-import { RenderProps } from '../chart';
+import { ChartType, RenderProps } from '../chart';
 
 export class Statistic extends AntdChart {
   constructor() {
@@ -30,16 +28,7 @@ export class Statistic extends AntdChart {
     });
   }
 
-  init(
-    fields: FieldOption[],
-    {
-      measures,
-      dimensions,
-    }: {
-      measures?: QueryProps['measures'];
-      dimensions?: QueryProps['dimensions'];
-    },
-  ) {
+  init: ChartType['init'] = (fields, { measures, dimensions }) => {
     const { yField } = this.infer(fields, { measures, dimensions });
     return {
       general: {
@@ -47,7 +36,7 @@ export class Statistic extends AntdChart {
         title: yField?.label,
       },
     };
-  }
+  };
 
   getProps({ data, fieldProps, general, advanced }: RenderProps) {
     const record = data[0] || {};

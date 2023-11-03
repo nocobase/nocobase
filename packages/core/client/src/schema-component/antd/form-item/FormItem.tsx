@@ -27,8 +27,8 @@ import { HTMLEncode } from '../input/shared';
 import { useColorFields } from '../table-v2/Table.Column.Designer';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
-import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadAssociationFieldOfForm';
-import useLazyLoadAssociationFieldOfForm from './hooks/useLazyLoadAssociationFieldOfSubForm';
+import useLazyLoadAssociationFieldOfForm from './hooks/useLazyLoadAssociationFieldOfForm';
+import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
 
 export const FormItem: any = observer(
@@ -391,11 +391,10 @@ FormItem.Designer = function Designer() {
         />
       )}
       {showModeSelect && (
-        <SchemaSettings.Item>
+        <SchemaSettings.Item title="Popup size">
           <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
             {t('Popup size')}
             <Select
-              data-testid="antd-select"
               bordered={false}
               options={[
                 { label: t('Small'), value: 'small' },
@@ -438,6 +437,7 @@ FormItem.Designer = function Designer() {
             if (!hasAddNew) {
               const addNewActionschema = {
                 'x-action': 'create',
+                'x-acl-action': 'create',
                 title: "{{t('Add new')}}",
                 'x-designer': 'Action.Designer',
                 'x-component': 'Action',
@@ -485,6 +485,7 @@ FormItem.Designer = function Designer() {
               if (!hasAddNew) {
                 const addNewActionschema = {
                   'x-action': 'create',
+                  'x-acl-action': 'create',
                   title: "{{t('Add new')}}",
                   'x-designer': 'Action.Designer',
                   'x-component': 'Action',
@@ -735,7 +736,7 @@ FormItem.FilterFormDesigner = FilterFormDesigner;
 
 function useIsAddNewForm() {
   const record = useRecord();
-  const isAddNewForm = _.isEmpty(_.omit(record, '__parent'));
+  const isAddNewForm = _.isEmpty(_.omit(record, ['__parent', '__collectionName']));
 
   return isAddNewForm;
 }

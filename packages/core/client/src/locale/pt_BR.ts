@@ -508,6 +508,7 @@ export default {
   "Single select and radio fields can be used as the grouping field": "Campos de seleção única e de rádio podem ser usados como o campo de agrupamento",
   "Tab name": "Nome da aba",
   "Current record blocks": "Blocos de registro atual",
+  "Parent record": "Registro pai",
   "Popup message": "Mensagem pop-up",
   "Delete role": "Excluir função",
   "Role display name": "Nome de exibição da função",

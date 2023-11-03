@@ -1,5 +1,5 @@
 import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/icons';
-import { RecursionField, Schema, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import {
   ActionContextProvider,
   RecordProvider,
@@ -19,7 +19,8 @@ import { AMapComponent, AMapForwardedRefProps } from './Map';
 import { getSource } from '../../utils';
 
 export const AMapBlock = (props) => {
-  const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys } = useProps(props);
+  const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys, lineSort } =
+    useProps(props);
   const { name, getPrimaryKey } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
   const primaryKey = getPrimaryKey();
@@ -118,9 +119,9 @@ export const AMapBlock = (props) => {
     const cf = getCollectionJoinField([name, ...fieldPaths].flat().join('.'));
     const overlays = dataSource
       .map((item) => {
-        const data = getSource(item, fieldNames?.field, cf?.interface);
+        const data = getSource(item, fieldNames?.field, cf?.interface)?.filter(Boolean);
         if (!data?.length) return [];
-        return data?.filter(Boolean).map((mapItem) => {
+        return data.map((mapItem) => {
           const overlay = mapRef.current?.setOverlay(collectionField.type, mapItem, {
             strokeColor: '#4e9bff',
             fillColor: '#4e9bff',
@@ -188,13 +189,46 @@ export const AMapBlock = (props) => {
       return () => o.off('click', onClick);
     });
 
+    if (collectionField.type === 'point' && lineSort?.length && overlays?.length > 1) {
+      const positions = overlays.map((o: AMap.Marker) => o.getPosition());
+
+      (overlays[0] as AMap.Marker).setzIndex(13);
+      (overlays[overlays.length - 1] as AMap.Marker).setzIndex(13);
+
+      const createText = (start = true) => {
+        if (!mapRef.current?.map) return;
+        return new AMap.Text({
+          label: {
+            direction: 'top',
+            offset: [0, 0],
+            content: start ? t('Start point') : t('End point'),
+          },
+          position: positions[start ? 0 : positions.length - 1],
+          map: mapRef.current?.map,
+        });
+      };
+
+      overlays.push(
+        ...[
+          mapRef.current?.setOverlay('lineString', positions, {
+            strokeColor: '#4e9bff',
+            fillColor: '#4e9bff',
+            strokeWeight: 2,
+            cursor: 'pointer',
+          }),
+          createText(),
+          createText(false),
+        ].filter(Boolean),
+      );
+    }
+
     return () => {
       overlays.forEach((ov) => {
         ov.remove();
       });
       events.forEach((e) => e());
     };
-  }, [dataSource, isMapInitialization, fieldNames, name, primaryKey, collectionField.type, isConnected]);
+  }, [dataSource, isMapInitialization, fieldNames, name, primaryKey, collectionField.type, isConnected, lineSort]);
 
   useEffect(() => {
     setTimeout(() => {

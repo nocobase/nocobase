@@ -1,53 +1,76 @@
 import { Field } from '@formily/core';
-import { useField, useFieldSchema, useForm } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
+import _ from 'lodash';
 import { useEffect } from 'react';
+import { useFormBlockType, useRecord } from '../../../..';
 import { useCollection, useCollectionManager } from '../../../../collection-manager';
+import { useFlag } from '../../../../flag-provider';
 import { useVariables } from '../../../../variables';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 
 /**
- * 用于懒加载 Form 区块中只用于展示的关联字段的值
+ * 用于懒加载 Form 区块中正常的关系字段
  *
- * - 在表单区块中，有一个 Display association fields 的选项，这里面的字段，只是为了显示出相应的值，不可更改
- * - 这里就是用于加载这些字段的值
+ * - 当 record 中缺少对应的字段值时，通过解析变量的方法去获取关系字段的值
+ * - 注意：应该只有在编辑模式下运行，创建模式下直接返回
  */
-const useLazyLoadDisplayAssociationFieldsOfForm = () => {
+const useLazyLoadAssociationFieldOfForm = () => {
   const { name } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
-  const form = useForm();
+  const record = useRecord();
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const field = useField<Field>();
+  const { isInAssignFieldValues } = useFlag() || {};
+  const { type: formBlockType } = useFormBlockType();
 
   const schemaName = fieldSchema.name.toString();
 
   useEffect(() => {
-    // 在数据表管理页面，也存在 `a.b` 之类的 schema name，其 collectionName 为 fields，所以在这里排除一下 `name === 'fields'` 的情况
-    if (!schemaName.includes('.') || !variables || name === 'fields') {
+    if (isInAssignFieldValues || formBlockType === 'create') {
       return;
     }
 
-    const formVariable = {
-      name: '$nForm',
-      ctx: form.values,
-      collectionName: name,
-    };
-    const variableString = `{{ $nForm.${schemaName} }}`;
     const collectionField = getCollectionJoinField(`${name}.${schemaName}`);
 
     if (!collectionField) {
-      return console.error(new Error(`useLazyLoadAssociationField: ${schemaName} not found in collection ${name}`));
+      return;
     }
 
+    const cloneRecord = { ...record };
+    delete cloneRecord['__parent'];
+    delete cloneRecord['__collectionName'];
+
+    if (_.isEmpty(cloneRecord) || !variables || record[schemaName] != null) {
+      return;
+    }
+
+    // 通过模拟一个 record 变量，用解析变量的方法去获取关系字段的值
+    const recordVariable = {
+      name: '$nRecord',
+      ctx: cloneRecord,
+      collectionName: name,
+    };
+    const variableString = `{{ $nRecord.${schemaName} }}`;
+
     variables
-      .parseVariable(variableString, formVariable)
+      .parseVariable(variableString, recordVariable)
       .then((value) => {
+        // fix https://nocobase.height.app/T-2288
+        // 造成这个问题的原因有以下几点：
+        // 1. 编辑表单自身会请求数据，并在请求数据时，会在 appends 参数中加上所有的关系字段路径（包括子表单中的）；
+        // 2. 而 `变量预加载中` 也会请求对应关系字段的数据，但是请求的数据是不包含子表单中的关系字段的；
+        // 3. 所以，当 `变量预加载` 的请求晚于编辑表单的请求时，就会造成这个问题；
+        // 更优的解决方案是：在 `变量预加载` 中也加上子表单中的关系字段路径，并删除编辑表单请求数据的逻辑（因为没必要了）。
+        // 但是这样改动较大，可以等之后 e2e 测试较完备后再处理。
+        if (field.value) return;
+
         field.value = transformVariableValue(value, { targetCollectionField: collectionField });
       })
       .catch((err) => {
         console.error(err);
       });
-  }, [schemaName.includes('.') ? form.values[schemaName.split('.')[0]] : null]);
+  }, []);
 };
 
-export default useLazyLoadDisplayAssociationFieldsOfForm;
+export default useLazyLoadAssociationFieldOfForm;

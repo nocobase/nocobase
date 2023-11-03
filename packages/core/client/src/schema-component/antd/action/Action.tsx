@@ -2,13 +2,13 @@ import { observer, RecursionField, useField, useFieldSchema, useForm } from '@fo
 import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
-import lodash from 'lodash';
+import { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
-import { useRecord } from '../../../record-provider';
+import { RecordProvider, useRecord } from '../../../record-provider';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
@@ -22,6 +22,7 @@ import { ActionPage } from './Action.Page';
 import useStyles from './Action.style';
 import { ActionContextProvider } from './context';
 import { useA } from './hooks';
+import { useGetAriaLabelOfAction } from './hooks/useGetAriaLabelOfAction';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
 
@@ -38,6 +39,8 @@ export const Action: ComposedAction = observer(
       icon,
       title,
       onClick,
+      style,
+      openSize,
       ...others
     } = useProps(props);
     const { wrapSSR, componentCls, hashId } = useStyles();
@@ -50,21 +53,28 @@ export const Action: ComposedAction = observer(
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const form = useForm();
-    const values = useRecord();
+    const record = useRecord();
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
     const disabled = form.disabled || field.disabled || field.data?.disabled || props.disabled;
-    const openSize = fieldSchema?.['x-component-props']?.['openSize'];
     const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
     const { modal } = App.useApp();
     const variables = useVariables();
-    const localVariables = useLocalVariables({ currentForm: { values } as any });
+    const localVariables = useLocalVariables({ currentForm: { values: record } as any });
+    const { getAriaLabel } = useGetAriaLabelOfAction(title);
 
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
+
+    // fix https://nocobase.height.app/T-2259
+    const shouldResetRecord = ['create', 'customize:bulkUpdate', 'customize:bulkEdit', 'customize:create'].includes(
+      fieldSchema['x-action'],
+    );
+
     useEffect(() => {
+      field.linkageProperty = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {
@@ -73,13 +83,13 @@ export const Action: ComposedAction = observer(
               operator: h.operator,
               field,
               condition: v.condition,
-              values,
+              values: record,
               variables,
               localVariables,
             });
           });
         });
-    }, [JSON.stringify(linkageRules), values, designable, field]);
+    }, [JSON.stringify(linkageRules), record, designable, field]);
 
     const handleButtonClick = useCallback(
       (e: React.MouseEvent) => {
@@ -111,10 +121,10 @@ export const Action: ComposedAction = observer(
 
     const buttonStyle = useMemo(() => {
       return {
-        ...others.style,
+        ...style,
         opacity: designable && field?.data?.hidden && 0.1,
       };
-    }, [designable, field?.data?.hidden, others.style]);
+    }, [designable, field?.data?.hidden, style]);
 
     const renderButton = () => {
       if (!designable && field?.data?.hidden) {
@@ -123,7 +133,8 @@ export const Action: ComposedAction = observer(
 
       return (
         <SortableItem
-          data-testid={`${fieldSchema['x-action'] || fieldSchema.name}-action`}
+          role="button"
+          aria-label={getAriaLabel()}
           {...others}
           loading={field?.data?.loading}
           icon={icon ? <Icon type={icon} /> : null}
@@ -140,7 +151,7 @@ export const Action: ComposedAction = observer(
       );
     };
 
-    return wrapSSR(
+    const result = (
       <ActionContextProvider
         button={renderButton()}
         visible={visible}
@@ -156,7 +167,17 @@ export const Action: ComposedAction = observer(
         {!popover && renderButton()}
         {!popover && props.children}
         {element}
-      </ActionContextProvider>,
+      </ActionContextProvider>
+    );
+
+    return wrapSSR(
+      shouldResetRecord ? (
+        <RecordProvider parent={record} record={{}}>
+          {result}
+        </RecordProvider>
+      ) : (
+        result
+      ),
     );
   },
   { displayName: 'Action' },

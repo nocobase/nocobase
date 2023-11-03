@@ -619,6 +619,7 @@ export default {
   "Dynamic value": "Dynamic value",
   "Current user": "Current user",
   "Current record": "Current record",
+  "Parent record": "Parent record",
   "Current time": "Current time",
   "System variables": "System variables",
   "Date variables": "Date variables",

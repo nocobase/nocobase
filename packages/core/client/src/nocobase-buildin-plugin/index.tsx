@@ -250,7 +250,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
     });
   }
   async addPlugins() {
-    await this.app.pm.add(LocalePlugin, { name: 'locale' });
+    await this.app.pm.add(LocalePlugin, { name: 'builtin-locale' });
     await this.app.pm.add(AdminLayoutPlugin, { name: 'admin-layout' });
     await this.app.pm.add(SystemSettingsPlugin, { name: 'system-setting' });
     await this.app.pm.add(PinnedListPlugin, {
@@ -275,8 +275,8 @@ export class NocoBaseBuildInPlugin extends Plugin {
     await this.app.pm.add(BlockSchemaComponentPlugin, { name: 'block-schema-component' });
     await this.app.pm.add(AntdSchemaComponentPlugin, { name: 'antd-schema-component' });
     await this.app.pm.add(SigninPageExtensionPlugin, { name: 'signin-page-extension' });
-    await this.app.pm.add(ACLPlugin, { name: 'acl' });
+    await this.app.pm.add(ACLPlugin, { name: 'builtin-acl' });
     await this.app.pm.add(RemoteDocumentTitlePlugin, { name: 'remote-document-title' });
-    await this.app.pm.add(PMPlugin, { name: 'pm' });
+    await this.app.pm.add(PMPlugin, { name: 'builtin-pm' });
   }
 }

@@ -101,6 +101,7 @@ export default {
     };
   },
   initializers: {},
+  actionTriggerable: true,
 };
 
 function getFormValues({
@@ -148,7 +149,6 @@ export function useTriggerWorkflowsActionProps() {
 
   return {
     async onClick() {
-      const fieldNames = fields.map((field) => field.name);
       const {
         assignedValues: originalAssignedValues = {},
         onSuccess,

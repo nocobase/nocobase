@@ -39,7 +39,7 @@ export const DynamicComponent = (props: Props) => {
         });
       },
     });
-  }, [JSON.stringify(props.value)]);
+  }, [JSON.stringify(props.value), props.schema]);
   const renderSchemaComponent = useCallback(() => {
     return (
       <FieldContext.Provider value={null}>
@@ -63,16 +63,14 @@ export const DynamicComponent = (props: Props) => {
   }, [props.schema]);
   return (
     <FormContext.Provider value={form}>
-      <div data-testid="dynamic-component-filter-item">
-        {component
-          ? React.createElement<DynamicComponentProps>(component, {
-              value: props.value,
-              collectionField: props.collectionField,
-              onChange: props?.onChange,
-              renderSchemaComponent,
-            })
-          : renderSchemaComponent()}
-      </div>
+      {component
+        ? React.createElement<DynamicComponentProps>(component, {
+            value: props.value,
+            collectionField: props.collectionField,
+            onChange: props?.onChange,
+            renderSchemaComponent,
+          })
+        : renderSchemaComponent()}
     </FormContext.Provider>
   );
 };

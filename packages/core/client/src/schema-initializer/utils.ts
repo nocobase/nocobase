@@ -406,6 +406,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
         ?.map((subField) => {
           const interfaceConfig = getInterface(subField.interface);
           const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
+          const isAssociationField = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(subField?.type);
           const schema = {
             type: 'string',
             name: `${field.name}.${subField.name}`,
@@ -415,10 +416,12 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
             'x-read-pretty': readPretty,
             'x-component-props': {
               'pattern-disable': block === 'Form' && readPretty,
-              fieldNames: {
-                label: isFileCollection ? 'preview' : 'id',
-                value: 'id',
-              },
+              fieldNames: isAssociationField
+                ? {
+                    label: isFileCollection ? 'preview' : 'id',
+                    value: 'id',
+                  }
+                : undefined,
             },
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
@@ -850,7 +853,6 @@ export const useCollectionDataSourceItems = (componentName) => {
 
   return [
     {
-      key: 'tableBlock',
       type: 'itemGroup',
       title: null,
       children: [],
@@ -1400,6 +1402,7 @@ export const createCollapseBlockSchema = (options) => {
       associationFilterStyle: {
         width: '100%',
       },
+      name: 'filter-collapse',
     },
     'x-designer': 'AssociationFilter.BlockDesigner',
     'x-component': 'CardItem',
@@ -1435,7 +1438,7 @@ export const createTableSelectorSchema = (options) => {
       ...others,
     },
     'x-designer': 'TableSelectorDesigner',
-    'x-component': 'BlockItem',
+    'x-component': 'CardItem',
     properties: {
       actions: {
         type: 'void',
@@ -1805,7 +1808,7 @@ const getChildren = ({
 }: {
   collections: any[];
   getCollectionFields: (name: any) => CollectionFieldOptions[];
-  componentName: any;
+  componentName: string;
   searchValue: string;
   getTemplatesByCollection: (collectionName: string, resourceName?: string) => any;
   t;

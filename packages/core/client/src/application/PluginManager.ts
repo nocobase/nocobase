@@ -47,8 +47,8 @@ export class PluginManager {
         pluginData: pluginList,
         devDynamicImport: this.app.devDynamicImport,
       });
-      for await (const plugin of plugins) {
-        await this.add(plugin);
+      for await (const [name, pluginClass] of plugins) {
+        await this.add(pluginClass, { name });
       }
     } catch (error) {
       if (401 === error?.response?.status) {

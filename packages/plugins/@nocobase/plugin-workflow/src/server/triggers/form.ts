@@ -12,12 +12,9 @@ export default class FormTrigger extends Trigger {
     super(plugin);
 
     plugin.app.resourcer.use(this.middleware);
-    plugin.app.actions({
-      ['workflows:trigger']: this.triggerAction,
-    });
   }
 
-  triggerAction = async (context, next) => {
+  async triggerAction(context, next) {
     const { triggerWorkflows } = context.action.params;
 
     if (!triggerWorkflows) {
@@ -28,21 +25,26 @@ export default class FormTrigger extends Trigger {
     await next();
 
     this.trigger(context);
-  };
+  }
 
   middleware = async (context, next) => {
-    await next();
-
     const {
       resourceName,
       actionName,
       params: { triggerWorkflows },
     } = context.action;
+
+    if (resourceName === 'workflows' && actionName === 'trigger') {
+      return this.triggerAction(context, next);
+    }
+
+    await next();
+
     if (!triggerWorkflows) {
       return;
     }
 
-    if ((resourceName === 'workflows' && actionName === 'trigger') || !['create', 'update'].includes(actionName)) {
+    if (!['create', 'update'].includes(actionName)) {
       return;
     }
 
