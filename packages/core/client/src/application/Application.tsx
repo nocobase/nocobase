@@ -40,7 +40,7 @@ export interface ApplicationOptions {
   scopes?: Record<string, any>;
   router?: RouterOptions;
   devDynamicImport?: DevDynamicImport;
-  initializers?: Record<string, SchemaInitializer>;
+  schemaInitializers?: SchemaInitializer[];
   loadRemotePlugins?: boolean;
 }
 
@@ -84,7 +84,7 @@ export class Application {
       renderComponent: this.renderComponent.bind(this),
     });
     this.pm = new PluginManager(options.plugins, options.loadRemotePlugins, this);
-    this.schemaInitializerManager = new SchemaInitializerManager(options.initializers, this);
+    this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);

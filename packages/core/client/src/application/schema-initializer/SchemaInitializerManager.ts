@@ -1,26 +1,29 @@
 import { ButtonProps } from 'antd';
 import { Application } from '../Application';
 import { SchemaInitializer } from './SchemaInitializer';
-import { SchemaInitializerOptions } from './types';
 
 export class SchemaInitializerManager {
+  protected schemaInitializers: Record<string, SchemaInitializer<any, any>> = {};
+
   constructor(
-    protected initializers: Record<string, SchemaInitializer<any, any>> = {},
+    protected _schemaInitializers: SchemaInitializer<any, any>[] = [],
     protected app: Application,
   ) {
     this.app = app;
+
+    _schemaInitializers.forEach((item) => this.add(item));
   }
 
   add<P1 = any, P2 = any>(schemaInitializer: SchemaInitializer<P1, P2>) {
-    this.initializers[schemaInitializer.name] = schemaInitializer;
+    this.schemaInitializers[schemaInitializer.name] = schemaInitializer;
   }
 
   get<P1 = ButtonProps, P2 = {}>(name: string): SchemaInitializer<P1, P2> | undefined {
-    return this.initializers[name];
+    return this.schemaInitializers[name];
   }
 
   getAll() {
-    return this.initializers;
+    return this.schemaInitializers;
   }
 
   has(name: string) {
@@ -28,6 +31,6 @@ export class SchemaInitializerManager {
   }
 
   remove(name: string) {
-    delete this.initializers[name];
+    delete this.schemaInitializers[name];
   }
 }
