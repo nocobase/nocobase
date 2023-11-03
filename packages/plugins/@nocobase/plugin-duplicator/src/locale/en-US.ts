@@ -13,6 +13,8 @@ const locale = {
   'Start restore': 'Start restore',
   'Backed up successfully': 'Backed up successfully',
   Plugin: 'Plugin',
+  'file uploaded successfully': 'file uploaded successfully',
+  'file upload failed':'file upload failed'
 };
 
 export default locale;

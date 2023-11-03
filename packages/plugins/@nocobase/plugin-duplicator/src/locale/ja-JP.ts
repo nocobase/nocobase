@@ -13,4 +13,5 @@ export default {
   'Start restore': 'リストアを開始',
   'Backed up successfully': 'バックアップ成功',
   Plugin: 'プラグイン',
+  'file uploaded successfully': 'ファイルのアップロードに成功しました',
 };

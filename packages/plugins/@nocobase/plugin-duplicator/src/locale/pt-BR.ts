@@ -12,7 +12,9 @@ const locale = {
   'Start restore': 'Iniciar a Restauração',
   'Start backup': 'Iniciar a cópia de segurança',
   'Backed up successfully': 'Cópia de segurança bem sucedida',
-  'Plugin':'Plugins'
+  'Plugin':'Plugins',
+  'file uploaded successfully': 'O ficheiro foi enviado com sucesso',
+  'file upload failed': 'O envio do ficheiro falhou',
 };
 
 export default locale;

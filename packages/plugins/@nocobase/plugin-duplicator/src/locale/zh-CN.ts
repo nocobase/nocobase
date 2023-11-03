@@ -19,4 +19,6 @@ export default {
   'Start restore': '开始还原',
   'Backed up successfully': '备份成功',
   Plugin: '插件',
+  'file uploaded successfully': '文件上传成功',
+  'file upload failed': '文件上传失败',
 };
