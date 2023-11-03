@@ -90,6 +90,7 @@ const DatabaseServerSelect = () => {
           </Button>
         </>
       )}
+      optionLabelProp="label"
     >
       <Select.Option value={'s1'} label="Database server 1">
         Database server 1{' '}
@@ -153,8 +154,8 @@ const PreView = () => {
   );
 };
 
-export const remoteTable: ICollectionTemplate = {
-  name: 'remoteTable',
+export const federated: ICollectionTemplate = {
+  name: 'federated',
   title: '{{t("Connect to remote database table")}}',
   order: 10,
   color: 'yellow',
