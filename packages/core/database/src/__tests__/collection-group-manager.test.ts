@@ -33,7 +33,7 @@ describe('collection group manager', () => {
         dumpable: 'optional',
         with: 'test',
       }),
-    ).toThrow('optional collection must have dataType specified');
+    ).toThrow('invalid duplicator option');
 
     expect(() => CollectionGroupManager.unifyDuplicatorOption('optional')).toThrow(
       'optional collection must have dataType specified',
