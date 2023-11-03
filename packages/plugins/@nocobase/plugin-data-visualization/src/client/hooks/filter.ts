@@ -7,6 +7,8 @@ import { useChartsTranslation } from '../locale';
 import { ChartFilterContext } from '../filter/FilterProvider';
 import { useMemoizedFn } from 'ahooks';
 import { parse } from '@nocobase/utils';
+import lodash from 'lodash';
+import { getValuesByPath } from '../utils';
 
 export const useCustomFieldInterface = () => {
   const { getInterface } = useCollectionManager();
@@ -59,7 +61,8 @@ export const useChartFilter = () => {
   const { charts } = useContext(ChartDataContext);
   const { fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
-  const { getCollection, getInterface, getCollectionFields } = useCollectionManager();
+  const { getCollection, getInterface, getCollectionFields, getCollectionField, getCollectionJoinField } =
+    useCollectionManager();
   const { fields: fieldProps, form } = useContext(ChartFilterContext);
 
   const getChartFilterFields = (collection: CollectionOptions) => {
@@ -171,7 +174,17 @@ export const useChartFilter = () => {
       if (field.target && depth > 2) {
         return;
       }
-      if (depth > 2) {
+      if (children?.length) {
+        const items = children.map((child: any) =>
+          children2item(child, `${title} / ${fieldTitle}`, `${name}.${field.name}`),
+        );
+        return {
+          type: 'subMenu',
+          title: field?.uiSchema?.title || field.name,
+          children: items,
+        };
+      }
+      if (!depth || depth > 2) {
         return item;
       }
       if (nested) {
@@ -185,56 +198,60 @@ export const useChartFilter = () => {
           children: items,
         };
       }
-      if (children) {
-        const items = children.map((child: any) =>
-          children2item(child, `${title} / ${fieldTitle}`, `${name}.${field.name}`),
-        );
-        return {
-          type: 'subMenu',
-          title: field?.uiSchema?.title || field.name,
-          children: items,
-        };
-      }
       return item;
     };
 
     const options = [];
+    const associationOptions = [];
     fields.forEach((field) => {
-      const option = field2option(field, 1, collection.title, collection.name);
+      const fieldInterface = field.interface;
+      const option = field2option(field, 0, collection.title, collection.name);
       if (option) {
         options.push(option);
       }
+      if (['m2o'].includes(fieldInterface)) {
+        const option = field2option(field, 1, collection.title, collection.name);
+        if (option) {
+          associationOptions.push(option);
+        }
+      }
     });
+    if (associationOptions.length) {
+      options.push(
+        {
+          type: 'divider',
+        },
+        {
+          type: 'itemGroup',
+          title: i18n.t('Display association fields'),
+          children: associationOptions,
+        },
+      );
+    }
     return options;
   };
 
   const getFilter = () => {
     const values = form?.values || {};
     const filter = {};
-    Object.entries(values).forEach(([collection, fields]) => {
-      Object.entries(fields).forEach(([field, value]) => {
-        let target: string;
-        let name: string;
-        if (value && typeof value === 'object' && !Array.isArray(value)) {
-          target = field;
-          name = Object.keys(value)[0];
-          field = `${target}.${name}`;
-          value = Object.values(value)[0];
-        }
-        const operator = fieldProps[collection]?.[field]?.operator;
-        const op = operator?.value || '$eq';
-        if (collection !== 'custom') {
-          filter[collection] = filter[collection] || { $and: [] };
-          if (name) {
-            filter[collection].$and.push({ [target]: { [name]: { [op]: value } } });
-          } else {
-            filter[collection].$and.push({ [field]: { [op]: value } });
-          }
-        } else {
-          filter[collection] = filter[collection] || {};
-          filter[collection][`$nFilter.${field}`] = value;
-        }
-      });
+    Object.entries(fieldProps).forEach(([name, props]) => {
+      const { operator } = props || {};
+      const field = getCollectionJoinField(name);
+      if (field?.target) {
+        name = `${name}.${field.targetKey || 'id'}`;
+      }
+      const [collection, ...fields] = name.split('.');
+      const value = getValuesByPath(values, name);
+      const op = operator?.value || '$eq';
+      if (collection !== 'custom') {
+        filter[collection] = filter[collection] || { $and: [] };
+        const condition = {};
+        lodash.set(condition, fields.join('.'), { [op]: value });
+        filter[collection].$and.push(condition);
+      } else {
+        filter[collection] = filter[collection] || {};
+        filter[collection][`$nFilter.${fields.join('.')}`] = value;
+      }
     });
     return filter;
   };

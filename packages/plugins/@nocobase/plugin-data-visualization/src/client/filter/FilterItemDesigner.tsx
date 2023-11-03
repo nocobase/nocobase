@@ -174,7 +174,7 @@ const EditProps = () => {
   );
 };
 
-const SetDefaultValue = () => {
+const EditDefaultValue = () => {
   const { t } = useChartsTranslation();
   const { dn } = useDesignable();
   const variables = useContext(VariablesContext);
@@ -223,6 +223,58 @@ const SetDefaultValue = () => {
   );
 };
 
+const EditTitleField = () => {
+  const { getCollectionFields, getCollectionJoinField, getInterface } = useCollectionManager();
+  const field = useField<Field>();
+  const fieldSchema = useFieldSchema();
+  const { t } = useChartsTranslation();
+  const { dn } = useDesignable();
+  const compile = useCompile();
+  const collectionField = getCollectionJoinField(fieldSchema['x-collection-field']);
+  const targetFields = collectionField?.target
+    ? getCollectionFields(collectionField?.target)
+    : getCollectionFields(collectionField?.targetCollection) ?? [];
+  const options = targetFields
+    .filter((field) => {
+      if (field?.target || field.type === 'boolean') {
+        return false;
+      }
+      const fieldInterface = getInterface(field?.interface);
+      return fieldInterface?.titleUsable;
+    })
+    .map((field) => ({
+      value: field?.name,
+      label: compile(field?.uiSchema?.title) || field?.name,
+    }));
+
+  return options.length > 0 && fieldSchema['x-component'] === 'CollectionField' ? (
+    <SchemaSettings.SelectItem
+      key="title-field"
+      title={t('Title field')}
+      options={options}
+      value={field?.componentProps?.fieldNames?.label}
+      onChange={(label: string) => {
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        const fieldNames = {
+          ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
+          ...field.componentProps.fieldNames,
+          label,
+        };
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+        schema['x-component-props'] = fieldSchema['x-component-props'];
+        field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
+        dn.emit('patch', {
+          schema,
+        });
+        dn.refresh();
+      }}
+    />
+  ) : null;
+};
+
 export const ChartFilterItemDesigner: React.FC = () => {
   const { getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
@@ -237,7 +289,8 @@ export const ChartFilterItemDesigner: React.FC = () => {
       <EditDescription />
       {hasProps && isCustom && <EditProps />}
       {!isCustom && <EditOperator />}
-      <SetDefaultValue />
+      <EditTitleField />
+      <EditDefaultValue />
       {collectionField ? <SchemaSettings.Divider /> : null}
       <SchemaSettings.Remove
         key="remove"

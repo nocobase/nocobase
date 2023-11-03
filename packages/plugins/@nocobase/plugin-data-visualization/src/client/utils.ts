@@ -3,6 +3,7 @@ import { uid } from '@formily/shared';
 import { SelectedField } from './configure';
 import { FieldOption } from './hooks';
 import { QueryProps } from './renderer';
+import lodash from 'lodash';
 
 export const createRendererSchema = (decoratorProps: any, componentProps = {}) => {
   const { collection } = decoratorProps;
@@ -120,4 +121,15 @@ export const removeUnparsableFilter = (filter: any) => {
     return null;
   }
   return filter;
+};
+
+export const getValuesByPath = (values: any, path: string) => {
+  const keys = path.split('.');
+  let result = lodash.get(values, keys.slice(0, -1).join('.'));
+  if (Array.isArray(result)) {
+    result = result.map((item) => lodash.get(item, keys.slice(-1)[0]));
+  } else {
+    result = lodash.get(result, keys.slice(-1)[0]);
+  }
+  return result;
 };

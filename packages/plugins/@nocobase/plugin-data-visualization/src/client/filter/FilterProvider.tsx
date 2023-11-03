@@ -6,13 +6,11 @@ export const ChartFilterContext = createContext<{
   enabled: boolean;
   setEnabled: (enabled: boolean) => void;
   fields: {
-    [collection: string]: {
-      [field: string]: {
-        title: string;
-        operator?: {
-          value: string;
-          noValue?: boolean;
-        };
+    [name: string]: {
+      title: string;
+      operator?: {
+        value: string;
+        noValue?: boolean;
       };
     };
   };
@@ -34,23 +32,17 @@ export const ChartFilterProvider: React.FC = (props) => {
   const [collapse, _setCollapse] = useState({ collapsed: false, row: 1 });
   const [form, _setForm] = useState<any>();
   const addField = useMemoizedFn((name: string, props: { title: string }) => {
-    const [collection, target, field] = name.split('.');
-    const fieldName = field ? `${target}.${field}` : target;
     setFields((fields) => ({
       ...fields,
-      [collection]: {
-        ...(fields[collection] || {}),
-        [fieldName]: props,
-      },
+      [name]: props,
     }));
   });
   const removeField = useMemoizedFn((name: string) => {
-    const [collection, field] = name.split('.');
     setFields((fields) => {
       const newFields = {
         ...fields,
       };
-      newFields[collection][field] = undefined;
+      newFields[name] = undefined;
       return newFields;
     });
   });
