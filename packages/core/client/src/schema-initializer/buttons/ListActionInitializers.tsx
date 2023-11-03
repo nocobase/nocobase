@@ -54,6 +54,7 @@ export const ListActionInitializers = {
           component: 'ImportActionInitializer',
           schema: {
             'x-align': 'right',
+            'x-acl-action': 'importXlsx',
             'x-decorator': 'ACLActionProvider',
             'x-acl-action-props': {
               skipScopeCheck: true,

@@ -50,6 +50,7 @@ export const GridCardActionInitializers = {
           component: 'ImportActionInitializer',
           schema: {
             'x-align': 'right',
+            'x-acl-action': 'importXlsx',
             'x-decorator': 'ACLActionProvider',
             'x-acl-action-props': {
               skipScopeCheck: true,
