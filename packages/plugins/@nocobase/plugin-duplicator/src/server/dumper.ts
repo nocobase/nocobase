@@ -205,41 +205,47 @@ export class Dumper extends AppMigrator {
 
     await fsPromises.mkdir(collectionDataDir, { recursive: true });
 
-    // write collection data
-    const dataFilePath = path.resolve(collectionDataDir, 'data');
-    const dataStream = fs.createWriteStream(dataFilePath);
+    let count = 0;
 
-    const rows = await app.db.sequelize.query(
-      sqlAdapter(
-        app.db,
-        `SELECT *
-         FROM ${collection.isParent() ? 'ONLY' : ''} ${collection.quotedTableName()}`,
-      ),
-      {
-        type: 'SELECT',
-      },
-    );
+    if (columns.length !== 0) {
+      // write collection data
+      const dataFilePath = path.resolve(collectionDataDir, 'data');
+      const dataStream = fs.createWriteStream(dataFilePath);
 
-    for (const row of rows) {
-      const rowData = JSON.stringify(
-        columns.map((col) => {
-          const val = row[col];
-          const field = collection.getField(col);
-
-          return field ? FieldValueWriter.toDumpedValue(field, val) : val;
-        }),
+      const rows = await app.db.sequelize.query(
+        sqlAdapter(
+          app.db,
+          `SELECT *
+           FROM ${collection.isParent() ? 'ONLY' : ''} ${collection.quotedTableName()}`,
+        ),
+        {
+          type: 'SELECT',
+        },
       );
 
-      dataStream.write(rowData + '\r\n', 'utf8');
-    }
+      for (const row of rows) {
+        const rowData = JSON.stringify(
+          columns.map((col) => {
+            const val = row[col];
+            const field = collection.getField(col);
 
-    dataStream.end();
-    await finished(dataStream);
+            return field ? FieldValueWriter.toDumpedValue(field, val) : val;
+          }),
+        );
+
+        dataStream.write(rowData + '\r\n', 'utf8');
+      }
+
+      dataStream.end();
+      await finished(dataStream);
+
+      count = rows.length;
+    }
 
     const meta = {
       name: collectionName,
       tableName: collection.model.tableName,
-      count: rows.length,
+      count,
       columns,
     };
 
