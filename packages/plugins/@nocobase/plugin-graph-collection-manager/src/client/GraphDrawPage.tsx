@@ -77,7 +77,7 @@ const getGridData = (num, arr) => {
 };
 
 //初始布局
-async function layout(createPositions) {
+async function layout(createPositions, isSaveLayput) {
   const { positions } = targetGraph;
   let graphPositions = [];
   const nodes: any[] = targetGraph.getNodes();
@@ -126,7 +126,7 @@ async function layout(createPositions) {
   } else {
     targetGraph.positionCell(nodes[0], 'top-left', { padding: 100 });
   }
-  if (graphPositions.length > 0) {
+  if (graphPositions.length > 0 && isSaveLayput) {
     await createPositions(graphPositions);
     graphPositions = [];
   }
@@ -725,14 +725,14 @@ export const GraphDrawPage = React.memo(() => {
     m2mEdge && lightUp(m2mEdge);
   };
   // 全量渲染
-  const renderInitGraphCollection = (rawData) => {
+  const renderInitGraphCollection = (rawData, isSaveLayput = true) => {
     targetGraph.clearCells();
     const { nodesData, edgesData, inheritEdges } = formatData(rawData);
     targetGraph.data = { nodes: nodesData, edges: edgesData };
     targetGraph.fromJSON({ nodes: nodesData });
     targetGraph.addEdges(edgesData);
     targetGraph.addEdges(inheritEdges);
-    layout(saveGraphPositionAction);
+    layout(saveGraphPositionAction, isSaveLayput);
   };
 
   // 增量渲染
@@ -1073,11 +1073,11 @@ export const GraphDrawPage = React.memo(() => {
     if (selectedCollections && collectionList.length) {
       const selectKeys = selectedCollections?.split(',');
       const data = collectionList.filter((v) => selectKeys.includes(v.name));
-      renderInitGraphCollection(data);
+      renderInitGraphCollection(data, false);
       handelResetLayout(true);
       targetGraph.selectedCollections = selectedCollections;
     } else {
-      !selectedCollections && renderInitGraphCollection(collections);
+      !selectedCollections && renderInitGraphCollection(collections, false);
     }
     return () => {
       cleanGraphContainer();
