@@ -613,12 +613,14 @@ export class Collection<
     });
 
     for (const model of models) {
-      await model.sync(syncOptions || {
-        force: false,
-        alter: {
-          drop: false,
+      await model.sync(
+        syncOptions || {
+          force: false,
+          alter: {
+            drop: false,
+          },
         },
-      });
+      );
     }
   }
 
