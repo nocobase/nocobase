@@ -181,7 +181,6 @@ test.describe('page tabs', () => {
     expect(targetBoundingBox.x).toBeLessThan(sourceBoundingBox.x);
     await source.dragTo(targetElement);
     await sourceElement.dragTo(targetElement);
-    await page.waitForTimeout(1000); // 等待1秒钟
     const tab2 = await page.locator('span:has-text("tab 2")').boundingBox();
     const tab1 = await page.locator('span:has-text("tab 1")').boundingBox();
     //拖拽后 2-1

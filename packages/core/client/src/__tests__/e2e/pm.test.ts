@@ -43,7 +43,7 @@ test.describe('add plugin in front', () => {
     await waitForModalToBeHidden(page);
     await page.waitForLoadState('load');
     await page.getByPlaceholder('Search plugin').fill('sample-custom-collection-template');
-    await expect(await page.getByLabel('sample-custom-collection-template')).not.toBeVisible();
+    await expect(page.getByLabel('sample-custom-collection-template')).not.toBeVisible();
   });
   test.skip('add plugin local upload', async ({ page, mockPage }) => {});
   test.skip('add plugin  file url', async ({ page, mockPage }) => {});
@@ -64,7 +64,7 @@ test.describe('remove plugin', () => {
     //等待页面刷新结束
     await page.waitForLoadState('load');
     await page.getByPlaceholder('Search plugin').fill('hello');
-    await expect(await page.getByLabel('Hello')).not.toBeVisible();
+    await expect(page.getByLabel('Hello')).not.toBeVisible();
     //将删除的插件加回来
     await page.getByRole('button', { name: 'Add new' }).click();
     await page
@@ -87,9 +87,9 @@ test.describe('remove plugin', () => {
     await expect(page.getByLabel('Hello')).toBeVisible();
     //已启用的插件不能remove，如ACL
     await page.getByPlaceholder('Search plugin').fill('ACL');
-    await expect(await page.getByLabel('ACL')).toBeVisible();
+    await expect(page.getByLabel('ACL')).toBeVisible();
     const isAclActive = await page.getByLabel('ACL').getByLabel('enable').isChecked();
-    await expect(isAclActive).toBe(true);
+    expect(isAclActive).toBe(true);
     await expect(page.getByLabel('ACL').getByText('Remove')).not.toBeVisible();
   });
 });
