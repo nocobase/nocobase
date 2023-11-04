@@ -3,7 +3,7 @@ export * from './Branch';
 export * from './FlowContext';
 export * from './nodes';
 export { triggers, useTrigger, getTriggersOptions } from './triggers';
-export { useWorkflowVariableOptions, getCollectionFieldOptions } from './variable';
+export * from './variable';
 export { default as useStyles } from './style';
 
 import { Plugin } from '@nocobase/client';

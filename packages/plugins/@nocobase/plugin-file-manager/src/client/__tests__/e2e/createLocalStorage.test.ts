@@ -18,10 +18,10 @@ test.describe('file manager', () => {
     await page.getByRole('menuitem', { name: 'Local storage' }).click();
     const createLocalStorage = new CreateLocalStorage(page);
     await createLocalStorage.title.fill(caseTitle);
-    const storageName = caseNum + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
+    const storageName = caseNum + dayjs().format('YYYYMMDDHHmmssSSS').toString();
     await createLocalStorage.storageName.fill(storageName);
-    await createLocalStorage.storagebaseURL.fill('/storage/uploadsFM01AA');
-    await createLocalStorage.destination.fill('storage/uploadsFM01AA');
+    // await createLocalStorage.storagebaseURL.fill('/storage/uploadsFM01AA');
+    // await createLocalStorage.destination.fill('storage/uploadsFM01AA');
     // await createLocalStorage.path.fill('');
     // await createLocalStorage.defaultStorage.check();
     // await createLocalStorage.deleteRecordRetentionFile.check();

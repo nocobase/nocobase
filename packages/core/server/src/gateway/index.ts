@@ -5,6 +5,7 @@ import compression from 'compression';
 import { EventEmitter } from 'events';
 import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
+import compose from 'koa-compose';
 import { promisify } from 'node:util';
 import { resolve } from 'path';
 import qs from 'qs';
@@ -13,12 +14,11 @@ import { parse } from 'url';
 import xpipe from 'xpipe';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions } from '../application';
-import { getPackageDirByExposeUrl, getPackageNameByExposeUrl, PLUGIN_STATICS_PATH } from '../plugin-manager';
+import { PLUGIN_STATICS_PATH, getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import { WSServer } from './ws-server';
-import compose from 'koa-compose';
 
 const compress = promisify(compression());
 
@@ -202,7 +202,7 @@ export class Gateway extends EventEmitter {
 
     if (appStatus === 'initialized') {
       const appInstance = await AppSupervisor.getInstance().getApp(handleApp);
-      appInstance.runAsCLI(['start'], { from: 'user' });
+      appInstance.runCommand('start', '--quickstart');
       appStatus = AppSupervisor.getInstance().getAppStatus(handleApp);
     }
 
