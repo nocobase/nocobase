@@ -292,7 +292,7 @@ test.describe('action linkage rule', () => {
     await page.getByRole('button', { name: 'Linkage rules' }).click();
     await page.getByRole('button', { name: 'plus Add linkage rule', exact: true }).click();
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('filter-select-field').click();
+    await page.getByTestId('select-filter-field').click();
     await page.getByTitle('ID', { exact: true }).getByText('ID').click();
     await page.getByRole('spinbutton').fill('1');
     await page.getByText('Add property').click();
@@ -323,7 +323,7 @@ test.describe('action linkage rule', () => {
     await page.getByRole('button', { name: 'Linkage rules' }).click();
     await page.getByRole('button', { name: 'plus Add linkage rule', exact: true }).click();
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('filter-select-field').click();
+    await page.getByTestId('select-filter-field').click();
     await page.getByTitle('ID', { exact: true }).getByText('ID').click();
     await page.getByRole('spinbutton').fill('1');
     await page.getByText('Add property').click();
