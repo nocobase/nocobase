@@ -1,11 +1,13 @@
-import React, { FC, ReactNode, useCallback, useMemo } from 'react';
-import { SchemaInitializerChild, SchemaInitializerItems } from '../components';
-import { useCompile } from '../../../schema-component';
-import { SchemaInitializerItemType, SchemaInitializerOptions } from '../types';
-import { useApp } from '../../hooks';
 import { ButtonProps } from 'antd';
+import React, { FC, ReactNode, useCallback, useMemo } from 'react';
+import { useCompile } from '../../../schema-component';
+import { useApp } from '../../hooks';
+import { SchemaInitializerChild, SchemaInitializerItems } from '../components';
 import { SchemaInitializerButton } from '../components/SchemaInitializerButton';
 import { withInitializer } from '../hoc';
+import { SchemaInitializerItemType, SchemaInitializerOptions } from '../types';
+
+export * from './useAriaAttributeOfMenuItem';
 
 export function useSchemaInitializerMenuItems(items: any[], name?: string, onClick?: (args: any) => void) {
   const compile = useCompile();
@@ -33,7 +35,6 @@ export function useSchemaInitializerMenuItems(items: any[], name?: string, onCli
           }
           return {
             key: item.key,
-            title: compiledTitle,
             label: element,
           };
         }
@@ -44,7 +45,6 @@ export function useSchemaInitializerMenuItems(items: any[], name?: string, onCli
             type: 'group',
             key,
             label,
-            title: label,
             // className: styles.nbMenuItemGroup,
             children: item?.children.length ? getMenuItems(item.children, key) : [],
           };
@@ -55,7 +55,6 @@ export function useSchemaInitializerMenuItems(items: any[], name?: string, onCli
           return {
             key,
             label,
-            title: label,
             children: item?.children.length ? getMenuItems(item.children, key) : [],
           };
         }
@@ -69,7 +68,6 @@ export function useSchemaInitializerMenuItems(items: any[], name?: string, onCli
         return {
           key,
           label,
-          title: compiledTitle,
           onClick: (info) => {
             if (info.key !== key) return;
             if (item.onClick) {

@@ -1,12 +1,11 @@
-import React, { useMemo, useState } from 'react';
-import { ComponentType, useCallback } from 'react';
-import { Popover } from 'antd';
 import { ISchema, observer } from '@formily/react';
+import { Popover } from 'antd';
+import React, { ComponentType, useCallback, useMemo, useState } from 'react';
 
 import { useDesignable } from '../../../schema-component';
-import { SchemaInitializerOptions } from '../types';
-import { SchemaInitializerContext } from '../context';
 import { useSchemaInitializerStyles } from '../components/style';
+import { SchemaInitializerContext } from '../context';
+import { SchemaInitializerOptions } from '../types';
 
 const defaultWrap = (s: ISchema) => s;
 

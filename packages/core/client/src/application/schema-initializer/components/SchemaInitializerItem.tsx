@@ -4,9 +4,9 @@ import React, { ReactNode } from 'react';
 import { Icon } from '../../../icon';
 import { useCompile } from '../../../schema-component';
 import { useSchemaInitializerItem } from '../context';
-import { useSchemaInitializerMenuItems } from '../hooks';
-import { useSchemaInitializerStyles } from './style';
+import { useAriaAttributeOfMenuItem, useSchemaInitializerMenuItems } from '../hooks';
 import { SchemaInitializerInternalMenu } from './SchemaInitializerMenu';
+import { useSchemaInitializerStyles } from './style';
 
 export interface SchemaInitializerItemProps {
   style?: React.CSSProperties;
@@ -25,6 +25,8 @@ export const SchemaInitializerItem = React.forwardRef<any, SchemaInitializerItem
   const compile = useCompile();
   const childrenItems = useSchemaInitializerMenuItems(items, name, onClick);
   const { componentCls, hashId } = useSchemaInitializerStyles();
+  const { attribute } = useAriaAttributeOfMenuItem();
+
   if (items && items.length > 0) {
     return (
       <SchemaInitializerInternalMenu
@@ -34,7 +36,6 @@ export const SchemaInitializerItem = React.forwardRef<any, SchemaInitializerItem
             style: style,
             className: className,
             label: children || compile(title),
-            title: compile(title),
             onClick: (info) => {
               if (info.key !== name) return;
               onClick?.({ ...info, item: props });
@@ -55,7 +56,11 @@ export const SchemaInitializerItem = React.forwardRef<any, SchemaInitializerItem
         onClick?.({ event, item: props });
       }}
     >
-      <div className={classNames({ [`${componentCls}-menu-item`]: applyMenuStyle }, className)} style={style}>
+      <div
+        {...attribute}
+        className={classNames({ [`${componentCls}-menu-item`]: applyMenuStyle }, className)}
+        style={style}
+      >
         {children || (
           <>
             {icon && typeof icon === 'string' ? <Icon type={icon as string} /> : icon}

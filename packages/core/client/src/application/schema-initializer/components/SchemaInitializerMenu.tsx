@@ -1,11 +1,11 @@
 import Icon from '@ant-design/icons';
+import { uid } from '@formily/shared';
 import { Menu, MenuProps } from 'antd';
 import React, { FC, ReactNode, useMemo } from 'react';
-import { SchemaInitializerOptions } from '../types';
 import { useCompile } from '../../../schema-component';
-import { useSchemaInitializerMenuItems } from '../hooks';
-import { uid } from '@formily/shared';
 import { useSchemaInitializerItem } from '../context';
+import { useSchemaInitializerMenuItems } from '../hooks';
+import { SchemaInitializerOptions } from '../types';
 import { useSchemaInitializerStyles } from './style';
 
 export interface SchemaInitializerMenuProps {
@@ -16,6 +16,18 @@ export interface SchemaInitializerMenuProps {
   children?: SchemaInitializerOptions['items'];
 }
 
+const SchemaInitializerMenuContext = React.createContext<{ isInMenu?: true }>({});
+const SchemaInitializerMenuProvider = (props) => {
+  return (
+    <SchemaInitializerMenuContext.Provider value={{ isInMenu: true }}>
+      {props.children}
+    </SchemaInitializerMenuContext.Provider>
+  );
+};
+export const useSchemaInitializerMenuContext = () => {
+  return React.useContext(SchemaInitializerMenuContext);
+};
+
 export const SchemaInitializerInternalMenu: FC<MenuProps> = (props) => {
   const { componentCls, hashId } = useSchemaInitializerStyles();
   const { items, ...others } = props;
@@ -24,7 +36,11 @@ export const SchemaInitializerInternalMenu: FC<MenuProps> = (props) => {
     [componentCls, hashId, items],
   );
   // selectedKeys 为了不让有选中效果
-  return <Menu selectedKeys={[]} items={itemsWithPopupClass} {...others} />;
+  return (
+    <SchemaInitializerMenuProvider>
+      <Menu selectedKeys={[]} items={itemsWithPopupClass} {...others} />
+    </SchemaInitializerMenuProvider>
+  );
 };
 
 export const SchemaInitializerMenu = (props) => {
