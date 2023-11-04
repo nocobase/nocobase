@@ -3,7 +3,7 @@ export * from './FlowContext';
 export * from './constants';
 export * from './nodes';
 export { default as useStyles } from './style';
-export { getTriggersOptions, getTriggersOptions, triggers, triggers, useTrigger, useTrigger } from './triggers';
+export { getTriggersOptions, triggers, useTrigger } from './triggers';
 export * from './variable';
 export { getCollectionFieldOptions, useWorkflowVariableOptions } from './variable';
 
