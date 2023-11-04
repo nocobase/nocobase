@@ -11,12 +11,11 @@ test.describe('menu page', () => {
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill(pageTitle);
     await page.getByRole('button', { name: 'OK' }).click();
-    const menuItem = await page.getByRole('menu').locator('li').filter({ hasText: pageTitle });
+    const menuItem = page.getByRole('menu').locator('li').filter({ hasText: pageTitle });
     const defaultBackgroundColor = await menuItem.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.backgroundColor;
     });
-    await page.waitForTimeout(1000); // 等待1秒钟
     await menuItem.click();
     // 获取激活后的背景高亮颜色
     const activedBackgroundColor = await menuItem.evaluate((element) => {
@@ -24,7 +23,7 @@ test.describe('menu page', () => {
       return computedStyle.backgroundColor;
     });
     // 菜单高亮/进入空页面只有一个add block 按钮
-    await expect(activedBackgroundColor).not.toBe(defaultBackgroundColor);
+    expect(activedBackgroundColor).not.toBe(defaultBackgroundColor);
     await expect(page.getByLabel('schema-initializer-Grid-BlockInitializers')).toBeVisible();
     await expect(page.getByTitle(pageTitle)).toBeVisible();
     const divElement = await page.locator('.nb-page-content');
@@ -94,7 +93,6 @@ test.describe('menu page', () => {
     await page.getByLabel(pageTitle3).getByLabel('designer-schema-settings').hover();
 
     await page.getByLabel('Insert before').hover();
-    await page.waitForTimeout(1000); // 等待1秒钟
 
     await page.getByRole('button', { name: 'Add page' }).click();
     await page.getByRole('textbox').fill(pageTitle4);
@@ -125,7 +123,6 @@ test.describe('menu page', () => {
     await page.getByLabel(pageTitle5).getByLabel('designer-schema-settings').hover();
 
     await page.getByLabel('Insert after').hover();
-    await page.waitForTimeout(1000); // 等待1秒钟
 
     await page.getByRole('button', { name: 'Add page' }).click();
     await page.getByRole('textbox').fill(pageTitle6);
@@ -139,7 +136,6 @@ test.describe('menu page', () => {
     await expect(page.getByLabel('schema-initializer-Grid-BlockInitializers')).toBeVisible();
     //删除页面
     await page.getByLabel(pageTitle6).getByLabel('designer-schema-settings-Menu.Item').click();
-    await page.waitForTimeout(1000); // 等待1秒钟
     await page.getByRole('menu').getByLabel('Delete').click();
     await page.getByRole('button', { name: 'OK' }).click();
   });

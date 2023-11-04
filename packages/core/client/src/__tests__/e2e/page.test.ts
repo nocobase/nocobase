@@ -33,7 +33,7 @@ test.describe('page title', () => {
     //不显示
     await page.getByLabel('Display page title').getByRole('switch').click();
     await expect(page.locator('.ant-page-header')).toBeVisible();
-    await expect(await page.locator('.ant-page-header').getByTitle(pageTitle)).not.toBeVisible();
+    await expect(page.locator('.ant-page-header').getByTitle(pageTitle)).not.toBeVisible();
     await expect(page.getByLabel('Display page title').getByRole('switch')).not.toBeChecked();
     //开启
     await page.locator('.ant-page-header').click();

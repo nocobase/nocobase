@@ -15,9 +15,9 @@ test.describe('add plugin in front', () => {
   test('add plugin npm registry,then remove plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
     await page.getByTestId('plugin-manager-button').click();
-    await expect(await page.getByLabel('sample-custom-collection-template')).not.toBeVisible();
+    await expect(page.getByLabel('sample-custom-collection-template')).not.toBeVisible();
     await page.getByRole('button', { name: 'Add new' }).click();
-    await await page
+    await page
       .getByLabel('block-item-Input-Npm package name')
       .getByRole('textbox')
       .fill('@nocobase/plugin-sample-custom-collection-template');
