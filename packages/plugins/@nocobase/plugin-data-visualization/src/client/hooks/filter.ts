@@ -364,9 +364,6 @@ export const useChartFilterSourceFields = () => {
     if (!field.interface) {
       return;
     }
-    if (!values.includes(field.uiSchema?.['x-component']) && !values.includes(field.interface)) {
-      return;
-    }
     const fieldInterface = getInterface(field.interface);
     if (!fieldInterface?.filterable) {
       return;
@@ -390,6 +387,9 @@ export const useChartFilterSourceFields = () => {
         label: t(field?.uiSchema?.title || field.name),
         children: items.filter((item: any) => item),
       };
+    }
+    if (!values.includes(field.uiSchema?.['x-component']) && !values.includes(field.interface)) {
+      return;
     }
     return item;
   };
