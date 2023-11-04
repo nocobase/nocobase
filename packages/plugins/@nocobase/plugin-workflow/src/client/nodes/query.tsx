@@ -13,7 +13,7 @@ import { CollectionBlockInitializer } from '../components/CollectionBlockInitial
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { NAMESPACE } from '../locale';
 import { appends, collection, filter, pagination, sort } from '../schemas/collection';
-import { getCollectionFieldOptions, useWorkflowVariableOptions } from '../variable';
+import { WorkflowVariableInput, getCollectionFieldOptions } from '../variable';
 
 export default {
   title: `{{t("Query record", { ns: "${NAMESPACE}" })}}`,
@@ -59,7 +59,6 @@ export default {
   view: {},
   scope: {
     useCollectionDataSource,
-    useWorkflowVariableOptions,
     useSortableFields() {
       const compile = useCompile();
       const { getCollectionFields, getInterface } = useCollectionManager();
@@ -88,6 +87,7 @@ export default {
     ArrayItems,
     FilterDynamicComponent,
     SchemaComponentContext,
+    WorkflowVariableInput,
   },
   useVariables({ key: name, title, config }, options) {
     const compile = useCompile();

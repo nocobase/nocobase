@@ -57,6 +57,7 @@ export const listActionInitializers = new SchemaInitializer({
           Component: 'ImportActionInitializer',
           schema: {
             'x-align': 'right',
+            'x-acl-action': 'importXlsx',
             'x-decorator': 'ACLActionProvider',
             'x-acl-action-props': {
               skipScopeCheck: true,
@@ -64,7 +65,7 @@ export const listActionInitializers = new SchemaInitializer({
           },
           useVisible() {
             const collection = useCollection();
-            return collection.template !== 'sql';
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
