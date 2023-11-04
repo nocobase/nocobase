@@ -36,6 +36,7 @@ const EditTitle = () => {
           title: {
             title: t('Field title'),
             default: field?.title,
+            required: true,
             'x-decorator': 'FormItem',
             'x-component': 'Input',
             'x-component-props': {},
@@ -52,8 +53,8 @@ const EditTitle = () => {
               title: fieldSchema.title,
             },
           });
+          setField(fieldSchema.name as string, { title });
         }
-        setField(fieldSchema.name as string, { title });
         dn.refresh();
       }}
     />

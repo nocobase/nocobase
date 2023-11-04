@@ -22,6 +22,7 @@ export const getOptionsSchema = () => {
               'x-component-props': {
                 placeholder: '{{t("Option label")}}',
               },
+              required: true,
             },
             value: {
               type: 'string',
@@ -30,6 +31,7 @@ export const getOptionsSchema = () => {
               'x-component-props': {
                 placeholder: '{{t("Option value")}}',
               },
+              required: true,
             },
             remove: {
               type: 'void',

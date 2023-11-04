@@ -17,10 +17,10 @@ import { Schema, SchemaOptionsContext, observer, useField, useFieldSchema, useFo
 import { useMemoizedFn } from 'ahooks';
 import { FormLayout, FormItem } from '@formily/antd-v5';
 import { uid } from '@formily/shared';
-import { useChartData, useChartFilter } from '../hooks/filter';
+import { useChartData, useChartFilter, useChartFilterSourceFields, useFieldComponents } from '../hooks/filter';
 import { Alert } from 'antd';
 import { getPropsSchemaByComponent } from './utils';
-import { Field } from '@formily/core';
+import { Field, onFieldValueChange } from '@formily/core';
 import { css, cx } from '@emotion/css';
 
 const FieldComponentProps: React.FC = observer((props) => {
@@ -81,11 +81,17 @@ export const ChartFilterCustomItemInitializer: React.FC<{
   const { scope, components } = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const { insert } = props;
+  const { getCollectionJoinField, getInterface } = useCollectionManager();
+  const sourceFields = useChartFilterSourceFields();
+  const { options: fieldComponents, values: fieldComponentValues } = useFieldComponents();
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
       t('Add custom field'),
       () => (
-        <SchemaComponentOptions scope={scope} components={{ ...components, FieldComponentProps }}>
+        <SchemaComponentOptions
+          scope={{ ...scope, useChartFilterSourceFields }}
+          components={{ ...components, FieldComponentProps }}
+        >
           <FormLayout layout={'vertical'}>
             <Alert
               type="info"
@@ -106,23 +112,21 @@ export const ChartFilterCustomItemInitializer: React.FC<{
                     'x-decorator': 'FormItem',
                     required: true,
                   },
+                  source: {
+                    type: 'string',
+                    title: t('Field source'),
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Cascader',
+                    enum: sourceFields,
+                    description: t('Select a source field to use metadata of the field'),
+                  },
                   component: {
                     type: 'string',
                     title: t('Field component'),
                     'x-component': 'Select',
                     'x-decorator': 'FormItem',
                     required: true,
-                    enum: [
-                      { label: t('Input'), value: 'Input' },
-                      { label: t('Number'), value: 'InputNumber' },
-                      { label: t('Date'), value: 'DatePicker' },
-                      { label: t('Date range'), value: 'DatePicker.RangePicker' },
-                      { label: t('Time'), value: 'TimePicker' },
-                      { label: t('Time range'), value: 'TimePicker.RangePicker' },
-                      { label: t('Select'), value: 'Select' },
-                      { label: t('Radio group'), value: 'Radio.Group' },
-                      { label: t('Checkbox group'), value: 'Checkbox.Group' },
-                    ],
+                    enum: fieldComponents,
                   },
                   props: {
                     type: 'object',
@@ -140,18 +144,50 @@ export const ChartFilterCustomItemInitializer: React.FC<{
       values: {
         name: `f_${uid()}`,
       },
+      effects() {
+        onFieldValueChange('source', (field) => {
+          const name = field.value?.join('.');
+          const props = getCollectionJoinField(name);
+          if (!props) {
+            return;
+          }
+          const uiSchema = props.uiSchema || {};
+          let fieldComponent: string;
+          if (fieldComponentValues.includes(uiSchema['x-component'])) {
+            fieldComponent = uiSchema['x-component'];
+            const fieldComponentProps = uiSchema['x-component-props'] || {};
+            if (uiSchema.enum) {
+              fieldComponentProps.options = uiSchema.enum;
+            }
+            const componentProps = field.query('.props').take() as Field;
+            componentProps.setValue(fieldComponentProps);
+          } else if (fieldComponentValues.includes(props.interface)) {
+            fieldComponent = props.interface;
+          }
+          if (!fieldComponent) {
+            return;
+          }
+          const component = field.query('.component').take() as Field;
+          component.setValue(fieldComponent);
+        });
+      },
     });
     const { name, title, component, props } = values;
+    const defaultSchema = getInterface(component)?.default?.uiSchema || {};
     insert(
       gridRowColWrap({
+        'x-component': component,
+        ...defaultSchema,
         type: 'string',
         title: title,
         name: `custom.${name}`,
         required: false,
         'x-designer': 'ChartFilterItemDesigner',
-        'x-component': component,
         'x-decorator': 'ChartFilterFormItem',
-        'x-component-props': props,
+        'x-component-props': {
+          ...(defaultSchema['x-component-props'] || {}),
+          ...props,
+        },
       }),
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps

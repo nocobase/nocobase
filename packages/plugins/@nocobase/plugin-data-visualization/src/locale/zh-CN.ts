@@ -83,4 +83,5 @@ export default {
   'Date range': '日期范围',
   'Time range': '时间范围',
   'Edit field properties': '编辑字段属性',
+  'Select a source field to use metadata of the field': '选择来源字段可以复用字段的元数据配置',
 };

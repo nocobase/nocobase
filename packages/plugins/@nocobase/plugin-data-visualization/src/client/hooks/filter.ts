@@ -354,3 +354,85 @@ export const useFilterVariable = () => {
 
   return result;
 };
+
+export const useChartFilterSourceFields = () => {
+  const { t } = useChartsTranslation();
+  const { getChartCollections } = useChartData();
+  const { getInterface, getCollectionFields, getCollection } = useCollectionManager();
+  const { values } = useFieldComponents();
+  const field2option = (field: any, depth: number) => {
+    if (!field.interface) {
+      return;
+    }
+    if (!values.includes(field.uiSchema?.['x-component']) && !values.includes(field.interface)) {
+      return;
+    }
+    const fieldInterface = getInterface(field.interface);
+    if (!fieldInterface?.filterable) {
+      return;
+    }
+    const { nested } = fieldInterface.filterable;
+    const item = {
+      value: field.name,
+      label: t(field?.uiSchema?.title || field.name),
+    };
+    if (field.target && depth > 2) {
+      return;
+    }
+    if (depth > 2) {
+      return item;
+    }
+    if (nested) {
+      const targetFields = getCollectionFields(field.target);
+      const items = targetFields.map((targetField) => field2option(targetField, depth + 1));
+      return {
+        value: field.name,
+        label: t(field?.uiSchema?.title || field.name),
+        children: items.filter((item: any) => item),
+      };
+    }
+    return item;
+  };
+
+  const collections = getChartCollections();
+  const options = [];
+  collections.forEach((name) => {
+    const collection = getCollection(name);
+    const children = [];
+    const fields = getCollectionFields(collection);
+    fields.forEach((field) => {
+      const option = field2option(field, 1);
+      if (option) {
+        children.push(option);
+      }
+    });
+    if (children.length) {
+      options.push({
+        value: name,
+        label: t(collection.title),
+        children,
+      });
+    }
+  });
+  return options;
+};
+
+export const useFieldComponents = () => {
+  const { t } = useChartsTranslation();
+  const options = [
+    { label: t('Input'), value: 'Input' },
+    { label: t('Number'), value: 'InputNumber' },
+    { label: t('Date'), value: 'DatePicker' },
+    { label: t('Date range'), value: 'DatePicker.RangePicker' },
+    { label: t('Time'), value: 'TimePicker' },
+    { label: t('Time range'), value: 'TimePicker.RangePicker' },
+    { label: t('Select'), value: 'Select' },
+    { label: t('Radio group'), value: 'Radio.Group' },
+    { label: t('Checkbox group'), value: 'Checkbox.Group' },
+    { label: t('China region'), value: 'chinaRegion' },
+  ];
+  return {
+    options,
+    values: options.map((option) => option.value),
+  };
+};
