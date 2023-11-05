@@ -555,7 +555,7 @@ Menu.URL = observer(
         label: (
           <SchemaContext.Provider value={schema}>
             <FieldContext.Provider value={field}>
-              <SortableItem className={designerCss} removeParentsIfNoChildren={false}>
+              <SortableItem className={designerCss} removeParentsIfNoChildren={false} aria-label={t(field.title)}>
                 <Icon type={icon} />
                 <span
                   style={{
@@ -601,7 +601,11 @@ Menu.SubMenu = observer(
         label: (
           <SchemaContext.Provider value={schema}>
             <FieldContext.Provider value={field}>
-              <SortableItem className={subMenuDesignerCss} removeParentsIfNoChildren={false}>
+              <SortableItem
+                className={subMenuDesignerCss}
+                removeParentsIfNoChildren={false}
+                aria-label={t(field.title)}
+              >
                 <Icon type={icon} />
                 {t(field.title)}
                 <Designer />
