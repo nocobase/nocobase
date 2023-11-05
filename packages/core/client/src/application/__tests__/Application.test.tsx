@@ -326,7 +326,7 @@ describe('Application', () => {
       expect(screen.getByText('AppMain')).toBeInTheDocument();
     });
 
-    it.only('render component error', async () => {
+    it('render component error', async () => {
       const app = new Application({
         router,
       });
