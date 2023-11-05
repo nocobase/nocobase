@@ -55,7 +55,6 @@ import {
   useActionContext,
   useBlockRequestContext,
   useCollection,
-  useCollectionFilterOptions,
   useCollectionManager,
   useCompile,
   useDesignable,
@@ -134,7 +133,7 @@ interface ModalItemProps {
   title: string;
   onSubmit: (values: any) => void;
   initialValues?: any;
-  schema?: ISchema;
+  schema?: ISchema | (() => ISchema);
   modalTip?: string;
   components?: any;
   hidden?: boolean;
@@ -938,7 +937,6 @@ SchemaSettings.ModalItem = function ModalItem(props: ModalItemProps) {
     components,
     scope,
     effects,
-    schema,
     onSubmit,
     asyncGetInitialValues,
     initialValues,
@@ -958,12 +956,13 @@ SchemaSettings.ModalItem = function ModalItem(props: ModalItemProps) {
   }
   return (
     <SchemaSettings.Item
-      title={schema.title || title}
+      title={title}
       {...others}
       onClick={async () => {
         const values = asyncGetInitialValues ? await asyncGetInitialValues() : initialValues;
+        const schema = _.isFunction(props.schema) ? props.schema() : props.schema;
         FormDialog(
-          { title: schema.title || title, width },
+          { title, width },
           () => {
             return (
               <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
@@ -1888,7 +1887,7 @@ SchemaSettings.SortingRule = function SortRuleConfigure(props) {
 
 SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
   const { t } = useTranslation();
-  const options = useCollectionFilterOptions(props.collectionName);
+  const { getFields } = useCollectionFilterOptionsV2(props.collectionName);
   const record = useRecord();
   const { form } = useFormBlockContext();
   const variables = useVariables();
@@ -1896,54 +1895,59 @@ SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
   const { getAllCollectionsInheritChain } = useCollectionManager();
   const { isInSubForm, isInSubTable } = useFlag() || {};
 
-  const dynamicComponent = (props: DynamicComponentProps) => {
-    return (
-      <DatePickerProvider value={{ utc: false }}>
-        <VariableInput
-          {...props}
-          form={form}
-          record={record}
-          shouldChange={getShouldChange({
-            collectionField: props.collectionField,
-            variables,
-            localVariables,
-            getAllCollectionsInheritChain,
-          })}
-        />
-      </DatePickerProvider>
-    );
+  const dynamicComponent = useCallback(
+    (props: DynamicComponentProps) => {
+      return (
+        <DatePickerProvider value={{ utc: false }}>
+          <VariableInput
+            {...props}
+            form={form}
+            record={record}
+            shouldChange={getShouldChange({
+              collectionField: props.collectionField,
+              variables,
+              localVariables,
+              getAllCollectionsInheritChain,
+            })}
+          />
+        </DatePickerProvider>
+      );
+    },
+    [form, getAllCollectionsInheritChain, localVariables, record, variables],
+  );
+
+  const getSchema = () => {
+    return {
+      type: 'object',
+      title: t('Set the data scope'),
+      properties: {
+        filter: {
+          enum: props.collectionFilterOption || getFields(),
+          'x-decorator': (props) => (
+            <BaseVariableProvider {...props}>
+              <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable}>
+                {props.children}
+              </FlagProvider>
+            </BaseVariableProvider>
+          ),
+          'x-decorator-props': {
+            isDisabled,
+          },
+          'x-component': 'Filter',
+          'x-component-props': {
+            collectionName: props.collectionName,
+            dynamicComponent: props.dynamicComponent || dynamicComponent,
+          },
+        },
+      },
+    };
   };
 
   return (
     <SchemaSettings.ModalItem
       title={t('Set the data scope')}
       initialValues={{ filter: props.defaultFilter }}
-      schema={
-        {
-          type: 'object',
-          title: t('Set the data scope'),
-          properties: {
-            filter: {
-              enum: props.collectionFilterOption || options,
-              'x-decorator': (props) => (
-                <BaseVariableProvider {...props}>
-                  <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable}>
-                    {props.children}
-                  </FlagProvider>
-                </BaseVariableProvider>
-              ),
-              'x-decorator-props': {
-                isDisabled,
-              },
-              'x-component': 'Filter',
-              'x-component-props': {
-                collectionName: props.collectionName,
-                dynamicComponent: props.dynamicComponent || dynamicComponent,
-              },
-            },
-          },
-        } as ISchema
-      }
+      schema={getSchema as () => ISchema}
       onSubmit={props.onSubmit}
     />
   );
