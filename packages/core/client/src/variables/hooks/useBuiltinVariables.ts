@@ -33,6 +33,14 @@ const useBuiltInVariables = () => {
       },
       /**
        * @deprecated
+       * 兼容旧版本的 `$date` 变量，新版本已弃用
+       */
+      {
+        name: '$date',
+        ctx: dateVars,
+      },
+      /**
+       * @deprecated
        * 兼容旧版本的 `$system` 变量，新版本已弃用
        */
       {
