@@ -38,6 +38,7 @@ export interface ApplicationOptions {
   scopes?: Record<string, any>;
   router?: RouterOptions;
   devDynamicImport?: DevDynamicImport;
+  loadRemotePlugins?: boolean;
 }
 
 export class Application {
@@ -75,7 +76,7 @@ export class Application {
       ...options.router,
       renderComponent: this.renderComponent.bind(this),
     });
-    this.pm = new PluginManager(options.plugins, this);
+    this.pm = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
