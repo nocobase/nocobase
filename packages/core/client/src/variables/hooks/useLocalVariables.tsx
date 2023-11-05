@@ -4,6 +4,7 @@ import { useFormBlockContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
 import { useSubFormValue } from '../../schema-component/antd/association-field/hooks';
+import { getDateRanges } from '../../schema-component/antd/date-picker/util';
 import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/useBlockCollection';
 import { VariableOption } from '../types';
 
@@ -31,6 +32,7 @@ const useLocalVariables = (props?: Props) => {
   }
 
   return useMemo(() => {
+    const dateVars = getDateRanges();
     return (
       [
         /**
@@ -74,6 +76,18 @@ const useLocalVariables = (props?: Props) => {
           name: '$nForm',
           ctx: form?.values,
           collectionName: name,
+        },
+        {
+          name: '$nDate',
+          ctx: dateVars,
+        },
+        /**
+         * @deprecated
+         * 兼容旧版本的 `$date` 变量，新版本已弃用
+         */
+        {
+          name: '$date',
+          ctx: dateVars,
         },
         subFormValue && { name: '$iteration', ctx: subFormValue, collectionName: currentCollectionName },
       ] as VariableOption[]
