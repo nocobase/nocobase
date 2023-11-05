@@ -962,7 +962,7 @@ SchemaSettings.ModalItem = function ModalItem(props: ModalItemProps) {
         const values = asyncGetInitialValues ? await asyncGetInitialValues() : initialValues;
         const schema = _.isFunction(props.schema) ? props.schema() : props.schema;
         FormDialog(
-          { title, width },
+          { title: schema.title || title, width },
           () => {
             return (
               <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
