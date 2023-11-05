@@ -64,7 +64,6 @@ const useResource = (props: UseResourceProps) => {
   const { fieldSchema } = useActionContext();
   const isCreateAction = fieldSchema?.['x-action'] === 'create';
   const association = useAssociation(props);
-  console.log(association);
   const sourceId = useSourceId?.();
   const field = useField();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);

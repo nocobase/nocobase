@@ -1,4 +1,4 @@
-import { enableToConfig, expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
 
 test.describe('page header', () => {
   test('disabled & enabled page header', async ({ page, mockPage }) => {
@@ -99,7 +99,7 @@ test.describe('page tabs', () => {
     //修改tab名称
     await page.getByText('Unnamed').click();
     await page.getByRole('button', { name: 'designer-schema-settings-Page-tab' }).click();
-    await page.getByLabel('Edit tab').click();
+    await page.getByLabel('Edit', { exact: true }).click();
     await page.getByRole('textbox').fill('page tab');
     await page.getByRole('button', { name: 'OK' }).click();
 
