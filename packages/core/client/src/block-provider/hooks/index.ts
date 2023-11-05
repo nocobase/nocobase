@@ -182,10 +182,10 @@ export const useCreateActionProps = () => {
             ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
             : undefined,
         });
+        setVisible?.(false);
         actionField.data.loading = false;
         actionField.data.data = data;
         __parent?.service?.refresh?.();
-        setVisible?.(false);
         if (!onSuccess?.successMessage) {
           message.success(t('Saved successfully'));
           await form.reset();
