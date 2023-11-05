@@ -18,6 +18,7 @@ import {
   SchemaInitializerItemOptions,
   SchemaInitializerItemProps,
 } from './types';
+import { useWhyDidYouUpdate } from 'ahooks';
 
 const defaultWrap = (s: ISchema) => s;
 

@@ -99,7 +99,7 @@ import { Option } from './VariableInput/type';
 import { formatVariableScop } from './VariableInput/utils/formatVariableScop';
 import { DataScopeProps } from './types';
 
-interface SchemaSettingsProps {
+export interface SchemaSettingsProps {
   title?: any;
   dn?: Designable;
   field?: GeneralField;
@@ -166,6 +166,7 @@ interface SchemaSettingsProviderProps {
   visible?: any;
   template?: any;
   collectionName?: any;
+  designerContext?: any;
 }
 
 export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (props) => {
@@ -479,13 +480,14 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
   );
 };
 
-SchemaSettings.Item = function Item(props: {
+export interface SchemaSettingsItemProps {
   title: string;
   name?: string;
   children?: ReactNode;
   eventKey?: string;
   onClick?: (e: any) => void;
-}) {
+}
+SchemaSettings.Item = function Item(props: SchemaSettingsItemProps) {
   const { pushMenuItem } = useCollectMenuItems();
   const { collectMenuItem } = useCollectMenuItem();
   const { eventKey, title, name } = props;
@@ -515,7 +517,11 @@ SchemaSettings.Item = function Item(props: {
   return null;
 };
 
-SchemaSettings.ItemGroup = function ItemGroup(props) {
+export interface SchemaSettingsItemGroupProps {
+  title: string;
+  children: SchemaSettingsItemProps[];
+}
+SchemaSettings.ItemGroup = function ItemGroup(props: SchemaSettingsItemGroupProps) {
   const { Component, getMenuItems } = useMenuItem();
   const { pushMenuItem } = useCollectMenuItems();
   const key = useMemo(() => uid(), []);
@@ -531,7 +537,12 @@ SchemaSettings.ItemGroup = function ItemGroup(props) {
   return <Component />;
 };
 
-SchemaSettings.SubMenu = function SubMenu(props) {
+export interface SchemaSettingsSubMenuProps {
+  title: string;
+  children: SchemaSettingsItemProps[];
+}
+
+SchemaSettings.SubMenu = function SubMenu(props: SchemaSettingsSubMenuProps) {
   const { Component, getMenuItems } = useMenuItem();
   const { pushMenuItem } = useCollectMenuItems();
   const key = useMemo(() => uid(), []);

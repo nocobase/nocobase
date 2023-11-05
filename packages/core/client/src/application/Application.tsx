@@ -19,6 +19,7 @@ import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import type { RequireJS } from './utils/requirejs';
 import { getRequireJs } from './utils/requirejs';
+import { SchemaSetting, SchemaSettingsManager } from './schema-settings';
 
 declare global {
   interface Window {
@@ -37,6 +38,7 @@ export interface ApplicationOptions {
   components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
+  schemaSettings?: SchemaSetting[];
   devDynamicImport?: DevDynamicImport;
 }
 
@@ -52,6 +54,8 @@ export class Application {
   public devDynamicImport: DevDynamicImport;
   public requirejs: RequireJS;
   public notification;
+  public schemaSettingsManager: SchemaSettingsManager;
+
   loading = true;
   maintained = false;
   maintaining = false;
@@ -76,6 +80,7 @@ export class Application {
       renderComponent: this.renderComponent.bind(this),
     });
     this.pm = new PluginManager(options.plugins, this);
+    this.schemaSettingsManager = new SchemaSettingsManager(options.schemaSettings, this);
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
