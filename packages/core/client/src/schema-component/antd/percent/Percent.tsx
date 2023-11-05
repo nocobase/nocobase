@@ -1,9 +1,11 @@
 import { connect, mapReadPretty } from '@formily/react';
-import { isNumberLike } from '@formily/shared';
+import { isNum } from '@formily/shared';
 import { InputNumber } from 'antd';
 import * as math from 'mathjs';
 import React, { useMemo } from 'react';
 import { ReadPretty } from '../input-number/ReadPretty';
+
+const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
 
 const toValue = (value: any, callback: (v: number) => number) => {
   if (isNumberLike(value)) {
