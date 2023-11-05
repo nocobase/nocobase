@@ -5,7 +5,7 @@ test.describe('menu page', () => {
   test('create new page, then delete', async ({ page, mockPage }) => {
     await mockPage().goto();
     const pageTitle = 'new page';
-    await page.getByLabel('schema-initializer-Menu-MenuItemInitializers').hover();
+    await page.getByTestId('schema-initializer-Menu-header').hover();
     await page.getByRole('menuitem', { name: 'Page' }).click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill(pageTitle);
@@ -142,14 +142,14 @@ test.describe('menu page', () => {
 test.describe('menu group', () => {
   test('create new menu group, then delete', async ({ page, mockPage }) => {
     await mockPage().goto();
-    await page.getByLabel('schema-initializer-Menu-MenuItemInitializers').hover();
+    await page.getByTestId('schema-initializer-Menu-header').hover();
     await page.getByRole('menuitem', { name: 'Group' }).click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('menu Group');
     await page.getByRole('button', { name: 'OK' }).click();
     await page.getByText('menu Group').click();
 
-    await expect(page.getByLabel('schema-initializer-Menu-side')).toBeVisible();
+    await expect(page.getByTestId('schema-initializer-Menu-side')).toBeVisible();
     const sideBar = await page.locator('ul').filter({ hasText: /^Add menu item$/ });
     await expect(sideBar).toBeVisible();
 
@@ -158,8 +158,8 @@ test.describe('menu group', () => {
       .locator('ul')
       .filter({ hasText: /^Add menu item$/ })
       .click();
-    await page.getByLabel('schema-initializer-Menu-side').click();
-    await page.getByRole('button', { name: 'Page' }).click();
+    await page.getByTestId('schema-initializer-Menu-side').click();
+    await page.getByRole('menuitem', { name: 'Page', exact: true }).click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('group page');
     await page.getByRole('button', { name: 'OK' }).click();
@@ -196,7 +196,7 @@ test.describe('menu group', () => {
 test.describe('menu link', () => {
   test('create new menu link, then delete', async ({ page, mockPage }) => {
     await mockPage().goto();
-    await page.getByLabel('schema-initializer-Menu-MenuItemInitializers').hover();
+    await page.getByTestId('schema-initializer-Menu-header').hover();
     await page.getByRole('menuitem', { name: 'Link' }).click();
     await page.getByLabel('block-item-Input-Menu item title').getByRole('textbox').fill('link menu');
     await page.getByLabel('block-item-Input-Link').getByRole('textbox').fill('https://www.baidu.com/');

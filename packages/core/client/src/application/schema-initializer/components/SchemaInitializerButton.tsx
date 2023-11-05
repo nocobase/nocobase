@@ -12,6 +12,7 @@ export const SchemaInitializerButton: FC<SchemaInitializerOptions> = React.memo(
 
   return (
     <Button
+      data-testid={options['data-testid']}
       aria-label={getAriaLabel()}
       aria-disabled="false"
       type={'dashed'}
