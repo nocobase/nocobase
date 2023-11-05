@@ -47,7 +47,7 @@ export default defineConfig({
                 },
                 {
                   title: 'SettingsCenter',
-                  link: '/apis/api-client',
+                  link: '#',
                 },
               ],
             },
