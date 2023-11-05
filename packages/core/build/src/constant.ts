@@ -1,5 +1,5 @@
-import path from 'path';
 import { Package } from '@lerna/package';
+import path from 'path';
 
 export const globExcludeFiles = [
   '!src/**/__tests__',
@@ -26,7 +26,10 @@ export const EsbuildSupportExts = [
 ];
 export const ROOT_PATH = path.join(__dirname, '../../../../');
 export const PACKAGES_PATH = path.join(ROOT_PATH, 'packages');
-export const PLUGINS_DIR = [path.join(PACKAGES_PATH, 'plugins'), path.join(PACKAGES_PATH, 'samples')];
+export const PLUGINS_DIR = ['plugins', 'samples', 'pro-plugins']
+  .concat((process.env.PLUGINS_DIRS || '').split(','))
+  .filter(Boolean)
+  .map((name) => path.join(PACKAGES_PATH, name));
 export const PRESETS_DIR = path.join(PACKAGES_PATH, 'presets');
 export const getPluginPackages = (packages: Package[]) =>
   packages.filter((item) => PLUGINS_DIR.some((pluginDir) => item.location.startsWith(pluginDir)));

@@ -1,4 +1,7 @@
-import { useCompile } from '@nocobase/client';
+import React from 'react';
+
+import { Variable, useCompile } from '@nocobase/client';
+
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE, lang } from './locale';
 import { instructions, useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
@@ -211,20 +214,29 @@ function filterTypedFields({ fields, types, appends, depth = 1, compile, getColl
   });
 }
 
+function useOptions(scope, opts) {
+  const compile = useCompile();
+  const children = scope.useOptions?.(opts)?.filter(Boolean);
+  const { fieldNames } = opts;
+  return {
+    [fieldNames.label]: compile(scope.label),
+    [fieldNames.value]: scope.value,
+    key: scope[fieldNames.value],
+    [fieldNames.children]: children,
+    disabled: !children || !children.length,
+  };
+}
+
 export function useWorkflowVariableOptions(options: OptionsOfUseVariableOptions = {}) {
   const fieldNames = Object.assign({}, defaultFieldNames, options.fieldNames ?? {});
   const opts = Object.assign(options, { fieldNames });
-  const compile = useCompile();
-  const result = [scopeOptions, nodesOptions, triggerOptions, systemOptions].map((item: any) => {
-    const children = item.useOptions?.(opts)?.filter(Boolean);
-    return {
-      [fieldNames.label]: compile(item.label),
-      [fieldNames.value]: item.value,
-      key: item[fieldNames.value],
-      [fieldNames.children]: children,
-      disabled: !children || !children.length,
-    };
-  });
+  const result = [
+    useOptions(scopeOptions, opts),
+    useOptions(nodesOptions, opts),
+    useOptions(triggerOptions, opts),
+    useOptions(systemOptions, opts),
+  ];
+  // const cache = useMemo(() => result, [result]);
 
   return result;
 }
@@ -348,4 +360,24 @@ export function getCollectionFieldOptions(options): VariableOption[] {
   });
 
   return result;
+}
+
+export function WorkflowVariableInput({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.Input scope={scope} {...props} />;
+}
+
+export function WorkflowVariableTextArea({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.TextArea scope={scope} {...props} />;
+}
+
+export function WorkflowVariableRawTextArea({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.RawTextArea scope={scope} {...props} />;
+}
+
+export function WorkflowVariableJSON({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.JSON scope={scope} {...props} />;
 }
