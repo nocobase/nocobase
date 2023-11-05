@@ -1,18 +1,14 @@
-import { ArrowUpOutlined } from '@ant-design/icons';
-import { css, cx, useCompile } from '@nocobase/client';
 import React from 'react';
+import { ArrowUpOutlined } from '@ant-design/icons';
+
+import { css, cx, useCompile } from '@nocobase/client';
+
 import { NodeDefaultView } from '.';
 import { Branch } from '../Branch';
 import { useFlowContext } from '../FlowContext';
 import { NAMESPACE, lang } from '../locale';
 import useStyles from '../style';
-import {
-  VariableOption,
-  defaultFieldNames,
-  nodesOptions,
-  triggerOptions,
-  useWorkflowVariableOptions,
-} from '../variable';
+import { VariableOption, WorkflowVariableInput, defaultFieldNames, nodesOptions, triggerOptions } from '../variable';
 
 function findOption(options: VariableOption[], paths: string[]) {
   let opts = options;
@@ -45,9 +41,8 @@ export default {
       title: `{{t("Loop target", { ns: "${NAMESPACE}" })}}`,
       description: `{{t("A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'Variable.Input',
+      'x-component': 'WorkflowVariableInput',
       'x-component-props': {
-        scope: '{{useWorkflowVariableOptions()}}',
         changeOnSelect: true,
         useTypedConstant: ['string', 'number', 'null'],
         className: css`
@@ -95,10 +90,10 @@ export default {
       </NodeDefaultView>
     );
   },
-  scope: {
-    useWorkflowVariableOptions,
+  scope: {},
+  components: {
+    WorkflowVariableInput,
   },
-  components: {},
   useScopeVariables(node, options) {
     const compile = useCompile();
     const { target } = node.config;

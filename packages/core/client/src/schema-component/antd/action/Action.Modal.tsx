@@ -32,7 +32,6 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
 
     return (
       <Modal
-        data-testid="action-modal"
         width={actualWidth}
         title={field.title}
         {...(others as ModalProps)}

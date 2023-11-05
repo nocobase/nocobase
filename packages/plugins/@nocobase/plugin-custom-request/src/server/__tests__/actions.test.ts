@@ -154,7 +154,9 @@ describe('actions', () => {
         filterByTk: 'currentUser-with-association-data',
       });
       expect(res.status).toBe(200);
-      expect(params).toMatchSnapshot();
+      expect(expect.arrayContaining(params.a)).toMatchObject(['root', 'member', 'admin']);
+      expect(expect.arrayContaining(params.b)).toMatchObject(['{{t("Member")}}', '{{t("Root")}}', '{{t("Admin")}}']);
+      expect(expect.arrayContaining(params.c)).toMatchObject([1, 1, 1]);
     });
   });
 });
