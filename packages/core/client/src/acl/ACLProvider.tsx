@@ -212,11 +212,13 @@ export const useRecordPkValue = () => {
 };
 
 export const ACLActionProvider = (props) => {
+  const { template, writableView } = useCollection();
   const recordPkValue = useRecordPkValue();
   const resource = useResourceName();
   const { parseAction } = useACLRoleContext();
   const schema = useFieldSchema();
   let actionPath = schema['x-acl-action'];
+  const editablePath = ['create', 'update', 'destroy', 'importXlsx'];
   if (!actionPath && resource && schema['x-action']) {
     actionPath = `${resource}:${schema['x-action']}`;
   }
@@ -228,6 +230,13 @@ export const ACLActionProvider = (props) => {
   }
   const params = parseAction(actionPath, { schema, recordPkValue });
   if (!params) {
+    return null;
+  }
+  //视图表无编辑权限时不显示
+  if (editablePath.includes(actionPath) || editablePath.includes(actionPath?.split(':')[1])) {
+    if (template !== 'view' || writableView) {
+      return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
+    }
     return null;
   }
   return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;

@@ -1,5 +1,5 @@
 import { FormItem, FormLayout } from '@formily/antd-v5';
-import { SchemaInitializerItemOptions, Variable, css, defaultFieldNames, useCollectionManager } from '@nocobase/client';
+import { SchemaInitializerItemOptions, Variable, defaultFieldNames, useCollectionManager } from '@nocobase/client';
 import { Evaluator, evaluators, getOptions } from '@nocobase/evaluators/client';
 import { Radio } from 'antd';
 import React from 'react';
@@ -8,7 +8,7 @@ import { RadioWithTooltip } from '../components/RadioWithTooltip';
 import { ValueBlock } from '../components/ValueBlock';
 import { renderEngineReference } from '../components/renderEngineReference';
 import { NAMESPACE, lang } from '../locale';
-import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
+import { BaseTypeSets, WorkflowVariableInput, WorkflowVariableTextArea, useWorkflowVariableOptions } from '../variable';
 
 function useDynamicExpressionCollectionFieldMatcher(field): boolean {
   if (!['belongsTo', 'hasOne'].includes(field.type)) {
@@ -93,13 +93,10 @@ export default {
       type: 'string',
       title: `{{t("Calculation expression", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'CalculationExpression',
-      // NOTE: can not use Variable.Input and scope directly as below,
-      //       because the scope will be cached.
-      // 'x-component': 'Variable.Input',
-      // 'x-component-props': {
-      //   scope: '{{useWorkflowVariableOptions()}}',
-      // },
+      'x-component': 'WorkflowVariableTextArea',
+      'x-component-props': {
+        changeOnSelect: true,
+      },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
         const { evaluate } = evaluators.get(values.engine) as Evaluator;
@@ -135,9 +132,12 @@ export default {
       type: 'string',
       title: `{{t("Variable datasource", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'ScopeSelect',
+      'x-component': 'WorkflowVariableInput',
       'x-component-props': {
         changeOnSelect: true,
+        variableOptions: {
+          types: [{ type: 'reference', options: { collection: '*', entity: true } }],
+        },
       },
       'x-reactions': {
         dependencies: ['dynamic'],
@@ -154,17 +154,8 @@ export default {
     renderEngineReference,
   },
   components: {
-    CalculationExpression(props) {
-      const scope = useWorkflowVariableOptions();
-
-      return <Variable.TextArea scope={scope} changeOnSelect {...props} />;
-    },
-    ScopeSelect(props) {
-      const scope = useWorkflowVariableOptions({
-        types: [{ type: 'reference', options: { collection: '*', entity: true } }],
-      });
-      return <Variable.Input scope={scope} {...props} />;
-    },
+    WorkflowVariableInput,
+    WorkflowVariableTextArea,
     RadioWithTooltip,
     DynamicConfig,
     ValueBlock,

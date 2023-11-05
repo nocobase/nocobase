@@ -1,9 +1,7 @@
-import React from 'react';
-
-import { Variable, css } from '@nocobase/client';
+import { css, defaultFieldNames } from '@nocobase/client';
 
 import { NAMESPACE } from '../locale';
-import { useWorkflowVariableOptions } from '../variable';
+import { WorkflowVariableRawTextArea } from '../variable';
 
 export default {
   title: `{{t("SQL action", { ns: "${NAMESPACE}" })}}`,
@@ -17,7 +15,7 @@ export default {
       title: 'SQL',
       description: `{{t("Usage of SQL query result is not supported yet.", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'SQLInput',
+      'x-component': 'WorkflowVariableRawTextArea',
       'x-component-props': {
         rows: 20,
         className: css`
@@ -29,9 +27,12 @@ export default {
   },
   scope: {},
   components: {
-    SQLInput(props) {
-      const scope = useWorkflowVariableOptions();
-      return <Variable.RawTextArea scope={scope} {...props} />;
-    },
+    WorkflowVariableRawTextArea,
+  },
+  useVariables({ key, title }, { types, fieldNames = defaultFieldNames }) {
+    return {
+      [fieldNames.value]: key,
+      [fieldNames.label]: title,
+    };
   },
 };
