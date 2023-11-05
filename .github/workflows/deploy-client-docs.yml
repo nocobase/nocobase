@@ -15,9 +15,9 @@ jobs:
     - name: copy files via ssh
       uses: appleboy/scp-action@v0.1.4
       with:
-        host: ${{ secrets.CN_HOST }}
-        username: ${{ secrets.CN_USERNAME }}
-        key: ${{ secrets.CN_KEY }}
-        port: ${{ secrets.CN_PORT }}
+        host: ${{ secrets.CN_CLIENT_HOST }}
+        username: ${{ secrets.CN_CLIENT_USERNAME }}
+        key: ${{ secrets.CN_CLIENT_KEY }}
+        port: ${{ secrets.CN_CLIENT_PORT }}
         source: "packages/core/client/dist/*"
-        target: ${{ secrets.CN_TARGET }}/${{ github.ref_name }}
+        target: ${{ secrets.CN_CLIENT_TARGET }}/${{ github.ref_name }}
