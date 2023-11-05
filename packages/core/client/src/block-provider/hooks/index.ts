@@ -164,7 +164,7 @@ export const useCreateActionProps = () => {
       // const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
       if (addChild) {
         const treeParentField = getTreeParentField();
-        values[treeParentField?.name ?? 'parent'] = currentRecord?.__parent;
+        values[treeParentField?.name ?? 'parent'] = omit(currentRecord?.__parent, ['children']);
         values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord?.__parent?.id;
       }
       actionField.data = field.data || {};
