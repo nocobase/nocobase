@@ -81,6 +81,20 @@ const LearnMore: React.FC = () => {
 
   const columns = [
     {
+      title: t('Collection'),
+      dataIndex: 'collection',
+      key: 'collection',
+      render: (_, collection) => {
+        return (
+          <div>
+            {compile(collection.title)}
+            <br />
+            <div style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>{collection.name}</div>
+          </div>
+        );
+      },
+    },
+    {
       title: t('Plugin'),
       dataIndex: 'plugin',
       key: 'plugin',
@@ -91,20 +105,6 @@ const LearnMore: React.FC = () => {
             {plugin.title}
             <br />
             <div style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>{plugin.name}</div>
-          </div>
-        );
-      },
-    },
-    {
-      title: t('Collection'),
-      dataIndex: 'collection',
-      key: 'collection',
-      render: (_, collection) => {
-        return (
-          <div>
-            {compile(collection.title)}
-            <br />
-            <div style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>{collection.name}</div>
           </div>
         );
       },
