@@ -1,17 +1,13 @@
 import { useAPIClient, useCompile, Checkbox } from '@nocobase/client';
-import { Button, Card, Tabs, message, Modal, Table, Upload, Result } from 'antd';
+import { Button, Card, message, Modal, Table, Upload, Result, Tabs } from 'antd';
+import { FormItem } from '@formily/antd-v5';
 import React, { useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import type { UploadProps } from 'antd';
 import { saveAs } from 'file-saver';
 import { InboxOutlined, LoadingOutlined } from '@ant-design/icons';
 import { useDuplicatorTranslation, generateNTemplate } from './locale';
 
 const { Dragger } = Upload;
-const ActionType = [
-  { label: generateNTemplate('Backup'), value: 'backup' },
-  { label: generateNTemplate('Restore'), value: 'restore' },
-];
 const options = [
   { label: generateNTemplate('System metadata'), value: 'meta', disabled: true },
   { label: generateNTemplate('System config'), value: 'config' },
@@ -64,6 +60,7 @@ const LearnMore: React.FC = () => {
   const apiClient = useAPIClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [dataSource, setDataSource] = useState<any>();
+  const [tabKey, setTabKey] = useState('meta');
   const compile = useCompile();
   const showModal = async () => {
     const data = await apiClient.request({
@@ -71,7 +68,6 @@ const LearnMore: React.FC = () => {
       method: 'get',
     });
     setDataSource(data?.data);
-    console.log(data?.data);
     setIsModalOpen(true);
   };
 
@@ -114,16 +110,26 @@ const LearnMore: React.FC = () => {
       },
     },
   ];
+
   return (
     <>
       <a onClick={showModal}>{t('Learn more')}</a>
       <Modal width={800} open={isModalOpen} footer={null} onOk={handleOk} onCancel={handleCancel}>
-        <h3> {t('System metadata')}</h3>
-        <Table bordered size={'small'} dataSource={dataSource?.meta} columns={columns} scroll={{ y: 300 }} />
-        <h3>{t('System config')}</h3>
-        <Table bordered size={'small'} dataSource={dataSource?.config} columns={columns} scroll={{ y: 300 }} />
-        <h3>{t('Business data')}</h3>
-        <Table bordered size={'small'} dataSource={dataSource?.business} columns={columns} scroll={{ y: 300 }} />
+        <Tabs type="card" defaultActiveKey={tabKey} onChange={(key) => setTabKey(key)}>
+          {options.map((tab) => {
+            return (
+              <Tabs.TabPane key={tab.value} tab={compile(tab.label)}>
+                <Table
+                  bordered
+                  size={'small'}
+                  dataSource={dataSource?.[tabKey]}
+                  columns={columns}
+                  scroll={{ y: 400 }}
+                />
+              </Tabs.TabPane>
+            );
+          })}
+        </Tabs>
       </Modal>
     </>
   );
@@ -263,16 +269,18 @@ const RestoreConfiguration = () => {
           ):
         </strong>
         <div style={{ lineHeight: 2, marginBottom: 16 }}>
-          <Checkbox.Group
-            options={compile(
-              options.map((v) => {
-                return { ...v, disabled: !restoreData?.meta?.dataTypes?.includes(v.value) || v.disabled };
-              }),
-            )}
-            style={{ flexDirection: 'column' }}
-            defaultValue={dataTypes}
-            onChange={(checkValue) => setDataTypes(checkValue)}
-          />
+          <FormItem>
+            <Checkbox.Group
+              options={compile(
+                options.map((v) => {
+                  return { ...v, disabled: !restoreData?.meta?.dataTypes?.includes(v.value) || v.disabled };
+                }),
+              )}
+              style={{ flexDirection: 'column' }}
+              defaultValue={dataTypes}
+              onChange={(checkValue) => setDataTypes(checkValue)}
+            />
+          </FormItem>
         </div>
         <Button type="primary" onClick={handleStartRestore} disabled={!restoreData}>
           {t('Start restore')}
@@ -282,33 +290,4 @@ const RestoreConfiguration = () => {
   );
 };
 
-const components = {
-  backup: BackupConfiguration,
-  restore: RestoreConfiguration,
-};
-
-const tabList = ActionType.map((item) => {
-  return {
-    ...item,
-    component: components[item.value],
-  };
-});
-
-export const Configuration = () => {
-  const compile = useCompile();
-  const location = useLocation();
-  const search = new URLSearchParams(location.search);
-  return (
-    <Card bordered>
-      <Tabs type="card" defaultActiveKey={search.get('tab')}>
-        {tabList.map((tab) => {
-          return (
-            <Tabs.TabPane key={tab.value} tab={compile(tab.label)}>
-              <tab.component type={tab.value} />
-            </Tabs.TabPane>
-          );
-        })}
-      </Tabs>
-    </Card>
-  );
-};
+export { BackupConfiguration, RestoreConfiguration };
