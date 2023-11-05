@@ -164,7 +164,7 @@ export const useCreateActionProps = () => {
       // const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
       if (addChild) {
         const treeParentField = getTreeParentField();
-        values[treeParentField?.name ?? 'parent'] = currentRecord?.__parent;
+        values[treeParentField?.name ?? 'parent'] = omit(currentRecord?.__parent, ['children']);
         values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord?.__parent?.id;
       }
       actionField.data = field.data || {};
@@ -182,10 +182,10 @@ export const useCreateActionProps = () => {
             ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
             : undefined,
         });
+        setVisible?.(false);
         actionField.data.loading = false;
         actionField.data.data = data;
         __parent?.service?.refresh?.();
-        setVisible?.(false);
         if (!onSuccess?.successMessage) {
           message.success(t('Saved successfully'));
           await form.reset();

@@ -14,6 +14,7 @@ export const ImportInitializerProvider = (props: any) => {
       schema: {
         'x-align': 'right',
         'x-decorator': 'ACLActionProvider',
+        'x-acl-action': 'importXlsx',
         'x-acl-action-props': {
           skipScopeCheck: true,
         },

@@ -65,16 +65,6 @@ export const AssociationFilterFilterBlockInitializer = () => {
     children: optionalChildren,
   };
 
-  const dividerItem: SchemaInitializerItemOptions = {
-    type: 'divider',
-  };
-
-  const deleteItem: SchemaInitializerItemOptions = {
-    type: 'item',
-    title: t('Delete'),
-    component: 'AssociationFilterDesignerDelete',
-  };
-
   const items = [associatedFieldGroup, optionalFieldGroup];
 
   return (

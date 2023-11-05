@@ -8,7 +8,6 @@ import supertest, { SuperAgentTest } from 'supertest';
 import db2resource from '../../../server/src/middlewares/db2resource';
 import { uid } from '@nocobase/utils';
 
-
 interface ActionParams {
   fields?: string[];
   filter?: any;
@@ -117,7 +116,8 @@ export class MockServer extends Koa {
               {
                 get(target, method: string, receiver) {
                   return (params: ActionParams = {}) => {
-                    let { filterByTk, values = {}, file, ...restParams } = params;
+                    let { filterByTk } = params;
+                    const { values = {}, file, ...restParams } = params;
                     if (params.associatedIndex) {
                       resourceOf = params.associatedIndex;
                     }

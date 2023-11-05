@@ -237,7 +237,9 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     this.app.db.on(`afterRemoveCollection`, (collection) => {
       const subApps = [...AppSupervisor.getInstance().subApps()];
       for (const subApp of subApps) {
-        subApp.db.removeCollection(collection.name);
+        if (subApp.db.hasCollection(collection.name)) {
+          subApp.db.removeCollection(collection.name);
+        }
       }
     });
   }

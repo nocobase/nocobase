@@ -1,5 +1,11 @@
-import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
+import { DeleteOutlined } from '@ant-design/icons';
+import { cloneDeep } from 'lodash';
+import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
+import { App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
+import { useTranslation } from 'react-i18next';
+
 import {
   ActionContextProvider,
   SchemaComponent,
@@ -9,13 +15,10 @@ import {
   useAPIClient,
   useActionContext,
   useCompile,
-  useRequest,
   useResourceActionContext,
 } from '@nocobase/client';
 import { Registry, parse, str2moment } from '@nocobase/utils/client';
-import { App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
-import React, { useContext, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+
 import { AddButton } from '../AddButton';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
@@ -25,6 +28,7 @@ import { useGetAriaLabelOfAddButton } from '../hooks/useGetAriaLabelOfAddButton'
 import { lang } from '../locale';
 import useStyles from '../style';
 import { VariableOption, VariableOptions } from '../variable';
+
 import aggregate from './aggregate';
 import calculation from './calculation';
 import condition from './condition';
@@ -96,6 +100,7 @@ function useUpdateAction() {
           config: form.values,
         },
       });
+      ctx.setFormValueChanged(false);
       ctx.setVisible(false);
       refresh();
     },
@@ -281,23 +286,46 @@ export function NodeDefaultView(props) {
 
   const [editingTitle, setEditingTitle] = useState<string>(data.title ?? typeTitle);
   const [editingConfig, setEditingConfig] = useState(false);
+  const [formValueChanged, setFormValueChanged] = useState(false);
 
-  async function onChangeTitle(next) {
-    const title = next || typeTitle;
-    setEditingTitle(title);
-    if (title === data.title) {
-      return;
-    }
-    await api.resource('flow_nodes').update?.({
-      filterByTk: data.id,
-      values: {
-        title,
-      },
+  const form = useMemo(() => {
+    const values = cloneDeep(data.config);
+    return createForm({
+      initialValues: values,
+      values,
+      disabled: workflow.executed,
     });
-    refresh();
-  }
+  }, [data, workflow]);
 
-  function onOpenDrawer(ev) {
+  const resetForm = useCallback(
+    (changed) => {
+      setFormValueChanged(changed);
+      if (!changed) {
+        form.reset();
+      }
+    },
+    [form],
+  );
+
+  const onChangeTitle = useCallback(
+    async function (next) {
+      const title = next || typeTitle;
+      setEditingTitle(title);
+      if (title === data.title) {
+        return;
+      }
+      await api.resource('flow_nodes').update?.({
+        filterByTk: data.id,
+        values: {
+          title,
+        },
+      });
+      refresh();
+    },
+    [data],
+  );
+
+  const onOpenDrawer = useCallback(function (ev) {
     if (ev.target === ev.currentTarget) {
       setEditingConfig(true);
       return;
@@ -310,7 +338,7 @@ export function NodeDefaultView(props) {
         return;
       }
     }
-  }
+  }, []);
 
   return (
     <div className={cx(styles.nodeClass, `workflow-node-type-${data.type}`)}>
@@ -324,20 +352,25 @@ export function NodeDefaultView(props) {
           <Tag>{typeTitle}</Tag>
           <span className="workflow-node-id">{data.id}</span>
         </div>
-        <div>
-          <Input.TextArea
-            role="button"
-            aria-label="textarea"
-            disabled={workflow.executed}
-            value={editingTitle}
-            onChange={(ev) => setEditingTitle(ev.target.value)}
-            onBlur={(ev) => onChangeTitle(ev.target.value)}
-            autoSize
-          />
-        </div>
+        <Input.TextArea
+          role="button"
+          aria-label="textarea"
+          disabled={workflow.executed}
+          value={editingTitle}
+          onChange={(ev) => setEditingTitle(ev.target.value)}
+          onBlur={(ev) => onChangeTitle(ev.target.value)}
+          autoSize
+        />
         <RemoveButton />
         <JobButton />
-        <ActionContextProvider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
+        <ActionContextProvider
+          value={{
+            visible: editingConfig,
+            setVisible: setEditingConfig,
+            formValueChanged,
+            setFormValueChanged: resetForm,
+          }}
+        >
           <SchemaComponent
             scope={instruction.scope}
             components={instruction.components}
@@ -383,17 +416,11 @@ export function NodeDefaultView(props) {
                       </Tooltip>
                     </div>
                   ),
-                  'x-component': 'Action.Drawer',
-                  'x-decorator': 'Form',
+                  'x-decorator': 'FormV2',
                   'x-decorator-props': {
-                    disabled: workflow.executed,
-                    useValues(options) {
-                      const { config } = useNodeContext();
-                      return useRequest(() => {
-                        return Promise.resolve({ data: config });
-                      }, options);
-                    },
+                    form,
                   },
+                  'x-component': 'Action.Drawer',
                   properties: {
                     ...(instruction.description
                       ? {

@@ -133,7 +133,7 @@ export const PageTabDesigner = ({ schema }) => {
   return (
     <div className={'general-schema-designer'}>
       <div className={'general-schema-designer-icons'}>
-        <Space size={2} align={'center'}>
+        <Space size={3} align={'center'}>
           <DragHandler>
             <DragOutlined style={{ marginRight: 0 }} role="button" aria-label={getAriaLabel('drag-handler', 'tab')} />
           </DragHandler>
