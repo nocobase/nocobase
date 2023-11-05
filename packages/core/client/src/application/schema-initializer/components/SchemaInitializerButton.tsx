@@ -12,6 +12,8 @@ export const SchemaInitializerButton: FC<SchemaInitializerOptions> = React.memo(
 
   return (
     <Button
+      aria-label={getAriaLabel()}
+      aria-disabled="false"
       type={'dashed'}
       style={{
         borderColor: 'var(--colorSettings)',
@@ -20,7 +22,6 @@ export const SchemaInitializerButton: FC<SchemaInitializerOptions> = React.memo(
       }}
       icon={typeof options.icon === 'string' ? <Icon type={options.icon as string} /> : options.icon}
       {...others}
-      aria-label={getAriaLabel()}
     >
       {compile(options.title)}
     </Button>

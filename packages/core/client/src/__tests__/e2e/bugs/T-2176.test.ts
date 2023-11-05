@@ -218,6 +218,8 @@ test('BUG: Relationship block issue, menu should not display loading', async ({ 
   await mockPage(config).goto();
   await page.getByLabel('action-Action.Link-View-view-roles-table-root').click();
   await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-roles').hover();
+
+  // 因为下面的断言是判断是否隐藏，又因为一开始就是隐藏的，所以为了准确，需要等待一下
   await page.waitForTimeout(300);
 
   // 这个输入框不应该显示

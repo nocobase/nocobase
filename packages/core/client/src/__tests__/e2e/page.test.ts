@@ -1,4 +1,4 @@
-import { enableToConfig, expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
 
 test.describe('page header', () => {
   test('disabled & enabled page header', async ({ page, mockPage }) => {
@@ -11,13 +11,13 @@ test.describe('page header', () => {
     await expect(page.getByLabel('Enable page header').getByRole('switch')).toBeChecked();
     //关闭
     await page.getByLabel('Enable page header').getByRole('switch').click();
-    await expect(await page.locator('.ant-page-header')).not.toBeVisible();
+    await expect(page.locator('.ant-page-header')).not.toBeVisible();
     await expect(page.getByLabel('Enable page header').getByRole('switch')).not.toBeChecked();
     //开启
     await page.getByRole('main').locator('span').nth(1).click();
     await page.getByLabel('designer-schema-settings-Page').hover();
     await page.getByLabel('Enable page header').getByRole('switch').click();
-    await expect(await page.locator('.ant-page-header').getByTitle(pageTitle)).toBeVisible();
+    await expect(page.locator('.ant-page-header').getByTitle(pageTitle)).toBeVisible();
   });
 });
 
@@ -84,17 +84,11 @@ test.describe('page tabs', () => {
     await page.getByRole('button', { name: 'OK' }).click();
     await page.getByText('page tab 2').click();
 
-    await page.waitForTimeout(1000); // 等待1秒钟
-    const tabMenuItem = await page.getByRole('tab').locator('div > span').filter({ hasText: 'page tab 2' });
-    const tabMenuItemActivedColor = await tabMenuItem.evaluate((element) => {
-      const computedStyle = window.getComputedStyle(element);
-      return computedStyle.color;
-    });
     //激活的tab样式符合预期
     await expect(page.getByText('page tab 1')).toBeVisible();
     await expect(page.getByText('page tab 2')).toBeVisible();
     await expect(page.getByLabel('schema-initializer-Grid-BlockInitializers')).toBeVisible();
-    await expect(tabMenuItemActivedColor).toBe('rgb(22, 119, 255)');
+    await expect(page.getByRole('tab', { name: 'page tab 2' })).toHaveAttribute('aria-selected', 'true');
 
     //修改tab名称
     await page.getByText('Unnamed').click();
@@ -104,13 +98,13 @@ test.describe('page tabs', () => {
     await page.getByRole('button', { name: 'OK' }).click();
 
     const tabMenuItem1 = await page.getByRole('tab').getByText('page tab', { exact: true });
-    const tabMenuItemActivedColor1 = await tabMenuItem1.evaluate((element) => {
+    const tabMenuItemActiveColor1 = await tabMenuItem1.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.color;
     });
     await expect(tabMenuItem1).toBeVisible();
     await expect(page.getByLabel('schema-initializer-Grid-BlockInitializers')).toBeVisible();
-    await expect(tabMenuItemActivedColor1).toBe('rgb(22, 119, 255)');
+    expect(tabMenuItemActiveColor1).toBe('rgb(22, 119, 255)');
 
     //删除 tab
     await page.getByRole('tab').getByText('page tab', { exact: true }).hover();
@@ -121,15 +115,12 @@ test.describe('page tabs', () => {
     await page.getByRole('tab').getByText('page tab 1').click();
 
     //禁用标签
-    await page
-      .locator('div')
-      .filter({ hasText: /^page tab$/ })
-      .nth(1)
-      .click();
-    await page.getByLabel('designer-schema-settings-Page', { exact: true }).click();
-    await page.getByLabel('Enable page tabs').getByRole('switch').setChecked(false);
+    await page.getByTitle('page tab', { exact: true }).hover();
+    await page.getByLabel('designer-schema-settings-Page', { exact: true }).hover();
+    await page.getByLabel('Enable page tabs').click();
     await expect(page.getByText('page tab 2')).not.toBeVisible();
   });
+
   test('drag page tab sorting', async ({ page, mockPage }) => {
     await mockPage({
       pageSchema: {
@@ -170,11 +161,11 @@ test.describe('page tabs', () => {
       },
     }).goto();
 
-    const sourceElement = await page.locator('span:has-text("tab 2")');
+    const sourceElement = page.locator('span:has-text("tab 2")');
     await sourceElement.hover();
-    const source = await page.getByRole('button', { name: 'drag' });
+    const source = page.getByRole('button', { name: 'drag' });
     await source.hover();
-    const targetElement = await page.locator('span:has-text("tab 1")');
+    const targetElement = page.locator('span:has-text("tab 1")');
     const sourceBoundingBox = await sourceElement.boundingBox();
     const targetBoundingBox = await targetElement.boundingBox();
     //拖拽标签调整排序 拖拽前 1-2
@@ -184,6 +175,6 @@ test.describe('page tabs', () => {
     const tab2 = await page.locator('span:has-text("tab 2")').boundingBox();
     const tab1 = await page.locator('span:has-text("tab 1")').boundingBox();
     //拖拽后 2-1
-    await expect(tab2.x).toBeLessThan(tab1.x);
+    expect(tab2.x).toBeLessThan(tab1.x);
   });
 });

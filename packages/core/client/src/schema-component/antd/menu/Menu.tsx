@@ -197,8 +197,6 @@ const HeaderMenu = ({
       key: 'x-designer-button',
       style: { padding: '0 8px', order: 9999 },
       label: render({
-        'aria-label': 'schema-initializer-Menu-header',
-        'aria-disabled': false,
         style: { background: 'none' },
       }),
       notdelete: true,

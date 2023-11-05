@@ -474,8 +474,12 @@ const createFakerData = async (collectionSettings: CollectionSetting[]) => {
  * 使页面成为可配置态
  */
 export async function enableToConfig(page: Page) {
-  if (!(await page.getByRole('button', { name: 'plus Add menu item' }).isVisible())) {
-    await page.getByRole('button', { name: 'highlight' }).click();
+  // TODO: 更好的办法是通过判断 Initializer 按钮的显隐来判断页面是否已经是可配置态；
+  // 但是 page.getByLabel('schema-initializer-Menu-MenuItemInitializers').isVisible() 一直返回的都是 false
+  const style = await page.getByTestId('ui-editor-button').getAttribute('style');
+
+  if (!style) {
+    await page.getByTestId('ui-editor-button').click();
   }
 }
 
