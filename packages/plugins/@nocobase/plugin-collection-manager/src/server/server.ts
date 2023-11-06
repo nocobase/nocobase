@@ -81,7 +81,9 @@ export class CollectionManagerPlugin extends Plugin {
         removeOptions['transaction'] = options.transaction;
       }
 
-      if (lodash.get(options, 'context.action.params.cascade', false)) {
+      const cascade = lodash.get(options, 'context.action.params.cascade', false);
+
+      if (cascade === true || cascade === 'true') {
         removeOptions['cascade'] = true;
       }
 
