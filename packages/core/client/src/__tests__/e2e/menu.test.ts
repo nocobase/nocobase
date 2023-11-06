@@ -92,7 +92,7 @@ test.describe('menu page', () => {
 
     await page.getByLabel('Insert before').hover();
 
-    await page.getByRole('button', { name: 'Add page' }).click();
+    await page.getByRole('button', { name: 'Page', exact: true }).click();
     await page.getByRole('textbox').fill(pageTitle4);
     await page.getByRole('button', { name: 'OK' }).click();
 
@@ -122,7 +122,7 @@ test.describe('menu page', () => {
 
     await page.getByLabel('Insert after').hover();
 
-    await page.getByRole('button', { name: 'Add page' }).click();
+    await page.getByRole('button', { name: 'Page', exact: true }).click();
     await page.getByRole('textbox').fill(pageTitle6);
     await page.getByRole('button', { name: 'OK' }).click();
 

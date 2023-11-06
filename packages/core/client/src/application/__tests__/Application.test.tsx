@@ -330,8 +330,8 @@ describe('Application', () => {
         router,
       });
 
-      const ErrorFallback = () => {
-        return <div>ErrorFallback</div>;
+      const AppError = () => {
+        return <div>AppError</div>;
       };
       const Foo = () => {
         throw new Error('error');
@@ -339,7 +339,7 @@ describe('Application', () => {
       };
       app.use(Foo);
       app.addComponents({
-        ErrorFallback,
+        AppError,
       });
 
       const originalConsoleWarn = console.error;
@@ -351,8 +351,7 @@ describe('Application', () => {
       await sleep(10);
       expect(fn).toBeCalled();
 
-      expect(screen.getByText('ErrorFallback')).toBeInTheDocument();
-      screen.debug();
+      expect(screen.getByText('AppError')).toBeInTheDocument();
 
       console.error = originalConsoleWarn;
     });
