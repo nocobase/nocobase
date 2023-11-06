@@ -2,10 +2,9 @@ import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { createForm, Field, Form as FormilyForm, onFieldChange, onFieldInit, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { autorun } from '@formily/reactive';
+import { autorun, raw } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
-import _ from 'lodash';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
@@ -127,9 +126,6 @@ const WithForm = (props: WithFormProps) => {
 
             // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `autorun` 代替
             onFieldInit(`*(${fields})`, (field: any, form) => {
-              // 使用防抖是为了避免短时间内多次赋值触发死循环
-              field.__setValueWithDebounce = _.debounce(field.setValue, 150);
-
               disposes.push(
                 autorun(async () => {
                   linkagefields.push(field);
@@ -138,7 +134,7 @@ const WithForm = (props: WithFormProps) => {
                     value: h.value,
                     field,
                     condition: v.condition,
-                    values: form?.values,
+                    values: raw(form?.values),
                     variables,
                     localVariables,
                   });
