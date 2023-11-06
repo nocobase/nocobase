@@ -56,11 +56,11 @@ export default defineConfig({
               children: [
                 {
                   title: 'SchemaComponent',
-                  link: '#',
+                  link: '/apis/schema-component',
                 },
                 {
                   title: 'SchemaInitializer',
-                  link: '#',
+                  link: '/apis/schema-initializer',
                 },
                 {
                   title: 'SchemaSettings',
@@ -74,7 +74,7 @@ export default defineConfig({
             },
             {
               title: 'Collection Manager',
-              link: '#',
+              link: '/apis/collection-manager',
             },
             {
               title: 'BlockProvider',
