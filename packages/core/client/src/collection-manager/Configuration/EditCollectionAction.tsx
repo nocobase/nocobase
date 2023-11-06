@@ -79,7 +79,13 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
   const result = useRequest(
-    () => Promise.resolve({ data: { ...omit(record, ['__parent']), category: record?.category.map((v) => v.id) } }),
+    () =>
+      Promise.resolve({
+        data: {
+          ...omit(cloneDeep(record), ['__parent', '__collectionName']),
+          category: record?.category.map((v) => v.id),
+        },
+      }),
     {
       ...options,
       manual: true,
@@ -124,7 +130,7 @@ export const EditCollection = (props) => {
 };
 
 export const EditCollectionAction = (props) => {
-  const { scope, getContainer, item: record, children } = props;
+  const { scope, getContainer, item: record, children, ...otherProps } = props;
   const { getTemplate } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -135,6 +141,7 @@ export const EditCollectionAction = (props) => {
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
+          {...otherProps}
           onClick={async () => {
             const templateConf = getTemplate(record.template);
             const schema = getSchema(

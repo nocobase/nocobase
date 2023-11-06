@@ -1,5 +1,11 @@
-import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
+import { DeleteOutlined } from '@ant-design/icons';
+import { cloneDeep } from 'lodash';
+import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
+import { App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
+import { useTranslation } from 'react-i18next';
+
 import {
   ActionContextProvider,
   SchemaComponent,
@@ -9,20 +15,20 @@ import {
   useAPIClient,
   useActionContext,
   useCompile,
-  useRequest,
   useResourceActionContext,
 } from '@nocobase/client';
 import { Registry, parse, str2moment } from '@nocobase/utils/client';
-import { Alert, App, Button, Dropdown, Input, Tag, message } from 'antd';
-import React, { useContext, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+
 import { AddButton } from '../AddButton';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
+import { StatusButton } from '../components/StatusButton';
 import { JobStatusOptionsMap } from '../constants';
-import { NAMESPACE, lang } from '../locale';
+import { useGetAriaLabelOfAddButton } from '../hooks/useGetAriaLabelOfAddButton';
+import { lang } from '../locale';
 import useStyles from '../style';
 import { VariableOption, VariableOptions } from '../variable';
+
 import aggregate from './aggregate';
 import calculation from './calculation';
 import condition from './condition';
@@ -36,7 +42,6 @@ import query from './query';
 import request from './request';
 import sql from './sql';
 import update from './update';
-import { StatusButton } from '../components/StatusButton';
 
 export interface Instruction {
   title: string;
@@ -49,11 +54,11 @@ export interface Instruction {
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
   component?(props): JSX.Element;
-  endding?: boolean;
   useVariables?(node, options?): VariableOption;
   useScopeVariables?(node, options?): VariableOptions;
   useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
+  isAvailable?(ctx: object): boolean;
 }
 
 export const instructions = new Registry<Instruction>();
@@ -95,6 +100,7 @@ function useUpdateAction() {
           config: form.values,
         },
       });
+      ctx.setFormValueChanged(false);
       ctx.setVisible(false);
       refresh();
     },
@@ -136,36 +142,14 @@ export function useUpstreamScopes(node) {
 
 export function Node({ data }) {
   const { styles } = useStyles();
-  const { component: Component = NodeDefaultView, endding } = instructions.get(data.type);
+  const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
+  const { component: Component = NodeDefaultView } = instructions.get(data.type);
 
   return (
     <NodeContext.Provider value={data}>
       <div className={cx(styles.nodeBlockClass)}>
         <Component data={data} />
-        {!endding ? (
-          <AddButton upstream={data} />
-        ) : (
-          <div
-            className={css`
-              flex-grow: 1;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              width: 1px;
-              height: 6em;
-              padding: 2em 0;
-              background-color: var(--nb-box-bg);
-
-              .anticon {
-                font-size: 1.5em;
-                line-height: 100%;
-              }
-            `}
-          >
-            <CloseOutlined />
-          </div>
-        )}
+        <AddButton aria-label={getAriaLabel()} upstream={data} />
       </div>
     </NodeContext.Provider>
   );
@@ -198,7 +182,7 @@ export function RemoveButton() {
 
       const template = parse(node.config);
       const refs = template.parameters.filter(
-        ({ key }) => key.startsWith(`$jobsMapByNodeId.${current.id}.`) || key === `$jobsMapByNodeId.${current.id}`,
+        ({ key }) => key.startsWith(`$jobsMapByNodeKey.${current.key}.`) || key === `$jobsMapByNodeKey.${current.key}`,
       );
       return refs.length;
     });
@@ -302,23 +286,46 @@ export function NodeDefaultView(props) {
 
   const [editingTitle, setEditingTitle] = useState<string>(data.title ?? typeTitle);
   const [editingConfig, setEditingConfig] = useState(false);
+  const [formValueChanged, setFormValueChanged] = useState(false);
 
-  async function onChangeTitle(next) {
-    const title = next || typeTitle;
-    setEditingTitle(title);
-    if (title === data.title) {
-      return;
-    }
-    await api.resource('flow_nodes').update?.({
-      filterByTk: data.id,
-      values: {
-        title,
-      },
+  const form = useMemo(() => {
+    const values = cloneDeep(data.config);
+    return createForm({
+      initialValues: values,
+      values,
+      disabled: workflow.executed,
     });
-    refresh();
-  }
+  }, [data, workflow]);
 
-  function onOpenDrawer(ev) {
+  const resetForm = useCallback(
+    (changed) => {
+      setFormValueChanged(changed);
+      if (!changed) {
+        form.reset();
+      }
+    },
+    [form],
+  );
+
+  const onChangeTitle = useCallback(
+    async function (next) {
+      const title = next || typeTitle;
+      setEditingTitle(title);
+      if (title === data.title) {
+        return;
+      }
+      await api.resource('flow_nodes').update?.({
+        filterByTk: data.id,
+        values: {
+          title,
+        },
+      });
+      refresh();
+    },
+    [data],
+  );
+
+  const onOpenDrawer = useCallback(function (ev) {
     if (ev.target === ev.currentTarget) {
       setEditingConfig(true);
       return;
@@ -331,27 +338,39 @@ export function NodeDefaultView(props) {
         return;
       }
     }
-  }
+  }, []);
 
   return (
     <div className={cx(styles.nodeClass, `workflow-node-type-${data.type}`)}>
-      <div className={cx(styles.nodeCardClass, { configuring: editingConfig })} onClick={onOpenDrawer}>
+      <div
+        role="button"
+        aria-label={`${typeTitle}-${editingTitle}`}
+        className={cx(styles.nodeCardClass, { configuring: editingConfig })}
+        onClick={onOpenDrawer}
+      >
         <div className={cx(styles.nodeMetaClass, 'workflow-node-meta')}>
           <Tag>{typeTitle}</Tag>
           <span className="workflow-node-id">{data.id}</span>
         </div>
-        <div>
-          <Input.TextArea
-            disabled={workflow.executed}
-            value={editingTitle}
-            onChange={(ev) => setEditingTitle(ev.target.value)}
-            onBlur={(ev) => onChangeTitle(ev.target.value)}
-            autoSize
-          />
-        </div>
+        <Input.TextArea
+          role="button"
+          aria-label="textarea"
+          disabled={workflow.executed}
+          value={editingTitle}
+          onChange={(ev) => setEditingTitle(ev.target.value)}
+          onBlur={(ev) => onChangeTitle(ev.target.value)}
+          autoSize
+        />
         <RemoveButton />
         <JobButton />
-        <ActionContextProvider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
+        <ActionContextProvider
+          value={{
+            visible: editingConfig,
+            setVisible: setEditingConfig,
+            formValueChanged,
+            setFormValueChanged: resetForm,
+          }}
+        >
           <SchemaComponent
             scope={instruction.scope}
             components={instruction.components}
@@ -370,18 +389,38 @@ export function NodeDefaultView(props) {
                 },
                 [`${instruction.type}_${data.id}`]: {
                   type: 'void',
-                  title: data.title,
-                  'x-component': 'Action.Drawer',
-                  'x-decorator': 'Form',
+                  title: (
+                    <div
+                      className={css`
+                        display: flex;
+                        justify-content: space-between;
+
+                        strong {
+                          font-weight: bold;
+                        }
+
+                        .ant-tag {
+                          margin-inline-end: 0;
+                        }
+
+                        code {
+                          font-weight: normal;
+                        }
+                      `}
+                    >
+                      <strong>{data.title}</strong>
+                      <Tooltip title={lang('Variable key of node')}>
+                        <Tag>
+                          <code>{data.key}</code>
+                        </Tag>
+                      </Tooltip>
+                    </div>
+                  ),
+                  'x-decorator': 'FormV2',
                   'x-decorator-props': {
-                    disabled: workflow.executed,
-                    useValues(options) {
-                      const { config } = useNodeContext();
-                      return useRequest(() => {
-                        return Promise.resolve({ data: config });
-                      }, options);
-                    },
+                    form,
                   },
+                  'x-component': 'Action.Drawer',
                   properties: {
                     ...(instruction.description
                       ? {

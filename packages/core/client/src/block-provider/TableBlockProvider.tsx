@@ -3,10 +3,11 @@ import { FormContext, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
+import { useRecord } from '../record-provider';
 import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { mergeFilter } from './SharedFilterProvider';
-import { findFilterTargets } from './hooks';
+import { findFilterTargets, useParsedFilter } from './hooks';
 
 export const TableBlockContext = createContext<any>({});
 export function getIdsWithChildren(nodes) {
@@ -74,9 +75,11 @@ const InternalTableBlockProvider = (props: Props) => {
 
 export const TableBlockProvider = (props) => {
   const resourceName = props.resource;
-  const params = { ...props.params };
+  const params = useMemo(() => ({ ...props.params }), [props.params]);
   const fieldSchema = useFieldSchema();
   const { getCollection, getCollectionField } = useCollectionManager();
+  const record = useRecord();
+
   const collection = getCollection(props.collection);
   const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   if (props.dragSort) {
@@ -99,12 +102,22 @@ export const TableBlockProvider = (props) => {
     }
   }
   const form = useMemo(() => createForm(), [treeTable]);
+  const { filter: parsedFilter } = useParsedFilter({
+    filterOption: params?.filter,
+    currentRecord: { __parent: record, __collectionName: props.collection },
+  });
+  const paramsWithFilter = useMemo(() => {
+    return {
+      ...params,
+      filter: parsedFilter,
+    };
+  }, [parsedFilter, params]);
 
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
       <FormContext.Provider value={form}>
-        <BlockProvider data-testid="table-block" {...props} params={params} runWhenParamsChanged>
-          <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
+        <BlockProvider name={props.name || 'table'} {...props} params={paramsWithFilter} runWhenParamsChanged>
+          <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={paramsWithFilter} />
         </BlockProvider>
       </FormContext.Provider>
     </SchemaComponentOptions>

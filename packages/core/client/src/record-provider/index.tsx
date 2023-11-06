@@ -1,14 +1,17 @@
 import React, { createContext, useContext } from 'react';
+import { useCollection } from '../collection-manager';
 import { useCurrentUserContext } from '../user';
 
 export const RecordContext = createContext({});
 export const RecordIndexContext = createContext(null);
 
-export const RecordProvider: React.FC<{ record: any; parent?: any }> = (props) => {
-  const { record, children, parent = false } = props;
+export const RecordProvider: React.FC<{ record: any; parent?: any; collectionName?: string }> = (props) => {
+  const { record, children, collectionName, parent = false } = props;
+  const { name: __collectionName } = useCollection();
   const __parent = useContext(RecordContext);
   const value = { ...record };
   value['__parent'] = parent ? parent : __parent;
+  value['__collectionName'] = collectionName || __collectionName;
   return <RecordContext.Provider value={value}>{children}</RecordContext.Provider>;
 };
 

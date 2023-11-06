@@ -9,6 +9,7 @@ import { Button, Card, Divider, Tooltip } from 'antd';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormActiveFieldsProvider } from '../../../block-provider';
+import { FlagProvider } from '../../../flag-provider';
 import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
 import {
@@ -16,17 +17,24 @@ import {
   IsAllowToSetDefaultValueParams,
   interfacesOfUnsupportedDefaultValue,
 } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
-import { LocalVariablesProvider } from '../../../variables/hooks/useLocalVariables';
 import { AssociationFieldContext } from './context';
-import { useAssociationFieldContext } from './hooks';
+import { SubFormProvider, useAssociationFieldContext } from './hooks';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
   if (['hasOne', 'belongsTo'].includes(options.type)) {
-    return <ToOneNester {...props} />;
+    return (
+      <FlagProvider isInSubForm>
+        <ToOneNester {...props} />
+      </FlagProvider>
+    );
   }
   if (['hasMany', 'belongsToMany'].includes(options.type)) {
-    return <ToManyNester {...props} />;
+    return (
+      <FlagProvider isInSubForm>
+        <ToManyNester {...props} />
+      </FlagProvider>
+    );
   }
   return null;
 };
@@ -69,13 +77,13 @@ const ToOneNester = (props) => {
 
   return (
     <FormActiveFieldsProvider name="nester">
-      <RecordProvider record={field.value}>
-        <LocalVariablesProvider iterationCtx={field.value}>
+      <SubFormProvider value={field.value}>
+        <RecordProvider record={field.value}>
           <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
             <Card bordered={true}>{props.children}</Card>
           </DefaultValueProvider>
-        </LocalVariablesProvider>
-      </RecordProvider>
+        </RecordProvider>
+      </SubFormProvider>
     </FormActiveFieldsProvider>
   );
 };
@@ -177,8 +185,8 @@ const ToManyNester = observer(
                 )}
               </div>
               <FormActiveFieldsProvider name="nester">
-                <RecordProvider record={value}>
-                  <LocalVariablesProvider iterationCtx={value}>
+                <SubFormProvider value={value}>
+                  <RecordProvider record={value}>
                     <RecordIndexProvider index={index}>
                       <DefaultValueProvider isAllowToSetDefaultValue={isAllowToSetDefaultValue}>
                         <RecursionField
@@ -188,8 +196,8 @@ const ToManyNester = observer(
                         />
                       </DefaultValueProvider>
                     </RecordIndexProvider>
-                  </LocalVariablesProvider>
-                </RecordProvider>
+                  </RecordProvider>
+                </SubFormProvider>
               </FormActiveFieldsProvider>
               <Divider />
             </React.Fragment>

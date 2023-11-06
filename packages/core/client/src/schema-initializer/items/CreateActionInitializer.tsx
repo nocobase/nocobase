@@ -5,6 +5,7 @@ export const CreateActionInitializer = (props) => {
   const schema = {
     type: 'void',
     'x-action': 'create',
+    'x-acl-action': 'create',
     title: "{{t('Add new')}}",
     'x-designer': 'Action.Designer',
     'x-component': 'Action',

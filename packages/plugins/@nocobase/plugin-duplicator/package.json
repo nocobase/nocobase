@@ -4,7 +4,7 @@
   "displayName.zh-CN": "应用的备份与还原",
   "description": "Can be used for application replication, migration, upgrade, etc",
   "description.zh-CN": "可用于应用的复制、迁移、升级等场景",
-  "version": "0.14.0-alpha.7",
+  "version": "0.14.0-alpha.8",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "repository": {

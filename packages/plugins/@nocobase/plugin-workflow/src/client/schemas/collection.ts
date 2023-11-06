@@ -135,9 +135,8 @@ export const pagination = {
               type: 'number',
               title: '{{t("Page number")}}',
               'x-decorator': 'FormItem',
-              'x-component': 'Variable.Input',
+              'x-component': 'WorkflowVariableInput',
               'x-component-props': {
-                scope: '{{useWorkflowVariableOptions()}}',
                 useTypedConstant: ['number', 'null'],
               },
               default: 1,
@@ -173,6 +172,7 @@ export const appends = {
   'x-decorator': 'FormItem',
   'x-component': 'AppendsTreeSelect',
   'x-component-props': {
+    title: 'Preload associations',
     multiple: true,
     useCollection() {
       const { values } = useForm();

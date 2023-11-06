@@ -2,7 +2,6 @@ import { useCollection } from '../../';
 
 // 日历的操作配置
 export const CalendarActionInitializers = {
-  'data-testid': 'configure-actions-button-of-calendar-block',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   style: { marginLeft: 8 },

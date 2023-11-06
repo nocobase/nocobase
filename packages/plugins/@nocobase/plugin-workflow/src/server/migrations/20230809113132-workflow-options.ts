@@ -2,12 +2,12 @@ import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
   async up() {
-    const match = await this.app.version.satisfies('<0.11.0-alpha.2');
+    const match = await this.app.version.satisfies('<0.14.0-alpha.8');
     if (!match) {
       return;
     }
     const { db } = this.context;
-    const WorkflowRepo = db.getRepository('flow_nodes');
+    const WorkflowRepo = db.getRepository('workflows');
     await db.sequelize.transaction(async (transaction) => {
       const workflows = await WorkflowRepo.find({
         transaction,
@@ -16,6 +16,9 @@ export default class extends Migration {
       await workflows.reduce(
         (promise, workflow) =>
           promise.then(() => {
+            if (!workflow.useTransaction) {
+              return;
+            }
             workflow.set('options', {
               useTransaction: workflow.get('useTransaction'),
             });

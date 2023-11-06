@@ -12,6 +12,7 @@ export const useLanguageSettings = () => {
   const enabledLanguages: string[] = data?.data?.enabledLanguages || [];
   const result = useMemo<MenuProps['items'][0]>(() => {
     return {
+      role: 'button',
       key: 'language',
       eventKey: 'LanguageSettings',
       onClick: () => {
@@ -19,6 +20,7 @@ export const useLanguageSettings = () => {
       },
       label: (
         <div
+          aria-label="language-settings"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -27,7 +29,7 @@ export const useLanguageSettings = () => {
         >
           {t('Language')}{' '}
           <Select
-            data-testid="antd-select"
+            data-testid="select-language"
             popupMatchSelectWidth={false}
             style={{ minWidth: 100 }}
             bordered={false}

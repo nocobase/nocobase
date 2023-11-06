@@ -155,6 +155,10 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       return;
     }
 
+    if (this.collection.options.sync === false) {
+      return;
+    }
+
     const model = this as any;
 
     const _schema = model._schema;

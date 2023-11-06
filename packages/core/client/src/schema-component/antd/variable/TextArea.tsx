@@ -229,19 +229,21 @@ export function TextArea(props) {
       const sel = window.getSelection?.();
       if (sel) {
         const children = Array.from(current.childNodes) as HTMLElement[];
-        if (range[0] === -1) {
-          if (range[1]) {
-            nextRange.setStartAfter(children[range[1] - 1]);
+        if (children.length) {
+          if (range[0] === -1) {
+            if (range[1]) {
+              nextRange.setStartAfter(children[range[1] - 1]);
+            }
+          } else {
+            nextRange.setStart(children[range[0]], range[1]);
           }
-        } else {
-          nextRange.setStart(children[range[0]], range[1]);
-        }
-        if (range[2] === -1) {
-          if (range[3]) {
-            nextRange.setEndAfter(children[range[3] - 1]);
+          if (range[2] === -1) {
+            if (range[3]) {
+              nextRange.setEndAfter(children[range[3] - 1]);
+            }
+          } else {
+            nextRange.setEnd(children[range[2]], range[3]);
           }
-        } else {
-          nextRange.setEnd(children[range[2]], range[3]);
         }
         nextRange.collapse(true);
         sel.removeAllRanges();
@@ -365,6 +367,8 @@ export function TextArea(props) {
       )}
     >
       <div
+        role="button"
+        aria-label="textbox"
         onInput={onInput}
         onBlur={onBlur}
         onKeyDown={onKeyDown}
@@ -391,7 +395,13 @@ export function TextArea(props) {
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {!disabled ? (
-        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} changeOnSelect={changeOnSelect} />
+        <VariableSelect
+          className=""
+          options={options}
+          setOptions={setOptions}
+          onInsert={onInsert}
+          changeOnSelect={changeOnSelect}
+        />
       ) : null}
     </Input.Group>,
   );

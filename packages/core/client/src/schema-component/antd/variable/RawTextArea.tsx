@@ -58,6 +58,16 @@ export function RawTextArea(props): JSX.Element {
         `}
       >
         <VariableSelect
+          className={
+            props.buttonClass ??
+            css`
+              &:not(:hover) {
+                border-right-color: transparent;
+                border-top-color: transparent;
+              }
+              background-color: transparent;
+            `
+          }
           fieldNames={props.fieldNames}
           options={options}
           setOptions={setOptions}

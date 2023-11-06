@@ -17,4 +17,4 @@ export class MultiAppManagerPlugin extends Plugin {
 }
 
 export default MultiAppManagerPlugin;
-export { tableActionColumnSchema } from './settings/schemas/applications';
+export { formSchema, tableActionColumnSchema } from './settings/schemas/applications';

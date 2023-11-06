@@ -11,12 +11,16 @@ export default {
     name: {
       'x-component': 'CollectionField',
       'x-decorator': 'FormItem',
+      'x-disabled': '{{ !createOnly }}',
+      required: true,
+      default: '{{ useNewId("s_") }}',
       description:
         '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
     },
     baseUrl: {
       'x-component': 'CollectionField',
       'x-decorator': 'FormItem',
+      'x-display': 'hidden',
       default: '/storage/uploads',
     },
     options: {
@@ -28,6 +32,7 @@ export default {
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
+          'x-display': 'hidden',
           default: 'storage/uploads',
         },
       },
@@ -35,6 +40,9 @@ export default {
     path: {
       'x-component': 'CollectionField',
       'x-decorator': 'FormItem',
+      'x-component-props': {
+        addonBefore: 'storage/uploads/',
+      },
     },
     default: {
       'x-component': 'CollectionField',

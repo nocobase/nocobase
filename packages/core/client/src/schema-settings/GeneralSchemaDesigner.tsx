@@ -3,11 +3,12 @@ import { css } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettings } from './SchemaSettings';
+import { useGetAriaLabelOfDesigner } from './hooks/useGetAriaLabelOfDesigner';
 
 const titleCss = css`
   pointer-events: none;
@@ -41,66 +42,6 @@ const overrideAntdCSS = css`
   }
 `;
 
-const DesignerControl = ({ onShow, children }) => {
-  // const divRef = React.useRef(null);
-  // const shouldUnmount = React.useRef(true);
-  // const isVisible = React.useRef(false);
-  // const unmount = useCallback(
-  //   _.debounce(() => {
-  //     if (shouldUnmount.current && !isVisible.current) {
-  //       onShow(false);
-  //     }
-  //   }, 300) as () => void,
-  //   [onShow],
-  // );
-
-  // useEffect(() => {
-  //   // 兼容旧浏览器
-  //   if (!IntersectionObserver) {
-  //     return onShow(true);
-  //   }
-
-  //   const observer = new IntersectionObserver((entries) => {
-  //     // 兼容旧浏览器
-  //     if (entries[0].isIntersecting === undefined) {
-  //       return onShow(true);
-  //     }
-
-  //     if (entries[0].isIntersecting) {
-  //       isVisible.current = true;
-  //       onShow(true);
-  //     } else {
-  //       isVisible.current = false;
-  //       unmount();
-  //     }
-  //   });
-
-  //   observer.observe(divRef.current);
-  //   return () => {
-  //     observer.disconnect();
-  //   };
-  // }, [unmount, onShow]);
-
-  // const onMouseEnter = useCallback(() => {
-  //   shouldUnmount.current = false;
-  // }, []);
-  // const onMouseLeave = useCallback(() => {
-  //   shouldUnmount.current = true;
-  //   unmount();
-  // }, [unmount]);
-
-  return (
-    <div
-      // ref={divRef}
-      className={classNames('general-schema-designer', overrideAntdCSS)}
-      // onMouseEnter={onMouseEnter}
-      // onMouseLeave={onMouseLeave}
-    >
-      {children}
-    </div>
-  );
-};
-
 export const GeneralSchemaDesigner = (props: any) => {
   const { disableInitializer, title, template, draggable = true } = props;
   const { dn, designable } = useDesignable();
@@ -108,17 +49,13 @@ export const GeneralSchemaDesigner = (props: any) => {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
-
-  // TODO: 需要解决弹窗自动关闭的问题：https://nocobase.height.app/T-2100
-  const [visible, setVisible] = useState(true);
+  const { getAriaLabel } = useGetAriaLabelOfDesigner();
 
   const schemaSettingsProps = {
     dn,
     field,
     fieldSchema,
   };
-
-  const onShow = useCallback((value) => setVisible(value), []);
 
   const rowCtx = useGridRowContext();
   const ctx = useGridContext();
@@ -129,7 +66,13 @@ export const GeneralSchemaDesigner = (props: any) => {
     return {
       insertPosition: 'afterEnd',
       wrap: rowCtx?.cols?.length > 1 ? undefined : gridRowColWrap,
-      component: <PlusOutlined data-testid="designer-add-block" style={{ cursor: 'pointer', fontSize: 14 }} />,
+      component: (
+        <PlusOutlined
+          role="button"
+          aria-label={getAriaLabel('schema-initializer')}
+          style={{ cursor: 'pointer', fontSize: 14 }}
+        />
+      ),
     };
   }, [rowCtx?.cols?.length]);
 
@@ -138,46 +81,46 @@ export const GeneralSchemaDesigner = (props: any) => {
   }
 
   return (
-    <DesignerControl onShow={onShow}>
-      {visible ? (
-        <>
-          {title && (
-            <div className={classNames('general-schema-designer-title', titleCss)}>
-              <Space size={2}>
-                <span className={'title-tag'}>{compile(title)}</span>
-                {template && (
-                  <span className={'title-tag'}>
-                    {t('Reference template')}: {templateName || t('Untitled')}
-                  </span>
-                )}
-              </Space>
-            </div>
+    <div className={classNames('general-schema-designer', overrideAntdCSS)}>
+      {title && (
+        <div className={classNames('general-schema-designer-title', titleCss)}>
+          <Space size={2}>
+            <span className={'title-tag'}>{compile(title)}</span>
+            {template && (
+              <span className={'title-tag'}>
+                {t('Reference template')}: {templateName || t('Untitled')}
+              </span>
+            )}
+          </Space>
+        </div>
+      )}
+      <div className={'general-schema-designer-icons'}>
+        <Space size={2} align={'center'}>
+          {draggable && (
+            <DragHandler>
+              <DragOutlined role="button" aria-label={getAriaLabel('drag-handler')} />
+            </DragHandler>
           )}
-          <div className={'general-schema-designer-icons'}>
-            <Space size={2} align={'center'}>
-              {draggable && (
-                <DragHandler>
-                  <DragOutlined data-testid="designer-drag" />
-                </DragHandler>
-              )}
-              {!disableInitializer &&
-                (ctx?.InitializerComponent ? (
-                  <ctx.InitializerComponent {...initializerProps} />
-                ) : (
-                  ctx?.renderSchemaInitializer?.(initializerProps)
-                ))}
-              <SchemaSettings
-                title={
-                  <MenuOutlined data-testid="designer-schema-settings" style={{ cursor: 'pointer', fontSize: 12 }} />
-                }
-                {...schemaSettingsProps}
-              >
-                {props.children}
-              </SchemaSettings>
-            </Space>
-          </div>
-        </>
-      ) : null}
-    </DesignerControl>
+          {!disableInitializer &&
+            (ctx?.InitializerComponent ? (
+              <ctx.InitializerComponent {...initializerProps} />
+            ) : (
+              ctx?.renderSchemaInitializer?.(initializerProps)
+            ))}
+          <SchemaSettings
+            title={
+              <MenuOutlined
+                role="button"
+                aria-label={getAriaLabel('schema-settings')}
+                style={{ cursor: 'pointer', fontSize: 12 }}
+              />
+            }
+            {...schemaSettingsProps}
+          >
+            {props.children}
+          </SchemaSettings>
+        </Space>
+      </div>
+    </div>
   );
 };

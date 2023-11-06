@@ -27,7 +27,8 @@ describe('Select', () => {
     await userEvent.click(screen.getByText('福州'));
     await userEvent.click(selector);
     fireEvent.click(screen.getByText('浙江'));
-    expect(container.querySelectorAll('.ant-tag')).toHaveLength(2);
+    expect(screen.getAllByText('福州')).toHaveLength(3);
+    expect(screen.getAllByText('浙江')).toHaveLength(3);
   });
 
   it('select one & objectValue: true', async () => {

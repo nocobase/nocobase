@@ -1,12 +1,14 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
+  SchemaComponentOptions,
   useActionContext,
   useRecord,
   useRequest,
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
+import React from 'react';
 import { i18nText } from '../../utils';
 
 const collection = {
@@ -97,7 +99,42 @@ export const useDestroyAll = () => {
   };
 };
 
-export const tableActionColumnSchema = {
+export const formSchema: ISchema = {
+  type: 'void',
+  'x-component': 'div',
+  properties: {
+    displayName: {
+      'x-component': 'CollectionField',
+      'x-decorator': 'FormItem',
+    },
+    name: {
+      'x-component': 'CollectionField',
+      'x-decorator': 'FormItem',
+      'x-disabled': '{{ !createOnly }}',
+    },
+    pinned: {
+      'x-component': 'CollectionField',
+      'x-decorator': 'FormItem',
+    },
+    'options.standaloneDeployment': {
+      'x-component': 'Checkbox',
+      'x-decorator': 'FormItem',
+      'x-content': i18nText('Standalone deployment'),
+    },
+    'options.autoStart': {
+      'x-component': 'Checkbox',
+      'x-decorator': 'FormItem',
+      'x-content': i18nText('Auto start'),
+    },
+    cname: {
+      title: i18nText('Custom domain'),
+      'x-component': 'Input',
+      'x-decorator': 'FormItem',
+    },
+  },
+};
+
+export const tableActionColumnSchema: ISchema = {
   properties: {
     view: {
       type: 'void',
@@ -119,29 +156,7 @@ export const tableActionColumnSchema = {
           },
           title: '{{t("Edit")}}',
           properties: {
-            displayName: {
-              'x-component': 'CollectionField',
-              'x-decorator': 'FormItem',
-            },
-            pinned: {
-              'x-component': 'CollectionField',
-              'x-decorator': 'FormItem',
-            },
-            'options.standaloneDeployment': {
-              'x-component': 'Checkbox',
-              'x-decorator': 'FormItem',
-              'x-content': i18nText('Standalone deployment'),
-            },
-            'options.autoStart': {
-              'x-component': 'Checkbox',
-              'x-decorator': 'FormItem',
-              'x-content': i18nText('Auto start'),
-            },
-            cname: {
-              title: i18nText('Custom domain'),
-              'x-component': 'Input',
-              'x-decorator': 'FormItem',
-            },
+            formSchema,
             footer: {
               type: 'void',
               'x-component': 'Action.Drawer.Footer',
@@ -230,6 +245,8 @@ export const schema: ISchema = {
             create: {
               type: 'void',
               title: '{{t("Add new")}}',
+              'x-decorator': (props) =>
+                React.createElement(SchemaComponentOptions, { ...props, scope: { createOnly: true } }),
               'x-component': 'Action',
               'x-component-props': {
                 type: 'primary',
@@ -255,33 +272,7 @@ export const schema: ISchema = {
                   },
                   title: '{{t("Add new")}}',
                   properties: {
-                    displayName: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
-                    name: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
-                    pinned: {
-                      'x-component': 'CollectionField',
-                      'x-decorator': 'FormItem',
-                    },
-                    'options.standaloneDeployment': {
-                      'x-component': 'Checkbox',
-                      'x-decorator': 'FormItem',
-                      'x-content': i18nText('Standalone deployment'),
-                    },
-                    'options.autoStart': {
-                      'x-component': 'Checkbox',
-                      'x-decorator': 'FormItem',
-                      'x-content': i18nText('Auto start'),
-                    },
-                    cname: {
-                      title: i18nText('Custom domain'),
-                      'x-component': 'Input',
-                      'x-decorator': 'FormItem',
-                    },
+                    formSchema,
                     footer: {
                       type: 'void',
                       'x-component': 'Action.Drawer.Footer',

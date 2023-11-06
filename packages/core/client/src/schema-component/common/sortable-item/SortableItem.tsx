@@ -38,6 +38,7 @@ export const Sortable = (props: any) => {
   return React.createElement(
     component || 'div',
     {
+      role: 'none',
       ...others,
       className: cx('nb-sortable-designer', props.className),
       ref: setNodeRef,
@@ -49,18 +50,18 @@ export const Sortable = (props: any) => {
 
 const useSortableItemProps = (props) => {
   const id = useSortableItemId(props);
+  const schema = useFieldSchema();
   if (props.schema) {
     return { ...props, id };
   }
-  const schema = useFieldSchema();
   return { ...props, id, schema };
 };
 
 const useSortableItemId = (props) => {
+  const field = useField();
   if (props.id) {
     return props.id;
   }
-  const field = useField();
   return field.address.toString();
 };
 
@@ -118,6 +119,7 @@ export const DragHandler = (props) => {
         }}
         {...listeners}
         {...attributes}
+        role="none"
       >
         <span style={{ cursor: 'move', fontSize: 14 }}>{props.children}</span>
       </div>

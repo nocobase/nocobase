@@ -1,5 +1,5 @@
 import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
-import { onFieldChange } from '@formily/core';
+import { onFieldChange, FormPath } from '@formily/core';
 import { RecursionField, connect, mapProps, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Space, message } from 'antd';
@@ -32,7 +32,7 @@ export const filterAnalyses = (filters): any[] => {
       return true;
     }
     const regex = /\{\{\$(?:[a-zA-Z_]\w*)\.([a-zA-Z_]\w*)(?:\.id)?\}\}/;
-    const fieldName = jsonlogic?.value.match?.(regex)?.[1];
+    const fieldName = jsonlogic?.value?.match?.(regex)?.[1];
     if (fieldName) {
       results.push(fieldName);
     }
@@ -59,18 +59,22 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const resource = api.resource(collectionField.target);
   const linkageFields = filterAnalyses(field.componentProps?.service?.params?.filter);
   useEffect(() => {
+    const initValue = isVariable(field.value) ? undefined : field.value;
+    const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;
+    setInnerValue(value);
+  }, [field.value]);
+  useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
-      linkageFields?.forEach((v) => {
-        if (v) {
-          onFieldChange(v, () => {
-            if (field.value) {
-              props.onChange(null);
-              setInnerValue(null);
-            }
-          });
-        }
-      });
+      if (linkageFields?.length > 0) {
+        //支持深层次子表单
+        onFieldChange('*', (fieldPath: any) => {
+          if (linkageFields.includes(fieldPath.props.name) && field.value) {
+            props.onChange(null);
+            setInnerValue(null);
+          }
+        });
+      }
     });
 
     return () => {
@@ -112,7 +116,6 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
       </div>
     );
   };
-
   return (
     <div key={fieldSchema.name}>
       <Space.Compact style={{ display: 'flex', lineHeight: '32px' }}>
@@ -125,7 +128,6 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
           service={service}
           onChange={(value) => {
             const val = value?.length !== 0 ? value : null;
-            setInnerValue(val);
             props.onChange?.(val);
           }}
           CustomDropdownRender={addMode === 'quickAdd' && QuickAddContent}

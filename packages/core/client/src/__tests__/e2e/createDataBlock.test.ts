@@ -4,50 +4,50 @@ test.describe('create data block', () => {
   test('table', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByRole('button', { name: 'plus Add block' }).hover();
-    await page.getByRole('menuitem', { name: 'table Table right' }).hover();
-    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('dataBlocks-table', { exact: true }).hover();
+    await page.getByLabel('dataBlocks-table-Users').click();
 
-    await expect(page.getByRole('columnheader', { name: 'setting Configure columns' })).toBeVisible();
+    await expect(page.getByText('Configure columns')).toBeVisible();
   });
 
   test('form', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByRole('button', { name: 'plus Add block' }).hover();
-    await page.getByRole('menuitem', { name: 'form Form right' }).first().hover();
-    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('dataBlocks-form', { exact: true }).hover();
+    await page.getByLabel('dataBlocks-form-Users').click();
 
-    await expect(page.getByRole('button', { name: 'setting Configure fields' })).toBeVisible();
+    await expect(page.getByText('Configure fields')).toBeVisible();
   });
 
   test('details', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByRole('button', { name: 'plus Add block' }).hover();
-    await page.getByRole('menuitem', { name: 'table Details right' }).hover();
-    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('dataBlocks-details', { exact: true }).hover();
+    await page.getByLabel('dataBlocks-details-Users').click();
 
-    await expect(page.getByRole('button', { name: 'setting Configure fields' })).toBeVisible();
+    await expect(page.getByText('Configure fields')).toBeVisible();
   });
 
   test('list', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByRole('button', { name: 'plus Add block' }).hover();
-    await page.getByRole('menuitem', { name: 'ordered-list List right' }).hover();
-    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('dataBlocks-List', { exact: true }).hover();
+    await page.getByLabel('dataBlocks-List-Users').click();
 
-    await expect(page.getByRole('button', { name: 'setting Configure fields' }).first()).toBeVisible();
+    await expect(page.getByText('Configure fields').first()).toBeVisible();
   });
 
   test('grid card', async ({ page, mockPage }) => {
     await mockPage().goto();
 
-    await page.getByRole('button', { name: 'plus Add block' }).hover();
-    await page.getByRole('menuitem', { name: 'ordered-list Grid Card right' }).hover();
-    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByLabel('dataBlocks-GridCard', { exact: true }).hover();
+    await page.getByLabel('dataBlocks-GridCard-Users').click();
 
-    await expect(page.getByRole('button', { name: 'setting Configure fields' }).first()).toBeVisible();
+    await expect(page.getByText('Configure fields').first()).toBeVisible();
   });
 });

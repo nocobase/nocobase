@@ -2,17 +2,18 @@ import { ArrayTable } from '@formily/antd-v5';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import cloneDeep from 'lodash/cloneDeep';
+import omit from 'lodash/omit';
 import set from 'lodash/set';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction, useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 
 const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
@@ -64,7 +65,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
             return useRequest(
               () =>
                 Promise.resolve({
-                  data: cloneDeep(schema.default),
+                  data: cloneDeep(omit(schema.default, ['uiSchema.rawTitle'])),
                 }),
               options,
             );
@@ -147,7 +148,7 @@ export const EditCollectionField = (props) => {
 };
 
 export const EditFieldAction = (props) => {
-  const { scope, getContainer, item: record, children } = props;
+  const { scope, getContainer, item: record, children, ...otherProps } = props;
   const { getInterface, collections } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -165,10 +166,12 @@ export const EditFieldAction = (props) => {
       };
     });
   }, []);
+
   return (
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
+          {...otherProps}
           onClick={async () => {
             const { data } = await api.resource('collections.fields', record.collectionName).get({
               filterByTk: record.name,

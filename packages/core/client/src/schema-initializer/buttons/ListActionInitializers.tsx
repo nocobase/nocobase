@@ -2,7 +2,6 @@ import { useCollection } from '../../collection-manager';
 
 // 表单的操作配置
 export const ListActionInitializers = {
-  'data-testid': 'configure-actions-button-of-list-block',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -55,6 +54,7 @@ export const ListActionInitializers = {
           component: 'ImportActionInitializer',
           schema: {
             'x-align': 'right',
+            'x-acl-action': 'importXlsx',
             'x-decorator': 'ACLActionProvider',
             'x-acl-action-props': {
               skipScopeCheck: true,
@@ -62,7 +62,7 @@ export const ListActionInitializers = {
           },
           visible: function useVisible() {
             const collection = useCollection();
-            return collection.template !== 'sql';
+            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
@@ -144,7 +144,6 @@ export const ListActionInitializers = {
 };
 
 export const ListItemActionInitializers = {
-  'data-testid': 'configure-actions-button-of-list-item',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [

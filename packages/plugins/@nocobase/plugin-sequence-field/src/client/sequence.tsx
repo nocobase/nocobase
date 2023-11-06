@@ -29,7 +29,7 @@ function RuleTypeSelect(props) {
   });
 
   return (
-    <Select data-testid="antd-select" popupMatchSelectWidth={false} {...props}>
+    <Select popupMatchSelectWidth={false} {...props}>
       {Object.keys(RuleTypes).map((key) => (
         <Select.Option key={key} value={key}>
           {compile(RuleTypes[key].title)}
@@ -40,9 +40,11 @@ function RuleTypeSelect(props) {
 }
 
 function RuleOptions() {
-  const { type, options } = ArrayTable.useRecord();
-  const ruleType = RuleTypes[type];
   const compile = useCompile();
+  const { values } = useForm();
+  const index = ArrayTable.useIndex();
+  const { type, options } = values.patterns[index];
+  const ruleType = RuleTypes[type];
   return (
     <div
       className={css`
@@ -181,7 +183,7 @@ const RuleTypes = {
                 }) || shortValues[5];
           return (
             <fieldset>
-              <Select data-testid="antd-select" value={option.value} onChange={(v) => onChange(shortValues[v].cron)}>
+              <Select value={option.value} onChange={(v) => onChange(shortValues[v].cron)}>
                 {shortValues.map((item) => (
                   <Select.Option key={item.value} value={item.value}>
                     {lang(item.label)}
@@ -210,9 +212,9 @@ export function RuleConfigForm() {
   const { t } = useTranslation();
   const compile = useCompile();
   const schemaOptions = useContext(SchemaOptionsContext);
-  const form = useForm();
-  const { type, options } = ArrayTable.useRecord();
+  const { values, setValuesIn } = useForm();
   const index = ArrayTable.useIndex();
+  const { type, options } = values.patterns[index];
   const ruleType = RuleTypes[type];
   return ruleType?.fieldset ? (
     <Button
@@ -252,7 +254,7 @@ export function RuleConfigForm() {
             initialValues: options,
           })
           .then((values) => {
-            form.setValuesIn(`patterns.${index}`, { type, options: { ...values } });
+            setValuesIn(`patterns.${index}`, { type, options: { ...values } });
           })
           .catch((err) => {
             error(err);

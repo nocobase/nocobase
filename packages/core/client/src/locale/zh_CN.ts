@@ -661,6 +661,7 @@ export default {
   'Dynamic value': '动态值',
   'Current user': '当前用户',
   'Current record': '当前记录',
+  'Parent record': '上级记录',
   'Current time': '当前时间',
   Now: '现在',
   'Popup close method': '弹窗关闭方式',

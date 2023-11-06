@@ -131,7 +131,7 @@ export default {
           try {
             return {
               ...item.toJSON(),
-              url: `${getExposeUrl(item.packageName, PLUGIN_CLIENT_ENTRY_FILE)}?version=${version}`,
+              url: `${getExposeUrl(item.packageName, PLUGIN_CLIENT_ENTRY_FILE)}?version=${item.version}`,
             };
           } catch {
             return false;

@@ -620,6 +620,7 @@ export default {
   "Dynamic value": "Динамічне значення",
   "Current user": "Поточний користувач",
   "Current record": "Поточний запис",
+  "Parent record": "Батьківський запис",
   "Current time": "Поточний час",
   "System variables": "Системні змінні",
   "Date variables": "Змінні дати",

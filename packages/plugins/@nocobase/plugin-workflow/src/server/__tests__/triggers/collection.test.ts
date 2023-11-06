@@ -85,6 +85,8 @@ describe('workflow > triggers > collection', () => {
         plugins: ['error-handler', 'collection-manager'],
         database: {
           tablePrefix: db.options.tablePrefix,
+          storage: db.options.storage,
+          database: db.options.database,
         },
       });
 

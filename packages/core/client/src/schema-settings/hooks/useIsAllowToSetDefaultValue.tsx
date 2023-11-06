@@ -49,7 +49,6 @@ const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField }: Pro
   const innerFieldSchema = useFieldSchema();
   const { type } = useFormBlockType();
   const { isAllowToSetDefaultValue = _isAllowToSetDefaultValue } = useContext(DefaultValueContext) || {};
-
   const innerCollectionField =
     getField(innerFieldSchema['name']) || getCollectionJoinField(innerFieldSchema['x-collection-field']);
 
@@ -114,12 +113,10 @@ function _isAllowToSetDefaultValue({
   ) {
     return false;
   }
-
-  // 表单编辑状态下，不允许设置默认值
-  if (formBlockType === 'update') {
+  // 表单非新建状态下，不允许设置默认值
+  if (formBlockType !== 'create') {
     return false;
   }
-
   return (
     !form?.readPretty &&
     !isPatternDisabled(fieldSchema) &&

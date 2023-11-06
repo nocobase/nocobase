@@ -1,12 +1,31 @@
+import { Logger, LoggerOptions, Transports, createLogger, getLoggerFilePath } from '@nocobase/logger';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
-import { send } from './actions/send';
 import { listByCurrentRole } from './actions/listByCurrentRole';
+import { send } from './actions/send';
 
 export class CustomRequestPlugin extends Plugin {
+  logger: Logger;
+
   afterAdd() {}
 
-  beforeLoad() {}
+  beforeLoad() {
+    this.logger = this.getLogger();
+  }
+
+  getLogger(): Logger {
+    const logger = createLogger({
+      transports: [
+        'console',
+        Transports.dailyRotateFile({
+          dirname: getLoggerFilePath('custom-request'),
+          filename: this.app.name + '-%DATE%.log',
+        }),
+      ],
+    } as LoggerOptions);
+
+    return logger;
+  }
 
   async load() {
     await this.db.import({
@@ -16,7 +35,7 @@ export class CustomRequestPlugin extends Plugin {
     this.app.resource({
       name: 'customRequests',
       actions: {
-        send,
+        send: send.bind(this),
         listByCurrentRole,
       },
     });
