@@ -83,13 +83,12 @@ export const Action: ComposedAction = observer(
               operator: h.operator,
               field,
               condition: v.condition,
-              values: record,
               variables,
               localVariables,
             });
           });
         });
-    }, [JSON.stringify(linkageRules), record, designable, field]);
+    }, [field, linkageRules, localVariables, record, variables]);
 
     const handleButtonClick = useCallback(
       (e: React.MouseEvent) => {
