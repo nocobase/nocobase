@@ -75,14 +75,12 @@ export const linkageAction = async ({
   operator,
   field,
   condition,
-  values,
   variables,
   localVariables,
 }: {
   operator;
   field;
   condition;
-  values;
   variables: VariablesContextType;
   localVariables: VariableOption[];
 }) => {
@@ -91,7 +89,7 @@ export const linkageAction = async ({
 
   switch (operator) {
     case ActionType.Visible:
-      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         displayResult.push(operator);
         field.data = field.data || {};
         field.data.hidden = false;
@@ -103,7 +101,7 @@ export const linkageAction = async ({
       field.display = last(displayResult);
       break;
     case ActionType.Hidden:
-      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         field.data = field.data || {};
         field.data.hidden = true;
       } else {
@@ -112,7 +110,7 @@ export const linkageAction = async ({
       }
       break;
     case ActionType.Disabled:
-      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         disableResult.push(true);
       }
       field.linkageProperty = {
@@ -123,7 +121,7 @@ export const linkageAction = async ({
       field.componentProps['disabled'] = last(disableResult);
       break;
     case ActionType.Active:
-      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         disableResult.push(false);
       } else {
         disableResult.push(true);
