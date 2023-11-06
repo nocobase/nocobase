@@ -74,3 +74,4 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
     </SchemaComponentContext.Provider>
   );
 };
+SchemaComponentProvider.displayName = 'SchemaComponentProvider';

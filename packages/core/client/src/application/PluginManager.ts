@@ -19,6 +19,7 @@ export class PluginManager {
 
   constructor(
     protected _plugins: PluginType[],
+    protected loadRemotePlugins: boolean,
     protected app: Application,
   ) {
     this.app = app;
@@ -27,7 +28,9 @@ export class PluginManager {
 
   async init(_plugins: PluginType[]) {
     await this.initStaticPlugins(_plugins);
-    await this.initRemotePlugins();
+    if (this.loadRemotePlugins) {
+      await this.initRemotePlugins();
+    }
   }
 
   private async initStaticPlugins(_plugins: PluginType[] = []) {
