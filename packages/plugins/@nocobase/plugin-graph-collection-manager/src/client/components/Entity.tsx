@@ -34,6 +34,7 @@ import { ConnectAssociationAction } from './ConnectAssociationAction';
 import { ConnectChildAction } from './ConnectChildAction';
 import { ConnectParentAction } from './ConnectParentAction';
 import { EditCollectionAction } from './EditCollectionAction';
+import { DeleteCollectionAction } from './DeleteCollectionAction';
 import { EditFieldAction } from './EditFieldAction';
 import { FieldSummary } from './FieldSummary';
 import { OverrideFieldAction } from './OverrideFieldAction';
@@ -436,6 +437,7 @@ const Entity: React.FC<{
                   components={{
                     EditOutlined,
                     EditCollectionAction,
+                    DeleteCollectionAction,
                     ConnectChildAction,
                     ConnectParentAction,
                     ...options.components,
@@ -475,17 +477,14 @@ const Entity: React.FC<{
                       delete: {
                         type: 'void',
                         'x-action': 'destroy',
-                        'x-component': 'Action',
+                        'x-component': 'DeleteCollectionAction',
                         'x-component-props': {
-                          component: DeleteOutlined,
-                          icon: 'DeleteOutlined',
                           className: 'btn-del',
-                          confirm: {
-                            title: "{{t('Delete record')}}",
-                            getContainer: getPopupContainer,
-                            collectionConten: "{{t('Are you sure you want to delete it?')}}",
+                          getContainer: getPopupContainer,
+                          item: collectionData.current,
+                          useAction: () => {
+                            return useDestroyActionAndRefreshCM({ name, id });
                           },
-                          useAction: () => useDestroyActionAndRefreshCM({ name, id }),
                         },
                       },
                     },
