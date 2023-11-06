@@ -1,11 +1,15 @@
-import { Button } from 'antd';
+import { Button, ButtonProps } from 'antd';
 import React, { FC } from 'react';
 import { Icon } from '../../../icon';
 import { useCompile } from '../../../schema-component';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { SchemaInitializerOptions } from '../types';
 
-export const SchemaInitializerButton: FC<SchemaInitializerOptions> = React.memo((props) => {
+export interface SchemaInitializerButtonProps extends ButtonProps {
+  options: SchemaInitializerOptions;
+}
+
+export const SchemaInitializerButton: FC<SchemaInitializerButtonProps> = React.memo((props) => {
   const { style, options, ...others } = props;
   const compile = useCompile();
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
