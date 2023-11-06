@@ -485,9 +485,13 @@ export const useDestroyAction = () => {
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
   const { [targetKey]: filterByTk } = useRecord();
+  const ctx = useActionContext();
+  const form = useForm();
+  const { cascade } = form?.values || {};
   return {
     async run() {
-      await resource.destroy({ filterByTk });
+      await resource.destroy({ filterByTk, cascade });
+      ctx?.setVisible?.(false);
       refresh();
     },
   };
@@ -496,7 +500,10 @@ export const useDestroyAction = () => {
 export const useBulkDestroyAction = () => {
   const { state, setState, refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
+  const ctx = useActionContext();
   const { t } = useTranslation();
+  const form = useForm();
+  const { cascade } = form?.values || {};
   return {
     async run() {
       if (!state?.selectedRowKeys?.length) {
@@ -504,7 +511,9 @@ export const useBulkDestroyAction = () => {
       }
       await resource.destroy({
         filterByTk: state?.selectedRowKeys || [],
+        cascade,
       });
+      ctx?.setVisible?.(false);
       setState?.({ selectedRowKeys: [] });
       refresh();
     },
