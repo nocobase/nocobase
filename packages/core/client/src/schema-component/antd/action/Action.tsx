@@ -107,10 +107,8 @@ export const Action: ComposedAction = observer(
             run();
           };
           if (confirm) {
-            const Component = confirm?.content;
             modal.confirm({
               ...confirm,
-              content: isFunction(Component) ? <Component /> : Component,
               onOk,
             });
           } else {

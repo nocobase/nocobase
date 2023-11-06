@@ -1,5 +1,5 @@
-import path from 'path';
 import { Package } from '@lerna/package';
+import path from 'path';
 
 export const globExcludeFiles = [
   '!src/**/__tests__',
