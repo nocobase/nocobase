@@ -67,6 +67,7 @@ export const useBulkDestroyAction = () => {
         filterByTk: state?.selectedRowKeys || [],
         cascade,
       });
+      form.reset();
       ctx?.setVisible?.(false);
       setState?.({ selectedRowKeys: [] });
       refresh();
