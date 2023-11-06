@@ -124,13 +124,29 @@ export function useSchemaSettings<T = any>() {
   return useContext(SchemaSettingsContext) as SchemaSettingsContextProps<T>;
 }
 
-interface RemoveProps {
+export interface SchemaSettingsRemoveProps {
   confirm?: any;
   removeParentsIfNoChildren?: boolean;
   breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
 }
 
-interface ModalItemProps {
+export interface SchemaSettingsItemProps extends MenuItemProps {
+  name?: string;
+}
+export interface SchemaSettingsPopupProps extends MenuItemProps {
+  name?: string;
+}
+export interface SchemaSettingsSwitchItemProps extends Omit<MenuItemProps, 'onChange'> {
+  name?: string;
+  title: string;
+  checked?: boolean;
+  onChange?: (v: boolean) => void;
+}
+export type SchemaSettingsCascaderItemProps = CascaderProps<any> & Omit<MenuItemProps, 'title'> & { title: any };
+
+export type SchemaSettingsDataScopeProps = DataScopeProps;
+
+export interface SchemaSettingsModalItemProps {
   title: string;
   onSubmit: (values: any) => void;
   initialValues?: any;
@@ -148,14 +164,14 @@ interface ModalItemProps {
 }
 
 type SchemaSettingsNested = {
-  Remove?: React.FC<RemoveProps>;
-  Item?: React.FC<MenuItemProps & { name?: string }>;
+  Remove?: React.FC<SchemaSettingsRemoveProps>;
+  Item?: React.FC<SchemaSettingsItemProps>;
   Divider?: React.FC;
-  Popup?: React.FC<MenuItemProps & { schema?: ISchema }>;
-  SwitchItem?: React.FC<SwitchItemProps & { name?: string }>;
-  CascaderItem?: React.FC<CascaderProps<any> & Omit<MenuItemProps, 'title'> & { title: any }>;
-  DataScope?: React.FC<DataScopeProps>;
-  ModalItem: React.FC<ModalItemProps>;
+  Popup?: React.FC<SchemaSettingsPopupProps>;
+  SwitchItem?: React.FC<SchemaSettingsSwitchItemProps>;
+  CascaderItem?: React.FC<SchemaSettingsCascaderItemProps>;
+  DataScope?: React.FC<SchemaSettingsDataScopeProps>;
+  ModalItem: React.FC<SchemaSettingsModalItemProps>;
   [key: string]: any;
 };
 
@@ -565,7 +581,7 @@ SchemaSettings.Divider = function Divider() {
   return null;
 };
 
-SchemaSettings.Remove = function Remove(props: any) {
+SchemaSettings.Remove = function Remove(props: SchemaSettingsRemoveProps) {
   const { confirm, removeParentsIfNoChildren, breakRemoveOn } = props;
   const { dn, template } = useSchemaSettings();
   const { t } = useTranslation();
@@ -783,13 +799,7 @@ SchemaSettings.CascaderItem = (props: CascaderProps<any> & { title: any }) => {
   );
 };
 
-interface SwitchItemProps extends Omit<MenuItemProps, 'onChange'> {
-  title: string;
-  checked?: boolean;
-  onChange?: (v: boolean) => void;
-}
-
-SchemaSettings.SwitchItem = function SwitchItem(props) {
+SchemaSettings.SwitchItem = function SwitchItem(props: SchemaSettingsSwitchItemProps) {
   const { title, onChange, name, ...others } = props;
   const [checked, setChecked] = useState(!!props.checked);
   return (

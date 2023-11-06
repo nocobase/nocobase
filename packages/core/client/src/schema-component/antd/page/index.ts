@@ -1,3 +1,4 @@
 export * from './Page';
 export * from './FixedBlock';
-export * from './PageTabSchemaSettings';
+export * from './PageTab.Settings';
+export * from './Page.Settings';

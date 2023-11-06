@@ -2,6 +2,7 @@ import { Form as FormV2 } from './Form';
 import { DetailsDesigner, FormDesigner, ReadPrettyFormDesigner } from './Form.Designer';
 import { FilterDesigner } from './Form.FilterDesigner';
 import { Templates } from './Templates';
+export * from './Form.Settings';
 
 FormV2.Designer = FormDesigner;
 FormV2.FilterDesigner = FilterDesigner;
