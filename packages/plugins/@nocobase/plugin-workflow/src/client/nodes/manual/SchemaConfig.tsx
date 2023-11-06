@@ -1,8 +1,8 @@
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { FormProvider, ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { Alert, Button, Modal, Space } from 'antd';
-import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -450,22 +450,27 @@ export function SchemaConfig({ value, onChange }) {
     [],
   );
 
+  const refresh = useCallback(
+    function refresh() {
+      // ctx.refresh?.();
+      const { tabs } = lodash.get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
+      const forms = Array.from(manualFormTypes.getValues()).reduce(
+        (result, item: ManualFormType) => Object.assign(result, item.config.parseFormOptions(tabs)),
+        {},
+      );
+      form.setValuesIn('forms', forms);
+
+      onChange(tabs.properties);
+    },
+    [form, onChange, schema],
+  );
+
   return (
     <SchemaComponentContext.Provider
       value={{
         ...ctx,
         designable: !workflow.executed,
-        refresh() {
-          ctx.refresh?.();
-          const { tabs } = lodash.get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
-          const forms = Array.from(manualFormTypes.getValues()).reduce(
-            (result, item: ManualFormType) => Object.assign(result, item.config.parseFormOptions(tabs)),
-            {},
-          );
-          form.setValuesIn('forms', forms);
-
-          onChange(tabs.properties);
-        },
+        refresh,
       }}
     >
       <SchemaInitializerProvider
@@ -520,7 +525,9 @@ export function SchemaConfigButton(props) {
       <Button type="primary" onClick={() => setVisible(true)}>
         {workflow.executed ? lang('View user interface') : lang('Configure user interface')}
       </Button>
-      <ActionContextProvider value={{ visible, setVisible }}>{props.children}</ActionContextProvider>
+      <ActionContextProvider value={{ visible, setVisible, formValueChanged: false }}>
+        {props.children}
+      </ActionContextProvider>
     </>
   );
 }
