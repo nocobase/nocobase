@@ -30,7 +30,6 @@ function PluginInfo(props: IPluginInfo) {
   const [enabledVal, setEnabledVal] = useState(enabled);
   const reload = () => window.location.reload();
   const title = displayName || name || packageName;
-
   return (
     <>
       {showUploadForm && (
@@ -94,7 +93,7 @@ function PluginInfo(props: IPluginInfo) {
               </a>
             )}
             {enabled ? (
-              app.settingsCenter.hasAuth(name) && (
+              app.settingsCenter.has(name) && (
                 <a
                   onClick={(e) => {
                     e.stopPropagation();
