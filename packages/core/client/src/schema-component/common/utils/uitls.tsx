@@ -67,12 +67,10 @@ function getAllKeys(obj) {
 
 export const conditionAnalyses = async ({
   rules,
-  formValues,
   variables,
   localVariables,
 }: {
   rules;
-  formValues;
   variables: VariablesContextType;
   localVariables: VariableOption[];
 }) => {
