@@ -1,7 +1,6 @@
+import { Application, Plugin } from '@nocobase/client';
 import React, { FC } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Application } from '../Application';
-import { Plugin } from '../Plugin';
 
 const Root = () => {
   return (
