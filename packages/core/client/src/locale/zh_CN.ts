@@ -878,4 +878,6 @@ export default {
   Execute: '执行',
   'Please use a valid SELECT or WITH AS statement': '请使用有效的 SELECT 或 WITH AS 语句',
   'Please confirm the SQL statement first': '请先确认 SQL 语句',
+  'Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects':
+  '自动删除依赖于该表的对象,以及依赖这些对象的对象',
 };
