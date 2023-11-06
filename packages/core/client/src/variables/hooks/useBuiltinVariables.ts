@@ -9,8 +9,6 @@ const useBuiltInVariables = () => {
 
   const currentUser = data?.data?.data;
   const dateVars = getDateRanges();
-  // 使用函数方便测试断言
-  dateVars.now = (() => dayjs().toISOString()) as any;
   const builtinVariables: VariableOption[] = useMemo(() => {
     return [
       {
