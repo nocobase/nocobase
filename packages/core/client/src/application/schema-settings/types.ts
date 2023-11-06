@@ -1,5 +1,5 @@
 import { ComponentType } from 'react';
-import { SchemaSettingsProps } from '../../schema-settings';
+import { SchemaSettingsItemProps, SchemaSettingsProps } from '../../schema-settings';
 
 export interface SchemaSettingOptions<T = {}> extends Omit<SchemaSettingsProps, 'title' | 'children'> {
   name: string;
@@ -14,9 +14,18 @@ export type SchemaSettingItemBaseType<T = {}> = {
   sort?: number;
   Component?: string | ComponentType<T>;
   componentProps?: T;
+  useComponentProps?: () => T;
   useVisible?: () => boolean;
   [index: string]: any;
 };
+
+export interface SchemaSettingItemDividerType extends SchemaSettingItemBaseType {
+  type: 'divider';
+}
+
+export interface SchemaSettingItemCommonType extends SchemaSettingItemBaseType<SchemaSettingsItemProps> {
+  type: 'item';
+}
 
 export type SchemaSettingItemWithChildrenType<T = {}> = SchemaSettingItemBaseType<T> & {
   type: 'subMenu' | 'itemGroup';
@@ -27,4 +36,8 @@ export type SchemaSettingItemWithChildrenType<T = {}> = SchemaSettingItemBaseTyp
 //   type: 'divider';
 // }
 
-export type SchemaSettingItemType = SchemaSettingItemBaseType | SchemaSettingItemWithChildrenType;
+export type SchemaSettingItemType =
+  | SchemaSettingItemDividerType
+  | SchemaSettingItemCommonType
+  | SchemaSettingItemWithChildrenType
+  | SchemaSettingItemBaseType;

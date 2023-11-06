@@ -6,6 +6,8 @@ import { SchemaComponentOptions } from '../core';
 import { useFilterActionProps } from './filter/useFilterActionProps';
 import { requestChartData } from './g2plot/requestChartData';
 
+import { pageTabSettings } from './page';
+
 // TODO: delete this, replaced by `AntdSchemaComponentPlugin`
 export const AntdSchemaComponentProvider = (props) => {
   const { children } = props;
@@ -23,6 +25,7 @@ export class AntdSchemaComponentPlugin extends Plugin {
   async load() {
     this.addComponents();
     this.addScopes();
+    this.addSchemaSettings();
   }
 
   addComponents() {
@@ -37,5 +40,9 @@ export class AntdSchemaComponentPlugin extends Plugin {
       requestChartData,
       useFilterActionProps,
     });
+  }
+
+  addSchemaSettings() {
+    this.app.schemaSettingsManager.add(pageTabSettings);
   }
 }

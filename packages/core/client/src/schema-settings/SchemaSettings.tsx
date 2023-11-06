@@ -107,7 +107,7 @@ export interface SchemaSettingsProps {
   children?: ReactNode;
 }
 
-interface SchemaSettingsContextProps {
+interface SchemaSettingsContextProps<T = any> {
   dn?: Designable;
   field?: GeneralField;
   fieldSchema?: Schema;
@@ -115,13 +115,14 @@ interface SchemaSettingsContextProps {
   visible?: any;
   template?: any;
   collectionName?: any;
+  designer?: T;
 }
 
 const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
 
-export const useSchemaSettings = () => {
-  return useContext(SchemaSettingsContext);
-};
+export function useSchemaSettings<T = any>() {
+  return useContext(SchemaSettingsContext) as SchemaSettingsContextProps<T>;
+}
 
 interface RemoveProps {
   confirm?: any;
@@ -166,7 +167,7 @@ interface SchemaSettingsProviderProps {
   visible?: any;
   template?: any;
   collectionName?: any;
-  designerContext?: any;
+  designer?: any;
 }
 
 export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (props) => {
@@ -217,14 +218,11 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
     </>
   );
 
-  if (dn) {
-    return (
-      <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
-        {dropdownMenu()}
-      </SchemaSettingsProvider>
-    );
-  }
-  return dropdownMenu();
+  return (
+    <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
+      {dropdownMenu()}
+    </SchemaSettingsProvider>
+  );
 };
 
 SchemaSettings.Template = function Template(props) {
@@ -480,12 +478,8 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
   );
 };
 
-export interface SchemaSettingsItemProps {
-  title: string;
+export interface SchemaSettingsItemProps extends MenuItemProps {
   name?: string;
-  children?: ReactNode;
-  eventKey?: string;
-  onClick?: (e: any) => void;
 }
 SchemaSettings.Item = function Item(props: SchemaSettingsItemProps) {
   const { pushMenuItem } = useCollectMenuItems();

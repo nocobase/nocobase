@@ -6,7 +6,7 @@ import { SchemaSettingsIcon } from './SchemaSettingsIcon';
 import React from 'react';
 
 export interface SchemaSettingsWrapperProps extends SchemaSettingOptions<any> {
-  designerContext: any;
+  designer: any;
 }
 
 export const SchemaSettingsWrapper: FC<SchemaSettingsWrapperProps> = (props) => {

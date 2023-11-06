@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { DragHandler, useDesignable } from '../..';
 import { SchemaSettings } from '../../../schema-settings';
 import { useGetAriaLabelOfDesigner } from '../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
+import { useSchemaSettingsRender } from '../../../application';
 
 export const PageDesigner = ({ title }) => {
   const { dn, designable } = useDesignable();
@@ -121,11 +122,13 @@ export const PageDesigner = ({ title }) => {
 };
 
 export const PageTabDesigner = ({ schema }) => {
-  const { dn, designable } = useDesignable();
-  const { t } = useTranslation();
-  const { modal } = App.useApp();
+  const { designable } = useDesignable();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
-
+  const fieldSchema = useFieldSchema();
+  const { render } = useSchemaSettingsRender(
+    fieldSchema['x-settings'] || 'PageTabSettings',
+    fieldSchema['x-settings-props'],
+  );
   if (!designable) {
     return null;
   }
@@ -137,62 +140,7 @@ export const PageTabDesigner = ({ schema }) => {
           <DragHandler>
             <DragOutlined style={{ marginRight: 0 }} role="button" aria-label={getAriaLabel('drag-handler', 'tab')} />
           </DragHandler>
-          <SchemaSettings title={<MenuOutlined role="button" aria-label={getAriaLabel('schema-settings', 'tab')} />}>
-            <SchemaSettings.ModalItem
-              title={t('Edit')}
-              schema={
-                {
-                  type: 'object',
-                  title: t('Edit tab'),
-                  properties: {
-                    title: {
-                      title: t('Tab name'),
-                      required: true,
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Input',
-                      'x-component-props': {},
-                    },
-                    icon: {
-                      title: t('Icon'),
-                      'x-decorator': 'FormItem',
-                      'x-component': 'IconPicker',
-                      'x-component-props': {},
-                    },
-                  },
-                } as ISchema
-              }
-              initialValues={{ title: schema.title, icon: schema['x-icon'] }}
-              onSubmit={({ title, icon }) => {
-                schema.title = title;
-                schema['x-icon'] = icon;
-                dn.emit('patch', {
-                  schema: {
-                    ['x-uid']: schema['x-uid'],
-                    title,
-                    'x-icon': icon,
-                  },
-                });
-                dn.refresh();
-              }}
-            />
-            <SchemaSettings.Divider />
-            <SchemaSettings.Item
-              title="Delete"
-              eventKey="remove"
-              onClick={() => {
-                modal.confirm({
-                  title: t('Delete block'),
-                  content: t('Are you sure you want to delete it?'),
-                  ...confirm,
-                  onOk() {
-                    dn.remove(schema);
-                  },
-                });
-              }}
-            >
-              {t('Delete')}
-            </SchemaSettings.Item>
-          </SchemaSettings>
+          {render({ schema })}
         </Space>
       </div>
     </div>

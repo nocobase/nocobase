@@ -25,7 +25,7 @@ const mySchemaSetting = new SchemaSetting({
 const DemoDesigner = () => {
   const filedSchema = useFieldSchema();
   // 从 schema 中读取 name
-  const { exists, render } = useSchemaSettingsRender(filedSchema['x-setting'], filedSchema['x-setting-props']);
+  const { exists, render } = useSchemaSettingsRender(filedSchema['x-settings'], filedSchema['x-settings-props']);
 
   return <div style={{ border: '1px solid red', padding: 50 }}>{exists && render()}</div>;
 };

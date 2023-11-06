@@ -25,20 +25,23 @@ export const SchemaSettingChildren: FC<SchemaSettingChildrenProps> = (props) => 
 };
 
 const useChildrenDefault = () => undefined;
+const useComponentPropsDefault = () => undefined;
 const useVisibleDefault = () => true;
 export const SchemaSettingChild: FC<SchemaSettingItemType> = (props) => {
   const {
+    useVisible = useVisibleDefault,
+    useChildren = useChildrenDefault,
+    useComponentProps = useComponentPropsDefault,
     type,
     Component,
-    useVisible = useVisibleDefault,
     children,
-    useChildren = useChildrenDefault,
     checkChildrenLength,
     componentProps,
     sort: _unUse,
     ...others
   } = props;
   const useChildrenRes = useChildren();
+  const useComponentPropsRes = useComponentProps();
   const findComponent = useFindComponent();
   const componentChildren = useChildrenRes || children;
   const contextValue = useMemo(() => {
@@ -67,7 +70,7 @@ export const SchemaSettingChild: FC<SchemaSettingItemType> = (props) => {
 
   return (
     <SchemaSettingItemContext.Provider value={contextValue}>
-      <C {...componentProps}>
+      <C {...componentProps} {...useComponentPropsRes}>
         {Array.isArray(componentChildren) && componentChildren.length > 0 && (
           <SchemaSettingChildren>{componentChildren}</SchemaSettingChildren>
         )}
