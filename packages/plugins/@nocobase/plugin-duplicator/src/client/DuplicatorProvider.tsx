@@ -12,7 +12,7 @@ export const DuplicatorProvider: FC = function (props) {
         settings={{
           duplicator: {
             title: t('Backup & Restore'),
-            icon: 'ApiOutlined',
+            icon: 'CloudServerOutlined',
             tabs: {
               backup: {
                 title: t('Backup'),
