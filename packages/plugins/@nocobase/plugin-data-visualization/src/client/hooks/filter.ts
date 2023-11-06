@@ -71,9 +71,10 @@ export const useChartFilter = () => {
       const interfaceConfig = getInterface(field.interface);
       const defaultOperator = interfaceConfig?.filterable?.operators?.[0];
       const targetCollection = getCollection(field.target);
+      title = title ? `${title} / ${fieldTitle}` : fieldTitle;
       let schema = {
         type: 'string',
-        title: `${title} / ${fieldTitle}`,
+        title,
         name: `${name}.${field.name}`,
         required: false,
         'x-designer': 'ChartFilterItemDesigner',
@@ -118,6 +119,8 @@ export const useChartFilter = () => {
     };
 
     const children2item = (child: any, title: string, name: string) => {
+      const childTitle = child.uiSchema?.title || child.name;
+      title = title ? `${title} / ${childTitle}` : childTitle;
       const defaultOperator = child.operators[0];
       let schema = {
         type: 'string',
@@ -127,7 +130,7 @@ export const useChartFilter = () => {
         'x-decorator': 'ChartFilterFormItem',
         'x-collection-field': `${name}.${child.name}`,
         ...child.schema,
-        title: `${title} / ${child.title || child.name}`,
+        title,
         'x-component-props': {
           'filter-operator': defaultOperator?.value,
         },
@@ -173,10 +176,9 @@ export const useChartFilter = () => {
       if (field.target && depth > 2) {
         return;
       }
+      title = title ? `${title} / ${fieldTitle}` : fieldTitle;
       if (children?.length && field.interface !== 'chinaRegion') {
-        const items = children.map((child: any) =>
-          children2item(child, `${title} / ${fieldTitle}`, `${name}.${field.name}`),
-        );
+        const items = children.map((child: any) => children2item(child, title, `${name}.${field.name}`));
         return {
           type: 'subMenu',
           title: field?.uiSchema?.title || field.name,
@@ -189,7 +191,7 @@ export const useChartFilter = () => {
       if (nested) {
         const targetFields = getCollectionFields(field.target);
         const items = targetFields.map((targetField) =>
-          field2option(targetField, depth + 1, `${title} / ${fieldTitle}`, `${name}.${field.name}`),
+          field2option(targetField, depth + 1, title, `${name}.${field.name}`),
         );
         return {
           type: 'subMenu',
@@ -204,12 +206,12 @@ export const useChartFilter = () => {
     const associationOptions = [];
     fields.forEach((field) => {
       const fieldInterface = field.interface;
-      const option = field2option(field, 0, collection.title, collection.name);
+      const option = field2option(field, 0, '', collection.name);
       if (option) {
         options.push(option);
       }
       if (['m2o'].includes(fieldInterface)) {
-        const option = field2option(field, 1, collection.title, collection.name);
+        const option = field2option(field, 1, '', collection.name);
         if (option) {
           associationOptions.push(option);
         }

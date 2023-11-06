@@ -17,6 +17,8 @@ import { ChartFilterContext } from './FilterProvider';
 import { getPropsSchemaByComponent, setDefaultValue } from './utils';
 import { ChartFilterVariableInput } from './FilterVariableInput';
 import { useChartFilter } from '../hooks';
+import { Typography } from 'antd';
+const { Text } = Typography;
 
 const EditTitle = () => {
   const field = useField<Field>();
@@ -279,15 +281,28 @@ const EditTitleField = () => {
 };
 
 export const ChartFilterItemDesigner: React.FC = () => {
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollection, getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
   const { t } = useChartsTranslation();
   const fieldSchema = useFieldSchema();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const isCustom = (fieldSchema['name'] as string).startsWith('custom.');
+  const fieldName = fieldSchema.name as string;
+  const [collectionName] = fieldName.split('.');
+  const collectionField = getField(fieldName) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const collection = getCollection(collectionName);
+  const isCustom = fieldName.startsWith('custom.');
   const hasProps = getPropsSchemaByComponent(fieldSchema['x-component']);
   return (
     <GeneralSchemaDesigner disableInitializer>
+      {!isCustom && (
+        <>
+          <SchemaSettings.Item title="collection?.title">
+            <Text type="secondary">
+              {t('Collection')}: {Schema.compile(collection?.title, { t })}
+            </Text>
+          </SchemaSettings.Item>
+          <SchemaSettings.Divider />
+        </>
+      )}
       <EditTitle />
       <EditDescription />
       {hasProps && isCustom && <EditProps />}
