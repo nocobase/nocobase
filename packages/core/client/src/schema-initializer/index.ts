@@ -16,6 +16,8 @@ export {
   useInheritsTableColumnInitializerFields,
   useRecordCollectionDataSourceItems,
   useTableColumnInitializerFields,
+  useAssociatedFormItemInitializerFields,
+  useFormItemInitializerFields,
 } from './utils';
 
 import { Plugin } from '../application/Plugin';
@@ -35,7 +37,6 @@ import {
   filterFormItemInitializers,
   gridCardActionInitializers,
   gridCardItemActionInitializers,
-  kanbanActionInitializers,
   listActionInitializers,
   listItemActionInitializers,
   recordBlockInitializers,
@@ -87,7 +88,7 @@ export class SchemaInitializerPlugin extends Plugin {
     this.app.schemaInitializerManager.add(filterFormItemInitializers);
     this.app.schemaInitializerManager.add(gridCardActionInitializers);
     this.app.schemaInitializerManager.add(gridCardItemActionInitializers);
-    this.app.schemaInitializerManager.add(kanbanActionInitializers);
+
     this.app.schemaInitializerManager.add(listActionInitializers);
     this.app.schemaInitializerManager.add(listItemActionInitializers);
     this.app.schemaInitializerManager.add(recordBlockInitializers);

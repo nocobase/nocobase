@@ -3,11 +3,15 @@ import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect } from 'react';
-import { useACLRoleContext } from '../acl';
-import { useCollection, useCollectionManager } from '../collection-manager';
-import { FixedBlockWrapper } from '../schema-component';
-import { toColumns } from '../schema-component/antd/kanban/Kanban';
-import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import {
+  useACLRoleContext,
+  useCollection,
+  useCollectionManager,
+  FixedBlockWrapper,
+  BlockProvider,
+  useBlockRequestContext,
+} from '@nocobase/client';
+import { toColumns } from './Kanban';
 
 export const KanbanBlockContext = createContext<any>({});
 

@@ -4,13 +4,18 @@ import { SchemaOptionsContext } from '@formily/react';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useAPIClient } from '../../api-client';
-import { useCollectionManager } from '../../collection-manager';
-import { useGlobalTheme } from '../../global-theme';
-import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
-import { createKanbanBlockSchema } from '../utils';
-import { DataBlockInitializer } from './DataBlockInitializer';
-import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import {
+  useAPIClient,
+  useCollectionManager,
+  useGlobalTheme,
+  FormDialog,
+  SchemaComponent,
+  SchemaComponentOptions,
+  DataBlockInitializer,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+} from '@nocobase/client';
+import { createKanbanBlockSchema } from './utils';
 
 export const KanbanBlockInitializer = () => {
   const { insert } = useSchemaInitializer();

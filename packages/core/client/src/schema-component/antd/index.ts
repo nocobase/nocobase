@@ -27,7 +27,6 @@ export * from './grid-card';
 export * from './icon-picker';
 export * from './input';
 export * from './input-number';
-export * from './kanban';
 export * from './list';
 export * from './markdown';
 export * from './menu';

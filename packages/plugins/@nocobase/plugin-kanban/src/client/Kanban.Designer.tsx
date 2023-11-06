@@ -1,12 +1,16 @@
 import { useField, useFieldSchema } from '@formily/react';
 import React from 'react';
-import { useFormBlockContext, useKanbanBlockContext } from '../../../block-provider';
-import { useCollection } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
-import { useSchemaTemplate } from '../../../schema-templates';
-import { useDesignable } from '../../hooks';
-import { removeNullCondition } from '../filter';
-import { FixedBlockDesignerItem } from '../page';
+import {
+  useFormBlockContext,
+  useCollection,
+  GeneralSchemaDesigner,
+  SchemaSettings,
+  useSchemaTemplate,
+  useDesignable,
+  removeNullCondition,
+  FixedBlockDesignerItem,
+} from '@nocobase/client';
+import { useKanbanBlockContext } from './KanbanBlockProvider';
 
 export const KanbanDesigner = () => {
   const { name, title } = useCollection();

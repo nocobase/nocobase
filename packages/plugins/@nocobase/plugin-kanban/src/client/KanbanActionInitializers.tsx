@@ -1,5 +1,4 @@
-import { useCollection } from '../../';
-import { SchemaInitializer } from '../../application/schema-initializer';
+import { useCollection, SchemaInitializer } from '@nocobase/client';
 
 export const kanbanActionInitializers = new SchemaInitializer({
   name: 'KanbanActionInitializers',

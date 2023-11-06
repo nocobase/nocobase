@@ -33,7 +33,6 @@ export * from './G2PlotInitializer';
 export * from './GanttBlockInitializer';
 export * from './GridCardBlockInitializer';
 export * from './InitializerWithSwitch';
-export * from './KanbanBlockInitializer';
 export * from './ListBlockInitializer';
 export * from './MarkdownBlockInitializer';
 export * from './PrintActionInitializer';

@@ -1,7 +1,6 @@
 import React from 'react';
-import { useFieldSchema, Schema } from '@formily/react';
-import { useDesignable } from '../../hooks';
-import { SchemaInitializerSwitch, useSchemaInitializerItem } from '../../../application';
+import { useFieldSchema } from '@formily/react';
+import { useDesignable, SchemaInitializerSwitch, useSchemaInitializerItem } from '@nocobase/client';
 
 export const KanbanCardDesignerTitleSwitch = () => {
   const itemConfig = useSchemaInitializerItem();

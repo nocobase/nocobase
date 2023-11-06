@@ -4,16 +4,17 @@ import { uid } from '@formily/shared';
 import { Space } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient } from '../../../api-client';
-import { useSchemaInitializerRender } from '../../../application';
-import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
-import { createDesignable, useDesignable } from '../../../schema-component';
 import {
+  useAPIClient,
+  useSchemaInitializerRender,
+  SchemaInitializer,
+  createDesignable,
+  useDesignable,
   useAssociatedFormItemInitializerFields,
   useFormItemInitializerFields,
-} from '../../../schema-initializer/utils';
-import { SchemaInitializerOpenModeSchemaItems } from '../../../schema-items';
-import { useGetAriaLabelOfDesigner } from '../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
+  SchemaInitializerOpenModeSchemaItems,
+  useGetAriaLabelOfDesigner,
+} from '@nocobase/client';
 
 const gridRowColWrap = (schema: ISchema) => {
   schema['x-read-pretty'] = true;

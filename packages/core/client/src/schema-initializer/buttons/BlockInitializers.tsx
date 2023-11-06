@@ -43,11 +43,6 @@ export const blockInitializers = new SchemaInitializer({
           Component: 'CalendarBlockInitializer',
         },
         {
-          name: 'kanban',
-          title: '{{t("Kanban")}}',
-          Component: 'KanbanBlockInitializer',
-        },
-        {
           name: 'gantt',
           title: '{{t("Gantt")}}',
           Component: 'GanttBlockInitializer',

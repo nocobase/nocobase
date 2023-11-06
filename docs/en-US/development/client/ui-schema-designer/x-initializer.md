@@ -9,7 +9,6 @@
 - DetailsActionInitializers
 - FormActionInitializers
 - FormItemInitializers
-- KanbanActionInitializers
 - ReadPrettyFormActionInitializers
 - ReadPrettyFormItemInitializers
 - RecordBlockInitializers

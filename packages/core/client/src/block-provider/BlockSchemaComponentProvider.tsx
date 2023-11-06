@@ -9,7 +9,6 @@ import { FormBlockProvider, useFormBlockProps } from './FormBlockProvider';
 import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
 import { GanttBlockProvider, useGanttBlockProps } from './GanttBlockProvider';
 import * as bp from './hooks';
-import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider';
 import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
@@ -28,7 +27,6 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         FilterFormBlockProvider,
         FormFieldProvider,
         DetailsBlockProvider,
-        KanbanBlockProvider,
         RecordLink,
       }}
       scope={{
@@ -43,7 +41,6 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useTableFieldProps,
         useTableBlockProps,
         useTableSelectorProps,
-        useKanbanBlockProps,
         useGanttBlockProps,
       }}
     >
@@ -69,7 +66,6 @@ export class BlockSchemaComponentPlugin extends Plugin {
       FilterFormBlockProvider,
       FormFieldProvider,
       DetailsBlockProvider,
-      KanbanBlockProvider,
       RecordLink,
     });
   }
@@ -87,7 +83,6 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useTableFieldProps,
       useTableBlockProps,
       useTableSelectorProps,
-      useKanbanBlockProps,
       useGanttBlockProps,
     });
   }

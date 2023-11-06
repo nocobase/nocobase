@@ -2,11 +2,8 @@ import { ArrayField } from '@formily/core';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Spin, Tag } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
-import { SchemaComponentOptions } from '../..';
-import { RecordProvider } from '../../../';
-import { useCreateActionProps as useCAP } from '../../../block-provider/hooks';
-import { Board } from '../../../board';
-import { useProps } from '../../hooks/useProps';
+import { SchemaComponentOptions, RecordProvider, useCreateActionProps as useCAP, useProps } from '@nocobase/client';
+import { Board } from './board';
 import { KanbanCardContext, KanbanColumnContext } from './context';
 import { useStyles } from './style';
 
@@ -55,7 +52,7 @@ export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
 
 export const Kanban: any = observer(
   (props: any) => {
-    const { wrapSSR, hashId, componentCls: className } = useStyles();
+    const { styles } = useStyles();
     const { groupField, onCardDragEnd, ...restProps } = useProps(props);
     const field = useField<ArrayField>();
     const fieldSchema = useFieldSchema();
@@ -87,8 +84,8 @@ export const Kanban: any = observer(
       field.value = updatedBoard.columns;
     };
 
-    return wrapSSR(
-      <Spin wrapperClassName={`${className} ${hashId}`} spinning={field.loading || false}>
+    return (
+      <Spin wrapperClassName={styles.nbKanban} spinning={field.loading || false}>
         <Board
           {...restProps}
           allowAddCard={!!schemas.cardAdder}
@@ -143,7 +140,7 @@ export const Kanban: any = observer(
             columns: field.value || [],
           }}
         </Board>
-      </Spin>,
+      </Spin>
     );
   },
   { displayName: 'Kanban' },

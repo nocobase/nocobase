@@ -1,6 +1,6 @@
 import React, { forwardRef, useState } from 'react';
 import { Draggable } from 'react-beautiful-dnd';
-import { useKanbanBlockContext } from '../block-provider';
+import { useKanbanBlockContext } from '../KanbanBlockProvider';
 import Card from './Card';
 import CardAdder from './CardAdder';
 import { pickPropOut } from './utils';

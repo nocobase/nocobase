@@ -12,7 +12,6 @@ export * from './FormActionInitializers';
 export * from './FormItemInitializers';
 export * from './GanttActionInitializers';
 export * from './GridCardActionInitializers';
-export * from './KanbanActionInitializers';
 export * from './ListActionInitializers';
 export * from './ReadPrettyFormActionInitializers';
 export * from './ReadPrettyFormItemInitializers';
