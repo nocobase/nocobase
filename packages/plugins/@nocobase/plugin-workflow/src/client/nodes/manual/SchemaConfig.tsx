@@ -520,7 +520,9 @@ export function SchemaConfigButton(props) {
       <Button type="primary" onClick={() => setVisible(true)}>
         {workflow.executed ? lang('View user interface') : lang('Configure user interface')}
       </Button>
-      <ActionContextProvider value={{ visible, setVisible }}>{props.children}</ActionContextProvider>
+      <ActionContextProvider value={{ visible, setVisible, formValueChanged: false }}>
+        {props.children}
+      </ActionContextProvider>
     </>
   );
 }
