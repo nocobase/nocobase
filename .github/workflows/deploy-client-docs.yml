@@ -1,5 +1,18 @@
 name: deploy client docs
-on: [push]
+on:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'packages/core/client/**'
+      - '.github/workflows/deploy-client-docs.yml'
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - 'packages/core/client/**'
+      - '.github/workflows/deploy-client-docs.yml'
+
 jobs:
   build:
     name: Build
@@ -12,7 +25,15 @@ jobs:
     - run: yarn install
     - name: Build
       run: yarn doc build core/client
-    - name: copy files via ssh
+    - name: Set tags
+      id: set-tags
+      run: |
+        if [[ "${{ github.ref_name }}" == "main" ]]; then
+          echo "::set-output name=tags::${{ github.ref_name }}"
+        else
+          echo "::set-output name=tags::pr-${{ github.event.pull_request.number }}"
+        fi
+    - name: copy files via ssh - ${{ steps.set-tags.outputs.tags }}
       uses: appleboy/scp-action@v0.1.4
       with:
         host: ${{ secrets.CN_CLIENT_HOST }}
@@ -20,4 +41,4 @@ jobs:
         key: ${{ secrets.CN_CLIENT_KEY }}
         port: ${{ secrets.CN_CLIENT_PORT }}
         source: "packages/core/client/dist/*"
-        target: ${{ secrets.CN_CLIENT_TARGET }}/${{ github.ref_name }}
+        target: ${{ secrets.CN_CLIENT_TARGET }}/${{ steps.set-tags.outputs.tags }}
