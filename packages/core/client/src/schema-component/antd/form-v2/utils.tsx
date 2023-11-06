@@ -132,7 +132,11 @@ export const linkageMergeAction = async ({
         };
 
         if (last(valueResult) !== undefined) {
-          field.value = last(valueResult);
+          if (field.__setValueWithDebounce) {
+            field.__setValueWithDebounce(last(valueResult));
+          } else {
+            field.value = last(valueResult);
+          }
         }
       }
       break;

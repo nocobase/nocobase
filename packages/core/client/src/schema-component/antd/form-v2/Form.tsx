@@ -5,6 +5,7 @@ import { FieldContext, FormContext, observer, RecursionField, useField, useField
 import { autorun } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
+import _ from 'lodash';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
@@ -126,6 +127,9 @@ const WithForm = (props: WithFormProps) => {
 
             // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `autorun` 代替
             onFieldInit(`*(${fields})`, (field: any, form) => {
+              // 使用防抖是为了避免短时间内多次赋值触发死循环
+              field.__setValueWithDebounce = _.debounce(field.setValue, 150);
+
               disposes.push(
                 autorun(async () => {
                   linkagefields.push(field);
