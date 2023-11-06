@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import {
-  useAPIClient,
-} from '@nocobase/client';
+import { useAPIClient } from '@nocobase/client';
 import { Form, Input, Button, Dropdown, Space, MenuProps } from 'antd';
 import './EmailBody.css';
 import 'react-quill/dist/quill.snow.css';
 import { RichTextV2 } from '@nocobase/client';
-
 
 const EmailBody = (props) => {
   const ref = React.useRef(null);
@@ -14,7 +11,6 @@ const EmailBody = (props) => {
   const [items, setItems] = useState([]);
   const [formData, setFormData] = React.useState({ subject: '', body: '' });
   const fetchExistingData = async () => {
-    
     //values for setting data dynamically
     const bodyProperty = props.page;
     const subjectProperty = props.page + 'Subject';
@@ -103,15 +99,12 @@ const EmailBody = (props) => {
 
   console.log(formData);
   const handleRichTextValues = (value) => {
-    if (formData.subject) {
-      setFormData({ ...formData, body: value });
-    } else {
-      setFormData({ subject: ref.current, body: value });
-    }
+    console.log(value);
+    setFormData({ ...formData, body: value });
+
   };
   return (
     <div>
-
       <Form onFinish={handleSubmit} layout="vertical">
         <Form.Item label="Subject">
           <Input
@@ -123,12 +116,9 @@ const EmailBody = (props) => {
             }}
           />
         </Form.Item>
-       
-        <Form.Item label="Body">
-         
-          <RichTextV2/>
 
-        
+        <Form.Item label="Body">
+          <RichTextV2 value={formData.body} onChange={handleRichTextValues} />
         </Form.Item>
         <Form.Item>
           <Button type="primary" htmlType="submit">

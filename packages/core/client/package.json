@@ -64,7 +64,7 @@
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.10.0",
     "solarlunar-es": "^1.0.9",
-   
+   "jodit-react":"1.3.39",
     "use-deep-compare-effect": "^1.8.1"
   },
   "peerDependencies": {
