@@ -76,16 +76,7 @@ export class CollectionManagerPlugin extends Plugin {
     );
 
     this.app.db.on('collections.beforeDestroy', async (model: CollectionModel, options) => {
-      const removeOptions = {};
-      if (options.transaction) {
-        removeOptions['transaction'] = options.transaction;
-      }
-
-      if (lodash.get(options, 'context.action.params.cascade', false)) {
-        removeOptions['cascade'] = true;
-      }
-
-      await model.remove(removeOptions);
+      await model.remove(options);
     });
 
     // 要在 beforeInitOptions 之前处理

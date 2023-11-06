@@ -24,8 +24,6 @@ import {
   ViewCollectionField,
   ViewFieldAction,
   SyncSQLFieldsAction,
-  DeleteCollection,
-  DeleteCollectionAction,
 } from './Configuration';
 
 import { CollectionCategroriesProvider } from './CollectionManagerProvider';
@@ -73,8 +71,6 @@ export const CollectionManagerPane = () => {
         AddCategory,
         EditCollection,
         EditCollectionAction,
-        DeleteCollection,
-        DeleteCollectionAction,
         EditFieldAction,
         EditCollectionField,
         OverridingCollectionField,

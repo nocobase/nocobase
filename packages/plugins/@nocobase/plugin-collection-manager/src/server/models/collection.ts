@@ -1,7 +1,7 @@
 import Database, { Collection, MagicAttributeModel, SyncOptions, Transactionable } from '@nocobase/database';
 import lodash from 'lodash';
 import { FieldModel } from './field';
-import { QueryInterfaceDropTableOptions } from 'sequelize';
+import { async } from 'fast-glob';
 
 interface LoadOptions extends Transactionable {
   // TODO
@@ -85,7 +85,7 @@ export class CollectionModel extends MagicAttributeModel {
     }
   }
 
-  async remove(options?: Transactionable & QueryInterfaceDropTableOptions) {
+  async remove(options?: any) {
     const { transaction } = options || {};
     const name = this.get('name');
     const collection = this.db.getCollection(name);
@@ -109,7 +109,9 @@ export class CollectionModel extends MagicAttributeModel {
       }
     }
 
-    await collection.removeFromDb(options);
+    await collection.removeFromDb({
+      transaction,
+    });
   }
 
   async migrate(options?: SyncOptions & Transactionable) {

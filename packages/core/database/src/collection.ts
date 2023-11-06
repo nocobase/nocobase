@@ -383,7 +383,7 @@ export class Collection<
   }
 
   remove() {
-    return this.context.database.removeCollection(this.name);
+    this.context.database.removeCollection(this.name);
   }
 
   async removeFromDb(options?: QueryInterfaceDropTableOptions) {
@@ -396,8 +396,7 @@ export class Collection<
       const queryInterface = this.db.sequelize.getQueryInterface();
       await queryInterface.dropTable(this.getTableNameWithSchema(), options);
     }
-
-    return this.remove();
+    this.remove();
   }
 
   async existsInDb(options?: Transactionable) {

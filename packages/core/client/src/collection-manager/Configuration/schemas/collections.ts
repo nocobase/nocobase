@@ -7,7 +7,6 @@ import { i18n } from '../../../i18n';
 import { CollectionOptions } from '../../types';
 import { CollectionCategory } from '../components/CollectionCategory';
 import { CollectionTemplate } from '../components/CollectionTemplate';
-
 const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
 };
@@ -148,10 +147,14 @@ export const collectionTableSchema: ISchema = {
         delete: {
           type: 'void',
           title: '{{ t("Delete") }}',
-          'x-component': 'DeleteCollection',
+          'x-component': 'Action',
           'x-component-props': {
-            role: 'button',
-            isBulk: true,
+            icon: 'DeleteOutlined',
+            useAction: '{{ cm.useBulkDestroyActionAndRefreshCM }}',
+            confirm: {
+              title: "{{t('Delete record')}}",
+              content: "{{t('Are you sure you want to delete it?')}}",
+            },
           },
         },
         create: {
@@ -306,12 +309,13 @@ export const collectionTableSchema: ISchema = {
                 delete: {
                   type: 'void',
                   title: '{{ t("Delete") }}',
-                  'x-component': 'DeleteCollection',
+                  'x-component': 'Action.Link',
                   'x-component-props': {
-                    role: 'button',
-                    'aria-label': '{{ "delete-button-" + $record.name }}',
-                    type: 'primary',
-                    className: 'nb-action-link',
+                    confirm: {
+                      title: "{{t('Delete record')}}",
+                      content: "{{t('Are you sure you want to delete it?')}}",
+                    },
+                    useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
                   },
                 },
               },
