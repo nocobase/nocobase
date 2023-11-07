@@ -180,7 +180,7 @@ export const useChartFilter = () => {
         return;
       }
       title = title ? `${title} / ${fieldTitle}` : fieldTitle;
-      if (children?.length && field.interface !== 'chinaRegion') {
+      if (children?.length && !['chinaRegion', 'createdBy', 'updatedBy'].includes(field.interface)) {
         const items = children.map((child: any) => children2item(child, title, `${name}.${field.name}`));
         return {
           type: 'subMenu',
