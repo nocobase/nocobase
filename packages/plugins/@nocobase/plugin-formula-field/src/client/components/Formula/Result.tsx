@@ -44,7 +44,7 @@ function getValuesByPath(values, key, index?) {
   if (Array.isArray(targetValue)) {
     return targetValue[index];
   }
-  if (targetValue && targetValue === 'object') {
+  if (targetValue && typeof targetValue === 'object') {
     return targetValue;
   } else {
     return values;
