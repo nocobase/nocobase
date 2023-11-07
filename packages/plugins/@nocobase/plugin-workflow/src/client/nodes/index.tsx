@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
 import { cloneDeep } from 'lodash';
 import { createForm } from '@formily/core';
@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import {
   ActionContextProvider,
+  FormProvider,
   SchemaComponent,
   SchemaInitializerItemOptions,
   css,
@@ -273,6 +274,10 @@ export function JobButton() {
   );
 }
 
+function useNodeFormProps() {
+  return { form: useForm() };
+}
+
 export function NodeDefaultView(props) {
   const { data, children } = props;
   const compile = useCompile();
@@ -292,15 +297,14 @@ export function NodeDefaultView(props) {
     const values = cloneDeep(data.config);
     return createForm({
       initialValues: values,
-      values,
       disabled: workflow.executed,
     });
   }, [data, workflow]);
 
   const resetForm = useCallback(
-    (changed) => {
-      setFormValueChanged(changed);
-      if (!changed) {
+    (editing) => {
+      setEditingConfig(editing);
+      if (!editing) {
         form.reset();
       }
     },
@@ -366,123 +370,129 @@ export function NodeDefaultView(props) {
         <ActionContextProvider
           value={{
             visible: editingConfig,
-            setVisible: setEditingConfig,
+            setVisible: resetForm,
             formValueChanged,
-            setFormValueChanged: resetForm,
+            setFormValueChanged,
           }}
         >
-          <SchemaComponent
-            scope={instruction.scope}
-            components={instruction.components}
-            schema={{
-              type: 'void',
-              properties: {
-                ...(instruction.view ? { view: instruction.view } : {}),
-                button: {
-                  type: 'void',
-                  'x-content': detailText,
-                  'x-component': Button,
-                  'x-component-props': {
-                    type: 'link',
-                    className: 'workflow-node-config-button',
-                  },
-                },
-                [`${instruction.type}_${data.id}`]: {
-                  type: 'void',
-                  title: (
-                    <div
-                      className={css`
-                        display: flex;
-                        justify-content: space-between;
-
-                        strong {
-                          font-weight: bold;
-                        }
-
-                        .ant-tag {
-                          margin-inline-end: 0;
-                        }
-
-                        code {
-                          font-weight: normal;
-                        }
-                      `}
-                    >
-                      <strong>{data.title}</strong>
-                      <Tooltip title={lang('Variable key of node')}>
-                        <Tag>
-                          <code>{data.key}</code>
-                        </Tag>
-                      </Tooltip>
-                    </div>
-                  ),
-                  'x-decorator': 'FormV2',
-                  'x-decorator-props': {
-                    form,
-                  },
-                  'x-component': 'Action.Drawer',
-                  properties: {
-                    ...(instruction.description
-                      ? {
-                          description: {
-                            type: 'void',
-                            'x-component': DrawerDescription,
-                            'x-component-props': {
-                              label: lang('Node type'),
-                              title: instruction.title,
-                              description: instruction.description,
-                            },
-                          },
-                        }
-                      : {}),
-                    fieldset: {
-                      type: 'void',
-                      'x-component': 'fieldset',
-                      'x-component-props': {
-                        className: css`
-                          .ant-input,
-                          .ant-select,
-                          .ant-cascader-picker,
-                          .ant-picker,
-                          .ant-input-number,
-                          .ant-input-affix-wrapper {
-                            &.auto-width {
-                              width: auto;
-                              min-width: 6em;
-                            }
-                          }
-                        `,
-                      },
-                      properties: instruction.fieldset,
+          <FormProvider form={form}>
+            <SchemaComponent
+              scope={{
+                ...instruction.scope,
+                useNodeFormProps,
+              }}
+              components={instruction.components}
+              schema={{
+                type: 'void',
+                properties: {
+                  ...(instruction.view ? { view: instruction.view } : {}),
+                  button: {
+                    type: 'void',
+                    'x-content': detailText,
+                    'x-component': Button,
+                    'x-component-props': {
+                      type: 'link',
+                      className: 'workflow-node-config-button',
                     },
-                    actions: workflow.executed
-                      ? null
-                      : {
-                          type: 'void',
-                          'x-component': 'Action.Drawer.Footer',
-                          properties: {
-                            cancel: {
-                              title: '{{t("Cancel")}}',
-                              'x-component': 'Action',
+                  },
+                  [`${instruction.type}_${data.id}`]: {
+                    type: 'void',
+                    title: (
+                      <div
+                        className={css`
+                          display: flex;
+                          justify-content: space-between;
+
+                          strong {
+                            font-weight: bold;
+                          }
+
+                          .ant-tag {
+                            margin-inline-end: 0;
+                          }
+
+                          code {
+                            font-weight: normal;
+                          }
+                        `}
+                      >
+                        <strong>{data.title}</strong>
+                        <Tooltip title={lang('Variable key of node')}>
+                          <Tag>
+                            <code>{data.key}</code>
+                          </Tag>
+                        </Tooltip>
+                      </div>
+                    ),
+                    'x-decorator': 'FormV2',
+                    'x-decorator-props': {
+                      // form,
+                      useProps: '{{ useNodeFormProps }}',
+                    },
+                    'x-component': 'Action.Drawer',
+                    properties: {
+                      ...(instruction.description
+                        ? {
+                            description: {
+                              type: 'void',
+                              'x-component': DrawerDescription,
                               'x-component-props': {
-                                useAction: '{{ cm.useCancelAction }}',
+                                label: lang('Node type'),
+                                title: instruction.title,
+                                description: instruction.description,
                               },
                             },
-                            submit: {
-                              title: '{{t("Submit")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                type: 'primary',
-                                useAction: useUpdateAction,
+                          }
+                        : {}),
+                      fieldset: {
+                        type: 'void',
+                        'x-component': 'fieldset',
+                        'x-component-props': {
+                          className: css`
+                            .ant-input,
+                            .ant-select,
+                            .ant-cascader-picker,
+                            .ant-picker,
+                            .ant-input-number,
+                            .ant-input-affix-wrapper {
+                              &.auto-width {
+                                width: auto;
+                                min-width: 6em;
+                              }
+                            }
+                          `,
+                        },
+                        properties: instruction.fieldset,
+                      },
+                      actions: workflow.executed
+                        ? null
+                        : {
+                            type: 'void',
+                            'x-component': 'Action.Drawer.Footer',
+                            properties: {
+                              cancel: {
+                                title: '{{t("Cancel")}}',
+                                'x-component': 'Action',
+                                'x-component-props': {
+                                  useAction: '{{ cm.useCancelAction }}',
+                                },
+                              },
+                              submit: {
+                                title: '{{t("Submit")}}',
+                                'x-component': 'Action',
+                                'x-component-props': {
+                                  type: 'primary',
+                                  useAction: useUpdateAction,
+                                },
                               },
                             },
                           },
-                        },
-                  },
-                } as ISchema,
-              },
-            }}
-          />
+                    },
+                  } as ISchema,
+                },
+              }}
+            />
+          </FormProvider>
         </ActionContextProvider>
       </div>
       {children}
