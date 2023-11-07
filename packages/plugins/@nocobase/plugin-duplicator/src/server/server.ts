@@ -9,6 +9,7 @@ import dumpableCollections from './actions/dumpable-collections-action';
 import getDictAction from './actions/get-dict-action';
 import { getPackageContent, restoreAction } from './actions/restore-action';
 import zhCN from './locale/zh-CN';
+import { downloadAction } from './actions/dump-file-actions';
 
 export default class Duplicator extends Plugin {
   beforeLoad() {
@@ -27,7 +28,7 @@ export default class Duplicator extends Plugin {
         }
 
         const storage = multer.diskStorage({
-          destination: os.tmpdir(), // 获取临时目录
+          destination: os.tmpdir(),
           filename: function (req, file, cb) {
             const randomName = Date.now().toString() + Math.random().toString().slice(2); // 随机生成文件名
             cb(null, randomName);
@@ -38,6 +39,7 @@ export default class Duplicator extends Plugin {
         return upload(ctx, next);
       },
       actions: {
+        download: downloadAction,
         restore: restoreAction,
         upload: getPackageContent,
         dump: dumpAction,

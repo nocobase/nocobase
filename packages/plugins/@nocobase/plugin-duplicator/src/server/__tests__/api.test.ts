@@ -16,25 +16,6 @@ describe('duplicator api', () => {
     await app.destroy();
   });
 
-  it('should request create dump api', async () => {
-    const dumpResponse = await app
-      .agent()
-      .post('/duplicator:dump')
-      .send({
-        dataTypes: ['meta', 'config', 'business'],
-      });
-
-    expect(dumpResponse.status).toBe(200);
-
-    const data = dumpResponse.body.data;
-
-    expect(data.key).toBeDefined();
-
-    const promise = Dumper.getTaskPromise(data.key);
-
-    await promise;
-  });
-
   it('should request dump and restore api', async () => {
     await app.db.getCollection('collections').repository.create({
       values: {
@@ -55,12 +36,26 @@ describe('duplicator api', () => {
       });
 
     expect(dumpResponse.status).toBe(200);
+
+    const dumpKey = dumpResponse.body.data.key;
+    expect(dumpKey).toBeDefined();
+
+    const promise = Dumper.getTaskPromise(dumpKey);
+
+    await promise;
+
+    // download dump file
+    const downloadResponse = await app.agent().get(`/duplicator:download?key=${dumpKey}`);
+
+    expect(downloadResponse.status).toBe(200);
+
     // should response file name
-    const headers = dumpResponse.headers;
+    const headers = downloadResponse.headers;
     expect(headers['content-disposition']).toBeTruthy();
+
     const filePath = path.resolve(os.tmpdir(), 'dump.nbdump');
 
-    fs.writeFileSync(filePath, dumpResponse.body);
+    fs.writeFileSync(filePath, downloadResponse.body);
 
     const packageInfoResponse = await app.agent().post('/duplicator:upload').attach('file', filePath);
 

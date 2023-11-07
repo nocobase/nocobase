@@ -23,11 +23,13 @@ type BackUpStatusOk = {
   name: string;
   createdAt: Date;
   fileSize: string;
+  status: 'ok';
 };
 
 type BackUpStatusDoing = {
   name: string;
   inProgress: true;
+  status: 'in_progress';
 };
 
 export class Dumper extends AppMigrator {
@@ -51,6 +53,7 @@ export class Dumper extends AppMigrator {
             name: fileName,
             createdAt: backupFileStat.birthtime,
             fileSize: humanFileSize(backupFileStat.size),
+            status: 'ok',
           } as BackUpStatusOk;
         } else {
           throw new Error('Path is not a file');
@@ -63,6 +66,7 @@ export class Dumper extends AppMigrator {
               return {
                 name: fileName,
                 inProgress: true,
+                status: 'in_progress',
               } as BackUpStatusDoing;
             }
 
@@ -138,6 +142,11 @@ export class Dumper extends AppMigrator {
 
   backUpStorageDir() {
     return path.resolve(process.cwd(), 'storage', 'duplicator');
+  }
+
+  backUpFilePath(fileName: string) {
+    const dirname = this.backUpStorageDir();
+    return path.resolve(dirname, fileName);
   }
 
   lockFilePath(fileName: string) {
