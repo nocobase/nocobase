@@ -15,6 +15,21 @@ describe('duplicator api', () => {
     await app.destroy();
   });
 
+  it('should request create dump api', async () => {
+    const dumpResponse = await app
+      .agent()
+      .post('/duplicator:dump')
+      .send({
+        dataTypes: ['meta', 'config', 'business'],
+      });
+
+    expect(dumpResponse.status).toBe(200);
+
+    const data = dumpResponse.body.data;
+
+    expect(data.key).toBeDefined();
+  });
+
   it('should request dump and restore api', async () => {
     await app.db.getCollection('collections').repository.create({
       values: {

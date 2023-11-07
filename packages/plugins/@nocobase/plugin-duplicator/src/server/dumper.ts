@@ -11,15 +11,67 @@ import util from 'util';
 import { AppMigrator } from './app-migrator';
 import { FieldValueWriter } from './field-value-writer';
 import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
+import { access, constants } from 'node:fs/promises';
 
 const finished = util.promisify(stream.finished);
 
 type DumpOptions = {
   dataTypes: Set<DumpDataType>;
+  fileName?: string;
+};
+
+type BackUpStatusOk = {
+  name: string;
+  createdAt: Date;
+  fileSize: string;
+};
+
+type BackUpStatusDoing = {
+  name: string;
+  inProgress: true;
 };
 
 export class Dumper extends AppMigrator {
   direction = 'dump' as const;
+
+  static async getFileStatus(filePath: string): Promise<BackUpStatusOk | BackUpStatusDoing> {
+    const lockFile = filePath + '.lock';
+    const fileName = path.basename(filePath);
+
+    return fs.promises
+      .stat(filePath)
+      .then((backupFileStat) => {
+        if (backupFileStat.isFile()) {
+          return {
+            name: fileName,
+            createdAt: backupFileStat.birthtime,
+            fileSize: humanFileSize(backupFileStat.size),
+          } as BackUpStatusOk;
+        } else {
+          throw new Error('Path is not a file');
+        }
+      })
+      .catch((error) => {
+        if (error.code === 'ENOENT') {
+          return fs.promises.stat(lockFile).then((lockFileStat) => {
+            if (lockFileStat.isFile()) {
+              return {
+                name: fileName,
+                inProgress: true,
+              } as BackUpStatusDoing;
+            }
+
+            throw new Error('Lock file is not a file');
+          });
+        }
+
+        throw error;
+      });
+  }
+
+  static generateFileName() {
+    return `backup_${dayjs().format('YYYYMMDD_HHmmss')}.${DUMPED_EXTENSION}`;
+  }
 
   async getCollectionsByDataTypes(dataTypes: Set<DumpDataType>): Promise<string[]> {
     const dumpableCollectionsGroupByDataTypes = await this.collectionsGroupByDataTypes();
@@ -100,7 +152,7 @@ export class Dumper extends AppMigrator {
 
     await this.dumpDb();
 
-    const filePath = await this.packDumpedDir();
+    const filePath = await this.packDumpedDir(options.fileName || Dumper.generateFileName());
     await this.clearWorkDir();
     return filePath;
   }
@@ -253,11 +305,11 @@ export class Dumper extends AppMigrator {
     await fsPromises.writeFile(path.resolve(collectionDataDir, 'meta'), JSON.stringify(meta), 'utf8');
   }
 
-  async packDumpedDir() {
+  async packDumpedDir(fileName: string) {
     const dirname = path.resolve(process.cwd(), 'storage', 'duplicator');
-    mkdirp.sync(dirname);
-    const filePath = path.resolve(dirname, `dump-${dayjs().format('YYYYMMDDTHHmmss')}.${DUMPED_EXTENSION}`);
+    await mkdirp(dirname);
 
+    const filePath = path.resolve(dirname, fileName);
     const output = fs.createWriteStream(filePath);
 
     const archive = archiver('zip', {

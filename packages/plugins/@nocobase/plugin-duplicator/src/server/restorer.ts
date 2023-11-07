@@ -32,7 +32,7 @@ export class Restorer extends AppMigrator {
     }
   }
 
-  setBackUpFilePath(backUpFilePath) {
+  setBackUpFilePath(backUpFilePath: string) {
     if (path.isAbsolute(backUpFilePath)) {
       this.backUpFilePath = backUpFilePath;
     } else if (path.basename(backUpFilePath) === backUpFilePath) {

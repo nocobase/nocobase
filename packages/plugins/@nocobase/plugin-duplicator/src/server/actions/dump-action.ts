@@ -21,6 +21,7 @@ export default async function dumpAction(ctx, next) {
   });
 
   ctx.set('Content-Disposition', contentDisposition(filePath));
+
   await send(ctx, filePath.replace(dirname, ''), {
     root: dirname,
   });
