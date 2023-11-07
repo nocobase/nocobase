@@ -12,7 +12,7 @@ import {
   useFormBlockContext,
 } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
-import { Registry, toFixedByStep } from '@nocobase/utils/client';
+import { Registry, getValuesByPath, toFixedByStep } from '@nocobase/utils/client';
 import React, { useEffect, useState } from 'react';
 
 import { toDbType } from '../../../utils';
@@ -40,32 +40,6 @@ function useTargetCollectionField() {
   return getCollectionField(`${collection.name}.${paths[paths.length - 1]}`);
 }
 
-function getValuesByPath(data, path) {
-  const keys = path.split('.');
-  let current = data;
-
-  for (const key of keys) {
-    if (current && typeof current === 'object') {
-      if (Array.isArray(current) && !isNaN(key)) {
-        const index = parseInt(key);
-        if (index >= 0 && index < current.length) {
-          current = current[index];
-        } else {
-          return data;
-        }
-      } else if (key in current) {
-        current = current[key];
-      } else {
-        return data;
-      }
-    } else {
-      return data;
-    }
-  }
-
-  return current;
-}
-
 export function Result(props) {
   const { value, ...others } = props;
   const fieldSchema = useFieldSchema();
@@ -75,7 +49,7 @@ export function Result(props) {
   const formBlockContext = useFormBlockContext();
   const field = useField();
   const path: any = field.path.entire;
-  const fieldPath = path?.replace(`.${fieldSchema.name}`, '');
+  const fieldPath = path?.replace(new RegExp(`(^|\\.)${fieldSchema.name}$`), '');
 
   useEffect(() => {
     setEditingValue(value);
@@ -91,7 +65,7 @@ export function Result(props) {
         return;
       }
 
-      const scope = toJS(getValuesByPath(form.values, fieldPath));
+      const scope = toJS(fieldPath ? getValuesByPath(form.values, fieldPath) : form.values);
       let v;
       try {
         v = evaluate(expression, scope);
