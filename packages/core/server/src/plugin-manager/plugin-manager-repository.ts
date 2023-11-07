@@ -114,7 +114,7 @@ export class PluginManagerRepository extends Repository {
         ...options,
       });
     }
-    const directoryPath = 'packages\\plugins\\@codenula';
+    const directoryPath = './packages/plugins/@codenula';
     const folderNames = [];
 
     fs.readdirSync(directoryPath).forEach((fileName) => {
