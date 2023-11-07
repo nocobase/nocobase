@@ -140,6 +140,7 @@ export class PluginSmtpServer extends Plugin {
           delete custom_variable_object.createdById;
 
           const mappedStringWithValue = format(data[emailBody], custom_variable_object);
+
           const emailOption = {
             to: email,
             from: `no reply <${emailData.from}>`,
