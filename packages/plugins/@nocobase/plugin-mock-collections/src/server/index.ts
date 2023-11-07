@@ -10,7 +10,7 @@ export class PluginMockCollectionsServer extends Plugin {
     const templates = collectionTemplates;
 
     const defaultFields = {
-      id: {
+      id: () => ({
         name: 'id',
         type: 'bigInt',
         autoIncrement: true,
@@ -18,8 +18,8 @@ export class PluginMockCollectionsServer extends Plugin {
         allowNull: false,
         uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
         interface: 'id',
-      },
-      createdAt: {
+      }),
+      createdAt: () => ({
         name: 'createdAt',
         interface: 'createdAt',
         type: 'date',
@@ -31,8 +31,8 @@ export class PluginMockCollectionsServer extends Plugin {
           'x-component-props': {},
           'x-read-pretty': true,
         },
-      },
-      createdBy: {
+      }),
+      createdBy: () => ({
         name: 'createdBy',
         interface: 'createdBy',
         type: 'belongsTo',
@@ -45,8 +45,8 @@ export class PluginMockCollectionsServer extends Plugin {
           'x-component-props': { fieldNames: { value: 'id', label: 'nickname' } },
           'x-read-pretty': true,
         },
-      },
-      updatedAt: {
+      }),
+      updatedAt: () => ({
         type: 'date',
         field: 'updatedAt',
         name: 'updatedAt',
@@ -58,8 +58,8 @@ export class PluginMockCollectionsServer extends Plugin {
           'x-component-props': {},
           'x-read-pretty': true,
         },
-      },
-      updatedBy: {
+      }),
+      updatedBy: () => ({
         type: 'belongsTo',
         target: 'users',
         foreignKey: 'updatedById',
@@ -72,7 +72,7 @@ export class PluginMockCollectionsServer extends Plugin {
           'x-component-props': { fieldNames: { value: 'id', label: 'nickname' } },
           'x-read-pretty': true,
         },
-      },
+      }),
     };
 
     const mockCollection = (values) => {
@@ -88,11 +88,11 @@ export class PluginMockCollectionsServer extends Plugin {
         view: false,
         sort: 1,
         name: `t_${uid()}`,
-        title: `T-${uid()}`,
         ...values,
       };
-      if (defaults.key) {
-        delete defaults.key;
+      defaults.key = uid();
+      if (!defaults.title) {
+        defaults.title = defaults.name;
       }
       if (!defaults.fields?.length) {
         defaults.fields = [];
@@ -107,19 +107,19 @@ export class PluginMockCollectionsServer extends Plugin {
         }
       }
       if (defaults.autoGenId && !fieldNames.includes('id')) {
-        defaults.fields.push(defaultFields.id);
+        defaults.fields.push(defaultFields.id());
       }
       if (defaults.createdAt && !fieldNames.includes('createdAt')) {
-        defaults.fields.push(defaultFields.createdAt);
+        defaults.fields.push(defaultFields.createdAt());
       }
       if (defaults.updatedAt && !fieldNames.includes('updatedAt')) {
-        defaults.fields.push(defaultFields.updatedAt);
+        defaults.fields.push(defaultFields.updatedAt());
       }
       if (defaults.createdBy && !fieldNames.includes('createdBy')) {
-        defaults.fields.push(defaultFields.createdBy);
+        defaults.fields.push(defaultFields.createdBy());
       }
       if (defaults.updatedBy && !fieldNames.includes('updatedBy')) {
-        defaults.fields.push(defaultFields.updatedBy);
+        defaults.fields.push(defaultFields.updatedBy());
       }
       defaults.fields.map((field) => {
         field.collectionName = defaults.name;
@@ -142,11 +142,11 @@ export class PluginMockCollectionsServer extends Plugin {
       if (!options.name) {
         options.name = `f_${uid()}`;
       }
-      if (options.title) {
+      if (options.title && options.uiSchema) {
         options.uiSchema.title = options.title;
       }
       if (options.uiSchema && !options.uiSchema.title) {
-        options.uiSchema.title = `T-${uid()}`;
+        options.uiSchema.title = options.name;
       }
       return options;
     };
@@ -168,7 +168,7 @@ export class PluginMockCollectionsServer extends Plugin {
         await db.sequelize.transaction(async (transaction) => {
           await Promise.all(
             collections.map((collection) =>
-              collectionsRepository.updateOrCreate({
+              collectionsRepository.firstOrCreate({
                 values: collection,
                 filterKeys: ['name'],
                 hooks: false,
@@ -178,7 +178,7 @@ export class PluginMockCollectionsServer extends Plugin {
           );
           await Promise.all(
             collectionFields.map((collectionField) =>
-              fieldsRepository.updateOrCreate({
+              fieldsRepository.firstOrCreate({
                 values: collectionField,
                 filterKeys: ['name', 'collectionName'],
                 hooks: false,
@@ -196,14 +196,6 @@ export class PluginMockCollectionsServer extends Plugin {
           },
           appends: ['fields'],
         });
-        await next();
-      },
-      'collections.fields:mock': async (ctx, next) => {
-        const { values } = ctx.action.params;
-        const options = mockCollectionField(values);
-        options.collectionName = ctx.action.resourceOf;
-        ctx.action.params.values = options;
-        ctx.body = options;
         await next();
       },
     });
