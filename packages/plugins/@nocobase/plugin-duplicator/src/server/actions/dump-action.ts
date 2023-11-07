@@ -1,8 +1,6 @@
 import { Dumper } from '../dumper';
-import send from 'koa-send';
 import { getApp } from './get-app';
 import { DumpDataType } from '@nocobase/database';
-import contentDisposition from 'content-disposition';
 
 export default async function dumpAction(ctx, next) {
   const data = <
@@ -16,15 +14,13 @@ export default async function dumpAction(ctx, next) {
 
   const dumper = new Dumper(app);
 
-  const { filePath, dirname } = await dumper.dump({
+  const taskId = await dumper.runDumpTask({
     dataTypes: new Set(data.dataTypes) as Set<DumpDataType>,
   });
 
-  ctx.set('Content-Disposition', contentDisposition(filePath));
-
-  await send(ctx, filePath.replace(dirname, ''), {
-    root: dirname,
-  });
+  ctx.body = {
+    key: taskId,
+  };
 
   await next();
 }

@@ -3,6 +3,7 @@ import path from 'path';
 import os from 'os';
 import fs from 'fs';
 import createApp from './index';
+import { Dumper } from '../dumper';
 
 describe('duplicator api', () => {
   let app: MockServer;
@@ -28,6 +29,10 @@ describe('duplicator api', () => {
     const data = dumpResponse.body.data;
 
     expect(data.key).toBeDefined();
+
+    const promise = Dumper.getTaskPromise(data.key);
+
+    await promise;
   });
 
   it('should request dump and restore api', async () => {

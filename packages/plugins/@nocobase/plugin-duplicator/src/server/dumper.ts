@@ -11,7 +11,6 @@ import util from 'util';
 import { AppMigrator } from './app-migrator';
 import { FieldValueWriter } from './field-value-writer';
 import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
-import { access, constants } from 'node:fs/promises';
 
 const finished = util.promisify(stream.finished);
 
@@ -32,7 +31,13 @@ type BackUpStatusDoing = {
 };
 
 export class Dumper extends AppMigrator {
+  static dumpTasks: Map<string, Promise<any>> = new Map();
+
   direction = 'dump' as const;
+
+  static getTaskPromise(taskId: string): Promise<any> | undefined {
+    return this.dumpTasks.get(taskId);
+  }
 
   static async getFileStatus(filePath: string): Promise<BackUpStatusOk | BackUpStatusDoing> {
     const lockFile = filePath + '.lock';
@@ -131,6 +136,45 @@ export class Dumper extends AppMigrator {
     return Object.fromEntries(Object.entries(grouped).map(([key, value]) => [key, value.map((item) => item.name)]));
   }
 
+  backUpStorageDir() {
+    return path.resolve(process.cwd(), 'storage', 'duplicator');
+  }
+
+  lockFilePath(fileName: string) {
+    const lockFile = fileName + '.lock';
+    const dirname = this.backUpStorageDir();
+    return path.resolve(dirname, lockFile);
+  }
+
+  async writeLockFile(fileName: string) {
+    const dirname = this.backUpStorageDir();
+    await mkdirp(dirname);
+
+    const filePath = this.lockFilePath(fileName);
+    await fsPromises.writeFile(filePath, 'lock', 'utf8');
+  }
+
+  async cleanLockFile(fileName: string) {
+    const filePath = this.lockFilePath(fileName);
+    await fsPromises.unlink(filePath);
+  }
+
+  async runDumpTask(options: Omit<DumpOptions, 'fileName'>) {
+    const backupFileName = Dumper.generateFileName();
+    await this.writeLockFile(backupFileName);
+
+    const promise = this.dump({
+      dataTypes: options.dataTypes,
+    }).finally(() => {
+      this.cleanLockFile(backupFileName);
+      Dumper.dumpTasks.delete(backupFileName);
+    });
+
+    Dumper.dumpTasks.set(backupFileName, promise);
+
+    return backupFileName;
+  }
+
   async dump(options: DumpOptions) {
     const dumpDataTypes = options.dataTypes;
     dumpDataTypes.add('meta');
@@ -152,7 +196,8 @@ export class Dumper extends AppMigrator {
 
     await this.dumpDb();
 
-    const filePath = await this.packDumpedDir(options.fileName || Dumper.generateFileName());
+    const backupFileName = options.fileName || Dumper.generateFileName();
+    const filePath = await this.packDumpedDir(backupFileName);
     await this.clearWorkDir();
     return filePath;
   }

@@ -37,6 +37,21 @@ describe('dumper', () => {
     });
   });
 
+  it('should run dump task', async () => {
+    const dumper = new Dumper(app);
+
+    const taskId = await dumper.runDumpTask({
+      dataTypes: new Set(['meta']),
+    });
+
+    expect(taskId).toBeDefined();
+
+    const promise = Dumper.getTaskPromise(taskId);
+    expect(promise).toBeDefined();
+
+    await promise;
+  });
+
   it('should create dump file name', async () => {
     expect(Dumper.generateFileName()).toMatch(/^backup_\d{8}_\d{6}\.nbdump$/);
   });
