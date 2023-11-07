@@ -2,7 +2,7 @@ import { observer, RecursionField, useField, useFieldSchema, useForm } from '@fo
 import { isPortalInBody } from '@nocobase/utils/client';
 import { App, Button, Popover } from 'antd';
 import classnames from 'classnames';
-import { default as lodash, isFunction } from 'lodash';
+import { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useActionContext } from '../..';
@@ -88,7 +88,7 @@ export const Action: ComposedAction = observer(
             });
           });
         });
-    }, [JSON.stringify(linkageRules), designable, field]);
+    }, [field, linkageRules, localVariables, record, variables]);
 
     const handleButtonClick = useCallback(
       (e: React.MouseEvent) => {
