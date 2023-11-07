@@ -16,7 +16,7 @@ import _ from 'lodash';
 import { ChartFilterContext } from './FilterProvider';
 import { getPropsSchemaByComponent, setDefaultValue } from './utils';
 import { ChartFilterVariableInput } from './FilterVariableInput';
-import { useChartFilter } from '../hooks';
+import { useChartFilter, useCollectionJoinFieldTitle } from '../hooks';
 import { Typography } from 'antd';
 const { Text } = Typography;
 
@@ -281,23 +281,22 @@ const EditTitleField = () => {
 };
 
 export const ChartFilterItemDesigner: React.FC = () => {
-  const { getCollection, getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
   const { t } = useChartsTranslation();
   const fieldSchema = useFieldSchema();
   const fieldName = fieldSchema.name as string;
-  const [collectionName] = fieldName.split('.');
   const collectionField = getField(fieldName) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const collection = getCollection(collectionName);
   const isCustom = fieldName.startsWith('custom.');
   const hasProps = getPropsSchemaByComponent(fieldSchema['x-component']);
+  const originalTitle = useCollectionJoinFieldTitle(fieldName);
   return (
     <GeneralSchemaDesigner disableInitializer>
       {!isCustom && (
         <>
-          <SchemaSettings.Item title="collection?.title">
+          <SchemaSettings.Item title={fieldName}>
             <Text type="secondary">
-              {t('Collection')}: {Schema.compile(collection?.title, { t })}
+              {t('Original field')}: {originalTitle}
             </Text>
           </SchemaSettings.Item>
           <SchemaSettings.Divider />

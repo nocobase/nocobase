@@ -30,4 +30,5 @@ export default {
   'Time range': 'Time range',
   'Edit field properties': 'Edit field properties',
   'Select a source field to use metadata of the field': 'Select a source field to use metadata of the field',
+  'Original field': 'Original field',
 };

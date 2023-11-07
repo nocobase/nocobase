@@ -194,7 +194,7 @@ export const useChartFilter = () => {
       if (nested) {
         const targetFields = getCollectionFields(field.target);
         const items = targetFields.map((targetField) =>
-          field2option(targetField, depth + 1, title, `${name}.${field.name}`),
+          field2option(targetField, depth + 1, '', `${name}.${field.name}`),
         );
         return {
           type: 'subMenu',
@@ -440,4 +440,35 @@ export const useFieldComponents = () => {
     options,
     values: options.map((option) => option.value),
   };
+};
+
+export const useCollectionJoinFieldTitle = (name: string) => {
+  const { getCollection, getCollectionField } = useCollectionManager();
+  return useMemo(() => {
+    if (!name) {
+      return;
+    }
+    const [collectionName, ...fieldNames] = name.split('.');
+    if (!fieldNames?.length) {
+      return;
+    }
+    const collection = getCollection(collectionName);
+    let cName: any = collectionName;
+    let field: any;
+    let title = Schema.compile(collection?.title, { t: i18n.t });
+    while (cName && fieldNames.length > 0) {
+      const fileName = fieldNames.shift();
+      field = getCollectionField(`${cName}.${fileName}`);
+      const fieldTitle = field?.uiSchema?.title || field?.name;
+      if (fieldTitle) {
+        title += ` / ${Schema.compile(fieldTitle, { t: i18n.t })}`;
+      }
+      if (field?.target) {
+        cName = field.target;
+      } else {
+        cName = null;
+      }
+    }
+    return title;
+  }, [name]);
 };
