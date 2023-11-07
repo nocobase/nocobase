@@ -14,7 +14,7 @@ import {
 } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 import { Button, Input, Tag, message } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { NAMESPACE, lang } from '../locale';
@@ -23,6 +23,7 @@ import { VariableOptions } from '../variable';
 import collection from './collection';
 import formTrigger from './form';
 import schedule from './schedule/';
+import { cloneDeep } from 'lodash';
 
 function useUpdateConfigAction() {
   const form = useForm();
@@ -43,6 +44,7 @@ function useUpdateConfigAction() {
           config: form.values,
         },
       });
+      ctx.setFormValueChanged(false);
       ctx.setVisible(false);
       refresh();
     },
@@ -146,50 +148,61 @@ export const TriggerConfig = () => {
   const { workflow, refresh } = useFlowContext();
   const [editingTitle, setEditingTitle] = useState<string>('');
   const [editingConfig, setEditingConfig] = useState(false);
+  const [formValueChanged, setFormValueChanged] = useState(false);
   const { styles } = useStyles();
-  let typeTitle = '';
+  const compile = useCompile();
+
+  const { title, type, executed } = workflow;
+  const trigger = triggers.get(type);
+  const typeTitle = compile(trigger.title);
+  const { fieldset, scope, components } = trigger;
+  const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
+  const titleText = lang('Trigger');
+
   useEffect(() => {
     if (workflow) {
       setEditingTitle(workflow.title ?? typeTitle);
     }
   }, [workflow]);
 
-  const form = useMemo(
-    () =>
-      createForm({
-        initialValues: workflow?.config,
-        values: workflow?.config,
-        disabled: workflow?.executed,
-      }),
+  const form = useMemo(() => {
+    const values = cloneDeep(workflow?.config);
+    return createForm({
+      initialValues: values,
+      values,
+      disabled: workflow?.executed,
+    });
+  }, [workflow]);
+
+  const resetForm = useCallback(
+    (changed) => {
+      setFormValueChanged(changed);
+      if (!changed) {
+        form.reset();
+      }
+    },
+    [form],
+  );
+
+  const onChangeTitle = useCallback(
+    async function (next) {
+      const t = next || typeTitle;
+      setEditingTitle(t);
+      if (t === title) {
+        return;
+      }
+      await api.resource('workflows').update?.({
+        filterByTk: workflow.id,
+        values: {
+          title: t,
+        },
+      });
+      refresh();
+    },
     [workflow],
   );
 
-  if (!workflow || !workflow.type) {
-    return null;
-  }
-  const { title, type, executed } = workflow;
-  const trigger = triggers.get(type);
-  const { fieldset, scope, components } = trigger;
-  typeTitle = trigger.title;
-  const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
-  const titleText = lang('Trigger');
-
-  async function onChangeTitle(next) {
-    const t = next || typeTitle;
-    setEditingTitle(t);
-    if (t === title) {
-      return;
-    }
-    await api.resource('workflows').update?.({
-      filterByTk: workflow.id,
-      values: {
-        title: t,
-      },
-    });
-    refresh();
-  }
-
-  function onOpenDrawer(ev) {
+  const onOpenDrawer = useCallback(function (ev) {
     if (ev.target === ev.currentTarget) {
       setEditingConfig(true);
       return;
@@ -202,7 +215,7 @@ export const TriggerConfig = () => {
         return;
       }
     }
-  }
+  }, []);
 
   return (
     <div
@@ -225,7 +238,14 @@ export const TriggerConfig = () => {
         />
       </div>
       <TriggerExecution />
-      <ActionContextProvider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
+      <ActionContextProvider
+        value={{
+          visible: editingConfig,
+          setVisible: setEditingConfig,
+          formValueChanged,
+          setFormValueChanged: resetForm,
+        }}
+      >
         <SchemaComponent
           schema={{
             name: `workflow-trigger-${workflow.id}`,

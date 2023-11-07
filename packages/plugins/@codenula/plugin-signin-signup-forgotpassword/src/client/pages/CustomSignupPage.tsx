@@ -1,4 +1,4 @@
-import { SignupPage,SchemaComponent } from '@nocobase/client';
+import { SignupPage, SchemaComponent } from '@nocobase/client';
 import React from 'react';
 
 import LogoImg from '../assets/logo.svg';
@@ -9,12 +9,14 @@ import { signupSchema } from '../schema';
 
 import { useCustomSignup } from '../hooks';
 
+import Loader from 'packages/plugins/@nocobase/smtp/src/client/utils/Loader';
+
 const CustomSignupPage = (props) => {
+  const [isLoading, setIsLoading] = React.useState(false);
   const signinLink = `/signin`;
-const allowSignUp = true
+  const allowSignUp = true;
   const useBasicSignUp = () => {
-    
-    return useCustomSignup()
+    return useCustomSignup({ isLoading, setIsLoading });
   };
   return (
     <div>
@@ -35,10 +37,9 @@ const allowSignUp = true
                   </div>
                   <div className="signupform">
                     {/* <SignupPage {...props} scope={{ useSignup: useCustomSignup }} /> */}
-                    <SchemaComponent
-                      schema={signupSchema}
-                      scope={{ useBasicSignUp, allowSignUp, signinLink }}
-                    />
+
+                    <SchemaComponent schema={signupSchema} scope={{ useBasicSignUp, allowSignUp, signinLink }} />
+
                   </div>
                 </div>
               </div>

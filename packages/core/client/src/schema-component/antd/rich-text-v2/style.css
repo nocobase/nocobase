@@ -1,0 +1,7 @@
+.rich-text{
+    display:flex;
+    flex-direction: row;
+}
+.rich-text-textarea{
+    height: 200px;
+}

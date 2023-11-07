@@ -30,7 +30,9 @@ export const useForgotPasswordEmailSubmit = () => {
     },
   };
 };
-export const useCustomSignup = () => {
+
+export const useCustomSignup = ({isLoading,setIsLoading}) => {
+
   const { run } = useSignup();
   const form = useForm();
   const api = useAPIClient();
@@ -38,7 +40,9 @@ export const useCustomSignup = () => {
     async run() {
       console.log('useCustomSignup');
       form.setValuesIn('url', 'bb');
+      setIsLoading(true)
       await run();
+      setIsLoading(false)
     },
   };
 };

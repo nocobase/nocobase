@@ -72,7 +72,7 @@ export const useSignIn = (authenticator) => {
 
       const token = response.data.data.token;
       const authorizationToken = `Bearer ${token}`;
-      console.log(values);
+
       const config = {
         url: '/api/email:authEmail',
         method: 'POST' as Method,

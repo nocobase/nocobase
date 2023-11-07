@@ -1,6 +1,6 @@
 ---
 group:
-  title: Client
+  title: core
   order: 1
 ---
 

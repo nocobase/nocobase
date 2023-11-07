@@ -1,6 +1,8 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 import nodemailer from 'nodemailer';
 import format from 'string-template';
+import CryptoJS from 'crypto-js';
+
 
 function createTransPort({ host, port }) {
   return nodemailer.createTransport({
@@ -126,7 +128,8 @@ export class PluginSmtpServer extends Plugin {
             {
               username: userdata.username,
               email: email,
-              link
+              link,
+
             },
             userdata.dataValues,
           );
@@ -144,7 +147,8 @@ export class PluginSmtpServer extends Plugin {
             from: `no reply <${emailData.from}>`,
             subject: data[subject],
             text: mappedStringWithValue,
-            html:mappedStringWithValue
+            html: mappedStringWithValue,
+
           };
           const info = await transporter.sendMail(emailOption);
 
@@ -157,7 +161,8 @@ export class PluginSmtpServer extends Plugin {
             body: data[emailBody],
             emailBody,
             subject,
-            custom_variable_object
+            custom_variable_object,
+
           };
 
           await next();
@@ -206,7 +211,8 @@ export class PluginSmtpServer extends Plugin {
             from: `no reply <${emailData.from}>`,
             subject: data[subject],
             text: mappedStringWithValue,
-            html:mappedStringWithValue
+            html: mappedStringWithValue,
+
           };
           const info = await transporter.sendMail(emailOption);
 
@@ -219,6 +225,69 @@ export class PluginSmtpServer extends Plugin {
 
           await next();
         },
+
+
+        //signup email API
+        //signup email API
+        //signup email API
+        async signupEmail(ctx, next) {
+          const { email, page } = ctx.request.body;
+          const emailBody = page[0];
+          const subject = page[1];
+          const emailData = await ctx.db.getRepository('smtpRequest').findOne({
+            filter: {
+              id: 1,
+            },
+          });
+          const data = await ctx.db.getRepository('custom-email-body').findOne({
+            filter: {
+              id: 1,
+            },
+          });
+          const userdata = await ctx.db.getRepository('users').findOne({
+            filter: {
+              email,
+            },
+          });
+
+          if (!data) {
+            //TODO:-send error ......
+            return ctx.throw(400, ctx.t('No data found!'));
+          }
+
+          //replacing email values and username in userData
+          const custom_variable_object = Object.assign(
+            {
+              username: userdata.username,
+              email: email,
+            },
+            userdata.dataValues,
+          );
+          // Exclude sensitive fields
+          delete custom_variable_object.password;
+          delete custom_variable_object.resetToken;
+
+          //mapping variable values to email body
+          const mappedStringWithValue = format(data[emailBody], custom_variable_object);
+          const emailOption = {
+            to: email,
+            from: `no reply <${emailData.from}>`,
+            subject: data[subject],
+            text: mappedStringWithValue,
+            html: mappedStringWithValue,
+          };
+          const info = await transporter.sendMail(emailOption);
+           // Respond to the request with a success message.
+          ctx.body = {
+            message: 'Signup success, Welcome',
+          };
+       
+
+         
+
+          await next();
+        },
+
       },
     });
     //applying condition on who can access the API
@@ -243,10 +312,29 @@ export class PluginSmtpServer extends Plugin {
         return false;
       }
     });
+
+    this.app.acl.allowManager.registerAllowCondition('signupEmailCheck', async (ctx) => {
+     
+
+      const token = ctx.request.header.authorization.split(' ')[1].trim().toString();
+
+      // Decrypt
+      var bytes = CryptoJS.AES.decrypt(token, 'secret');
+      var originalText = bytes.toString(CryptoJS.enc.Utf8);
+      if (originalText === 'somerandomstring') {
+        return true;
+      } else {
+        return false;
+      }
+    });
+
     this.app.acl.allow('email', 'sendMyEmail', 'admin');
     this.app.acl.allow('email', 'forgotPassword');
     this.app.acl.allow('email', 'verifyOtp');
     this.app.acl.allow('email', 'authEmail');
+
+    this.app.acl.allow('email', 'signupEmail', 'signupEmailCheck');
+
     this.app.acl.allow('smtpRequest', '*');
     this.app.acl.allow('otp', '*');
   }

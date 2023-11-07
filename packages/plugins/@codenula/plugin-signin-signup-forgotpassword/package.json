@@ -5,7 +5,9 @@
   "dependencies": {
     "template-strings":"0.0.6",
     "string-template":"1.0.0",
-    "react-quill":"2.0.0"
+    "react-quill":"2.0.0",
+    "crypto-js":"4.2.0"
+
   },
   "peerDependencies": {
     "@nocobase/client": "0.x",

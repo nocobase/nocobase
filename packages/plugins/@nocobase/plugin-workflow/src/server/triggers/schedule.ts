@@ -511,7 +511,7 @@ export default class ScheduleTrigger extends Trigger {
       const should = await this.shouldCache(workflow, now);
 
       if (should) {
-        this.plugin.app.logger.info('caching scheduled workflow will run in next minute:', workflow.id);
+        this.plugin.getLogger(workflow.id).info('caching scheduled workflow will run in next minute');
       }
 
       this.setCache(workflow, !should);

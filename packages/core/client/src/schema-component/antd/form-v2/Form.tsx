@@ -1,16 +1,8 @@
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
-import {
-  createForm,
-  Field,
-  Form as FormilyForm,
-  onFieldChange,
-  onFieldInit,
-  onFieldReact,
-  onFormInputChange,
-} from '@formily/core';
+import { createForm, Field, Form as FormilyForm, onFieldChange, onFieldInit, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { autorun } from '@formily/reactive';
+import { autorun, raw } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
 import React, { useEffect, useMemo } from 'react';
@@ -106,7 +98,7 @@ const WithForm = (props: WithFormProps) => {
     return () => {
       form.removeEffects(id);
     };
-  }, [props.disabled]);
+  }, [form, props.disabled, setFormValueChanged]);
 
   useEffect(() => {
     const id = uid();
@@ -132,7 +124,7 @@ const WithForm = (props: WithFormProps) => {
               };
             });
 
-            // `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 代替
+            // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `autorun` 代替
             onFieldInit(`*(${fields})`, (field: any, form) => {
               disposes.push(
                 autorun(async () => {
@@ -142,7 +134,7 @@ const WithForm = (props: WithFormProps) => {
                     value: h.value,
                     field,
                     condition: v.condition,
-                    values: form?.values,
+                    values: raw(form?.values),
                     variables,
                     localVariables,
                   });

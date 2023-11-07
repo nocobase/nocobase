@@ -2,6 +2,8 @@ import { Repository } from '@nocobase/database';
 import lodash from 'lodash';
 import { PluginManager } from './plugin-manager';
 import { PluginData } from './types';
+const fs = require('fs');
+const path = require('path');
 
 export class PluginManagerRepository extends Repository {
   pm: PluginManager;
@@ -111,6 +113,20 @@ export class PluginManagerRepository extends Repository {
         ...others,
         ...options,
       });
+    }
+    const directoryPath = 'packages\\plugins\\@codenula';
+    const folderNames = [];
+
+    fs.readdirSync(directoryPath).forEach((fileName) => {
+      const filePath = path.join(directoryPath, fileName);
+      const directoryName = directoryPath.split('\\').pop();
+      const stats = fs.statSync(filePath);
+      if (stats.isDirectory()) {
+        folderNames.push(directoryName + '/' + fileName);
+      }
+    });
+    for (let i = 0; i < folderNames.length; i++) {
+      await this.pm.addViaCLI(folderNames[i]);
     }
   }
 }
