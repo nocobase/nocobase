@@ -63,7 +63,7 @@ export interface Trigger {
   components?: { [key: string]: any };
   useInitializers?(config): SchemaInitializerItemOptions | null;
   initializers?: any;
-  actionTriggerable?: boolean;
+  useActionTriggerable?: boolean | (() => boolean);
 }
 
 export const triggers = new Registry<Trigger>();
