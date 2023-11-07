@@ -65,21 +65,10 @@ export const AssociationFilterFilterBlockInitializer = () => {
     children: optionalChildren,
   };
 
-  const dividerItem: SchemaInitializerItemOptions = {
-    type: 'divider',
-  };
-
-  const deleteItem: SchemaInitializerItemOptions = {
-    type: 'item',
-    title: t('Delete'),
-    component: 'AssociationFilterDesignerDelete',
-  };
-
   const items = [associatedFieldGroup, optionalFieldGroup];
 
   return (
     <SchemaInitializer.Button
-      data-testid="configure-fields-button-of-association-filter-filter-block"
       className={css`
         margin-top: 16px;
       `}

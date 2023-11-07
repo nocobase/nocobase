@@ -58,7 +58,7 @@ const validateJSON = {
 
 export const ChartBlockEngineDesigner = () => {
   const fieldSchema = useFieldSchema();
-  const { chartBlockEngineMetaData } = fieldSchema?.['x-component-props'];
+  const { chartBlockEngineMetaData } = fieldSchema?.['x-component-props'] || {};
   return (
     <GeneralSchemaDesigner>
       <ChartBlockEngineDesignerInitializer chartBlockEngineMetaData={chartBlockEngineMetaData} />
@@ -95,6 +95,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
 
   return (
     <SchemaSettings.Item
+      title={props.title || 'Edit chart block'}
       onClick={async () => {
         FormDialog(
           {

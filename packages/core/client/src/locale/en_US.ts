@@ -619,6 +619,7 @@ export default {
   "Dynamic value": "Dynamic value",
   "Current user": "Current user",
   "Current record": "Current record",
+  "Parent record": "Parent record",
   "Current time": "Current time",
   "System variables": "System variables",
   "Date variables": "Date variables",
@@ -782,4 +783,6 @@ export default {
   Execute: 'Execute',
   'Please use a valid SELECT or WITH AS statement': 'Please use a valid SELECT or WITH AS statement',
   'Please confirm the SQL statement first': 'Please confirm the SQL statement first',
+  'Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects':
+    'Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects',
 };

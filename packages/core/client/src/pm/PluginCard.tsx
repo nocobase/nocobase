@@ -27,6 +27,7 @@ function PluginInfo(props: IPluginInfo) {
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [enabledVal, setEnabledVal] = useState(enabled);
   const reload = () => window.location.reload();
+  const title = displayName || name || packageName;
 
   return (
     <>
@@ -40,6 +41,8 @@ function PluginInfo(props: IPluginInfo) {
         />
       )}
       <Card
+        role="button"
+        aria-label={title}
         size={'small'}
         bordered={false}
         onClick={() => {
@@ -48,7 +51,7 @@ function PluginInfo(props: IPluginInfo) {
         headStyle={{ border: 'none', minHeight: 'inherit', paddingTop: 14 }}
         bodyStyle={{ paddingTop: 10 }}
         // style={{ marginBottom: theme.marginLG }}
-        title={<div>{displayName || name || packageName}</div>}
+        title={<div>{title}</div>}
         hoverable
         className={css`
           .ant-card-actions {
@@ -127,6 +130,7 @@ function PluginInfo(props: IPluginInfo) {
             )}
           </Space>,
           <Switch
+            aria-label="enable"
             key={'enable'}
             size={'small'}
             disabled={builtIn || error}
@@ -169,7 +173,7 @@ function PluginInfo(props: IPluginInfo) {
             <Typography.Text type="danger">{t('Dependencies check failed')}</Typography.Text>
           </Button>
         )} */}
-        {/* 
+        {/*
           <Col span={8}>
             <Space direction="vertical" align="end" style={{ display: 'flex', marginTop: -10 }}>
               {type && (
@@ -184,7 +188,7 @@ function PluginInfo(props: IPluginInfo) {
                   {t('Update plugin')}
                 </Button>
               )}
-              
+
               {!error && (
                 <Button style={{ padding: 0 }} type="link">
                   {t('More details')}

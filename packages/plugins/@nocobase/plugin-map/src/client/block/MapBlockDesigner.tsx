@@ -84,6 +84,7 @@ export const MapBlockDesigner = () => {
           }}
         />
       ) : null}
+      <SchemaSettings.DefaultSortingRules path="x-component-props.lineSort" title={t('Concatenation order field')} />
       <SchemaSettings.ModalItem
         title={t('The default zoom level of the map')}
         schema={

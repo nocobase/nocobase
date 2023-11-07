@@ -1,10 +1,7 @@
-import { ISchema } from '@formily/react';
 import { G2PlotChart } from './g2plot';
-import { RenderProps } from '../chart';
+import { ChartType, RenderProps } from '../chart';
 import React from 'react';
 import { DualAxes as G2DualAxes } from '@ant-design/plots';
-import { FieldOption } from '../../hooks';
-import { QueryProps } from '../../renderer';
 
 export class DualAxes extends G2PlotChart {
   constructor() {
@@ -57,16 +54,7 @@ export class DualAxes extends G2PlotChart {
     ];
   }
 
-  init(
-    fields: FieldOption[],
-    {
-      measures,
-      dimensions,
-    }: {
-      measures?: QueryProps['measures'];
-      dimensions?: QueryProps['dimensions'];
-    },
-  ) {
+  init: ChartType['init'] = (fields, { measures, dimensions }) => {
     const { xField, yFields } = this.infer(fields, { measures, dimensions });
     return {
       general: {
@@ -74,7 +62,7 @@ export class DualAxes extends G2PlotChart {
         yField: yFields?.map((f) => f.value).slice(0, 2) || [],
       },
     };
-  }
+  };
 
   render({ data, general, advanced, fieldProps }: RenderProps) {
     const props = this.getProps({ data, general, advanced, fieldProps });

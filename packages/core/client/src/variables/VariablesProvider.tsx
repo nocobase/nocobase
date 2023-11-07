@@ -71,7 +71,7 @@ const VariablesProvider = ({ children }) => {
         );
         if (Array.isArray(current)) {
           const result = current.map((item) => {
-            if (shouldToRequest(item[key]) && item.id != null) {
+            if (shouldToRequest(item?.[key]) && item?.id != null) {
               if (associationField?.target) {
                 const url = `/${collectionName}/${item.id}/${key}:${getAction(associationField.type)}`;
                 if (hasRequested(url)) {
@@ -90,7 +90,7 @@ const VariablesProvider = ({ children }) => {
                 return result;
               }
             }
-            return item[key];
+            return item?.[key];
           });
           current = _.flatten(await Promise.all(result));
         } else if (shouldToRequest(current[key]) && current.id != null && associationField?.target) {

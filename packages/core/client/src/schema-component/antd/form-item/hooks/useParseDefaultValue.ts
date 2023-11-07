@@ -1,9 +1,11 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
+import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useRecord, useRecordIndex } from '../../../../../src/record-provider';
+import { useFormBlockType } from '../../../../block-provider/FormBlockProvider';
 import { useCollection } from '../../../../collection-manager';
 import { useFlag } from '../../../../flag-provider';
 import { DEBOUNCE_WAIT, useLocalVariables, useVariables } from '../../../../variables';
@@ -27,9 +29,21 @@ const useParseDefaultValue = () => {
   const { getField } = useCollection();
   const { isSpecialCase, setDefaultValue } = useSpecialCase();
   const index = useRecordIndex();
+  const { type: formBlockType } = useFormBlockType();
 
-  // 需要保存 record 的初始值，因为设置默认值的时候 record 会被修改，导致初始值丢失
-  const recordRef = useRef(_.omit(record, '__parent'));
+  /**
+   * name: 如 $user
+   */
+  const findVariable = useCallback(
+    (name: string) => {
+      let result = variables?.getVariable(name);
+      if (!result) {
+        result = localVariables.find((item) => item.name === name);
+      }
+      return result;
+    },
+    [localVariables, variables],
+  );
 
   useEffect(() => {
     if (
@@ -37,8 +51,8 @@ const useParseDefaultValue = () => {
       isInSetDefaultValueDialog ||
       isInFormDataTemplate ||
       isSubMode(fieldSchema) ||
-      // 根据 record 是否为空，判断当前是否是新建状态，编辑状态下不需要设置默认值，否则会覆盖用户输入的值，只有新建状态下才需要设置默认值
-      (!_.isEmpty(recordRef.current) && isFromDatabase(record) && !isInAssignFieldValues)
+      // 编辑状态下不需要设置默认值，否则会覆盖用户输入的值，只有新建状态下才需要设置默认值
+      (formBlockType === 'update' && isFromDatabase(record) && !isInAssignFieldValues)
     ) {
       return;
     }
@@ -94,12 +108,25 @@ const useParseDefaultValue = () => {
 
     if (isVariable(fieldSchema.default)) {
       const variableName = getVariableName(fieldSchema.default);
-      const variableValue = localVariables.find((item) => item.name === variableName);
+      const variable = findVariable(variableName);
 
-      if (variableValue) {
+      if (process.env.NODE_ENV !== 'production' && !variable) {
+        throw new Error(`useParseDefaultValue: can not find variable ${variableName}`);
+      }
+
+      if (variable) {
         // 实现联动的效果，当依赖的变量变化时（如 `$nForm` 变量），重新解析默认值
         const dispose = reaction(() => {
-          return _.get({ [variableName]: variableValue?.ctx }, getPath(fieldSchema.default));
+          const obj = { [variableName]: variable?.ctx || {} };
+          const path = getPath(fieldSchema.default);
+
+          // fix https://nocobase.height.app/T-2212
+          if (getValuesByPath(obj, path) === undefined) {
+            // 返回一个随机值，确保能触发 run 函数
+            return Math.random();
+          }
+
+          return getValuesByPath(obj, path);
         }, run);
 
         return dispose;

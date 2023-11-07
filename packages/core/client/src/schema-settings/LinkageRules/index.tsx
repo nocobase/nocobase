@@ -22,6 +22,10 @@ interface usePropsReturn {
   variables: VariablesContextType;
   localVariables: VariableOption | VariableOption[];
   record: Record<string, any>;
+  /**
+   * create 表示创建表单，update 表示更新表单
+   */
+  formBlockType: 'create' | 'update';
 }
 
 interface Props {
@@ -33,7 +37,8 @@ export const FormLinkageRules = observer(
   (props: Props) => {
     const fieldSchema = useFieldSchema();
     const { useProps, dynamicComponent } = props;
-    const { options, defaultValues, collectionName, form, variables, localVariables, record } = useProps();
+    const { options, defaultValues, collectionName, form, formBlockType, variables, localVariables, record } =
+      useProps();
     const { getAllCollectionsInheritChain } = useCollectionManager();
 
     const components = useMemo(() => ({ ArrayCollapse }), []);
@@ -160,7 +165,7 @@ export const FormLinkageRules = observer(
     );
 
     return (
-      <FormBlockContext.Provider value={{ form }}>
+      <FormBlockContext.Provider value={{ form, type: formBlockType }}>
         <RecordProvider record={record}>
           <FilterContext.Provider value={value}>
             <SchemaComponent components={components} schema={schema} />

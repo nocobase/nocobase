@@ -362,7 +362,7 @@ test('BUG: in the Duplicate mode, the Roles field should not have a value after 
 }) => {
   await mockPage(config).goto();
 
-  await page.getByText('Duplicate').click();
-  await expect(page.getByTestId('users.nickname-field').getByRole('textbox')).toHaveValue('Super Admin');
-  await expect(page.getByText('AdminMemberRoot')).not.toBeVisible();
+  await page.getByLabel('action-Action.Link-Duplicate-duplicate-users-table-0').click();
+  await expect(page.getByRole('textbox')).toHaveValue('Super Admin');
+  await expect(page.getByTestId('select-object-multiple')).toHaveText('');
 });

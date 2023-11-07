@@ -30,7 +30,7 @@ export default class Processor {
   nodes: FlowNodeModel[] = [];
   nodesMap = new Map<number, FlowNodeModel>();
   jobsMap = new Map<number, JobModel>();
-  jobsMapByNodeId: { [key: number]: any } = {};
+  jobsMapByNodeKey: { [key: string]: any } = {};
 
   constructor(
     public execution: ExecutionModel,
@@ -61,8 +61,9 @@ export default class Processor {
   private makeJobs(jobs: Array<JobModel>) {
     jobs.forEach((job) => {
       this.jobsMap.set(job.id, job);
-      // TODO: should consider cycle, and from previous job
-      this.jobsMapByNodeId[job.nodeId] = job.result;
+
+      const node = this.nodesMap.get(job.nodeId);
+      this.jobsMapByNodeKey[node.key] = job.result;
     });
   }
 
@@ -252,7 +253,9 @@ export default class Processor {
       );
     }
     this.jobsMap.set(job.id, job);
-    this.jobsMapByNodeId[job.nodeId] = job.result;
+
+    const node = this.nodesMap.get(job.nodeId);
+    this.jobsMapByNodeKey[node.key] = job.result;
 
     return job;
   }
@@ -339,13 +342,13 @@ export default class Processor {
     for (let n = this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
       const instruction = this.options.plugin.instructions.get(n.type);
       if (typeof instruction.getScope === 'function') {
-        $scopes[n.id] = instruction.getScope(n, this.jobsMapByNodeId[n.id], this);
+        $scopes[n.id] = $scopes[n.key] = instruction.getScope(n, this.jobsMapByNodeKey[n.key], this);
       }
     }
 
     return {
       $context: this.execution.context,
-      $jobsMapByNodeId: this.jobsMapByNodeId,
+      $jobsMapByNodeKey: this.jobsMapByNodeKey,
       $system: systemFns,
       $scopes,
     };

@@ -4,6 +4,7 @@ import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { OpenSize, useActionContext } from '.';
+import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
 import { ComposedActionDrawer } from './types';
 
 const openSizeWidthMap = new Map<OpenSize, string>([
@@ -24,9 +25,13 @@ export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
       }
       return buf;
     });
+
+    if (process.env.__E2E__) {
+      useSetAriaLabelForModal(visible);
+    }
+
     return (
       <Modal
-        data-testid="action-modal"
         width={actualWidth}
         title={field.title}
         {...(others as ModalProps)}

@@ -72,7 +72,6 @@ export const FormFieldLinkageRuleAction = observer(
               placeholder={t('Select field')}
             />
             <Select
-              data-testid="antd-select"
               popupMatchSelectWidth={false}
               value={operator}
               className={css`
@@ -93,7 +92,7 @@ export const FormFieldLinkageRuleAction = observer(
               />
             )}
             {!props.disabled && (
-              <a data-testid="close-icon-button">
+              <a role="button" aria-label="icon-close">
                 <CloseCircleOutlined onClick={() => remove()} style={{ color: '#bfbfbf' }} />
               </a>
             )}
@@ -146,6 +145,7 @@ export const FormButtonLinkageRuleAction = observer(
       <div style={{ marginBottom: 8 }}>
         <Space>
           <Select
+            data-testid="select-linkage-properties"
             popupMatchSelectWidth={false}
             value={operator}
             options={operators}
@@ -159,7 +159,7 @@ export const FormButtonLinkageRuleAction = observer(
               onChange: onChangeValue,
             })}
           {!props.disabled && (
-            <a data-testid="close-icon-button">
+            <a role="button" aria-label="icon-close">
               <CloseCircleOutlined onClick={remove} style={closeStyle} />
             </a>
           )}

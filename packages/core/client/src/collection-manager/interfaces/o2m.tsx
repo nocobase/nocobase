@@ -46,7 +46,8 @@ export const o2m: IField = {
   availableTypes: ['hasMany'],
   schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
     // schema['type'] = 'array';
-    if (targetCollection?.titleField && schema['x-component-props']) {
+    if (targetCollection?.titleField) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }

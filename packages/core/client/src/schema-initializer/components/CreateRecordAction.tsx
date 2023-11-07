@@ -97,6 +97,7 @@ export const CreateRecordAction = observer(
     const localVariables = useLocalVariables({ currentForm: { values } as any });
 
     useEffect(() => {
+      field.linkageProperty = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {
@@ -105,13 +106,12 @@ export const CreateRecordAction = observer(
               operator: h.operator,
               field,
               condition: v.condition,
-              values,
               variables,
               localVariables,
             });
           });
         });
-    }, [JSON.stringify(linkageRules), values]);
+    }, [field, linkageRules, localVariables, variables]);
     return (
       <div className={actionDesignerCss}>
         <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
@@ -201,6 +201,7 @@ export const CreateAction = observer(
     }, [menuItems]);
 
     useEffect(() => {
+      field.linkageProperty = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {
@@ -209,29 +210,30 @@ export const CreateAction = observer(
               operator: h.operator,
               field,
               condition: v.condition,
-              values,
               variables,
               localVariables,
             });
           });
         });
-    }, [JSON.stringify(linkageRules), values]);
+    }, [field, linkageRules, localVariables, variables]);
     return (
       <div className={actionDesignerCss}>
-        {FinallyButton({
-          inheritsCollections,
-          linkageFromForm,
-          allowAddToCurrent,
-          props,
-          componentType,
-          menu,
-          onClick,
-          collection,
-          icon,
-          field,
-          form,
-          designable,
-        })}
+        <FinallyButton
+          {...{
+            inheritsCollections,
+            linkageFromForm,
+            allowAddToCurrent,
+            props,
+            componentType,
+            menu,
+            onClick,
+            collection,
+            icon,
+            field,
+            form,
+            designable,
+          }}
+        />
       </div>
     );
   },
@@ -269,6 +271,7 @@ function FinallyButton({
     if (!linkageFromForm) {
       return allowAddToCurrent === undefined || allowAddToCurrent ? (
         <Dropdown.Button
+          aria-label={props['aria-label']}
           danger={props.danger}
           type={componentType}
           icon={<DownOutlined />}
@@ -287,7 +290,7 @@ function FinallyButton({
       ) : (
         <Dropdown menu={menu}>
           {
-            <Button icon={icon} type={componentType} danger={props.danger}>
+            <Button aria-label={props['aria-label']} icon={icon} type={componentType} danger={props.danger}>
               {props.children} <DownOutlined />
             </Button>
           }
@@ -296,6 +299,7 @@ function FinallyButton({
     }
     return (
       <Button
+        aria-label={props['aria-label']}
         type={componentType}
         disabled={field.disabled}
         danger={props.danger}
@@ -319,6 +323,7 @@ function FinallyButton({
 
   return (
     <Button
+      aria-label={props['aria-label']}
       type={componentType}
       disabled={field.disabled}
       danger={props.danger}

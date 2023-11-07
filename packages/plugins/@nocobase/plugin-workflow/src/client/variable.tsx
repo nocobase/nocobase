@@ -1,4 +1,7 @@
-import { useCompile } from '@nocobase/client';
+import React from 'react';
+
+import { Variable, useCompile } from '@nocobase/client';
+
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE, lang } from './locale';
 import { instructions, useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
@@ -30,13 +33,14 @@ export type OptionsOfUseVariableOptions = {
     children?: string;
   };
   appends?: string[] | null;
+  depth?: number;
 };
 
 export const defaultFieldNames = { label: 'label', value: 'value', children: 'children' } as const;
 
 export const nodesOptions = {
   label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-  value: '$jobsMapByNodeId',
+  value: '$jobsMapByNodeKey',
   useOptions(options: OptionsOfUseVariableOptions) {
     const current = useNodeContext();
     const upstreams = useAvailableUpstreams(current);
@@ -75,8 +79,8 @@ export const scopeOptions = {
       const subOptions = instruction.useScopeVariables?.(node, options);
       if (subOptions) {
         result.push({
-          key: node.id.toString(),
-          [fieldNames.value]: node.id.toString(),
+          key: node.key,
+          [fieldNames.value]: node.key,
           [fieldNames.label]: node.title ?? `#${node.id}`,
           [fieldNames.children]: subOptions,
         });
@@ -167,17 +171,20 @@ function getNextAppends(field, appends: string[] | null): string[] | null {
   return appends.filter((item) => item.startsWith(fieldPrefix)).map((item) => item.replace(fieldPrefix, ''));
 }
 
-function filterTypedFields({ fields, types, appends, compile, getCollectionFields }) {
+function filterTypedFields({ fields, types, appends, depth = 1, compile, getCollectionFields }) {
   return fields.filter((field) => {
     const match = types?.length ? types.some((type) => matchFieldType(field, type)) : true;
     if (isAssociationField(field)) {
       if (appends === null) {
+        if (!depth) {
+          return false;
+        }
         return (
           match ||
           filterTypedFields({
             fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
             types,
-            // depth: depth - 1,
+            depth: depth - 1,
             appends,
             compile,
             getCollectionFields,
@@ -207,20 +214,29 @@ function filterTypedFields({ fields, types, appends, compile, getCollectionField
   });
 }
 
+function useOptions(scope, opts) {
+  const compile = useCompile();
+  const children = scope.useOptions?.(opts)?.filter(Boolean);
+  const { fieldNames } = opts;
+  return {
+    [fieldNames.label]: compile(scope.label),
+    [fieldNames.value]: scope.value,
+    key: scope[fieldNames.value],
+    [fieldNames.children]: children,
+    disabled: !children || !children.length,
+  };
+}
+
 export function useWorkflowVariableOptions(options: OptionsOfUseVariableOptions = {}) {
   const fieldNames = Object.assign({}, defaultFieldNames, options.fieldNames ?? {});
   const opts = Object.assign(options, { fieldNames });
-  const compile = useCompile();
-  const result = [scopeOptions, nodesOptions, triggerOptions, systemOptions].map((item: any) => {
-    const children = item.useOptions?.(opts)?.filter(Boolean);
-    return {
-      [fieldNames.label]: compile(item.label),
-      [fieldNames.value]: item.value,
-      key: item[fieldNames.value],
-      [fieldNames.children]: children,
-      disabled: !children || !children.length,
-    };
-  });
+  const result = [
+    useOptions(scopeOptions, opts),
+    useOptions(nodesOptions, opts),
+    useOptions(triggerOptions, opts),
+    useOptions(systemOptions, opts),
+  ];
+  // const cache = useMemo(() => result, [result]);
 
   return result;
 }
@@ -286,6 +302,7 @@ function loadChildren(option) {
     collection: option.field.target,
     types: option.types,
     appends,
+    depth: option.depth - 1,
     ...this,
   });
   option.loadChildren = null;
@@ -306,6 +323,7 @@ export function getCollectionFieldOptions(options): VariableOption[] {
     collection,
     types,
     appends = [],
+    depth = 1,
     compile,
     getCollectionFields,
     fieldNames = defaultFieldNames,
@@ -317,7 +335,7 @@ export function getCollectionFieldOptions(options): VariableOption[] {
   const result: VariableOption[] = filterTypedFields({
     fields: computedFields,
     types,
-    // depth,
+    depth,
     appends,
     compile,
     getCollectionFields,
@@ -335,11 +353,31 @@ export function getCollectionFieldOptions(options): VariableOption[] {
       isLeaf,
       loadChildren: isLeaf ? null : boundLoadChildren,
       field,
-      // depth,
+      depth,
       appends,
       types,
     };
   });
 
   return result;
+}
+
+export function WorkflowVariableInput({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.Input scope={scope} {...props} />;
+}
+
+export function WorkflowVariableTextArea({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.TextArea scope={scope} {...props} />;
+}
+
+export function WorkflowVariableRawTextArea({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.RawTextArea scope={scope} {...props} />;
+}
+
+export function WorkflowVariableJSON({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.JSON scope={scope} {...props} />;
 }

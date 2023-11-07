@@ -13,6 +13,9 @@ export const IframeBlockInitializer = (props) => {
           type: 'void',
           'x-designer': 'Iframe.Designer',
           'x-decorator': 'BlockItem',
+          'x-decorator-props': {
+            name: 'iframe',
+          },
           'x-component': 'Iframe',
           'x-component-props': {},
         });

@@ -6,6 +6,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollection, useSortFields } from '../../../collection-manager';
+import { RecordProvider, useRecord } from '../../../record-provider';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { SchemaComponentOptions } from '../../core';
@@ -27,6 +28,7 @@ export const GridCardDesigner = () => {
   const field = useField();
   const { dn } = useDesignable();
   const sortFields = useSortFields(name);
+  const record = useRecord();
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const columnCount = field.decoratorProps.columnCount || defaultColumnCount;
@@ -70,159 +72,162 @@ export const GridCardDesigner = () => {
         };
   });
   return (
-    <GeneralSchemaDesigner template={template} title={title || name}>
-      <SchemaComponentOptions components={{ Slider }}>
-        <SchemaSettings.ModalItem
-          title={t('Set the count of columns displayed in a row')}
-          initialValues={columnCount}
-          schema={
-            {
-              type: 'object',
-              title: t('Set the count of columns displayed in a row'),
-              properties: columnCountProperties,
-            } as ISchema
-          }
-          onSubmit={(columnCount) => {
-            _.set(fieldSchema, 'x-decorator-props.columnCount', columnCount);
-            field.decoratorProps.columnCount = columnCount;
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
-              },
-            });
-          }}
-        />
-        <SchemaSettings.DataScope
-          collectionName={name}
-          defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
-          form={form}
-          onSubmit={({ filter }) => {
-            filter = removeNullCondition(filter);
-            _.set(fieldSchema, 'x-decorator-props.params.filter', filter);
-            field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params };
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
-              },
-            });
-          }}
-        />
-        <SchemaSettings.ModalItem
-          title={t('Set default sorting rules')}
-          components={{ ArrayItems }}
-          schema={
-            {
-              type: 'object',
-              title: t('Set default sorting rules'),
-              properties: {
-                sort: {
-                  type: 'array',
-                  default: sort,
-                  'x-component': 'ArrayItems',
-                  'x-decorator': 'FormItem',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      space: {
-                        type: 'void',
-                        'x-component': 'Space',
-                        properties: {
-                          sort: {
-                            type: 'void',
-                            'x-decorator': 'FormItem',
-                            'x-component': 'ArrayItems.SortHandle',
-                          },
-                          field: {
-                            type: 'string',
-                            enum: sortFields,
-                            required: true,
-                            'x-decorator': 'FormItem',
-                            'x-component': 'Select',
-                            'x-component-props': {
-                              style: {
-                                width: 260,
+    // fix https://nocobase.height.app/T-2259
+    <RecordProvider parent={record} record={{}}>
+      <GeneralSchemaDesigner template={template} title={title || name}>
+        <SchemaComponentOptions components={{ Slider }}>
+          <SchemaSettings.ModalItem
+            title={t('Set the count of columns displayed in a row')}
+            initialValues={columnCount}
+            schema={
+              {
+                type: 'object',
+                title: t('Set the count of columns displayed in a row'),
+                properties: columnCountProperties,
+              } as ISchema
+            }
+            onSubmit={(columnCount) => {
+              _.set(fieldSchema, 'x-decorator-props.columnCount', columnCount);
+              field.decoratorProps.columnCount = columnCount;
+              dn.emit('patch', {
+                schema: {
+                  ['x-uid']: fieldSchema['x-uid'],
+                  'x-decorator-props': fieldSchema['x-decorator-props'],
+                },
+              });
+            }}
+          />
+          <SchemaSettings.DataScope
+            collectionName={name}
+            defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+            form={form}
+            onSubmit={({ filter }) => {
+              filter = removeNullCondition(filter);
+              _.set(fieldSchema, 'x-decorator-props.params.filter', filter);
+              field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params };
+              dn.emit('patch', {
+                schema: {
+                  ['x-uid']: fieldSchema['x-uid'],
+                  'x-decorator-props': fieldSchema['x-decorator-props'],
+                },
+              });
+            }}
+          />
+          <SchemaSettings.ModalItem
+            title={t('Set default sorting rules')}
+            components={{ ArrayItems }}
+            schema={
+              {
+                type: 'object',
+                title: t('Set default sorting rules'),
+                properties: {
+                  sort: {
+                    type: 'array',
+                    default: sort,
+                    'x-component': 'ArrayItems',
+                    'x-decorator': 'FormItem',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        space: {
+                          type: 'void',
+                          'x-component': 'Space',
+                          properties: {
+                            sort: {
+                              type: 'void',
+                              'x-decorator': 'FormItem',
+                              'x-component': 'ArrayItems.SortHandle',
+                            },
+                            field: {
+                              type: 'string',
+                              enum: sortFields,
+                              required: true,
+                              'x-decorator': 'FormItem',
+                              'x-component': 'Select',
+                              'x-component-props': {
+                                style: {
+                                  width: 260,
+                                },
                               },
                             },
-                          },
-                          direction: {
-                            type: 'string',
-                            'x-decorator': 'FormItem',
-                            'x-component': 'Radio.Group',
-                            'x-component-props': {
-                              optionType: 'button',
+                            direction: {
+                              type: 'string',
+                              'x-decorator': 'FormItem',
+                              'x-component': 'Radio.Group',
+                              'x-component-props': {
+                                optionType: 'button',
+                              },
+                              enum: [
+                                {
+                                  label: t('ASC'),
+                                  value: 'asc',
+                                },
+                                {
+                                  label: t('DESC'),
+                                  value: 'desc',
+                                },
+                              ],
                             },
-                            enum: [
-                              {
-                                label: t('ASC'),
-                                value: 'asc',
-                              },
-                              {
-                                label: t('DESC'),
-                                value: 'desc',
-                              },
-                            ],
-                          },
-                          remove: {
-                            type: 'void',
-                            'x-decorator': 'FormItem',
-                            'x-component': 'ArrayItems.Remove',
+                            remove: {
+                              type: 'void',
+                              'x-decorator': 'FormItem',
+                              'x-component': 'ArrayItems.Remove',
+                            },
                           },
                         },
                       },
                     },
-                  },
-                  properties: {
-                    add: {
-                      type: 'void',
-                      title: t('Add sort field'),
-                      'x-component': 'ArrayItems.Addition',
+                    properties: {
+                      add: {
+                        type: 'void',
+                        title: t('Add sort field'),
+                        'x-component': 'ArrayItems.Addition',
+                      },
                     },
                   },
                 },
-              },
-            } as ISchema
-          }
-          onSubmit={({ sort }) => {
-            const sortArr = sort.map((item) => {
-              return item.direction === 'desc' ? `-${item.field}` : item.field;
-            });
+              } as ISchema
+            }
+            onSubmit={({ sort }) => {
+              const sortArr = sort.map((item) => {
+                return item.direction === 'desc' ? `-${item.field}` : item.field;
+              });
 
-            _.set(fieldSchema, 'x-decorator-props.params.sort', sortArr);
-            field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params };
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
-              },
-            });
-          }}
-        />
-        <SchemaSettings.SelectItem
-          title={t('Records per page')}
-          value={field.decoratorProps?.params?.pageSize || 20}
-          options={pageSizeOptions.map((v) => ({ value: v }))}
-          onChange={(pageSize) => {
-            _.set(fieldSchema, 'x-decorator-props.params.pageSize', pageSize);
-            field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params, page: 1 };
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
-              },
-            });
-          }}
-        />
-        <SchemaSettings.Template componentName={'GridCard'} collectionName={name} resourceName={defaultResource} />
-        <SchemaSettings.Divider />
-        <SchemaSettings.Remove
-          removeParentsIfNoChildren
-          breakRemoveOn={{
-            'x-component': 'Grid',
-          }}
-        />
-      </SchemaComponentOptions>
-    </GeneralSchemaDesigner>
+              _.set(fieldSchema, 'x-decorator-props.params.sort', sortArr);
+              field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params };
+              dn.emit('patch', {
+                schema: {
+                  ['x-uid']: fieldSchema['x-uid'],
+                  'x-decorator-props': fieldSchema['x-decorator-props'],
+                },
+              });
+            }}
+          />
+          <SchemaSettings.SelectItem
+            title={t('Records per page')}
+            value={field.decoratorProps?.params?.pageSize || 20}
+            options={pageSizeOptions.map((v) => ({ value: v }))}
+            onChange={(pageSize) => {
+              _.set(fieldSchema, 'x-decorator-props.params.pageSize', pageSize);
+              field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params, page: 1 };
+              dn.emit('patch', {
+                schema: {
+                  ['x-uid']: fieldSchema['x-uid'],
+                  'x-decorator-props': fieldSchema['x-decorator-props'],
+                },
+              });
+            }}
+          />
+          <SchemaSettings.Template componentName={'GridCard'} collectionName={name} resourceName={defaultResource} />
+          <SchemaSettings.Divider />
+          <SchemaSettings.Remove
+            removeParentsIfNoChildren
+            breakRemoveOn={{
+              'x-component': 'Grid',
+            }}
+          />
+        </SchemaComponentOptions>
+      </GeneralSchemaDesigner>
+    </RecordProvider>
   );
 };

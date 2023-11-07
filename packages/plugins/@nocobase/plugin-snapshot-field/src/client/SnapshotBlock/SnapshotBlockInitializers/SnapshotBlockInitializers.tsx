@@ -7,7 +7,6 @@ export const SnapshotBlockInitializers = (props: any) => {
   const { insertPosition, component } = props;
   return (
     <SchemaInitializer.Button
-      data-testid="add-block-button-in-snapshot-block"
       wrap={gridRowColWrap}
       insertPosition={insertPosition}
       component={component}

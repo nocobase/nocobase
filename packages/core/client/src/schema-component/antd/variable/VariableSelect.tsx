@@ -1,11 +1,19 @@
 import { cx } from '@emotion/css';
-import { Button, Cascader } from 'antd';
+import { Cascader } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToken } from '../__builtins__';
 import useStyles from './VariableSelect.style';
+import { XButton } from './XButton';
 
-export function VariableSelect({ options, setOptions, onInsert, changeOnSelect = false }): JSX.Element {
+export function VariableSelect({
+  options,
+  setOptions,
+  onInsert,
+  changeOnSelect = false,
+  fieldNames = {},
+  className,
+}): JSX.Element {
   const { t } = useTranslation();
   const [selectedVar, setSelectedVar] = useState<string[]>([]);
   const { wrapSSR, componentCls, hashId } = useStyles();
@@ -20,12 +28,12 @@ export function VariableSelect({ options, setOptions, onInsert, changeOnSelect =
   }
 
   return wrapSSR(
-    <Button className={cx('x-button', componentCls, hashId)}>
-      <span className={'variable-btn'}>x</span>
+    <XButton className={cx('x-button', componentCls, hashId, className)}>
       <Cascader
         placeholder={t('Select a variable')}
         value={[]}
         options={options}
+        fieldNames={fieldNames}
         loadData={loadData}
         onChange={(keyPaths = [], selectedOptions = []) => {
           setSelectedVar(keyPaths as string[]);
@@ -68,6 +76,6 @@ export function VariableSelect({ options, setOptions, onInsert, changeOnSelect =
             : null
         }
       />
-    </Button>,
+    </XButton>,
   );
 }

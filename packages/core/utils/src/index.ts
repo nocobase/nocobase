@@ -20,5 +20,6 @@ export * from './requireModule';
 export * from './toposort';
 export * from './uid';
 export * from './url';
+export * from './measure-execution-time';
 
 export { dayjs, lodash };

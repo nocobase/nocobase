@@ -744,6 +744,20 @@ export class UiSchemaRepository extends Repository {
     return insertedNodes;
   }
 
+  private regenerateUid(s: any) {
+    s['x-uid'] = uid();
+    Object.keys(s.properties || {}).forEach((key) => {
+      this.regenerateUid(s.properties[key]);
+    });
+  }
+
+  @transaction()
+  async duplicate(uid: string, options?: Transactionable) {
+    const s = await this.getJsonSchema(uid, { ...options, includeAsyncNode: true });
+    this.regenerateUid(s);
+    return this.insert(s, options);
+  }
+
   @transaction()
   async insert(schema: any, options?: Transactionable) {
     const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
