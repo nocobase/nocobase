@@ -48,9 +48,6 @@ export type SchemaSettingItemRemoveType = SchemaSettingItemBaseType<SchemaSettin
 interface SchemaSettingItemSwitchType extends SchemaSettingItemBaseType<SchemaSettingsSwitchItemProps> {
   type: 'switch';
 }
-// export type SchemaSettingItemSwitchType = SchemaSettingItemBaseType<SchemaSettingsSwitchItemProps> & {
-//   type: 'switch';
-// };
 
 export type SchemaSettingItemPopupType = SchemaSettingItemBaseType<SchemaSettingsPopupProps> & {
   type: 'popup';

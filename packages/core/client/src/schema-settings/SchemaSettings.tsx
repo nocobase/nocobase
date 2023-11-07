@@ -202,7 +202,7 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   const { title, dn, ...others } = props;
   const [visible, setVisible] = useState(false);
   const { Component, getMenuItems } = useMenuItem();
-  const [isPending, startTransition] = useReactTransition();
+  const [, startTransition] = useReactTransition();
 
   const changeMenu = (v: boolean) => {
     // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
@@ -213,8 +213,8 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
 
   const items = getMenuItems(() => props.children);
 
-  const dropdownMenu = () => (
-    <>
+  return (
+    <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
       <Component />
       <Dropdown
         open={visible}
@@ -231,12 +231,6 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
       >
         <div data-testid={props['data-testid']}>{typeof title === 'string' ? <span>{title}</span> : title}</div>
       </Dropdown>
-    </>
-  );
-
-  return (
-    <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
-      {dropdownMenu()}
     </SchemaSettingsProvider>
   );
 };
@@ -945,7 +939,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
 });
 SchemaSettings.ActionModalItem.displayName = 'SchemaSettings.ActionModalItem';
 
-SchemaSettings.ModalItem = function ModalItem(props: ModalItemProps) {
+SchemaSettings.ModalItem = function ModalItem(props: SchemaSettingsModalItemProps) {
   const {
     hidden,
     title,

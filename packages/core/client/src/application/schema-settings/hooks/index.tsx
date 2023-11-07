@@ -23,7 +23,7 @@ export function useSchemaSettingsRender<T = {}, DesignerContext = {}>(name: stri
   }
   return {
     exists: true,
-    render: (designer?: DesignerContext) =>
+    render: (designer: DesignerContext = {} as any) =>
       React.createElement(SchemaSettingsWrapper, { ...schemaSetting.options, ...options, designer }),
   };
 }

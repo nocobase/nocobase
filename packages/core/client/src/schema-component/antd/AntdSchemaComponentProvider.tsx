@@ -8,6 +8,7 @@ import { requestChartData } from './g2plot/requestChartData';
 
 import { pageTabSettings, pageSettings } from './page';
 import { formSettings } from './form-v2';
+import { formItemSettings } from './form-item';
 
 // TODO: delete this, replaced by `AntdSchemaComponentPlugin`
 export const AntdSchemaComponentProvider = (props) => {
@@ -47,5 +48,6 @@ export class AntdSchemaComponentPlugin extends Plugin {
     this.app.schemaSettingsManager.add(pageSettings);
     this.app.schemaSettingsManager.add(pageTabSettings);
     this.app.schemaSettingsManager.add(formSettings);
+    this.app.schemaSettingsManager.add(formItemSettings);
   }
 }
