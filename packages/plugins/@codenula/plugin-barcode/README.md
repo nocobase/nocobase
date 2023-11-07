@@ -1,1 +1,0 @@
-# @codenula/plugin-barcode

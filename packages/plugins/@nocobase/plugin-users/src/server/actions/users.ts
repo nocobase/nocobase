@@ -87,7 +87,7 @@ export async function lostpassword(ctx: Context, next: Next) {
     console.log(err);
     ctx.throw(404, {
       code: 'InvalidUserData',
-      message: ctx.t('smtp plugin not enabled', { ns: namespace }),
+      message: ctx.t('An error occurred', { ns: namespace }),
     });
   }
 

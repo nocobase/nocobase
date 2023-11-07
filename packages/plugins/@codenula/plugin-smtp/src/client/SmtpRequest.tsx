@@ -122,7 +122,7 @@ const useTryNow = () => {
             url: 'email:sendMyEmail',
             method: 'post',
             data: params,
-            params: params,
+            // params: params,
           })
           .then((res) => {
             console.log(res);
@@ -233,6 +233,16 @@ const schema: ISchema = {
         from: {
           type: 'string',
           title: 'Sender Email',
+          'x-validator': `{{(value) => {
+            if (!value) {
+              return "Please enter your email";
+            }
+          
+              if (!/^[\\w-]+(\\.[\\w-]+)*@[\\w-]+(\\.[\\w-]+)+$/.test(value)) {
+                return "Please enter a valid email";
+              }
+            
+          }}}`,
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           required: true,
@@ -267,12 +277,12 @@ const schema: ISchema = {
           'x-decorator': 'FormItem',
           'x-component': 'Checkbox',
         },
-        root: {
-          title: 'Root',
-          type: 'boolean',
-          'x-decorator': 'FormItem',
-          'x-component': 'Checkbox',
-        },
+        // root: {
+        //   title: 'Root',
+        //   type: 'boolean',
+        //   'x-decorator': 'FormItem',
+        //   'x-component': 'Checkbox',
+        // },
 
         footer1: {
           type: 'void',

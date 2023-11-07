@@ -18,7 +18,16 @@ export const TryModalSchema: ISchema = {
           title: 'From',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
-
+          'x-validator': `{{(value) => {
+            if (!value) {
+              return "Please enter your email";
+            }
+          
+              if (!/^[\\w-]+(\\.[\\w-]+)*@[\\w-]+(\\.[\\w-]+)+$/.test(value)) {
+                return "Please enter a valid email";
+              }
+            
+          }}}`,
           required: true,
         },
         to: {
@@ -26,6 +35,16 @@ export const TryModalSchema: ISchema = {
           title: 'To',
           'x-decorator': 'FormItem',
           'x-component': 'Input',
+          'x-validator': `{{(value) => {
+            if (!value) {
+              return "Please enter your email";
+            }
+          
+              if (!/^[\\w-]+(\\.[\\w-]+)*@[\\w-]+(\\.[\\w-]+)+$/.test(value)) {
+                return "Please enter a valid email";
+              }
+            
+          }}}`,
           required: true,
         },
         subject: {

@@ -87,7 +87,7 @@ export const useSignIn = (authenticator) => {
       try {
         const response = await axios(config);
       } catch (err) {
-        window.alert('error occurred');
+        // window.alert('error occurred');
         console.log(err);
       }
       await refreshAsync();
