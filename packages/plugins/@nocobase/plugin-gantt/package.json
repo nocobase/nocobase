@@ -1,0 +1,16 @@
+{
+  "name": "@nocobase/plugin-gantt",
+  "version": "0.14.0-alpha.8",
+  "displayName": "Gantt",
+  "displayName.zh-CN": "甘特图",
+  "description": "Provides Gantt blocks",
+  "description.zh-CN": "提供甘特图区块",
+  "license": "AGPL-3.0",
+  "main": "dist/server/index.js",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  }
+}

@@ -47,11 +47,6 @@ export const blockInitializers = new SchemaInitializer({
           title: '{{t("Kanban")}}',
           Component: 'KanbanBlockInitializer',
         },
-        {
-          name: 'gantt',
-          title: '{{t("Gantt")}}',
-          Component: 'GanttBlockInitializer',
-        },
       ],
     },
     {

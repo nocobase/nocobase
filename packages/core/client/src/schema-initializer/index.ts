@@ -31,7 +31,6 @@ import {
   createFormActionInitializers,
   updateFormActionInitializers,
   bulkEditFormActionInitializers,
-  ganttActionInitializers,
   filterFormItemInitializers,
   gridCardActionInitializers,
   gridCardItemActionInitializers,
@@ -83,7 +82,6 @@ export class SchemaInitializerPlugin extends Plugin {
     this.app.schemaInitializerManager.add(createFormActionInitializers);
     this.app.schemaInitializerManager.add(updateFormActionInitializers);
     this.app.schemaInitializerManager.add(bulkEditFormActionInitializers);
-    this.app.schemaInitializerManager.add(ganttActionInitializers);
     this.app.schemaInitializerManager.add(filterFormItemInitializers);
     this.app.schemaInitializerManager.add(gridCardActionInitializers);
     this.app.schemaInitializerManager.add(gridCardItemActionInitializers);

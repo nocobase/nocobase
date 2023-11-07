@@ -27,6 +27,7 @@ export class PresetNocoBase extends Plugin {
     'auth',
     'sms-auth',
     'custom-request',
+    'gantt',
   ];
 
   localPlugins = [
