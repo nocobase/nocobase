@@ -92,6 +92,9 @@ export const useChartFilter = () => {
           'x-component': 'InputNumber',
         };
       }
+      if (['oho', 'o2m'].includes(field.interface)) {
+        schema['x-component-props'].useOriginalFilter = true;
+      }
       const resultItem: SchemaInitializerItemOptions = {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
