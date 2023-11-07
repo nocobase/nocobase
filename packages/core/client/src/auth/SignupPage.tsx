@@ -9,6 +9,7 @@ import { Method } from 'axios';
 import cloneDeep from 'lodash/cloneDeep';
 import CryptoJS from 'crypto-js';
 
+
 export const SignupPageContext = createContext<{
   [authType: string]: {
     component: FunctionComponent<{
@@ -52,6 +53,7 @@ export const useSignup = (props?: UseSignupProps) => {
       await form.submit();
       const response = await api.auth.signUp(form.values, props?.authenticator);
 
+
       const values = cloneDeep(form.values);
 
       const config = {
@@ -59,6 +61,7 @@ export const useSignup = (props?: UseSignupProps) => {
         method: 'POST' as Method,
         headers: {
           Authorization: `Bearer ${encryptedString}`,
+
         },
         data: {
           email: values.email,
@@ -67,8 +70,7 @@ export const useSignup = (props?: UseSignupProps) => {
       };
       try {
         await axios(config);
-      } catch (err) {
-        window.alert('signup mail error');
+      } catch (err) 
         console.log(err);
       }
 

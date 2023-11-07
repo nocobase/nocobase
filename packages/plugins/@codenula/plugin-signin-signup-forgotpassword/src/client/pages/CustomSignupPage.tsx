@@ -8,6 +8,7 @@ import RightImg from '../assets/image-login-right.png';
 import { signupSchema } from '../schema';
 
 import { useCustomSignup } from '../hooks';
+
 import Loader from 'packages/plugins/@nocobase/smtp/src/client/utils/Loader';
 
 const CustomSignupPage = (props) => {
@@ -36,7 +37,9 @@ const CustomSignupPage = (props) => {
                   </div>
                   <div className="signupform">
                     {/* <SignupPage {...props} scope={{ useSignup: useCustomSignup }} /> */}
+
                     <SchemaComponent schema={signupSchema} scope={{ useBasicSignUp, allowSignUp, signinLink }} />
+
                   </div>
                 </div>
               </div>

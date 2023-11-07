@@ -3,6 +3,7 @@ import nodemailer from 'nodemailer';
 import format from 'string-template';
 import CryptoJS from 'crypto-js';
 
+
 function createTransPort({ host, port }) {
   return nodemailer.createTransport({
     host,
@@ -128,6 +129,7 @@ export class PluginSmtpServer extends Plugin {
               username: userdata.username,
               email: email,
               link,
+
             },
             userdata.dataValues,
           );
@@ -146,6 +148,7 @@ export class PluginSmtpServer extends Plugin {
             subject: data[subject],
             text: mappedStringWithValue,
             html: mappedStringWithValue,
+
           };
           const info = await transporter.sendMail(emailOption);
 
@@ -159,6 +162,7 @@ export class PluginSmtpServer extends Plugin {
             emailBody,
             subject,
             custom_variable_object,
+
           };
 
           await next();
@@ -208,6 +212,7 @@ export class PluginSmtpServer extends Plugin {
             subject: data[subject],
             text: mappedStringWithValue,
             html: mappedStringWithValue,
+
           };
           const info = await transporter.sendMail(emailOption);
 
@@ -220,6 +225,7 @@ export class PluginSmtpServer extends Plugin {
 
           await next();
         },
+
 
         //signup email API
         //signup email API
@@ -281,6 +287,7 @@ export class PluginSmtpServer extends Plugin {
 
           await next();
         },
+
       },
     });
     //applying condition on who can access the API
@@ -305,6 +312,7 @@ export class PluginSmtpServer extends Plugin {
         return false;
       }
     });
+
     this.app.acl.allowManager.registerAllowCondition('signupEmailCheck', async (ctx) => {
      
 
@@ -319,11 +327,14 @@ export class PluginSmtpServer extends Plugin {
         return false;
       }
     });
+
     this.app.acl.allow('email', 'sendMyEmail', 'admin');
     this.app.acl.allow('email', 'forgotPassword');
     this.app.acl.allow('email', 'verifyOtp');
     this.app.acl.allow('email', 'authEmail');
+
     this.app.acl.allow('email', 'signupEmail', 'signupEmailCheck');
+
     this.app.acl.allow('smtpRequest', '*');
     this.app.acl.allow('otp', '*');
   }

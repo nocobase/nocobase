@@ -14,6 +14,7 @@ const EmailBody = (props) => {
     //values for setting data dynamically
     const bodyProperty = props.page;
     const subjectProperty = props.page + 'Subject';
+
     api
       .request({
         url: 'custom-email-body:get?filterByTk=1',
@@ -27,6 +28,7 @@ const EmailBody = (props) => {
           body: res.data.data[bodyProperty],
           subject: res.data.data[subjectProperty],
         });
+
       })
       .catch((err) => console.log(err));
   };
@@ -92,10 +94,13 @@ const EmailBody = (props) => {
       .catch((err) => console.log(err));
   };
 
+ 
+
   const onClick = (props) => {
     console.log(props.domEvent.target.innerHTML);
     setFormData({ ...formData, body: formData.body + `{${props.domEvent.target.innerHTML}}` });
   };
+
 
   console.log(formData);
   const handleRichTextValues = (value) => {
@@ -116,6 +121,7 @@ const EmailBody = (props) => {
             }}
           />
         </Form.Item>
+
 
         <Form.Item label="Body">
           <RichTextV2 value={formData.body} onChange={handleRichTextValues} />
