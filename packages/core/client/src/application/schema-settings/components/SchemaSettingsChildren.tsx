@@ -3,7 +3,7 @@ import { upperFirst } from 'lodash';
 
 import { useFindComponent } from '../../../schema-component';
 import { SchemaSettingItemType } from '../types';
-import { SchemaSettings } from '../../../schema-settings';
+import { SchemaSettings, useSchemaSettings } from '../../../schema-settings';
 import { SchemaSettingItemContext } from '../context';
 
 export interface SchemaSettingChildrenProps {
@@ -12,6 +12,8 @@ export interface SchemaSettingChildrenProps {
 
 export const SchemaSettingChildren: FC<SchemaSettingChildrenProps> = (props) => {
   const { children } = props;
+  const { visible } = useSchemaSettings();
+  if (!visible) return null;
   if (!children || children.length === 0) return null;
   return (
     <>
