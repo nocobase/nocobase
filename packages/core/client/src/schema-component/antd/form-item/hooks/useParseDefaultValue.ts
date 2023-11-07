@@ -16,8 +16,6 @@ import { transformVariableValue } from '../../../../variables/utils/transformVar
 import { isSubMode } from '../../association-field/util';
 import { isFromDatabase, useSpecialCase } from './useSpecialCase';
 
-const formilyVariable = ['record'];
-
 /**
  * 用于解析并设置 FormItem 的默认值
  */
@@ -49,7 +47,6 @@ const useParseDefaultValue = () => {
 
   useEffect(() => {
     if (
-      (isVariable(fieldSchema.default) && formilyVariable.includes(getVariableName(fieldSchema.default))) ||
       fieldSchema.default == null ||
       isInSetDefaultValueDialog ||
       isInFormDataTemplate ||
