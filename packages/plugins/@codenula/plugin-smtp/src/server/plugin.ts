@@ -121,7 +121,7 @@ export class PluginSmtpServer extends Plugin {
           }
 
           const port = process.env.APP_PORT_1;
-          const linkOrigin = origin.replace(/:\d+$/, `:${port}`);
+          const linkOrigin = origin.replace(/:\d+$/, `:13000`);
 
           const link = `${linkOrigin}/resetPassword/${email}/${resetToken}`;
           const custom_variable_object = Object.assign(
@@ -140,8 +140,7 @@ export class PluginSmtpServer extends Plugin {
           delete custom_variable_object.createdById;
 
           const mappedStringWithValue = format(data[emailBody], custom_variable_object);
-          const domParser = new DOMParser();
-          const document = domParser.parseFromString(mappedStringWithValue, 'text/html');
+         
           const emailOption = {
             to: email,
             from: `no reply <${emailData.from}>`,
