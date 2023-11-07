@@ -491,17 +491,14 @@ export const Gantt: any = (props: any) => {
 
   return (
     <div
-      className={cx(
-        styles.nbGantt,
-        css`
-          .ant-table-container::after {
-            box-shadow: none !important;
-          }
-          .ant-table-row {
-            height: ${tableRowHeight}px;
-          }
-        `,
-      )}
+      className={cx(css`
+        .ant-table-container::after {
+          box-shadow: none !important;
+        }
+        .ant-table-row {
+          height: ${tableRowHeight}px;
+        }
+      `)}
     >
       <GanttRecordViewer visible={visible} setVisible={setVisible} record={record} />
       <RecursionField name={'anctionBar'} schema={fieldSchema.properties.toolBar} />
