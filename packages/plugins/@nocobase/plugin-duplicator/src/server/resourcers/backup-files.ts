@@ -7,6 +7,7 @@ import path from 'path';
 import fsPromises from 'fs/promises';
 import { Restorer } from '../restorer';
 import _ from 'lodash';
+import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '@nocobase/actions';
 
 export default {
   name: 'backupFiles',
@@ -27,7 +28,31 @@ export default {
     return upload(ctx, next);
   },
   actions: {
-    async list(ctx, next) {},
+    async list(ctx, next) {
+      const { page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE } = ctx.action.params;
+
+      const dumper = new Dumper(ctx.app);
+      const backupFiles = await dumper.allBackUpFilePaths();
+      // handle pagination
+
+      const count = backupFiles.length;
+
+      const rows = await Promise.all(
+        backupFiles.slice((page - 1) * pageSize, page * pageSize).map(async (file) => {
+          return await Dumper.getFileStatus(file);
+        }),
+      );
+
+      ctx.body = {
+        count,
+        rows,
+        page: Number(page),
+        pageSize: Number(pageSize),
+        totalPage: Math.ceil(count / pageSize),
+      };
+
+      await next();
+    },
     async get(ctx, next) {
       const { filterByTk } = ctx.action.params;
       const dumper = new Dumper(ctx.app);

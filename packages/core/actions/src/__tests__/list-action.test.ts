@@ -3,6 +3,7 @@ import { mockServer as actionMockServer } from './index';
 
 describe('list action', () => {
   let app;
+
   beforeEach(async () => {
     app = actionMockServer();
     registerActions(app);

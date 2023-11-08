@@ -32,7 +32,7 @@ describe('backup files', () => {
     await promise;
   });
 
-  describe('single resource action', () => {
+  describe('resource action', () => {
     let dumpKey: string;
 
     let dumper: Dumper;
@@ -47,6 +47,17 @@ describe('backup files', () => {
       const promise = Dumper.getTaskPromise(dumpKey);
 
       await promise;
+    });
+
+    it('should list backup file', async () => {
+      const listResponse = await app.agent().resource('backupFiles').list();
+
+      expect(listResponse.status).toBe(200);
+
+      const body = listResponse.body;
+
+      expect(body.meta.count).toBeDefined();
+      expect(body.meta.totalPage).toBeDefined();
     });
 
     it('should get backup file', async () => {

@@ -144,6 +144,33 @@ export class Dumper extends AppMigrator {
     return path.resolve(process.cwd(), 'storage', 'duplicator');
   }
 
+  async allBackUpFilePaths() {
+    const dirname = this.backUpStorageDir();
+
+    try {
+      const files = await fsPromises.readdir(dirname);
+
+      const filesData = await Promise.all(
+        files
+          .filter((file) => file.endsWith(DUMPED_EXTENSION))
+          .map(async (file) => {
+            const filePath = path.resolve(dirname, file);
+            const stats = await fsPromises.stat(filePath);
+            return { filePath, birthtime: stats.birthtime.getTime() };
+          }),
+      );
+
+      // 按创建时间逆序排序
+      filesData.sort((a, b) => b.birthtime - a.birthtime);
+
+      // 返回排序后的文件路径数组
+      return filesData.map((fileData) => fileData.filePath);
+    } catch (error) {
+      console.error('Error reading directory:', error);
+      return [];
+    }
+  }
+
   backUpFilePath(fileName: string) {
     const dirname = this.backUpStorageDir();
     return path.resolve(dirname, fileName);
