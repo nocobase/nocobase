@@ -11,13 +11,14 @@ import { CollectionOptions, useCollection, useCollectionManager } from '../../..
 import { FlagProvider } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
 import { OpenModeSchemaItems } from '../../../schema-items';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettings, useSchemaSettings } from '../../../schema-settings';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
 import { usePlugin } from '../../../application/hooks';
+import { SchemaSetting } from '../../../application';
 
 const Tree = connect(
   AntdTree,
@@ -894,42 +895,177 @@ function WorkflowConfig() {
   );
 }
 
+export const actionSettings = new SchemaSetting({
+  name: 'ActionSettings',
+  items: [
+    {
+      name: 'Customize',
+      Component: MenuGroup,
+      children: [
+        {
+          name: 'editButton',
+          Component: ButtonEditor,
+          useComponentProps() {
+            const { designer } = useSchemaSettings();
+            return designer.buttonEditorProps;
+          },
+        },
+        {
+          name: 'saveMode',
+          Component: SaveMode,
+          useVisible() {
+            const fieldSchema = useFieldSchema();
+            return (
+              fieldSchema['x-action'] === 'submit' &&
+              fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers'
+            );
+          },
+        },
+        {
+          name: 'linkageRules',
+          Component: SchemaSettings.LinkageRules,
+          useVisible() {
+            const isAction = useLinkageAction();
+            const { designer } = useSchemaSettings();
+            return designer.linkageAction || isAction;
+          },
+          useComponentProps() {
+            const { name } = useCollection();
+            const { designer } = useSchemaSettings();
+            return {
+              ...designer.linkageRulesProps,
+              collectionName: name,
+            };
+          },
+        },
+        {
+          name: 'duplicationMode',
+          Component: DuplicationMode,
+          useComponentProps() {
+            const fieldSchema = useFieldSchema();
+            const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
+            return isDuplicateAction;
+          },
+        },
+        {
+          name: 'openMode',
+          Component: OpenModeSchemaItems,
+          useComponentProps() {
+            const fieldSchema = useFieldSchema();
+            const isPopupAction = [
+              'create',
+              'update',
+              'view',
+              'customize:popup',
+              'duplicate',
+              'customize:create',
+            ].includes(fieldSchema['x-action'] || '');
+
+            return {
+              openMode: isPopupAction,
+              openSize: isPopupAction,
+            };
+          },
+        },
+        {
+          name: 'updateMode',
+          Component: UpdateMode,
+          useVisible() {
+            const fieldSchema = useFieldSchema();
+            const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(
+              fieldSchema['x-action'],
+            );
+            return isUpdateModePopupAction;
+          },
+        },
+        {
+          name: 'assignFieldValues',
+          Component: AssignedFieldValues,
+          useVisible() {
+            const fieldSchema = useFieldSchema();
+            return isValid(fieldSchema?.['x-action-settings']?.assignedValues);
+          },
+        },
+        {
+          name: 'requestSettings',
+          Component: RequestSettings,
+          useVisible() {
+            const fieldSchema = useFieldSchema();
+            return isValid(fieldSchema?.['x-action-settings']?.requestSettings);
+          },
+        },
+        {
+          name: 'skipValidator',
+          Component: SkipValidation,
+          useVisible() {
+            const fieldSchema = useFieldSchema();
+            return isValid(fieldSchema?.['x-action-settings']?.skipValidator);
+          },
+        },
+        {
+          name: 'afterSuccess',
+          Component: AfterSuccess,
+          useVisible() {
+            const fieldSchema = useFieldSchema();
+            return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
+          },
+        },
+        {
+          name: 'workflowConfig',
+          Component: WorkflowConfig,
+          useVisible() {
+            const fieldSchema = useFieldSchema();
+            return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
+          },
+        },
+        {
+          name: 'enableChildCollections',
+          Component: SchemaSettings.LinkageRules,
+          useVisible() {
+            const fieldSchema = useFieldSchema();
+            const { name } = useCollection();
+            const { getChildrenCollections } = useCollectionManager();
+            const isChildCollectionAction =
+              getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
+            return isChildCollectionAction;
+          },
+          useComponentProps() {
+            const { name } = useCollection();
+            return {
+              collectionName: name,
+            };
+          },
+        },
+        {
+          name: 'remove',
+          Component: RemoveButton,
+          useComponentProps() {
+            const { designer } = useSchemaSettings();
+            return designer.removeButtonProps;
+          },
+          useVisible() {
+            const fieldSchema = useFieldSchema();
+            return fieldSchema?.['x-action-settings']?.removable !== false;
+          },
+        },
+      ],
+    },
+  ],
+});
+
 export const ActionDesigner = (props) => {
   const { modalTip, linkageAction, removeButtonProps, buttonEditorProps, linkageRulesProps, ...restProps } = props;
   const fieldSchema = useFieldSchema();
-  const { name } = useCollection();
-  const { getChildrenCollections } = useCollectionManager();
-  const isAction = useLinkageAction();
-  const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate', 'customize:create'].includes(
-    fieldSchema['x-action'] || '',
-  );
-  const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
-  const isLinkageAction = linkageAction || isAction;
-  const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
   const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
-  const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
 
   return (
-    <GeneralSchemaDesigner {...restProps} disableInitializer draggable={isDraggable}>
-      <MenuGroup>
-        <ButtonEditor {...buttonEditorProps} />
-        {fieldSchema['x-action'] === 'submit' &&
-          fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers' && <SaveMode />}
-        {isLinkageAction && <SchemaSettings.LinkageRules {...linkageRulesProps} collectionName={name} />}
-        {isDuplicateAction && <DuplicationMode />}
-        <OpenModeSchemaItems openMode={isPopupAction} openSize={isPopupAction} />
-        {isUpdateModePopupAction && <UpdateMode />}
-        {isValid(fieldSchema?.['x-action-settings']?.assignedValues) && <AssignedFieldValues />}
-        {isValid(fieldSchema?.['x-action-settings']?.requestSettings) && <RequestSettings />}
-        {isValid(fieldSchema?.['x-action-settings']?.skipValidator) && <SkipValidation />}
-        {isValid(fieldSchema?.['x-action-settings']?.['onSuccess']) && <AfterSuccess />}
-        {isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows) && <WorkflowConfig />}
-        {restProps.children}
-        {isChildCollectionAction && <SchemaSettings.EnableChildCollections collectionName={name} />}
-
-        {fieldSchema?.['x-action-settings']?.removable !== false && <RemoveButton {...removeButtonProps} />}
-      </MenuGroup>
-    </GeneralSchemaDesigner>
+    <GeneralSchemaDesigner
+      schemaSettings="ActionSettings"
+      schemaSettingsDesigner={{ modalTip, linkageAction, removeButtonProps, buttonEditorProps, linkageRulesProps }}
+      {...restProps}
+      disableInitializer
+      draggable={isDraggable}
+    ></GeneralSchemaDesigner>
   );
 };
 

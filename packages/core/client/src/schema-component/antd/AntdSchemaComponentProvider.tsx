@@ -10,6 +10,7 @@ import { pageTabSettings, pageSettings } from './page';
 import { formSettings, readPrettyFormSettings, formDetailsSettings, formFilterSettings } from './form-v2';
 import { formV1Settings } from './form';
 import { formItemSettings, filterFormItemSettings } from './form-item';
+import { actionSettings } from './action';
 
 // TODO: delete this, replaced by `AntdSchemaComponentPlugin`
 export const AntdSchemaComponentProvider = (props) => {
@@ -62,5 +63,8 @@ export class AntdSchemaComponentPlugin extends Plugin {
     this.app.schemaSettingsManager.add(formFilterSettings);
     this.app.schemaSettingsManager.add(readPrettyFormSettings);
     this.app.schemaSettingsManager.add(formDetailsSettings);
+
+    // action
+    this.app.schemaSettingsManager.add(actionSettings);
   }
 }
