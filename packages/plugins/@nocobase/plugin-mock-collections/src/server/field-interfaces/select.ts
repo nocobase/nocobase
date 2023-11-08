@@ -1,5 +1,4 @@
-export default (options) => ({
-  interface: 'select',
+export const select = (options) => ({
   type: 'string',
   // name,
   uiSchema: {

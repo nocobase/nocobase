@@ -4,7 +4,7 @@ export const checkboxGroup = (options) => ({
   defaultValue: [],
   // name,
   uiSchema: {
-    type: 'string',
+    type: 'array',
     'x-component': 'Checkbox.Group',
     enum: options?.uiSchema?.enum || [
       { value: 'option1', label: 'Option1' },

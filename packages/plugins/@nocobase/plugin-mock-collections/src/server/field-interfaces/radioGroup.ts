@@ -1,7 +1,5 @@
 export const radioGroup = (options) => ({
-  interface: 'radioGroup',
   type: 'string',
-  defaultValue: [],
   // name,
   uiSchema: {
     type: 'string',

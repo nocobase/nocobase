@@ -4,5 +4,8 @@ export const time = () => ({
   uiSchema: {
     type: 'string',
     'x-component': 'TimePicker',
+    'x-component-props': {
+      format: 'HH:mm:ss',
+    },
   },
 });

@@ -6,6 +6,7 @@ export const datetime = () => ({
     // title,
     'x-component': 'DatePicker',
     'x-component-props': {
+      dateFormat: 'YYYY-MM-DD',
       showTime: false,
     },
   },

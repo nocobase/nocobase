@@ -1,4 +1,4 @@
-export default () => ({
+export const updatedBy = () => ({
   type: 'belongsTo',
   target: 'users',
   foreignKey: 'updatedById',

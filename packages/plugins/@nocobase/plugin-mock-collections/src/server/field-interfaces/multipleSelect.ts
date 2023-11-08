@@ -4,7 +4,7 @@ export const multipleSelect = (options) => ({
   defaultValue: [],
   // name,
   uiSchema: {
-    type: 'string',
+    type: 'array',
     'x-component': 'Select',
     'x-component-props': {
       mode: 'multiple',
