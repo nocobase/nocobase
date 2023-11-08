@@ -36,13 +36,163 @@ export default {
         },
       },
     },
+    '/backupFiles:list': {
+      get: {
+        summary: 'Get backup file list',
+        parameters: [
+          {
+            name: 'page',
+            in: 'query',
+            description: 'Page number of item to retrieve',
+            required: false,
+            schema: {
+              type: 'integer',
+              format: 'int32',
+              default: 1,
+            },
+          },
+          {
+            name: 'pageSize',
+            in: 'query',
+            description: 'Number of item to retrieve per page',
+            required: false,
+            schema: {
+              type: 'integer',
+              format: 'int32',
+              default: 10,
+            },
+          },
+        ],
+
+        responses: {
+          '200': {
+            description: 'A paged array of backup statuses',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    data: {
+                      type: 'array',
+                      items: {
+                        oneOf: [
+                          {
+                            $ref: '#/components/schemas/BackUpStatusOk',
+                          },
+                          {
+                            $ref: '#/components/schemas/BackUpStatusDoing',
+                          },
+                        ],
+                      },
+                    },
+                    meta: {
+                      type: 'object',
+                      properties: {
+                        page: {
+                          type: 'integer',
+                          format: 'int32',
+                        },
+                        pageSize: {
+                          type: 'integer',
+                          format: 'int32',
+                        },
+                        count: {
+                          type: 'integer',
+                          format: 'int64',
+                        },
+                        totalPage: {
+                          type: 'integer',
+                          format: 'int32',
+                        },
+                      },
+                    },
+                  },
+                  required: ['data', 'meta'],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     '/backupFiles:get': {
-      get: {},
+      get: {
+        summary: 'Get backup file info',
+        parameters: [
+          {
+            name: 'filterByTk',
+            in: 'query',
+            required: true,
+            schema: {
+              type: 'string',
+            },
+          },
+        ],
+
+        responses: {
+          '200': {
+            description: 'Status of the backup operation',
+            content: {
+              'application/json': {
+                schema: {
+                  oneOf: [
+                    {
+                      $ref: '#/components/schemas/BackUpStatusOk',
+                    },
+                    {
+                      $ref: '#/components/schemas/BackUpStatusDoing',
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
     },
   },
 
   components: {
     schemas: {
+      BackUpStatusOk: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'date-time',
+          },
+          fileSize: {
+            type: 'string',
+          },
+          status: {
+            type: 'string',
+            enum: ['ok'],
+          },
+        },
+        required: ['name', 'createdAt', 'fileSize', 'status'],
+      },
+
+      BackUpStatusDoing: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+          },
+          inProgress: {
+            type: 'boolean',
+            enum: [true],
+          },
+          status: {
+            type: 'string',
+            enum: ['in_progress'],
+          },
+        },
+        required: ['name', 'inProgress', 'status'],
+      },
+
       DumpDataType: {
         type: 'string',
         enum: ['meta', 'config', 'business'],

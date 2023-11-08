@@ -65,10 +65,11 @@ describe('backup files', () => {
         filterByTk: dumpKey,
       });
 
-      console.log({ dumpKey });
       expect(getResponse.status).toBe(200);
 
       expect(getResponse.body.data.name).toEqual(dumpKey);
+
+      console.log({ getResponse: getResponse.body.data });
     });
 
     it('should restore from file name', async () => {
