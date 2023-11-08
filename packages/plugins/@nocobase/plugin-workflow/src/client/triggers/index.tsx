@@ -3,6 +3,7 @@ import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
 import {
   ActionContextProvider,
+  FormProvider,
   SchemaComponent,
   SchemaInitializerItemOptions,
   css,
@@ -143,6 +144,10 @@ function TriggerExecution() {
   );
 }
 
+function useFormProviderProps() {
+  return { form: useForm() };
+}
+
 export const TriggerConfig = () => {
   const api = useAPIClient();
   const { workflow, refresh } = useFlowContext();
@@ -169,15 +174,14 @@ export const TriggerConfig = () => {
     const values = cloneDeep(workflow?.config);
     return createForm({
       initialValues: values,
-      values,
       disabled: workflow?.executed,
     });
   }, [workflow]);
 
   const resetForm = useCallback(
-    (changed) => {
-      setFormValueChanged(changed);
-      if (!changed) {
+    (editing) => {
+      setEditingConfig(editing);
+      if (!editing) {
         form.reset();
       }
     },
@@ -241,92 +245,98 @@ export const TriggerConfig = () => {
       <ActionContextProvider
         value={{
           visible: editingConfig,
-          setVisible: setEditingConfig,
+          setVisible: resetForm,
           formValueChanged,
-          setFormValueChanged: resetForm,
+          setFormValueChanged,
         }}
       >
-        <SchemaComponent
-          schema={{
-            name: `workflow-trigger-${workflow.id}`,
-            type: 'void',
-            properties: {
-              config: {
-                type: 'void',
-                'x-content': detailText,
-                'x-component': Button,
-                'x-component-props': {
-                  type: 'link',
-                  className: 'workflow-node-config-button',
+        <FormProvider form={form}>
+          <SchemaComponent
+            scope={{
+              ...scope,
+              useFormProviderProps,
+            }}
+            components={components}
+            schema={{
+              name: `workflow-trigger-${workflow.id}`,
+              type: 'void',
+              properties: {
+                config: {
+                  type: 'void',
+                  'x-content': detailText,
+                  'x-component': Button,
+                  'x-component-props': {
+                    type: 'link',
+                    className: 'workflow-node-config-button',
+                  },
                 },
-              },
-              drawer: {
-                type: 'void',
-                title: titleText,
-                'x-component': 'Action.Drawer',
-                'x-decorator': 'FormV2',
-                'x-decorator-props': {
-                  form,
-                },
-                properties: {
-                  ...(trigger.description
-                    ? {
-                        description: {
-                          type: 'void',
-                          'x-component': DrawerDescription,
-                          'x-component-props': {
-                            label: lang('Trigger type'),
-                            title: trigger.title,
-                            description: trigger.description,
+                drawer: {
+                  type: 'void',
+                  title: titleText,
+                  'x-component': 'Action.Drawer',
+                  'x-decorator': 'FormV2',
+                  'x-decorator-props': {
+                    // form,
+                    useProps: '{{ useFormProviderProps }}',
+                  },
+                  properties: {
+                    ...(trigger.description
+                      ? {
+                          description: {
+                            type: 'void',
+                            'x-component': DrawerDescription,
+                            'x-component-props': {
+                              label: lang('Trigger type'),
+                              title: trigger.title,
+                              description: trigger.description,
+                            },
                           },
-                        },
-                      }
-                    : {}),
-                  fieldset: {
-                    type: 'void',
-                    'x-component': 'fieldset',
-                    'x-component-props': {
-                      className: css`
-                        .ant-select.auto-width {
-                          width: auto;
-                          min-width: 6em;
                         }
-                      `,
+                      : {}),
+                    fieldset: {
+                      type: 'void',
+                      'x-component': 'fieldset',
+                      'x-component-props': {
+                        className: css`
+                          .ant-select.auto-width {
+                            width: auto;
+                            min-width: 6em;
+                          }
+                        `,
+                      },
+                      properties: fieldset,
                     },
-                    properties: fieldset,
-                  },
-                  actions: {
-                    ...(executed
-                      ? {}
-                      : {
-                          type: 'void',
-                          'x-component': 'Action.Drawer.Footer',
-                          properties: {
-                            cancel: {
-                              title: '{{t("Cancel")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                useAction: '{{ cm.useCancelAction }}',
+                    actions: {
+                      ...(executed
+                        ? {}
+                        : {
+                            type: 'void',
+                            'x-component': 'Action.Drawer.Footer',
+                            properties: {
+                              cancel: {
+                                title: '{{t("Cancel")}}',
+                                'x-component': 'Action',
+                                'x-component-props': {
+                                  useAction: '{{ cm.useCancelAction }}',
+                                },
+                              },
+                              submit: {
+                                title: '{{t("Submit")}}',
+                                'x-component': 'Action',
+                                'x-component-props': {
+                                  type: 'primary',
+                                  useAction: useUpdateConfigAction,
+                                },
                               },
                             },
-                            submit: {
-                              title: '{{t("Submit")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                type: 'primary',
-                                useAction: useUpdateConfigAction,
-                              },
-                            },
-                          },
-                        }),
+                          }),
+                    },
                   },
                 },
               },
-            },
-          }}
-          scope={scope}
-          components={components}
-        />
+            }}
+          />
+        </FormProvider>
       </ActionContextProvider>
     </div>
   );
