@@ -250,8 +250,8 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
         dataTypes,
       },
     });
-    setIsModalOpen(false);
     refresh?.();
+    setIsModalOpen(false);
   };
 
   const handleCancel = () => {
