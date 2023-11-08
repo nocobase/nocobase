@@ -55,55 +55,6 @@ export class Restorer extends AppMigrator {
     await this.clearWorkDir();
   }
 
-  async getImportPlugins() {
-    const meta = await this.getImportCollectionMeta('applicationPlugins');
-    const nameIndex = meta.columns.indexOf('name');
-
-    const plugins = await this.getImportCollectionData('applicationPlugins');
-    return ['core', ...plugins.map((plugin) => JSON.parse(plugin)[nameIndex])];
-  }
-
-  async getImportCustomCollections() {
-    const collections = await this.getImportCollections();
-    const meta = await this.getImportCollectionMeta('collections');
-    const data = await this.getImportCollectionData('collections');
-
-    return data
-      .map((row) => JSON.parse(row)[meta.columns.indexOf('name')])
-      .filter((name) => collections.includes(name));
-  }
-
-  async getImportCollectionTitle(collectionName) {
-    const meta = await this.getImportCollectionMeta('collections');
-    const data = await this.getImportCollectionData('collections');
-
-    const index = meta.columns.indexOf('name');
-    const row = data.find((row) => JSON.parse(row)[index] === collectionName);
-
-    if (!row) {
-      throw new Error(`Collection ${collectionName} not found`);
-    }
-
-    const titleIndex = meta.columns.indexOf('title');
-
-    return JSON.parse(row)[titleIndex];
-  }
-
-  async getImportCollections() {
-    const collectionsDir = path.resolve(this.workDir, 'collections');
-    return await fsPromises.readdir(collectionsDir);
-  }
-
-  async getImportCollectionData(collectionName) {
-    const dataFile = path.resolve(this.workDir, 'collections', collectionName, 'data');
-    return await readLines(dataFile);
-  }
-
-  async getImportCollectionMeta(collectionName) {
-    const metaData = path.resolve(this.workDir, 'collections', collectionName, 'meta');
-    return JSON.parse(await fsPromises.readFile(metaData, 'utf8'));
-  }
-
   async getImportMeta() {
     const metaFile = path.resolve(this.workDir, 'meta');
     return JSON.parse(await fsPromises.readFile(metaFile, 'utf8')) as any;
@@ -139,6 +90,7 @@ export class Restorer extends AppMigrator {
 
     // import applicationPlugins first
     await importCollection('applicationPlugins');
+
     // reload app
     await this.app.reload();
 

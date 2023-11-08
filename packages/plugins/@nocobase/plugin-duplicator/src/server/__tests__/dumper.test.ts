@@ -68,7 +68,7 @@ describe('dumper', () => {
   });
 
   it('should create dump file name', async () => {
-    expect(Dumper.generateFileName()).toMatch(/^backup_\d{8}_\d{6}\.nbdump$/);
+    expect(Dumper.generateFileName()).toMatch(/^backup_\d{8}_\d{6}_\d{4}\.nbdump$/);
   });
 
   it('should get dumped collections by data types', async () => {
