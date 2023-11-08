@@ -35,8 +35,11 @@ describe('backup files', () => {
   describe('single resource action', () => {
     let dumpKey: string;
 
+    let dumper: Dumper;
+
     beforeEach(async () => {
-      const dumper = new Dumper(app);
+      dumper = new Dumper(app);
+
       dumpKey = await dumper.runDumpTask({
         dataTypes: new Set(['meta', 'config', 'business']) as Set<DumpDataType>,
       });
@@ -82,52 +85,28 @@ describe('backup files', () => {
       expect(getResponse.status).toBe(404);
     });
 
-    it('should restore from upload file', async () => {});
+    it('should restore from upload file', async () => {
+      const filePath = dumper.backUpFilePath(dumpKey);
+      const packageInfoResponse = await app.agent().post('/backupFiles:upload').attach('file', filePath);
+
+      expect(packageInfoResponse.status).toBe(200);
+      const data = packageInfoResponse.body.data;
+
+      expect(data['key']).toBeTruthy();
+      expect(data['meta']).toBeTruthy();
+
+      const restoreResponse = await app
+        .agent()
+        .resource('backupFiles')
+        .restore({
+          key: data['key'],
+          dataTypes: ['meta', 'config', 'business'],
+        });
+
+      expect(restoreResponse.status).toBe(200);
+    });
   });
 
-  // it('should request dump and restore api', async () => {
-  //   await app.db.getCollection('collections').repository.create({
-  //     values: {
-  //       name: 'test',
-  //       title: '测试',
-  //       autoGenId: false,
-  //       timestamps: false,
-  //       fields: [],
-  //     },
-  //     context: {},
-  //   });
-  //
-  //   // download dump file
-  //   const downloadResponse = await app.agent().resource('backupFiles').download({
-  //     filterByTk: dumpKey,
-  //   });
-  //
-  //   expect(downloadResponse.status).toBe(200);
-  //
-  //   // should response file name
-  //   const headers = downloadResponse.headers;
-  //   expect(headers['content-disposition']).toBeTruthy();
-  //
-  //   const filePath = path.resolve(os.tmpdir(), 'dump.nbdump');
-  //
-  //   fs.writeFileSync(filePath, downloadResponse.body);
-  //
-  //   const packageInfoResponse = await app.agent().post('/duplicator:upload').attach('file', filePath);
-  //
-  //   expect(packageInfoResponse.status).toBe(200);
-  //   const data = packageInfoResponse.body.data;
-  //
-  //   expect(data['key']).toBeTruthy();
-  //   expect(data['meta']).toBeTruthy();
-  //
-  //   const restoreResponse = await app.agent().post('/duplicator:restore').send({
-  //     key: data['key'],
-  //     dataTypes: data['meta']['dataTypes'],
-  //   });
-  //
-  //   expect(restoreResponse.status).toBe(200);
-  // });
-  //
   it('should get dumpable collections', async () => {
     await app.db.getCollection('collections').repository.create({
       values: {
@@ -143,7 +122,7 @@ describe('backup files', () => {
       },
       context: {},
     });
-    const response = await app.agent().get('/duplicator:dumpableCollections');
+    const response = await app.agent().get('/backupFiles:dumpableCollections');
 
     expect(response.status).toBe(200);
 

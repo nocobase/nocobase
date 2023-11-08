@@ -1,4 +1,3 @@
-import { getApp } from '../actions/get-app';
 import { Dumper } from '../dumper';
 import { DumpDataType } from '@nocobase/database';
 import fs from 'fs';
@@ -6,6 +5,8 @@ import { koaMulter as multer } from '@nocobase/utils';
 import os from 'os';
 import path from 'path';
 import fsPromises from 'fs/promises';
+import { Restorer } from '../restorer';
+import _ from 'lodash';
 
 export default {
   name: 'backupFiles',
@@ -29,32 +30,24 @@ export default {
     async list(ctx, next) {},
     async get(ctx, next) {
       const { filterByTk } = ctx.action.params;
-      const { app: appName } = ctx.request.query;
-
-      const app = await getApp(ctx, appName);
-      const dumper = new Dumper(app);
-
+      const dumper = new Dumper(ctx.app);
       const filePath = dumper.backUpFilePath(filterByTk);
+
+      async function sendError(message, status = 404) {
+        ctx.body = { status: 'error', message };
+        ctx.status = status;
+      }
 
       try {
         const fileState = await Dumper.getFileStatus(filePath);
-
         if (fileState.status !== 'ok') {
-          ctx.body = {
-            status: 'error',
-            message: `Backup file ${filterByTk} not found`,
-          };
-          ctx.status = 404;
+          await sendError(`Backup file ${filterByTk} not found`);
         } else {
           ctx.body = fileState;
         }
       } catch (e) {
         if (e.code === 'ENOENT') {
-          ctx.body = {
-            status: 'error',
-            message: `Backup file ${filterByTk} not found`,
-          };
-          ctx.status = 404;
+          await sendError(`Backup file ${filterByTk} not found`);
         }
       }
 
@@ -107,6 +100,7 @@ export default {
       ctx.body = fs.createReadStream(filePath);
       await next();
     },
+
     async restore(ctx, next) {
       const { filterByTk, dataTypes, key } = ctx.action.params;
 
@@ -136,6 +130,7 @@ export default {
 
       await next();
     },
+
     async destroy(ctx, next) {
       const { filterByTk } = ctx.action.params;
       const dumper = new Dumper(ctx.app);
@@ -150,6 +145,44 @@ export default {
       await next();
     },
 
-    async upload(ctx, next) {},
+    async upload(ctx, next) {
+      const file = ctx.file;
+      const fileName = file.filename;
+
+      const restorer = new Restorer(ctx.app, {
+        backUpFilePath: file.path,
+      });
+
+      const restoreMeta = await restorer.parseBackupFile();
+
+      ctx.body = {
+        key: fileName,
+        meta: restoreMeta,
+      };
+
+      await next();
+    },
+
+    async dumpableCollections(ctx, next) {
+      ctx.withoutDataWrapping = true;
+
+      const dumper = new Dumper(ctx.app);
+
+      const dumpableCollections = (await dumper.dumpableCollections()).map((c) => {
+        return {
+          name: c.name,
+          dataType: c.dataType,
+          origin: c.origin,
+          title: c.title,
+        };
+      });
+
+      ctx.body = _(dumpableCollections)
+        .groupBy('dataType')
+        .mapValues((items) => _.sortBy(items, (item) => item.origin.name))
+        .value();
+
+      await next();
+    },
   },
 };
