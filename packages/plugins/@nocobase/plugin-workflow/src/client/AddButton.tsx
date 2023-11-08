@@ -71,7 +71,7 @@ export function AddButton(props: AddButtonProps) {
       const instruction = instructions.get(type);
       if (optionKey) {
         const { value } = instruction.options?.find((item) => item.key === optionKey) ?? {};
-        Object.assign(config, value);
+        Object.assign(config, typeof value === 'function' ? value() : value);
       }
 
       if (resource) {
