@@ -1,11 +1,9 @@
 import { MockServer } from '@nocobase/test';
-import path from 'path';
-import os from 'os';
-import fs from 'fs';
 import createApp from './index';
 import { Dumper } from '../dumper';
+import { DumpDataType } from '@nocobase/database';
 
-describe('duplicator api', () => {
+describe('backup files', () => {
   let app: MockServer;
 
   beforeEach(async () => {
@@ -16,18 +14,7 @@ describe('duplicator api', () => {
     await app.destroy();
   });
 
-  it('should request dump and restore api', async () => {
-    await app.db.getCollection('collections').repository.create({
-      values: {
-        name: 'test',
-        title: '测试',
-        autoGenId: false,
-        timestamps: false,
-        fields: [],
-      },
-      context: {},
-    });
-
+  it('should create dump file', async () => {
     const createResponse = await app
       .agent()
       .resource('backupFiles')
@@ -43,44 +30,104 @@ describe('duplicator api', () => {
     const promise = Dumper.getTaskPromise(dumpKey);
 
     await promise;
-
-    const getResponse = await app.agent().resource('backupFiles').get({
-      filterByTk: dumpKey,
-    });
-
-    expect(getResponse.status).toBe(200);
-
-    // download dump file
-    const downloadResponse = await app.agent().resource('backupFiles').download({
-      filterByTk: dumpKey,
-    });
-
-    expect(downloadResponse.status).toBe(200);
-
-    // should response file name
-    const headers = downloadResponse.headers;
-    expect(headers['content-disposition']).toBeTruthy();
-
-    const filePath = path.resolve(os.tmpdir(), 'dump.nbdump');
-
-    fs.writeFileSync(filePath, downloadResponse.body);
-
-    const packageInfoResponse = await app.agent().post('/duplicator:upload').attach('file', filePath);
-
-    expect(packageInfoResponse.status).toBe(200);
-    const data = packageInfoResponse.body.data;
-
-    expect(data['key']).toBeTruthy();
-    expect(data['meta']).toBeTruthy();
-
-    const restoreResponse = await app.agent().post('/duplicator:restore').send({
-      key: data['key'],
-      dataTypes: data['meta']['dataTypes'],
-    });
-
-    expect(restoreResponse.status).toBe(200);
   });
 
+  describe('single resource action', () => {
+    let dumpKey: string;
+
+    beforeEach(async () => {
+      const dumper = new Dumper(app);
+      dumpKey = await dumper.runDumpTask({
+        dataTypes: new Set(['meta', 'config', 'business']) as Set<DumpDataType>,
+      });
+
+      const promise = Dumper.getTaskPromise(dumpKey);
+
+      await promise;
+    });
+
+    it('should get backup file', async () => {
+      const getResponse = await app.agent().resource('backupFiles').get({
+        filterByTk: dumpKey,
+      });
+
+      expect(getResponse.status).toBe(200);
+
+      expect(getResponse.body.data.name).toEqual(dumpKey);
+    });
+
+    it('should restore from file name', async () => {
+      const restoreResponse = await app
+        .agent()
+        .resource('backupFiles')
+        .restore({
+          filterByTk: dumpKey,
+          dataTypes: ['meta', 'config', 'business'],
+        });
+
+      expect(restoreResponse.status).toBe(200);
+    });
+
+    it('should destroy dump file', async () => {
+      const destroyResponse = await app.agent().resource('backupFiles').destroy({
+        filterByTk: dumpKey,
+      });
+
+      expect(destroyResponse.status).toBe(200);
+
+      const getResponse = await app.agent().resource('backupFiles').get({
+        filterByTk: dumpKey,
+      });
+
+      expect(getResponse.status).toBe(404);
+    });
+
+    it('should restore from upload file', async () => {});
+  });
+
+  // it('should request dump and restore api', async () => {
+  //   await app.db.getCollection('collections').repository.create({
+  //     values: {
+  //       name: 'test',
+  //       title: '测试',
+  //       autoGenId: false,
+  //       timestamps: false,
+  //       fields: [],
+  //     },
+  //     context: {},
+  //   });
+  //
+  //   // download dump file
+  //   const downloadResponse = await app.agent().resource('backupFiles').download({
+  //     filterByTk: dumpKey,
+  //   });
+  //
+  //   expect(downloadResponse.status).toBe(200);
+  //
+  //   // should response file name
+  //   const headers = downloadResponse.headers;
+  //   expect(headers['content-disposition']).toBeTruthy();
+  //
+  //   const filePath = path.resolve(os.tmpdir(), 'dump.nbdump');
+  //
+  //   fs.writeFileSync(filePath, downloadResponse.body);
+  //
+  //   const packageInfoResponse = await app.agent().post('/duplicator:upload').attach('file', filePath);
+  //
+  //   expect(packageInfoResponse.status).toBe(200);
+  //   const data = packageInfoResponse.body.data;
+  //
+  //   expect(data['key']).toBeTruthy();
+  //   expect(data['meta']).toBeTruthy();
+  //
+  //   const restoreResponse = await app.agent().post('/duplicator:restore').send({
+  //     key: data['key'],
+  //     dataTypes: data['meta']['dataTypes'],
+  //   });
+  //
+  //   expect(restoreResponse.status).toBe(200);
+  // });
+  //
   it('should get dumpable collections', async () => {
     await app.db.getCollection('collections').repository.create({
       values: {

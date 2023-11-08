@@ -155,6 +155,11 @@ export class Restorer extends AppMigrator {
       }
 
       const collection = this.app.db.getCollection(collectionName);
+
+      if (!collection) {
+        throw new Error(`Collection ${collectionName} not found`);
+      }
+
       if (collection.options.duplicator['delayRestore']) {
         delayCollections.push(collectionName);
         continue;
