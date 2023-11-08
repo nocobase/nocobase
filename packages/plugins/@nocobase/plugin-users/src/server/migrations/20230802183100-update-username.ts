@@ -9,14 +9,14 @@ export default class UpdateUserNameMigration extends Migration {
     const repo = this.context.db.getRepository('users');
     const user = await repo.findOne({
       filter: {
-        email: 'admin@nocobase.com',
+        email: 'admin@codenula.com',
         username: null,
       },
     });
     if (user) {
       await repo.update({
         values: {
-          username: process.env.INIT_ROOT_USERNAME || 'nocobase',
+          username: 'codenula',
         },
         filter: {
           id: user.id,
