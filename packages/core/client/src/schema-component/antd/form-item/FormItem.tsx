@@ -17,7 +17,6 @@ import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadAssociationFieldOfForm from './hooks/useLazyLoadAssociationFieldOfForm';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
-import { useSchemaSettingsRender } from '../../../application';
 
 export const FormItem: any = observer(
   (props: any) => {
@@ -82,12 +81,7 @@ export const FormItem: any = observer(
 );
 
 FormItem.Designer = function Designer() {
-  const filedSchema = useFieldSchema();
-  const { render } = useSchemaSettingsRender(
-    filedSchema['x-settings'] || 'FormItemSettings',
-    filedSchema['x-settings-props'],
-  );
-  return <GeneralSchemaDesigner>{render()}</GeneralSchemaDesigner>;
+  return <GeneralSchemaDesigner defaultSchemaSettings="FormItemSettings"></GeneralSchemaDesigner>;
 };
 
 export function isFileCollection(collection: Collection) {
