@@ -42,7 +42,7 @@ export const ChartRenderer: React.FC & {
       if (!props[name]) {
         const field = getField(fields, name.split('.'));
         const transformer = transformers[name];
-        props[name] = { label: field?.label || name, transformer };
+        props[name] = { label: field?.label || name, transformer, interface: field?.interface };
       }
       return props;
     }, {}),

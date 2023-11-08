@@ -1,6 +1,7 @@
 import { RenderProps } from '../chart';
 import { AntdChart } from './antd';
 import { Table as AntdTable } from 'antd';
+import * as math from 'mathjs';
 
 export class Table extends AntdChart {
   constructor() {
@@ -18,6 +19,13 @@ export class Table extends AntdChart {
     const dataSource = data.map((item: any) => {
       Object.keys(item).map((key: string) => {
         const props = fieldProps[key];
+        if (props?.interface === 'percent') {
+          const value = math.round(parseFloat(item[key]) * 100, 9).toFixed(2);
+          item[key] = `${value}%`;
+        }
+        if (typeof item[key] === 'boolean') {
+          item[key] = item[key].toString();
+        }
         if (props?.transformer) {
           item[key] = props.transformer(item[key]);
         }
@@ -28,14 +36,17 @@ export class Table extends AntdChart {
     return {
       bordered: true,
       size: 'middle',
-      pagination:
-        dataSource.length < pageSize
-          ? false
-          : {
-              pageSize,
-            },
+      // pagination:
+      //   dataSource.length < pageSize
+      //     ? false
+      //     : {
+      //         pageSize,
+      //       },
       dataSource,
       columns,
+      scroll: {
+        x: 'max-content',
+      },
       ...general,
       ...advanced,
     };

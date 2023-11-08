@@ -410,25 +410,19 @@ ChartConfigure.Data = function Data() {
   const data = useData(current?.data);
   const error = service?.error;
   return !error ? (
-    <div
-      style={{
-        overflowX: 'auto',
-        overflowY: 'hidden',
-      }}
-    >
-      <Table
-        dataSource={data}
-        columns={Object.keys(data[0] || {}).map((col) => {
-          const field = getField(fields, col.split('.'));
-          return {
-            title: field?.label || col,
-            dataIndex: col,
-            key: col,
-          };
-        })}
-        size="small"
-      />
-    </div>
+    <Table
+      dataSource={data}
+      scroll={{ x: 'max-content' }}
+      columns={Object.keys(data[0] || {}).map((col) => {
+        const field = getField(fields, col.split('.'));
+        return {
+          title: field?.label || col,
+          dataIndex: col,
+          key: col,
+        };
+      })}
+      size="small"
+    />
   ) : (
     <Alert
       message="Error"
