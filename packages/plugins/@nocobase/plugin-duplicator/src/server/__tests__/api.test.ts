@@ -28,24 +28,32 @@ describe('duplicator api', () => {
       context: {},
     });
 
-    const dumpResponse = await app
+    const createResponse = await app
       .agent()
-      .post('/duplicator:dump')
-      .send({
+      .resource('backupFiles')
+      .create({
         dataTypes: ['meta', 'config', 'business'],
       });
 
-    expect(dumpResponse.status).toBe(200);
+    expect(createResponse.status).toBe(200);
 
-    const dumpKey = dumpResponse.body.data.key;
+    const dumpKey = createResponse.body.data.key;
     expect(dumpKey).toBeDefined();
 
     const promise = Dumper.getTaskPromise(dumpKey);
 
     await promise;
 
+    const getResponse = await app.agent().resource('backupFiles').get({
+      filterByTk: dumpKey,
+    });
+
+    expect(getResponse.status).toBe(200);
+
     // download dump file
-    const downloadResponse = await app.agent().get(`/duplicator:download?key=${dumpKey}`);
+    const downloadResponse = await app.agent().resource('backupFiles').download({
+      filterByTk: dumpKey,
+    });
 
     expect(downloadResponse.status).toBe(200);
 

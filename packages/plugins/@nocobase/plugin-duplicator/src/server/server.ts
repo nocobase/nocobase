@@ -10,6 +10,7 @@ import getDictAction from './actions/get-dict-action';
 import { getPackageContent, restoreAction } from './actions/restore-action';
 import zhCN from './locale/zh-CN';
 import { downloadAction } from './actions/dump-file-actions';
+import backupFilesResourcer from './resourcers/backup-files';
 
 export default class Duplicator extends Plugin {
   beforeLoad() {
@@ -20,6 +21,8 @@ export default class Duplicator extends Plugin {
   }
 
   async load() {
+    this.app.resourcer.define(backupFilesResourcer);
+
     this.app.resourcer.define({
       name: 'duplicator',
       middleware: async (ctx, next) => {
