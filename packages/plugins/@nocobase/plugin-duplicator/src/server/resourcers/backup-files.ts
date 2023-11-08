@@ -6,7 +6,6 @@ import os from 'os';
 import path from 'path';
 import fsPromises from 'fs/promises';
 import { Restorer } from '../restorer';
-import _ from 'lodash';
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE } from '@nocobase/actions';
 
 export default {
@@ -68,7 +67,16 @@ export default {
         if (fileState.status !== 'ok') {
           await sendError(`Backup file ${filterByTk} not found`);
         } else {
-          ctx.body = fileState;
+          const restorer = new Restorer(ctx.app, {
+            backUpFilePath: filePath,
+          });
+
+          const restoreMeta = await restorer.parseBackupFile();
+
+          ctx.body = {
+            ...fileState,
+            meta: restoreMeta,
+          };
         }
       } catch (e) {
         if (e.code === 'ENOENT') {
@@ -193,19 +201,7 @@ export default {
 
       const dumper = new Dumper(ctx.app);
 
-      const dumpableCollections = (await dumper.dumpableCollections()).map((c) => {
-        return {
-          name: c.name,
-          dataType: c.dataType,
-          origin: c.origin,
-          title: c.title,
-        };
-      });
-
-      ctx.body = _(dumpableCollections)
-        .groupBy('dataType')
-        .mapValues((items) => _.sortBy(items, (item) => item.origin.name))
-        .value();
+      ctx.body = await dumper.dumpableCollectionsGroupByDataTypes();
 
       await next();
     },

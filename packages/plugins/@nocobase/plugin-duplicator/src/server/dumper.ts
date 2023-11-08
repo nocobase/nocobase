@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import lodash from 'lodash';
+import _ from 'lodash';
 import mkdirp from 'mkdirp';
 import path from 'path';
 import stream from 'stream';
@@ -211,11 +212,25 @@ export class Dumper extends AppMigrator {
     return backupFileName;
   }
 
+  async dumpableCollectionsGroupByDataTypes() {
+    const dumpableCollections = (await this.dumpableCollections()).map((c) => {
+      return {
+        name: c.name,
+        dataType: c.dataType,
+        origin: c.origin,
+        title: c.title,
+      };
+    });
+
+    return _(dumpableCollections)
+      .groupBy('dataType')
+      .mapValues((items) => _.sortBy(items, (item) => item.origin.name))
+      .value();
+  }
+
   async dump(options: DumpOptions) {
     const dumpDataTypes = options.dataTypes;
     dumpDataTypes.add('meta');
-
-    const dumpableCollectionsGroupByDataTypes = await this.collectionsGroupByDataTypes();
 
     const dumpedCollections = await this.getCollectionsByDataTypes(dumpDataTypes);
 
@@ -226,7 +241,9 @@ export class Dumper extends AppMigrator {
     }
 
     await this.dumpMeta({
-      dumpableCollectionsGroupByDataTypes,
+      dumpableCollectionsGroupByDataTypes: lodash.pick(await this.dumpableCollectionsGroupByDataTypes(), [
+        ...dumpDataTypes,
+      ]),
       dataTypes: [...dumpDataTypes],
     });
 

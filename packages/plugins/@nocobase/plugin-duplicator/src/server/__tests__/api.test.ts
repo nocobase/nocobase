@@ -145,7 +145,6 @@ describe('backup files', () => {
 
     const testCollectionInfo = body['business'].find((item: any) => item.name === 'test');
 
-    console.log(JSON.stringify(body, null, 2));
     expect(testCollectionInfo).toMatchObject({
       name: 'test',
       title: '测试',

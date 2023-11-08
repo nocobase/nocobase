@@ -2,6 +2,7 @@ import { MockServer } from '@nocobase/test';
 import createApp from './index';
 import { Dumper } from '../dumper';
 import path from 'path';
+import { Restorer } from '../restorer';
 
 describe('dumper', () => {
   let app: MockServer;
@@ -11,6 +12,20 @@ describe('dumper', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should save dump meta to dump file', async () => {
+    const dumper = new Dumper(app);
+    const result = await dumper.dump({
+      dataTypes: new Set(['meta']),
+    });
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: result.filePath,
+    });
+
+    const meta = await restorer.parseBackupFile();
+    expect(meta.dumpableCollectionsGroupByDataTypes.meta).toBeTruthy();
   });
 
   describe('get file status', function () {
