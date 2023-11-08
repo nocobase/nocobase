@@ -14,4 +14,6 @@ export default {
   'Backed up successfully': 'バックアップ成功',
   Plugin: 'プラグイン',
   'file uploaded successfully': 'ファイルのアップロードに成功しました',
+  Download: 'ダウンロード',
+  'Restore backup from local':'ローカルからバックアップに返信'
 };

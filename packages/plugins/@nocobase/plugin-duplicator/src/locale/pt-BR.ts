@@ -15,6 +15,8 @@ const locale = {
   'Plugin':'Plugins',
   'file uploaded successfully': 'O ficheiro foi enviado com sucesso',
   'file upload failed': 'O envio do ficheiro falhou',
+  'Download':'download',
+  'Restore backup from local':'Restaurar a cópia de segurança localmente'
 };
 
 export default locale;

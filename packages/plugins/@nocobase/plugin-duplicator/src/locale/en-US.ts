@@ -14,7 +14,9 @@ const locale = {
   'Backed up successfully': 'Backed up successfully',
   Plugin: 'Plugin',
   'file uploaded successfully': 'file uploaded successfully',
-  'file upload failed':'file upload failed'
+  'file upload failed':'file upload failed',
+  'Download':'Download',
+  'Restore backup from local':'Restore backup from local'
 };
 
 export default locale;

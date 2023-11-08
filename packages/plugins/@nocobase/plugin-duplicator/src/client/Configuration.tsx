@@ -1,7 +1,7 @@
 import { useAPIClient, useCompile, Checkbox } from '@nocobase/client';
 import { Button, Card, message, Modal, Table, Upload, Tabs, Alert, Divider, Space } from 'antd';
 import { FormItem } from '@formily/antd-v5';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { UploadProps, TabsProps } from 'antd';
 import { saveAs } from 'file-saver';
 import { InboxOutlined, PlusOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
@@ -62,11 +62,11 @@ const LearnMore: React.FC = () => {
   const apiClient = useAPIClient();
   const compile = useCompile();
   const showModal = async () => {
-    // const data = await apiClient.request({
-    //   url: 'duplicator:dumpableCollections',
-    //   method: 'get',
-    // });
-    // setDataSource(data?.data);
+    const data = await apiClient.request({
+      url: 'backupFiles:dumpableCollections',
+      method: 'get',
+    });
+    setDataSource(data?.data);
     setIsModalOpen(true);
   };
 
@@ -160,7 +160,7 @@ const LearnMore: React.FC = () => {
   );
 };
 
-const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = false }) => {
+const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = false, fileData }) => {
   const { t } = useDuplicatorTranslation();
   const [dataTypes, setDataTypes] = useState<any[]>(['meta']);
   const compile = useCompile();
@@ -168,15 +168,20 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
   const [restoreData, setRestoreData] = useState<any>({});
   const apiClient = useAPIClient();
   const resource = useMemo(() => {
-    return apiClient.resource('duplicator');
+    return apiClient.resource('backupFiles');
   }, [apiClient]);
+
   const showModal = () => {
     setIsModalOpen(true);
   };
 
   const handleOk = () => {
     resource.restore({
-      values: { dataTypes, key: restoreData.key },
+      values: {
+        dataTypes,
+        key: restoreData.key,
+        // filterByTk: 'string'
+      },
     });
     setIsModalOpen(false);
   };
@@ -226,7 +231,7 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
   );
 };
 
-const NewBackup: React.FC<any> = ({ ButtonComponent = Button }) => {
+const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
   const { t } = useDuplicatorTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const compile = useCompile();
@@ -239,14 +244,14 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button }) => {
 
   const handleOk = () => {
     apiClient.request({
-      url: 'duplicator:dump',
+      url: 'backupFiles:create',
       method: 'post',
       data: {
         dataTypes,
       },
-      responseType: 'blob',
     });
     setIsModalOpen(false);
+    refresh?.();
   };
 
   const handleCancel = () => {
@@ -278,11 +283,11 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button }) => {
 };
 
 const RestoreUpload = (props: any) => {
-  const { setRestoreData } = props;
+  const [restoreData, setRestoreData] = useState(null);
   const { t } = useDuplicatorTranslation();
   const uploadProps: UploadProps = {
     multiple: false,
-    action: '/duplicator:upload',
+    action: '/backupFiles:upload',
     onChange(info) {
       if (info.fileList.length > 1) {
         info.fileList.splice(0, info.fileList.length - 1); // 只保留一个文件
@@ -304,7 +309,7 @@ const RestoreUpload = (props: any) => {
   };
 
   return (
-    <Dragger {...useUploadProps(uploadProps)}>
+    <Dragger {...uploadProps}>
       <p className="ant-upload-drag-icon">
         <InboxOutlined />
       </p>
@@ -315,13 +320,38 @@ const RestoreUpload = (props: any) => {
 
 export const BackupAndRestoreList = () => {
   const { t } = useDuplicatorTranslation();
-  const handleDownload = (fileData) => {
-    const blob = new Blob([fileData?.data]);
-    const match = /filename="(.+)"/.exec(fileData?.headers?.['content-disposition'] || '');
-    const filename = match ? match[1] : 'duplicator.nbump';
-    saveAs(blob, filename);
+  const apiClient = useAPIClient();
+  const [dataSource, setDataSource] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const resource = useMemo(() => {
+    return apiClient.resource('backupFiles');
+  }, [apiClient]);
+
+  useEffect(() => {
+    queryFieldList();
+  }, []);
+  const queryFieldList = async () => {
+    setLoading(true);
+    const { data } = await resource.list();
+    setDataSource(data.data);
+    setLoading(false);
   };
-  const handleRefresh = () => {};
+  const handleDownload = async (fileData) => {
+    const data = await apiClient.request({
+      url: 'backupFiles:download',
+      method: 'get',
+      params: {
+        filterByTk: fileData.name,
+        responseType: 'blob',
+      },
+    });
+    const blob = new Blob([data.data]);
+    saveAs(blob, fileData.name);
+  };
+  const handleRefresh = () => {
+    queryFieldList();
+  };
+
   return (
     <div>
       <Card bordered={false}>
@@ -337,23 +367,12 @@ export const BackupAndRestoreList = () => {
               </>
             }
           />
-          <NewBackup />
+          <NewBackup refresh={handleRefresh} />
         </Space>
         <Table
           tableLayout="fixed"
-          dataSource={[
-            {
-              name: '20231025105324',
-              fileSize: '130KB',
-              createdAt: '2023-10-25 11:05:53',
-              inProgress: true,
-            },
-            {
-              name: '20231025110552',
-              fileSize: '130KB',
-              createdAt: '2023-10-25 11:05:53',
-            },
-          ]}
+          dataSource={dataSource}
+          loading={loading}
           columns={[
             {
               title: 'Name',
@@ -406,9 +425,9 @@ export const BackupAndRestoreList = () => {
                     }
                   : {};
               },
-              render: (record) => (
+              render: (_, record) => (
                 <Space split={<Divider type="vertical" />}>
-                  <Restore ButtonComponent={'a'} title={t('Restore')} />
+                  <Restore ButtonComponent={'a'} title={t('Restore')} fileData={record} />
                   <a onClick={() => handleDownload(record)}>{t('Download')}</a>
                   <a>{t('Delete')}</a>
                 </Space>
