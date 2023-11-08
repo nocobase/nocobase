@@ -9,7 +9,6 @@ import { signupSchema } from '../schema';
 
 import { useCustomSignup } from '../hooks';
 
-import Loader from 'packages/plugins/@nocobase/smtp/src/client/utils/Loader';
 
 const CustomSignupPage = (props) => {
   const [isLoading, setIsLoading] = React.useState(false);

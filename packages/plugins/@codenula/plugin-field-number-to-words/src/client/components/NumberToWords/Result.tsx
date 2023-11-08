@@ -33,6 +33,7 @@ function useTargetCollectionField() {
   let collection = providedCollection;
   for (let i = 0; i < paths.length - 1; i++) {
     const field = collection.getField(paths[i]);
+    // @ts-ignore
     collection = getCollection(field.target);
   }
   return getCollectionField(`${collection.name}.${paths[paths.length - 1]}`);

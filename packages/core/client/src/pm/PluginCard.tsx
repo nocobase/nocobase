@@ -19,6 +19,7 @@ interface IPluginInfo extends IPluginCard {
 function PluginInfo(props: IPluginInfo) {
   const { data, onClick } = props;
   const { name, displayName, isCompatible, packageName, updatable, builtIn, enabled, description, type, error } = data;
+  const isIndiaRegionPlugin = name.includes('@codenula/india-region');
   const { styles, theme } = useStyles();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -133,7 +134,7 @@ function PluginInfo(props: IPluginInfo) {
             aria-label="enable"
             key={'enable'}
             size={'small'}
-            disabled={builtIn || error}
+            disabled={isIndiaRegionPlugin || builtIn || error}
             onChange={async (checked, e) => {
               e.stopPropagation();
               if (!isCompatible && checked) {

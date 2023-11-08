@@ -114,12 +114,12 @@ export class PluginManagerRepository extends Repository {
         ...options,
       });
     }
-    const directoryPath = 'packages\\plugins\\@codenula';
+    const directoryPath = './packages/plugins/@codenula';
     const folderNames = [];
 
     fs.readdirSync(directoryPath).forEach((fileName) => {
       const filePath = path.join(directoryPath, fileName);
-      const directoryName = directoryPath.split('\\').pop();
+      const directoryName = path.basename(directoryPath);
       const stats = fs.statSync(filePath);
       if (stats.isDirectory()) {
         folderNames.push(directoryName + '/' + fileName);

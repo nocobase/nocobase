@@ -347,6 +347,11 @@ export class PluginManager {
   }
 
   async enable(name: string | string[]) {
+    console.log("*************")
+    console.log("*************")
+    console.log("*************")
+    console.log("*************")
+    console.log(name)
     const pluginNames = _.castArray(name);
     this.app.log.debug(`enabling plugin ${pluginNames.join(',')}`);
     this.app.setMaintainingMessage(`enabling plugin ${pluginNames.join(',')}`);
