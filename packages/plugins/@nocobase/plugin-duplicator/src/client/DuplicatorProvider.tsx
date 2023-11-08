@@ -1,7 +1,7 @@
 import { SettingsCenterProvider, CollectionManagerContext, CurrentAppInfoProvider } from '@nocobase/client';
 import React, { FC, useContext } from 'react';
 import { useDuplicatorTranslation } from './locale';
-import { BackupConfiguration, RestoreConfiguration } from './Configuration';
+import { BackupAndRestoreList } from './Configuration';
 
 export const DuplicatorProvider: FC = function (props) {
   const ctx = useContext(CollectionManagerContext);
@@ -14,13 +14,9 @@ export const DuplicatorProvider: FC = function (props) {
             title: t('Backup & Restore'),
             icon: 'CloudServerOutlined',
             tabs: {
-              backup: {
-                title: t('Backup'),
-                component: BackupConfiguration,
-              },
-              restore: {
-                title: t('Restore'),
-                component: RestoreConfiguration,
+              tab1: {
+                title: t('Backup & Restore'),
+                component: BackupAndRestoreList,
               },
             },
           },
