@@ -183,7 +183,6 @@ export const BlockRequestProvider = (props) => {
   const field = useField<Field>();
   const resource = useBlockResource();
   const [allowedActions, setAllowedActions] = useState({});
-
   const service = useResourceAction(
     { ...props, resource },
     {
@@ -304,14 +303,14 @@ export const BlockProvider = (props: {
 }) => {
   const { collection, association, name } = props;
   const resource = useResource(props);
+
   const params = useMemo(() => ({ ...props.params }), [props.params]);
   const { appends, updateAssociationValues } = useAssociationNames();
   const blockValue = useMemo(() => ({ name }), [name]);
 
-  if (!Object.keys(params).includes('appends')) {
+  if (!Object.keys(params).includes('appends') || appends.length > 0) {
     params['appends'] = appends;
   }
-
   return (
     <BlockContext.Provider value={blockValue}>
       <MaybeCollectionProvider collection={collection}>
