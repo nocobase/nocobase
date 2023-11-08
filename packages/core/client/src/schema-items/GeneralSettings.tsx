@@ -142,10 +142,10 @@ export const generalSettingsItems: SchemaSettingOptions['items'] = [
       const fieldSchema = useFieldSchema();
 
       return {
-        title: t('Edit description'),
+        title: t('Edit tooltip'),
         schema: {
           type: 'object',
-          title: t('Edit description'),
+          title: t('Edit tooltip'),
           properties: {
             tooltip: {
               default: fieldSchema?.['x-decorator-props']?.tooltip,

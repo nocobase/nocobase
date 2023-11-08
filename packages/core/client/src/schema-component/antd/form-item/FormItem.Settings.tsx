@@ -907,7 +907,7 @@ function useShowFieldMode() {
   const fieldSchema = useFieldSchema();
   const fieldModeOptions = useFieldModeOptions();
   const isTableField = fieldSchema['x-component'] === 'TableField';
-  const isAssociationField = useIsAllowToSetDefaultValue();
+  const isAssociationField = useIsAssociationField();
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
   return showFieldMode;
 }

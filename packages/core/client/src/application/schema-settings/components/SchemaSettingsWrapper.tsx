@@ -10,7 +10,7 @@ export interface SchemaSettingsWrapperProps extends SchemaSettingOptions<any> {
 }
 
 export const SchemaSettingsWrapper: FC<SchemaSettingsWrapperProps> = (props) => {
-  const { items, Component = SchemaSettingsIcon, componentProps, style, ...others } = props;
+  const { items, Component = SchemaSettingsIcon, name, componentProps, style, ...others } = props;
   const cProps = useMemo(
     () => ({
       options: props,
@@ -19,6 +19,7 @@ export const SchemaSettingsWrapper: FC<SchemaSettingsWrapperProps> = (props) => 
     }),
     [componentProps, props, style],
   );
+  Component.displayName = `${Component.displayName || Component.name}(${name})`;
 
   return (
     <SchemaSettings title={React.createElement(Component, cProps)} {...others}>
