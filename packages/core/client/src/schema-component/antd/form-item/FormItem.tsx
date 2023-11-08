@@ -81,7 +81,7 @@ export const FormItem: any = observer(
 );
 
 FormItem.Designer = function Designer() {
-  return <GeneralSchemaDesigner defaultSchemaSettings="FormItemSettings"></GeneralSchemaDesigner>;
+  return <GeneralSchemaDesigner schemaSettings="FormItemSettings"></GeneralSchemaDesigner>;
 };
 
 export function isFileCollection(collection: Collection) {

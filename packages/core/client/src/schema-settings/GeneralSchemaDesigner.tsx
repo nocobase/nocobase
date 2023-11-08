@@ -47,7 +47,7 @@ export interface GeneralSchemaDesignerProps {
   disableInitializer?: boolean;
   title?: string;
   template?: any;
-  defaultSchemaSettings?: string;
+  schemaSettings?: string;
   schemaSettingsDesigner?: any;
   /**
    * @default true
@@ -56,14 +56,7 @@ export interface GeneralSchemaDesignerProps {
 }
 
 export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any) => {
-  const {
-    disableInitializer,
-    title,
-    template,
-    defaultSchemaSettings,
-    schemaSettingsDesigner,
-    draggable = true,
-  } = props;
+  const { disableInitializer, title, template, schemaSettings, schemaSettingsDesigner, draggable = true } = props;
   const { dn, designable } = useDesignable();
   const field = useField();
   const { t } = useTranslation();
@@ -76,7 +69,7 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
     fieldSchema,
   };
   const { render: schemaSettingsRender, exists: schemaSettingsExists } = useSchemaSettingsRender(
-    fieldSchema['x-settings'] || defaultSchemaSettings,
+    fieldSchema['x-settings'] || schemaSettings,
     {
       ...fieldSchema['x-settings-props'],
       ...schemaSettingsProps,
