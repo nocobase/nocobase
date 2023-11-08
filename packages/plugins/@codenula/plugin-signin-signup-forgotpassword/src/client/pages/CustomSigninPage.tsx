@@ -7,15 +7,11 @@ import {
   useSignup,
   useAPIClient,
 } from '@nocobase/client';
-import { useForm } from '@formily/react';
 import React, { useContext } from 'react';
 import LogoImg from '../assets/logo.svg';
-import ArrowImg from '../assets/arrow-r.svg';
 import CodenulaImg from '../assets/logo-codenula.png';
 import RightImg from '../assets/image-login-right.png';
-import cloneDeep from 'lodash/cloneDeep';
 import { passwordForm } from '../schema';
-import Loader from 'packages/plugins/@nocobase/smtp/src/client/utils/Loader';
 import '../../../../plugin-smtp/src/client/utils/Loader.css';
 
 const CustomSigninPage = () => {

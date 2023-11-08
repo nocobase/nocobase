@@ -56,6 +56,7 @@ const SmtpRequestProviderNew = React.memo((props) => {
           tabs: {
             tab1: {
               title: 'Smtp Request',
+              // @ts-ignore
               component: () => <SmtpRequest />,
             },
           },

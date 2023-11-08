@@ -1,7 +1,5 @@
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useWorkflowVariableOptions } from '@nocobase/plugin-workflow/client';
-import { ArrayItems } from '@formily/antd-v5';
 import { Variable,css} from '@nocobase/client';
 import React from 'react';
 

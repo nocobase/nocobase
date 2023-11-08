@@ -1,1 +1,0 @@
-# @nocobase/test-plugin
