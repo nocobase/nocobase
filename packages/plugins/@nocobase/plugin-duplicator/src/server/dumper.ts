@@ -80,7 +80,7 @@ export class Dumper extends AppMigrator {
   }
 
   static generateFileName() {
-    return `backup_${dayjs().format('YYYYMMDD_HHmmss')}.${DUMPED_EXTENSION}`;
+    return `backup_${dayjs().format(`YYYYMMDD_HHmmss_${Math.floor(1000 + Math.random() * 9000)}`)}.${DUMPED_EXTENSION}`;
   }
 
   async getCollectionsByDataTypes(dataTypes: Set<DumpDataType>): Promise<string[]> {
@@ -202,6 +202,7 @@ export class Dumper extends AppMigrator {
 
     const promise = this.dump({
       dataTypes: options.dataTypes,
+      fileName: backupFileName,
     }).finally(() => {
       this.cleanLockFile(backupFileName);
       Dumper.dumpTasks.delete(backupFileName);

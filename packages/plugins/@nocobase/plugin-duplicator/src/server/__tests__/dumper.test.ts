@@ -1,8 +1,8 @@
 import { MockServer } from '@nocobase/test';
 import createApp from './index';
 import { Dumper } from '../dumper';
-import path from 'path';
 import { Restorer } from '../restorer';
+import path from 'path';
 
 describe('dumper', () => {
   let app: MockServer;
