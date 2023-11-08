@@ -1,9 +1,10 @@
 import Database, { Repository } from '@nocobase/database';
 import { CollectionRepository } from '@nocobase/plugin-collection-manager';
 import { Plugin } from '@nocobase/server';
-import { uid } from '@nocobase/utils';
+import { merge, uid } from '@nocobase/utils';
+import _ from 'lodash';
 import collectionTemplates from './collection-templates';
-import fieldInterfaces from './field-interfaces';
+import * as fieldInterfaces from './field-interfaces';
 
 export class PluginMockCollectionsServer extends Plugin {
   async load() {
@@ -76,6 +77,12 @@ export class PluginMockCollectionsServer extends Plugin {
     };
 
     const mockCollection = (values) => {
+      if (values.autoCreate) {
+        return values;
+      }
+      if (values.view) {
+        return values;
+      }
       const defaults = {
         logging: true,
         autoGenId: true,
@@ -106,38 +113,55 @@ export class PluginMockCollectionsServer extends Plugin {
           defaults.fields.push(field);
         }
       }
-      if (defaults.autoGenId && !fieldNames.includes('id')) {
-        defaults.fields.push(defaultFields.id());
+      if (['general', 'tree', 'calendar', 'expression'].includes(defaults.template)) {
+        if (defaults.autoGenId && !fieldNames.includes('id')) {
+          defaults.fields.push(defaultFields.id());
+        }
+        if (defaults.createdAt && !fieldNames.includes('createdAt')) {
+          defaults.fields.push(defaultFields.createdAt());
+        }
+        if (defaults.updatedAt && !fieldNames.includes('updatedAt')) {
+          defaults.fields.push(defaultFields.updatedAt());
+        }
+        if (defaults.createdBy && !fieldNames.includes('createdBy')) {
+          defaults.fields.push(defaultFields.createdBy());
+        }
+        if (defaults.updatedBy && !fieldNames.includes('updatedBy')) {
+          defaults.fields.push(defaultFields.updatedBy());
+        }
+        const foreignKeyFields = [];
+        defaults.fields = defaults.fields.map((field) => {
+          field.collectionName = defaults.name;
+          const f = mockCollectionField(field);
+          if (f.foreignKeyFields) {
+            foreignKeyFields.push(...f.foreignKeyFields);
+          }
+          if (f.reverseField) {
+            foreignKeyFields.push(f.reverseField);
+          }
+          if (f.throughCollection) {
+            defaults['throughCollection'] = f.throughCollection;
+          }
+          f.collectionName = defaults.name;
+          return _.omit(f, ['reverseField', 'throughCollection', 'foreignKeyFields']);
+        });
+        defaults.fields.push(...foreignKeyFields);
       }
-      if (defaults.createdAt && !fieldNames.includes('createdAt')) {
-        defaults.fields.push(defaultFields.createdAt());
-      }
-      if (defaults.updatedAt && !fieldNames.includes('updatedAt')) {
-        defaults.fields.push(defaultFields.updatedAt());
-      }
-      if (defaults.createdBy && !fieldNames.includes('createdBy')) {
-        defaults.fields.push(defaultFields.createdBy());
-      }
-      if (defaults.updatedBy && !fieldNames.includes('updatedBy')) {
-        defaults.fields.push(defaultFields.updatedBy());
-      }
-      defaults.fields.map((field) => {
-        field.collectionName = defaults.name;
-        const f = mockCollectionField(field);
-        f.collectionName = defaults.name;
-        return f;
-      });
       return defaults;
     };
 
-    const mockCollectionField = (options) => {
+    const mockCollectionField = (opts) => {
+      let options = opts;
       options.sort = 1;
-      options.key = uid();
       if (options.interface) {
         const fn = fieldInterfaces[options.interface];
         if (fn) {
-          Object.assign(options, fn(options));
+          const defaultValue = fn(options);
+          options = merge(defaultValue, options);
         }
+      }
+      if (!options.key) {
+        options.key = uid();
       }
       if (!options.name) {
         options.name = `f_${uid()}`;
@@ -158,44 +182,60 @@ export class PluginMockCollectionsServer extends Plugin {
         const collections = [];
         const collectionFields = [];
         for (const item of items) {
-          const { fields = [], ...opts } = mockCollection(item);
+          const { fields = [], throughCollection, ...opts } = mockCollection(item);
           collections.push(opts);
+          if (throughCollection) {
+            collections.push(throughCollection);
+          }
           collectionFields.push(...fields);
         }
+        // ctx.body = {
+        //   collections,
+        //   collectionFields,
+        // };
+        // await next();
+        // return;
         const db = ctx.db as Database;
         const collectionsRepository = db.getRepository('collections') as CollectionRepository;
         const fieldsRepository = db.getRepository('fields') as Repository;
         await db.sequelize.transaction(async (transaction) => {
-          await Promise.all(
-            collections.map((collection) =>
-              collectionsRepository.firstOrCreate({
+          for (const collection of collections) {
+            try {
+              await collectionsRepository.firstOrCreate({
                 values: collection,
                 filterKeys: ['name'],
                 hooks: false,
                 transaction,
-              }),
-            ),
-          );
-          await Promise.all(
-            collectionFields.map((collectionField) =>
-              fieldsRepository.firstOrCreate({
+              });
+            } catch (error) {
+              this.app.log.error(error.message, { collection });
+              throw error;
+            }
+          }
+          for (const collectionField of collectionFields) {
+            try {
+              await fieldsRepository.firstOrCreate({
                 values: collectionField,
                 filterKeys: ['name', 'collectionName'],
                 hooks: false,
                 transaction,
-              }),
-            ),
-          );
+              });
+            } catch (error) {
+              this.app.log.error(error.message, { collectionField });
+              throw error;
+            }
+          }
         });
 
         await collectionsRepository.load();
         await db.sync();
-        ctx.body = await collectionsRepository.find({
+        const records = await collectionsRepository.find({
           filter: {
             name: collections.map((c) => c.name),
           },
           appends: ['fields'],
         });
+        ctx.body = Array.isArray(values) ? records : records[0];
         await next();
       },
     });
