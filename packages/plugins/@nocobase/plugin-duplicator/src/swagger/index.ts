@@ -150,6 +150,162 @@ export default {
         },
       },
     },
+    '/backupFiles:download': {
+      get: {
+        summary: 'Download a backup file',
+        parameters: [
+          {
+            name: 'filterByTk',
+            in: 'query',
+            required: true,
+            schema: {
+              type: 'string',
+            },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Download successful',
+            content: {
+              'application/octet-stream': {
+                schema: {
+                  type: 'string',
+                  format: 'binary',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/backupFiles:destroy': {
+      post: {
+        summary: 'Destroy a backup file',
+        parameters: [
+          {
+            name: 'filterByTk',
+            in: 'query',
+            required: true,
+            schema: {
+              type: 'string',
+            },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Destroy successful',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    status: {
+                      type: 'string',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/backupFiles:upload': {
+      post: {
+        summary: 'Upload a backup file',
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: {
+                type: 'object',
+                properties: {
+                  file: {
+                    type: 'string',
+                    format: 'binary',
+                  },
+                },
+              },
+            },
+          },
+        },
+
+        responses: {
+          200: {
+            description: 'Upload successful',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    key: {
+                      type: 'string',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    '/backupFiles:restore': {
+      post: {
+        summary: 'Restore from a backup file',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  filterByTk: {
+                    type: 'string',
+                  },
+                  dataTypes: {
+                    type: 'array',
+                    items: {
+                      $ref: '#/components/schemas/DumpDataType',
+                    },
+                    uniqueItems: true,
+                  },
+                  key: {
+                    type: 'string',
+                  },
+                },
+                oneOf: [
+                  {
+                    required: ['filterByTk', 'dataTypes'],
+                  },
+                  {
+                    required: ['key', 'dataTypes'],
+                  },
+                ],
+              },
+            },
+          },
+        },
+
+        responses: {
+          '200': {
+            description: 'Restore successful',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    status: {
+                      type: 'string',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
 
   components: {
