@@ -11,7 +11,7 @@ DB_LOGGING=off
 DB_DIALECT={{{env.DB_DIALECT}}}
 {{{envs}}}
 
-INIT_ROOT_EMAIL=admin@nocobase.com
+INIT_ROOT_EMAIL=admin@codenula.com
 INIT_ROOT_PASSWORD=admin123
 INIT_ROOT_NICKNAME=Super Admin
-INIT_ROOT_USERNAME=nocobase
+INIT_ROOT_USERNAME=codenula
