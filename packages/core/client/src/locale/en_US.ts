@@ -729,7 +729,6 @@ export default {
   "Changed to": "Changed to",
   "Clear": "Clear",
   "Add attach": "Add attach",
-  "Please select the records to be updated": "Please select the records to be updated",
   "Selector": "Selector",
   "Inner": "Inner",
   "Search and select collection": "Search and select collection",
