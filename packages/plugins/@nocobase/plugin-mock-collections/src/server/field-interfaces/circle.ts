@@ -4,6 +4,8 @@ export const circle = () => ({
     type: 'void',
     'x-component': 'Map',
     'x-component-designer': 'Map.Designer',
-    'x-component-props': {},
+    'x-component-props': {
+      mapType: 'amap',
+    },
   },
 });
