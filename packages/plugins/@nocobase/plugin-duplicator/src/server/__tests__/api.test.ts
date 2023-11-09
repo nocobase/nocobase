@@ -1,4 +1,4 @@
-import { MockServer } from '@nocobase/test';
+import { MockServer, waitSecond } from '@nocobase/test';
 import createApp from './index';
 import { Dumper } from '../dumper';
 import { DumpDataType } from '@nocobase/database';
@@ -47,6 +47,20 @@ describe('backup files', () => {
       const promise = Dumper.getTaskPromise(dumpKey);
 
       await promise;
+    });
+
+    it('should list backup file with in progress status', async () => {
+      await waitSecond(1000);
+      const fileName = Dumper.generateFileName();
+      await dumper.writeLockFile(fileName);
+      const listResponse = await app.agent().resource('backupFiles').list();
+
+      expect(listResponse.status).toBe(200);
+
+      const body = listResponse.body;
+
+      const firstItem = body.data[0];
+      expect(firstItem.status).toEqual('in_progress');
     });
 
     it('should list backup file', async () => {

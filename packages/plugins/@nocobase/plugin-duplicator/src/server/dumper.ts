@@ -145,15 +145,24 @@ export class Dumper extends AppMigrator {
     return path.resolve(process.cwd(), 'storage', 'duplicator');
   }
 
-  async allBackUpFilePaths() {
+  async allBackUpFilePaths(options?: { includeInProgress?: boolean }) {
     const dirname = this.backUpStorageDir();
+    const includeInProgress = options?.includeInProgress;
 
     try {
       const files = await fsPromises.readdir(dirname);
 
       const filesData = await Promise.all(
         files
-          .filter((file) => file.endsWith(DUMPED_EXTENSION))
+          .filter((file) => {
+            const extension = path.extname(file);
+
+            if (includeInProgress) {
+              return extension === `.${DUMPED_EXTENSION}` || extension === '.lock';
+            }
+
+            return extension === `.${DUMPED_EXTENSION}`;
+          })
           .map(async (file) => {
             const filePath = path.resolve(dirname, file);
             const stats = await fsPromises.stat(filePath);

@@ -31,14 +31,17 @@ export default {
       const { page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE } = ctx.action.params;
 
       const dumper = new Dumper(ctx.app);
-      const backupFiles = await dumper.allBackUpFilePaths();
-      // handle pagination
+      const backupFiles = await dumper.allBackUpFilePaths({
+        includeInProgress: true,
+      });
 
+      // handle pagination
       const count = backupFiles.length;
 
       const rows = await Promise.all(
         backupFiles.slice((page - 1) * pageSize, page * pageSize).map(async (file) => {
-          return await Dumper.getFileStatus(file);
+          // if file is lock file, remove lock extension
+          return await Dumper.getFileStatus(file.endsWith('.lock') ? file.replace('.lock', '') : file);
         }),
       );
 
