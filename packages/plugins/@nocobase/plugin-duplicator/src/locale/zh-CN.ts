@@ -21,6 +21,7 @@ export default {
   Plugin: '插件',
   'file uploaded successfully': '文件上传成功',
   'file upload failed': '文件上传失败',
-  'Download':'下载',
-  'Restore backup from local':'从本地回复备份'
+  Download: '下载',
+  'Restore backup from local': '从本地回复备份',
+  'Backup instructions': '备份说明',
 };

@@ -82,7 +82,6 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
     setIsModalOpen(false);
   };
   console.log(dataSource);
-
   const columns = [
     {
       title: t('Collection'),
@@ -122,27 +121,27 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
       children: (
         <>
           <Alert style={{ marginBottom: 16 }} message={'占位，系统元数据说明'} />
-          <Table bordered size={'small'} dataSource={dataSource.meta} columns={columns} />
+          <Table bordered size={'small'} dataSource={dataSource?.meta} columns={columns} />
         </>
       ),
     },
-    dataSource.config && {
+    dataSource?.config && {
       key: 'config',
       label: t('System config'),
       children: (
         <>
           <Alert style={{ marginBottom: 16 }} message={'占位，系统配置数据说明'} />
-          <Table bordered size={'small'} dataSource={dataSource.config} columns={columns} />
+          <Table bordered size={'small'} dataSource={dataSource?.config} columns={columns} />
         </>
       ),
     },
-    dataSource.business && {
+    dataSource?.business && {
       key: 'bussiness',
       label: t('Business data'),
       children: (
         <>
           <Alert style={{ marginBottom: 16 }} message={'占位，系统业务数据说明'} />
-          <Table bordered size={'small'} dataSource={dataSource.business} columns={columns} />
+          <Table bordered size={'small'} dataSource={dataSource?.business} columns={columns} />
         </>
       ),
     },
@@ -177,8 +176,10 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
   }, [apiClient]);
 
   const showModal = async () => {
-    const { data } = await resource.get({ filterByTk: fileData.name });
-    setRestoreData(data?.data?.meta);
+    if (!upload) {
+      const { data } = await resource.get({ filterByTk: fileData.name });
+      setRestoreData(data?.data?.meta);
+    }
     setIsModalOpen(true);
   };
   const handleOk = () => {
@@ -206,7 +207,6 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
         onCancel={handleCancel}
       >
         {upload && <RestoreUpload />}
-
         {!upload && (
           <strong style={{ fontWeight: 600, display: 'block', margin: '16px 0 8px' }}>
             {t('Select the data to be backed up')} (
@@ -288,7 +288,7 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
   );
 };
 
-const RestoreUpload = (props: any) => {
+const RestoreUpload: React.FC<any> = (props: any) => {
   const [restoreData, setRestoreData] = useState(null);
   const { t } = useDuplicatorTranslation();
   const uploadProps: UploadProps = {
@@ -307,6 +307,7 @@ const RestoreUpload = (props: any) => {
         setRestoreData(info.file.response?.data);
       } else if (status === 'error') {
         message.error(`${info.file.name} ` + t('file upload failed'));
+        info.fileList.splice(0, 1);
       }
     },
     onDrop(e) {
@@ -315,7 +316,7 @@ const RestoreUpload = (props: any) => {
   };
 
   return (
-    <Dragger {...uploadProps}>
+    <Dragger {...useUploadProps(uploadProps)}>
       <p className="ant-upload-drag-icon">
         <InboxOutlined />
       </p>
