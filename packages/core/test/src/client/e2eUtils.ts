@@ -395,7 +395,7 @@ const createCollections = async (collectionSettings: CollectionSetting | Collect
 
   collectionSettings = Array.isArray(collectionSettings) ? collectionSettings : [collectionSettings];
 
-  const result = await api.post(`/api/collections:create`, {
+  const result = await api.post(`/api/collections:mock`, {
     headers,
     // data: collectionSettings.map((item) => Object.assign(defaultCollectionSetting, item)),
     data: collectionSettings.filter((item) => !['users', 'roles'].includes(item.name)),
