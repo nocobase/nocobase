@@ -138,6 +138,7 @@ export const GeneralSchemaItems: React.FC<{
             }}
           />
         )}
+        {/* TODO: FormField 好像被弃用了，应该删除掉 */}
         {!field.readPretty && fieldSchema['x-component'] !== 'FormField' && required && (
           <SchemaSettings.SwitchItem
             key="required"
