@@ -19,5 +19,6 @@ export default {
   'Backup instructions':'バックアップの説明',
   'File size':'ファイルサイズ',
   'New backup':'新規バックアップ',
-  'Origin':'ソース'
+  'Origin':'ソース',
+  'Backing up':'バックアップ中'
 };

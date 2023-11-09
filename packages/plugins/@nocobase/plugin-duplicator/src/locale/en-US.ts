@@ -20,7 +20,8 @@ const locale = {
   'Backup instructions': 'Backup instructions',
   'File size': 'File size',
   'New backup':'New backup',
-  'Origin':'Origin'
+  'Origin':'Origin',
+  'Backing up':'Backing up'
 };
 
 export default locale;

@@ -401,7 +401,7 @@ export const BackupAndRestoreList = () => {
               render: (name, data) =>
                 data.inProgress ? (
                   <div style={{ color: 'rgba(0, 0, 0, 0.88)' }}>
-                    {name}({t('Backing up...')})
+                    {name}({t('Backing up')}...)
                   </div>
                 ) : (
                   <div>{name}</div>

@@ -20,7 +20,8 @@ const locale = {
   'Backup instructions':'Instruções de cópia de segurança',
   'File size':'tamanho do ficheiro',
   'New backup':'Nova Cópia de Segurança',
-  'Origin':'fonte'
+  'Origin':'fonte',
+  'Backing up':'Cópia de segurança em curso'
 };
 
 export default locale;
