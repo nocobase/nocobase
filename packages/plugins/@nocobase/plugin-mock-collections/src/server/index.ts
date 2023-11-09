@@ -77,10 +77,18 @@ export class PluginMockCollectionsServer extends Plugin {
     };
 
     const mockCollection = (values) => {
-      if (values.autoCreate) {
-        return values;
-      }
-      if (values.view) {
+      if (values.autoCreate || values.view) {
+        if (!values.key) {
+          values.key = uid();
+        }
+        if (Array.isArray(values.fields)) {
+          values.fields = values.fields.map((f) => {
+            if (!f.key) {
+              f.key = uid();
+            }
+            return f;
+          });
+        }
         return values;
       }
       const defaults = {
@@ -113,7 +121,7 @@ export class PluginMockCollectionsServer extends Plugin {
           defaults.fields.push(field);
         }
       }
-      if (['general', 'tree', 'calendar', 'expression'].includes(defaults.template)) {
+      if (['general', 'file', 'tree', 'calendar', 'expression'].includes(defaults.template)) {
         if (defaults.autoGenId && !fieldNames.includes('id')) {
           defaults.fields.push(defaultFields.id());
         }
