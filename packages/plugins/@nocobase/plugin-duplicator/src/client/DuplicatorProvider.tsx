@@ -10,11 +10,11 @@ export const DuplicatorProvider: FC = function (props) {
     <CurrentAppInfoProvider>
       <SettingsCenterProvider
         settings={{
-          duplicator: {
+          backup: {
             title: t('Backup & Restore'),
             icon: 'CloudServerOutlined',
             tabs: {
-              tab1: {
+              restore: {
                 title: t('Backup & Restore'),
                 component: BackupAndRestoreList,
               },
