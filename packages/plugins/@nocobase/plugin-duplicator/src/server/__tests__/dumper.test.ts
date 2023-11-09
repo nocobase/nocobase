@@ -3,6 +3,7 @@ import createApp from './index';
 import { Dumper } from '../dumper';
 import { Restorer } from '../restorer';
 import path from 'path';
+import fs from 'fs';
 
 describe('dumper', () => {
   let app: MockServer;
@@ -88,6 +89,32 @@ describe('dumper', () => {
     const dumper = new Dumper(app);
     const collections = await dumper.getCollectionsByDataTypes(new Set(['business']));
     expect(collections.includes('test_collection')).toBeTruthy();
+  });
+
+  it('should dump collection table structure', async () => {
+    await app.db.getRepository('collections').create({
+      values: {
+        name: 'test_collection',
+        fields: [
+          {
+            name: 'test_field1',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const dumper = new Dumper(app);
+    await dumper.dumpCollection({
+      name: 'test_collection',
+    });
+
+    const collectionDir = path.resolve(dumper.workDir, 'collections', 'test_collection');
+    const metaFile = path.resolve(collectionDir, 'meta');
+    const meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
+
+    expect(meta['attributes']).toBeDefined();
   });
 
   it('should get dumped collections with origin option', async () => {

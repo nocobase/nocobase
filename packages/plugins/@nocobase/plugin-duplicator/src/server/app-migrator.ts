@@ -12,7 +12,7 @@ export type AppMigratorOptions = {
   workDir?: string;
 };
 abstract class AppMigrator extends EventEmitter {
-  protected workDir: string;
+  public readonly workDir: string;
   public app: Application;
 
   abstract direction: 'restore' | 'dump';
