@@ -186,7 +186,8 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
     resource.restore({
       values: {
         dataTypes,
-        filterByTk: fileData.name,
+        filterByTk: fileData?.name,
+        key: restoreData?.key,
       },
     });
     setIsModalOpen(false);
@@ -201,7 +202,7 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
       <Modal
         title={t('Restore')}
         width={800}
-        footer={upload ? null : undefined}
+        footer={upload && !restoreData ? null : undefined}
         open={isModalOpen}
         onOk={handleOk}
         onCancel={handleCancel}
@@ -296,16 +297,11 @@ const RestoreUpload: React.FC<any> = (props: any) => {
         info.fileList.splice(0, info.fileList.length - 1); // 只保留一个文件
       }
       const { status } = info.file;
-      if (status !== 'uploading') {
-        console.log(info.file, info.fileList);
-      }
       if (status === 'done') {
         message.success(`${info.file.name} ` + t('file uploaded successfully'));
-        props.setRestoreData(info.file.response?.data?.meta);
-        console.log(info.file.response?.data?.meta);
+        props.setRestoreData({ ...info.file.response?.data?.meta, key: info.file.response?.data.key });
       } else if (status === 'error') {
         message.error(`${info.file.name} ` + t('file upload failed'));
-        info.fileList.splice(0, 1);
       }
     },
     onDrop(e) {
