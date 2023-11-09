@@ -55,18 +55,22 @@ function useUploadProps(props: UploadProps): any {
   };
 }
 
-const LearnMore: React.FC = () => {
+const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) => {
+  const { collectionsData } = props;
   const { t } = useDuplicatorTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [dataSource, setDataSource] = useState<any>();
+  const [dataSource, setDataSource] = useState<any>(collectionsData);
   const apiClient = useAPIClient();
   const compile = useCompile();
+  const resource = useMemo(() => {
+    return apiClient.resource('backupFiles');
+  }, [apiClient]);
   const showModal = async () => {
-    const data = await apiClient.request({
-      url: 'backupFiles:dumpableCollections',
-      method: 'get',
-    });
-    setDataSource(data?.data);
+    if (props.isBackup) {
+      const data = await resource.dumpableCollections();
+      setDataSource(data?.data);
+      setIsModalOpen(true);
+    }
     setIsModalOpen(true);
   };
 
@@ -77,18 +81,19 @@ const LearnMore: React.FC = () => {
   const handleCancel = () => {
     setIsModalOpen(false);
   };
+  console.log(dataSource);
 
   const columns = [
     {
       title: t('Collection'),
       dataIndex: 'collection',
       key: 'collection',
-      render: (collection) => {
+      render: (_, data) => {
         return (
           <div>
-            {compile(collection.title)}
+            {compile(data.title)}
             <br />
-            <div style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>{collection.name}</div>
+            <div style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>{data.name}</div>
           </div>
         );
       },
@@ -96,20 +101,20 @@ const LearnMore: React.FC = () => {
     {
       title: t('Origin'),
       dataIndex: 'plugin',
-      key: 'plugin',
+      key: 'origin',
       width: '50%',
-      render: (plugin) => {
+      render: (_, data) => {
+        const { origin } = data;
         return (
           <div>
-            {plugin.title}
+            {origin.title}
             <br />
-            <div style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>{plugin.name}</div>
+            <div style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>{origin.name}</div>
           </div>
         );
       },
     },
   ];
-
   const items: TabsProps['items'] = [
     {
       key: 'meta',
@@ -117,27 +122,27 @@ const LearnMore: React.FC = () => {
       children: (
         <>
           <Alert style={{ marginBottom: 16 }} message={'占位，系统元数据说明'} />
-          <Table bordered size={'small'} dataSource={dataSource} columns={columns} />
+          <Table bordered size={'small'} dataSource={dataSource.meta} columns={columns} />
         </>
       ),
     },
-    {
+    dataSource.config && {
       key: 'config',
       label: t('System config'),
       children: (
         <>
           <Alert style={{ marginBottom: 16 }} message={'占位，系统配置数据说明'} />
-          <Table bordered size={'small'} dataSource={dataSource} columns={columns} />
+          <Table bordered size={'small'} dataSource={dataSource.config} columns={columns} />
         </>
       ),
     },
-    {
+    dataSource.business && {
       key: 'bussiness',
       label: t('Business data'),
       children: (
         <>
           <Alert style={{ marginBottom: 16 }} message={'占位，系统业务数据说明'} />
-          <Table bordered size={'small'} dataSource={dataSource} columns={columns} />
+          <Table bordered size={'small'} dataSource={dataSource.business} columns={columns} />
         </>
       ),
     },
@@ -171,16 +176,16 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
     return apiClient.resource('backupFiles');
   }, [apiClient]);
 
-  const showModal = () => {
+  const showModal = async () => {
+    const { data } = await resource.get({ filterByTk: fileData.name });
+    setRestoreData(data?.data?.meta);
     setIsModalOpen(true);
   };
-
   const handleOk = () => {
     resource.restore({
       values: {
         dataTypes,
-        key: restoreData.key,
-        // filterByTk: 'string'
+        filterByTk: fileData.name,
       },
     });
     setIsModalOpen(false);
@@ -189,7 +194,6 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
   const handleCancel = () => {
     setIsModalOpen(false);
   };
-
   return (
     <>
       <ButtonComponent onClick={showModal}>{title}</ButtonComponent>
@@ -206,7 +210,7 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
         {!upload && (
           <strong style={{ fontWeight: 600, display: 'block', margin: '16px 0 8px' }}>
             {t('Select the data to be backed up')} (
-            <LearnMore />
+            <LearnMore collectionsData={restoreData?.dumpableCollectionsGroupByDataTypes} />
             ):
           </strong>
         )}
@@ -216,7 +220,7 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
               <Checkbox.Group
                 options={compile(
                   options.filter((v) => {
-                    return restoreData.includes?.(v);
+                    return restoreData?.dataTypes?.includes?.(v.value);
                   }),
                 )}
                 style={{ flexDirection: 'column' }}
@@ -268,7 +272,7 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
       <Modal title="New backup" width={800} open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
         <strong style={{ fontWeight: 600, display: 'block', margin: '16px 0 8px' }}>
           {t('Select the data to be backed up')} (
-          <LearnMore />
+          <LearnMore isBackup={true} />
           ):
         </strong>
         <div style={{ lineHeight: 2, marginBottom: 8 }}>
