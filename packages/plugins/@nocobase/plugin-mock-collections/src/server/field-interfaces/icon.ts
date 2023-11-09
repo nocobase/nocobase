@@ -1,9 +1,11 @@
-export const icon = () => ({
-  type: 'string',
-  // name,
-  uiSchema: {
+export const icon = {
+  options: () => ({
     type: 'string',
-    // title,
-    'x-component': 'IconPicker',
-  },
-});
+    // name,
+    uiSchema: {
+      type: 'string',
+      // title,
+      'x-component': 'IconPicker',
+    },
+  }),
+};

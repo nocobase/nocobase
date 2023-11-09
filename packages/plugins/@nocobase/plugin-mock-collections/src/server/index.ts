@@ -1,4 +1,4 @@
-import Database, { Repository } from '@nocobase/database';
+import Database, { Collection, Repository } from '@nocobase/database';
 import { CollectionRepository } from '@nocobase/plugin-collection-manager';
 import { Plugin } from '@nocobase/server';
 import { merge, uid } from '@nocobase/utils';
@@ -164,7 +164,7 @@ export class PluginMockCollectionsServer extends Plugin {
       if (options.interface) {
         const fn = fieldInterfaces[options.interface];
         if (fn) {
-          const defaultValue = fn(options);
+          const defaultValue = fn.options(options);
           options = merge(defaultValue, options);
         }
       }
@@ -184,6 +184,39 @@ export class PluginMockCollectionsServer extends Plugin {
     };
 
     this.app.resourcer.registerActions({
+      mock: async (ctx, next) => {
+        const { resourceName } = ctx.action;
+        const { count = 10 } = ctx.action.params;
+        const mockCollectionData = async (collectionName, count = 1) => {
+          const collection = ctx.db.getCollection(collectionName) as Collection;
+          const items = await Promise.all(
+            _.range(count).map(async (i) => {
+              const values = {};
+              if (collection.options.sortable) {
+                values['sort'] = i + 1;
+              }
+              for (const field of collection.fields.values()) {
+                if (!field.options.interface) {
+                  continue;
+                }
+                const fn = fieldInterfaces[field.options.interface];
+                if (fn?.mock) {
+                  values[field.name] = await fn.mock(field.options, { mockCollectionData });
+                }
+              }
+              return values;
+            }),
+          );
+          return count === 1 ? items[0] : items;
+        };
+        const repository = ctx.db.getRepository(resourceName);
+        const data = await mockCollectionData(resourceName, count);
+        // ctx.body = data;
+        ctx.body = await repository.create({
+          values: data,
+        });
+        await next();
+      },
       'collections:mock': async (ctx, next) => {
         const { values } = ctx.action.params;
         const items = Array.isArray(values) ? values : [values || {}];

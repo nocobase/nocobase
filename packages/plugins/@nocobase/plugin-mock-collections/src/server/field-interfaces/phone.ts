@@ -1,13 +1,15 @@
-export const phone = () => ({
-  type: 'string',
-  // name,
-  uiSchema: {
+export const phone = {
+  options: () => ({
     type: 'string',
-    // title,
-    'x-component': 'Input',
-    'x-component-props': {
-      type: 'tel',
+    // name,
+    uiSchema: {
+      type: 'string',
+      // title,
+      'x-component': 'Input',
+      'x-component-props': {
+        type: 'tel',
+      },
+      // 'x-validator': 'phone',
     },
-    // 'x-validator': 'phone',
-  },
-});
+  }),
+};

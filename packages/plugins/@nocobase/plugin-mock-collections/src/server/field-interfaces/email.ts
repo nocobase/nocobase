@@ -1,10 +1,15 @@
-export const email = () => ({
-  type: 'string',
-  // name,
-  uiSchema: {
+import { faker } from '@faker-js/faker';
+
+export const email = {
+  options: () => ({
     type: 'string',
-    // title,
-    'x-component': 'Input',
-    'x-validator': 'email',
-  },
-});
+    // name,
+    uiSchema: {
+      type: 'string',
+      // title,
+      'x-component': 'Input',
+      'x-validator': 'email',
+    },
+  }),
+  mock: () => faker.internet.email(),
+};

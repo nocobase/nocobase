@@ -1,8 +1,13 @@
-export const checkbox = () => ({
-  type: 'boolean',
-  // name,
-  uiSchema: {
+import { faker } from '@faker-js/faker';
+
+export const checkbox = {
+  options: () => ({
     type: 'boolean',
-    'x-component': 'Checkbox',
-  },
-});
+    // name,
+    uiSchema: {
+      type: 'boolean',
+      'x-component': 'Checkbox',
+    },
+  }),
+  mock: () => faker.datatype.boolean(),
+};

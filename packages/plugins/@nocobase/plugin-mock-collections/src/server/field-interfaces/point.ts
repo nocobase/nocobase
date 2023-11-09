@@ -1,11 +1,13 @@
-export const point = () => ({
-  type: 'point',
-  uiSchema: {
-    type: 'void',
-    'x-component': 'Map',
-    'x-component-designer': 'Map.Designer',
-    'x-component-props': {
-      mapType: 'amap',
+export const point = {
+  options: () => ({
+    type: 'point',
+    uiSchema: {
+      type: 'void',
+      'x-component': 'Map',
+      'x-component-designer': 'Map.Designer',
+      'x-component-props': {
+        mapType: 'amap',
+      },
     },
-  },
-});
+  }),
+};

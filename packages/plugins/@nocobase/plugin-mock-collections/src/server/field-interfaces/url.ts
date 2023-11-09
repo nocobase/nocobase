@@ -1,7 +1,10 @@
-export const url = () => ({
-  type: 'string',
-  uiSchema: {
+export const url = {
+  options: () => ({
     type: 'string',
-    'x-component': 'Input.URL',
-  },
-});
+    uiSchema: {
+      type: 'string',
+      'x-component': 'Input.URL',
+    },
+  }),
+  mock: () => null,
+};

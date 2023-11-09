@@ -1,7 +1,9 @@
-export const collection = (options) => ({
-  type: 'string',
-  uiSchema: {
+export const collection = {
+  options: (options) => ({
     type: 'string',
-    'x-component': 'CollectionSelect',
-  },
-});
+    uiSchema: {
+      type: 'string',
+      'x-component': 'CollectionSelect',
+    },
+  }),
+};

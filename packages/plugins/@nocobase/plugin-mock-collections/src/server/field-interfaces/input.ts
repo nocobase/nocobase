@@ -1,7 +1,12 @@
-export const input = () => ({
-  type: 'string',
-  uiSchema: {
+import { faker } from '@faker-js/faker';
+
+export const input = {
+  options: () => ({
     type: 'string',
-    'x-component': 'Input',
-  },
-});
+    uiSchema: {
+      type: 'string',
+      'x-component': 'Input',
+    },
+  }),
+  mock: () => faker.word.words({ count: { min: 5, max: 10 } }),
+};

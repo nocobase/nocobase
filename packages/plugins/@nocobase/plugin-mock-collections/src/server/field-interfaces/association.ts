@@ -1,3 +1,4 @@
+import { faker } from '@faker-js/faker';
 import { uid } from '@nocobase/utils';
 
 function reverseFieldHandle(defaults, { target, reverseField }) {
@@ -57,176 +58,120 @@ function generateForeignKeyField(options) {
       };
 }
 
-export const oho = (options) => {
-  const { foreignKey = `f_${uid()}`, targetKey = 'id', sourceKey = 'id', reverseField } = options;
-  const defaults = {
-    type: 'hasOne',
-    foreignKey,
-    sourceKey,
-    // name,
-    uiSchema: {
-      // title,
-      'x-component': 'AssociationField',
-      'x-component-props': {
-        // mode: 'tags',
-        multiple: false,
-        fieldNames: {
-          label: targetKey,
-          value: targetKey,
-        },
-      },
-    },
-    reverseField: {
-      interface: 'obo',
-      type: 'belongsTo',
-      foreignKey,
-      targetKey: sourceKey,
-      uiSchema: {
-        // title,
-        'x-component': 'AssociationField',
-        'x-component-props': {
-          // mode: 'tags',
-          multiple: false,
-          fieldNames: {
-            label: sourceKey,
-            value: sourceKey,
-          },
-        },
-      },
-    },
-  };
-  defaults['foreignKeyFields'] = [
-    generateForeignKeyField({
-      type: sourceKey === 'id' ? 'bigInt' : 'string',
-      name: foreignKey,
-      collectionName: options.target,
-    }),
-  ];
-  return reverseFieldHandle(defaults, options);
-};
-
-export const obo = (options) => {
-  const { foreignKey = `f_${uid()}`, targetKey = 'id', sourceKey = 'id', reverseField } = options;
-  const key = uid();
-  const defaults = {
-    type: 'belongsTo',
-    foreignKey,
-    targetKey,
-    // name,
-    uiSchema: {
-      // title,
-      'x-component': 'AssociationField',
-      'x-component-props': {
-        // mode: 'tags',
-        multiple: false,
-        fieldNames: {
-          label: targetKey,
-          value: targetKey,
-        },
-      },
-    },
-    reverseField: {
-      interface: 'oho',
+export const oho = {
+  options: (options) => {
+    const { foreignKey = `f_${uid()}`, targetKey = 'id', sourceKey = 'id', reverseField } = options;
+    const defaults = {
       type: 'hasOne',
       foreignKey,
-      sourceKey: targetKey,
+      sourceKey,
+      // name,
       uiSchema: {
         // title,
         'x-component': 'AssociationField',
         'x-component-props': {
+          // mode: 'tags',
           multiple: false,
           fieldNames: {
-            label: sourceKey,
-            value: sourceKey,
+            label: targetKey,
+            value: targetKey,
           },
         },
       },
-    },
-  };
-  defaults['foreignKeyFields'] = [
-    generateForeignKeyField({
-      type: targetKey === 'id' ? 'bigInt' : 'string',
-      name: foreignKey,
-      collectionName: options.collectionName,
-    }),
-  ];
-  return reverseFieldHandle(defaults, options);
-};
-
-export const o2m = (options) => {
-  const { foreignKey = `f_${uid()}`, targetKey = 'id', sourceKey = 'id', reverseField } = options;
-  const defaults = {
-    type: 'hasMany',
-    foreignKey,
-    targetKey,
-    sourceKey,
-    // name,
-    uiSchema: {
-      // title,
-      'x-component': 'AssociationField',
-      'x-component-props': {
-        // mode: 'tags',
-        multiple: true,
-        fieldNames: {
-          label: targetKey,
-          value: targetKey,
+      reverseField: {
+        interface: 'obo',
+        type: 'belongsTo',
+        foreignKey,
+        targetKey: sourceKey,
+        uiSchema: {
+          // title,
+          'x-component': 'AssociationField',
+          'x-component-props': {
+            // mode: 'tags',
+            multiple: false,
+            fieldNames: {
+              label: sourceKey,
+              value: sourceKey,
+            },
+          },
         },
       },
-    },
-    reverseField: {
-      interface: 'm2o',
+    };
+    defaults['foreignKeyFields'] = [
+      generateForeignKeyField({
+        type: sourceKey === 'id' ? 'bigInt' : 'string',
+        name: foreignKey,
+        collectionName: options.target,
+      }),
+    ];
+    return reverseFieldHandle(defaults, options);
+  },
+  mock: async (options, { mockCollectionData }) => {
+    return mockCollectionData(options.target);
+  },
+};
+
+export const obo = {
+  options: (options) => {
+    const { foreignKey = `f_${uid()}`, targetKey = 'id', sourceKey = 'id', reverseField } = options;
+    const key = uid();
+    const defaults = {
       type: 'belongsTo',
       foreignKey,
-      targetKey: sourceKey,
+      targetKey,
+      // name,
       uiSchema: {
-        // title: `T-${uid()}`,
+        // title,
         'x-component': 'AssociationField',
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
           fieldNames: {
-            label: sourceKey,
-            value: sourceKey,
+            label: targetKey,
+            value: targetKey,
           },
         },
       },
-    },
-  };
-  defaults['foreignKeyFields'] = [
-    generateForeignKeyField({
-      type: sourceKey === 'id' ? 'bigInt' : 'string',
-      name: foreignKey,
-      collectionName: options.target,
-    }),
-  ];
-  return reverseFieldHandle(defaults, options);
-};
-
-export const m2o = (options) => {
-  const { foreignKey = `f_${uid()}`, targetKey = 'id', sourceKey = 'id', reverseField } = options;
-  const defaults = {
-    type: 'belongsTo',
-    foreignKey,
-    targetKey,
-    // name,
-    uiSchema: {
-      // title,
-      'x-component': 'AssociationField',
-      'x-component-props': {
-        // mode: 'tags',
-        multiple: false,
-        fieldNames: {
-          label: targetKey,
-          value: targetKey,
+      reverseField: {
+        interface: 'oho',
+        type: 'hasOne',
+        foreignKey,
+        sourceKey: targetKey,
+        uiSchema: {
+          // title,
+          'x-component': 'AssociationField',
+          'x-component-props': {
+            multiple: false,
+            fieldNames: {
+              label: sourceKey,
+              value: sourceKey,
+            },
+          },
         },
       },
-    },
-    reverseField: {
-      interface: 'o2m',
+    };
+    defaults['foreignKeyFields'] = [
+      generateForeignKeyField({
+        type: targetKey === 'id' ? 'bigInt' : 'string',
+        name: foreignKey,
+        collectionName: options.collectionName,
+      }),
+    ];
+    return reverseFieldHandle(defaults, options);
+  },
+  mock: async (options, { mockCollectionData }) => {
+    return mockCollectionData(options.target);
+  },
+};
+
+export const o2m = {
+  options: (options) => {
+    const { foreignKey = `f_${uid()}`, targetKey = 'id', sourceKey = 'id', reverseField } = options;
+    const defaults = {
       type: 'hasMany',
       foreignKey,
-      targetKey: sourceKey,
-      sourceKey: targetKey,
+      targetKey,
+      sourceKey,
       // name,
       uiSchema: {
         // title,
@@ -235,60 +180,116 @@ export const m2o = (options) => {
           // mode: 'tags',
           multiple: true,
           fieldNames: {
-            label: sourceKey,
-            value: sourceKey,
+            label: targetKey,
+            value: targetKey,
           },
         },
       },
-    },
-  };
-  defaults['foreignKeyFields'] = [
-    generateForeignKeyField({
-      type: targetKey === 'id' ? 'bigInt' : 'string',
-      name: foreignKey,
-      collectionName: options.collectionName,
-    }),
-  ];
-  return reverseFieldHandle(defaults, options);
+      reverseField: {
+        interface: 'm2o',
+        type: 'belongsTo',
+        foreignKey,
+        targetKey: sourceKey,
+        uiSchema: {
+          // title: `T-${uid()}`,
+          'x-component': 'AssociationField',
+          'x-component-props': {
+            // mode: 'tags',
+            multiple: false,
+            fieldNames: {
+              label: sourceKey,
+              value: sourceKey,
+            },
+          },
+        },
+      },
+    };
+    defaults['foreignKeyFields'] = [
+      generateForeignKeyField({
+        type: sourceKey === 'id' ? 'bigInt' : 'string',
+        name: foreignKey,
+        collectionName: options.target,
+      }),
+    ];
+    return reverseFieldHandle(defaults, options);
+  },
+  mock: async (options, { mockCollectionData }) => {
+    return mockCollectionData(options.target, faker.number.int({ min: 2, max: 5 }));
+  },
 };
 
-export const m2m = (options) => {
-  const {
-    through = `t_${uid()}`,
-    foreignKey = `f_${uid()}`,
-    otherKey = `f_${uid()}`,
-    targetKey = 'id',
-    sourceKey = 'id',
-    reverseField,
-  } = options;
-  const defaults = {
-    type: 'belongsToMany',
-    through,
-    foreignKey,
-    otherKey,
-    targetKey,
-    sourceKey,
-    // name,
-    uiSchema: {
-      // title,
-      'x-component': 'AssociationField',
-      'x-component-props': {
-        // mode: 'tags',
-        multiple: true,
-        fieldNames: {
-          label: targetKey,
-          value: targetKey,
+export const m2o = {
+  options: (options) => {
+    const { foreignKey = `f_${uid()}`, targetKey = 'id', sourceKey = 'id', reverseField } = options;
+    const defaults = {
+      type: 'belongsTo',
+      foreignKey,
+      targetKey,
+      // name,
+      uiSchema: {
+        // title,
+        'x-component': 'AssociationField',
+        'x-component-props': {
+          // mode: 'tags',
+          multiple: false,
+          fieldNames: {
+            label: targetKey,
+            value: targetKey,
+          },
         },
       },
-    },
-    reverseField: {
-      interface: 'm2m',
+      reverseField: {
+        interface: 'o2m',
+        type: 'hasMany',
+        foreignKey,
+        targetKey: sourceKey,
+        sourceKey: targetKey,
+        // name,
+        uiSchema: {
+          // title,
+          'x-component': 'AssociationField',
+          'x-component-props': {
+            // mode: 'tags',
+            multiple: true,
+            fieldNames: {
+              label: sourceKey,
+              value: sourceKey,
+            },
+          },
+        },
+      },
+    };
+    defaults['foreignKeyFields'] = [
+      generateForeignKeyField({
+        type: targetKey === 'id' ? 'bigInt' : 'string',
+        name: foreignKey,
+        collectionName: options.collectionName,
+      }),
+    ];
+    return reverseFieldHandle(defaults, options);
+  },
+  mock: async (options, { mockCollectionData }) => {
+    return mockCollectionData(options.target);
+  },
+};
+
+export const m2m = {
+  options: (options) => {
+    const {
+      through = `t_${uid()}`,
+      foreignKey = `f_${uid()}`,
+      otherKey = `f_${uid()}`,
+      targetKey = 'id',
+      sourceKey = 'id',
+      reverseField,
+    } = options;
+    const defaults = {
       type: 'belongsToMany',
       through,
-      foreignKey: otherKey,
-      otherKey: foreignKey,
-      targetKey: sourceKey,
-      sourceKey: targetKey,
+      foreignKey,
+      otherKey,
+      targetKey,
+      sourceKey,
       // name,
       uiSchema: {
         // title,
@@ -297,35 +298,60 @@ export const m2m = (options) => {
           // mode: 'tags',
           multiple: true,
           fieldNames: {
-            label: sourceKey,
-            value: sourceKey,
+            label: targetKey,
+            value: targetKey,
           },
         },
       },
-    },
-  };
-  defaults['foreignKeyFields'] = [
-    generateForeignKeyField({
-      type: sourceKey === 'id' ? 'bigInt' : 'string',
-      name: foreignKey,
-      collectionName: through,
-    }),
-    generateForeignKeyField({
-      type: targetKey === 'id' ? 'bigInt' : 'string',
-      name: otherKey,
-      collectionName: through,
-    }),
-  ];
-  defaults['throughCollection'] = {
-    key: uid(),
-    name: through,
-    title: through,
-    timestamps: true,
-    autoGenId: false,
-    hidden: true,
-    autoCreate: true,
-    isThrough: true,
-    sortable: false,
-  };
-  return reverseFieldHandle(defaults, options);
+      reverseField: {
+        interface: 'm2m',
+        type: 'belongsToMany',
+        through,
+        foreignKey: otherKey,
+        otherKey: foreignKey,
+        targetKey: sourceKey,
+        sourceKey: targetKey,
+        // name,
+        uiSchema: {
+          // title,
+          'x-component': 'AssociationField',
+          'x-component-props': {
+            // mode: 'tags',
+            multiple: true,
+            fieldNames: {
+              label: sourceKey,
+              value: sourceKey,
+            },
+          },
+        },
+      },
+    };
+    defaults['foreignKeyFields'] = [
+      generateForeignKeyField({
+        type: sourceKey === 'id' ? 'bigInt' : 'string',
+        name: foreignKey,
+        collectionName: through,
+      }),
+      generateForeignKeyField({
+        type: targetKey === 'id' ? 'bigInt' : 'string',
+        name: otherKey,
+        collectionName: through,
+      }),
+    ];
+    defaults['throughCollection'] = {
+      key: uid(),
+      name: through,
+      title: through,
+      timestamps: true,
+      autoGenId: false,
+      hidden: true,
+      autoCreate: true,
+      isThrough: true,
+      sortable: false,
+    };
+    return reverseFieldHandle(defaults, options);
+  },
+  mock: async (options, { mockCollectionData }) => {
+    return mockCollectionData(options.target, faker.number.int({ min: 2, max: 5 }));
+  },
 };
