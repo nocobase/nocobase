@@ -381,24 +381,11 @@ const createCollections = async (collectionSettings: CollectionSetting | Collect
 
   const state = await api.storageState();
   const headers = getHeaders(state);
-  // const defaultCollectionSetting: Partial<CollectionSetting> = {
-  //   template: 'general',
-  //   logging: true,
-  //   autoGenId: true,
-  //   createdBy: true,
-  //   updatedBy: true,
-  //   createdAt: true,
-  //   updatedAt: true,
-  //   sortable: true,
-  //   view: false,
-  // };
-
   collectionSettings = Array.isArray(collectionSettings) ? collectionSettings : [collectionSettings];
 
   const result = await api.post(`/api/collections:mock`, {
     headers,
-    // data: collectionSettings.map((item) => Object.assign(defaultCollectionSetting, item)),
-    data: collectionSettings.filter((item) => !['users', 'roles'].includes(item.name)),
+    data: collectionSettings,
   });
 
   if (!result.ok()) {
