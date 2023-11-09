@@ -28,6 +28,7 @@ const subMenuDesignerCss = css`
   margin-right: -34px;
   padding: 0 34px 0 24px;
   width: calc(100% + 58px);
+  height: 100%;
   &:hover {
     > .general-schema-designer {
       display: block;
