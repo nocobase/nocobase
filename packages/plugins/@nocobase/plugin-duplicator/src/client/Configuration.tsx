@@ -250,8 +250,10 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
         dataTypes,
       },
     });
-    refresh?.();
     setIsModalOpen(false);
+    setTimeout(() => {
+      refresh();
+    }, 1000);
   };
 
   const handleCancel = () => {
@@ -348,8 +350,13 @@ export const BackupAndRestoreList = () => {
     const blob = new Blob([data.data]);
     saveAs(blob, fileData.name);
   };
-  const handleRefresh = () => {
-    queryFieldList();
+  const handleRefresh = async () => {
+    await queryFieldList();
+  };
+  const handleDestory = async (fileData) => {
+    await resource.destroy({ filterByTk: fileData.name });
+    await queryFieldList();
+    message.success(t('Operation succeeded'));
   };
 
   return (
@@ -429,7 +436,7 @@ export const BackupAndRestoreList = () => {
                 <Space split={<Divider type="vertical" />}>
                   <Restore ButtonComponent={'a'} title={t('Restore')} fileData={record} />
                   <a onClick={() => handleDownload(record)}>{t('Download')}</a>
-                  <a>{t('Delete')}</a>
+                  <a onClick={() => handleDestory(record)}>{t('Delete')}</a>
                 </Space>
               ),
             },
