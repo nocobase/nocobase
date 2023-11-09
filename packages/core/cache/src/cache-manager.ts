@@ -11,15 +11,17 @@ export type AppCacheOptions = {
 };
 
 export class CacheManager {
+  private default = 'memory';
   private stores = new Map<string, 'memory' | FactoryStore<Store, any>>();
   private caches = new Map<string, Cache>();
 
   async init(options: AppCacheOptions) {
+    this.default = options.default || 'memory';
     await this.register('memory', 'memory');
-    await this.create('memory', 'memory', options.memory);
+    await this.createWithOptions('memory', 'memory', options.memory);
     if (options.redis) {
       await this.register('redis', redisStore);
-      await this.create('redis', 'redis', options.redis);
+      await this.createWithOptions('redis', 'redis', options.redis);
     }
   }
 
@@ -33,22 +35,36 @@ export class CacheManager {
   }
 
   // Create a new cache with the name of store factory and custom config
-  async create(namespace: string, storeName: string, options?: any): Promise<Cache> {
+  private async createWithOptions(namespace: string, storeName: string, options: any): Promise<Cache> {
     const store = this.stores.get(storeName) as any;
     if (!store) {
       throw new Error(`Create cache failed, store is unavailable or not registered`);
-    }
-    if (lodash.isEmpty(options)) {
-      // Use the default cache if the options is empty
-      const cache = this.caches.get(storeName);
-      if (cache) {
-        return cache;
-      }
     }
     const space = await caching(store, options);
     const cache = new Cache({ namespace, cache: space });
     this.caches.set(namespace, cache);
     return cache;
+  }
+
+  create(namespace: string, storeName?: string): Cache;
+  create(namespace: string, storeName?: string, options?: any): Promise<Cache>;
+  create(namespace: string, storeName?: string, options?: any): Cache | Promise<Cache> {
+    storeName = storeName || this.default;
+    const store = this.stores.get(storeName) as any;
+    if (!store) {
+      throw new Error(`Create cache failed, store ${storeName} is unavailable or not registered`);
+    }
+    if (lodash.isEmpty(options)) {
+      // Use the default cache if the options is empty
+      const cache = this.caches.get(storeName);
+      if (!cache) {
+        throw new Error(`Create cache failed, default cache ${storeName} is not found`);
+      }
+      const space = new Cache({ namespace, cache: cache.cache });
+      this.caches.set(namespace, space);
+      return space;
+    }
+    return this.createWithOptions(namespace, storeName, options);
   }
 
   get(namespace: string): Cache {
@@ -57,5 +73,13 @@ export class CacheManager {
       throw new Error(`Get cache failed, ${namespace} is not found`);
     }
     return cache;
+  }
+
+  async flushAll() {
+    const promises = [];
+    for (const cache of this.caches.values()) {
+      promises.push(cache.reset());
+    }
+    await Promise.all(promises);
   }
 }

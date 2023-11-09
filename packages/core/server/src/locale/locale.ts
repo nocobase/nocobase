@@ -1,4 +1,4 @@
-import { Cache, createCache } from '@nocobase/cache';
+import { Cache } from '@nocobase/cache';
 import { lodash } from '@nocobase/utils';
 import Application from '../application';
 import { getResource } from './resource';
@@ -11,8 +11,6 @@ export class Locale {
 
   constructor(app: Application) {
     this.app = app;
-    this.cache = createCache();
-
     this.app.on('afterLoad', async () => {
       this.app.log.debug('load locale resource');
       this.app.setMaintainingMessage('load locale resource');
@@ -23,6 +21,8 @@ export class Locale {
   }
 
   async load() {
+    this.cache = this.app.cacheManager.create('locale');
+
     await this.get(this.defaultLang);
   }
 
@@ -36,7 +36,7 @@ export class Locale {
     };
     for (const [name, fn] of this.localeFn) {
       // this.app.log.debug(`load [${name}] locale resource `);
-      const result = await this.wrapCache(`locale:${name}:${lang}`, async () => await fn(lang));
+      const result = await this.wrapCache(`${name}:${lang}`, async () => await fn(lang));
       if (result) {
         defaults[name] = result;
       }
@@ -58,7 +58,7 @@ export class Locale {
   }
 
   async getCacheResources(lang: string) {
-    return await this.wrapCache(`locale:resources:${lang}`, () => this.getResources(lang));
+    return await this.wrapCache(`resources:${lang}`, () => this.getResources(lang));
   }
 
   getResources(lang: string) {

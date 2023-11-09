@@ -716,10 +716,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._db = this.createDatabase(options);
 
+    this._cacheManager = createCacheManager(this, options.cache);
     this._resourcer = createResourcer(options);
     this._cli = this.createCli();
     this._i18n = createI18n(options);
-    this._cacheManager = createCacheManager(this, options.cache);
     this.context.db = this._db;
     this.context.logger = this._logger;
     this.context.resourcer = this._resourcer;

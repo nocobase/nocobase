@@ -97,7 +97,7 @@ export class LocalizationManagementPlugin extends Plugin {
         .catch((err) => {});
     });
 
-    this.resources = new Resources(this.db);
+    this.resources = new Resources(this.app, this.db);
 
     this.registerUISchemahook();
 
