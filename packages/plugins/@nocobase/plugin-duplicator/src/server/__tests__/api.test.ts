@@ -77,8 +77,10 @@ describe('backup files', () => {
         .agent()
         .resource('backupFiles')
         .restore({
-          filterByTk: dumpKey,
-          dataTypes: ['meta', 'config', 'business'],
+          values: {
+            filterByTk: dumpKey,
+            dataTypes: ['meta', 'config', 'business'],
+          },
         });
 
       expect(restoreResponse.status).toBe(200);
@@ -112,8 +114,10 @@ describe('backup files', () => {
         .agent()
         .resource('backupFiles')
         .restore({
-          key: data['key'],
-          dataTypes: ['meta', 'config', 'business'],
+          values: {
+            key: data['key'],
+            dataTypes: ['meta', 'config', 'business'],
+          },
         });
 
       expect(restoreResponse.status).toBe(200);

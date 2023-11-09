@@ -135,7 +135,7 @@ export default {
     },
 
     async restore(ctx, next) {
-      const { filterByTk, dataTypes, key } = ctx.action.params;
+      const { dataTypes, filterByTk, key } = ctx.action.params.values;
 
       const filePath = (() => {
         if (key) {
