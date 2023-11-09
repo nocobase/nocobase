@@ -6,6 +6,7 @@ import {
   SchemaSettingsPopupProps,
   SchemaSettingsProps,
   SchemaSettingsRemoveProps,
+  SchemaSettingsSelectItemProps,
   SchemaSettingsSubMenuProps,
   SchemaSettingsSwitchItemProps,
 } from '../../schema-settings';
@@ -18,13 +19,14 @@ export interface SchemaSettingOptions<T = {}> extends Omit<SchemaSettingsProps, 
   style?: React.CSSProperties;
 }
 
-export type SchemaSettingItemBaseType<T = {}> = {
+export type SchemaSettingItemBaseType<T = any> = {
   name: string;
   sort?: number;
-  Component?: string | ComponentType<T>;
-  componentProps?: T;
-  useComponentProps?: () => T;
+  Component?: string | ComponentType<Omit<T, 'children'>>;
+  componentProps?: Omit<T, 'children'>;
+  useComponentProps?: () => Omit<T, 'children'>;
   useVisible?: () => boolean;
+  children?: SchemaSettingItemBaseType[];
   [index: string]: any;
 };
 
@@ -38,7 +40,6 @@ export interface SchemaSettingItemCommonType extends SchemaSettingItemBaseType<S
 
 export type SchemaSettingItemWithChildrenType = SchemaSettingItemBaseType<SchemaSettingsSubMenuProps> & {
   type: 'subMenu' | 'itemGroup';
-  children?: SchemaSettingItemBaseType[];
 };
 
 export type SchemaSettingItemRemoveType = SchemaSettingItemBaseType<SchemaSettingsRemoveProps> & {
@@ -61,7 +62,22 @@ export type SchemaSettingItemModalType = SchemaSettingItemBaseType<SchemaSetting
   type: 'modal';
 };
 
+export type SchemaSettingItemSelectType = SchemaSettingItemBaseType<SchemaSettingsSelectItemProps> & {
+  type: 'select';
+};
+
+export type SchemaSettingComponentItem = {
+  name: string;
+  Component: string | ComponentType;
+  sort?: number;
+  componentProps?: any;
+  useComponentProps?: () => any;
+  useVisible?: () => boolean;
+  children?: SchemaSettingItemBaseType[];
+};
+
 export type SchemaSettingItemType =
+  | SchemaSettingComponentItem
   | SchemaSettingItemNoProps
   | SchemaSettingItemRemoveType
   | SchemaSettingItemSwitchType
@@ -69,5 +85,5 @@ export type SchemaSettingItemType =
   | SchemaSettingItemCascaderType
   | SchemaSettingItemModalType
   | SchemaSettingItemCommonType
-  | SchemaSettingItemWithChildrenType
-  | SchemaSettingItemBaseType;
+  | SchemaSettingItemSelectType
+  | SchemaSettingItemWithChildrenType;

@@ -6,6 +6,33 @@ group:
 
 # SchemaSettings
 
+## API
+
+### SchemaSetting API
+
+#### new SchemaSetting(options)
+
+##### name
+
+##### title
+
+##### items
+
+#### schemaSetting.add()
+
+#### schemaSetting.remove()
+
+#### app.schemaSettingsManager
+
+#### useSchemaSettings()
+
+#### useSchemaSettingItem()
+
+#### useSchemaSettingRender()
+
+### SchemaSettings Component
+
+
 ## Examples
 
 ### 基础用法

@@ -163,6 +163,12 @@ export interface SchemaSettingsModalItemProps {
   hide?: boolean;
 }
 
+export interface SchemaSettingsSelectItemProps
+  extends Omit<SchemaSettingsItemProps, 'onChange' | 'onClick'>,
+    Omit<SelectWithTitleProps, 'title' | 'defaultValue'> {
+  value?: SelectWithTitleProps['defaultValue'];
+}
+
 type SchemaSettingsNested = {
   Remove?: React.FC<SchemaSettingsRemoveProps>;
   Item?: React.FC<SchemaSettingsItemProps>;
@@ -172,6 +178,7 @@ type SchemaSettingsNested = {
   CascaderItem?: React.FC<SchemaSettingsCascaderItemProps>;
   DataScope?: React.FC<SchemaSettingsDataScopeProps>;
   ModalItem: React.FC<SchemaSettingsModalItemProps>;
+  SelectItem: React.FC<SchemaSettingsSelectItemProps>;
   [key: string]: any;
 };
 
@@ -764,7 +771,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
   );
 };
 
-SchemaSettings.SelectItem = function SelectItem(props) {
+SchemaSettings.SelectItem = function SelectItem(props: SchemaSettingsSelectItemProps) {
   const { title, name, options, value, onChange, onClick, ...others } = props;
 
   return (
@@ -1972,21 +1979,16 @@ export const isPatternDisabled = (fieldSchema: Schema) => {
   return fieldSchema?.['x-component-props']?.['pattern-disable'] == true;
 };
 
-function SelectWithTitle({
-  name,
-  title,
-  defaultValue,
-  onChange,
-  options,
-  onClick,
-}: {
+interface SelectWithTitleProps {
   name?: string;
   title?: any;
   defaultValue?: any;
   options?: any;
   onChange?: (...args: any[]) => void;
   onClick?: (...args: any[]) => void;
-}) {
+}
+
+function SelectWithTitle({ name, title, defaultValue, onChange, options, onClick }: SelectWithTitleProps) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef<any>(null);
 

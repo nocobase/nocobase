@@ -23,7 +23,7 @@ import { useColorFields } from '../table-v2/Table.Column.Designer';
 export const formItemSettings = new SchemaSetting({
   name: 'FormItemSettings',
   items: [
-    ...generalSettingsItems,
+    ...(generalSettingsItems as any),
     {
       name: 'quickUpload',
       type: 'switch',

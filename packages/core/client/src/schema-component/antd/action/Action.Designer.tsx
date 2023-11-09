@@ -899,6 +899,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
   {
     name: 'Customize',
     Component: MenuGroup,
+    type: 'itemGroup',
     children: [
       {
         name: 'editButton',
