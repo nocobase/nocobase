@@ -15,5 +15,5 @@ export const integer = {
       'x-validator': 'integer',
     },
   }),
-  mock: () => faker.number.int(),
+  mock: () => faker.number.int({ max: 10000 }),
 };

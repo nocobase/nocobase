@@ -107,7 +107,7 @@ export const oho = {
     return reverseFieldHandle(defaults, options);
   },
   mock: async (options, { mockCollectionData }) => {
-    return mockCollectionData(options.target);
+    return mockCollectionData(options.target, 1, true);
   },
 };
 
@@ -160,7 +160,7 @@ export const obo = {
     return reverseFieldHandle(defaults, options);
   },
   mock: async (options, { mockCollectionData }) => {
-    return mockCollectionData(options.target);
+    return mockCollectionData(options.target, 1, true);
   },
 };
 
@@ -214,7 +214,7 @@ export const o2m = {
     return reverseFieldHandle(defaults, options);
   },
   mock: async (options, { mockCollectionData }) => {
-    return mockCollectionData(options.target, faker.number.int({ min: 2, max: 5 }));
+    return mockCollectionData(options.target, faker.number.int({ min: 2, max: 5 }), true);
   },
 };
 
@@ -269,7 +269,7 @@ export const m2o = {
     return reverseFieldHandle(defaults, options);
   },
   mock: async (options, { mockCollectionData }) => {
-    return mockCollectionData(options.target);
+    return mockCollectionData(options.target, 1, true);
   },
 };
 
@@ -352,6 +352,6 @@ export const m2m = {
     return reverseFieldHandle(defaults, options);
   },
   mock: async (options, { mockCollectionData }) => {
-    return mockCollectionData(options.target, faker.number.int({ min: 2, max: 5 }));
+    return mockCollectionData(options.target, faker.number.int({ min: 2, max: 5 }), true);
   },
 };

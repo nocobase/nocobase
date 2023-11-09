@@ -14,5 +14,5 @@ export const number = {
       },
     },
   }),
-  mock: () => faker.number.float(),
+  mock: () => faker.number.float({ max: 1000 }),
 };

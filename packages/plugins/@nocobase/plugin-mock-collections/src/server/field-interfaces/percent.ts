@@ -15,5 +15,5 @@ export const percent = {
       },
     },
   }),
-  mock: () => faker.number.float(),
+  mock: () => faker.number.float({ max: 1000 }),
 };
