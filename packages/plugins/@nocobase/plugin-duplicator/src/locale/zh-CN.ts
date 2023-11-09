@@ -24,4 +24,7 @@ export default {
   Download: '下载',
   'Restore backup from local': '从本地回复备份',
   'Backup instructions': '备份说明',
+  'File size':'文件大小',
+  'New backup':'新建备份',
+  'Origin':'来源'
 };

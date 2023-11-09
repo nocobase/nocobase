@@ -121,7 +121,7 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
       children: (
         <>
           <Alert style={{ marginBottom: 16 }} message={'占位，系统元数据说明'} />
-          <Table bordered size={'small'} dataSource={dataSource?.meta} columns={columns} />
+          <Table bordered size={'small'} dataSource={dataSource?.meta} columns={columns} scroll={{ y: 400 }} />
         </>
       ),
     },
@@ -131,7 +131,7 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
       children: (
         <>
           <Alert style={{ marginBottom: 16 }} message={'占位，系统配置数据说明'} />
-          <Table bordered size={'small'} dataSource={dataSource?.config} columns={columns} />
+          <Table bordered size={'small'} dataSource={dataSource?.config} columns={columns} scroll={{ y: 400 }} />
         </>
       ),
     },
@@ -141,7 +141,7 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
       children: (
         <>
           <Alert style={{ marginBottom: 16 }} message={'占位，系统业务数据说明'} />
-          <Table bordered size={'small'} dataSource={dataSource?.business} columns={columns} />
+          <Table bordered size={'small'} dataSource={dataSource?.business} columns={columns} scroll={{ y: 400 }} />
         </>
       ),
     },
@@ -268,7 +268,7 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
       <ButtonComponent icon={<PlusOutlined />} type="primary" onClick={showModal}>
         {t('New backup')}
       </ButtonComponent>
-      <Modal title="New backup" width={800} open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
+      <Modal title={t('New backup')} width={800} open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
         <strong style={{ fontWeight: 600, display: 'block', margin: '16px 0 8px' }}>
           {t('Select the data to be backed up')} (
           <LearnMore isBackup={true} />
@@ -381,8 +381,9 @@ export const BackupAndRestoreList = () => {
           loading={loading}
           columns={[
             {
-              title: 'Name',
+              title: t('Name'),
               dataIndex: 'name',
+              width: 400,
               onCell: (data) => {
                 return data.inProgress
                   ? {
@@ -400,7 +401,7 @@ export const BackupAndRestoreList = () => {
                 ),
             },
             {
-              title: 'File size',
+              title: t('File size'),
               dataIndex: 'fileSize',
               onCell: (data) => {
                 return data.inProgress
@@ -411,7 +412,7 @@ export const BackupAndRestoreList = () => {
               },
             },
             {
-              title: 'Created at',
+              title: t('Created at'),
               dataIndex: 'createdAt',
               onCell: (data) => {
                 return data.inProgress
@@ -422,7 +423,7 @@ export const BackupAndRestoreList = () => {
               },
             },
             {
-              title: 'Actions',
+              title: t('Actions'),
               dataIndex: 'actions',
               onCell: (data) => {
                 return data.inProgress

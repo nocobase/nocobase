@@ -17,7 +17,10 @@ const locale = {
   'file upload failed': 'O envio do ficheiro falhou',
   'Download':'download',
   'Restore backup from local':'Restaurar a cópia de segurança localmente',
-  'Backup instructions':'Instruções de cópia de segurança'
+  'Backup instructions':'Instruções de cópia de segurança',
+  'File size':'tamanho do ficheiro',
+  'New backup':'Nova Cópia de Segurança',
+  'Origin':'fonte'
 };
 
 export default locale;

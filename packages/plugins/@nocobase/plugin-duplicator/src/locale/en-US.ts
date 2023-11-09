@@ -14,10 +14,13 @@ const locale = {
   'Backed up successfully': 'Backed up successfully',
   Plugin: 'Plugin',
   'file uploaded successfully': 'file uploaded successfully',
-  'file upload failed':'file upload failed',
-  'Download':'Download',
-  'Restore backup from local':'Restore backup from local',
-  'Backup instructions':'Backup instructions'
+  'file upload failed': 'file upload failed',
+  Download: 'Download',
+  'Restore backup from local': 'Restore backup from local',
+  'Backup instructions': 'Backup instructions',
+  'File size': 'File size',
+  'New backup':'New backup',
+  'Origin':'Origin'
 };
 
 export default locale;
