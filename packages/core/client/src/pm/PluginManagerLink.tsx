@@ -6,16 +6,18 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { ActionContextProvider, useCompile } from '../schema-component';
+import { useToken } from '../style';
 import { SettingsCenterContext, getPluginsTabs } from './index';
 
 export const PluginManagerLink = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { token } = useToken();
   return (
     <Tooltip title={t('Plugin manager')}>
       <Button
         data-testid={'plugin-manager-button'}
-        icon={<ApiOutlined />}
+        icon={<ApiOutlined style={{ color: token.colorTextHeaderMenu }} />}
         title={t('Plugin manager')}
         onClick={() => {
           navigate('/admin/pm/list');
@@ -42,6 +44,7 @@ export const SettingsCenterDropdown = () => {
   const compile = useCompile();
   const navigate = useNavigate();
   const itemData = useContext(SettingsCenterContext);
+  const { token } = useToken();
   const pluginsTabs = getPluginsTabs(itemData, snippets);
   const bookmarkTabs = getBookmarkTabs(pluginsTabs);
   const menu = useMemo<MenuProps>(() => {
@@ -70,7 +73,7 @@ export const SettingsCenterDropdown = () => {
       <Dropdown placement="bottom" menu={menu}>
         <Button
           data-testid="settings-center-button"
-          icon={<SettingOutlined />}
+          icon={<SettingOutlined style={{ color: token.colorTextHeaderMenu }} />}
           // title={t('All plugin settings')}
         />
       </Dropdown>
