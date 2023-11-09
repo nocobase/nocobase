@@ -16,12 +16,13 @@ export class CacheManager {
   private caches = new Map<string, Cache>();
 
   async init(options: AppCacheOptions) {
-    this.default = options.default || 'memory';
+    const { default: defaultCache, memory, redis } = options || {};
+    this.default = defaultCache || 'memory';
     await this.register('memory', 'memory');
-    await this.createWithOptions('memory', 'memory', options.memory);
+    await this.createWithOptions('memory', 'memory', memory);
     if (options.redis) {
       await this.register('redis', redisStore);
-      await this.createWithOptions('redis', 'redis', options.redis);
+      await this.createWithOptions('redis', 'redis', redis);
     }
   }
 
