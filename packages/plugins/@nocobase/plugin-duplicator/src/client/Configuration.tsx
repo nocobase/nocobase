@@ -1,5 +1,5 @@
 import { useAPIClient, useCompile, Checkbox } from '@nocobase/client';
-import { Button, Card, message, Modal, Table, Upload, Tabs, Alert, Divider, Space } from 'antd';
+import { Button, Card, message, Modal, Table, Upload, Tabs, Alert, Divider, Space, App } from 'antd';
 import { FormItem } from '@formily/antd-v5';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { UploadProps, TabsProps } from 'antd';
@@ -256,7 +256,7 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
     setIsModalOpen(false);
     setTimeout(() => {
       refresh();
-    }, 1000);
+    }, 500);
   };
 
   const handleCancel = () => {
@@ -324,6 +324,7 @@ export const BackupAndRestoreList = () => {
   const apiClient = useAPIClient();
   const [dataSource, setDataSource] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { modal } = App.useApp();
   const resource = useMemo(() => {
     return apiClient.resource('backupFiles');
   }, [apiClient]);
@@ -352,10 +353,16 @@ export const BackupAndRestoreList = () => {
   const handleRefresh = async () => {
     await queryFieldList();
   };
-  const handleDestory = async (fileData) => {
-    await resource.destroy({ filterByTk: fileData.name });
-    await queryFieldList();
-    message.success(t('Operation succeeded'));
+  const handleDestory = (fileData) => {
+    modal.confirm({
+      title: t('Delete record'),
+      content: t('Are you sure you want to delete it?'),
+      onOk: async () => {
+        await resource.destroy({ filterByTk: fileData.name });
+        await queryFieldList();
+        message.success(t('Operation succeeded'));
+      },
+    });
   };
 
   return (
