@@ -169,7 +169,7 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
   const [dataTypes, setDataTypes] = useState<any[]>(['meta']);
   const compile = useCompile();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [restoreData, setRestoreData] = useState<any>({});
+  const [restoreData, setRestoreData] = useState<any>(null);
   const apiClient = useAPIClient();
   const resource = useMemo(() => {
     return apiClient.resource('backupFiles');
@@ -206,16 +206,14 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
         onOk={handleOk}
         onCancel={handleCancel}
       >
-        {upload && <RestoreUpload />}
-        {!upload && (
-          <strong style={{ fontWeight: 600, display: 'block', margin: '16px 0 8px' }}>
+        {upload && !restoreData && <RestoreUpload setRestoreData={setRestoreData} />}
+        {(!upload || restoreData) && [
+          <strong style={{ fontWeight: 600, display: 'block', margin: '16px 0 8px' }} key="info">
             {t('Select the data to be backed up')} (
             <LearnMore collectionsData={restoreData?.dumpableCollectionsGroupByDataTypes} />
             ):
-          </strong>
-        )}
-        {!upload && (
-          <div style={{ lineHeight: 2, marginBottom: 8 }}>
+          </strong>,
+          <div style={{ lineHeight: 2, marginBottom: 8 }} key="dataType">
             <FormItem>
               <Checkbox.Group
                 options={compile(
@@ -228,8 +226,8 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
                 onChange={(checkValue) => setDataTypes(checkValue)}
               />
             </FormItem>
-          </div>
-        )}
+          </div>,
+        ]}
       </Modal>
     </>
   );
@@ -289,7 +287,6 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
 };
 
 const RestoreUpload: React.FC<any> = (props: any) => {
-  const [restoreData, setRestoreData] = useState(null);
   const { t } = useDuplicatorTranslation();
   const uploadProps: UploadProps = {
     multiple: false,
@@ -304,7 +301,8 @@ const RestoreUpload: React.FC<any> = (props: any) => {
       }
       if (status === 'done') {
         message.success(`${info.file.name} ` + t('file uploaded successfully'));
-        setRestoreData(info.file.response?.data);
+        props.setRestoreData(info.file.response?.data?.meta);
+        console.log(info.file.response?.data?.meta);
       } else if (status === 'error') {
         message.error(`${info.file.name} ` + t('file upload failed'));
         info.fileList.splice(0, 1);
@@ -349,8 +347,8 @@ export const BackupAndRestoreList = () => {
       method: 'get',
       params: {
         filterByTk: fileData.name,
-        responseType: 'blob',
       },
+      responseType: 'blob',
     });
     const blob = new Blob([data.data]);
     saveAs(blob, fileData.name);
