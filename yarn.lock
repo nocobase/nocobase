@@ -4752,6 +4752,40 @@
     classcat "^5.0.3"
     zustand "^4.3.1"
 
+"@redis/bloom@1.2.0", "@redis/bloom@^1.2.0":
+  version "1.2.0"
+  resolved "https://registry.npmjs.org/@redis/bloom/-/bloom-1.2.0.tgz#d3fd6d3c0af3ef92f26767b56414a370c7b63b71"
+  integrity sha512-HG2DFjYKbpNmVXsa0keLHp/3leGJz1mjh09f2RLGGLQZzSHpkmZWuwJbAvo3QcRY8p80m5+ZdXZdYOSBLlp7Cg==
+
+"@redis/client@1.5.11", "@redis/client@^1.5.8":
+  version "1.5.11"
+  resolved "https://registry.npmjs.org/@redis/client/-/client-1.5.11.tgz#5ee8620fea56c67cb427228c35d8403518efe622"
+  integrity sha512-cV7yHcOAtNQ5x/yQl7Yw1xf53kO0FNDTdDU6bFIMbW6ljB7U7ns0YRM+QIkpoqTAt6zK5k9Fq0QWlUbLcq9AvA==
+  dependencies:
+    cluster-key-slot "1.1.2"
+    generic-pool "3.9.0"
+    yallist "4.0.0"
+
+"@redis/graph@1.1.0", "@redis/graph@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.npmjs.org/@redis/graph/-/graph-1.1.0.tgz#cc2b82e5141a29ada2cce7d267a6b74baa6dd519"
+  integrity sha512-16yZWngxyXPd+MJxeSr0dqh2AIOi8j9yXKcKCwVaKDbH3HTuETpDVPcLujhFYVPtYrngSco31BUcSa9TH31Gqg==
+
+"@redis/json@1.0.6", "@redis/json@^1.0.4":
+  version "1.0.6"
+  resolved "https://registry.npmjs.org/@redis/json/-/json-1.0.6.tgz#b7a7725bbb907765d84c99d55eac3fcf772e180e"
+  integrity sha512-rcZO3bfQbm2zPRpqo82XbW8zg4G/w4W3tI7X8Mqleq9goQjAGLL7q/1n1ZX4dXEAmORVZ4s1+uKLaUOg7LrUhw==
+
+"@redis/search@1.1.5", "@redis/search@^1.1.3":
+  version "1.1.5"
+  resolved "https://registry.npmjs.org/@redis/search/-/search-1.1.5.tgz#682b68114049ff28fdf2d82c580044dfb74199fe"
+  integrity sha512-hPP8w7GfGsbtYEJdn4n7nXa6xt6hVZnnDktKW4ArMaFQ/m/aR7eFvsLQmG/mn1Upq99btPJk+F27IQ2dYpCoUg==
+
+"@redis/time-series@1.0.5", "@redis/time-series@^1.0.4":
+  version "1.0.5"
+  resolved "https://registry.npmjs.org/@redis/time-series/-/time-series-1.0.5.tgz#a6d70ef7a0e71e083ea09b967df0a0ed742bc6ad"
+  integrity sha512-IFjIgTusQym2B5IZJG3XKr5llka7ey84fw/NOYqESP5WUfQs9zz1ww/9+qoz4ka/S6KcGBodzlCeZ5UImKbscg==
+
 "@remix-run/router@1.7.1":
   version "1.7.1"
   resolved "https://registry.npmjs.org/@remix-run/router/-/router-1.7.1.tgz#fea7ac35ae4014637c130011f59428f618730498"
@@ -5507,10 +5541,6 @@
   dependencies:
     "@types/connect" "*"
     "@types/node" "*"
-
-"@types/cache-manager@^4.0.2":
-  version "4.0.2"
-  resolved "https://registry.npmmirror.com/@types/cache-manager/-/cache-manager-4.0.2.tgz#5e76dd9e7881c23f332c2f48e5f326bd05ba9ac9"
 
 "@types/chai-subset@^1.3.3":
   version "1.3.3"
@@ -7680,10 +7710,6 @@ async-validator@^4.1.0:
   version "4.2.5"
   resolved "https://registry.npmmirror.com/async-validator/-/async-validator-4.2.5.tgz#c96ea3332a521699d0afaaceed510a54656c6339"
 
-async@3.2.3:
-  version "3.2.3"
-  resolved "https://registry.npmmirror.com/async/-/async-3.2.3.tgz#ac53dafd3f4720ee9e8a160628f18ea91df196c9"
-
 async@^2.6.3, async@^2.6.4, async@~2.6.1:
   version "2.6.4"
   resolved "https://registry.npmmirror.com/async/-/async-2.6.4.tgz#706b7ff6084664cd7eae713f6f965433b5504221"
@@ -8412,19 +8438,27 @@ cache-content-type@^1.0.0:
     mime-types "^2.1.18"
     ylru "^1.2.0"
 
-cache-manager-fs-hash@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.npmmirror.com/cache-manager-fs-hash/-/cache-manager-fs-hash-1.0.0.tgz#9a3f3fa239c48c54fc6b00575032b72c07dcad99"
+cache-manager-redis-yet@^4.1.2:
+  version "4.1.2"
+  resolved "https://registry.npmjs.org/cache-manager-redis-yet/-/cache-manager-redis-yet-4.1.2.tgz#fa04df1a979a42585393a7a9918168978a7211ec"
+  integrity sha512-pM2K1ZlOv8gQpE1Z5mcDrfLj5CsNKVRiYua/SZ12j7LEDgfDeFVntI6JSgIw0siFSR/9P/FpG30scI3frHwibA==
   dependencies:
-    lockfile "^1.0.4"
+    "@redis/bloom" "^1.2.0"
+    "@redis/client" "^1.5.8"
+    "@redis/graph" "^1.1.0"
+    "@redis/json" "^1.0.4"
+    "@redis/search" "^1.1.3"
+    "@redis/time-series" "^1.0.4"
+    cache-manager "^5.2.2"
+    redis "^4.6.7"
 
-cache-manager@^4.1.0:
-  version "4.1.0"
-  resolved "https://registry.npmmirror.com/cache-manager/-/cache-manager-4.1.0.tgz#aa986421f1c975a862d6de88edb9ab1d30f4bd39"
+cache-manager@^5.2.2, cache-manager@^5.2.4:
+  version "5.2.4"
+  resolved "https://registry.npmjs.org/cache-manager/-/cache-manager-5.2.4.tgz#01bebe2cc6bef993e3e959d59d3a25a3f2658df1"
+  integrity sha512-gkuCjug16NdGvKm/sydxGVx17uffrSWcEe2xraBtwRCgdYcFxwJAla4OYpASAZT2yhSoxgDiWL9XH6IAChcZJA==
   dependencies:
-    async "3.2.3"
     lodash.clonedeep "^4.5.0"
-    lru-cache "^7.10.1"
+    lru-cache "^10.0.1"
 
 cacheable-request@^6.0.0:
   version "6.1.0"
@@ -8875,6 +8909,11 @@ cloneable-readable@^1.0.0:
 clsx@^1.2.1:
   version "1.2.1"
   resolved "https://registry.npmmirror.com/clsx/-/clsx-1.2.1.tgz#0ddc4a20a549b59c93a4116bb26f5294ca17dc12"
+
+cluster-key-slot@1.1.2:
+  version "1.1.2"
+  resolved "https://registry.npmjs.org/cluster-key-slot/-/cluster-key-slot-1.1.2.tgz#88ddaa46906e303b5de30d3153b7d9fe0a0c19ac"
+  integrity sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==
 
 cmd-shim@^4.1.0:
   version "4.1.0"
@@ -12409,6 +12448,11 @@ generate-function@^2.3.1:
   dependencies:
     is-property "^1.0.2"
 
+generic-pool@3.9.0:
+  version "3.9.0"
+  resolved "https://registry.npmjs.org/generic-pool/-/generic-pool-3.9.0.tgz#36f4a678e963f4fdb8707eab050823abc4e8f5e4"
+  integrity sha512-hymDOu5B53XvN4QT9dBmZxPX4CWhBPPLguTZ9MMFeFa/Kg0xWVfylOVNlJji/E7yTZWFd/q9GO5TxDLq156D7g==
+
 genfun@^4.0.1:
   version "4.0.1"
   resolved "https://registry.npmmirror.com/genfun/-/genfun-4.0.1.tgz#ed10041f2e4a7f1b0a38466d17a5c3e27df1dfc1"
@@ -15783,12 +15827,6 @@ locate-path@^6.0.0:
   dependencies:
     p-locate "^5.0.0"
 
-lockfile@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.npmmirror.com/lockfile/-/lockfile-1.0.4.tgz#07f819d25ae48f87e538e6578b6964a4981a5609"
-  dependencies:
-    signal-exit "^3.0.2"
-
 lodash-es@^4.17.15, lodash-es@^4.17.21:
   version "4.17.21"
   resolved "https://registry.npmmirror.com/lodash-es/-/lodash-es-4.17.21.tgz#43e626c46e6591b7750beb2b50117390c609e3ee"
@@ -15983,6 +16021,11 @@ lru-cache@8.0.5:
   version "8.0.5"
   resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-8.0.5.tgz#983fe337f3e176667f8e567cfcce7cb064ea214e"
 
+lru-cache@^10.0.1:
+  version "10.0.1"
+  resolved "https://registry.npmjs.org/lru-cache/-/lru-cache-10.0.1.tgz#0a3be479df549cca0e5d693ac402ff19537a6b7a"
+  integrity sha512-IJ4uwUTi2qCccrioU6g9g/5rvvVl13bsdczUUcqbciD9iLr095yj8DQKdObriEvuNSx325N1rV1O0sJFszx75g==
+
 lru-cache@^4.0.1, lru-cache@^4.1.1:
   version "4.1.5"
   resolved "https://registry.npmmirror.com/lru-cache/-/lru-cache-4.1.5.tgz#8bbe50ea85bed59bc9e33dcab8235ee9bcf443cd"
@@ -16002,7 +16045,7 @@ lru-cache@^6.0.0:
   dependencies:
     yallist "^4.0.0"
 
-lru-cache@^7.10.1, lru-cache@^7.14.1:
+lru-cache@^7.14.1:
   version "7.18.3"
   resolved "https://registry.npmmirror.com/lru-cache/-/lru-cache-7.18.3.tgz#f793896e0fd0e954a59dfdd82f0773808df6aa89"
 
@@ -20317,6 +20360,18 @@ redent@^3.0.0:
     indent-string "^4.0.0"
     strip-indent "^3.0.0"
 
+redis@^4.6.10, redis@^4.6.7:
+  version "4.6.10"
+  resolved "https://registry.npmjs.org/redis/-/redis-4.6.10.tgz#07f6ea2b2c5455b098e76d1e8c9b3376114e9458"
+  integrity sha512-mmbyhuKgDiJ5TWUhiKhBssz+mjsuSI/lSZNPI9QvZOYzWvYGejtb+W3RlDDf8LD6Bdl5/mZeG8O1feUGhXTxEg==
+  dependencies:
+    "@redis/bloom" "1.2.0"
+    "@redis/client" "1.5.11"
+    "@redis/graph" "1.1.0"
+    "@redis/json" "1.0.6"
+    "@redis/search" "1.1.5"
+    "@redis/time-series" "1.0.5"
+
 redux@^4.0.0, redux@^4.0.4:
   version "4.2.1"
   resolved "https://registry.npmmirror.com/redux/-/redux-4.2.1.tgz#c08f4306826c49b5e9dc901dee0452ea8fce6197"
@@ -23985,6 +24040,10 @@ y18n@^5.0.5:
   version "5.0.8"
   resolved "https://registry.npmmirror.com/y18n/-/y18n-5.0.8.tgz#7f4934d0f7ca8c56f95314939ddcd2dd91ce1d55"
 
+yallist@4.0.0, yallist@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.npmmirror.com/yallist/-/yallist-4.0.0.tgz#9bb92790d9c0effec63be73519e11a35019a3a72"
+
 yallist@^2.1.2:
   version "2.1.2"
   resolved "https://registry.npmmirror.com/yallist/-/yallist-2.1.2.tgz#1c11f9218f076089a47dd512f93c6699a6a81d52"
@@ -23992,10 +24051,6 @@ yallist@^2.1.2:
 yallist@^3.0.0, yallist@^3.0.2, yallist@^3.1.1:
   version "3.1.1"
   resolved "https://registry.npmmirror.com/yallist/-/yallist-3.1.1.tgz#dbb7daf9bfd8bac9ab45ebf602b8cbad0d5d08fd"
-
-yallist@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.npmmirror.com/yallist/-/yallist-4.0.0.tgz#9bb92790d9c0effec63be73519e11a35019a3a72"
 
 yaml@^1.10.0:
   version "1.10.2"
