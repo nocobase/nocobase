@@ -15,12 +15,12 @@ export class CacheManager {
   private stores = new Map<string, 'memory' | FactoryStore<Store, any>>();
   private caches = new Map<string, Cache>();
 
-  async init(options: AppCacheOptions) {
+  async init(options?: AppCacheOptions) {
     const { default: defaultCache, memory, redis } = options || {};
     this.default = defaultCache || 'memory';
     await this.register('memory', 'memory');
     await this.createWithOptions('memory', 'memory', memory);
-    if (options.redis) {
+    if (redis) {
       await this.register('redis', redisStore);
       await this.createWithOptions('redis', 'redis', redis);
     }
