@@ -3,6 +3,8 @@ export default {
     return {
       fields: [
         { name: 'exclude', type: 'json' },
+        { name: 'title', type: 'string', interface: 'input' },
+        { name: 'startAt', type: 'date', interface: 'datetime' },
         {
           name: 'cron',
           type: 'string',

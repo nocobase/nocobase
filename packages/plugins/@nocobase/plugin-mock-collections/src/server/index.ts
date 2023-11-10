@@ -5,6 +5,7 @@ import { merge, uid } from '@nocobase/utils';
 import _ from 'lodash';
 import collectionTemplates from './collection-templates';
 import * as fieldInterfaces from './field-interfaces';
+import { mockAttachment } from './field-interfaces';
 
 export class PluginMockCollectionsServer extends Plugin {
   async load() {
@@ -191,6 +192,9 @@ export class PluginMockCollectionsServer extends Plugin {
           const collection = ctx.db.getCollection(collectionName) as Collection;
           const items = await Promise.all(
             _.range(count).map(async (i) => {
+              if (collection.options.template === 'file') {
+                return mockAttachment();
+              }
               const values = {};
               if (collection.options.sortable) {
                 values['sort'] = i + 1;
