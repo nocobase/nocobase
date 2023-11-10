@@ -88,62 +88,43 @@ export class Restorer extends AppMigrator {
       }
     };
 
-    // import applicationPlugins first
-    await importCollection('applicationPlugins');
-
-    // reload app
-    await this.app.reload();
-
-    const { dumpableCollectionsGroupByDataTypes } = await this.parseBackupFile();
+    const { dumpableCollectionsGroupByDataTypes, delayCollections } = await this.parseBackupFile();
 
     // import meta collections
     const metaCollections = dumpableCollectionsGroupByDataTypes.meta;
 
-    const delayCollections = [];
-
-    for (const collectionName of metaCollections) {
-      if (collectionName === 'applicationPlugins') {
+    for (const collection of metaCollections) {
+      if (delayCollections.includes(collection.name)) {
         continue;
       }
 
-      const collection = this.app.db.getCollection(collectionName);
-
-      if (!collection) {
-        throw new Error(`Collection ${collectionName} not found`);
-      }
-
-      if (collection.options.duplicator['delayRestore']) {
-        delayCollections.push(collectionName);
-        continue;
-      }
-
-      await importCollection(collectionName);
+      await importCollection(collection.name);
     }
 
-    // load imported collections into database object
-    await (this.app.db.getRepository('collections') as any).load();
-
-    // sync database
-    await this.app.db.sync({
-      force: false,
-      alter: {
-        drop: false,
-      },
-    });
+    // // load imported collections into database object
+    // await (this.app.db.getRepository('collections') as any).load();
+    //
+    // // sync database
+    // await this.app.db.sync({
+    //   force: false,
+    //   alter: {
+    //     drop: false,
+    //   },
+    // });
 
     if (options.dataTypes.has('config')) {
       const configCollections = dumpableCollectionsGroupByDataTypes.config;
 
-      for (const collectionName of configCollections) {
-        await importCollection(collectionName);
+      for (const collection of configCollections) {
+        await importCollection(collection.name);
       }
     }
 
     if (options.dataTypes.has('business')) {
       const businessCollections = dumpableCollectionsGroupByDataTypes.business;
 
-      for (const collectionName of businessCollections) {
-        await importCollection(collectionName);
+      for (const collection of businessCollections) {
+        await importCollection(collection.name);
       }
     }
 
@@ -151,6 +132,8 @@ export class Restorer extends AppMigrator {
       const delayRestore = this.app.db.getCollection(collectionName).options.duplicator['delayRestore'];
       await delayRestore(this);
     }
+
+    await this.app.reload();
 
     await this.emitAsync('restoreCollectionsFinished');
   }

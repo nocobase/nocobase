@@ -242,11 +242,17 @@ export class Dumper extends AppMigrator {
     const dumpDataTypes = options.dataTypes;
     dumpDataTypes.add('meta');
 
+    const delayCollections = new Set();
     const dumpedCollections = await this.getCollectionsByDataTypes(dumpDataTypes);
 
-    for (const collection of dumpedCollections) {
+    for (const collectionName of dumpedCollections) {
+      const collection = this.app.db.getCollection(collectionName);
+      if (lodash.get(collection.options, 'duplicator.delayRestore')) {
+        delayCollections.add(collectionName);
+      }
+
       await this.dumpCollection({
-        name: collection,
+        name: collectionName,
       });
     }
 
@@ -255,6 +261,7 @@ export class Dumper extends AppMigrator {
         ...dumpDataTypes,
       ]),
       dataTypes: [...dumpDataTypes],
+      delayCollections: [...delayCollections],
     });
 
     await this.dumpDb();
@@ -407,7 +414,7 @@ export class Dumper extends AppMigrator {
 
     const metaAttributes = lodash.mapValues(attributes, (attr) => {
       return {
-        ...lodash.pick(attr, ['field', 'primaryKey', 'autoIncrement', 'allowNull', 'defaultValue']),
+        ...lodash.pick(attr, ['field', 'primaryKey', 'autoIncrement', 'allowNull', 'defaultValue', 'unique']),
         type: attr.type.constructor.toString(),
       };
     });
