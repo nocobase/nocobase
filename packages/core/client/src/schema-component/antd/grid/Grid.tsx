@@ -8,6 +8,7 @@ import { useDesignable, useFormBlockContext, useSchemaInitializer } from '../../
 import { DndContext } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
+import { useFormBlockType } from '../../../block-provider';
 
 const GridRowContext = createContext<any>({});
 const GridColContext = createContext<any>({});
@@ -368,6 +369,7 @@ Grid.Row = observer(
     const addr = field.address.toString();
     const cols = useColProperties();
     const { showDivider } = useGridContext();
+    const { type } = useFormBlockType();
 
     return (
       <GridRowContext.Provider value={{ schema: fieldSchema, cols }}>
@@ -392,7 +394,16 @@ Grid.Row = observer(
           {cols.map((schema, index) => {
             return (
               <React.Fragment key={index}>
-                <RecursionField name={schema.name} schema={schema} />
+                <RecursionField
+                  name={schema.name}
+                  schema={schema}
+                  mapProperties={(schema) => {
+                    if (type === 'update') {
+                      schema.default = null;
+                    }
+                    return schema;
+                  }}
+                />
                 {showDivider && (
                   <ColDivider
                     cols={cols}
