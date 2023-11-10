@@ -113,7 +113,7 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
         </div>
       )}
       <div className={'general-schema-designer-icons'}>
-        <Space size={2} align={'center'}>
+        <Space size={3} align={'center'}>
           {draggable && (
             <DragHandler>
               <DragOutlined role="button" aria-label={getAriaLabel('drag-handler')} />
