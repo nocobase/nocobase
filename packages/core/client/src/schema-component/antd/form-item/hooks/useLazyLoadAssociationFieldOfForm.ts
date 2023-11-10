@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useEffect } from 'react';
-import { useFormBlockType, useRecord } from '../../../..';
+import { useRecord } from '../../../..';
 import { useCollection, useCollectionManager } from '../../../../collection-manager';
 import { useFlag } from '../../../../flag-provider';
 import { useVariables } from '../../../../variables';
@@ -22,12 +22,16 @@ const useLazyLoadAssociationFieldOfForm = () => {
   const variables = useVariables();
   const field = useField<Field>();
   const { isInAssignFieldValues } = useFlag() || {};
-  const { type: formBlockType } = useFormBlockType();
 
   const schemaName = fieldSchema.name.toString();
 
   useEffect(() => {
-    if (isInAssignFieldValues || formBlockType === 'create') {
+    const cloneRecord = { ...record };
+    delete cloneRecord['__parent'];
+    delete cloneRecord['__collectionName'];
+
+    // 如果 record 是个空对象，则说明现在是一个创建数据的表单，不需要去获取关系字段的值
+    if (isInAssignFieldValues || _.isEmpty(cloneRecord)) {
       return;
     }
 
@@ -37,11 +41,7 @@ const useLazyLoadAssociationFieldOfForm = () => {
       return;
     }
 
-    const cloneRecord = { ...record };
-    delete cloneRecord['__parent'];
-    delete cloneRecord['__collectionName'];
-
-    if (_.isEmpty(cloneRecord) || !variables || record[schemaName] != null) {
+    if (!variables || record[schemaName] != null) {
       return;
     }
 
@@ -70,7 +70,7 @@ const useLazyLoadAssociationFieldOfForm = () => {
       .catch((err) => {
         console.error(err);
       });
-  }, []);
+  }, [record]);
 };
 
 export default useLazyLoadAssociationFieldOfForm;
