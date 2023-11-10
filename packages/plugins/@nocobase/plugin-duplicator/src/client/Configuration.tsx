@@ -60,6 +60,9 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
   const { t } = useDuplicatorTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [dataSource, setDataSource] = useState<any>(collectionsData);
+  useEffect(() => {
+    setDataSource(collectionsData);
+  }, [collectionsData]);
   const apiClient = useAPIClient();
   const compile = useCompile();
   const resource = useMemo(() => {
@@ -81,7 +84,6 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
   const handleCancel = () => {
     setIsModalOpen(false);
   };
-  console.log(dataSource);
   const columns = [
     {
       title: t('Collection'),
