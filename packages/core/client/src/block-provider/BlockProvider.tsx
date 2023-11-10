@@ -303,13 +303,18 @@ export const BlockProvider = (props: {
 }) => {
   const { collection, association, name } = props;
   const resource = useResource(props);
-
-  const params = useMemo(() => ({ ...props.params }), [props.params]);
   const { appends, updateAssociationValues } = useAssociationNames();
+  const params = useMemo(() => {
+    if (!props.params) {
+      return props.params;
+    }
+    if (!props.params['appends']) {
+      return { ...props.params, appends };
+    }
+    return { ...props.params };
+  }, [appends, props.params]);
   const blockValue = useMemo(() => ({ name }), [name]);
-  if (!Object.keys(params).includes('appends') && appends.length > 0) {
-    params['appends'] = appends;
-  }
+
   return (
     <BlockContext.Provider value={blockValue}>
       <MaybeCollectionProvider collection={collection}>
