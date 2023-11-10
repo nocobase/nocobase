@@ -4,7 +4,7 @@ import fsPromises from 'fs/promises';
 import path from 'path';
 import { AppMigrator, AppMigratorOptions } from './app-migrator';
 import { FieldValueWriter } from './field-value-writer';
-import { readLines, sqlAdapter } from './utils';
+import { readLines } from './utils';
 import { Application } from '@nocobase/server';
 import { DumpDataType } from '@nocobase/database';
 
@@ -176,11 +176,10 @@ export class Restorer extends AppMigrator {
 
     const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
     const meta = JSON.parse(metaContent);
+
     app.log.info(`collection meta ${metaContent}`);
-
-    const addSchemaTableName = db.utils.addSchema(meta.tableName);
+    const addSchemaTableName = meta.tableName;
     const tableName = db.utils.quoteTable(meta.tableName);
-
     const columns = meta['columns'];
 
     if (columns.length == 0) {
@@ -189,15 +188,13 @@ export class Restorer extends AppMigrator {
     }
 
     if (options.clear !== false) {
-      // truncate old data
-      let sql = `TRUNCATE TABLE ${tableName}`;
+      // drop table
+      await db.sequelize.getQueryInterface().dropTable(addSchemaTableName, {
+        cascade: true,
+      });
 
-      if (app.db.inDialect('sqlite')) {
-        sql = `DELETE
-               FROM ${tableName}`;
-      }
-
-      await app.db.sequelize.query(sqlAdapter(app.db, sql));
+      // create table
+      await db.sequelize.getQueryInterface().createTable(addSchemaTableName, meta.attributes);
     }
 
     // read file content from collection data
