@@ -166,7 +166,6 @@ export class Restorer extends AppMigrator {
     app.log.info(`collection meta ${metaContent}`);
 
     const addSchemaTableName = meta.tableName;
-    const tableName = db.utils.quoteTable(meta.tableName);
     const columns = meta['columns'];
 
     if (columns.length == 0) {
@@ -174,26 +173,26 @@ export class Restorer extends AppMigrator {
       return;
     }
 
+    const attributes = lodash.mapValues(meta.attributes, (attr) => {
+      const obj = {
+        ...attr,
+        // @ts-ignore
+        type: db.sequelize.normalizeDataType(DataTypes[attr.type === 'JSONTYPE' ? 'JSON' : attr.type]),
+      };
+
+      if (attr.defaultValue && ['JSON', 'JSONB', 'JSONTYPE'].includes(attr.type)) {
+        obj.defaultValue = JSON.stringify(attr.defaultValue);
+      }
+
+      return obj;
+    });
+
     if (options.clear !== false) {
       // drop table
       await db.sequelize.getQueryInterface().dropTable(addSchemaTableName);
 
       // create table
-      await db.sequelize.getQueryInterface().createTable(
-        addSchemaTableName,
-        lodash.mapValues(meta.attributes, (attr) => {
-          const obj = {
-            ...attr,
-            type: DataTypes[attr.type === 'JSONTYPE' ? 'JSON' : attr.type],
-          };
-
-          if (attr.defaultValue && ['JSON', 'JSONB', 'JSONTYPE'].includes(attr.type)) {
-            obj.defaultValue = JSON.stringify(attr.defaultValue);
-          }
-
-          return obj;
-        }),
-      );
+      await db.sequelize.getQueryInterface().createTable(addSchemaTableName, attributes);
     }
 
     // read file content from collection data
@@ -238,7 +237,20 @@ export class Restorer extends AppMigrator {
     }
 
     //@ts-ignore
-    const sql = db.sequelize.queryInterface.queryGenerator.bulkInsertQuery(addSchemaTableName, rowsWithMeta);
+    const sql = db.sequelize.queryInterface.queryGenerator.bulkInsertQuery(
+      addSchemaTableName,
+      rowsWithMeta,
+      {},
+      columns.reduce((carry, column) => {
+        const attr = Object.values(attributes).find((attr) => attr.field === column);
+
+        carry[column] = {
+          type: attr.type,
+        };
+
+        return carry;
+      }, {}),
+    );
 
     if (options.insert === false) {
       return sql;
