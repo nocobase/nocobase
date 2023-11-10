@@ -1,4 +1,4 @@
-import { SchemaSetting } from '../../../application';
+import { SchemaSetting } from '../../../application/schema-settings';
 import { useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';

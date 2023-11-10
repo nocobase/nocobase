@@ -1,6 +1,6 @@
-import { SchemaSetting } from '../../../application';
+import { SchemaSetting } from '../../../application/schema-settings';
 import { useCollection } from '../../../collection-manager';
-import { SchemaSettings } from '../../../schema-settings';
+import { SchemaSettings } from '../../../schema-settings/SchemaSettings';
 
 export const formV1Settings = new SchemaSetting({
   name: 'FormV1Settings',

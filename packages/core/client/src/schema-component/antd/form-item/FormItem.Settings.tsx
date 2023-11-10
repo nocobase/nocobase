@@ -1,4 +1,4 @@
-import { SchemaSetting } from '../../../application';
+import { SchemaSetting } from '../../../application/schema-settings';
 import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
 import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';

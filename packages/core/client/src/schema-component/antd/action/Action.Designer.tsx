@@ -11,14 +11,15 @@ import { CollectionOptions, useCollection, useCollectionManager } from '../../..
 import { FlagProvider } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
 import { OpenModeSchemaItems } from '../../../schema-items';
-import { GeneralSchemaDesigner, SchemaSettings, useSchemaSettings } from '../../../schema-settings';
+import { SchemaSettings, useSchemaSettings } from '../../../schema-settings/SchemaSettings';
+import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
 import { usePlugin } from '../../../application/hooks';
-import { SchemaSetting, SchemaSettingOptions } from '../../../application';
+import { SchemaSetting, SchemaSettingOptions } from '../../../application/schema-settings';
 
 const Tree = connect(
   AntdTree,

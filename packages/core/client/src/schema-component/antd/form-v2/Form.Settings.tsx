@@ -5,10 +5,10 @@ import { useFormBlockContext } from '../../../block-provider';
 import { useDetailsBlockContext } from '../../../block-provider/DetailsBlockProvider';
 import { useCollection } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
-import { SchemaSettings } from '../../../schema-settings';
+import { SchemaSettings } from '../../../schema-settings/SchemaSettings';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { SchemaSetting } from '../../../application';
+import { SchemaSetting } from '../../../application/schema-settings';
 
 export const formSettings = new SchemaSetting({
   name: 'FormSettings',

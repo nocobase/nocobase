@@ -1,7 +1,7 @@
 import { useFieldSchema } from '@formily/react';
-import { SchemaSetting } from '../../../application';
+import { SchemaSetting } from '../../../application/schema-settings';
 import { useCollection } from '../../../collection-manager';
-import { SchemaSettings } from '../../../schema-settings';
+import { SchemaSettings } from '../../../schema-settings/SchemaSettings';
 import { FilterBlockType } from '../../../filter-provider';
 import { useTranslation } from 'react-i18next';
 

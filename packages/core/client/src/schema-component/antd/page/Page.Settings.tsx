@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useDesignable } from '../..';
 import { useSchemaSettings } from '../../../schema-settings';
-import { SchemaSetting } from '../../../application';
+import { SchemaSetting } from '../../../application/schema-settings';
 
 function useNotDisableHeader() {
   const fieldSchema = useFieldSchema();

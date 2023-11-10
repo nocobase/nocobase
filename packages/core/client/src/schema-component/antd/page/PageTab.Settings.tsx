@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { SchemaSetting } from '../../../application';
+import { SchemaSetting } from '../../../application/schema-settings';
 import { ISchema } from '@formily/json-schema';
 import { useDesignable } from '../../hooks';
 import { useSchemaSettings } from '../../../schema-settings';
