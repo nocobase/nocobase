@@ -31,14 +31,14 @@ const mySchemaSetting = new SchemaSetting({
       children: [
         {
           name: 'demo3',
-          type: 'switchItem', // Switch
+          type: 'switch', // Switch
           componentProps: {
             title: 'Switch1',
           },
         },
         {
           name: 'demo4',
-          type: 'switchItem',
+          type: 'switch',
           componentProps: {
             title: 'Switch2',
           },
@@ -111,6 +111,9 @@ const mySchemaSetting = new SchemaSetting({
               'x-component-props': {},
             },
           },
+        },
+        onSubmit() {
+          alert(123);
         },
       },
     },

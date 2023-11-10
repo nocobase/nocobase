@@ -19,8 +19,8 @@ export const SchemaSettingChildren: FC<SchemaSettingChildrenProps> = (props) => 
     <>
       {children
         .sort((a, b) => (a.sort || 0) - (b.sort || 0))
-        .map((item, index) => (
-          <SchemaSettingChild key={item.name || item.key || index} {...item} />
+        .map((item) => (
+          <SchemaSettingChild key={item.name} {...item} />
         ))}
     </>
   );
@@ -39,19 +39,11 @@ export const SchemaSettingChild: FC<SchemaSettingItemType> = (props) => {
     children,
     checkChildrenLength,
     componentProps,
-    sort: _unUse,
-    ...others
   } = props;
   const useChildrenRes = useChildren();
   const useComponentPropsRes = useComponentProps();
   const findComponent = useFindComponent();
   const componentChildren = useChildrenRes || children;
-  const contextValue = useMemo(() => {
-    return {
-      ...others,
-      children: componentChildren,
-    };
-  }, [componentChildren, others]);
   const visibleResult = useVisible();
   const ComponentValue = useMemo(() => {
     return !Component && type && (SchemaSettings[upperFirst(type)] || SchemaSettings[upperFirst(`${type}Item`)])
@@ -71,7 +63,7 @@ export const SchemaSettingChild: FC<SchemaSettingItemType> = (props) => {
   }
 
   return (
-    <SchemaSettingItemContext.Provider value={contextValue}>
+    <SchemaSettingItemContext.Provider value={props}>
       <C {...componentProps} {...useComponentPropsRes}>
         {Array.isArray(componentChildren) && componentChildren.length > 0 && (
           <SchemaSettingChildren>{componentChildren}</SchemaSettingChildren>

@@ -1,12 +1,13 @@
 import { SchemaSetting } from '../../../application';
 import { useCollection } from '../../../collection-manager';
+import { SchemaSettings } from '../../../schema-settings';
 
 export const formV1Settings = new SchemaSetting({
   name: 'FormV1Settings',
   items: [
     {
       name: 'template',
-      type: 'template',
+      Component: SchemaSettings.Template,
       useComponentProps() {
         const { name } = useCollection();
         return {

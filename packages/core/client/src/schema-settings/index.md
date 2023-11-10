@@ -84,6 +84,7 @@ export type SchemaSettingItemType<T = {}> = {
   useComponentProps?: () => T;
   useVisible?: () => boolean;
   children?: SchemaSettingItemType[];
+  [index]: any;
 };
 ```
 
@@ -115,19 +116,19 @@ const mySettings = new SchemaSetting({
 
 其底层对应的是 `SchemaSettings.ModalItem` 组件。具体内置类型和对应的组件如下：
 
-| type | Component |
-| --- | --- |
-| item | SchemaSettings.Item |
-| itemGroup | SchemaSettings.ItemGroup |
-| subMenu | SchemaSettings.SubMenu |
-| divider | SchemaSettings.Divider |
-| remove | SchemaSettings.Remove |
-| select | SchemaSettings.SelectItem |
-| cascader | SchemaSettings.CascaderItem |
-| switch | SchemaSettings.SwitchItem |
-| popup | SchemaSettings.PopupItem |
-| actionModal | SchemaSettings.ActionModalItem |
-| modal | SchemaSettings.ModalItem |
+| type | Component | 效果 |
+| --- | --- | --- |
+| item | SchemaSettings.Item | 文本 |
+| itemGroup | SchemaSettings.ItemGroup | 分组，同 Menu 组件的 `type: 'group'` |
+| subMenu | SchemaSettings.SubMenu | 子菜单，同 Menu 组件的子菜单 |
+| divider | SchemaSettings.Divider | 分割线，同 Menu 组件的  `type: 'divider'` |
+| remove | SchemaSettings.Remove | 删除，用于删除一个区块 |
+| select | SchemaSettings.SelectItem | 下拉选择 |
+| cascader | SchemaSettings.CascaderItem | 级联选择 |
+| switch | SchemaSettings.SwitchItem | 开关 |
+| popup | SchemaSettings.PopupItem | 弹出层 |
+| actionModal | SchemaSettings.ActionModalItem | 操作弹窗 |
+| modal | SchemaSettings.ModalItem | 弹窗 |
 
 `componentProps` 和 `useComponentProps`：用于定制化内置组件的 props，两者的区别是后面的可以使用一些 hooks。
 
@@ -392,34 +393,122 @@ class MyPlugin extends Plugin {
 
 ### Hooks
 
-#### useSchemaSettings()
-#### useSchemaSettingItem()
 #### useSchemaSettingsRender()
+
+用于渲染 schemaSetting 实例。
+
+- 类型
+
+```tsx | pure
+interface SchemaSettingOptions<T = {}>{
+  name: string;
+  Component?: ComponentType<T>;
+  componentProps?: T;
+  style?: React.CSSProperties;
+  items: SchemaSettingItemType[];
+}
+
+interface SchemaSettingsRenderOptions extends SchemaSettingOptions {
+  dn?: Designable;
+  field?: GeneralField;
+  fieldSchema?: Schema;
+}
+
+interface SchemaSettingsRenderResult {
+  render: (designer: any) => React.ReactElement;
+  exists: boolean;
+}
+
+function useSchemaSettingsRender(
+  name: string,
+  options?: SchemaSettingsRenderOptions,
+): SchemaSettingsRenderResult;
+```
+
+- 示例
+
+```tsx | pure
+const MyDesigner = (props) => {
+  const { modalTip } = props;
+
+  const { dn } = useDesignable();
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+
+  const { render, exists } = useSchemaSettingsRender(fieldSchema['x-settings'], {
+    ...fieldSchema['x-settings-props']
+    dn,
+    field,
+    modalTip,
+  });
+
+  const designerContext = {
+    modalTip
+  }
+
+  return <div>{exists && render(designerContext)}</div>
+}
+
+```
+
+#### useSchemaSettings()
+
+获取 schemaSetting 上下文数据。
+
+上下文数据包含了 `schemaSetting` 实例化时的 `options` 以及调用 `useSchemaSettingsRender()` 时传入的 `options` 和 `designer`。
+
+- 类型
+
+```ts | pure
+interface UseSchemaSettingsResult<T> extends SchemaSettingOptions {
+  dn?: Designable;
+  field?: GeneralField;
+  fieldSchema?: Schema;
+  designer?: T;
+}
+
+function useSchemaSettings(): UseSchemaSettingsResult;
+```
+
+- 示例
+
+```tsx | pure
+const { designer, dn } = useSchemaSettings();
+
+const { modalTip } = designer;
+```
+
+#### useSchemaSettingsItem()
+
+用于获取一个 item 的数据。
+
+- 类型
+
+```ts | pure
+export type SchemaSettingItemType<T = {}> = {
+  name: string;
+  type?: string;
+  sort?: number;
+  Component?: string | ComponentType<T>;
+  componentProps?: T;
+  useComponentProps?: () => T;
+  useVisible?: () => boolean;
+  children?: SchemaSettingItemType[];
+  [index]: any;
+};
+
+function useSchemaSettingsItem(): SchemaSettingItemType;
+```
+
+- 示例
+
+```tsx | pure
+const { name } = useSchemaSettingsItem();
+```
 
 ### Components
 
-
-```ts | pure
-
-const schema = {
-  type: 'void',
-  properties: {
-    title: {
-      type: 'void',
-      title: '标题',
-      // schema 中标识使用 name
-      'x-settings': 'MySettings',
-    },
-  },
-};
-
-
-// 读取 schema 中的 x-settings 并交给 `useSchemaSettingsRender()`
-const fieldSchema = useFieldSchema();
-const { render } = useSchemaSettingsRender(fieldSchema['x-settings'], fieldSchema['x-settings-props']);
-```
-
-
+>  TODO: 文档待补充
 
 ## Examples
 
@@ -427,15 +516,15 @@ const { render } = useSchemaSettingsRender(fieldSchema['x-settings'], fieldSchem
 
 <code src="./demos/basic.tsx"></code>
 
+### 自定义按钮
+
+<code src="./demos/custom-component.tsx"></code>
+
 ### 内置类型
 
 NocoBase 提供了几个内置的组件，可以直接使用。
 
 <code src="./demos/built-type.tsx"></code>
-
-### 自定义按钮
-
-<code src="./demos/custom-component.tsx"></code>
 
 ### Schema
 

@@ -124,7 +124,7 @@ export const formDetailsSettings = new SchemaSetting({
     },
     {
       name: 'dataScope',
-      type: 'dataScope',
+      Component: SchemaSettings.DataScope,
       useComponentProps() {
         const { name } = useCollection();
         const fieldSchema = useFieldSchema();

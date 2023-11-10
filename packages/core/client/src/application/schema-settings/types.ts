@@ -4,7 +4,6 @@ import {
   SchemaSettingsItemProps,
   SchemaSettingsModalItemProps,
   SchemaSettingsPopupProps,
-  SchemaSettingsProps,
   SchemaSettingsRemoveProps,
   SchemaSettingsSelectItemProps,
   SchemaSettingsSubMenuProps,
@@ -19,70 +18,71 @@ export interface SchemaSettingOptions<T = {}> {
   style?: React.CSSProperties;
 }
 
-export type SchemaSettingItemBaseType<T = {}> = {
+interface SchemaSettingItemCommon<T = {}> {
   name: string;
   sort?: number;
-  Component?: string | ComponentType<Omit<T, 'children'>>;
+  useVisible?: () => boolean;
+  children?: SchemaSettingItemType[];
+  useChildren?: () => SchemaSettingItemType[];
+  checkChildrenLength?: boolean;
   componentProps?: Omit<T, 'children'>;
   useComponentProps?: () => Omit<T, 'children'>;
-  useVisible?: () => boolean;
-  children?: SchemaSettingItemBaseType[];
-};
+  [index: string]: any;
+}
 
-export interface SchemaSettingItemNoProps extends SchemaSettingItemBaseType {
+export interface SchemaSettingItemNoProps extends SchemaSettingItemCommon {
   type: 'divider' | 'blockTitle';
 }
 
-export interface SchemaSettingItemCommonType extends SchemaSettingItemBaseType<SchemaSettingsItemProps> {
+export interface SchemaSettingItemItemType extends SchemaSettingItemCommon<SchemaSettingsItemProps> {
   type: 'item';
 }
 
-export type SchemaSettingItemWithChildrenType = SchemaSettingItemBaseType<SchemaSettingsSubMenuProps> & {
+export type SchemaSettingItemWithChildrenType = SchemaSettingItemCommon<SchemaSettingsSubMenuProps> & {
   type: 'subMenu' | 'itemGroup';
 };
 
-export type SchemaSettingItemRemoveType = SchemaSettingItemBaseType<SchemaSettingsRemoveProps> & {
+export type SchemaSettingItemRemoveType = SchemaSettingItemCommon<SchemaSettingsRemoveProps> & {
   type: 'remove';
 };
 
-interface SchemaSettingItemSwitchType extends SchemaSettingItemBaseType<SchemaSettingsSwitchItemProps> {
+interface SchemaSettingItemSwitchType extends SchemaSettingItemCommon<SchemaSettingsSwitchItemProps> {
   type: 'switch';
 }
 
-export type SchemaSettingItemPopupType = SchemaSettingItemBaseType<SchemaSettingsPopupProps> & {
+export type SchemaSettingItemPopupType = SchemaSettingItemCommon<SchemaSettingsPopupProps> & {
   type: 'popup';
 };
 
-export type SchemaSettingItemCascaderType = SchemaSettingItemBaseType<SchemaSettingsCascaderItemProps> & {
+export type SchemaSettingItemCascaderType = SchemaSettingItemCommon<SchemaSettingsCascaderItemProps> & {
   type: 'cascader';
 };
 
-export type SchemaSettingItemModalType = SchemaSettingItemBaseType<SchemaSettingsModalItemProps> & {
+export type SchemaSettingItemModalType = SchemaSettingItemCommon<SchemaSettingsModalItemProps> & {
   type: 'modal';
 };
 
-export type SchemaSettingItemSelectType = SchemaSettingItemBaseType<SchemaSettingsSelectItemProps> & {
+export type SchemaSettingItemSelectType = SchemaSettingItemCommon<SchemaSettingsSelectItemProps> & {
   type: 'select';
 };
 
-export type SchemaSettingComponentItem = {
-  name: string;
+export type SchemaSettingItemActionModalType = SchemaSettingItemCommon<SchemaSettingsSelectItemProps> & {
+  type: 'select';
+};
+
+export type SchemaSettingItemComponentType<T = {}> = SchemaSettingItemCommon<T> & {
   Component: string | ComponentType;
-  sort?: number;
-  componentProps?: any;
-  useComponentProps?: () => any;
-  useVisible?: () => boolean;
-  children?: SchemaSettingItemBaseType[];
 };
 
 export type SchemaSettingItemType =
-  | SchemaSettingComponentItem
+  | SchemaSettingItemComponentType
   | SchemaSettingItemNoProps
   | SchemaSettingItemRemoveType
+  | SchemaSettingItemActionModalType
   | SchemaSettingItemSwitchType
   | SchemaSettingItemPopupType
   | SchemaSettingItemCascaderType
   | SchemaSettingItemModalType
-  | SchemaSettingItemCommonType
+  | SchemaSettingItemItemType
   | SchemaSettingItemSelectType
   | SchemaSettingItemWithChildrenType;

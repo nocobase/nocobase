@@ -130,7 +130,8 @@ export interface SchemaSettingsRemoveProps {
   breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
 }
 
-export interface SchemaSettingsItemProps extends MenuItemProps {
+export interface SchemaSettingsItemProps extends Omit<MenuItemProps, 'title'> {
+  title: string;
   name?: string;
 }
 export interface SchemaSettingsPopupProps extends MenuItemProps {
@@ -163,6 +164,15 @@ export interface SchemaSettingsModalItemProps {
   hide?: boolean;
 }
 
+export interface SchemaSettingsActionModalItemProps
+  extends SchemaSettingsModalItemProps,
+    Omit<SchemaSettingsItemProps, 'onSubmit' | 'onClick'> {
+  uid?: string;
+  initialSchema?: ISchema;
+  schema?: ISchema;
+  beforeOpen?: () => void;
+}
+
 export interface SchemaSettingsSelectItemProps
   extends Omit<SchemaSettingsItemProps, 'onChange' | 'onClick'>,
     Omit<SelectWithTitleProps, 'title' | 'defaultValue'> {
@@ -179,6 +189,7 @@ type SchemaSettingsNested = {
   DataScope?: React.FC<SchemaSettingsDataScopeProps>;
   ModalItem: React.FC<SchemaSettingsModalItemProps>;
   SelectItem: React.FC<SchemaSettingsSelectItemProps>;
+  ActionModalItem: React.FC<SchemaSettingsActionModalItemProps>;
   [key: string]: any;
 };
 
@@ -848,8 +859,9 @@ SchemaSettings.PopupItem = function PopupItem(props) {
   );
 };
 
-SchemaSettings.ActionModalItem = React.memo((props: any) => {
-  const { title, onSubmit, initialValues, initialSchema, schema, modalTip, components, scope, ...others } = props;
+SchemaSettings.ActionModalItem = React.memo((props: SchemaSettingsActionModalItemProps) => {
+  const { title, onSubmit, initialValues, beforeOpen, initialSchema, schema, modalTip, components, scope, ...others } =
+    props;
   const [visible, setVisible] = useState(false);
   const [schemaUid, setSchemaUid] = useState<string>(props.uid);
   const { t } = useTranslation();
@@ -891,8 +903,8 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
       await api.resource('uiSchemas').insert({ values: initialSchema });
       setSchemaUid(initialSchema['x-uid']);
     }
-    if (typeof others?.beforeOpen === 'function') {
-      others?.beforeOpen?.();
+    if (typeof beforeOpen === 'function') {
+      beforeOpen?.();
     }
     ctx.setVisible(false);
     setVisible(true);
