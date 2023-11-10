@@ -288,8 +288,8 @@ export default VariablesProvider;
  */
 function shouldToRequest(value) {
   // fix https://nocobase.height.app/T-2502
-  // 兼容对多子表单子表格字段的情况
-  if (JSON.stringify(value) === '[{}]') {
+  // 兼容 `对多` 和 `对一` 子表单子表格字段的情况
+  if (JSON.stringify(value) === '[{}]' || JSON.stringify(value) === '{}') {
     return true;
   }
 
