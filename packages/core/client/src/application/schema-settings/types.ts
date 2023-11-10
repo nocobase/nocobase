@@ -11,7 +11,7 @@ import {
   SchemaSettingsSwitchItemProps,
 } from '../../schema-settings';
 
-export interface SchemaSettingOptions<T = {}> extends Omit<SchemaSettingsProps, 'title' | 'children'> {
+export interface SchemaSettingOptions<T = {}> {
   name: string;
   Component?: ComponentType<T>;
   componentProps?: T;
@@ -19,7 +19,7 @@ export interface SchemaSettingOptions<T = {}> extends Omit<SchemaSettingsProps, 
   style?: React.CSSProperties;
 }
 
-export type SchemaSettingItemBaseType<T = any> = {
+export type SchemaSettingItemBaseType<T = {}> = {
   name: string;
   sort?: number;
   Component?: string | ComponentType<Omit<T, 'children'>>;
@@ -27,7 +27,6 @@ export type SchemaSettingItemBaseType<T = any> = {
   useComponentProps?: () => Omit<T, 'children'>;
   useVisible?: () => boolean;
   children?: SchemaSettingItemBaseType[];
-  [index: string]: any;
 };
 
 export interface SchemaSettingItemNoProps extends SchemaSettingItemBaseType {

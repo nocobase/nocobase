@@ -3,8 +3,12 @@ import { useApp } from '../../hooks';
 import { SchemaSettingOptions } from '../types';
 import React from 'react';
 import { SchemaSettingsWrapper } from '../components';
+import { SchemaSettingsProps } from '../../../schema-settings';
 
-export function useSchemaSettingsRender<T = {}, DesignerContext = {}>(name: string, options?: SchemaSettingOptions<T>) {
+export function useSchemaSettingsRender<T = {}, DesignerContext = {}>(
+  name: string,
+  options?: SchemaSettingOptions<T> & Omit<SchemaSettingsProps, 'title' | 'children'>,
+) {
   const app = useApp();
   const schemaSetting = useMemo(() => app.schemaSettingsManager.get<T>(name), [app.schemaSettingsManager, name]);
   if (!name) {

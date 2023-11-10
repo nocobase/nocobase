@@ -15,7 +15,7 @@ export class SchemaSetting<T = {}> {
 
   add(name: string, item: Omit<SchemaSettingItemType, 'name'>) {
     const arr = name.split('.');
-    const data = { ...item, name: arr[arr.length - 1] };
+    const data: any = { ...item, name: arr[arr.length - 1] };
     if (arr.length === 1) {
       const index = this.items.findIndex((item: any) => item.name === name);
       if (index === -1) {
