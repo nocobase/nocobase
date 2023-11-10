@@ -1,6 +1,5 @@
 import React from 'react';
-import { BlockInitializer } from './BlockInitializer';
-import { useSchemaInitializerItem } from '../../application';
+import { BlockInitializer, useSchemaInitializerItem } from '@nocobase/client';
 
 export const CustomizeBulkEditActionInitializer = () => {
   const schema = {

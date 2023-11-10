@@ -127,20 +127,6 @@ export const ganttActionInitializers = new SchemaInitializer({
         },
         {
           type: 'item',
-          title: '{{t("Bulk edit")}}',
-          name: 'bulkEdit',
-          Component: 'CustomizeBulkEditActionInitializer',
-          schema: {
-            'x-align': 'right',
-            'x-decorator': 'ACLActionProvider',
-            'x-acl-action': 'update',
-            'x-acl-action-props': {
-              skipScopeCheck: true,
-            },
-          },
-        },
-        {
-          type: 'item',
           title: '{{t("Add record")}}',
           name: 'addRecord',
           Component: 'CustomizeAddRecordActionInitializer',

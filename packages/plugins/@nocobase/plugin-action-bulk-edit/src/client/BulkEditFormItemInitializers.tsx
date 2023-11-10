@@ -1,7 +1,7 @@
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
-import { gridRowColWrap, useCustomBulkEditFormItemInitializerFields } from '../utils';
+import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
+import { useCustomBulkEditFormItemInitializerFields } from './utils';
 
-export const bulkEditFormItemInitializers = new SchemaInitializer({
+export const BulkEditFormItemInitializers = new SchemaInitializer({
   name: 'BulkEditFormItemInitializers',
   wrap: gridRowColWrap,
   icon: 'SettingOutlined',

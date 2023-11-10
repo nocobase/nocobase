@@ -92,19 +92,6 @@ export const mapActionInitializers = new SchemaInitializer({
             },
           },
         },
-        {
-          name: 'bulkEdit',
-          title: '{{t("Bulk edit")}}',
-          Component: 'CustomizeBulkEditActionInitializer',
-          schema: {
-            'x-align': 'right',
-            'x-decorator': 'ACLActionProvider',
-            'x-acl-action': 'update',
-            'x-acl-action-props': {
-              skipScopeCheck: true,
-            },
-          },
-        },
       ],
       useVisible() {
         const collection = useCollection();
