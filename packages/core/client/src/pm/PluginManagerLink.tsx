@@ -1,20 +1,21 @@
 import { ApiOutlined, SettingOutlined } from '@ant-design/icons';
 import { Button, Dropdown, MenuProps, Tooltip } from 'antd';
-import _ from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { ActionContextProvider, useCompile } from '../schema-component';
 import { ADMIN_SETTINGS_PATH, useApp } from '../application';
+import { ActionContextProvider, useCompile } from '../schema-component';
+import { useToken } from '../style';
 
 export const PluginManagerLink = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { token } = useToken();
   return (
     <Tooltip title={t('Plugin manager')}>
       <Button
         data-testid={'plugin-manager-button'}
-        icon={<ApiOutlined />}
+        icon={<ApiOutlined style={{ color: token.colorTextHeaderMenu }} />}
         title={t('Plugin manager')}
         onClick={() => {
           navigate('/admin/pm/list');
@@ -58,7 +59,7 @@ export const SettingsCenterDropdown = () => {
       <Dropdown placement="bottom" menu={menu}>
         <Button
           data-testid="settings-center-button"
-          icon={<SettingOutlined />}
+          icon={<SettingOutlined style={{ color: token.colorTextHeaderMenu }} />}
           // title={t('All plugin settings')}
         />
       </Dropdown>
