@@ -54,4 +54,15 @@ export class Cache {
   async ttl(key: string): Promise<number> {
     return await this.cache.store.ttl(`${this.namespace}:${key}`);
   }
+
+  async setValueInObject(key: string, objectKey: string, value: unknown) {
+    const object = (await this.get(key)) || {};
+    object[objectKey] = value;
+    await this.set(key, object);
+  }
+
+  async getValueInObject(key: string, objectKey: string) {
+    const object = (await this.get(key)) || {};
+    return object[objectKey];
+  }
 }

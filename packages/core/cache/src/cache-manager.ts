@@ -11,9 +11,9 @@ export type AppCacheOptions = {
 };
 
 export class CacheManager {
-  private default = 'memory';
-  private stores = new Map<string, 'memory' | FactoryStore<Store, any>>();
-  private caches = new Map<string, Cache>();
+  default = 'memory';
+  stores = new Map<string, 'memory' | FactoryStore<Store, any>>();
+  caches = new Map<string, Cache>();
 
   async init(options?: AppCacheOptions) {
     const { default: defaultCache, memory, redis } = options || {};
