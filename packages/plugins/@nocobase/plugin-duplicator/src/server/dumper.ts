@@ -359,7 +359,10 @@ export class Dumper extends AppMigrator {
     }
 
     // @ts-ignore
-    const columns: string[] = [...new Set(lodash.map(collection.model.tableAttributes, 'field'))];
+    const attributes = collection.model.tableAttributes;
+
+    // @ts-ignore
+    const columns: string[] = [...new Set(lodash.map(attributes, 'field'))];
 
     const collectionDataDir = path.resolve(dir, 'collections', collectionName);
 
@@ -402,11 +405,19 @@ export class Dumper extends AppMigrator {
       count = rows.length;
     }
 
+    const metaAttributes = lodash.mapValues(attributes, (attr) => {
+      return {
+        ...lodash.pick(attr, ['field', 'primaryKey', 'autoIncrement', 'allowNull', 'defaultValue']),
+        type: attr.type.constructor.toString(),
+      };
+    });
+
     const meta = {
       name: collectionName,
-      tableName: collection.model.tableName,
+      tableName: collection.getTableNameWithSchema(),
       count,
       columns,
+      attributes: metaAttributes,
     };
 
     // write meta file

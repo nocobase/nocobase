@@ -114,7 +114,9 @@ describe('dumper', () => {
     const metaFile = path.resolve(collectionDir, 'meta');
     const meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
 
-    expect(meta['attributes']).toBeDefined();
+    const attributes = meta.attributes;
+    expect(attributes).toBeDefined();
+    expect(attributes.id.type).toBe('BIGINT');
   });
 
   it('should get dumped collections with origin option', async () => {
