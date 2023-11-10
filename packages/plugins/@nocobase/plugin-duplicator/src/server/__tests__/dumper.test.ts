@@ -117,6 +117,7 @@ describe('dumper', () => {
     const attributes = meta.attributes;
     expect(attributes).toBeDefined();
     expect(attributes.id.type).toBe('BIGINT');
+    expect(attributes['test_field1'].type).toBe('STRING');
   });
 
   it('should get dumped collections with origin option', async () => {
