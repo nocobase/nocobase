@@ -1,5 +1,5 @@
 import { useAPIClient, useCompile, Checkbox } from '@nocobase/client';
-import { Button, Card, message, Modal, Table, Upload, Tabs, Alert, Divider, Space, App } from 'antd';
+import { Button, Card, message, Modal, Table, Upload, Tabs, Alert, Divider, Space, App, Spin } from 'antd';
 import { FormItem } from '@formily/antd-v5';
 import React, { useEffect, useMemo, useState } from 'react';
 import type { UploadProps, TabsProps } from 'antd';
@@ -170,17 +170,20 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
   const compile = useCompile();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [restoreData, setRestoreData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   const apiClient = useAPIClient();
   const resource = useMemo(() => {
     return apiClient.resource('backupFiles');
   }, [apiClient]);
 
   const showModal = async () => {
+    setIsModalOpen(true);
     if (!upload) {
+      setLoading(true);
       const { data } = await resource.get({ filterByTk: fileData.name });
       setRestoreData(data?.data?.meta);
+      setLoading(false);
     }
-    setIsModalOpen(true);
   };
   const handleOk = () => {
     resource.restore({
@@ -207,28 +210,30 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
         onOk={handleOk}
         onCancel={handleCancel}
       >
-        {upload && !restoreData && <RestoreUpload setRestoreData={setRestoreData} />}
-        {(!upload || restoreData) && [
-          <strong style={{ fontWeight: 600, display: 'block', margin: '16px 0 8px' }} key="info">
-            {t('Select the data to be backed up')} (
-            <LearnMore collectionsData={restoreData?.dumpableCollectionsGroupByDataTypes} />
-            ):
-          </strong>,
-          <div style={{ lineHeight: 2, marginBottom: 8 }} key="dataType">
-            <FormItem>
-              <Checkbox.Group
-                options={compile(
-                  options.filter((v) => {
-                    return restoreData?.dataTypes?.includes?.(v.value);
-                  }),
-                )}
-                style={{ flexDirection: 'column' }}
-                defaultValue={dataTypes}
-                onChange={(checkValue) => setDataTypes(checkValue)}
-              />
-            </FormItem>
-          </div>,
-        ]}
+        <Spin spinning={loading}>
+          {upload && !restoreData && <RestoreUpload setRestoreData={setRestoreData} />}
+          {(!upload || restoreData) && [
+            <strong style={{ fontWeight: 600, display: 'block', margin: '16px 0 8px' }} key="info">
+              {t('Select the data to be backed up')} (
+              <LearnMore collectionsData={restoreData?.dumpableCollectionsGroupByDataTypes} />
+              ):
+            </strong>,
+            <div style={{ lineHeight: 2, marginBottom: 8 }} key="dataType">
+              <FormItem>
+                <Checkbox.Group
+                  options={compile(
+                    options.filter((v) => {
+                      return restoreData?.dataTypes?.includes?.(v.value);
+                    }),
+                  )}
+                  style={{ flexDirection: 'column' }}
+                  defaultValue={dataTypes}
+                  onChange={(checkValue) => setDataTypes(checkValue)}
+                />
+              </FormItem>
+            </div>,
+          ]}
+        </Spin>
       </Modal>
     </>
   );
