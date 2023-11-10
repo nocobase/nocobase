@@ -331,6 +331,7 @@ export const BackupAndRestoreList = () => {
   const apiClient = useAPIClient();
   const [dataSource, setDataSource] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [downloadTarget, setDownloadTarget] = useState(false);
   const { modal } = App.useApp();
   const resource = useMemo(() => {
     return apiClient.resource('backupFiles');
@@ -346,6 +347,7 @@ export const BackupAndRestoreList = () => {
     setLoading(false);
   };
   const handleDownload = async (fileData) => {
+    setDownloadTarget(fileData.name);
     const data = await apiClient.request({
       url: 'backupFiles:download',
       method: 'get',
@@ -354,6 +356,7 @@ export const BackupAndRestoreList = () => {
       },
       responseType: 'blob',
     });
+    setDownloadTarget(false);
     const blob = new Blob([data.data]);
     saveAs(blob, fileData.name);
   };
@@ -449,7 +452,9 @@ export const BackupAndRestoreList = () => {
               render: (_, record) => (
                 <Space split={<Divider type="vertical" />}>
                   <Restore ButtonComponent={'a'} title={t('Restore')} fileData={record} />
-                  <a onClick={() => handleDownload(record)}>{t('Download')}</a>
+                  <Button type="link" onClick={() => handleDownload(record)} loading={downloadTarget === record.name}>
+                    {t('Download')}
+                  </Button>
                   <a onClick={() => handleDestory(record)}>{t('Delete')}</a>
                 </Space>
               ),
