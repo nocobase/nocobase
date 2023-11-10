@@ -3,6 +3,6 @@ import { SchemaSettingItemType } from '../types';
 
 export const SchemaSettingItemContext = createContext<SchemaSettingItemType>({} as any);
 
-export function useSchemaSettingsItem<T = {}>(): T {
-  return useContext(SchemaSettingItemContext) as T;
+export function useSchemaSettingsItem() {
+  return useContext(SchemaSettingItemContext) as SchemaSettingItemType;
 }

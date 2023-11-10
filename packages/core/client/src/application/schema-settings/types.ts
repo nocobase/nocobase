@@ -70,12 +70,11 @@ export type SchemaSettingItemActionModalType = SchemaSettingItemCommon<SchemaSet
   type: 'select';
 };
 
-export type SchemaSettingItemComponentType<T = {}> = SchemaSettingItemCommon<T> & {
+interface SchemaSettingItemComponentType<T = {}> extends SchemaSettingItemCommon<T> {
   Component: string | ComponentType;
-};
+}
 
 export type SchemaSettingItemType =
-  | SchemaSettingItemComponentType
   | SchemaSettingItemNoProps
   | SchemaSettingItemRemoveType
   | SchemaSettingItemActionModalType
@@ -85,4 +84,5 @@ export type SchemaSettingItemType =
   | SchemaSettingItemModalType
   | SchemaSettingItemItemType
   | SchemaSettingItemSelectType
-  | SchemaSettingItemWithChildrenType;
+  | SchemaSettingItemWithChildrenType
+  | SchemaSettingItemComponentType;

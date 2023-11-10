@@ -62,6 +62,7 @@ import {
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
   useRecord,
+  useSchemaSettingsItem,
   useSortFields,
 } from '..';
 import { BlockRequestContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
@@ -132,13 +133,10 @@ export interface SchemaSettingsRemoveProps {
 
 export interface SchemaSettingsItemProps extends Omit<MenuItemProps, 'title'> {
   title: string;
-  name?: string;
 }
-export interface SchemaSettingsPopupProps extends MenuItemProps {
-  name?: string;
-}
+
+export type SchemaSettingsPopupProps = MenuItemProps;
 export interface SchemaSettingsSwitchItemProps extends Omit<MenuItemProps, 'onChange'> {
-  name?: string;
   title: string;
   checked?: boolean;
   onChange?: (v: boolean) => void;
@@ -171,6 +169,7 @@ export interface SchemaSettingsActionModalItemProps
   initialSchema?: ISchema;
   schema?: ISchema;
   beforeOpen?: () => void;
+  maskClosable?: boolean;
 }
 
 export interface SchemaSettingsSelectItemProps
@@ -506,13 +505,11 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
   );
 };
 
-export interface SchemaSettingsItemProps extends MenuItemProps {
-  name?: string;
-}
 SchemaSettings.Item = function Item(props: SchemaSettingsItemProps) {
   const { pushMenuItem } = useCollectMenuItems();
   const { collectMenuItem } = useCollectMenuItem();
-  const { eventKey, title, name } = props;
+  const { eventKey, title } = props;
+  const { name } = useSchemaSettingsItem();
 
   if (process.env.NODE_ENV !== 'production' && !title) {
     throw new Error('SchemaSettings.Item must have a title');
@@ -520,7 +517,7 @@ SchemaSettings.Item = function Item(props: SchemaSettingsItemProps) {
 
   const item = {
     role: 'button',
-    'aria-label': name || title,
+    'aria-label': name,
     key: title,
     ..._.omit(props, ['children', 'name']),
     eventKey: eventKey as any,
@@ -689,7 +686,6 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
       return (
         <SchemaSettings.SwitchItem
           key={block.uid}
-          name={compile(block.collection.title)}
           title={title}
           checked={targets.some((target) => target.uid === block.uid)}
           onChange={(checked) => {
@@ -720,7 +716,6 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
     return (
       <SchemaSettings.SelectItem
         key={block.uid}
-        name={compile(block.collection.title)}
         title={title}
         value={target?.field || ''}
         options={[
@@ -783,11 +778,11 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
 };
 
 SchemaSettings.SelectItem = function SelectItem(props: SchemaSettingsSelectItemProps) {
-  const { title, name, options, value, onChange, onClick, ...others } = props;
+  const { title, options, value, onChange, onClick, ...others } = props;
 
   return (
-    <SchemaSettings.Item name={name} title={title} role="none" aria-label="" {...others}>
-      <SelectWithTitle {...{ name, title, defaultValue: value, onChange, options, onClick }} />
+    <SchemaSettings.Item title={title} role="none" aria-label="" {...others}>
+      <SelectWithTitle {...{ title, defaultValue: value, onChange, options, onClick }} />
     </SchemaSettings.Item>
   );
 };
@@ -812,11 +807,10 @@ SchemaSettings.CascaderItem = (props: CascaderProps<any> & { title: any }) => {
 };
 
 SchemaSettings.SwitchItem = function SwitchItem(props: SchemaSettingsSwitchItemProps) {
-  const { title, onChange, name, ...others } = props;
+  const { title, onChange, ...others } = props;
   const [checked, setChecked] = useState(!!props.checked);
   return (
     <SchemaSettings.Item
-      name={name}
       title={title}
       {...others}
       onClick={() => {
@@ -1992,7 +1986,6 @@ export const isPatternDisabled = (fieldSchema: Schema) => {
 };
 
 interface SelectWithTitleProps {
-  name?: string;
   title?: any;
   defaultValue?: any;
   options?: any;
@@ -2000,14 +1993,14 @@ interface SelectWithTitleProps {
   onClick?: (...args: any[]) => void;
 }
 
-function SelectWithTitle({ name, title, defaultValue, onChange, options, onClick }: SelectWithTitleProps) {
+function SelectWithTitle({ title, defaultValue, onChange, options, onClick }: SelectWithTitleProps) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef<any>(null);
-
+  const { name } = useSchemaSettingsItem();
   return (
     <div
       role="button"
-      aria-label={name || title}
+      aria-label={name}
       style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}
       onClick={() => setOpen((v) => !v)}
       onMouseLeave={() => {

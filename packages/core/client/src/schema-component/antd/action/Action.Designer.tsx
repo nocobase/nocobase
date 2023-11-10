@@ -1038,7 +1038,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
       {
         name: 'remove',
         sort: 100,
-        Component: RemoveButton,
+        Component: RemoveButton as any,
         useComponentProps() {
           const { designer } = useSchemaSettings();
           return designer.removeButtonProps;
