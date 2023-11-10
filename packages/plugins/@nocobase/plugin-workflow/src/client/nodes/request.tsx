@@ -2,7 +2,7 @@ import { ArrayItems } from '@formily/antd-v5';
 
 import { defaultFieldNames } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
-import { WorkflowVariableInput } from '../variable';
+import { WorkflowVariableInput, WorkflowVariableJSON } from '../variable';
 
 export default {
   title: `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`,
@@ -172,6 +172,7 @@ export default {
   components: {
     ArrayItems,
     WorkflowVariableInput,
+    WorkflowVariableJSON,
   },
   useVariables({ key, title }, { types, fieldNames = defaultFieldNames }) {
     return {

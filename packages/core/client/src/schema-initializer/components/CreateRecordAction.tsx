@@ -106,13 +106,12 @@ export const CreateRecordAction = observer(
               operator: h.operator,
               field,
               condition: v.condition,
-              values,
               variables,
               localVariables,
             });
           });
         });
-    }, [JSON.stringify(linkageRules), values]);
+    }, [field, linkageRules, localVariables, variables]);
     return (
       <div className={actionDesignerCss}>
         <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
@@ -211,13 +210,12 @@ export const CreateAction = observer(
               operator: h.operator,
               field,
               condition: v.condition,
-              values,
               variables,
               localVariables,
             });
           });
         });
-    }, [JSON.stringify(linkageRules), values]);
+    }, [field, linkageRules, localVariables, variables]);
     return (
       <div className={actionDesignerCss}>
         <FinallyButton

@@ -1,7 +1,7 @@
 import { Field } from '@formily/core';
 import { evaluators } from '@nocobase/evaluators/client';
 import { uid } from '@nocobase/utils';
-import _, { cloneDeep, last } from 'lodash';
+import _, { last } from 'lodash';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { REGEX_OF_VARIABLE } from '../../../variables/utils/isVariable';
@@ -36,7 +36,7 @@ export const linkageMergeAction = async ({
 
   switch (operator) {
     case ActionType.Required:
-      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         requiredResult.push(true);
       }
       field.linkageProperty = {
@@ -50,7 +50,7 @@ export const linkageMergeAction = async ({
         resolve(void 0);
       });
     case ActionType.InRequired:
-      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         requiredResult.push(false);
       }
       field.linkageProperty = {
@@ -66,7 +66,7 @@ export const linkageMergeAction = async ({
     case ActionType.Visible:
     case ActionType.None:
     case ActionType.Hidden:
-      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         displayResult.push(operator);
       }
       field.linkageProperty = {
@@ -82,7 +82,7 @@ export const linkageMergeAction = async ({
     case ActionType.Editable:
     case ActionType.ReadOnly:
     case ActionType.ReadPretty:
-      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         patternResult.push(operator);
       }
       field.linkageProperty = {
@@ -96,16 +96,11 @@ export const linkageMergeAction = async ({
         resolve(void 0);
       });
     case ActionType.Value:
-      if (
-        isConditionEmpty(condition) ||
-        (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables }))
-      ) {
+      if (isConditionEmpty(condition) || (await conditionAnalyses({ rules: condition, variables, localVariables }))) {
         if (value?.mode === 'express') {
           if ((value.value || value.result) == null) {
             return;
           }
-
-          const scope = cloneDeep(values);
 
           // 1. 解析如 `{{$user.name}}` 之类的变量
           const { exp, scope: expScope } = await replaceVariables(value.value || value.result, {
@@ -115,7 +110,7 @@ export const linkageMergeAction = async ({
 
           try {
             // 2. TODO: 需要把里面解析变量的逻辑删除，因为在上一步已经解析过了
-            const result = evaluate(exp, { ...scope, now: () => new Date().toString(), ...expScope });
+            const result = evaluate(exp, { ...values, now: () => new Date().toString(), ...expScope });
             valueResult.push(result);
           } catch (error) {
             console.error(error);
