@@ -22,6 +22,7 @@ export default function addRestoreCommand(app: Application) {
     .action(async (restoreFilePath, options) => {
       // should confirm data will be overwritten
       if (!options.force) {
+        app.log.warn('This action will overwrite your current data, please make sure you have a backup❗️❗️');
         return;
       }
 

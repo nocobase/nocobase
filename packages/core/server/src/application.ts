@@ -426,7 +426,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
       return command;
     } catch (error) {
-      console.log({ error });
       if (!this.activatedCommand) {
         this.activatedCommand = {
           name: 'unknown',
