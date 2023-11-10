@@ -39,31 +39,16 @@ function useTargetCollectionField() {
   }
   return getCollectionField(`${collection.name}.${paths[paths.length - 1]}`);
 }
-
-function getValuesByPath(data, path) {
-  const keys = path.split('.');
-  let current = data;
-
-  for (const key of keys) {
-    if (current && typeof current === 'object') {
-      if (Array.isArray(current) && !isNaN(key)) {
-        const index = parseInt(key);
-        if (index >= 0 && index < current.length) {
-          current = current[index];
-        } else {
-          return data;
-        }
-      } else if (key in current) {
-        current = current[key];
-      } else {
-        return data;
-      }
-    } else {
-      return data;
-    }
+function getValuesByPath(values, key, index?) {
+  const targetValue = values[key];
+  if (Array.isArray(targetValue)) {
+    return targetValue[index];
   }
-
-  return current;
+  if (targetValue && typeof targetValue === 'object') {
+    return targetValue;
+  } else {
+    return values;
+  }
 }
 
 export function Result(props) {
@@ -76,7 +61,8 @@ export function Result(props) {
   const field = useField();
   const path: any = field.path.entire;
   const fieldPath = path?.replace(`.${fieldSchema.name}`, '');
-
+  const fieldName = fieldPath.split('.')[0];
+  const index = parseInt(fieldPath.split('.')?.[1]);
   useEffect(() => {
     setEditingValue(value);
   }, [value]);
@@ -90,8 +76,7 @@ export function Result(props) {
       ) {
         return;
       }
-
-      const scope = toJS(getValuesByPath(form.values, fieldPath));
+      const scope = toJS(getValuesByPath(form.values, fieldName, index));
       let v;
       try {
         v = evaluate(expression, scope);
@@ -103,6 +88,7 @@ export function Result(props) {
         setEditingValue(v);
       }
       setEditingValue(v);
+      others?.onChange?.(v);
     });
   });
   const Component = TypedComponents[dataType] ?? InputString;

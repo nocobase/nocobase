@@ -753,7 +753,6 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
           });
           dn.refresh();
         }}
-        onClick={(e) => e.stopPropagation()}
         onMouseEnter={onHover}
         onMouseLeave={onLeave}
       />
@@ -777,12 +776,12 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
   );
 };
 
-SchemaSettings.SelectItem = function SelectItem(props: SchemaSettingsSelectItemProps) {
-  const { title, options, value, onChange, onClick, ...others } = props;
+SchemaSettings.SelectItem = function SelectItem(props) {
+  const { title, options, value, onChange, ...others } = props;
 
   return (
     <SchemaSettings.Item title={title} role="none" aria-label="" {...others}>
-      <SelectWithTitle {...{ title, defaultValue: value, onChange, options, onClick }} />
+      <SelectWithTitle {...{ title, defaultValue: value, onChange, options }} />
     </SchemaSettings.Item>
   );
 };
@@ -1990,10 +1989,8 @@ interface SelectWithTitleProps {
   defaultValue?: any;
   options?: any;
   onChange?: (...args: any[]) => void;
-  onClick?: (...args: any[]) => void;
 }
-
-function SelectWithTitle({ title, defaultValue, onChange, options, onClick }: SelectWithTitleProps) {
+export function SelectWithTitle({ title, defaultValue, onChange, options }: SelectWithTitleProps) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef<any>(null);
   const { name } = useSchemaSettingsItem();
@@ -2002,7 +1999,10 @@ function SelectWithTitle({ title, defaultValue, onChange, options, onClick }: Se
       role="button"
       aria-label={name}
       style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}
-      onClick={() => setOpen((v) => !v)}
+      onClick={(e) => {
+        e.stopPropagation();
+        setOpen((v) => !v);
+      }}
       onMouseLeave={() => {
         timerRef.current = setTimeout(() => {
           setOpen(false);
@@ -2018,7 +2018,6 @@ function SelectWithTitle({ title, defaultValue, onChange, options, onClick }: Se
         onChange={onChange}
         options={options}
         style={{ textAlign: 'right', minWidth: 100 }}
-        onClick={onClick}
         onMouseEnter={() => {
           clearTimeout(timerRef.current);
         }}

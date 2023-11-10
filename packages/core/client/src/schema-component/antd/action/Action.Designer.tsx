@@ -763,7 +763,11 @@ function WorkflowConfig() {
   const fieldSchema = useFieldSchema();
   const { name: collection } = useCollection();
   const workflowPlugin = usePlugin('workflow') as any;
-  const workflowTypes = workflowPlugin.getTriggersOptions().filter((item) => item.options.actionTriggerable);
+  const workflowTypes = workflowPlugin.getTriggersOptions().filter((item) => {
+    return typeof item.options.useActionTriggerable === 'function'
+      ? item.options.useActionTriggerable()
+      : item.options.useActionTriggerable;
+  });
   const description = {
     submit: t('Workflow will be triggered after submitting succeeded.', { ns: 'workflow' }),
     'customize:save': t('Workflow will be triggered after saving succeeded.', { ns: 'workflow' }),
