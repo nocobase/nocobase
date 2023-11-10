@@ -1,5 +1,6 @@
 import { Cache } from '../cache';
 import { CacheManager } from '../cache-manager';
+import lodash from 'lodash';
 
 describe('cache', () => {
   let cache: Cache;
@@ -29,5 +30,35 @@ describe('cache', () => {
     await cache.setValueInObject('key', 'a', 2);
     const cacheVal2 = await cache.getValueInObject('key', 'a');
     expect(cacheVal2).toEqual(2);
+  });
+
+  it('wrap with condition, useCache', async () => {
+    const obj = {};
+    const get = () => obj;
+    const val = await cache.wrapWithCondition('key', get, {
+      useCache: false,
+    });
+    expect(val).toBe(obj);
+    expect(await cache.get('key')).toBeUndefined();
+    const val2 = await cache.wrapWithCondition('key', get);
+    expect(val2).toBe(obj);
+    expect(await cache.get('key')).toMatchObject(obj);
+  });
+
+  it('wrap with condition, isCacheable', async () => {
+    let obj = {};
+    const get = () => obj;
+    const isCacheable = (val: any) => !lodash.isEmpty(val);
+    const val = await cache.wrapWithCondition('key', get, {
+      isCacheable,
+    });
+    expect(val).toBe(obj);
+    expect(await cache.get('key')).toBeUndefined();
+    obj = { a: 1 };
+    const val2 = await cache.wrapWithCondition('key', get, {
+      isCacheable,
+    });
+    expect(val2).toBe(obj);
+    expect(await cache.get('key')).toMatchObject(obj);
   });
 });

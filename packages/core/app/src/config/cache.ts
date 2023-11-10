@@ -1,7 +1,7 @@
 import { AppCacheOptions } from '@nocobase/cache';
 
 export default {
-  default: process.env.CACHE_DEFAULT,
+  default: process.env.CACHE_DEFAULT_STORE || 'memory',
   memory: {
     max: parseInt(process.env.CACHE_MEMORY_MAX) || 2000,
   },

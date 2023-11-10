@@ -29,6 +29,32 @@ export class Cache {
     return await this.cache.wrap(`${this.namespace}:${key}`, fn, ttl);
   }
 
+  async wrapWithCondition<T>(
+    key: string,
+    fn: () => T | Promise<T>,
+    options?: {
+      useCache?: boolean;
+      isCacheable?: (val: unknown) => boolean | Promise<boolean>;
+      ttl?: Milliseconds;
+    },
+  ): Promise<T> {
+    const { useCache, isCacheable, ttl } = options || {};
+    if (useCache === false) {
+      return await fn();
+    }
+    const value = await this.get<T>(key);
+    if (value) {
+      return value;
+    }
+    const result = await fn();
+    const cacheable = isCacheable ? await isCacheable(result) : result;
+    if (!cacheable) {
+      return result;
+    }
+    await this.set(key, result, ttl);
+    return result;
+  }
+
   async mset(args: [string, unknown][], ttl?: Milliseconds): Promise<void> {
     await this.cache.store.mset(
       args.map(([key, value]) => [`${this.namespace}:${key}`, value]),

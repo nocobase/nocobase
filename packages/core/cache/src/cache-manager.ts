@@ -18,33 +18,29 @@ export class CacheManager {
   async init(options?: AppCacheOptions) {
     const { default: defaultCache, memory, redis } = options || {};
     this.default = defaultCache || 'memory';
-    await this.register('memory', 'memory');
-    await this.createWithOptions('memory', 'memory', memory);
+    await this.register('memory', 'memory', memory);
     if (redis) {
-      await this.register('redis', redisStore);
-      await this.createWithOptions('redis', 'redis', redis);
+      await this.register('redis', redisStore, redis);
     }
+  }
+
+  // Create a new cache with the name of store factory and custom config
+  private async createWithOptions(
+    namespace: string,
+    store: 'memory' | FactoryStore<Store, any>,
+    options: any,
+  ): Promise<Cache> {
+    const space = await caching(store as any, options);
+    const cache = new Cache({ namespace, cache: space });
+    this.caches.set(namespace, cache);
+    return cache;
   }
 
   // Register a new store factory and create a default cache
   async register(name: string, store: 'memory' | FactoryStore<Store, any>, defaultConfig?: any) {
     this.stores.set(name, store);
-    const space = await caching(store as any, defaultConfig);
-    const cache = new Cache({ namespace: name, cache: space });
-    this.caches.set(name, cache);
+    await this.createWithOptions(name, store, defaultConfig);
     return store;
-  }
-
-  // Create a new cache with the name of store factory and custom config
-  private async createWithOptions(namespace: string, storeName: string, options: any): Promise<Cache> {
-    const store = this.stores.get(storeName) as any;
-    if (!store) {
-      throw new Error(`Create cache failed, store is unavailable or not registered`);
-    }
-    const space = await caching(store, options);
-    const cache = new Cache({ namespace, cache: space });
-    this.caches.set(namespace, cache);
-    return cache;
   }
 
   create(namespace: string, storeName?: string): Cache;
@@ -65,7 +61,7 @@ export class CacheManager {
       this.caches.set(namespace, space);
       return space;
     }
-    return this.createWithOptions(namespace, storeName, options);
+    return this.createWithOptions(namespace, store, options);
   }
 
   get(namespace: string): Cache {

@@ -45,16 +45,9 @@ export class Locale {
   }
 
   async wrapCache(key: string, fn: () => any) {
-    const result = await this.cache.get(key);
-    if (result) {
-      return result;
-    }
-    const value = await fn();
-    if (lodash.isEmpty(value)) {
-      return value;
-    }
-    await this.cache.set(key, value);
-    return value;
+    return await this.cache.wrapWithCondition(key, fn, {
+      isCacheable: (val: any) => !lodash.isEmpty(val),
+    });
   }
 
   async getCacheResources(lang: string) {
