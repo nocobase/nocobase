@@ -214,17 +214,14 @@ export class PluginMockCollectionsServer extends Plugin {
               return values;
             }),
           );
-          return items;
+          return count == 1 ? items[0] : items;
         };
         const repository = ctx.db.getRepository(resourceName);
         const data = await mockCollectionData(resourceName, count);
         // ctx.body = data;
-        const records = await repository.create({
-          values: data.map((item) => {
-            return { ...item, ...values };
-          }),
+        ctx.body = await repository.create({
+          values: (Array.isArray(data) ? data : [data]).map((item) => ({ ...item, ...values })),
         });
-        ctx.body = count == 1 ? records[0] : records;
         await next();
       },
       'collections:mock': async (ctx, next) => {
