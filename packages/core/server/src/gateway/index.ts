@@ -149,6 +149,7 @@ export class Gateway extends EventEmitter {
       await compress(req, res);
       return handler(req, res, {
         public: resolve(process.cwd()),
+        directoryListing: false,
       });
     }
 
