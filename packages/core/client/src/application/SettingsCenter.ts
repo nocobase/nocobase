@@ -1,9 +1,9 @@
 import { set } from 'lodash';
 import { createElement } from 'react';
 
+import { Icon } from '../icon';
 import type { Application } from './Application';
 import type { RouteType } from './RouterManager';
-import { Icon } from '../icon';
 
 export const ADMIN_SETTINGS_KEY = 'admin.settings.';
 export const ADMIN_SETTINGS_PATH = '/admin/settings/';
@@ -30,6 +30,7 @@ export interface SettingPageType {
   icon: any;
   path: string;
   sort?: number;
+  name?: string;
   pluginName?: string;
   isBookmark?: boolean;
   children?: SettingPageType[];

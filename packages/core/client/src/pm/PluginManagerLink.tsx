@@ -1,9 +1,9 @@
 import { ApiOutlined, SettingOutlined } from '@ant-design/icons';
-import { Button, Dropdown, MenuProps, Tooltip } from 'antd';
-import React, { useMemo, useState } from 'react';
+import { Button, Card, Popover, Tooltip } from 'antd';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { ADMIN_SETTINGS_PATH, useApp } from '../application';
+import { useApp } from '../application';
 import { ActionContextProvider, useCompile } from '../schema-component';
 import { useToken } from '../style';
 
@@ -29,40 +29,62 @@ export const SettingsCenterDropdown = () => {
   const [visible, setVisible] = useState(false);
   const compile = useCompile();
   const { t } = useTranslation();
+  const { token } = useToken();
   const navigate = useNavigate();
   const app = useApp();
   const settings = app.settingsCenter.getList();
-  const bookmarkMenus = settings.filter((item) => item.isBookmark);
-  const menu = useMemo<MenuProps>(() => {
-    return {
-      items: [
-        ...bookmarkMenus.map((menu) => ({
-          key: menu.path,
-          role: 'button',
-          label: compile(menu.label),
-        })),
-        { type: 'divider' },
-        {
-          key: ADMIN_SETTINGS_PATH,
-          role: 'button',
-          label: t('All plugin settings'),
-        },
-      ],
-      onClick({ key }) {
-        navigate(key);
-      },
-    };
-  }, [bookmarkMenus, compile, navigate, t]);
+  const [open, setOpen] = useState(false);
 
   return (
     <ActionContextProvider value={{ visible, setVisible }}>
-      <Dropdown placement="bottom" menu={menu}>
+      <Popover
+        open={open}
+        onOpenChange={(open) => {
+          setOpen(open);
+        }}
+        arrow={false}
+        content={
+          <div style={{ maxWidth: 500 }}>
+            <Card bordered={false} style={{ boxShadow: 'none' }}>
+              {settings.map((setting) => (
+                <Card.Grid style={{ cursor: 'pointer', padding: 0 }} key={setting.pluginName}>
+                  <a
+                    role="button"
+                    aria-label={setting.name}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setOpen(false);
+                      navigate(setting.path);
+                    }}
+                    style={{ display: 'block', color: 'inherit', padding: token.margin }}
+                    href={setting.path}
+                  >
+                    <div style={{ fontSize: '1.5rem', textAlign: 'center', marginBottom: '0.3rem' }}>
+                      {setting.icon}
+                    </div>
+                    <div
+                      style={{
+                        textAlign: 'center',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {compile(setting.title)}
+                    </div>
+                  </a>
+                </Card.Grid>
+              ))}
+            </Card>
+          </div>
+        }
+      >
         <Button
           data-testid="settings-center-button"
           icon={<SettingOutlined style={{ color: token.colorTextHeaderMenu }} />}
           // title={t('All plugin settings')}
         />
-      </Dropdown>
+      </Popover>
     </ActionContextProvider>
   );
 };
