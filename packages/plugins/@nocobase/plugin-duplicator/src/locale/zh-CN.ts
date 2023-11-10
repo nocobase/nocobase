@@ -26,5 +26,6 @@ export default {
   'Backup instructions': '备份说明',
   'File size':'文件大小',
   'New backup':'新建备份',
-  'Origin':'来源'
+  'Origin':'来源',
+  'Backing up':'备份中'
 };
