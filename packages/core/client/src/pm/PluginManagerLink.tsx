@@ -33,7 +33,7 @@ export const SettingsCenterDropdown = () => {
   const { token } = useToken();
   const navigate = useNavigate();
   const app = useApp();
-  const settings = app.settingsCenter.getList();
+  const settings = app.pluginSettingsManager.getList();
   const [open, setOpen] = useState(false);
 
   return (
@@ -99,7 +99,7 @@ export const SettingsCenterDropdown = () => {
         }
       >
         <Button
-          data-testid="settings-center-button"
+          data-testid="plugin-settings-button"
           icon={<SettingOutlined style={{ color: token.colorTextHeaderMenu }} />}
           // title={t('All plugin settings')}
         />

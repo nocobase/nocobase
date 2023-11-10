@@ -2,7 +2,7 @@ import { Application } from '../Application';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 
-describe('SettingsCenter', () => {
+describe('PluginSettingsManager', () => {
   let app: Application;
 
   const test = {
@@ -34,7 +34,7 @@ describe('SettingsCenter', () => {
   it('basic use', () => {
     const name = 'test';
 
-    app.settingsCenter.add(name, test);
+    app.pluginSettingsManager.add(name, test);
 
     const settingRes = { ...test, name };
     const getRes = {
@@ -47,90 +47,90 @@ describe('SettingsCenter', () => {
       key: name,
       children: undefined,
     };
-    expect(app.settingsCenter.getSetting('test')).toContain(settingRes);
-    expect(app.settingsCenter.get('test')).toContain(getRes);
-    expect(app.settingsCenter.hasAuth('test')).toBeTruthy();
-    const list = app.settingsCenter.getList();
+    expect(app.pluginSettingsManager.getSetting('test')).toContain(settingRes);
+    expect(app.pluginSettingsManager.get('test')).toContain(getRes);
+    expect(app.pluginSettingsManager.hasAuth('test')).toBeTruthy();
+    const list = app.pluginSettingsManager.getList();
     expect(list.length).toBe(1);
     expect(list[0]).toContain(getRes);
   });
 
   it('multi', () => {
-    app.settingsCenter.add('test1', test1);
-    app.settingsCenter.add('test2', test2);
-    expect(app.settingsCenter.get('test1')).toContain(test1);
-    expect(app.settingsCenter.get('test2')).toContain(test2);
+    app.pluginSettingsManager.add('test1', test1);
+    app.pluginSettingsManager.add('test2', test2);
+    expect(app.pluginSettingsManager.get('test1')).toContain(test1);
+    expect(app.pluginSettingsManager.get('test2')).toContain(test2);
 
-    const list = app.settingsCenter.getList();
+    const list = app.pluginSettingsManager.getList();
     expect(list.length).toBe(2);
     expect(list[0]).toContain(test1);
     expect(list[1]).toContain(test2);
   });
 
   it('nested', () => {
-    app.settingsCenter.add('test1', test1);
-    app.settingsCenter.add('test1.test2', test2);
-    expect(app.settingsCenter.get('test1')).toContain(test1);
-    expect(app.settingsCenter.get('test1.test2')).toContain(test2);
-    expect(app.settingsCenter.get('test1').children.length).toBe(1);
-    expect(app.settingsCenter.get('test1').children[0]).toContain(test2);
+    app.pluginSettingsManager.add('test1', test1);
+    app.pluginSettingsManager.add('test1.test2', test2);
+    expect(app.pluginSettingsManager.get('test1')).toContain(test1);
+    expect(app.pluginSettingsManager.get('test1.test2')).toContain(test2);
+    expect(app.pluginSettingsManager.get('test1').children.length).toBe(1);
+    expect(app.pluginSettingsManager.get('test1').children[0]).toContain(test2);
   });
 
   it('remove', () => {
-    app.settingsCenter.add('test1', test1);
-    app.settingsCenter.add('test1.test2', test2);
+    app.pluginSettingsManager.add('test1', test1);
+    app.pluginSettingsManager.add('test1.test2', test2);
 
-    app.settingsCenter.remove('test1');
-    expect(app.settingsCenter.get('test1')).toBeFalsy();
-    expect(app.settingsCenter.get('test1.test2')).toBeFalsy();
-    expect(app.settingsCenter.getList().length).toBe(0);
+    app.pluginSettingsManager.remove('test1');
+    expect(app.pluginSettingsManager.get('test1')).toBeFalsy();
+    expect(app.pluginSettingsManager.get('test1.test2')).toBeFalsy();
+    expect(app.pluginSettingsManager.getList().length).toBe(0);
   });
 
   it('acl', () => {
-    app.settingsCenter.setAclSnippets(['!pm.test']);
-    app.settingsCenter.add('test', test);
-    expect(app.settingsCenter.get('test')).toBeFalsy();
-    expect(app.settingsCenter.hasAuth('test')).toBeFalsy();
-    expect(app.settingsCenter.get('test', false)).toContain({ ...test, isAllow: false });
+    app.pluginSettingsManager.setAclSnippets(['!pm.test']);
+    app.pluginSettingsManager.add('test', test);
+    expect(app.pluginSettingsManager.get('test')).toBeFalsy();
+    expect(app.pluginSettingsManager.hasAuth('test')).toBeFalsy();
+    expect(app.pluginSettingsManager.get('test', false)).toContain({ ...test, isAllow: false });
 
-    expect(app.settingsCenter.getList().length).toBe(0);
-    expect(app.settingsCenter.getList(false).length).toBe(1);
-    expect(app.settingsCenter.getList(false)[0]).toContain({ ...test, isAllow: false });
+    expect(app.pluginSettingsManager.getList().length).toBe(0);
+    expect(app.pluginSettingsManager.getList(false).length).toBe(1);
+    expect(app.pluginSettingsManager.getList(false)[0]).toContain({ ...test, isAllow: false });
   });
 
   it('has', () => {
-    app.settingsCenter.add('test', test);
-    expect(app.settingsCenter.has('test')).toBeTruthy();
-    expect(app.settingsCenter.has('test1')).toBeFalsy();
+    app.pluginSettingsManager.add('test', test);
+    expect(app.pluginSettingsManager.has('test')).toBeTruthy();
+    expect(app.pluginSettingsManager.has('test1')).toBeFalsy();
   });
 
   it('getAclSnippet', () => {
-    app.settingsCenter.add('test1', test1);
-    app.settingsCenter.add('test2', {
+    app.pluginSettingsManager.add('test1', test1);
+    app.pluginSettingsManager.add('test2', {
       ...test2,
       aclSnippet: 'any.string',
     });
-    expect(app.settingsCenter.getAclSnippet('test1')).toBe('pm.test1');
-    expect(app.settingsCenter.getAclSnippet('test2')).toBe('any.string');
+    expect(app.pluginSettingsManager.getAclSnippet('test1')).toBe('pm.test1');
+    expect(app.pluginSettingsManager.getAclSnippet('test2')).toBe('any.string');
   });
 
   it('getRouteName', () => {
-    app.settingsCenter.add('test1', test1);
-    app.settingsCenter.add('test1.test2', test2);
-    expect(app.settingsCenter.getRouteName('test1')).toBe('admin.settings.test1');
-    expect(app.settingsCenter.getRouteName('test1.test2')).toBe('admin.settings.test1.test2');
+    app.pluginSettingsManager.add('test1', test1);
+    app.pluginSettingsManager.add('test1.test2', test2);
+    expect(app.pluginSettingsManager.getRouteName('test1')).toBe('admin.settings.test1');
+    expect(app.pluginSettingsManager.getRouteName('test1.test2')).toBe('admin.settings.test1.test2');
   });
 
   it('getRoutePath', () => {
-    app.settingsCenter.add('test1', test1);
-    app.settingsCenter.add('test1.test2', test2);
-    expect(app.settingsCenter.getRoutePath('test1')).toBe('/admin/settings/test1');
-    expect(app.settingsCenter.getRoutePath('test1.test2')).toBe('/admin/settings/test1/test2');
+    app.pluginSettingsManager.add('test1', test1);
+    app.pluginSettingsManager.add('test1.test2', test2);
+    expect(app.pluginSettingsManager.getRoutePath('test1')).toBe('/admin/settings/test1');
+    expect(app.pluginSettingsManager.getRoutePath('test1.test2')).toBe('/admin/settings/test1/test2');
   });
 
   it('router', () => {
-    app.settingsCenter.add('test1', test1);
-    app.settingsCenter.add('test1.test2', test2);
+    app.pluginSettingsManager.add('test1', test1);
+    app.pluginSettingsManager.add('test1.test2', test2);
     expect(app.router.getRoutes()[0]).toMatchInlineSnapshot(`
       {
         "children": undefined,

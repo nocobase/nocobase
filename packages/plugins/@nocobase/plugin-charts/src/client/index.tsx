@@ -94,7 +94,7 @@ export class ChartsPlugin extends Plugin {
   }
   async load() {
     this.app.use(ChartsProvider);
-    this.app.settingsCenter.add(NAMESPACE, {
+    this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Charts", { ns: "${NAMESPACE}" })}}`,
       icon: 'PieChartOutlined',
       Component: QueriesTable,

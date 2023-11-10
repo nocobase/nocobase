@@ -27,7 +27,7 @@ MapProvider.displayName = 'MapProvider';
 export class MapPlugin extends Plugin {
   async load() {
     this.app.use(MapProvider);
-    this.app.settingsCenter.add(NAMESPACE, {
+    this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Map Manager", { ns: "${NAMESPACE}" })}}`,
       icon: 'EnvironmentOutlined',
       Component: Configuration,

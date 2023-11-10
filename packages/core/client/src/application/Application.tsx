@@ -12,7 +12,7 @@ import { Link, NavLink, Navigate } from 'react-router-dom';
 import { PluginManager, PluginType } from './PluginManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
-import { SettingsCenter } from './SettingsCenter';
+import { PluginSettingsManager } from './PluginSettingsManager';
 
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
@@ -54,7 +54,7 @@ export class Application {
   public apiClient: APIClient;
   public components: Record<string, ComponentType> = { ...defaultAppComponents };
   public pm: PluginManager;
-  public settingsCenter: SettingsCenter;
+  public pluginSettingsManager: PluginSettingsManager;
   public devDynamicImport: DevDynamicImport;
   public requirejs: RequireJS;
   public notification;
@@ -89,7 +89,7 @@ export class Application {
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
     this.ws = new WebSocketClient(options.ws);
-    this.settingsCenter = new SettingsCenter(this);
+    this.pluginSettingsManager = new PluginSettingsManager(this);
     this.addRoutes();
   }
 

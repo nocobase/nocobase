@@ -36,7 +36,7 @@ const MultiAppManager = () => {
     }),
     {
       key: '.manager',
-      label: <Link to={app.settingsCenter.getRoutePath('multi-app-manager')}>{t('Manage applications')}</Link>,
+      label: <Link to={app.pluginSettingsManager.getRoutePath('multi-app-manager')}>{t('Manage applications')}</Link>,
     },
   ];
   return (

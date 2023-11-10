@@ -22,21 +22,21 @@ export class PMPlugin extends Plugin {
   }
 
   addSettings() {
-    this.app.settingsCenter.add('acl', {
+    this.app.pluginSettingsManager.add('acl', {
       title: '{{t("ACL")}}',
       icon: 'LockOutlined',
       Component: ACLPane,
       aclSnippet: 'pm.acl.roles',
       isBookmark: true,
     });
-    this.app.settingsCenter.add('ui-schema-storage', {
+    this.app.pluginSettingsManager.add('ui-schema-storage', {
       title: '{{t("Block templates")}}',
       icon: 'LayoutOutlined',
       Component: BlockTemplatesPane,
       isBookmark: true,
       aclSnippet: 'pm.ui-schema-storage.block-templates',
     });
-    this.app.settingsCenter.add('system-settings', {
+    this.app.pluginSettingsManager.add('system-settings', {
       icon: 'SettingOutlined',
       title: '{{t("System settings")}}',
       Component: SystemSettingsPane,
@@ -44,14 +44,14 @@ export class PMPlugin extends Plugin {
       aclSnippet: 'pm.system-settings.system-settings',
     });
 
-    this.app.settingsCenter.add('collection-manager', {
+    this.app.pluginSettingsManager.add('collection-manager', {
       icon: 'DatabaseOutlined',
       title: '{{t("Collection manager")}}',
       Component: () => <Outlet />,
       isBookmark: true,
     });
 
-    this.app.settingsCenter.add('collection-manager.collections', {
+    this.app.pluginSettingsManager.add('collection-manager.collections', {
       title: '{{t("Collections & Fields")}}',
       Component: CollectionManagerPane,
     });

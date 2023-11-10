@@ -68,7 +68,7 @@ const HelloPluginSettingPage = () => {
 class HelloPlugin extends Plugin {
   async load() {
     this.app.addProvider(HelloProvider);
-    this.app.settingsCenter.add('sample-hello', {
+    this.app.pluginSettingsManager.add('sample-hello', {
       title: 'Hello',
       icon: 'ApiOutlined',
       Component: HelloPluginSettingPage,

@@ -6,7 +6,7 @@ import { NAMESPACE } from './locale';
 export class VerificationPlugin extends Plugin {
   async load() {
     this.app.use(VerificationProvider);
-    this.app.settingsCenter.add(NAMESPACE, {
+    this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'CheckCircleOutlined',
       title: `{{t("Verification", { ns: "${NAMESPACE}" })}}`,
       Component: VerificationProviders,

@@ -6,7 +6,7 @@ import { Authenticator } from './settings/Authenticator';
 
 export class AuthPlugin extends Plugin {
   async load() {
-    this.app.settingsCenter.add(NAMESPACE, {
+    this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'LoginOutlined',
       title: `{{t("Authentication", { ns: "${NAMESPACE}" })}}`,
       Component: Authenticator,

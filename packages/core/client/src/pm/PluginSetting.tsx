@@ -5,12 +5,12 @@ import _, { get } from 'lodash';
 import React, { createContext, useCallback, useMemo } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useStyles } from './style';
-import { ADMIN_SETTINGS_PATH, SettingPageType, useApp } from '../application';
+import { ADMIN_SETTINGS_PATH, PluginSettingsPageType, useApp } from '../application';
 import { useCompile } from '../schema-component';
 
 export const SettingsCenterContext = createContext<any>({});
 
-function getMenuItems(list: SettingPageType[]) {
+function getMenuItems(list: PluginSettingsPageType[]) {
   return list.map((item) => {
     return {
       key: item.name,
@@ -29,9 +29,9 @@ export const SettingsCenterComponent = () => {
   const location = useLocation();
   const compile = useCompile();
   const settings = useMemo(() => {
-    const list = app.settingsCenter.getList();
+    const list = app.pluginSettingsManager.getList();
     // compile title
-    function traverse(settings: SettingPageType[]) {
+    function traverse(settings: PluginSettingsPageType[]) {
       settings.forEach((item) => {
         item.title = compile(item.title);
         item.label = compile(item.title);
@@ -42,8 +42,8 @@ export const SettingsCenterComponent = () => {
     }
     traverse(list);
     return list;
-  }, [app.settingsCenter, compile]);
-  const getFirstDeepChildPath = useCallback((settings: SettingPageType[]) => {
+  }, [app.pluginSettingsManager, compile]);
+  const getFirstDeepChildPath = useCallback((settings: PluginSettingsPageType[]) => {
     if (!settings || !settings.length) {
       return '/admin';
     }
@@ -54,9 +54,9 @@ export const SettingsCenterComponent = () => {
     return first.path;
   }, []);
 
-  const settingsMapByPath = useMemo<Record<string, SettingPageType>>(() => {
+  const settingsMapByPath = useMemo<Record<string, PluginSettingsPageType>>(() => {
     const map = {};
-    const traverse = (settings: SettingPageType[]) => {
+    const traverse = (settings: PluginSettingsPageType[]) => {
       settings.forEach((item) => {
         map[item.path] = item;
         if (item.children?.length) {
@@ -133,7 +133,7 @@ export const SettingsCenterComponent = () => {
                   <Menu
                     style={{ marginLeft: -theme.margin }}
                     onClick={({ key }) => {
-                      navigate(app.settingsCenter.getRoutePath(key));
+                      navigate(app.pluginSettingsManager.getRoutePath(key));
                     }}
                     selectedKeys={[currentSetting?.name]}
                     mode="horizontal"

@@ -1,6 +1,6 @@
-# Settings Center
+# Plugin Settings Manager
 
-<img src="./settings-center/settings-tab.jpg" style="max-width: 100%;"/>
+<img src="./plugin-settings/settings-tab.jpg" style="max-width: 100%;"/>
 
 ## Example
 
@@ -14,7 +14,7 @@ const HelloSettingPage = () => <div>Hello Setting page</div>;
 
 export class HelloPlugin extends Plugin {
   async load() {
-    this.app.settingsCenter.add('hello', {
+    this.app.pluginSettingsManager.add('hello', {
       title: 'Hello',  // menu title and page title
       icon: 'ApiOutlined', // menu icon
       Component: HelloSettingPage,
@@ -31,18 +31,18 @@ const SettingPageLayout = () => <div> <div>This</div> public part, the following
 
 class HelloPlugin extends Plugin {
   async load() {
-    this.app.settingsCenter.add('hello', {
+    this.app.pluginSettingsManager.add('hello', {
       title: 'HelloWorld',
       icon: '',
       Component: SettingPageLayout
     })
 
-    this.app.settingsCenter.add('hello.demo1', {
+    this.app.pluginSettingsManager.add('hello.demo1', {
       title: 'Demo1 Page',
       Component: () => <div>Demo1 Page Content</div>
     })
 
-    this.app.settingsCenter.add('hello.demo2', {
+    this.app.pluginSettingsManager.add('hello.demo2', {
       title: 'Demo2 Page',
       Component: () => <div>Demo2 Page Content</div>
     })
@@ -58,8 +58,8 @@ If you want to get the jump link of the setting page, you can get it through the
 import { useApp } from '@nocobase/client'
 
 const app = useApp();
-app.settingsCenter.getRoutePath('hello'); // /admin/settings/hello
-app.settingsCenter.getRoutePath('hello.demo1'); // /admin/settings/hello/demo1
+app.pluginSettingsManager.getRoutePath('hello'); // /admin/settings/hello
+app.pluginSettingsManager.getRoutePath('hello.demo1'); // /admin/settings/hello/demo1
 ```
 
 ### Get Config
@@ -68,7 +68,7 @@ If you want to get the added configuration (already filtered by permissions), yo
 
 ```tsx | pure
 const app = useApp();
-app.settingsCenter.get('hello'); // { title: 'HelloWorld', icon: '', Component: HelloSettingPage, children: [{...}] }
+app.pluginSettingsManager.get('hello'); // { title: 'HelloWorld', icon: '', Component: HelloSettingPage, children: [{...}] }
 ```
 
 

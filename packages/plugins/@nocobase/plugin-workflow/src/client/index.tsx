@@ -30,7 +30,7 @@ export class WorkflowPlugin extends Plugin {
     this.addScopes();
     this.addComponents();
     this.app.addProvider(WorkflowProvider);
-    this.app.settingsCenter.add(NAMESPACE, {
+    this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'PartitionOutlined',
       title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
       Component: WorkflowPane,

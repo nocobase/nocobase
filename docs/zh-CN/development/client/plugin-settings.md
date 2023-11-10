@@ -1,6 +1,6 @@
 # 配置中心
 
-<img src="./settings-center/settings-tab.jpg" style="max-width: 100%;"/>
+<img src="./plugin-settings/settings-tab.jpg" style="max-width: 100%;"/>
 
 ## 示例
 
@@ -14,7 +14,7 @@ const HelloSettingPage = () => <div>Hello Setting page</div>;
 
 export class HelloPlugin extends Plugin {
   async load() {
-    this.app.settingsCenter.add('hello', {
+    this.app.pluginSettingsManager.add('hello', {
       title: 'Hello',  // 设置页面的标题和菜单名称
       icon: 'ApiOutlined', // 设置页面菜单图标
       Component: HelloSettingPage,
@@ -31,18 +31,18 @@ const SettingPageLayout = () => <div>公共部分，下面是子路由的出口:
 
 class HelloPlugin extends Plugin {
   async load() {
-    this.app.settingsCenter.add('hello', {
+    this.app.pluginSettingsManager.add('hello', {
       title: 'HelloWorld', // 设置页面的标题和菜单名称
       icon: '', // 菜单图标
       Component: SettingPageLayout
     })
 
-    this.app.settingsCenter.add('hello.demo1', {
+    this.app.pluginSettingsManager.add('hello.demo1', {
       title: 'Demo1 Page',
       Component: () => <div>Demo1 Page Content</div>
     })
 
-    this.app.settingsCenter.add('hello.demo2', {
+    this.app.pluginSettingsManager.add('hello.demo2', {
       title: 'Demo2 Page',
       Component: () => <div>Demo2 Page Content</div>
     })
@@ -59,8 +59,8 @@ class HelloPlugin extends Plugin {
 import { useApp } from '@nocobase/client'
 
 const app = useApp();
-app.settingsCenter.getRoutePath('hello'); // /admin/settings/hello
-app.settingsCenter.getRoutePath('hello.demo1'); // /admin/settings/hello/demo1
+app.pluginSettingsManager.getRoutePath('hello'); // /admin/settings/hello
+app.pluginSettingsManager.getRoutePath('hello.demo1'); // /admin/settings/hello/demo1
 ```
 
 ### 获取配置
@@ -69,7 +69,7 @@ app.settingsCenter.getRoutePath('hello.demo1'); // /admin/settings/hello/demo1
 
 ```tsx | pure
 const app = useApp();
-app.settingsCenter.get('hello'); // { title: 'HelloWorld', icon: '', Component: HelloSettingPage, children: [{...}] }
+app.pluginSettingsManager.get('hello'); // { title: 'HelloWorld', icon: '', Component: HelloSettingPage, children: [{...}] }
 ```
 
 完整示例查看 [samples/hello](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-sample-hello/src/client/index.tsx)。

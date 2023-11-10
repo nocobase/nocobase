@@ -4,7 +4,7 @@ import { NAMESPACE } from './locale';
 
 export class LocalizationManagementPlugin extends Plugin {
   async load() {
-    this.app.settingsCenter.add(NAMESPACE, {
+    this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Localization management", { ns: "${NAMESPACE}" })}}`,
       icon: 'GlobalOutlined',
       Component: Localization,

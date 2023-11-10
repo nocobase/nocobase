@@ -7,7 +7,7 @@ export class MultiAppManagerPlugin extends Plugin {
   async load() {
     this.app.use(MultiAppManagerProvider);
 
-    this.app.settingsCenter.add(NAMESPACE, {
+    this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Multi-app manager", { ns: "${NAMESPACE}" })}}`,
       icon: 'AppstoreOutlined',
       Component: AppManager,

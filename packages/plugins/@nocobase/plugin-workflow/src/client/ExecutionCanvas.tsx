@@ -247,7 +247,7 @@ export function ExecutionCanvas() {
         <header>
           <Breadcrumb
             items={[
-              { title: <Link to={app.settingsCenter.getRoutePath('workflow')}>{lang('Workflow')}</Link> },
+              { title: <Link to={app.pluginSettingsManager.getRoutePath('workflow')}>{lang('Workflow')}</Link> },
               { title: <Link to={getWorkflowDetailPath(workflow.id)}>{workflow.title}</Link> },
               { title: <ExecutionsDropdown /> },
             ]}

@@ -4,7 +4,7 @@ import { Configuration } from './Configuration';
 
 class APIKeysPlugin extends Plugin {
   async load() {
-    this.app.settingsCenter.add(NAMESPACE, {
+    this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'KeyOutlined',
       title: '{{t("API keys", {"ns": "api-keys"})}}',
       Component: Configuration,

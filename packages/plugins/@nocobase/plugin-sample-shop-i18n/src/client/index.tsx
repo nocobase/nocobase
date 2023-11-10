@@ -55,7 +55,7 @@ const ShopI18nProvider = React.memo((props) => {
 class ShopI18nPlugin extends Plugin {
   async load() {
     this.app.addProvider(ShopI18nProvider);
-    this.app.settingsCenter.add(NAMESPACE, {
+    this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Shop", { ns: "${NAMESPACE}" })}}`,
       icon: 'ShopOutlined',
       Component: OrderStatusSelect,

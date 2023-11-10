@@ -9,7 +9,7 @@ export const ADMIN_SETTINGS_KEY = 'admin.settings.';
 export const ADMIN_SETTINGS_PATH = '/admin/settings/';
 export const SNIPPET_PREFIX = 'pm.';
 
-export interface SettingOptionsType {
+export interface PluginSettingsManagerSettingOptionsType {
   title: string;
   Component: RouteType['Component'];
   icon?: string;
@@ -23,7 +23,7 @@ export interface SettingOptionsType {
   [index: string]: any;
 }
 
-export interface SettingPageType {
+export interface PluginSettingsPageType {
   label?: string;
   title: string;
   key: string;
@@ -33,12 +33,12 @@ export interface SettingPageType {
   name?: string;
   pluginName?: string;
   isBookmark?: boolean;
-  children?: SettingPageType[];
+  children?: PluginSettingsPageType[];
   [index: string]: any;
 }
 
-export class SettingsCenter {
-  protected settings: Record<string, SettingOptionsType> = {};
+export class PluginSettingsManager {
+  protected settings: Record<string, PluginSettingsManagerSettingOptionsType> = {};
   protected aclSnippets: string[] = [];
 
   constructor(protected app: Application) {
@@ -62,7 +62,7 @@ export class SettingsCenter {
     return `${ADMIN_SETTINGS_PATH}${name.replaceAll('.', '/')}`;
   }
 
-  add(name: string, options: SettingOptionsType) {
+  add(name: string, options: PluginSettingsManagerSettingOptionsType) {
     const nameArr = name.split('.');
     const pluginName = nameArr[0];
     this.settings[name] = { ...options, name, pluginName };
@@ -103,7 +103,7 @@ export class SettingsCenter {
     return !!this.getSetting(name);
   }
 
-  get(name: string, filterAuth = true): SettingPageType {
+  get(name: string, filterAuth = true): PluginSettingsPageType {
     const isAllow = this.hasAuth(name);
     const pluginSetting = this.getSetting(name);
     if ((filterAuth && !isAllow) || !pluginSetting) return null;
@@ -126,7 +126,7 @@ export class SettingsCenter {
     };
   }
 
-  getList(filterAuth = true): SettingPageType[] {
+  getList(filterAuth = true): PluginSettingsPageType[] {
     return Object.keys(this.settings)
       .filter((item) => !item.includes('.')) // top level
       .sort((a, b) => a.localeCompare(b)) // sort by name

@@ -9,7 +9,7 @@ export class FileManagerPlugin extends Plugin {
 
   async load() {
     this.app.use(FileManagerProvider);
-    this.app.settingsCenter.add(NAMESPACE, {
+    this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("File manager", { ns: "${NAMESPACE}" })}}`,
       icon: 'FileOutlined',
       Component: FileStoragePane,

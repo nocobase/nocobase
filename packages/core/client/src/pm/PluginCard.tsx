@@ -93,11 +93,11 @@ function PluginInfo(props: IPluginInfo) {
               </a>
             )}
             {enabled ? (
-              app.settingsCenter.has(name) && (
+              app.pluginSettingsManager.has(name) && (
                 <a
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(app.settingsCenter.getRoutePath(name));
+                    navigate(app.pluginSettingsManager.getRoutePath(name));
                   }}
                 >
                   <SettingOutlined /> {t('Setting')}

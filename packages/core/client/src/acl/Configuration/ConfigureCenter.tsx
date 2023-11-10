@@ -42,8 +42,8 @@ export const SettingsCenterConfigure = () => {
   const record = useRecord();
   const api = useAPIClient();
   const compile = useCompile();
-  const settings = app.settingsCenter.getList(false);
-  const allAclSnippets = app.settingsCenter.getAclSnippets();
+  const settings = app.pluginSettingsManager.getList(false);
+  const allAclSnippets = app.pluginSettingsManager.getAclSnippets();
   const [snippets, setSnippets] = useState<string[]>([]);
   const allChecked = useMemo(
     () => snippets.includes('pm.*') && snippets.every((item) => !item.startsWith('!pm.')),
