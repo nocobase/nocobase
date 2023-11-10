@@ -186,7 +186,7 @@ export class PluginMockCollectionsServer extends Plugin {
     this.app.resourcer.registerActions({
       mock: async (ctx, next) => {
         const { resourceName } = ctx.action;
-        const { count = 10 } = ctx.action.params;
+        const { values, count = 10 } = ctx.action.params;
         const mockCollectionData = async (collectionName, count = 1, skipAssoc = false) => {
           const collection = ctx.db.getCollection(collectionName) as Collection;
           const items = await Promise.all(
@@ -210,14 +210,17 @@ export class PluginMockCollectionsServer extends Plugin {
               return values;
             }),
           );
-          return count === 1 ? items[0] : items;
+          return items;
         };
         const repository = ctx.db.getRepository(resourceName);
         const data = await mockCollectionData(resourceName, count);
         // ctx.body = data;
-        ctx.body = await repository.create({
-          values: data,
+        const records = await repository.create({
+          values: data.map((item) => {
+            return { ...item, ...values };
+          }),
         });
+        ctx.body = count == 1 ? records[0] : records;
         await next();
       },
       'collections:mock': async (ctx, next) => {
