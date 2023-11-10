@@ -11,7 +11,7 @@ import { filterEmptyValues } from './utils/filterEmptyValues';
 import { getAction } from './utils/getAction';
 import { getPath } from './utils/getPath';
 import { clearRequested, getRequested, hasRequested, stashRequested } from './utils/hasRequested';
-import { REGEX_OF_VARIABLE, isVariable } from './utils/isVariable';
+import { isVariable } from './utils/isVariable';
 import { uniq } from './utils/uniq';
 
 export const VariablesContext = createContext<VariablesContextType>(null);
@@ -234,9 +234,7 @@ const VariablesProvider = ({ children }) => {
       let result = null;
 
       await onLocalVariablesReady(localVariables, async () => {
-        const matches = variableString.match(REGEX_OF_VARIABLE);
-        const path = matches[0].replace(REGEX_OF_VARIABLE, '$1');
-
+        const path = getPath(variableString);
         result = getCollectionJoinField(getFieldPath(path));
 
         // 当仅有一个例如 `$user` 这样的字符串时，需要拼一个假的 `collectionField` 返回
