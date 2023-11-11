@@ -3,16 +3,16 @@ import lodash from 'lodash';
 import {
   Association,
   BulkCreateOptions,
-  CountOptions as SequelizeCountOptions,
-  CreateOptions as SequelizeCreateOptions,
-  DestroyOptions as SequelizeDestroyOptions,
-  FindAndCountOptions as SequelizeAndCountOptions,
-  FindOptions as SequelizeFindOptions,
   ModelStatic,
   Op,
   Sequelize,
-  Transactionable,
+  FindAndCountOptions as SequelizeAndCountOptions,
+  CountOptions as SequelizeCountOptions,
+  CreateOptions as SequelizeCreateOptions,
+  DestroyOptions as SequelizeDestroyOptions,
+  FindOptions as SequelizeFindOptions,
   UpdateOptions as SequelizeUpdateOptions,
+  Transactionable,
   WhereOperators,
 } from 'sequelize';
 import { Collection } from './collection';
@@ -217,6 +217,7 @@ export interface AggregateOptions {
 interface FirstOrCreateOptions extends Transactionable {
   filterKeys: string[];
   values?: Values;
+  hooks?: boolean;
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes> {
@@ -459,7 +460,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * Get the first record matching the attributes or create it.
    */
   async firstOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction } = options;
+    const { filterKeys, values, transaction, hooks } = options;
     const filter = Repository.valuesToFilter(values, filterKeys);
 
     const instance = await this.findOne({ filter, transaction });
@@ -468,24 +469,26 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       return instance;
     }
 
-    return this.create({ values, transaction });
+    return this.create({ values, transaction, hooks });
   }
 
   async updateOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction } = options;
+    const { filterKeys, values, transaction, hooks } = options;
     const filter = Repository.valuesToFilter(values, filterKeys);
 
     const instance = await this.findOne({ filter, transaction });
 
     if (instance) {
+      console.log(filter, instance.toJSON(), instance.get(this.collection.model.primaryKeyAttribute));
       return await this.update({
-        filterByTk: instance.get(this.collection.model.primaryKeyAttribute),
+        filterByTk: instance.get(this.collection.filterTargetKey || this.collection.model.primaryKeyAttribute),
         values,
         transaction,
+        hooks,
       });
     }
 
-    return this.create({ values, transaction });
+    return this.create({ values, transaction, hooks });
   }
 
   /**

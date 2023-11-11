@@ -1,8 +1,8 @@
-import { Action } from '../action';
+import ActionContainer from '../action/Action.Container';
 import { RecordPicker } from './RecordPicker';
 
-RecordPicker.Viewer = Action.Container;
-RecordPicker.Selector = Action.Container;
+RecordPicker.Viewer = ActionContainer;
+RecordPicker.Selector = ActionContainer;
 
 export { RecordPicker };
 export * from './useFieldNames';

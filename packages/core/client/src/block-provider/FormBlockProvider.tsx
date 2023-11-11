@@ -9,6 +9,7 @@ import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { FormActiveFieldsProvider } from './hooks';
+import { TemplateBlockProvider } from './TemplateBlockProvider';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -103,11 +104,13 @@ export const FormBlockProvider = (props) => {
     (currentCollection.name === (collection?.name || collection) && !isDetailBlock) || !currentCollection.name;
   return (
     (detailFlag || createFlag || isCusomeizeCreate) && (
-      <BlockProvider name={props.name || 'form'} {...props} block={'form'}>
-        <FormActiveFieldsProvider name="form">
-          <InternalFormBlockProvider {...props} />
-        </FormActiveFieldsProvider>
-      </BlockProvider>
+      <TemplateBlockProvider>
+        <BlockProvider name={props.name || 'form'} {...props} block={'form'}>
+          <FormActiveFieldsProvider name="form">
+            <InternalFormBlockProvider {...props} />
+          </FormActiveFieldsProvider>
+        </BlockProvider>
+      </TemplateBlockProvider>
     )
   );
 };

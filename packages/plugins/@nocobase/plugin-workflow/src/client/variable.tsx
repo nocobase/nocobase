@@ -34,6 +34,7 @@ export type OptionsOfUseVariableOptions = {
   };
   appends?: string[] | null;
   depth?: number;
+  current?: any;
 };
 
 export const defaultFieldNames = { label: 'label', value: 'value', children: 'children' } as const;
@@ -70,9 +71,10 @@ export const scopeOptions = {
   label: `{{t("Scope variables", { ns: "${NAMESPACE}" })}}`,
   value: '$scopes',
   useOptions(options: OptionsOfUseVariableOptions) {
-    const { fieldNames = defaultFieldNames } = options;
-    const current = useNodeContext();
-    const scopes = useUpstreamScopes(current);
+    const { fieldNames = defaultFieldNames, current } = options;
+    const source = useNodeContext();
+    const from = current ?? source;
+    const scopes = useUpstreamScopes(from);
     const result: VariableOption[] = [];
     scopes.forEach((node) => {
       const instruction = instructions.get(node.type);

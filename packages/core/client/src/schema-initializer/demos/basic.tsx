@@ -1,5 +1,11 @@
+import {
+  Application,
+  CSSVariableProvider,
+  Plugin,
+  SchemaInitializer,
+  useSchemaInitializerRender,
+} from '@nocobase/client';
 import React from 'react';
-import { Application, Plugin, SchemaInitializer, useSchemaInitializerRender } from '@nocobase/client';
 
 const myInitializer = new SchemaInitializer({
   name: 'MyInitializer',
@@ -58,5 +64,7 @@ const app = new Application({
   },
   plugins: [MyPlugin, MyPlugin2],
 });
+
+app.use(CSSVariableProvider);
 
 export default app.getRootComponent();
