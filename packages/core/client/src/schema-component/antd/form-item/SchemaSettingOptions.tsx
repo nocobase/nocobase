@@ -167,6 +167,7 @@ export const EditRequired = () => {
   const { t } = useTranslation();
   const { dn, refresh } = useDesignable();
 
+  // TODO: FormField 好像被弃用了，应该删除掉
   return !field.readPretty && fieldSchema['x-component'] !== 'FormField' ? (
     <SchemaSettings.SwitchItem
       key="required"

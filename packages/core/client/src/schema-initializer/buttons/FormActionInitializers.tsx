@@ -1,5 +1,5 @@
 import { SchemaInitializerItemType } from '../../application';
-import { SchemaInitializer } from '../../application/schema-initializer';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 
 // TODO(refactor): should be moved to workflow plugin
 const formTriggerWorkflowActionInitializerV2: SchemaInitializerItemType = {

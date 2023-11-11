@@ -1278,10 +1278,10 @@ export const useAssociationNames = () => {
   const getAssociationAppends = (schema, str) => {
     schema.reduceProperties((pre, s) => {
       const prefix = pre || str;
-      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+      const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
       const isAssociationSubfield = s.name.includes('.');
       const isAssociationField =
-        collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type);
+        collectionField && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionField.type);
 
       // 根据联动规则中条件的字段获取一些 appends
       if (s['x-linkage-rules']) {
@@ -1301,8 +1301,8 @@ export const useAssociationNames = () => {
         });
       }
 
-      const isTreeCollection = isAssociationField && getCollection(collectionfield.target)?.template === 'tree';
-      if (collectionfield && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
+      const isTreeCollection = isAssociationField && getCollection(collectionField.target)?.template === 'tree';
+      if (collectionField && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
         const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
         const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
         if (isTreeCollection) {

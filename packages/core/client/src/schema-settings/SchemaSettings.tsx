@@ -725,7 +725,6 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
           });
           dn.refresh();
         }}
-        onClick={(e) => e.stopPropagation()}
         onMouseEnter={onHover}
         onMouseLeave={onLeave}
       />
@@ -750,11 +749,11 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
 };
 
 SchemaSettings.SelectItem = function SelectItem(props) {
-  const { title, name, options, value, onChange, onClick, ...others } = props;
+  const { title, name, options, value, onChange, ...others } = props;
 
   return (
     <SchemaSettings.Item name={name} title={title} role="none" aria-label="" {...others}>
-      <SelectWithTitle {...{ name, title, defaultValue: value, onChange, options, onClick }} />
+      <SelectWithTitle {...{ name, title, defaultValue: value, onChange, options }} />
     </SchemaSettings.Item>
   );
 };
@@ -1963,20 +1962,18 @@ export const isPatternDisabled = (fieldSchema: Schema) => {
   return fieldSchema?.['x-component-props']?.['pattern-disable'] == true;
 };
 
-function SelectWithTitle({
+export function SelectWithTitle({
   name,
   title,
   defaultValue,
   onChange,
   options,
-  onClick,
 }: {
   name?: string;
   title?: any;
   defaultValue?: any;
   options?: any;
   onChange?: (...args: any[]) => void;
-  onClick?: (...args: any[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef<any>(null);
@@ -1986,7 +1983,10 @@ function SelectWithTitle({
       role="button"
       aria-label={name || title}
       style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}
-      onClick={() => setOpen((v) => !v)}
+      onClick={(e) => {
+        e.stopPropagation();
+        setOpen((v) => !v);
+      }}
       onMouseLeave={() => {
         timerRef.current = setTimeout(() => {
           setOpen(false);
@@ -2002,7 +2002,6 @@ function SelectWithTitle({
         onChange={onChange}
         options={options}
         style={{ textAlign: 'right', minWidth: 100 }}
-        onClick={onClick}
         onMouseEnter={() => {
           clearTimeout(timerRef.current);
         }}

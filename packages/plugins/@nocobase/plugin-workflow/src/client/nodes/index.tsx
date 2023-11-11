@@ -274,7 +274,7 @@ export function JobButton() {
   );
 }
 
-function useNodeFormProps() {
+function useFormProviderProps() {
   return { form: useForm() };
 }
 
@@ -379,7 +379,7 @@ export function NodeDefaultView(props) {
             <SchemaComponent
               scope={{
                 ...instruction.scope,
-                useNodeFormProps,
+                useFormProviderProps,
               }}
               components={instruction.components}
               schema={{
@@ -427,7 +427,7 @@ export function NodeDefaultView(props) {
                     'x-decorator': 'FormV2',
                     'x-decorator-props': {
                       // form,
-                      useProps: '{{ useNodeFormProps }}',
+                      useProps: '{{ useFormProviderProps }}',
                     },
                     'x-component': 'Action.Drawer',
                     properties: {
