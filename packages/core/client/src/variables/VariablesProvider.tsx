@@ -287,5 +287,11 @@ export default VariablesProvider;
  * @returns
  */
 function shouldToRequest(value) {
+  // fix https://nocobase.height.app/T-2502
+  // 兼容对多子表单子表格字段的情况
+  if (JSON.stringify(value) === '[{}]') {
+    return true;
+  }
+
   return value === undefined;
 }

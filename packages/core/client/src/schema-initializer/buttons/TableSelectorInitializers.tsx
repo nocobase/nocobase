@@ -1,5 +1,5 @@
 import { useCollection } from '../..';
-import { SchemaInitializer } from '../../application/schema-initializer';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../utils';
 
 export const tableSelectorInitializers = new SchemaInitializer({
