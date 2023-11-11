@@ -49,6 +49,7 @@ test.describe('menu page', () => {
     await page.getByLabel(pageTitle).hover();
     await page.getByLabel(pageTitle).getByLabel('designer-schema-settings').hover();
     await page.getByLabel('Edit').click();
+    await page.mouse.move(300, 0);
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill(newPageTitle);
     await page.getByRole('button', { name: 'OK' }).click();

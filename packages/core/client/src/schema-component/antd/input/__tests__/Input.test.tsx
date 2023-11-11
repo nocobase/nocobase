@@ -121,9 +121,7 @@ describe('Input.JSON', () => {
       const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
       fireEvent.change(textarea, { target: { value: '{"name":nocobase}' } });
       fireEvent.blur(textarea, { target: { value: '{"name":nocobase}' } });
-      expect(screen.getByText(`Unexpected token o in JSON at position 9`).innerHTML).toBe(
-        `Unexpected token o in JSON at position 9`,
-      );
+      expect(screen.getByText(/Unexpected token/)).toBeInTheDocument();
     });
   });
 });

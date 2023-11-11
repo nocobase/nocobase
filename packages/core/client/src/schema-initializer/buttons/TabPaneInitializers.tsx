@@ -1,7 +1,7 @@
 import { useForm } from '@formily/react';
 import React, { useMemo } from 'react';
 import { SchemaComponent, useActionContext, useDesignable, useRecordIndex } from '../..';
-import { SchemaInitializer } from '../../application/schema-initializer';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { useGetAriaLabelOfSchemaInitializer } from '../hooks/useGetAriaLabelOfSchemaInitializer';
 
 export const TabPaneInitializers = (props?: any) => {

@@ -8,7 +8,14 @@ import { Branch } from '../Branch';
 import { useFlowContext } from '../FlowContext';
 import { NAMESPACE, lang } from '../locale';
 import useStyles from '../style';
-import { VariableOption, WorkflowVariableInput, defaultFieldNames, nodesOptions, triggerOptions } from '../variable';
+import {
+  VariableOption,
+  WorkflowVariableInput,
+  defaultFieldNames,
+  nodesOptions,
+  scopeOptions,
+  triggerOptions,
+} from '../variable';
 
 function findOption(options: VariableOption[], paths: string[]) {
   let opts = options;
@@ -121,8 +128,8 @@ export default {
         .split('.')
         .map((path) => path.trim());
 
-      const targetOptions = [nodesOptions, triggerOptions].map((item: any) => {
-        const opts = item.useOptions(options).filter(Boolean);
+      const targetOptions = [scopeOptions, nodesOptions, triggerOptions].map((item: any) => {
+        const opts = item.useOptions({ ...options, current: node }).filter(Boolean);
         return {
           [fieldNames.label]: compile(item.label),
           [fieldNames.value]: item.value,

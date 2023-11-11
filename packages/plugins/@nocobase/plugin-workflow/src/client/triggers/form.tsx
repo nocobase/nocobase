@@ -102,7 +102,7 @@ export default {
     };
   },
   initializers: {},
-  actionTriggerable: true,
+  useActionTriggerable: true,
 };
 
 function getFormValues({
