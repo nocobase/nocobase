@@ -1,6 +1,6 @@
-import { SchemaInitializer } from '../../../application/schema-initializer';
 import { useOptionalFieldList } from '../../../block-provider/hooks';
 import { useAssociatedFields } from '../../../filter-provider/utils';
+import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
 
 export const associationFilterFilterBlockInitializer = new SchemaInitializer({
   name: 'AssociationFilter.FilterBlockInitializer',
