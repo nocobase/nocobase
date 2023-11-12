@@ -74,8 +74,6 @@ export function withInitializer<T>(C: ComponentType<T>) {
             placement={'bottomLeft'}
             {...popoverProps}
             arrow={false}
-            className={'nb-className'}
-            openClassName={'nb-openClassName'}
             overlayClassName={css`
               .ant-popover-inner {
                 padding: ${`${token.paddingXXS}px 0`};
