@@ -1,66 +1,45 @@
-import { MenuProps, Select } from 'antd';
-import React, { useMemo, useState } from 'react';
+import { MenuProps } from 'antd';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, useSystemSettings } from '..';
+import { SelectWithTitle, useAPIClient, useSystemSettings } from '..';
 import locale from '../locale';
 
 export const useLanguageSettings = () => {
   const { t, i18n } = useTranslation();
-  const [open, setOpen] = useState(false);
   const api = useAPIClient();
   const { data } = useSystemSettings();
-  const enabledLanguages: string[] = data?.data?.enabledLanguages || [];
+  const enabledLanguages: string[] = useMemo(() => data?.data?.enabledLanguages || [], [data?.data?.enabledLanguages]);
   const result = useMemo<MenuProps['items'][0]>(() => {
     return {
       role: 'button',
       key: 'language',
       eventKey: 'LanguageSettings',
-      onClick: () => {
-        setOpen(true);
-      },
       label: (
-        <div
-          aria-label="language-settings"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+        <SelectWithTitle
+          title={t('Language')}
+          options={Object.keys(locale)
+            .filter((lang) => enabledLanguages.includes(lang))
+            .map((lang) => {
+              return {
+                label: locale[lang].label,
+                value: lang,
+              };
+            })}
+          defaultValue={i18n.language}
+          onChange={async (lang) => {
+            await api.resource('users').updateProfile({
+              values: {
+                appLang: lang,
+              },
+            });
+            api.auth.setLocale(lang);
+            await i18n.changeLanguage(lang);
+            window.location.reload();
           }}
-        >
-          {t('Language')}{' '}
-          <Select
-            data-testid="select-language"
-            popupMatchSelectWidth={false}
-            style={{ minWidth: 100 }}
-            bordered={false}
-            open={open}
-            onDropdownVisibleChange={(open) => {
-              setOpen(open);
-            }}
-            options={Object.keys(locale)
-              .filter((lang) => enabledLanguages.includes(lang))
-              .map((lang) => {
-                return {
-                  label: locale[lang].label,
-                  value: lang,
-                };
-              })}
-            value={i18n.language}
-            onChange={async (lang) => {
-              await api.resource('users').updateProfile({
-                values: {
-                  appLang: lang,
-                },
-              });
-              api.auth.setLocale(lang);
-              await i18n.changeLanguage(lang);
-              window.location.reload();
-            }}
-          />
-        </div>
+        />
       ),
     };
-  }, [enabledLanguages, i18n, open]);
+  }, [api, enabledLanguages, i18n, t]);
 
   if (enabledLanguages.length < 2) {
     return null;

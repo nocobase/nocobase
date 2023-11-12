@@ -4,7 +4,7 @@ import { App, Dropdown, Menu, MenuProps } from 'antd';
 import React, { createContext, useCallback, useMemo as useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useACLRoleContext, useAPIClient, useCurrentUserContext } from '..';
+import { useACLRoleContext, useAPIClient, useCurrentUserContext, useToken } from '..';
 import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
 import { useChangePassword } from './ChangePassword';
 import { useCurrentUserSettingsMenu } from './CurrentUserSettingsMenuProvider';
@@ -168,6 +168,7 @@ export const DropdownVisibleContext = createContext(null);
 export const CurrentUser = () => {
   const [visible, setVisible] = useState(false);
   const { data } = useCurrentUserContext();
+  const { token } = useToken();
 
   return (
     <div style={{ display: 'inline-flex', verticalAlign: 'top' }}>
@@ -191,7 +192,7 @@ export const CurrentUser = () => {
               white-space: nowrap;
               text-overflow: ellipsis;
             `}
-            style={{ cursor: 'pointer', border: 0, padding: '16px', color: 'rgba(255, 255, 255, 0.65)' }}
+            style={{ cursor: 'pointer', border: 0, padding: '16px', color: token.colorTextHeaderMenu }}
           >
             {data?.data?.nickname || data?.data?.username || data?.data?.email}
           </span>

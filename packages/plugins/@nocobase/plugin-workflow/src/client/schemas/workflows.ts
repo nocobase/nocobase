@@ -1,9 +1,10 @@
 import { ISchema, useForm } from '@formily/react';
+import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 // import { triggers } from '../triggers';
+import React from 'react';
 import { executionSchema } from './executions';
 
 const collection = {
@@ -289,7 +290,13 @@ export const workflowSchema: ISchema = {
                   type: 'number',
                   'x-decorator': 'OpenDrawer',
                   'x-decorator-props': {
-                    component: 'a',
+                    component: function Com(props) {
+                      const record = useRecord();
+                      return React.createElement('a', {
+                        'aria-label': `executed-${record.title}`,
+                        ...props,
+                      });
+                    },
                   },
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,

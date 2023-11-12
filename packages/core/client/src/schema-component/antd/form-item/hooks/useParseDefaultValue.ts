@@ -70,7 +70,7 @@ const useParseDefaultValue = () => {
 
         if (process.env.NODE_ENV !== 'production') {
           if (!collectionField) {
-            throw new Error(`useParseDefaultValue: can not find field ${fieldSchema.name}`);
+            console.error(`useParseDefaultValue: can not find field ${fieldSchema.name}`);
           }
         }
 
@@ -104,17 +104,17 @@ const useParseDefaultValue = () => {
     // 使用防抖，提高性能和用户体验
     const run = _.debounce(_run, DEBOUNCE_WAIT);
 
-    _run();
-
     if (isVariable(fieldSchema.default)) {
       const variableName = getVariableName(fieldSchema.default);
       const variable = findVariable(variableName);
 
       if (process.env.NODE_ENV !== 'production' && !variable) {
-        throw new Error(`useParseDefaultValue: can not find variable ${variableName}`);
+        console.error(`useParseDefaultValue: can not find variable ${variableName}`);
       }
 
       if (variable) {
+        _run();
+
         // 实现联动的效果，当依赖的变量变化时（如 `$nForm` 变量），重新解析默认值
         const dispose = reaction(() => {
           const obj = { [variableName]: variable?.ctx || {} };

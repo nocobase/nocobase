@@ -11,20 +11,25 @@ export const useSchemaInitializerStyles = genStyleHook('nb-schema-initializer', 
       ':not(.ant-menu)': {
         [`${componentCls}-group-title`]: {
           color: token.colorTextDescription,
-          height: token.controlHeightLG,
-          lineHeight: `${token.controlHeightLG}px`,
-        },
-        [`${componentCls}-menu-item`]: {
-          margin: token.marginXXS,
+          // height: token.controlHeight,
+          lineHeight: `${token.controlHeight}px`,
           paddingLeft: token.padding,
           paddingRight: token.paddingSM,
-          height: token.controlHeightLG,
-          lineHeight: `${token.controlHeightLG}px`,
+          // paddingTop: token.paddingXXS,
+          // paddingBottom: token.paddingXXS,
+        },
+        [`${componentCls}-menu-item`]: {
+          marginInline: token.marginXXS,
+          // margin: token.marginXXS,
+          paddingLeft: token.padding,
+          paddingRight: token.paddingSM,
+          // height: token.controlHeight,
+          lineHeight: `${token.controlHeight}px`,
           color: token.colorText,
           cursor: 'pointer',
 
           '&:hover': {
-            borderRadius: token.borderRadiusLG,
+            borderRadius: token.borderRadiusSM,
             backgroundColor: token.colorBgTextHover,
           },
         },
