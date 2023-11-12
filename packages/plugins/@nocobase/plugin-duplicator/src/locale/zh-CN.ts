@@ -22,7 +22,7 @@ export default {
   'file uploaded successfully': '文件上传成功',
   'file upload failed': '文件上传失败',
   Download: '下载',
-  'Restore backup from local': '从本地回复备份',
+  'Restore backup from local': '从本地恢复备份',
   'Backup instructions': '备份说明',
   'File size':'文件大小',
   'New backup':'新建备份',
