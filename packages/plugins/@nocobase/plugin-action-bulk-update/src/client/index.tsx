@@ -1,5 +1,5 @@
 import { Plugin, useCollection } from '@nocobase/client';
-import { BulkUpdatePluginProvider } from './BulkUpdatetPluginProvider';
+import { BulkUpdatePluginProvider } from './BulkUpdatePluginProvider';
 
 export class BulkUpdatePlugin extends Plugin {
   async load() {
