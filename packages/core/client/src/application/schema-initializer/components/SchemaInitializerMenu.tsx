@@ -1,6 +1,6 @@
-import Icon from '@ant-design/icons';
+import Icon, { RightOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
-import { Menu, MenuProps } from 'antd';
+import { ConfigProvider, Menu, MenuProps, theme } from 'antd';
 import React, { FC, ReactNode, useMemo } from 'react';
 import { useCompile } from '../../../schema-component';
 import { useSchemaInitializerItem } from '../context';
@@ -31,6 +31,7 @@ export const useSchemaInitializerMenuContext = () => {
 export const SchemaInitializerInternalMenu: FC<MenuProps> = (props) => {
   const { componentCls, hashId } = useSchemaInitializerStyles();
   const { items, ...others } = props;
+  const { token } = theme.useToken();
   const itemsWithPopupClass = useMemo(
     () => items.map((item) => ({ ...item, popupClassName: `${hashId} ${componentCls}-menu-sub` })),
     [componentCls, hashId, items],
@@ -38,7 +39,23 @@ export const SchemaInitializerInternalMenu: FC<MenuProps> = (props) => {
   // selectedKeys 为了不让有选中效果
   return (
     <SchemaInitializerMenuProvider>
-      <Menu selectedKeys={[]} items={itemsWithPopupClass} {...others} />
+      <ConfigProvider
+        theme={{
+          components: {
+            Menu: {
+              itemHeight: token.marginXL,
+              borderRadius: token.borderRadiusXS,
+            },
+          },
+        }}
+      >
+        <Menu
+          expandIcon={<RightOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextDescription }} />}
+          selectedKeys={[]}
+          items={itemsWithPopupClass}
+          {...others}
+        />
+      </ConfigProvider>
     </SchemaInitializerMenuProvider>
   );
 };

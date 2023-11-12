@@ -1,7 +1,8 @@
 import { ISchema, observer } from '@formily/react';
-import { Popover } from 'antd';
+import { Popover, theme } from 'antd';
 import React, { ComponentType, useCallback, useMemo, useState } from 'react';
 
+import { css } from '@emotion/css';
 import { useDesignable } from '../../../schema-component';
 import { useSchemaInitializerStyles } from '../components/style';
 import { SchemaInitializerContext } from '../context';
@@ -41,6 +42,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
 
     const { wrapSSR, hashId, componentCls } = useSchemaInitializerStyles();
     const [visible, setVisible] = useState(false);
+    const { token } = theme.useToken();
 
     const cProps = useMemo(
       () => ({
@@ -69,7 +71,19 @@ export function withInitializer<T>(C: ComponentType<T>) {
           React.createElement(C, cProps)
         ) : (
           <Popover
+            placement={'bottomLeft'}
             {...popoverProps}
+            arrow={false}
+            className={'nb-className'}
+            openClassName={'nb-openClassName'}
+            overlayClassName={css`
+              .ant-popover-inner {
+                padding: ${`${token.paddingXXS}px 0`};
+                .ant-menu-submenu-title {
+                  margin-block: 0;
+                }
+              }
+            `}
             open={visible}
             onOpenChange={setVisible}
             content={wrapSSR(
@@ -85,7 +99,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
               </div>,
             )}
           >
-            <span>{React.createElement(C, cProps)}</span>
+            {React.createElement(C, cProps)}
           </Popover>
         )}
       </SchemaInitializerContext.Provider>
