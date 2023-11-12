@@ -15,6 +15,70 @@ describe('dumper', () => {
     await app.destroy();
   });
 
+  it('should dump and restore map file', async () => {
+    await app.runAsCLI(['pm', 'enable', 'map'], { from: 'user' });
+
+    const fields = [
+      {
+        type: 'point',
+        name: 'point',
+      },
+      {
+        type: 'polygon',
+        name: 'polygon',
+      },
+      {
+        type: 'circle',
+        name: 'circle',
+      },
+      {
+        type: 'lineString',
+        name: 'lineString',
+      },
+    ];
+
+    await app.db.getRepository('collections').create({
+      values: {
+        name: 'tests',
+        fields,
+      },
+      context: {},
+    });
+
+    await app.db.getRepository('tests').create({
+      values: {
+        point: [1, 2],
+        polygon: [
+          [3, 4],
+          [5, 6],
+        ],
+        circle: [1, 2, 0.5],
+        lineString: [
+          [5, 6],
+          [7, 8],
+        ],
+      },
+    });
+
+    const dumper = new Dumper(app);
+    const result = await dumper.dump({
+      dataTypes: new Set(['meta', 'business']),
+    });
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: result.filePath,
+    });
+
+    await restorer.restore({
+      dataTypes: new Set(['meta', 'business']),
+    });
+
+    const testCollection = app.db.getCollection('tests');
+    const tableInfo = await app.db.sequelize.getQueryInterface().describeTable(testCollection.getTableNameWithSchema());
+
+    expect(tableInfo.point).toBeDefined();
+  });
+
   it('should save dump meta to dump file', async () => {
     const dumper = new Dumper(app);
     const result = await dumper.dump({

@@ -412,10 +412,24 @@ export class Dumper extends AppMigrator {
       count = rows.length;
     }
 
-    const metaAttributes = lodash.mapValues(attributes, (attr) => {
+    const metaAttributes = lodash.mapValues(attributes, (attr, key) => {
+      const collectionField = collection.getField(key);
+      const fieldOptionKeys = ['field', 'primaryKey', 'autoIncrement', 'allowNull', 'defaultValue', 'unique'];
+
+      if (collectionField) {
+        // is a field
+        return {
+          isCollectionField: true,
+          type: collectionField.type,
+          typeOptions: collectionField.options,
+        };
+      }
+
       return {
-        ...lodash.pick(attr, ['field', 'primaryKey', 'autoIncrement', 'allowNull', 'defaultValue', 'unique']),
+        ...lodash.pick(attr, fieldOptionKeys),
         type: attr.type.constructor.toString(),
+        isCollectionField: false,
+        typeOptions: attr.type.options,
       };
     });
 

@@ -7,6 +7,7 @@ import { readLines } from './utils';
 import { Application } from '@nocobase/server';
 import { DataTypes, DumpDataType } from '@nocobase/database';
 import lodash from 'lodash';
+import { FieldValueWriter } from './field-value-writer';
 
 type RestoreOptions = {
   dataTypes: Set<DumpDataType>;
@@ -173,11 +174,26 @@ export class Restorer extends AppMigrator {
       return;
     }
 
-    const attributes = lodash.mapValues(meta.attributes, (attr) => {
+    const fieldAttributes = lodash.mapValues(meta.attributes, (attr) => {
+      if (attr.isCollectionField) {
+        const fieldClass = db.fieldTypes.get(attr.type);
+        return new fieldClass(attr.typeOptions, {
+          database: db,
+        });
+      }
+
+      return undefined;
+    });
+
+    const rawAttributes = lodash.mapValues(meta.attributes, (attr, key) => {
+      if (attr.isCollectionField) {
+        const field = fieldAttributes[key];
+        return field.toSequelize();
+      }
+
       const obj = {
         ...attr,
-        // @ts-ignore
-        type: db.sequelize.normalizeDataType(DataTypes[attr.type === 'JSONTYPE' ? 'JSON' : attr.type]),
+        type: new DataTypes[attr.type](),
       };
 
       if (attr.defaultValue && ['JSON', 'JSONB', 'JSONTYPE'].includes(attr.type)) {
@@ -192,7 +208,7 @@ export class Restorer extends AppMigrator {
       await db.sequelize.getQueryInterface().dropTable(addSchemaTableName);
 
       // create table
-      await db.sequelize.getQueryInterface().createTable(addSchemaTableName, attributes);
+      await db.sequelize.getQueryInterface().createTable(addSchemaTableName, rawAttributes);
     }
 
     // read file content from collection data
@@ -203,23 +219,15 @@ export class Restorer extends AppMigrator {
       return;
     }
 
-    // const fields = columns
-    //   .map((column) => [column, collection.getField(column)])
-    //   .reduce((carry, [column, type]) => {
-    //     carry[column] = type;
-    //     return carry;
-    //   }, {});
-    //
     const rowsWithMeta = rows
       .map((row) =>
         JSON.parse(row)
           .map((val, index) => [columns[index], val])
           .reduce((carry, [column, val]) => {
-            // const field = fields[column];
+            const field = fieldAttributes[column];
 
-            // carry[column] = field ? FieldValueWriter.write(field, val) : val;
+            carry[column] = field ? FieldValueWriter.write(field, val) : val;
 
-            carry[column] = val;
             return carry;
           }, {}),
       )
@@ -241,15 +249,7 @@ export class Restorer extends AppMigrator {
       addSchemaTableName,
       rowsWithMeta,
       {},
-      columns.reduce((carry, column) => {
-        const attr = Object.values(attributes).find((attr) => attr.field === column);
-
-        carry[column] = {
-          type: attr.type,
-        };
-
-        return carry;
-      }, {}),
+      rawAttributes,
     );
 
     if (options.insert === false) {
