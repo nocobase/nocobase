@@ -200,6 +200,7 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
 
   const handleCancel = () => {
     setIsModalOpen(false);
+    setRestoreData(null);
   };
   return (
     <>
