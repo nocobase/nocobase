@@ -5,7 +5,7 @@ import _ from 'lodash';
 
 export * from '@playwright/test';
 
-interface CollectionSetting {
+export interface CollectionSetting {
   title: string;
   name: string;
   /**

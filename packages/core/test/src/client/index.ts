@@ -1,2 +1,2 @@
 export * from './e2eUtils';
-export * from './pageTemplates';
+export * from './templatesOfPage';
