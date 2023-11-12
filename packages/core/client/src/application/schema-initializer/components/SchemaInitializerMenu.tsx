@@ -1,4 +1,5 @@
 import Icon, { RightOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Menu, MenuProps, theme } from 'antd';
 import React, { FC, ReactNode, useMemo } from 'react';
@@ -52,6 +53,18 @@ export const SchemaInitializerInternalMenu: FC<MenuProps> = (props) => {
         <Menu
           expandIcon={<RightOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextDescription }} />}
           selectedKeys={[]}
+          rootClassName={css`
+            box-shadow: none !important;
+            border-inline-end: 0 !important;
+            .ant-menu-root {
+              margin: 0 -${token.margin}px;
+              .ant-menu-submenu-title {
+                margin-inline: 0;
+                margin-block: 0;
+                width: 100%;
+              }
+            }
+          `}
           items={itemsWithPopupClass}
           {...others}
         />
