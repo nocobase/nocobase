@@ -15,6 +15,16 @@ describe('dumper', () => {
     await app.destroy();
   });
 
+  it('should list dumped files', async () => {
+    const dumper = new Dumper(app);
+    const list = await dumper.allBackUpFilePaths({
+      includeInProgress: true,
+      dir: path.join(__dirname, './fixtures/files'),
+    });
+    console.log({ list });
+    expect(list.length).toBe(2);
+  });
+
   it('should dump and restore map file', async () => {
     const data = {
       polygon: [

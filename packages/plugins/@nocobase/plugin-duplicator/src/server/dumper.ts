@@ -47,34 +47,35 @@ export class Dumper extends AppMigrator {
     const fileName = path.basename(filePath);
 
     return fs.promises
-      .stat(filePath)
-      .then((backupFileStat) => {
-        if (backupFileStat.isFile()) {
+      .stat(lockFile)
+      .then((lockFileStat) => {
+        if (lockFileStat.isFile()) {
           return {
             name: fileName,
-            createdAt: backupFileStat.birthtime,
-            fileSize: humanFileSize(backupFileStat.size),
-            status: 'ok',
-          } as BackUpStatusOk;
+            inProgress: true,
+            status: 'in_progress',
+          } as BackUpStatusDoing;
         } else {
-          throw new Error('Path is not a file');
+          throw new Error('Lock file is not a file');
         }
       })
       .catch((error) => {
+        // 如果 Lock 文件不存在，检查备份文件
         if (error.code === 'ENOENT') {
-          return fs.promises.stat(lockFile).then((lockFileStat) => {
-            if (lockFileStat.isFile()) {
+          return fs.promises.stat(filePath).then((backupFileStat) => {
+            if (backupFileStat.isFile()) {
               return {
                 name: fileName,
-                inProgress: true,
-                status: 'in_progress',
-              } as BackUpStatusDoing;
+                createdAt: backupFileStat.birthtime,
+                fileSize: humanFileSize(backupFileStat.size),
+                status: 'ok',
+              } as BackUpStatusOk;
+            } else {
+              throw new Error('Path is not a file');
             }
-
-            throw new Error('Lock file is not a file');
           });
         }
-
+        // 其他错误直接抛出
         throw error;
       });
   }
@@ -145,35 +146,35 @@ export class Dumper extends AppMigrator {
     return path.resolve(process.cwd(), 'storage', 'duplicator');
   }
 
-  async allBackUpFilePaths(options?: { includeInProgress?: boolean }) {
-    const dirname = this.backUpStorageDir();
+  async allBackUpFilePaths(options?: { includeInProgress?: boolean; dir?: string }) {
+    const dirname = options?.dir || this.backUpStorageDir();
     const includeInProgress = options?.includeInProgress;
 
     try {
       const files = await fsPromises.readdir(dirname);
 
-      const filesData = await Promise.all(
-        files
-          .filter((file) => {
-            const extension = path.extname(file);
-
-            if (includeInProgress) {
-              return extension === `.${DUMPED_EXTENSION}` || extension === '.lock';
-            }
-
-            return extension === `.${DUMPED_EXTENSION}`;
-          })
-          .map(async (file) => {
-            const filePath = path.resolve(dirname, file);
-            const stats = await fsPromises.stat(filePath);
-            return { filePath, birthtime: stats.birthtime.getTime() };
-          }),
+      const lockFilesSet = new Set(
+        files.filter((file) => path.extname(file) === '.lock').map((file) => path.basename(file, '.lock')),
       );
 
-      // 按创建时间逆序排序
+      const filteredFiles = files
+        .filter((file) => {
+          const baseName = path.basename(file);
+          const isLockFile = path.extname(file) === '.lock';
+          const isDumpFile = path.extname(file) === `.${DUMPED_EXTENSION}`;
+
+          return (includeInProgress && isLockFile) || (isDumpFile && !lockFilesSet.has(baseName));
+        })
+        .map(async (file) => {
+          const filePath = path.resolve(dirname, file);
+          const stats = await fsPromises.stat(filePath);
+          return { filePath, birthtime: stats.birthtime.getTime() };
+        });
+
+      const filesData = await Promise.all(filteredFiles);
+
       filesData.sort((a, b) => b.birthtime - a.birthtime);
 
-      // 返回排序后的文件路径数组
       return filesData.map((fileData) => fileData.filePath);
     } catch (error) {
       console.error('Error reading directory:', error);
@@ -365,6 +366,11 @@ export class Dumper extends AppMigrator {
       return;
     }
 
+    if (collection.isView()) {
+      this.app.log.warn(`collection ${collectionName} is a view`);
+      return;
+    }
+
     // @ts-ignore
     const attributes = collection.model.tableAttributes;
 
@@ -457,33 +463,41 @@ export class Dumper extends AppMigrator {
       zlib: { level: 9 },
     });
 
-    output.on('close', function () {
-      console.log('dumped file size: ' + humanFileSize(archive.pointer(), true));
-    });
+    // Create a promise that resolves when the 'close' event is fired
+    const onClose = new Promise((resolve, reject) => {
+      output.on('close', function () {
+        console.log('dumped file size: ' + humanFileSize(archive.pointer(), true));
+        resolve(true);
+      });
 
-    output.on('end', function () {
-      console.log('Data has been drained');
-    });
+      output.on('end', function () {
+        console.log('Data has been drained');
+      });
 
-    archive.on('warning', function (err) {
-      if (err.code === 'ENOENT') {
-        // log warning
-      } else {
-        // throw error
-        throw err;
-      }
-    });
+      archive.on('warning', function (err) {
+        if (err.code === 'ENOENT') {
+          // log warning
+        } else {
+          // throw error
+          reject(err);
+        }
+      });
 
-    archive.on('error', function (err) {
-      throw err;
+      archive.on('error', function (err) {
+        reject(err);
+      });
     });
 
     archive.pipe(output);
 
     archive.directory(this.workDir, false);
 
+    // Finalize the archive
     await archive.finalize();
-    console.log('dumped to', filePath);
+
+    // Wait for the 'close' event
+    await onClose;
+
     return {
       filePath,
       dirname,
