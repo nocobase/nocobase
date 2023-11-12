@@ -188,7 +188,10 @@ export class Restorer extends AppMigrator {
     const rawAttributes = lodash.mapValues(meta.attributes, (attr, key) => {
       if (attr.isCollectionField) {
         const field = fieldAttributes[key];
-        return field.toSequelize();
+        return {
+          ...field.toSequelize(),
+          field: attr.field,
+        };
       }
 
       const obj = {

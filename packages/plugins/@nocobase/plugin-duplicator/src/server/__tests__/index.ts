@@ -5,6 +5,7 @@ export default async function createApp() {
     plugins: ['nocobase'],
   });
 
+  await app.cleanDb();
   app.plugin(require('../server').default, { name: 'duplicator' });
 
   await app.loadAndInstall({ clean: true });

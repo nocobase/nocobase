@@ -419,6 +419,7 @@ export class Dumper extends AppMigrator {
       if (collectionField) {
         // is a field
         return {
+          field: attr.field,
           isCollectionField: true,
           type: collectionField.type,
           typeOptions: collectionField.options,
