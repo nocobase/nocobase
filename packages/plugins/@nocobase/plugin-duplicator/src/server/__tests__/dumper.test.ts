@@ -16,6 +16,24 @@ describe('dumper', () => {
   });
 
   it('should dump and restore map file', async () => {
+    const data = {
+      polygon: [
+        [114.081074, 22.563646],
+        [114.147335, 22.559207],
+        [114.134975, 22.531621],
+        [114.09103, 22.520045],
+        [114.033695, 22.575376],
+        [114.025284, 22.55461],
+        [114.033523, 22.533048],
+      ],
+      point: [114.048868, 22.554927],
+      circle: [114.058996, 22.549695, 4171],
+      lineString: [
+        [114.047323, 22.534158],
+        [114.120966, 22.544146],
+      ],
+    };
+
     await app.runAsCLI(['pm', 'enable', 'map'], { from: 'user' });
 
     const fields = [
@@ -47,16 +65,7 @@ describe('dumper', () => {
 
     await app.db.getRepository('tests').create({
       values: {
-        point: [1, 2],
-        polygon: [
-          [3, 4],
-          [5, 6],
-        ],
-        circle: [1, 2, 0.5],
-        lineString: [
-          [5, 6],
-          [7, 8],
-        ],
+        ...data,
       },
     });
 
