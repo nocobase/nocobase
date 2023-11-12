@@ -1,3 +1,4 @@
+import { theme } from 'antd';
 import React from 'react';
 import { useCompile } from '../../../schema-component';
 import { useSchemaInitializerItem } from '../context';
@@ -17,8 +18,9 @@ export const SchemaInitializerGroup = () => {
   const { children, title, divider } = useSchemaInitializerItem<SchemaInitializerGroupProps>();
   const compile = useCompile();
   const { componentCls } = useSchemaInitializerStyles();
+  const { token } = theme.useToken();
   return (
-    <div>
+    <div style={{ marginInline: token.marginXXS }}>
       {divider && <SchemaInitializerDivider />}
       <div className={`${componentCls}-group-title`}>{compile(title)}</div>
       <SchemaInitializerChildren>{children}</SchemaInitializerChildren>
