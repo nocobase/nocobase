@@ -1,5 +1,5 @@
 import { ISchema, observer } from '@formily/react';
-import { Popover, theme } from 'antd';
+import { ConfigProvider, Popover, theme } from 'antd';
 import React, { ComponentType, useCallback, useMemo, useState } from 'react';
 
 import { css } from '@emotion/css';
@@ -93,7 +93,20 @@ export function withInitializer<T>(C: ComponentType<T>) {
                   overflowX: 'hidden',
                 }}
               >
-                {children}
+                <ConfigProvider
+                  theme={{
+                    components: {
+                      Menu: {
+                        itemHeight: token.marginXL,
+                        borderRadius: token.borderRadiusSM,
+                        itemBorderRadius: token.borderRadiusSM,
+                        subMenuItemBorderRadius: token.borderRadiusSM,
+                      },
+                    },
+                  }}
+                >
+                  {children}
+                </ConfigProvider>
               </div>,
             )}
           >

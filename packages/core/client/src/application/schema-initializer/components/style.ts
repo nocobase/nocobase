@@ -29,7 +29,7 @@ export const useSchemaInitializerStyles = genStyleHook('nb-schema-initializer', 
           cursor: 'pointer',
 
           '&:hover': {
-            borderRadius: token.borderRadiusXS,
+            borderRadius: token.borderRadiusSM,
             backgroundColor: token.colorBgTextHover,
           },
         },

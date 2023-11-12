@@ -1,7 +1,7 @@
 import Icon, { RightOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { uid } from '@formily/shared';
-import { ConfigProvider, Menu, MenuProps, theme } from 'antd';
+import { Menu, MenuProps, theme } from 'antd';
 import React, { FC, ReactNode, useMemo } from 'react';
 import { useCompile } from '../../../schema-component';
 import { useSchemaInitializerItem } from '../context';
@@ -40,35 +40,23 @@ export const SchemaInitializerInternalMenu: FC<MenuProps> = (props) => {
   // selectedKeys 为了不让有选中效果
   return (
     <SchemaInitializerMenuProvider>
-      <ConfigProvider
-        theme={{
-          components: {
-            Menu: {
-              itemHeight: token.marginXL,
-              borderRadius: token.borderRadiusXS,
-            },
-          },
-        }}
-      >
-        <Menu
-          expandIcon={<RightOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextDescription }} />}
-          selectedKeys={[]}
-          rootClassName={css`
-            box-shadow: none !important;
-            border-inline-end: 0 !important;
-            .ant-menu-root {
-              margin: 0 -${token.margin}px;
-              .ant-menu-submenu-title {
-                margin-inline: 0;
-                margin-block: 0;
-                width: 100%;
-              }
+      <Menu
+        expandIcon={<RightOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextDescription }} />}
+        rootClassName={css`
+          box-shadow: none !important;
+          border-inline-end: 0 !important;
+          .ant-menu-root {
+            margin: 0 -${token.margin}px;
+            .ant-menu-submenu-title {
+              margin-inline: 0;
+              margin-block: 0;
+              width: 100%;
             }
-          `}
-          items={itemsWithPopupClass}
-          {...others}
-        />
-      </ConfigProvider>
+          }
+        `}
+        items={itemsWithPopupClass}
+        {...others}
+      />
     </SchemaInitializerMenuProvider>
   );
 };
