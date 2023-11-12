@@ -45,7 +45,7 @@ export const SettingsCenterDropdown = () => {
         }}
         arrow={false}
         content={
-          <div style={{ maxWidth: '23rem' }}>
+          <div style={{ maxWidth: '21rem' }}>
             <Card
               bordered={false}
               className={css`
@@ -75,10 +75,10 @@ export const SettingsCenterDropdown = () => {
                       navigate(setting.path);
                     }}
                     title={compile(setting.title)}
-                    style={{ display: 'block', color: 'inherit', padding: token.margin }}
+                    style={{ display: 'block', color: 'inherit', padding: token.marginSM }}
                     href={setting.path}
                   >
-                    <div style={{ fontSize: '1.5rem', textAlign: 'center', marginBottom: '0.3rem' }}>
+                    <div style={{ fontSize: '1.2rem', textAlign: 'center', marginBottom: '0.3rem' }}>
                       {setting.icon || <SettingOutlined />}
                     </div>
                     <div
@@ -87,6 +87,7 @@ export const SettingsCenterDropdown = () => {
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
+                        fontSize: token.fontSizeSM,
                       }}
                     >
                       {compile(setting.title)}
