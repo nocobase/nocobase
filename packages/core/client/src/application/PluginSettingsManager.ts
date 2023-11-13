@@ -34,7 +34,9 @@ export interface PluginSettingsPageType {
   path: string;
   sort?: number;
   name?: string;
-  pluginName?: string;
+  isAllow?: boolean;
+  topLevelName?: string;
+  aclSnippet: string;
   children?: PluginSettingsPageType[];
   [index: string]: any;
 }
@@ -66,8 +68,8 @@ export class PluginSettingsManager {
 
   add(name: string, options: PluginSettingsManagerSettingOptionsType) {
     const nameArr = name.split('.');
-    const pluginName = nameArr[0];
-    this.settings[name] = { Component: Outlet, ...options, name, pluginName };
+    const topLevelName = nameArr[0];
+    this.settings[name] = { Component: Outlet, ...options, name, topLevelName };
 
     // add children
     if (nameArr.length > 1) {
@@ -129,8 +131,7 @@ export class PluginSettingsManager {
   }
 
   getList(filterAuth = true): PluginSettingsPageType[] {
-    return Object.keys(this.settings)
-      .filter((item) => !item.includes('.')) // top level
+    return Array.from(new Set(Object.values(this.settings).map((item) => item.topLevelName)))
       .sort((a, b) => a.localeCompare(b)) // sort by name
       .map((name) => this.get(name, filterAuth))
       .filter(Boolean)
