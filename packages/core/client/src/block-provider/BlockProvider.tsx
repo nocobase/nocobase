@@ -20,6 +20,7 @@ import { CollectionProvider, useCollection, useCollectionManager } from '../coll
 import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
+import { useTemplateBlockContext } from './TemplateBlockProvider';
 import { useAssociationNames } from './hooks';
 
 export const BlockResourceContext = createContext(null);
@@ -115,8 +116,9 @@ const useResourceAction = (props, opts = {}) => {
   const api = useAPIClient();
   const fieldSchema = useFieldSchema();
   const { snapshot } = useActionContext();
+  const { templateFinshed } = useTemplateBlockContext();
   const record = useRecord();
-
+  const isTemplate = fieldSchema['x-template-key'];
   if (!Reflect.has(params, 'appends')) {
     const appends = fields?.filter((field) => field.target).map((field) => field.name);
     if (appends?.length) {
@@ -129,7 +131,7 @@ const useResourceAction = (props, opts = {}) => {
           data: record[tableFieldName] ?? [],
         })
       : (opts) => {
-          if (!action) {
+          if (!action || (isTemplate && !templateFinshed)) {
             return Promise.resolve({});
           }
           const actionParams = { ...params, ...opts };
@@ -147,7 +149,7 @@ const useResourceAction = (props, opts = {}) => {
         }
       },
       defaultParams: [params],
-      refreshDeps: [runWhenParamsChanged ? null : JSON.stringify(params.appends)],
+      refreshDeps: [runWhenParamsChanged ? null : JSON.stringify(params.appends), templateFinshed],
     },
   );
   // automatic run service when params has changed
@@ -180,7 +182,6 @@ export const BlockRequestProvider = (props) => {
   const field = useField<Field>();
   const resource = useBlockResource();
   const [allowedActions, setAllowedActions] = useState({});
-
   const service = useResourceAction(
     { ...props, resource },
     {
@@ -301,13 +302,17 @@ export const BlockProvider = (props: {
 }) => {
   const { collection, association, name } = props;
   const resource = useResource(props);
-  const params = useMemo(() => ({ ...props.params }), [props.params]);
   const { appends, updateAssociationValues } = useAssociationNames();
+  const params = useMemo(() => {
+    if (!props.params) {
+      return props.params;
+    }
+    if (!props.params['appends']) {
+      return { ...props.params, appends };
+    }
+    return { ...props.params };
+  }, [appends, props.params]);
   const blockValue = useMemo(() => ({ name }), [name]);
-
-  if (!Object.keys(params).includes('appends')) {
-    params['appends'] = appends;
-  }
 
   return (
     <BlockContext.Provider value={blockValue}>
