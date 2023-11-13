@@ -252,7 +252,9 @@ export class Restorer extends AppMigrator {
       addSchemaTableName,
       rowsWithMeta,
       {},
-      rawAttributes,
+      lodash.mapKeys(rawAttributes, (value, key) => {
+        return value.field;
+      }),
     );
 
     if (options.insert === false) {
