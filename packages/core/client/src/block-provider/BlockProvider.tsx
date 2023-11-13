@@ -125,7 +125,6 @@ const useResourceAction = (props, opts = {}) => {
       params['appends'] = appends;
     }
   }
-  console.log(templateFinshed);
   const result = useRequest(
     snapshot
       ? async () => ({
