@@ -125,6 +125,10 @@ export class Restorer extends AppMigrator {
       const businessCollections = dumpableCollectionsGroupByDataTypes.business;
 
       for (const collection of businessCollections) {
+        // skip import view collection in logic level
+        if (collection.isView) {
+          continue;
+        }
         await importCollection(collection.name);
       }
     }

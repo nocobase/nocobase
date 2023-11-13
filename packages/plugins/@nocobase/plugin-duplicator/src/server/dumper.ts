@@ -120,6 +120,7 @@ export class Dumper extends AppMigrator {
               title: c.options.title || c.name,
               options: c.options,
               dataType: options?.dataType,
+              isView: c.isView(),
               origin: {
                 name: origin,
                 title: originTitle,
@@ -230,6 +231,7 @@ export class Dumper extends AppMigrator {
         dataType: c.dataType,
         origin: c.origin,
         title: c.title,
+        isView: c.isView,
       };
     });
 

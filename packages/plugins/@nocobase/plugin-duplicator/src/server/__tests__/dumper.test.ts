@@ -4,11 +4,15 @@ import { Dumper } from '../dumper';
 import { Restorer } from '../restorer';
 import path from 'path';
 import fs from 'fs';
+import { Database } from '@nocobase/database';
 
 describe('dumper', () => {
   let app: MockServer;
+  let db: Database;
+
   beforeEach(async () => {
     app = await createApp();
+    db = app.db;
   });
 
   afterEach(async () => {
@@ -22,6 +26,62 @@ describe('dumper', () => {
       dir: path.join(__dirname, './fixtures/files'),
     });
     expect(list.length).toBe(2);
+  });
+
+  it('should dump and restore with view collection', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tests',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const testCollection = db.getCollection('tests');
+
+    const viewName = 'test_view';
+
+    const dropViewSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    await db.sequelize.query(dropViewSQL);
+
+    const viewSQL = `CREATE VIEW ${viewName} as SELECT * FROM ${testCollection.quotedTableName()}`;
+
+    await db.sequelize.query(viewSQL);
+
+    db.getRepository('collections').create({
+      values: {
+        name: viewName,
+        view: true,
+        schema: db.inDialect('postgres') ? 'public' : undefined,
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const dumper = new Dumper(app);
+    const result = await dumper.dump({
+      dataTypes: new Set(['meta', 'business']),
+    });
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: result.filePath,
+    });
+
+    const meta = await restorer.parseBackupFile();
+
+    await restorer.restore({
+      dataTypes: new Set(['meta', 'business']),
+    });
   });
 
   it('should dump and restore map file', async () => {
