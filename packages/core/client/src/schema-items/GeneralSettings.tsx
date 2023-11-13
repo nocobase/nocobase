@@ -1,10 +1,10 @@
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useCollectionManager } from '../collection-manager';
 import { useDesignable } from '../schema-component';
-import { useSchemaSettings } from '../schema-settings';
 import { SchemaSettingOptions } from '../application';
+import { useSchemaDesigner } from '../application/schema-designer';
+import { useCollection, useCollectionManager } from '../collection-manager';
 
 export const generalSettingsItems: SchemaSettingOptions['items'] = [
   {
@@ -203,8 +203,7 @@ export const generalSettingsItems: SchemaSettingOptions['items'] = [
     useVisible() {
       const field = useField<Field>();
       const fieldSchema = useFieldSchema();
-      const { designer } = useSchemaSettings();
-      const { required = true } = designer;
+      const { required = true } = useSchemaDesigner();
       return !field.readPretty && fieldSchema['x-component'] !== 'FormField' && required;
     },
   },

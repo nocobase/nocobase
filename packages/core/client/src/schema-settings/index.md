@@ -415,7 +415,7 @@ interface SchemaSettingsRenderOptions extends SchemaSettingOptions {
 }
 
 interface SchemaSettingsRenderResult {
-  render: (designer: any) => React.ReactElement;
+  render: (options?: SchemaSettingsRenderOptions) => React.ReactElement;
   exists: boolean;
 }
 
@@ -442,11 +442,7 @@ const MyDesigner = (props) => {
     modalTip,
   });
 
-  const designerContext = {
-    modalTip
-  }
-
-  return <div>{exists && render(designerContext)}</div>
+  return <div>{render()}</div>
 }
 
 ```
@@ -455,7 +451,7 @@ const MyDesigner = (props) => {
 
 获取 schemaSetting 上下文数据。
 
-上下文数据包含了 `schemaSetting` 实例化时的 `options` 以及调用 `useSchemaSettingsRender()` 时传入的 `options` 和 `designer`。
+上下文数据包含了 `schemaSetting` 实例化时的 `options` 以及调用 `useSchemaSettingsRender()` 时传入的 `options`。
 
 - 类型
 
@@ -464,7 +460,6 @@ interface UseSchemaSettingsResult<T> extends SchemaSettingOptions {
   dn?: Designable;
   field?: GeneralField;
   fieldSchema?: Schema;
-  designer?: T;
 }
 
 function useSchemaSettings(): UseSchemaSettingsResult;
@@ -473,9 +468,7 @@ function useSchemaSettings(): UseSchemaSettingsResult;
 - 示例
 
 ```tsx | pure
-const { designer, dn } = useSchemaSettings();
-
-const { modalTip } = designer;
+const { dn } = useSchemaSettings();
 ```
 
 #### useSchemaSettingsItem()

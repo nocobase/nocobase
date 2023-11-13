@@ -4,7 +4,7 @@ import { Space } from 'antd';
 import React from 'react';
 import { DragHandler, useDesignable } from '../..';
 import { useGetAriaLabelOfDesigner } from '../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
-import { useSchemaSettingsRender } from '../../../application';
+import { SchemaDesignerProvider, useSchemaSettingsRender } from '../../../application';
 
 export const PageDesigner = ({ title }) => {
   const { designable } = useDesignable();
@@ -17,13 +17,15 @@ export const PageDesigner = ({ title }) => {
     return null;
   }
   return (
-    <div className={'general-schema-designer'}>
-      <div className={'general-schema-designer-icons'}>
-        <Space size={2} align={'center'}>
-          {render({ title })}
-        </Space>
+    <SchemaDesignerProvider title={title}>
+      <div className={'general-schema-designer'}>
+        <div className={'general-schema-designer-icons'}>
+          <Space size={2} align={'center'}>
+            {render()}
+          </Space>
+        </div>
       </div>
-    </div>
+    </SchemaDesignerProvider>
   );
 };
 
@@ -38,17 +40,18 @@ export const PageTabDesigner = ({ schema }) => {
   if (!designable) {
     return null;
   }
-
   return (
-    <div className={'general-schema-designer'}>
-      <div className={'general-schema-designer-icons'}>
-        <Space size={3} align={'center'}>
-          <DragHandler>
-            <DragOutlined style={{ marginRight: 0 }} role="button" aria-label={getAriaLabel('drag-handler', 'tab')} />
-          </DragHandler>
-          {render({ schema })}
-        </Space>
+    <SchemaDesignerProvider schema={schema}>
+      <div className={'general-schema-designer'}>
+        <div className={'general-schema-designer-icons'}>
+          <Space size={3} align={'center'}>
+            <DragHandler>
+              <DragOutlined style={{ marginRight: 0 }} role="button" aria-label={getAriaLabel('drag-handler', 'tab')} />
+            </DragHandler>
+            {render()}
+          </Space>
+        </div>
       </div>
-    </div>
+    </SchemaDesignerProvider>
   );
 };

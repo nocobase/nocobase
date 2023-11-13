@@ -9,7 +9,7 @@ import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowConte
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettings } from './SchemaSettings';
 import { useGetAriaLabelOfDesigner } from './hooks/useGetAriaLabelOfDesigner';
-import { useSchemaSettingsRender } from '../application';
+import { SchemaDesignerProvider, useSchemaSettingsRender } from '../application';
 
 const titleCss = css`
   pointer-events: none;
@@ -48,7 +48,7 @@ export interface GeneralSchemaDesignerProps {
   title?: string;
   template?: any;
   schemaSettings?: string;
-  schemaSettingsDesigner?: any;
+  contextValue?: any;
   /**
    * @default true
    */
@@ -56,7 +56,7 @@ export interface GeneralSchemaDesignerProps {
 }
 
 export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any) => {
-  const { disableInitializer, title, template, schemaSettings, schemaSettingsDesigner, draggable = true } = props;
+  const { disableInitializer, title, template, schemaSettings, contextValue, draggable = true } = props;
   const { dn, designable } = useDesignable();
   const field = useField();
   const { t } = useTranslation();
@@ -99,50 +99,52 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
   }
 
   return (
-    <div className={classNames('general-schema-designer', overrideAntdCSS)}>
-      {title && (
-        <div className={classNames('general-schema-designer-title', titleCss)}>
-          <Space size={2}>
-            <span className={'title-tag'}>{compile(title)}</span>
-            {template && (
-              <span className={'title-tag'}>
-                {t('Reference template')}: {templateName || t('Untitled')}
-              </span>
+    <SchemaDesignerProvider {...contextValue}>
+      <div className={classNames('general-schema-designer', overrideAntdCSS)}>
+        {title && (
+          <div className={classNames('general-schema-designer-title', titleCss)}>
+            <Space size={2}>
+              <span className={'title-tag'}>{compile(title)}</span>
+              {template && (
+                <span className={'title-tag'}>
+                  {t('Reference template')}: {templateName || t('Untitled')}
+                </span>
+              )}
+            </Space>
+          </div>
+        )}
+        <div className={'general-schema-designer-icons'}>
+          <Space size={3} align={'center'}>
+            {draggable && (
+              <DragHandler>
+                <DragOutlined role="button" aria-label={getAriaLabel('drag-handler')} />
+              </DragHandler>
+            )}
+            {!disableInitializer &&
+              (ctx?.InitializerComponent ? (
+                <ctx.InitializerComponent {...initializerProps} />
+              ) : (
+                ctx?.renderSchemaInitializer?.(initializerProps)
+              ))}
+            {schemaSettingsExists ? (
+              schemaSettingsRender(contextValue)
+            ) : (
+              <SchemaSettings
+                title={
+                  <MenuOutlined
+                    role="button"
+                    aria-label={getAriaLabel('schema-settings')}
+                    style={{ cursor: 'pointer', fontSize: 12 }}
+                  />
+                }
+                {...schemaSettingsProps}
+              >
+                {props.children}
+              </SchemaSettings>
             )}
           </Space>
         </div>
-      )}
-      <div className={'general-schema-designer-icons'}>
-        <Space size={3} align={'center'}>
-          {draggable && (
-            <DragHandler>
-              <DragOutlined role="button" aria-label={getAriaLabel('drag-handler')} />
-            </DragHandler>
-          )}
-          {!disableInitializer &&
-            (ctx?.InitializerComponent ? (
-              <ctx.InitializerComponent {...initializerProps} />
-            ) : (
-              ctx?.renderSchemaInitializer?.(initializerProps)
-            ))}
-          {schemaSettingsExists ? (
-            schemaSettingsRender(schemaSettingsDesigner)
-          ) : (
-            <SchemaSettings
-              title={
-                <MenuOutlined
-                  role="button"
-                  aria-label={getAriaLabel('schema-settings')}
-                  style={{ cursor: 'pointer', fontSize: 12 }}
-                />
-              }
-              {...schemaSettingsProps}
-            >
-              {props.children}
-            </SchemaSettings>
-          )}
-        </Space>
       </div>
-    </div>
+    </SchemaDesignerProvider>
   );
 };

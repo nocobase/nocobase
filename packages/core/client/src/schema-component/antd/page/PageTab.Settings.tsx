@@ -1,9 +1,9 @@
+import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { SchemaSetting } from '../../../application/schema-settings';
 import { ISchema } from '@formily/json-schema';
 import { useDesignable } from '../../hooks';
-import { useSchemaSettings } from '../../../schema-settings';
-import { App } from 'antd';
+import { useSchemaDesigner } from '../../../application/schema-designer';
+import { SchemaSetting } from '../../../application/schema-settings/SchemaSetting';
 
 export const pageTabSettings = new SchemaSetting({
   name: 'PageTabSettings',
@@ -13,7 +13,7 @@ export const pageTabSettings = new SchemaSetting({
       type: 'modal',
       useComponentProps() {
         const { t } = useTranslation();
-        const { designer } = useSchemaSettings<{ schema: ISchema }>();
+        const { schema } = useSchemaDesigner<{ schema: ISchema }>();
         const { dn } = useDesignable();
         return {
           title: t('Edit'),
@@ -36,13 +36,13 @@ export const pageTabSettings = new SchemaSetting({
               },
             },
           } as ISchema,
-          initialValues: { title: designer.schema.title, icon: designer.schema['x-icon'] },
+          initialValues: { title: schema.title, icon: schema['x-icon'] },
           onSubmit: ({ title, icon }) => {
-            designer.schema.title = title;
-            designer.schema['x-icon'] = icon;
+            schema.title = title;
+            schema['x-icon'] = icon;
             dn.emit('patch', {
               schema: {
-                ['x-uid']: designer.schema['x-uid'],
+                ['x-uid']: schema['x-uid'],
                 title,
                 'x-icon': icon,
               },
@@ -63,7 +63,7 @@ export const pageTabSettings = new SchemaSetting({
         const { modal } = App.useApp();
         const { dn } = useDesignable();
         const { t } = useTranslation();
-        const { designer } = useSchemaSettings();
+        const { schema } = useSchemaDesigner();
         return {
           title: 'Delete',
           eventKey: 'remove',
@@ -73,7 +73,7 @@ export const pageTabSettings = new SchemaSetting({
               content: t('Are you sure you want to delete it?'),
               ...confirm,
               onOk() {
-                dn.remove(designer.schema);
+                dn.remove(schema);
               },
             });
           },

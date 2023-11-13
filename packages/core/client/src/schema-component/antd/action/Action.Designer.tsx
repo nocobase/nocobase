@@ -11,7 +11,7 @@ import { CollectionOptions, useCollection, useCollectionManager } from '../../..
 import { FlagProvider } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
 import { OpenModeSchemaItems } from '../../../schema-items';
-import { SchemaSettings, useSchemaSettings } from '../../../schema-settings/SchemaSettings';
+import { SchemaSettings } from '../../../schema-settings/SchemaSettings';
 import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
@@ -20,6 +20,7 @@ import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
 import { usePlugin } from '../../../application/hooks';
 import { SchemaSetting, SchemaSettingOptions } from '../../../application/schema-settings';
+import { useSchemaDesigner } from '../../../application/schema-designer';
 
 const Tree = connect(
   AntdTree,
@@ -910,8 +911,8 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         name: 'editButton',
         Component: ButtonEditor,
         useComponentProps() {
-          const { designer } = useSchemaSettings();
-          return designer.buttonEditorProps;
+          const { buttonEditorProps } = useSchemaDesigner();
+          return buttonEditorProps;
         },
       },
       {
@@ -930,14 +931,14 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         Component: SchemaSettings.LinkageRules,
         useVisible() {
           const isAction = useLinkageAction();
-          const { designer } = useSchemaSettings();
-          return designer.linkageAction || isAction;
+          const { linkageAction } = useSchemaDesigner();
+          return linkageAction || isAction;
         },
         useComponentProps() {
           const { name } = useCollection();
-          const { designer } = useSchemaSettings();
+          const { linkageRulesProps } = useSchemaDesigner();
           return {
-            ...designer.linkageRulesProps,
+            ...linkageRulesProps,
             collectionName: name,
           };
         },
@@ -1045,8 +1046,8 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         sort: 100,
         Component: RemoveButton as any,
         useComponentProps() {
-          const { designer } = useSchemaSettings();
-          return designer.removeButtonProps;
+          const { removeButtonProps } = useSchemaDesigner();
+          return removeButtonProps;
         },
         useVisible() {
           const fieldSchema = useFieldSchema();
@@ -1078,7 +1079,7 @@ export const ActionDesigner = (props) => {
   return (
     <GeneralSchemaDesigner
       schemaSettings={schemaSettings}
-      schemaSettingsDesigner={{ modalTip, linkageAction, removeButtonProps, buttonEditorProps, linkageRulesProps }}
+      contextValue={{ modalTip, linkageAction, removeButtonProps, buttonEditorProps, linkageRulesProps }}
       {...restProps}
       disableInitializer
       draggable={isDraggable}

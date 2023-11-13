@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useDesignable } from '../..';
-import { useSchemaSettings } from '../../../schema-settings';
 import { SchemaSetting } from '../../../application/schema-settings';
+import { useSchemaDesigner } from '../../../application/schema-designer';
 
 function useNotDisableHeader() {
   const fieldSchema = useFieldSchema();
@@ -81,7 +81,7 @@ export const pageSettings = new SchemaSetting({
         const { t } = useTranslation();
         const field = useField();
         const fieldSchema = useFieldSchema();
-        const { designer } = useSchemaSettings();
+        const { title } = useSchemaDesigner();
         return {
           hide: true,
           title: t('Edit page title'),
@@ -98,7 +98,7 @@ export const pageSettings = new SchemaSetting({
               },
             },
           } as ISchema,
-          initialValues: { title: designer.title },
+          initialValues: { title },
           onSubmit({ title }) {
             field.title = title;
             fieldSchema['title'] = title;

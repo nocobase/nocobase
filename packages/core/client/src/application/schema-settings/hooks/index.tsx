@@ -5,10 +5,9 @@ import React from 'react';
 import { SchemaSettingsWrapper } from '../components';
 import { SchemaSettingsProps } from '../../../schema-settings';
 
-export function useSchemaSettingsRender<T = {}, DesignerContext = {}>(
-  name: string,
-  options?: SchemaSettingOptions<T> & Omit<SchemaSettingsProps, 'title' | 'children'>,
-) {
+type UseSchemaSettingsRenderOptions<T = {}> = SchemaSettingOptions<T> & Omit<SchemaSettingsProps, 'title' | 'children'>;
+
+export function useSchemaSettingsRender<T = {}>(name: string, options?: UseSchemaSettingsRenderOptions<T>) {
   const app = useApp();
   const schemaSetting = useMemo(() => app.schemaSettingsManager.get<T>(name), [app.schemaSettingsManager, name]);
   if (!name) {
@@ -27,7 +26,7 @@ export function useSchemaSettingsRender<T = {}, DesignerContext = {}>(
   }
   return {
     exists: true,
-    render: (designer: DesignerContext = {} as any) =>
-      React.createElement(SchemaSettingsWrapper, { ...schemaSetting.options, ...options, designer }),
+    render: (options2?: UseSchemaSettingsRenderOptions) =>
+      React.createElement(SchemaSettingsWrapper, { ...schemaSetting.options, ...options, ...options2 }),
   };
 }

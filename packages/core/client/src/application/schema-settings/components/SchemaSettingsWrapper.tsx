@@ -5,11 +5,7 @@ import { SchemaSettingChildren } from './SchemaSettingsChildren';
 import { SchemaSettingsIcon } from './SchemaSettingsIcon';
 import React from 'react';
 
-export interface SchemaSettingsWrapperProps extends SchemaSettingOptions<any> {
-  designer: any;
-}
-
-export const SchemaSettingsWrapper: FC<SchemaSettingsWrapperProps> = (props) => {
+export const SchemaSettingsWrapper: FC<SchemaSettingOptions<any>> = (props) => {
   const { items, Component = SchemaSettingsIcon, name, componentProps, style, ...others } = props;
   const cProps = useMemo(
     () => ({
