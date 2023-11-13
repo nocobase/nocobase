@@ -3,7 +3,7 @@ import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import { Button, Modal, Result, Spin } from 'antd';
 import React, { FC } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
 import { Application } from '../application';
 import { Plugin } from '../application/Plugin';
@@ -188,6 +188,22 @@ const AppMaintainingDialog: FC<{ app: Application; error: Error }> = observer(({
   );
 });
 
+const AppNotFound = () => {
+  const navigate = useNavigate();
+  return (
+    <Result
+      status="404"
+      title="404"
+      subTitle="Sorry, the page you visited does not exist."
+      extra={
+        <Button onClick={() => navigate('/', { replace: true })} type="primary">
+          Back Home
+        </Button>
+      }
+    />
+  );
+};
+
 export class NocoBaseBuildInPlugin extends Plugin {
   async afterAdd() {
     this.app.addComponents({
@@ -195,6 +211,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
       AppError,
       AppMaintaining,
       AppMaintainingDialog,
+      AppNotFound,
     });
     await this.addPlugins();
   }
@@ -214,6 +231,11 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.router.add('root', {
       path: '/',
       element: <Navigate replace to="/admin" />,
+    });
+
+    this.router.add('not-found', {
+      path: '*',
+      Component: AppNotFound,
     });
 
     this.router.add('admin', {

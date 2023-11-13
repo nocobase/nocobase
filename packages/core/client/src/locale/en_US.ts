@@ -38,6 +38,7 @@ export default {
   "Unconnected": "Unconnected",
   "System settings": "System settings",
   "System title": "System title",
+  "Settings": "Settings",
   "Logo": "Logo",
   "Add menu item": "Add menu item",
   "Page": "Page",
@@ -783,4 +784,6 @@ export default {
   Execute: 'Execute',
   'Please use a valid SELECT or WITH AS statement': 'Please use a valid SELECT or WITH AS statement',
   'Please confirm the SQL statement first': 'Please confirm the SQL statement first',
+  'Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects':
+    'Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects',
 };

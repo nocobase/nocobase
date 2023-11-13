@@ -9,8 +9,6 @@ const useBuiltInVariables = () => {
 
   const currentUser = data?.data?.data;
   const dateVars = getDateRanges();
-  // 使用函数方便测试断言
-  dateVars.now = (() => dayjs().toISOString()) as any;
   const builtinVariables: VariableOption[] = useMemo(() => {
     return [
       {
@@ -29,6 +27,14 @@ const useBuiltInVariables = () => {
       },
       {
         name: '$nDate',
+        ctx: dateVars,
+      },
+      /**
+       * @deprecated
+       * 兼容旧版本的 `$date` 变量，新版本已弃用
+       */
+      {
+        name: '$date',
         ctx: dateVars,
       },
       /**

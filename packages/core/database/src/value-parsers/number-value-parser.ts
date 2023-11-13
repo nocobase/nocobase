@@ -11,6 +11,7 @@ export class NumberValueParser extends BaseValueParser {
       } else if (['n/a', '-'].includes(value.toLowerCase())) {
         this.value = null;
       } else {
+        value = value.replace(/,/g, '');
         if (value.endsWith('%')) {
           value = percent2float(value);
         } else {

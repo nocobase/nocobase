@@ -16,7 +16,7 @@ describe('Application', () => {
   });
 
   const router: any = { type: 'memory', initialEntries: ['/'] };
-  const initialComponentsLength = 6;
+  const initialComponentsLength = 7;
   const initialProvidersLength = 2;
   it('basic', () => {
     const app = new Application({ router });
@@ -331,8 +331,8 @@ describe('Application', () => {
         router,
       });
 
-      const ErrorFallback = () => {
-        return <div>ErrorFallback</div>;
+      const AppError = () => {
+        return <div>AppError</div>;
       };
       const Foo = () => {
         throw new Error('error');
@@ -340,7 +340,7 @@ describe('Application', () => {
       };
       app.use(Foo);
       app.addComponents({
-        ErrorFallback,
+        AppError,
       });
 
       const originalConsoleWarn = console.error;
@@ -352,8 +352,7 @@ describe('Application', () => {
       await sleep(10);
       expect(fn).toBeCalled();
 
-      expect(screen.getByText('ErrorFallback')).toBeInTheDocument();
-      screen.debug();
+      expect(screen.getByText('AppError')).toBeInTheDocument();
 
       console.error = originalConsoleWarn;
     });

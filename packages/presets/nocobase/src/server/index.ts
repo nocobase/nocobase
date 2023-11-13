@@ -31,22 +31,21 @@ export class PresetNocoBase extends Plugin {
   ];
 
   localPlugins = [
-    // ['charts', '0.9.1-alpha.2'],
-    ['audit-logs', '0.7.1-alpha.4'],
-    ['sample-hello', '0.8.0-alpha.4'],
-    ['multi-app-manager', '0.7.0-alpha.1'],
-    ['multi-app-share-collection', '0.9.2-alpha.1'],
-    ['oidc', '0.9.2-alpha.1'],
-    ['saml', '0.8.1-alpha.3'],
-    ['cas', '0.13.0-alpha.5'],
-    ['map', '0.8.1-alpha.3'],
-    ['snapshot-field', '0.8.1-alpha.3'],
-    ['graph-collection-manager', '0.9.0-alpha.1'],
-    ['mobile-client', '0.10.0-alpha.2'],
-    ['api-keys', '0.10.1-alpha.1'],
-    ['localization-management', '0.11.1-alpha.1'],
-    ['theme-editor', '0.11.1-alpha.1'],
-    ['api-doc', '0.13.0-alpha.1'],
+    'audit-logs@0.7.1-alpha.4',
+    'sample-hello@0.8.0-alpha.4',
+    'multi-app-manager@0.7.0-alpha.1',
+    'multi-app-share-collection@0.9.2-alpha.1',
+    'oidc@0.9.2-alpha.1',
+    'saml@0.8.1-alpha.3',
+    'cas@0.13.0-alpha.5',
+    'map@0.8.1-alpha.3',
+    'snapshot-field@0.8.1-alpha.3',
+    'graph-collection-manager@0.9.0-alpha.1',
+    'mobile-client@0.10.0-alpha.2',
+    'api-keys@0.10.1-alpha.1',
+    'localization-management@0.11.1-alpha.1',
+    'theme-editor@0.11.1-alpha.1',
+    'api-doc@0.13.0-alpha.1',
   ];
 
   splitNames(name: string) {
@@ -62,7 +61,10 @@ export class PresetNocoBase extends Plugin {
 
   getLocalPlugins() {
     const { APPEND_PRESET_LOCAL_PLUGINS } = process.env;
-    return _.uniq<any>(this.splitNames(APPEND_PRESET_LOCAL_PLUGINS).concat(this.localPlugins as any));
+    const plugins = this.splitNames(APPEND_PRESET_LOCAL_PLUGINS)
+      .concat(this.localPlugins)
+      .map((name) => name.split('@'));
+    return plugins;
   }
 
   beforeLoad() {
@@ -87,7 +89,7 @@ export class PresetNocoBase extends Plugin {
       })
       .concat(
         this.getLocalPlugins().map((plugin) => {
-          const name = typeof plugin === 'string' ? plugin : plugin[0];
+          const name = plugin[0];
           const packageName = PluginManager.getPackageName(name);
           const packageJson = PluginManager.getPackageJson(packageName);
           return { name, packageName, version: packageJson.version };
@@ -102,15 +104,15 @@ export class PresetNocoBase extends Plugin {
       return { name, packageName, enabled: true, builtIn: true, version: packageJson.version } as any;
     });
     for (const plugin of this.getLocalPlugins()) {
-      if (Array.isArray(plugin)) {
+      if (plugin[1]) {
         if (await this.app.version.satisfies(`>${plugin[1]}`)) {
           continue;
         }
-        const name = plugin[0];
-        const packageName = PluginManager.getPackageName(name);
-        const packageJson = PluginManager.getPackageJson(packageName);
-        plugins.push({ name, packageName, version: packageJson.version });
       }
+      const name = plugin[0];
+      const packageName = PluginManager.getPackageName(name);
+      const packageJson = PluginManager.getPackageJson(packageName);
+      plugins.push({ name, packageName, version: packageJson.version });
     }
     return plugins;
   }

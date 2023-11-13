@@ -1,7 +1,14 @@
-import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { DeleteOutlined } from '@ant-design/icons';
+import { cloneDeep } from 'lodash';
+import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
+import { App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
+import { useTranslation } from 'react-i18next';
+
 import {
   ActionContextProvider,
+  FormProvider,
   SchemaComponent,
   SchemaInitializerItemOptions,
   css,
@@ -9,13 +16,10 @@ import {
   useAPIClient,
   useActionContext,
   useCompile,
-  useRequest,
   useResourceActionContext,
 } from '@nocobase/client';
 import { Registry, parse, str2moment } from '@nocobase/utils/client';
-import { App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
-import React, { useContext, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+
 import { AddButton } from '../AddButton';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
@@ -25,6 +29,7 @@ import { useGetAriaLabelOfAddButton } from '../hooks/useGetAriaLabelOfAddButton'
 import { lang } from '../locale';
 import useStyles from '../style';
 import { VariableOption, VariableOptions } from '../variable';
+
 import aggregate from './aggregate';
 import calculation from './calculation';
 import condition from './condition';
@@ -96,6 +101,7 @@ function useUpdateAction() {
           config: form.values,
         },
       });
+      ctx.setFormValueChanged(false);
       ctx.setVisible(false);
       refresh();
     },
@@ -268,6 +274,10 @@ export function JobButton() {
   );
 }
 
+function useFormProviderProps() {
+  return { form: useForm() };
+}
+
 export function NodeDefaultView(props) {
   const { data, children } = props;
   const compile = useCompile();
@@ -281,23 +291,45 @@ export function NodeDefaultView(props) {
 
   const [editingTitle, setEditingTitle] = useState<string>(data.title ?? typeTitle);
   const [editingConfig, setEditingConfig] = useState(false);
+  const [formValueChanged, setFormValueChanged] = useState(false);
 
-  async function onChangeTitle(next) {
-    const title = next || typeTitle;
-    setEditingTitle(title);
-    if (title === data.title) {
-      return;
-    }
-    await api.resource('flow_nodes').update?.({
-      filterByTk: data.id,
-      values: {
-        title,
-      },
+  const form = useMemo(() => {
+    const values = cloneDeep(data.config);
+    return createForm({
+      initialValues: values,
+      disabled: workflow.executed,
     });
-    refresh();
-  }
+  }, [data, workflow]);
 
-  function onOpenDrawer(ev) {
+  const resetForm = useCallback(
+    (editing) => {
+      setEditingConfig(editing);
+      if (!editing) {
+        form.reset();
+      }
+    },
+    [form],
+  );
+
+  const onChangeTitle = useCallback(
+    async function (next) {
+      const title = next || typeTitle;
+      setEditingTitle(title);
+      if (title === data.title) {
+        return;
+      }
+      await api.resource('flow_nodes').update?.({
+        filterByTk: data.id,
+        values: {
+          title,
+        },
+      });
+      refresh();
+    },
+    [data],
+  );
+
+  const onOpenDrawer = useCallback(function (ev) {
     if (ev.target === ev.currentTarget) {
       setEditingConfig(true);
       return;
@@ -310,7 +342,7 @@ export function NodeDefaultView(props) {
         return;
       }
     }
-  }
+  }, []);
 
   return (
     <div className={cx(styles.nodeClass, `workflow-node-type-${data.type}`)}>
@@ -324,138 +356,143 @@ export function NodeDefaultView(props) {
           <Tag>{typeTitle}</Tag>
           <span className="workflow-node-id">{data.id}</span>
         </div>
-        <div>
-          <Input.TextArea
-            role="button"
-            aria-label="textarea"
-            disabled={workflow.executed}
-            value={editingTitle}
-            onChange={(ev) => setEditingTitle(ev.target.value)}
-            onBlur={(ev) => onChangeTitle(ev.target.value)}
-            autoSize
-          />
-        </div>
+        <Input.TextArea
+          role="button"
+          aria-label="textarea"
+          disabled={workflow.executed}
+          value={editingTitle}
+          onChange={(ev) => setEditingTitle(ev.target.value)}
+          onBlur={(ev) => onChangeTitle(ev.target.value)}
+          autoSize
+        />
         <RemoveButton />
         <JobButton />
-        <ActionContextProvider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
-          <SchemaComponent
-            scope={instruction.scope}
-            components={instruction.components}
-            schema={{
-              type: 'void',
-              properties: {
-                ...(instruction.view ? { view: instruction.view } : {}),
-                button: {
-                  type: 'void',
-                  'x-content': detailText,
-                  'x-component': Button,
-                  'x-component-props': {
-                    type: 'link',
-                    className: 'workflow-node-config-button',
-                  },
-                },
-                [`${instruction.type}_${data.id}`]: {
-                  type: 'void',
-                  title: (
-                    <div
-                      className={css`
-                        display: flex;
-                        justify-content: space-between;
-
-                        strong {
-                          font-weight: bold;
-                        }
-
-                        .ant-tag {
-                          margin-inline-end: 0;
-                        }
-
-                        code {
-                          font-weight: normal;
-                        }
-                      `}
-                    >
-                      <strong>{data.title}</strong>
-                      <Tooltip title={lang('Variable key of node')}>
-                        <Tag>
-                          <code>{data.key}</code>
-                        </Tag>
-                      </Tooltip>
-                    </div>
-                  ),
-                  'x-component': 'Action.Drawer',
-                  'x-decorator': 'Form',
-                  'x-decorator-props': {
-                    disabled: workflow.executed,
-                    useValues(options) {
-                      const { config } = useNodeContext();
-                      return useRequest(() => {
-                        return Promise.resolve({ data: config });
-                      }, options);
+        <ActionContextProvider
+          value={{
+            visible: editingConfig,
+            setVisible: resetForm,
+            formValueChanged,
+            setFormValueChanged,
+          }}
+        >
+          <FormProvider form={form}>
+            <SchemaComponent
+              scope={{
+                ...instruction.scope,
+                useFormProviderProps,
+              }}
+              components={instruction.components}
+              schema={{
+                type: 'void',
+                properties: {
+                  ...(instruction.view ? { view: instruction.view } : {}),
+                  button: {
+                    type: 'void',
+                    'x-content': detailText,
+                    'x-component': Button,
+                    'x-component-props': {
+                      type: 'link',
+                      className: 'workflow-node-config-button',
                     },
                   },
-                  properties: {
-                    ...(instruction.description
-                      ? {
-                          description: {
-                            type: 'void',
-                            'x-component': DrawerDescription,
-                            'x-component-props': {
-                              label: lang('Node type'),
-                              title: instruction.title,
-                              description: instruction.description,
-                            },
-                          },
-                        }
-                      : {}),
-                    fieldset: {
-                      type: 'void',
-                      'x-component': 'fieldset',
-                      'x-component-props': {
-                        className: css`
-                          .ant-input,
-                          .ant-select,
-                          .ant-cascader-picker,
-                          .ant-picker,
-                          .ant-input-number,
-                          .ant-input-affix-wrapper {
-                            &.auto-width {
-                              width: auto;
-                              min-width: 6em;
-                            }
+                  [`${instruction.type}_${data.id}`]: {
+                    type: 'void',
+                    title: (
+                      <div
+                        className={css`
+                          display: flex;
+                          justify-content: space-between;
+
+                          strong {
+                            font-weight: bold;
                           }
-                        `,
-                      },
-                      properties: instruction.fieldset,
+
+                          .ant-tag {
+                            margin-inline-end: 0;
+                          }
+
+                          code {
+                            font-weight: normal;
+                          }
+                        `}
+                      >
+                        <strong>{data.title}</strong>
+                        <Tooltip title={lang('Variable key of node')}>
+                          <Tag>
+                            <code>{data.key}</code>
+                          </Tag>
+                        </Tooltip>
+                      </div>
+                    ),
+                    'x-decorator': 'FormV2',
+                    'x-decorator-props': {
+                      // form,
+                      useProps: '{{ useFormProviderProps }}',
                     },
-                    actions: workflow.executed
-                      ? null
-                      : {
-                          type: 'void',
-                          'x-component': 'Action.Drawer.Footer',
-                          properties: {
-                            cancel: {
-                              title: '{{t("Cancel")}}',
-                              'x-component': 'Action',
+                    'x-component': 'Action.Drawer',
+                    properties: {
+                      ...(instruction.description
+                        ? {
+                            description: {
+                              type: 'void',
+                              'x-component': DrawerDescription,
                               'x-component-props': {
-                                useAction: '{{ cm.useCancelAction }}',
+                                label: lang('Node type'),
+                                title: instruction.title,
+                                description: instruction.description,
                               },
                             },
-                            submit: {
-                              title: '{{t("Submit")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                type: 'primary',
-                                useAction: useUpdateAction,
+                          }
+                        : {}),
+                      fieldset: {
+                        type: 'void',
+                        'x-component': 'fieldset',
+                        'x-component-props': {
+                          className: css`
+                            .ant-input,
+                            .ant-select,
+                            .ant-cascader-picker,
+                            .ant-picker,
+                            .ant-input-number,
+                            .ant-input-affix-wrapper {
+                              &.auto-width {
+                                width: auto;
+                                min-width: 6em;
+                              }
+                            }
+                          `,
+                        },
+                        properties: instruction.fieldset,
+                      },
+                      actions: workflow.executed
+                        ? null
+                        : {
+                            type: 'void',
+                            'x-component': 'Action.Drawer.Footer',
+                            properties: {
+                              cancel: {
+                                title: '{{t("Cancel")}}',
+                                'x-component': 'Action',
+                                'x-component-props': {
+                                  useAction: '{{ cm.useCancelAction }}',
+                                },
+                              },
+                              submit: {
+                                title: '{{t("Submit")}}',
+                                'x-component': 'Action',
+                                'x-component-props': {
+                                  type: 'primary',
+                                  useAction: useUpdateAction,
+                                },
                               },
                             },
                           },
-                        },
-                  },
-                } as ISchema,
-              },
-            }}
-          />
+                    },
+                  } as ISchema,
+                },
+              }}
+            />
+          </FormProvider>
         </ActionContextProvider>
       </div>
       {children}

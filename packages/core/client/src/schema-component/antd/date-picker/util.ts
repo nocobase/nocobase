@@ -138,7 +138,7 @@ const getEnd = (offset: any, unit: any) => {
 
 export const getDateRanges = () => {
   return {
-    now: () => dayjs(),
+    now: () => dayjs().toISOString(),
     today: () => [getStart(0, 'day'), getEnd(0, 'day')],
     yesterday: () => [getStart(-1, 'day'), getEnd(-1, 'day')],
     tomorrow: () => [getStart(1, 'day'), getEnd(1, 'day')],
