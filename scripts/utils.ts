@@ -110,6 +110,7 @@ export const runNocoBase = async (
      * 是否强制启动服务
      */
     force?: boolean;
+    signal?: AbortSignal;
   },
 ) => {
   // 用于存放 playwright 自动生成的相关的文件
