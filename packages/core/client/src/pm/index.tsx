@@ -27,28 +27,23 @@ export class PMPlugin extends Plugin {
       icon: 'LockOutlined',
       Component: ACLPane,
       aclSnippet: 'pm.acl.roles',
-      isBookmark: true,
     });
     this.app.pluginSettingsManager.add('ui-schema-storage', {
       title: '{{t("Block templates")}}',
       icon: 'LayoutOutlined',
       Component: BlockTemplatesPane,
-      isBookmark: true,
       aclSnippet: 'pm.ui-schema-storage.block-templates',
     });
     this.app.pluginSettingsManager.add('system-settings', {
       icon: 'SettingOutlined',
       title: '{{t("System settings")}}',
       Component: SystemSettingsPane,
-      isBookmark: true,
       aclSnippet: 'pm.system-settings.system-settings',
     });
 
     this.app.pluginSettingsManager.add('collection-manager', {
       icon: 'DatabaseOutlined',
       title: '{{t("Collection manager")}}',
-      Component: () => <Outlet />,
-      isBookmark: true,
     });
 
     this.app.pluginSettingsManager.add('collection-manager.collections', {
