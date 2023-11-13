@@ -35,7 +35,6 @@ export const SettingsCenterDropdown = () => {
   const app = useApp();
   const settings = app.pluginSettingsManager.getList();
   const [open, setOpen] = useState(false);
-
   return (
     <ActionContextProvider value={{ visible, setVisible }}>
       <Popover
@@ -64,7 +63,7 @@ export const SettingsCenterDropdown = () => {
                       background: rgba(0, 0, 0, 0.045);
                     }
                   `}
-                  key={setting.pluginName}
+                  key={setting.name}
                 >
                   <a
                     role="button"
