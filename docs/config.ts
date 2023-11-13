@@ -200,7 +200,7 @@ const sidebar = {
           ],
         },
         '/development/client/ui-router',
-        '/development/client/settings-center',
+        '/development/client/plugin-settings',
         '/development/client/i18n',
         '/development/client/test',
       ],
