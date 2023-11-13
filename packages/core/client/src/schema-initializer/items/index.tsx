@@ -36,7 +36,6 @@ export * from './InitializerWithSwitch';
 export * from './KanbanBlockInitializer';
 export * from './ListBlockInitializer';
 export * from './MarkdownBlockInitializer';
-export * from './PrintActionInitializer';
 export * from './RecordAssociationBlockInitializer';
 export * from './RecordAssociationGridCardBlockInitializer';
 export * from './RecordAssociationListBlockInitializer';

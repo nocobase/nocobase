@@ -56,14 +56,6 @@ export const readPrettyFormActionInitializers = new SchemaInitializer({
           },
           useVisible: useVisibleCollection,
         },
-        {
-          title: '{{t("Print")}}',
-          name: 'print',
-          Component: 'PrintActionInitializer',
-          schema: {
-            'x-component': 'Action',
-          },
-        },
       ],
     },
     {

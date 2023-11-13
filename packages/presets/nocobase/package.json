@@ -44,6 +44,7 @@
     "@nocobase/plugin-ui-schema-storage": "0.14.0-alpha.8",
     "@nocobase/plugin-users": "0.14.0-alpha.8",
     "@nocobase/plugin-verification": "0.14.0-alpha.8",
+    "@nocobase/plugin-action-print": "0.14.0-alpha.8",
     "@nocobase/plugin-workflow": "0.14.0-alpha.8",
     "@nocobase/server": "0.14.0-alpha.8",
     "cronstrue": "^2.11.0"
