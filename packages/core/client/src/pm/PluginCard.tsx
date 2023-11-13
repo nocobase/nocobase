@@ -7,11 +7,11 @@ import { useNavigate } from 'react-router-dom';
 import { DeleteOutlined, ReadOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { useAPIClient } from '../api-client';
+import { useApp } from '../application';
 import { PluginDetail } from './PluginDetail';
 import { PluginUpgradeModal } from './PluginForm/modal/PluginUpgradeModal';
 import { useStyles } from './style';
 import type { IPluginData } from './types';
-import { useApp } from '../application';
 
 interface IPluginInfo extends IPluginCard {
   onClick: () => void;
@@ -100,7 +100,7 @@ function PluginInfo(props: IPluginInfo) {
                     navigate(app.pluginSettingsManager.getRoutePath(name));
                   }}
                 >
-                  <SettingOutlined /> {t('Setting')}
+                  <SettingOutlined /> {t('Settings')}
                 </a>
               )
             ) : (

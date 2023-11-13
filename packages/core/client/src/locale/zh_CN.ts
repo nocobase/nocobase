@@ -42,6 +42,7 @@ export default {
   'System settings': '系统设置',
   'System title': '系统名称',
   Setting: '设置',
+  Settings: '设置',
   Enable: '启用',
   Disable: '禁用',
   On: '启用',
