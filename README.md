@@ -8,7 +8,7 @@ NocoBase is in early stage of development and is subject to frequent changes, pl
 
 ## Recent major updates
 
-- [v0.15: New plugin settings manager - 2023/10/13](https://blog.nocobase.com/posts/release-v015/)
+- [v0.15: New plugin settings manager - 2023/11/13](https://blog.nocobase.com/posts/release-v015/)
 - [v0.14: New plugin manager, supports adding plugins through UI - 2023/09/11](https://blog.nocobase.com/posts/release-v014/)
 - [v0.13: New application status flow - 2023/08/24](https://blog.nocobase.com/posts/release-v013/)
 - [v0.12: New plugin build tool - 2023/08/01](https://blog.nocobase.com/posts/release-v012/)
