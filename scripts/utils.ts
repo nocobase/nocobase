@@ -2,6 +2,7 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 import type { CommonOptions } from 'execa';
 import execa from 'execa';
+import _ from 'lodash';
 import net from 'net';
 import fs from 'node:fs';
 import path from 'path';
@@ -13,11 +14,11 @@ export const commonConfig: any = {
   stdio: 'inherit',
 };
 
-export const runCommand = (command, argv, options = {}) => {
+export const runCommand = (command, argv, options: any = {}) => {
   return execa(command, argv, {
     shell: true,
     stdio: 'inherit',
-    ...options,
+    ..._.omit(options, 'force'),
     env: {
       ...process.env,
     },
@@ -103,7 +104,14 @@ const checkUI = async (duration = 1000, max = 60 * 10) => {
   });
 };
 
-export const runNocoBase = async (options?: CommonOptions<any>) => {
+export const runNocoBase = async (
+  options?: CommonOptions<any> & {
+    /**
+     * 是否强制启动服务
+     */
+    force?: boolean;
+  },
+) => {
   // 用于存放 playwright 自动生成的相关的文件
   if (!fs.existsSync('playwright')) {
     fs.mkdirSync('playwright');
@@ -120,7 +128,7 @@ export const runNocoBase = async (options?: CommonOptions<any>) => {
 
   dotenv.config({ path: path.resolve(process.cwd(), '.env.e2e') });
 
-  if (process.env.APP_BASE_URL) {
+  if (process.env.APP_BASE_URL && !options?.force) {
     console.log('APP_BASE_URL is setting, skip starting server.');
     return { awaitForNocoBase: () => {} };
   }
