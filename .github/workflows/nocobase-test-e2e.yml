@@ -23,6 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
+      verdaccio:
+        image: verdaccio/verdaccio:latest
+        ports:
+          - 4873:4873
       # Label used to access the service container
       postgres:
         # Docker Hub image
@@ -60,11 +64,28 @@ jobs:
         run: yarn build
         env:
           __E2E__: true
+
+      - run: npx npm-cli-adduser --username test --password test -e test@nocobase.com -r http://localhost:4873/
+      - run: |
+          git checkout -b release \
+            && yarn version:alpha -y  \
+            && git config user.email "test@mail.com"  \
+            && git config user.name "test" && git add .  \
+            && git commit -m "chore(versions): test publish packages xxx" \
+            && yarn release:force --registry http://localhost:4873/
+      - run: |
+          yarn config set network-timeout 600000 -g \
+            && yarn create nocobase-app my-nocobase-app -a \
+            && cd my-nocobase-app \
+            && yarn install \
+            && nohup yarn dev
+      - run: cd ../
       - run: npx playwright install --with-deps
       - name: Test with postgres
-        run: yarn test:e2e
+        run: yarn playwright-test
         env:
           __E2E__: true
+          APP_BASE_URL: http://localhost:13000
           LOGGER_LEVEL: error
           DB_DIALECT: postgres
           DB_HOST: postgres

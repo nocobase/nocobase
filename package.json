@@ -28,6 +28,7 @@
     "test:e2e": "tsx ./scripts/runE2e.setup.ts",
     "test:e2e:codegen": "tsx ./scripts/codegen.setup.ts",
     "test:e2e:server": "tsx ./scripts/nocobase.setup.ts",
+    "playwright-test": "tsx ./scripts/playwright-test.ts",
     "tc": "yarn test:client",
     "te": "yarn test:e2e",
     "tec": "yarn test:e2e:codegen",
