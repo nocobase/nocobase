@@ -1,5 +1,6 @@
 import { Plugin } from '@nocobase/client';
-import { LoggerProvider } from './LoggerProvider';
+import { lang } from './locale';
+import { LogsDownloader } from './LogsDownloader';
 
 export class PluginLoggerClient extends Plugin {
   async afterAdd() {
@@ -10,7 +11,11 @@ export class PluginLoggerClient extends Plugin {
 
   // You can get and modify the app instance here
   async load() {
-    this.app.use(LoggerProvider);
+    this.app.pluginSettingsManager.add('logger', {
+      title: lang('Logger'),
+      icon: 'FileTextOutlined',
+      Component: LogsDownloader,
+    });
   }
 }
 
