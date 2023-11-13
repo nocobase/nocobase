@@ -66,15 +66,16 @@ export const GeneralSchemaDesigner = (props: any) => {
     return {
       insertPosition: 'afterEnd',
       wrap: rowCtx?.cols?.length > 1 ? undefined : gridRowColWrap,
-      Component: () => (
+      Component: (props: any) => (
         <PlusOutlined
+          {...props}
           role="button"
           aria-label={getAriaLabel('schema-initializer')}
           style={{ cursor: 'pointer', fontSize: 14 }}
         />
       ),
     };
-  }, [rowCtx?.cols?.length]);
+  }, [getAriaLabel, rowCtx?.cols?.length]);
 
   if (!designable) {
     return null;
