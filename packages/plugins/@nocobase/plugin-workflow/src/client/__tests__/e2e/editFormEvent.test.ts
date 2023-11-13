@@ -10,7 +10,7 @@ test.describe('workflow manage', () => {
     const caseTitle = 'edit from event name';
 
     // 1、前置条件：1.1、已登录,1.2、存在一个工作流
-    await page.goto('/admin/settings/workflow/workflows');
+    await page.goto('/admin/settings/workflow');
     await page.waitForLoadState('networkidle');
     await page.getByLabel('action-Action-Add new-workflows').click();
     const createWorkFlow = new CreateWorkFlow(page);

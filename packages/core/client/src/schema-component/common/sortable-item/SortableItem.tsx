@@ -50,18 +50,18 @@ export const Sortable = (props: any) => {
 
 const useSortableItemProps = (props) => {
   const id = useSortableItemId(props);
+  const schema = useFieldSchema();
   if (props.schema) {
     return { ...props, id };
   }
-  const schema = useFieldSchema();
   return { ...props, id, schema };
 };
 
 const useSortableItemId = (props) => {
+  const field = useField();
   if (props.id) {
     return props.id;
   }
-  const field = useField();
   return field.address.toString();
 };
 

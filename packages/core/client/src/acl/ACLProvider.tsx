@@ -9,6 +9,7 @@ import { useCollection, useCollectionManager } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
+import { useApp } from '../application';
 
 export const ACLContext = createContext<any>({});
 
@@ -35,6 +36,7 @@ export const ACLRolesCheckProvider = (props) => {
   const { setDesignable } = useDesignable();
   const { render } = useAppSpin();
   const api = useAPIClient();
+  const app = useApp();
   const result = useRequest<{
     data: {
       snippets: string[];
@@ -57,6 +59,7 @@ export const ACLRolesCheckProvider = (props) => {
         if (data?.data?.role !== api.auth.role) {
           api.auth.setRole(data?.data?.role);
         }
+        app.pluginSettingsManager.setAclSnippets(data?.data?.snippets || []);
       },
     },
   );

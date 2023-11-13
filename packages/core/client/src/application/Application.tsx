@@ -8,17 +8,21 @@ import React, { ComponentType, FC, ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
-import { APIClient, APIClientProvider } from '../api-client';
-import { i18n } from '../i18n';
-import type { Plugin } from './Plugin';
+
 import { PluginManager, PluginType } from './PluginManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
+import { PluginSettingsManager } from './PluginSettingsManager';
+
+import { APIClient, APIClientProvider } from '../api-client';
+import { i18n } from '../i18n';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
-import type { RequireJS } from './utils/requirejs';
 import { getRequireJs } from './utils/requirejs';
+
+import type { RequireJS } from './utils/requirejs';
+import type { Plugin } from './Plugin';
 
 declare global {
   interface Window {
@@ -50,6 +54,7 @@ export class Application {
   public apiClient: APIClient;
   public components: Record<string, ComponentType> = { ...defaultAppComponents };
   public pm: PluginManager;
+  public pluginSettingsManager: PluginSettingsManager;
   public devDynamicImport: DevDynamicImport;
   public requirejs: RequireJS;
   public notification;
@@ -57,6 +62,9 @@ export class Application {
   maintained = false;
   maintaining = false;
   error = null;
+  get pluginManager() {
+    return this.pm;
+  }
 
   constructor(protected options: ApplicationOptions = {}) {
     this.initRequireJs();
@@ -81,6 +89,8 @@ export class Application {
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
     this.ws = new WebSocketClient(options.ws);
+    this.pluginSettingsManager = new PluginSettingsManager(this);
+    this.addRoutes();
   }
 
   private initRequireJs() {
@@ -99,6 +109,13 @@ export class Application {
       Link,
       Navigate: Navigate as ComponentType,
       NavLink,
+    });
+  }
+
+  private addRoutes() {
+    this.router.add('not-found', {
+      path: '*',
+      Component: this.components['AppNotFound'] || BlankComponent,
     });
   }
 

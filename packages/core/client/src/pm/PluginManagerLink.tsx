@@ -1,13 +1,12 @@
 import { ApiOutlined, SettingOutlined } from '@ant-design/icons';
-import { Button, Dropdown, MenuProps, Tooltip } from 'antd';
-import _ from 'lodash';
-import React, { useContext, useMemo, useState } from 'react';
+import { css } from '@emotion/css';
+import { Button, Card, Popover, Tooltip } from 'antd';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useACLRoleContext } from '../acl/ACLProvider';
+import { useApp } from '../application';
 import { ActionContextProvider, useCompile } from '../schema-component';
 import { useToken } from '../style';
-import { SettingsCenterContext, getPluginsTabs } from './index';
 
 export const PluginManagerLink = () => {
   const { t } = useTranslation();
@@ -27,56 +26,85 @@ export const PluginManagerLink = () => {
   );
 };
 
-const getBookmarkTabs = _.memoize((data) => {
-  const bookmarkTabs = [];
-  data.forEach((plugin) => {
-    const tabs = plugin.tabs;
-    tabs.forEach((tab) => {
-      tab.isBookmark && tab.isAllow && bookmarkTabs.push({ ...tab, path: `${plugin.key}/${tab.key}` });
-    });
-  });
-  return bookmarkTabs;
-});
 export const SettingsCenterDropdown = () => {
-  const { snippets = [] } = useACLRoleContext();
   const [visible, setVisible] = useState(false);
-  const { t } = useTranslation();
   const compile = useCompile();
-  const navigate = useNavigate();
-  const itemData = useContext(SettingsCenterContext);
+  const { t } = useTranslation();
   const { token } = useToken();
-  const pluginsTabs = getPluginsTabs(itemData, snippets);
-  const bookmarkTabs = getBookmarkTabs(pluginsTabs);
-  const menu = useMemo<MenuProps>(() => {
-    return {
-      items: [
-        ...bookmarkTabs.map((tab) => ({
-          role: 'button',
-          key: `/admin/settings/${tab.path}`,
-          label: compile(tab.title),
-        })),
-        { type: 'divider' },
-        {
-          role: 'button',
-          key: '/admin/settings',
-          label: t('All plugin settings'),
-        },
-      ],
-      onClick({ key }) {
-        navigate(key);
-      },
-    };
-  }, [bookmarkTabs]);
+  const navigate = useNavigate();
+  const app = useApp();
+  const settings = app.pluginSettingsManager.getList();
+  const [open, setOpen] = useState(false);
 
   return (
     <ActionContextProvider value={{ visible, setVisible }}>
-      <Dropdown placement="bottom" menu={menu}>
+      <Popover
+        open={open}
+        onOpenChange={(open) => {
+          setOpen(open);
+        }}
+        arrow={false}
+        content={
+          <div style={{ maxWidth: '21rem' }}>
+            <Card
+              bordered={false}
+              className={css`
+                box-shadow: none;
+              `}
+              style={{ boxShadow: 'none' }}
+            >
+              {settings.map((setting) => (
+                <Card.Grid
+                  className={css`
+                    cursor: pointer;
+                    padding: 0 !important;
+                    box-shadow: none !important;
+                    &:hover {
+                      border-radius: ${token.borderRadius}px;
+                      background: rgba(0, 0, 0, 0.045);
+                    }
+                  `}
+                  key={setting.pluginName}
+                >
+                  <a
+                    role="button"
+                    aria-label={setting.name}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setOpen(false);
+                      navigate(setting.path);
+                    }}
+                    title={compile(setting.title)}
+                    style={{ display: 'block', color: 'inherit', padding: token.marginSM }}
+                    href={setting.path}
+                  >
+                    <div style={{ fontSize: '1.2rem', textAlign: 'center', marginBottom: '0.3rem' }}>
+                      {setting.icon || <SettingOutlined />}
+                    </div>
+                    <div
+                      style={{
+                        textAlign: 'center',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        fontSize: token.fontSizeSM,
+                      }}
+                    >
+                      {compile(setting.title)}
+                    </div>
+                  </a>
+                </Card.Grid>
+              ))}
+            </Card>
+          </div>
+        }
+      >
         <Button
-          data-testid="settings-center-button"
+          data-testid="plugin-settings-button"
           icon={<SettingOutlined style={{ color: token.colorTextHeaderMenu }} />}
           // title={t('All plugin settings')}
         />
-      </Dropdown>
+      </Popover>
     </ActionContextProvider>
   );
 };
