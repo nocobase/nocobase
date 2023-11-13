@@ -7,7 +7,7 @@ export default {
     dataType: 'business',
   },
   name: 'apiKeys',
-  title: '{{t("API keys")}}',
+  title: '{{t("API keys", {"ns": "api-keys"})}}',
   sortable: 'sort',
   model: 'ApiKeyModel',
   createdBy: true,

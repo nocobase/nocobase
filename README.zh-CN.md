@@ -8,11 +8,11 @@ NocoBase 正处在早期开发阶段，可能变动频繁，请谨慎用于生�
 
 ## 最近重要更新
 
-- [v0.14：全新的插件管理器，支持通过界面添加插件 - 2023/09/11](https://docs-cn.nocobase.com/welcome/release/v14-changelog)
-- [v0.13: 全新的应用状态流转 - 2023/08/24](https://docs-cn.nocobase.com/welcome/release/v13-changelog)
-- [v0.12: 全新的插件构建工具 - 2023/08/01](https://docs-cn.nocobase.com/welcome/release/v12-changelog)
-- [v0.11: 全新的客户端 Application、Plugin 和 Router - 2023/07/08](https://docs-cn.nocobase.com/welcome/release/v11-changelog)
-- [v0.10: Update instructions - 2023/06/23](https://docs-cn.nocobase.com/welcome/release/v10-changelog)
+- [v0.15：全新的插件设置中心 - 2023/11/13](https://blog-cn.nocobase.com/posts/release-v015/)
+- [v0.14：全新的插件管理器，支持通过界面添加插件 - 2023/09/11](https://blog-cn.nocobase.com/posts/release-v014/)
+- [v0.13: 全新的应用状态流转 - 2023/08/24](https://blog-cn.nocobase.com/posts/release-v013/)
+- [v0.12: 全新的插件构建工具 - 2023/08/01](https://blog-cn.nocobase.com/posts/release-v012/)
+- [v0.11: 全新的客户端 Application、Plugin 和 Router - 2023/07/08](https://blog-cn.nocobase.com/posts/release-v011/)
 
 ## NocoBase 是什么
 

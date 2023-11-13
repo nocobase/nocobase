@@ -1,11 +1,11 @@
-import { i18n, Plugin, PluginManagerContext, SettingsCenterProvider } from '@nocobase/client';
+import { i18n, Plugin, PluginManagerContext } from '@nocobase/client';
 import { Select } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const ns = '@nocobase/plugin-sample-shop-i18n';
+const NAMESPACE = 'sample-shop-i18n';
 
-i18n.addResources('zh-CN', ns, {
+i18n.addResources('zh-CN', NAMESPACE, {
   Shop: '店铺',
   I18n: '国际化',
   Pending: '已下单',
@@ -23,7 +23,7 @@ const ORDER_STATUS_LIST = [
 ];
 
 function OrderStatusSelect() {
-  const { t } = useTranslation(ns);
+  const { t } = useTranslation(NAMESPACE);
 
   return (
     <Select style={{ minWidth: '8em' }}>
@@ -40,36 +40,26 @@ const ShopI18nProvider = React.memo((props) => {
   const ctx = useContext(PluginManagerContext);
 
   return (
-    <SettingsCenterProvider
-      settings={{
-        workflow: {
-          icon: 'ShopOutlined',
-          title: `{{t("Shop", { ns: "${ns}" })}}`,
-          tabs: {
-            workflows: {
-              title: `{{t("I18n", { ns: "${ns}" })}}`,
-              component: OrderStatusSelect,
-            },
-          },
+    <PluginManagerContext.Provider
+      value={{
+        components: {
+          ...ctx?.components,
         },
       }}
     >
-      <PluginManagerContext.Provider
-        value={{
-          components: {
-            ...ctx?.components,
-          },
-        }}
-      >
-        {props.children}
-      </PluginManagerContext.Provider>
-    </SettingsCenterProvider>
+      {props.children}
+    </PluginManagerContext.Provider>
   );
 });
 
 class ShopI18nPlugin extends Plugin {
   async load() {
     this.app.addProvider(ShopI18nProvider);
+    this.app.pluginSettingsManager.add(NAMESPACE, {
+      title: `{{t("Shop", { ns: "${NAMESPACE}" })}}`,
+      icon: 'ShopOutlined',
+      Component: OrderStatusSelect,
+    });
   }
 }
 

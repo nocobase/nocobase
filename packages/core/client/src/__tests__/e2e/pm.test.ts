@@ -1,6 +1,7 @@
 import { expect, test } from '@nocobase/test/client';
 
 async function waitForModalToBeHidden(page) {
+  test.slow();
   await page.waitForFunction(() => {
     const modal = document.querySelector('.ant-modal');
     if (modal) {
@@ -57,11 +58,12 @@ test.describe('remove plugin', () => {
     await page.getByPlaceholder('Search plugin').fill('Hello');
     await expect(page.getByLabel('Hello')).toBeVisible();
     const isActive = await page.getByLabel('Hello').getByLabel('enable').isChecked();
-    await expect(isActive).toBe(false);
+    expect(isActive).toBe(false);
     //将hello插件remove
     await page.getByLabel('Hello').getByText('Remove').click();
     await page.getByRole('button', { name: 'Yes' }).click();
     //等待页面刷新结束
+    await waitForModalToBeHidden(page);
     await page.waitForLoadState('load');
     await page.getByPlaceholder('Search plugin').fill('hello');
     await expect(page.getByLabel('Hello')).not.toBeVisible();
@@ -102,7 +104,7 @@ test.describe('enable & disabled plugin', () => {
     await expect(page.getByLabel('Hello')).toBeVisible();
     const isActive = await page.getByLabel('Hello').getByLabel('enable').isChecked();
     expect(isActive).toBe(false);
-    //激活插件
+    // 激活插件
     await page.getByLabel('Hello').getByLabel('enable').click();
     await page.waitForTimeout(1000); // 等待1秒钟
     //等待弹窗消失和页面刷新结束

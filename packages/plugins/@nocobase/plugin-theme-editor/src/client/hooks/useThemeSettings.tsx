@@ -1,6 +1,6 @@
-import { useAPIClient, useCurrentUserContext, useSystemSettings } from '@nocobase/client';
+import { SelectWithTitle, useAPIClient, useCurrentUserContext, useSystemSettings } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
-import { MenuProps, Select } from 'antd';
+import { MenuProps } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useCurrentThemeId } from '../components/InitializeTheme';
 import { useThemeListContext } from '../components/ThemeListProvider';
@@ -77,24 +77,13 @@ function Label() {
   }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+    <SelectWithTitle
+      title={t('Theme')}
+      options={options}
+      defaultValue={currentThemeId}
+      onChange={(value) => {
+        updateUserThemeSettings(value);
       }}
-    >
-      {t('Theme')}
-      <Select
-        style={{ minWidth: 100 }}
-        bordered={false}
-        popupMatchSelectWidth={false}
-        value={currentThemeId}
-        options={options}
-        onChange={(value) => {
-          updateUserThemeSettings(value);
-        }}
-      />
-    </div>
+    />
   );
 }

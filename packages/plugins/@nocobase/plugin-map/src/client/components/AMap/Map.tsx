@@ -1,8 +1,8 @@
 import AMapLoader from '@amap/amap-jsapi-loader';
 import '@amap/amap-jsapi-types';
 import { SyncOutlined } from '@ant-design/icons';
-import { useField, useFieldSchema } from '@formily/react';
-import { css, useCollection } from '@nocobase/client';
+import { useFieldSchema } from '@formily/react';
+import { css, useApp, useCollection } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Button, Spin } from 'antd';
 import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
@@ -373,11 +373,13 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     errMessage,
   }));
 
+  const app = useApp();
+
   if (!accessKey || errMessage) {
     return (
       <Alert
         action={
-          <Button type="primary" onClick={() => navigate('/admin/settings/map/configuration')}>
+          <Button type="primary" onClick={() => navigate(app.pluginSettingsManager.getRoutePath('map'))}>
             {t('Go to the configuration page')}
           </Button>
         }

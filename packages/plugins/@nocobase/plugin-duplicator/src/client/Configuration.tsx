@@ -262,6 +262,7 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
       },
     });
     setIsModalOpen(false);
+    setBackupData(['meta'])
     setTimeout(() => {
       refresh();
     }, 500);
@@ -269,6 +270,7 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
 
   const handleCancel = () => {
     setIsModalOpen(false);
+    setBackupData(['meta'])
   };
 
   return (

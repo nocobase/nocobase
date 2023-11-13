@@ -4,6 +4,7 @@ import {
   ResourceActionProvider,
   SchemaComponent,
   cx,
+  useApp,
   useDocumentTitle,
   useResourceActionContext,
   useResourceContext,
@@ -21,6 +22,7 @@ import { lang } from './locale';
 import { executionSchema } from './schemas/executions';
 import useStyles from './style';
 import { linkNodes } from './utils';
+import { getWorkflowDetailPath } from './constant';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -44,6 +46,7 @@ function ExecutionResourceProvider({ request, filter = {}, ...others }) {
 export function WorkflowCanvas() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const app = useApp();
   const { data, refresh, loading } = useResourceActionContext();
   const { resource } = useResourceContext();
   const { setTitle } = useDocumentTitle();
@@ -67,7 +70,7 @@ export function WorkflowCanvas() {
 
   function onSwitchVersion({ key }) {
     if (key != workflow.id) {
-      navigate(`/admin/settings/workflow/workflows/${key}`);
+      navigate(getWorkflowDetailPath(key));
     }
   }
 
@@ -92,7 +95,7 @@ export function WorkflowCanvas() {
     });
     message.success(t('Operation succeeded'));
 
-    navigate(`/admin/settings/workflow/workflows/${revision.id}`);
+    navigate(`/admin/workflow/workflows/${revision.id}`);
   }
 
   async function onDelete() {
@@ -110,8 +113,8 @@ export function WorkflowCanvas() {
 
         navigate(
           workflow.current
-            ? '/admin/settings/workflow/workflows'
-            : `/admin/settings/workflow/workflows/${revisions.find((item) => item.current)?.id}`,
+            ? app.pluginSettingsManager.getRoutePath('workflow')
+            : getWorkflowDetailPath(revisions.find((item) => item.current)?.id),
         );
       },
     });
@@ -147,7 +150,7 @@ export function WorkflowCanvas() {
         <header>
           <Breadcrumb
             items={[
-              { title: <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link> },
+              { title: <Link to={app.pluginSettingsManager.getRoutePath('workflow')}>{lang('Workflow')}</Link> },
               { title: <strong>{workflow.title}</strong> },
             ]}
           />
