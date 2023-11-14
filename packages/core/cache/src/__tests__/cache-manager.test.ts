@@ -13,7 +13,7 @@ describe('cache-manager', () => {
   });
 
   it('create with default config', async () => {
-    await cacheManager.registerStore({ name: 'memory', store: 'memory' });
+    cacheManager.registerStore({ name: 'memory', store: 'memory' });
     const cache = await cacheManager.createCache({ name: 'test', store: 'memory' });
     expect(cache).toBeDefined();
     expect(cache.name).toBe('test');
@@ -21,7 +21,7 @@ describe('cache-manager', () => {
   });
 
   it('create with custom config', async () => {
-    await cacheManager.registerStore({ name: 'memory', store: 'memory' });
+    cacheManager.registerStore({ name: 'memory', store: 'memory' });
     const cache = (await cacheManager.createCache({ name: 'test', store: 'memory', ttl: 100 })) as Cache;
     expect(cache).toBeDefined();
     expect(cache.name).toBe('test');

@@ -7,7 +7,7 @@ describe('cache', () => {
 
   beforeEach(async () => {
     const cacheManager = new CacheManager();
-    await cacheManager.registerStore({ name: 'memory', store: 'memory' });
+    cacheManager.registerStore({ name: 'memory', store: 'memory' });
     cache = await cacheManager.createCache({ name: 'test', store: 'memory' });
   });
 

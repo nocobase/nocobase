@@ -1,7 +1,7 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
-import { AppCacheOptions, Cache, CacheManager } from '@nocobase/cache';
+import { AppCacheManagerOptions, Cache, CacheManager } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
@@ -37,7 +37,7 @@ export interface ResourcerOptions {
 
 export interface ApplicationOptions {
   database?: IDatabaseOptions | Database;
-  cache?: AppCacheOptions;
+  cacheManager?: AppCacheManagerOptions;
   resourcer?: ResourcerOptions;
   bodyParser?: any;
   cors?: any;
@@ -330,7 +330,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       }
     }
 
-    this._cacheManager = await createCacheManager(this, this.options.cache);
+    this._cacheManager = await createCacheManager(this, this.options.cacheManager);
 
     this.setMaintainingMessage('init plugins');
     await this.pm.initPlugins();

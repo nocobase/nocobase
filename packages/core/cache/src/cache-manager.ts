@@ -7,13 +7,6 @@ type StoreType = {
   globalConfig?: any;
 };
 
-export type AppCacheOptions = {
-  defaultStore?: string;
-  stores: {
-    [name: string]: StoreType;
-  };
-};
-
 export class CacheManager {
   defaultStore: string;
   private stores = new Map<string, BasicCache>();
@@ -25,7 +18,7 @@ export class CacheManager {
     this.defaultStore = defaultStore;
   }
 
-  private async createStore(options: { name: string; storeType: string }) {
+  private async createStore(options: { name: string; storeType: string; [key: string]: any }) {
     const { name, storeType: type, ...config } = options;
     const storeType = this.storeTypes.get(type) as any;
     if (!storeType) {
@@ -37,16 +30,13 @@ export class CacheManager {
     return store;
   }
 
-  async registerStore(options: { name: string; store: 'memory' | FactoryStore<Store, any> }) {
+  registerStore(options: { name: string; store: 'memory' | FactoryStore<Store, any>; [key: string]: any }) {
     const { name, store, ...globalConfig } = options;
     this.storeTypes.set(name, { store, globalConfig });
-    // create default store for the store type
-    return await this.createStore({ name, storeType: name });
   }
 
-  private async newCache(options: { name: string; prefix?: string; store: string }) {
-    const { name, prefix, store: s, ...config } = options;
-    const store = await this.createStore({ name, storeType: s, ...config });
+  private newCache(options: { name: string; prefix?: string; store: BasicCache }) {
+    const { name, prefix, store } = options;
     const cache = new Cache({ name, prefix, store });
     this.caches.set(name, cache);
     return cache;
@@ -55,15 +45,15 @@ export class CacheManager {
   async createCache(options: { name: string; prefix?: string; store?: string; [key: string]: any }) {
     const { name, prefix, store = this.defaultStore, ...config } = options;
     if (!lodash.isEmpty(config)) {
-      return await this.newCache({ name, prefix, store, ...config });
+      const newStore = await this.createStore({ name, storeType: store, ...config });
+      return this.newCache({ name, prefix, store: newStore });
     }
     const s = this.stores.get(store);
     if (!s) {
-      return await this.newCache({ name, prefix, store });
+      const defaultStore = await this.createStore({ name: store, storeType: store });
+      return this.newCache({ name, prefix, store: defaultStore });
     }
-    const cache = new Cache({ name, prefix, store: s });
-    this.caches.set(name, cache);
-    return cache;
+    return this.newCache({ name, prefix, store: s });
   }
 
   getCache(name: string): Cache {
