@@ -14,6 +14,10 @@ interface Deps {
 export const transformVariableValue = (value: any, deps: Deps) => {
   const { targetCollectionField } = deps;
 
+  if (value == null) {
+    return value;
+  }
+
   if (!targetCollectionField) {
     return value;
   }
