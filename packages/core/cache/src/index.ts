@@ -17,7 +17,7 @@ export type AppCacheManagerOptions = Partial<{
   };
 }>;
 
-export const newAppCacheManager = (options: AppCacheManagerOptions) => {
+export const newAppCacheManager = (options?: AppCacheManagerOptions) => {
   const defaultOptions: AppCacheManagerOptions = {
     defaultStore: 'memory',
     stores: {
@@ -31,7 +31,7 @@ export const newAppCacheManager = (options: AppCacheManagerOptions) => {
       },
     },
   };
-  const cacheOptions = deepmerge(defaultOptions, options);
+  const cacheOptions = deepmerge(defaultOptions, options || {});
   const { defaultStore, stores } = cacheOptions;
   const cacheManager = new CacheManager({ defaultStore });
   for (const [name, store] of Object.entries(stores)) {
