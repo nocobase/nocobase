@@ -27,7 +27,9 @@ export class DataVisualizationPlugin extends Plugin {
       },
     });
 
-    this.cache = await this.app.cacheManager.create('data-visualization', 'memory', {
+    this.cache = await this.app.cacheManager.createCache({
+      name: 'data-visualization',
+      store: 'memory',
       ttl: 30 * 1000, // millseconds
       max: 1000,
     });

@@ -1,3 +1,4 @@
+import { Cache } from '../cache';
 import { CacheManager } from '../cache-manager';
 
 describe('cache-manager', () => {
@@ -11,25 +12,19 @@ describe('cache-manager', () => {
     cacheManager = null;
   });
 
-  it('register', async () => {
-    await cacheManager.register('memory', 'memory');
-    expect(cacheManager.stores.has('memory')).toBeTruthy();
-    expect(cacheManager.caches.has('memory')).toBeTruthy();
-  });
-
   it('create with default config', async () => {
-    await cacheManager.register('memory', 'memory');
-    const cache = cacheManager.create('test');
+    await cacheManager.registerStore({ name: 'memory', store: 'memory' });
+    const cache = cacheManager.createCache({ name: 'test', store: 'memory' }) as Cache;
     expect(cache).toBeDefined();
-    expect(cache.namespace).toBe('test');
+    expect(cache.name).toBe('test');
     expect(cacheManager.caches.has('test')).toBeTruthy();
   });
 
   it('create with custom config', async () => {
-    await cacheManager.register('memory', 'memory');
-    const cache = await cacheManager.create('test', 'memory', { ttl: 100 });
+    await cacheManager.registerStore({ name: 'memory', store: 'memory' });
+    const cache = (await cacheManager.createCache({ name: 'test', store: 'memory', ttl: 100 })) as Cache;
     expect(cache).toBeDefined();
-    expect(cache.namespace).toBe('test');
+    expect(cache.name).toBe('test');
     expect(cacheManager.caches.has('test')).toBeTruthy();
   });
 });

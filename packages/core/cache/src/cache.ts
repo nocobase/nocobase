@@ -1,32 +1,38 @@
-import { Cache as CacheType, Milliseconds } from 'cache-manager';
+import { Cache as BasicCache, Milliseconds } from 'cache-manager';
 
 export class Cache {
-  namespace: string;
-  cache: CacheType;
+  name: string;
+  prefix?: string;
+  store: BasicCache;
 
-  constructor({ namespace, cache }: { namespace: string; cache: CacheType }) {
-    this.namespace = namespace;
-    this.cache = cache;
+  constructor({ name, prefix, store }: { name: string; store: BasicCache; prefix?: string }) {
+    this.name = name;
+    this.prefix = prefix;
+    this.store = store;
+  }
+
+  key(key: string): string {
+    return this.prefix ? `${this.prefix}:${key}` : key;
   }
 
   async set(key: string, value: unknown, ttl?: Milliseconds): Promise<void> {
-    await this.cache.set(`${this.namespace}:${key}`, value, ttl);
+    await this.store.set(this.key(key), value, ttl);
   }
 
   async get<T>(key: string): Promise<T> {
-    return await this.cache.get(`${this.namespace}:${key}`);
+    return await this.store.get(this.key(key));
   }
 
   async del(key: string): Promise<void> {
-    await this.cache.del(`${this.namespace}:${key}`);
+    await this.store.del(this.key(key));
   }
 
   async reset(): Promise<void> {
-    await this.cache.reset();
+    await this.store.reset();
   }
 
   async wrap<T>(key: string, fn: () => Promise<T>, ttl?: Milliseconds): Promise<T> {
-    return await this.cache.wrap(`${this.namespace}:${key}`, fn, ttl);
+    return await this.store.wrap(this.key(key), fn, ttl);
   }
 
   async wrapWithCondition<T>(
@@ -56,29 +62,29 @@ export class Cache {
   }
 
   async mset(args: [string, unknown][], ttl?: Milliseconds): Promise<void> {
-    await this.cache.store.mset(
-      args.map(([key, value]) => [`${this.namespace}:${key}`, value]),
+    await this.store.store.mset(
+      args.map(([key, value]) => [this.key(key), value]),
       ttl,
     );
   }
 
   async mget(...args: string[]): Promise<unknown[]> {
-    args = args.map((key) => `${this.namespace}:${key}`);
-    return await this.cache.store.mget(...args);
+    args = args.map((key) => this.key(key));
+    return await this.store.store.mget(...args);
   }
 
   async mdel(...args: string[]): Promise<void> {
-    args = args.map((key) => `${this.namespace}:${key}`);
-    await this.cache.store.mdel(...args);
+    args = args.map((key) => this.key(key));
+    await this.store.store.mdel(...args);
   }
 
   async keys(pattern?: string): Promise<string[]> {
-    const keys = await this.cache.store.keys(pattern);
-    return keys.map((key) => key.replace(`${this.namespace}:`, ''));
+    const keys = await this.store.store.keys(pattern);
+    return keys.map((key) => key.replace(`${this.name}:`, ''));
   }
 
   async ttl(key: string): Promise<number> {
-    return await this.cache.store.ttl(`${this.namespace}:${key}`);
+    return await this.store.store.ttl(this.key(key));
   }
 
   async setValueInObject(key: string, objectKey: string, value: unknown) {

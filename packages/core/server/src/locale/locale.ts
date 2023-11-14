@@ -21,7 +21,11 @@ export class Locale {
   }
 
   async load() {
-    this.cache = this.app.cacheManager.create('locale');
+    this.cache = await this.app.cacheManager.createCache({
+      name: 'locale',
+      prefix: 'locale',
+      store: 'memory',
+    });
 
     await this.get(this.defaultLang);
   }

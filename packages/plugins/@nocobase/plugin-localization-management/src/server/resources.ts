@@ -1,13 +1,12 @@
 import { Cache } from '@nocobase/cache';
 import { Database } from '@nocobase/database';
-import { Application } from '@nocobase/server';
 
 export default class Resources {
   cache: Cache;
   db: Database;
 
-  constructor(app: Application, db: Database) {
-    this.cache = app.cacheManager.create('localization');
+  constructor(db: Database, cache: Cache) {
+    this.cache = cache;
     this.db = db;
   }
 

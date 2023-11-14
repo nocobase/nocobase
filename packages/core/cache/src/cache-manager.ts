@@ -1,73 +1,74 @@
-import { Config, FactoryStore, MemoryConfig, Store, caching } from 'cache-manager';
+import { FactoryStore, Store, caching, Cache as BasicCache } from 'cache-manager';
 import { Cache } from './cache';
-import { redisStore } from 'cache-manager-redis-yet';
-import { RedisClientOptions } from 'redis';
 import lodash from 'lodash';
 
+type StoreType = {
+  store: 'memory' | FactoryStore<Store, any>;
+  globalConfig?: any;
+};
+
 export type AppCacheOptions = {
-  default?: 'memory' | 'redis';
-  memory?: MemoryConfig;
-  redis?: RedisClientOptions & Config;
+  defaultStoreType?: string;
+  storesTypes: {
+    [name: string]: StoreType;
+  };
 };
 
 export class CacheManager {
-  default = 'memory';
-  stores = new Map<string, 'memory' | FactoryStore<Store, any>>();
+  defaultStoreType: string;
+  private stores = new Map<string, BasicCache>();
+  storeTypes = new Map<string, StoreType>();
   caches = new Map<string, Cache>();
 
-  async init(options?: AppCacheOptions) {
-    const { default: defaultCache, memory, redis } = options || {};
-    this.default = defaultCache || 'memory';
-    await this.register('memory', 'memory', memory);
-    if (redis) {
-      await this.register('redis', redisStore, redis);
+  constructor(options?: { defaultStoreType: string }) {
+    const { defaultStoreType = 'memory' } = options || {};
+    this.defaultStoreType = defaultStoreType;
+  }
+
+  private async createStore(options: { name: string; storeType: string }) {
+    const { name, storeType, ...config } = options;
+    const { store: s, globalConfig } = this.storeTypes.get(storeType) as any;
+    if (!s) {
+      throw new Error(`Create cache failed, store type [${storeType}] is unavailable or not registered`);
     }
-  }
-
-  // Create a new cache with the name of store factory and custom config
-  private async createWithOptions(
-    namespace: string,
-    store: 'memory' | FactoryStore<Store, any>,
-    options: any,
-  ): Promise<Cache> {
-    const space = await caching(store as any, options);
-    const cache = new Cache({ namespace, cache: space });
-    this.caches.set(namespace, cache);
-    return cache;
-  }
-
-  // Register a new store factory and create a default cache
-  async register(name: string, store: 'memory' | FactoryStore<Store, any>, defaultConfig?: any) {
+    const store = await caching(s, { ...globalConfig, ...config });
     this.stores.set(name, store);
-    await this.createWithOptions(name, store, defaultConfig);
     return store;
   }
 
-  create(namespace: string, storeName?: string): Cache;
-  create(namespace: string, storeName?: string, options?: any): Promise<Cache>;
-  create(namespace: string, storeName?: string, options?: any): Cache | Promise<Cache> {
-    storeName = storeName || this.default;
-    const store = this.stores.get(storeName) as any;
-    if (!store) {
-      throw new Error(`Create cache failed, store ${storeName} is unavailable or not registered`);
-    }
-    if (lodash.isEmpty(options)) {
-      // Use the default cache if the options is empty
-      const cache = this.caches.get(storeName);
-      if (!cache) {
-        throw new Error(`Create cache failed, default cache ${storeName} is not found`);
-      }
-      const space = new Cache({ namespace, cache: cache.cache });
-      this.caches.set(namespace, space);
-      return space;
-    }
-    return this.createWithOptions(namespace, store, options);
+  async registerStore(options: { name: string; store: 'memory' | FactoryStore<Store, any> }) {
+    const { name, store, ...globalConfig } = options;
+    this.storeTypes.set(name, { store, globalConfig });
+    // create default store for the store type
+    return await this.createStore({ name, storeType: name });
   }
 
-  get(namespace: string): Cache {
-    const cache = this.caches.get(namespace);
+  private async newCache(options: { name: string; prefix?: string; store: string }) {
+    const { name, prefix, store: s, ...config } = options;
+    const store = await this.createStore({ name, storeType: s, ...config });
+    const cache = new Cache({ name, prefix, store });
+    this.caches.set(name, cache);
+    return cache;
+  }
+
+  createCache(options: { name: string; prefix?: string; store?: string; [key: string]: any }): Cache | Promise<Cache> {
+    const { name, prefix, store = this.defaultStoreType, ...config } = options;
+    if (!lodash.isEmpty(config)) {
+      return this.newCache({ name, prefix, store, ...config });
+    }
+    const s = this.stores.get(store);
+    if (!s) {
+      return this.newCache({ name, prefix, store });
+    }
+    const cache = new Cache({ name, prefix, store: s });
+    this.caches.set(name, cache);
+    return cache;
+  }
+
+  getCache(name: string): Cache {
+    const cache = this.caches.get(name);
     if (!cache) {
-      throw new Error(`Get cache failed, ${namespace} is not found`);
+      throw new Error(`Get cache failed, ${name} is not found`);
     }
     return cache;
   }
