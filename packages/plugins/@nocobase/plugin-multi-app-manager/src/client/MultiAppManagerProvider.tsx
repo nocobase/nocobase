@@ -1,14 +1,7 @@
-import {
-  Icon,
-  PinnedPluginListProvider,
-  SchemaComponentOptions,
-  SettingsCenterProvider,
-  useRequest,
-} from '@nocobase/client';
+import { Icon, PinnedPluginListProvider, SchemaComponentOptions, useApp, useRequest } from '@nocobase/client';
 import { Button, Dropdown } from 'antd';
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { AppManager } from './AppManager';
 import { AppNameInput } from './AppNameInput';
 import { usePluginUtils } from './utils';
 
@@ -25,6 +18,7 @@ const MultiAppManager = () => {
     },
   );
   const { t } = usePluginUtils();
+  const app = useApp();
   const items = [
     ...(data?.data || []).map((app) => {
       let link = `/apps/${app.name}/admin/`;
@@ -42,7 +36,7 @@ const MultiAppManager = () => {
     }),
     {
       key: '.manager',
-      label: <Link to="/admin/settings/multi-app-manager/applications">{t('Manage applications')}</Link>,
+      label: <Link to={app.pluginSettingsManager.getRoutePath('multi-app-manager')}>{t('Manage applications')}</Link>,
     },
   ];
   return (
@@ -58,35 +52,13 @@ const MultiAppManager = () => {
 };
 
 export const MultiAppManagerProvider = (props) => {
-  const { t } = usePluginUtils();
   return (
     <PinnedPluginListProvider
       items={{
         am: { order: 201, component: 'MultiAppManager', pin: true },
       }}
     >
-      <SchemaComponentOptions components={{ MultiAppManager, AppNameInput }}>
-        <SettingsCenterProvider
-          settings={{
-            'multi-app-manager': {
-              title: t('Multi-app manager'),
-              icon: 'AppstoreOutlined',
-              tabs: {
-                applications: {
-                  title: t('Applications'),
-                  component: () => <AppManager />,
-                },
-                // settings: {
-                //   title: 'Settings',
-                //   component: () => <Settings />,
-                // },
-              },
-            },
-          }}
-        >
-          {props.children}
-        </SettingsCenterProvider>
-      </SchemaComponentOptions>
+      <SchemaComponentOptions components={{ MultiAppManager, AppNameInput }}>{props.children}</SchemaComponentOptions>
     </PinnedPluginListProvider>
   );
 };

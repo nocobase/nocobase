@@ -24,8 +24,8 @@ export const ColorSelect = connect(
     const compile = useCompile();
     return (
       <Select {...props}>
-        {Object.keys(colors).map((color, index) => (
-          <Select.Option key={index} value={color}>
+        {Object.keys(colors).map((color) => (
+          <Select.Option key={color} value={color}>
             <Tag color={color}>{compile(colors[color] || colors.default)}</Tag>
           </Select.Option>
         ))}

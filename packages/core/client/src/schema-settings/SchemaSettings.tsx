@@ -62,6 +62,7 @@ import {
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
   useRecord,
+  useSchemaSettingsItem,
   useSortFields,
 } from '..';
 import { BlockRequestContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
@@ -99,7 +100,7 @@ import { Option } from './VariableInput/type';
 import { formatVariableScop } from './VariableInput/utils/formatVariableScop';
 import { DataScopeProps } from './types';
 
-interface SchemaSettingsProps {
+export interface SchemaSettingsProps {
   title?: any;
   dn?: Designable;
   field?: GeneralField;
@@ -107,7 +108,7 @@ interface SchemaSettingsProps {
   children?: ReactNode;
 }
 
-interface SchemaSettingsContextProps {
+interface SchemaSettingsContextProps<T = any> {
   dn?: Designable;
   field?: GeneralField;
   fieldSchema?: Schema;
@@ -115,21 +116,36 @@ interface SchemaSettingsContextProps {
   visible?: any;
   template?: any;
   collectionName?: any;
+  designer?: T;
 }
 
 const SchemaSettingsContext = createContext<SchemaSettingsContextProps>(null);
 
-export const useSchemaSettings = () => {
-  return useContext(SchemaSettingsContext);
-};
+export function useSchemaSettings<T = any>() {
+  return useContext(SchemaSettingsContext) as SchemaSettingsContextProps<T>;
+}
 
-interface RemoveProps {
+export interface SchemaSettingsRemoveProps {
   confirm?: any;
   removeParentsIfNoChildren?: boolean;
   breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
 }
 
-interface ModalItemProps {
+export interface SchemaSettingsItemProps extends Omit<MenuItemProps, 'title'> {
+  title: string;
+}
+
+export type SchemaSettingsPopupProps = MenuItemProps;
+export interface SchemaSettingsSwitchItemProps extends Omit<MenuItemProps, 'onChange'> {
+  title: string;
+  checked?: boolean;
+  onChange?: (v: boolean) => void;
+}
+export type SchemaSettingsCascaderItemProps = CascaderProps<any> & Omit<MenuItemProps, 'title'> & { title: any };
+
+export type SchemaSettingsDataScopeProps = DataScopeProps;
+
+export interface SchemaSettingsModalItemProps {
   title: string;
   onSubmit: (values: any) => void;
   initialValues?: any;
@@ -146,15 +162,33 @@ interface ModalItemProps {
   hide?: boolean;
 }
 
+export interface SchemaSettingsActionModalItemProps
+  extends SchemaSettingsModalItemProps,
+    Omit<SchemaSettingsItemProps, 'onSubmit' | 'onClick'> {
+  uid?: string;
+  initialSchema?: ISchema;
+  schema?: ISchema;
+  beforeOpen?: () => void;
+  maskClosable?: boolean;
+}
+
+export interface SchemaSettingsSelectItemProps
+  extends Omit<SchemaSettingsItemProps, 'onChange' | 'onClick'>,
+    Omit<SelectWithTitleProps, 'title' | 'defaultValue'> {
+  value?: SelectWithTitleProps['defaultValue'];
+}
+
 type SchemaSettingsNested = {
-  Remove?: React.FC<RemoveProps>;
-  Item?: React.FC<MenuItemProps & { name?: string }>;
+  Remove?: React.FC<SchemaSettingsRemoveProps>;
+  Item?: React.FC<SchemaSettingsItemProps>;
   Divider?: React.FC;
-  Popup?: React.FC<MenuItemProps & { schema?: ISchema }>;
-  SwitchItem?: React.FC<SwitchItemProps & { name?: string }>;
-  CascaderItem?: React.FC<CascaderProps<any> & Omit<MenuItemProps, 'title'> & { title: any }>;
-  DataScope?: React.FC<DataScopeProps>;
-  ModalItem: React.FC<ModalItemProps>;
+  Popup?: React.FC<SchemaSettingsPopupProps>;
+  SwitchItem?: React.FC<SchemaSettingsSwitchItemProps>;
+  CascaderItem?: React.FC<SchemaSettingsCascaderItemProps>;
+  DataScope?: React.FC<SchemaSettingsDataScopeProps>;
+  ModalItem: React.FC<SchemaSettingsModalItemProps>;
+  SelectItem: React.FC<SchemaSettingsSelectItemProps>;
+  ActionModalItem: React.FC<SchemaSettingsActionModalItemProps>;
   [key: string]: any;
 };
 
@@ -166,6 +200,7 @@ interface SchemaSettingsProviderProps {
   visible?: any;
   template?: any;
   collectionName?: any;
+  designer?: any;
 }
 
 export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (props) => {
@@ -184,7 +219,7 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   const { title, dn, ...others } = props;
   const [visible, setVisible] = useState(false);
   const { Component, getMenuItems } = useMenuItem();
-  const [isPending, startTransition] = useReactTransition();
+  const [, startTransition] = useReactTransition();
 
   const changeMenu = (v: boolean) => {
     // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
@@ -195,8 +230,8 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
 
   const items = getMenuItems(() => props.children);
 
-  const dropdownMenu = () => (
-    <>
+  return (
+    <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
       <Component />
       <Dropdown
         open={visible}
@@ -213,17 +248,8 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
       >
         <div data-testid={props['data-testid']}>{typeof title === 'string' ? <span>{title}</span> : title}</div>
       </Dropdown>
-    </>
+    </SchemaSettingsProvider>
   );
-
-  if (dn) {
-    return (
-      <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
-        {dropdownMenu()}
-      </SchemaSettingsProvider>
-    );
-  }
-  return dropdownMenu();
 };
 
 SchemaSettings.Template = function Template(props) {
@@ -479,16 +505,11 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
   );
 };
 
-SchemaSettings.Item = function Item(props: {
-  title: string;
-  name?: string;
-  children?: ReactNode;
-  eventKey?: string;
-  onClick?: (e: any) => void;
-}) {
+SchemaSettings.Item = function Item(props: SchemaSettingsItemProps) {
   const { pushMenuItem } = useCollectMenuItems();
   const { collectMenuItem } = useCollectMenuItem();
-  const { eventKey, title, name } = props;
+  const { eventKey, title } = props;
+  const { name } = useSchemaSettingsItem();
 
   if (process.env.NODE_ENV !== 'production' && !title) {
     throw new Error('SchemaSettings.Item must have a title');
@@ -496,7 +517,7 @@ SchemaSettings.Item = function Item(props: {
 
   const item = {
     role: 'button',
-    'aria-label': name || title,
+    'aria-label': name,
     key: title,
     ..._.omit(props, ['children', 'name']),
     eventKey: eventKey as any,
@@ -515,7 +536,11 @@ SchemaSettings.Item = function Item(props: {
   return null;
 };
 
-SchemaSettings.ItemGroup = function ItemGroup(props) {
+export interface SchemaSettingsItemGroupProps {
+  title: string;
+  children: SchemaSettingsItemProps[];
+}
+SchemaSettings.ItemGroup = function ItemGroup(props: SchemaSettingsItemGroupProps) {
   const { Component, getMenuItems } = useMenuItem();
   const { pushMenuItem } = useCollectMenuItems();
   const key = useMemo(() => uid(), []);
@@ -531,7 +556,12 @@ SchemaSettings.ItemGroup = function ItemGroup(props) {
   return <Component />;
 };
 
-SchemaSettings.SubMenu = function SubMenu(props) {
+export interface SchemaSettingsSubMenuProps {
+  title: string;
+  children: SchemaSettingsItemProps[];
+}
+
+SchemaSettings.SubMenu = function SubMenu(props: SchemaSettingsSubMenuProps) {
   const { Component, getMenuItems } = useMenuItem();
   const { pushMenuItem } = useCollectMenuItems();
   const key = useMemo(() => uid(), []);
@@ -560,7 +590,7 @@ SchemaSettings.Divider = function Divider() {
   return null;
 };
 
-SchemaSettings.Remove = function Remove(props: any) {
+SchemaSettings.Remove = function Remove(props: SchemaSettingsRemoveProps) {
   const { confirm, removeParentsIfNoChildren, breakRemoveOn } = props;
   const { dn, template } = useSchemaSettings();
   const { t } = useTranslation();
@@ -656,7 +686,6 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
       return (
         <SchemaSettings.SwitchItem
           key={block.uid}
-          name={compile(block.collection.title)}
           title={title}
           checked={targets.some((target) => target.uid === block.uid)}
           onChange={(checked) => {
@@ -687,7 +716,6 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
     return (
       <SchemaSettings.SelectItem
         key={block.uid}
-        name={compile(block.collection.title)}
         title={title}
         value={target?.field || ''}
         options={[
@@ -749,11 +777,11 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
 };
 
 SchemaSettings.SelectItem = function SelectItem(props) {
-  const { title, name, options, value, onChange, ...others } = props;
+  const { title, options, value, onChange, ...others } = props;
 
   return (
-    <SchemaSettings.Item name={name} title={title} role="none" aria-label="" {...others}>
-      <SelectWithTitle {...{ name, title, defaultValue: value, onChange, options }} />
+    <SchemaSettings.Item title={title} role="none" aria-label="" {...others}>
+      <SelectWithTitle {...{ title, defaultValue: value, onChange, options }} />
     </SchemaSettings.Item>
   );
 };
@@ -777,18 +805,11 @@ SchemaSettings.CascaderItem = (props: CascaderProps<any> & { title: any }) => {
   );
 };
 
-interface SwitchItemProps extends Omit<MenuItemProps, 'onChange'> {
-  title: string;
-  checked?: boolean;
-  onChange?: (v: boolean) => void;
-}
-
-SchemaSettings.SwitchItem = function SwitchItem(props) {
-  const { title, onChange, name, ...others } = props;
+SchemaSettings.SwitchItem = function SwitchItem(props: SchemaSettingsSwitchItemProps) {
+  const { title, onChange, ...others } = props;
   const [checked, setChecked] = useState(!!props.checked);
   return (
     <SchemaSettings.Item
-      name={name}
       title={title}
       {...others}
       onClick={() => {
@@ -831,8 +852,9 @@ SchemaSettings.PopupItem = function PopupItem(props) {
   );
 };
 
-SchemaSettings.ActionModalItem = React.memo((props: any) => {
-  const { title, onSubmit, initialValues, initialSchema, schema, modalTip, components, scope, ...others } = props;
+SchemaSettings.ActionModalItem = React.memo((props: SchemaSettingsActionModalItemProps) => {
+  const { title, onSubmit, initialValues, beforeOpen, initialSchema, schema, modalTip, components, scope, ...others } =
+    props;
   const [visible, setVisible] = useState(false);
   const [schemaUid, setSchemaUid] = useState<string>(props.uid);
   const { t } = useTranslation();
@@ -874,8 +896,8 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
       await api.resource('uiSchemas').insert({ values: initialSchema });
       setSchemaUid(initialSchema['x-uid']);
     }
-    if (typeof others?.beforeOpen === 'function') {
-      others?.beforeOpen?.();
+    if (typeof beforeOpen === 'function') {
+      beforeOpen?.();
     }
     ctx.setVisible(false);
     setVisible(true);
@@ -929,7 +951,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
 });
 SchemaSettings.ActionModalItem.displayName = 'SchemaSettings.ActionModalItem';
 
-SchemaSettings.ModalItem = function ModalItem(props: ModalItemProps) {
+SchemaSettings.ModalItem = function ModalItem(props: SchemaSettingsModalItemProps) {
   const {
     hidden,
     title,
@@ -1962,26 +1984,20 @@ export const isPatternDisabled = (fieldSchema: Schema) => {
   return fieldSchema?.['x-component-props']?.['pattern-disable'] == true;
 };
 
-export function SelectWithTitle({
-  name,
-  title,
-  defaultValue,
-  onChange,
-  options,
-}: {
-  name?: string;
+interface SelectWithTitleProps {
   title?: any;
   defaultValue?: any;
   options?: any;
   onChange?: (...args: any[]) => void;
-}) {
+}
+export function SelectWithTitle({ title, defaultValue, onChange, options }: SelectWithTitleProps) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef<any>(null);
-
+  const { name } = useSchemaSettingsItem();
   return (
     <div
       role="button"
-      aria-label={name || title}
+      aria-label={name}
       style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}
       onClick={(e) => {
         e.stopPropagation();

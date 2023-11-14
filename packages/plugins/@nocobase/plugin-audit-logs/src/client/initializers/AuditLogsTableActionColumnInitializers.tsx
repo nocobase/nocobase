@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 export const auditLogsTableActionColumnInitializers = new SchemaInitializer({
   name: 'AuditLogsTableActionColumnInitializers',
   insertPosition: 'beforeEnd',
-  Component: () => <MenuOutlined style={{ cursor: 'pointer' }} />,
+  Component: (props: any) => <MenuOutlined {...props} style={{ cursor: 'pointer' }} />,
   useInsert() {
     const fieldSchema = useFieldSchema();
     const api = useAPIClient();

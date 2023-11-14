@@ -1,10 +1,7 @@
 import { Plugin } from '@nocobase/client';
-import { DuplicatorProvider } from './DuplicatorProvider';
 
 export class DuplicatorPlugin extends Plugin {
-  async load() {
-    this.app.use(DuplicatorProvider);
-  }
+  async load() {}
 }
 
 export default DuplicatorPlugin;
