@@ -284,5 +284,5 @@ function shouldToRequest(value) {
     return true;
   }
 
-  return value == null;
+  return _.isEmpty(value);
 }

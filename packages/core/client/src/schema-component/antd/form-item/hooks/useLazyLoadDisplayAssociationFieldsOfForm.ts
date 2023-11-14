@@ -1,10 +1,10 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema, useForm } from '@formily/react';
+import { nextTick } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useEffect, useRef } from 'react';
 import { useCollection, useCollectionManager } from '../../../../collection-manager';
 import { useFlag } from '../../../../flag-provider';
-import { useRecord } from '../../../../record-provider';
 import { useVariables } from '../../../../variables';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 import { useSubFormValue } from '../../association-field/hooks';
@@ -25,17 +25,24 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const field = useField<Field>();
   const { formValue: subFormValue } = useSubFormValue();
   const { isInSubForm, isInSubTable } = useFlag() || {};
-  const record = useRecord();
-  // 用于重新运行 useEffect 的标记
-  const refreshTagRef = useRef(0);
 
   const schemaName = fieldSchema.name.toString();
   const formValue = isInSubForm || isInSubTable ? subFormValue : form.values;
+  const collectionFieldRef = useRef(null);
+
+  if (collectionFieldRef.current == null) {
+    collectionFieldRef.current = getCollectionJoinField(`${name}.${schemaName}`);
+  }
+
+  const sourceKeyValue =
+    isDisplayField(schemaName) && collectionFieldRef.current
+      ? _.get(formValue, `${schemaName.split('.')[0]}.${collectionFieldRef.current.sourceKey}`)
+      : undefined;
 
   useEffect(() => {
     // 如果 schemaName 中是以 `.` 分割的，说明是一个关联字段，需要去获取关联字段的值；
     // 在数据表管理页面，也存在 `a.b` 之类的 schema name，其 collectionName 为 fields，所以在这里排除一下 `name === 'fields'` 的情况
-    if (!isDisplayField(schemaName) || !variables || name === 'fields') {
+    if (!isDisplayField(schemaName) || !variables || name === 'fields' || !collectionFieldRef.current) {
       return;
     }
 
@@ -49,30 +56,23 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
       collectionName: name,
     };
     const variableString = `{{ $nForm.${schemaName} }}`;
-    const collectionField = getCollectionJoinField(`${name}.${schemaName}`);
-
-    if (!collectionField) {
-      return console.error(new Error(`useLazyLoadAssociationField: ${schemaName} not found in collection ${name}`));
-    }
 
     // 如果关系字段的 id 为空，则说明请求的数据还没有返回，此时还不能去解析变量
-    if (_.get(formValue, `${schemaName.split('.')[0]}.${collectionField.sourceKey}`) === undefined) {
-      // 确保 useEffect 会重新运行一次，防止关系数据没有被加载的情况
-      refreshTagRef.current++;
+    if (sourceKeyValue === undefined) {
       return;
     }
 
     variables
       .parseVariable(variableString, formVariable)
       .then((value) => {
-        field.value = transformVariableValue(value, { targetCollectionField: collectionField });
+        nextTick(() => {
+          field.value = transformVariableValue(value, { targetCollectionField: collectionFieldRef.current });
+        });
       })
       .catch((err) => {
         console.error(err);
       });
-
-    // 这里的依赖不要动，动了会出 BUG
-  }, [schemaName.includes('.') ? formValue[schemaName.split('.')[0]] : null, record, refreshTagRef.current]);
+  }, [sourceKeyValue]);
 };
 
 export default useLazyLoadDisplayAssociationFieldsOfForm;
