@@ -21,13 +21,21 @@ const useLazyLoadAssociationFieldOfForm = () => {
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const field = useField<Field>();
-  const { isInAssignFieldValues } = useFlag() || {};
+  const { isInAssignFieldValues, isInSubForm, isInSubTable } = useFlag() || {};
   const { type: formBlockType } = useFormBlockType();
 
   const schemaName = fieldSchema.name.toString();
 
   useEffect(() => {
-    if (isInAssignFieldValues || formBlockType === 'create') {
+    const cloneRecord = { ...record };
+    delete cloneRecord['__parent'];
+    delete cloneRecord['__collectionName'];
+
+    if (
+      isInAssignFieldValues ||
+      _.isEmpty(cloneRecord) ||
+      (formBlockType === 'create' && !isInSubForm && !isInSubTable)
+    ) {
       return;
     }
 
@@ -37,11 +45,7 @@ const useLazyLoadAssociationFieldOfForm = () => {
       return;
     }
 
-    const cloneRecord = { ...record };
-    delete cloneRecord['__parent'];
-    delete cloneRecord['__collectionName'];
-
-    if (_.isEmpty(cloneRecord) || !variables || record[schemaName] != null) {
+    if (!variables || record[schemaName] != null) {
       return;
     }
 
@@ -70,7 +74,7 @@ const useLazyLoadAssociationFieldOfForm = () => {
       .catch((err) => {
         console.error(err);
       });
-  }, []);
+  }, [record]);
 };
 
 export default useLazyLoadAssociationFieldOfForm;

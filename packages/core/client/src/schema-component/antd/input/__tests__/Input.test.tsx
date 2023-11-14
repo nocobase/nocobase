@@ -116,12 +116,9 @@ describe('Input.JSON', () => {
   it('should display the error when the value is invalid', async () => {
     const { container } = render(<App4 />);
 
-    await sleep(10);
-    await waitFor(() => {
-      const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
-      fireEvent.change(textarea, { target: { value: '{"name":nocobase}' } });
-      fireEvent.blur(textarea, { target: { value: '{"name":nocobase}' } });
-      expect(screen.getByText(/Unexpected token/)).toBeInTheDocument();
-    });
+    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: '{"name":nocobase}' } });
+    fireEvent.blur(textarea, { target: { value: '{"name":nocobase}' } });
+    expect(screen.getByText(/Unexpected token/)).toBeInTheDocument();
   });
 });
