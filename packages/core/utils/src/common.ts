@@ -41,3 +41,7 @@ export const hasEmptyValue = (objOrArr: object | any[]) => {
   }
   return result;
 };
+
+export const nextTick = (fn: () => void) => {
+  setTimeout(fn);
+};

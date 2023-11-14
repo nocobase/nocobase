@@ -2,19 +2,23 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 import type { CommonOptions } from 'execa';
 import execa from 'execa';
+import _ from 'lodash';
 import net from 'net';
 import fs from 'node:fs';
 import path from 'path';
+
+const PORT = process.env.APP_PORT || 20000;
+export const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
 
 export const commonConfig: any = {
   stdio: 'inherit',
 };
 
-export const runCommand = (command, argv, options = {}) => {
+export const runCommand = (command, argv, options: any = {}) => {
   return execa(command, argv, {
     shell: true,
     stdio: 'inherit',
-    ...options,
+    ..._.omit(options, 'force'),
     env: {
       ...process.env,
     },
@@ -53,12 +57,12 @@ const checkServer = async (duration = 1000, max = 60 * 10) => {
         return reject(new Error('Server start timeout.'));
       }
 
-      if (!(await checkPort(process.env.APP_PORT))) {
+      if (!(await checkPort(PORT))) {
         return;
       }
 
       axios
-        .get(`${process.env.APP_BASE_URL}/api/__health_check`)
+        .get(`${APP_BASE_URL}/api/__health_check`)
         .then((response) => {
           if (response.status === 200) {
             clearInterval(timer);
@@ -86,7 +90,7 @@ const checkUI = async (duration = 1000, max = 60 * 10) => {
       }
 
       axios
-        .get(`${process.env.APP_BASE_URL}/__umi/api/bundle-status`)
+        .get(`${APP_BASE_URL}/__umi/api/bundle-status`)
         .then((response) => {
           if (response.data.bundleStatus.done) {
             clearInterval(timer);
@@ -100,7 +104,15 @@ const checkUI = async (duration = 1000, max = 60 * 10) => {
   });
 };
 
-export const runNocoBase = async (options?: CommonOptions<any>) => {
+export const runNocoBase = async (
+  options?: CommonOptions<any> & {
+    /**
+     * 是否强制启动服务
+     */
+    force?: boolean;
+    signal?: AbortSignal;
+  },
+) => {
   // 用于存放 playwright 自动生成的相关的文件
   if (!fs.existsSync('playwright')) {
     fs.mkdirSync('playwright');
@@ -116,6 +128,11 @@ export const runNocoBase = async (options?: CommonOptions<any>) => {
   }
 
   dotenv.config({ path: path.resolve(process.cwd(), '.env.e2e') });
+
+  if (process.env.APP_BASE_URL && !options?.force) {
+    console.log('APP_BASE_URL is setting, skip starting server.');
+    return { awaitForNocoBase: () => {} };
+  }
 
   const awaitForNocoBase = async () => {
     if (process.env.CI) {
@@ -133,28 +150,22 @@ export const runNocoBase = async (options?: CommonOptions<any>) => {
   if (process.env.CI) {
     console.log('yarn nocobase install');
     await runCommand('yarn', ['nocobase', 'install'], options);
-    console.log(`yarn start -d -p ${process.env.APP_PORT}`);
-    await runCommand('yarn', ['start', '-d', `-p ${process.env.APP_PORT}`], options);
+    console.log(`yarn start -d -p ${PORT}`);
+    await runCommand('yarn', ['start', '-d', `-p ${PORT}`], options);
     return { awaitForNocoBase };
-  }
-
-  if (!process.env.APP_BASE_URL.includes('localhost')) {
-    return {
-      awaitForNocoBase: async () => {},
-    };
   }
 
   // 加上 -f 会清空数据库
   console.log('yarn nocobase install -f');
   await runCommand('yarn', ['nocobase', 'install', '-f'], options);
 
-  if (await checkPort(process.env.APP_PORT)) {
+  if (await checkPort(PORT)) {
     console.log('Server is running, skip starting server.');
     return { awaitForNocoBase };
   }
 
   console.log('starting server...');
-  const { cancel, kill } = runCommand('yarn', ['dev', `-p ${process.env.APP_PORT}`, ...process.argv.slice(2)], options);
+  const { cancel, kill } = runCommand('yarn', ['dev', `-p ${PORT}`, ...process.argv.slice(2)], options);
 
   return { cancel, kill, awaitForNocoBase };
 };
