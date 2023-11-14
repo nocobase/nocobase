@@ -28,7 +28,7 @@ export class CacheManager {
   private async createStore(options: { name: string; storeType: string }) {
     const { name, storeType: type, ...config } = options;
     const storeType = this.storeTypes.get(type) as any;
-    if (!config) {
+    if (!storeType) {
       throw new Error(`Create cache failed, store type [${type}] is unavailable or not registered`);
     }
     const { store: s, globalConfig } = storeType;
