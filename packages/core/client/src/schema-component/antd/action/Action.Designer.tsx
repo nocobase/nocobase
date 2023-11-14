@@ -718,6 +718,7 @@ function RemoveButton(
 }
 
 function WorkflowSelect({ types, ...props }) {
+  const { t } = useTranslation();
   const index = ArrayTable.useIndex();
   const { setValuesIn } = useForm();
   const baseCollection = useCollection();
@@ -743,7 +744,12 @@ function WorkflowSelect({ types, ...props }) {
 
   return (
     <RemoteSelect
-      {...props}
+      manual={false}
+      placeholder={t('Select workflow', { ns: 'workflow' })}
+      fieldNames={{
+        label: 'title',
+        value: 'key',
+      }}
       service={{
         resource: 'workflows',
         action: 'list',
@@ -755,6 +761,7 @@ function WorkflowSelect({ types, ...props }) {
           },
         },
       }}
+      {...props}
     />
   );
 }
@@ -850,11 +857,6 @@ function WorkflowConfig() {
                         'x-decorator': 'FormItem',
                         'x-component': 'WorkflowSelect',
                         'x-component-props': {
-                          placeholder: t('Select workflow', { ns: 'workflow' }),
-                          fieldNames: {
-                            label: 'title',
-                            value: 'key',
-                          },
                           types: workflowTypes.map((item) => item.value),
                         },
                         required: true,

@@ -46,7 +46,7 @@ export default defineConfig({
                   link: '/apis/api-client',
                 },
                 {
-                  title: 'SettingsCenter',
+                  title: 'PluginSettingsManager',
                   link: '#',
                 },
               ],

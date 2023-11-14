@@ -6,7 +6,7 @@ Starting with v0.8, NocoBase begins to provide an available plugin manager and d
 
 - UI Editor
 - Plugin Manager
-- Settings Center
+- Plugin Settings Manager
 - Personal Center
 
 <img src="./v08-changelog/topright.jpg" style="max-width: 500px;" />
