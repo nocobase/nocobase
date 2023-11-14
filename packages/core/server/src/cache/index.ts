@@ -4,10 +4,10 @@ import Application from '../application';
 export const createCacheManager = async (app: Application, options: AppCacheOptions) => {
   const { defaultStoreType, storesTypes = {} } = options || {};
   const cacheManager = new CacheManager({ defaultStoreType });
-  Object.entries(storesTypes).forEach(([name, storeType]) => {
+  for (const [name, storeType] of Object.entries(storesTypes)) {
     const { store, ...globalConfig } = storeType;
-    cacheManager.registerStore({ name, store, ...globalConfig });
-  });
+    await cacheManager.registerStore({ name, store, ...globalConfig });
+  }
   const defaultCache = await cacheManager.createCache({ name: app.name });
   app.cache = defaultCache;
   app.context.cache = defaultCache;
