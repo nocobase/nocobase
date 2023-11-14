@@ -1,16 +1,13 @@
-import { CacheManager } from '@nocobase/cache';
+import { newAppCacheManager } from '@nocobase/cache';
 import Resources from '../resources';
 
 describe('resources', () => {
   let resources: Resources;
 
   beforeAll(async () => {
-    const cacheManager = new CacheManager();
-    await cacheManager.init();
+    const cacheManager = newAppCacheManager();
+    const cache = await cacheManager.createCache({ name: 'locale', store: 'memory' });
     resources = new Resources(
-      {
-        cacheManager,
-      } as any,
       {
         getRepository: (name: string) => {
           if (name === 'localizationTexts') {
@@ -32,6 +29,7 @@ describe('resources', () => {
           }
         },
       } as any,
+      cache,
     );
   });
 
