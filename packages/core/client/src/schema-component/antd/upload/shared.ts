@@ -185,6 +185,7 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
         });
       }
       formData.append(filename, file);
+      // eslint-disable-next-line promise/catch-or-return
       api.axios
         .post(action, formData, {
           withCredentials,
@@ -227,7 +228,7 @@ export const toItem = (file) => {
 };
 
 export const toFileList = (fileList: any) => {
-  return toArr(fileList).map(toItem);
+  return toArr(fileList?.filter(Boolean)).map(toItem);
 };
 
 export const toValue = (fileList: any) => {

@@ -1,18 +1,12 @@
 import { registerValidateRules } from '@formily/core';
-import {
-  BlockSchemaComponentPlugin,
-  Plugin,
-  SchemaComponentOptions,
-  SettingsCenterProvider,
-  useAPIClient,
-} from '@nocobase/client';
+import { BlockSchemaComponentPlugin, Plugin, SchemaComponentOptions, useAPIClient } from '@nocobase/client';
 import JSON5 from 'json5';
 import React from 'react';
 import { ChartBlockEngine } from './ChartBlockEngine';
 import { ChartBlockInitializer } from './ChartBlockInitializer';
 import { ChartQueryMetadataProvider } from './ChartQueryMetadataProvider';
 import './Icons';
-import { lang } from './locale';
+import { lang, NAMESPACE } from './locale';
 import { CustomSelect } from './select';
 import { QueriesTable } from './settings/QueriesTable';
 
@@ -62,27 +56,12 @@ const ChartsProvider = React.memo((props) => {
   };
   return (
     <ChartQueryMetadataProvider>
-      <SettingsCenterProvider
-        settings={{
-          charts: {
-            title: '{{t("Charts", {ns:"charts"})}}',
-            icon: 'PieChartOutlined',
-            tabs: {
-              queries: {
-                title: '{{t("Queries", {ns:"charts"})}}',
-                component: QueriesTable,
-              },
-            },
-          },
-        }}
+      <SchemaComponentOptions
+        scope={{ validateSQL }}
+        components={{ CustomSelect, ChartBlockInitializer, ChartBlockEngine }}
       >
-        <SchemaComponentOptions
-          scope={{ validateSQL }}
-          components={{ CustomSelect, ChartBlockInitializer, ChartBlockEngine }}
-        >
-          {props.children}
-        </SchemaComponentOptions>
-      </SettingsCenterProvider>
+        {props.children}
+      </SchemaComponentOptions>
     </ChartQueryMetadataProvider>
   );
 });
@@ -101,6 +80,12 @@ export class ChartsPlugin extends Plugin {
     //   Component: 'ChartBlockInitializer',
     // });
     this.app.use(ChartsProvider);
+    this.app.pluginSettingsManager.add(NAMESPACE, {
+      title: `{{t("Charts", { ns: "${NAMESPACE}" })}}`,
+      icon: 'PieChartOutlined',
+      Component: QueriesTable,
+      aclSnippet: 'pm.charts.queries',
+    });
   }
 }
 

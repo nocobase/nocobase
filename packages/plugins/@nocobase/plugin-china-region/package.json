@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-china-region",
-  "version": "0.14.0-alpha.8",
+  "version": "0.15.0-alpha.2",
   "displayName": "China region",
   "displayName.zh-CN": "中国行政区",
   "description": "Provides China region data and field interface",

@@ -12,7 +12,7 @@ test.describe('workflow manage', () => {
     // 1、前置条件：已登录
 
     // 2、测试步骤：进入“工作流管理”-“新建”按钮，填写表单，点击“确定”按钮
-    await page.goto('/admin/settings/workflow/workflows');
+    await page.goto('/admin/settings/workflow');
     await page.waitForLoadState('networkidle');
     await page.getByLabel('action-Action-Add new-workflows').click();
     const createWorkFlow = new CreateWorkFlow(page);

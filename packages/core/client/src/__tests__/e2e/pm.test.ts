@@ -1,6 +1,7 @@
 import { expect, test } from '@nocobase/test/client';
 
 async function waitForModalToBeHidden(page) {
+  test.slow();
   await page.waitForFunction(() => {
     const modal = document.querySelector('.ant-modal');
     if (modal) {
@@ -61,6 +62,7 @@ test.describe('remove plugin', () => {
     await page.getByLabel('Hello').getByText('Remove').click();
     await page.getByRole('button', { name: 'Yes' }).click();
     //等待页面刷新结束
+    await waitForModalToBeHidden(page);
     await page.waitForLoadState('load');
     await page.getByPlaceholder('Search plugin').fill('hello');
     await expect(page.getByLabel('Hello')).not.toBeVisible();
