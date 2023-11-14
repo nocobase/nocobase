@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-custom-block",
-  "version": "0.14.0-alpha.8",
+  "version": "0.15.0-alpha.2",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@ant-design/icons": "5.x",

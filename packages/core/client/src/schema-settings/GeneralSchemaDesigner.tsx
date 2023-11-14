@@ -3,12 +3,13 @@ import { css } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettings } from './SchemaSettings';
 import { useGetAriaLabelOfDesigner } from './hooks/useGetAriaLabelOfDesigner';
+import { SchemaDesignerProvider, useSchemaSettingsRender } from '../application';
 
 const titleCss = css`
   pointer-events: none;
@@ -42,21 +43,38 @@ const overrideAntdCSS = css`
   }
 `;
 
-export const GeneralSchemaDesigner = (props: any) => {
-  const { disableInitializer, title, template, draggable = true } = props;
+export interface GeneralSchemaDesignerProps {
+  disableInitializer?: boolean;
+  title?: string;
+  template?: any;
+  schemaSettings?: string;
+  contextValue?: any;
+  /**
+   * @default true
+   */
+  draggable?: boolean;
+}
+
+export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any) => {
+  const { disableInitializer, title, template, schemaSettings, contextValue, draggable = true } = props;
   const { dn, designable } = useDesignable();
   const field = useField();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
-
   const schemaSettingsProps = {
     dn,
     field,
     fieldSchema,
   };
-
+  const { render: schemaSettingsRender, exists: schemaSettingsExists } = useSchemaSettingsRender(
+    fieldSchema['x-settings'] || schemaSettings,
+    {
+      ...fieldSchema['x-settings-props'],
+      ...schemaSettingsProps,
+    },
+  );
   const rowCtx = useGridRowContext();
   const ctx = useGridContext();
   const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
@@ -82,46 +100,52 @@ export const GeneralSchemaDesigner = (props: any) => {
   }
 
   return (
-    <div className={classNames('general-schema-designer', overrideAntdCSS)}>
-      {title && (
-        <div className={classNames('general-schema-designer-title', titleCss)}>
-          <Space size={2}>
-            <span className={'title-tag'}>{compile(title)}</span>
-            {template && (
-              <span className={'title-tag'}>
-                {t('Reference template')}: {templateName || t('Untitled')}
-              </span>
+    <SchemaDesignerProvider {...contextValue}>
+      <div className={classNames('general-schema-designer', overrideAntdCSS)}>
+        {title && (
+          <div className={classNames('general-schema-designer-title', titleCss)}>
+            <Space size={2}>
+              <span className={'title-tag'}>{compile(title)}</span>
+              {template && (
+                <span className={'title-tag'}>
+                  {t('Reference template')}: {templateName || t('Untitled')}
+                </span>
+              )}
+            </Space>
+          </div>
+        )}
+        <div className={'general-schema-designer-icons'}>
+          <Space size={3} align={'center'}>
+            {draggable && (
+              <DragHandler>
+                <DragOutlined role="button" aria-label={getAriaLabel('drag-handler')} />
+              </DragHandler>
+            )}
+            {!disableInitializer &&
+              (ctx?.InitializerComponent ? (
+                <ctx.InitializerComponent {...initializerProps} />
+              ) : (
+                ctx?.renderSchemaInitializer?.(initializerProps)
+              ))}
+            {schemaSettingsExists ? (
+              schemaSettingsRender(contextValue)
+            ) : (
+              <SchemaSettings
+                title={
+                  <MenuOutlined
+                    role="button"
+                    aria-label={getAriaLabel('schema-settings')}
+                    style={{ cursor: 'pointer', fontSize: 12 }}
+                  />
+                }
+                {...schemaSettingsProps}
+              >
+                {props.children}
+              </SchemaSettings>
             )}
           </Space>
         </div>
-      )}
-      <div className={'general-schema-designer-icons'}>
-        <Space size={2} align={'center'}>
-          {draggable && (
-            <DragHandler>
-              <DragOutlined role="button" aria-label={getAriaLabel('drag-handler')} />
-            </DragHandler>
-          )}
-          {!disableInitializer &&
-            (ctx?.InitializerComponent ? (
-              <ctx.InitializerComponent {...initializerProps} />
-            ) : (
-              ctx?.renderSchemaInitializer?.(initializerProps)
-            ))}
-          <SchemaSettings
-            title={
-              <MenuOutlined
-                role="button"
-                aria-label={getAriaLabel('schema-settings')}
-                style={{ cursor: 'pointer', fontSize: 12 }}
-              />
-            }
-            {...schemaSettingsProps}
-          >
-            {props.children}
-          </SchemaSettings>
-        </Space>
       </div>
-    </div>
+    </SchemaDesignerProvider>
   );
 };
