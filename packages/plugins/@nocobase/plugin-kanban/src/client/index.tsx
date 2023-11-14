@@ -15,6 +15,7 @@ import { KanbanDesigner } from './Kanban.Designer';
 import { kanbanActionInitializers } from './KanbanActionInitializers';
 import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider';
 import { KanbanBlockInitializer } from './KanbanBlockInitializer';
+import { kanbanSettings } from './Kanban.Settings';
 
 Kanban.Card = KanbanCard;
 Kanban.CardAdder = Action;
@@ -45,6 +46,8 @@ class KanbanPlugin extends Plugin {
     this.app.use(KanbanPluginProvider);
     this.app.schemaInitializerManager.add(kanbanCardInitializers);
     this.app.schemaInitializerManager.add(kanbanActionInitializers);
+    this.app.schemaSettingsManager.add(kanbanSettings);
+
     const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
     blockInitializers?.add('dataBlocks.kanban', {
       title: '{{t("Kanban")}}',
