@@ -10,7 +10,7 @@
   "typings": "./index.d.ts",
   "dependencies": {
     "@svgr/webpack": "^8.1.0",
-    "@rspack/core": "0.3.4",
+    "@rspack/core": "0.3.11",
     "css-loader": "^6.8.1",
     "less": "^4.1.3",
     "postcss": "^8.4.29",
