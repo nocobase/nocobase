@@ -8,21 +8,21 @@ type StoreType = {
 };
 
 export type AppCacheOptions = {
-  defaultStoreType?: string;
-  storesTypes: {
+  defaultStore?: string;
+  stores: {
     [name: string]: StoreType;
   };
 };
 
 export class CacheManager {
-  defaultStoreType: string;
+  defaultStore: string;
   private stores = new Map<string, BasicCache>();
   storeTypes = new Map<string, StoreType>();
   caches = new Map<string, Cache>();
 
-  constructor(options?: { defaultStoreType: string }) {
-    const { defaultStoreType = 'memory' } = options || {};
-    this.defaultStoreType = defaultStoreType;
+  constructor(options?: { defaultStore: string }) {
+    const { defaultStore = 'memory' } = options || {};
+    this.defaultStore = defaultStore;
   }
 
   private async createStore(options: { name: string; storeType: string }) {
@@ -52,14 +52,14 @@ export class CacheManager {
     return cache;
   }
 
-  createCache(options: { name: string; prefix?: string; store?: string; [key: string]: any }): Cache | Promise<Cache> {
-    const { name, prefix, store = this.defaultStoreType, ...config } = options;
+  async createCache(options: { name: string; prefix?: string; store?: string; [key: string]: any }) {
+    const { name, prefix, store = this.defaultStore, ...config } = options;
     if (!lodash.isEmpty(config)) {
-      return this.newCache({ name, prefix, store, ...config });
+      return await this.newCache({ name, prefix, store, ...config });
     }
     const s = this.stores.get(store);
     if (!s) {
-      return this.newCache({ name, prefix, store });
+      return await this.newCache({ name, prefix, store });
     }
     const cache = new Cache({ name, prefix, store: s });
     this.caches.set(name, cache);
