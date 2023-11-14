@@ -8,8 +8,9 @@ import {
   useCollectionDataSourceItemsV2,
   useSchemaInitializer,
   useSchemaInitializerItem,
+  useMenuSearch,
 } from '@nocobase/client';
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { ChartConfigContext } from '../configure/ChartConfigure';
 import { Menu } from 'antd';
 
@@ -44,8 +45,17 @@ const ItemsComponent = () => {
       Component: ConfigureButton,
     }));
 
-  const menuItems = useSchemaInitializerMenuItems(items);
-  return <Menu items={menuItems} />;
+  const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
+  const searchedChildren = useMenuSearch(items, isOpenSubMenu, true);
+  const menuItems = useSchemaInitializerMenuItems(searchedChildren);
+  return (
+    <Menu
+      items={menuItems}
+      onOpenChange={(keys) => {
+        setIsOpenSubMenu(keys.length > 0);
+      }}
+    />
+  );
 };
 
 export const chartInitializers = new SchemaInitializer({
