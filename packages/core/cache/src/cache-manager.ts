@@ -26,11 +26,12 @@ export class CacheManager {
   }
 
   private async createStore(options: { name: string; storeType: string }) {
-    const { name, storeType, ...config } = options;
-    const { store: s, globalConfig } = this.storeTypes.get(storeType) as any;
-    if (!s) {
-      throw new Error(`Create cache failed, store type [${storeType}] is unavailable or not registered`);
+    const { name, storeType: type, ...config } = options;
+    const storeType = this.storeTypes.get(type) as any;
+    if (!config) {
+      throw new Error(`Create cache failed, store type [${type}] is unavailable or not registered`);
     }
+    const { store: s, globalConfig } = storeType;
     const store = await caching(s, { ...globalConfig, ...config });
     this.stores.set(name, store);
     return store;
