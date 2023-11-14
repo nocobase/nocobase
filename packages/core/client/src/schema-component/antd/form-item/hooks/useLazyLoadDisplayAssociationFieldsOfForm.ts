@@ -1,10 +1,14 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import { useEffect } from 'react';
+import _ from 'lodash';
+import { useEffect, useRef } from 'react';
 import { useCollection, useCollectionManager } from '../../../../collection-manager';
+import { useFlag } from '../../../../flag-provider';
+import { useRecord } from '../../../../record-provider';
 import { useVariables } from '../../../../variables';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 import { useSubFormValue } from '../../association-field/hooks';
+import { isDisplayField } from '../utils';
 
 /**
  * 用于懒加载 Form 区块中只用于展示的关联字段的值
@@ -20,14 +24,22 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const variables = useVariables();
   const field = useField<Field>();
   const { formValue: subFormValue } = useSubFormValue();
+  const { isInSubForm, isInSubTable } = useFlag() || {};
+  const record = useRecord();
+  // 用于重新运行 useEffect 的标记
+  const refreshTagRef = useRef(0);
 
   const schemaName = fieldSchema.name.toString();
-  const formValue = subFormValue || form.values;
+  const formValue = isInSubForm || isInSubTable ? subFormValue : form.values;
 
   useEffect(() => {
     // 如果 schemaName 中是以 `.` 分割的，说明是一个关联字段，需要去获取关联字段的值；
     // 在数据表管理页面，也存在 `a.b` 之类的 schema name，其 collectionName 为 fields，所以在这里排除一下 `name === 'fields'` 的情况
-    if (!schemaName.includes('.') || !variables || name === 'fields') {
+    if (!isDisplayField(schemaName) || !variables || name === 'fields') {
+      return;
+    }
+
+    if (_.isEmpty(formValue)) {
       return;
     }
 
@@ -43,6 +55,13 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
       return console.error(new Error(`useLazyLoadAssociationField: ${schemaName} not found in collection ${name}`));
     }
 
+    // 如果关系字段的 id 为空，则说明请求的数据还没有返回，此时还不能去解析变量
+    if (_.get(formValue, `${schemaName.split('.')[0]}.${collectionField.sourceKey}`) === undefined) {
+      // 确保 useEffect 会重新运行一次，防止关系数据没有被加载的情况
+      refreshTagRef.current++;
+      return;
+    }
+
     variables
       .parseVariable(variableString, formVariable)
       .then((value) => {
@@ -51,7 +70,9 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
       .catch((err) => {
         console.error(err);
       });
-  }, [schemaName.includes('.') ? formValue[schemaName.split('.')[0]] : null]);
+
+    // 这里的依赖不要动，动了会出 BUG
+  }, [schemaName.includes('.') ? formValue[schemaName.split('.')[0]] : null, record, refreshTagRef.current]);
 };
 
 export default useLazyLoadDisplayAssociationFieldsOfForm;
