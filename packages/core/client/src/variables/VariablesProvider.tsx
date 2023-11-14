@@ -277,13 +277,6 @@ VariablesProvider.displayName = 'VariablesProvider';
 
 export default VariablesProvider;
 
-/**
- * 判断是否应该请求关系字段的数据。如果是 null 则可以确定后端的数据为空，此时不需要请求；如果是 undefined 则需要请求。
- *
- * 注意：如果后端接口的这一 “规则” 发生了变更，那么可能会出现问题。
- * @param value
- * @returns
- */
 function shouldToRequest(value) {
   // fix https://nocobase.height.app/T-2502
   // 兼容 `对多` 和 `对一` 子表单子表格字段的情况
@@ -291,5 +284,5 @@ function shouldToRequest(value) {
     return true;
   }
 
-  return value === undefined;
+  return value == null;
 }
