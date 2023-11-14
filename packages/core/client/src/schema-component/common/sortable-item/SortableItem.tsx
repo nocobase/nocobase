@@ -50,18 +50,18 @@ export const Sortable = (props: any) => {
 
 const useSortableItemProps = (props) => {
   const id = useSortableItemId(props);
+  const schema = useFieldSchema();
   if (props.schema) {
     return { ...props, id };
   }
-  const schema = useFieldSchema();
   return { ...props, id, schema };
 };
 
 const useSortableItemId = (props) => {
+  const field = useField();
   if (props.id) {
     return props.id;
   }
-  const field = useField();
   return field.address.toString();
 };
 
@@ -100,9 +100,9 @@ export const DragHandler = (props) => {
     <div
       style={{
         display: 'inline-block',
-        width: 12,
-        height: 12,
-        lineHeight: '12px',
+        width: 14,
+        height: 14,
+        lineHeight: '14px',
         textAlign: 'left',
       }}
     >

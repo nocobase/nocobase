@@ -76,7 +76,7 @@ yarn pm remove hello
 - Client
   - UI Schema Designer：页面设计器
   - UI Router：有自定义页面需求时
-  - Settings Center：为插件提供配置页面
+  - Plugin Settings Manager：为插件提供配置页面
   - I18n：客户端国际化
 - Devtools
   - Commands：自定义命令行
@@ -113,8 +113,6 @@ yarn pm remove hello
   - UI Router
     - RouteSwitchProvider
     - RouteSwitch
-  - Settings Center
-    - SettingsCenterProvider
   - I18n
     - app.i18n
     - useTranslation

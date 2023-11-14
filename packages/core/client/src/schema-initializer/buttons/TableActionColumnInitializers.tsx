@@ -93,9 +93,16 @@ export const tableActionColumnInitializers = new SchemaInitializer({
       dn.insertBeforeEnd(schema);
     };
   },
-  Component: () => {
+  Component: (props: any) => {
     const { getAriaLabel } = useGetAriaLabelOfDesigner();
-    return <MenuOutlined role="button" aria-label={getAriaLabel('schema-settings')} style={{ cursor: 'pointer' }} />;
+    return (
+      <MenuOutlined
+        {...props}
+        role="button"
+        aria-label={getAriaLabel('schema-settings')}
+        style={{ cursor: 'pointer' }}
+      />
+    );
   },
   items: [
     {
