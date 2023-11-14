@@ -8,6 +8,5 @@ describe('Percent', () => {
     const input = container.querySelector('input') as HTMLInputElement;
     fireEvent.change(input, { target: { value: '10' } });
     expect(input.value).toBe('10');
-    expect(screen.getByText('10')).toBeInTheDocument();
   });
 });

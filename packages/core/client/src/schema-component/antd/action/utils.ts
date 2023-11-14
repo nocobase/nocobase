@@ -1,7 +1,9 @@
 import type { ISchema } from '@formily/react';
 import { last } from 'lodash';
-import { conditionAnalyse } from '../../common/utils/uitls';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
+import { VariableOption, VariablesContextType } from '../../../variables/types';
+import { conditionAnalyses } from '../../common/utils/uitls';
+
 const validateJSON = {
   validator: `{{(value, rule)=> {
     if (!value) {
@@ -69,12 +71,25 @@ export const requestSettingsSchema: ISchema = {
   },
 };
 
-export const linkageAction = (operator, field, condition, values) => {
+export const linkageAction = async ({
+  operator,
+  field,
+  condition,
+  variables,
+  localVariables,
+}: {
+  operator;
+  field;
+  condition;
+  variables: VariablesContextType;
+  localVariables: VariableOption[];
+}) => {
   const disableResult = field?.linkageProperty?.disabled || [false];
   const displayResult = field?.linkageProperty?.display || ['visible'];
+
   switch (operator) {
     case ActionType.Visible:
-      if (conditionAnalyse(condition, values)) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         displayResult.push(operator);
         field.data = field.data || {};
         field.data.hidden = false;
@@ -86,7 +101,7 @@ export const linkageAction = (operator, field, condition, values) => {
       field.display = last(displayResult);
       break;
     case ActionType.Hidden:
-      if (conditionAnalyse(condition, values)) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         field.data = field.data || {};
         field.data.hidden = true;
       } else {
@@ -95,7 +110,7 @@ export const linkageAction = (operator, field, condition, values) => {
       }
       break;
     case ActionType.Disabled:
-      if (conditionAnalyse(condition, values)) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         disableResult.push(true);
       }
       field.linkageProperty = {
@@ -103,16 +118,20 @@ export const linkageAction = (operator, field, condition, values) => {
         disabled: disableResult,
       };
       field.disabled = last(disableResult);
+      field.componentProps['disabled'] = last(disableResult);
       break;
     case ActionType.Active:
-      if (conditionAnalyse(condition, values)) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         disableResult.push(false);
+      } else {
+        disableResult.push(true);
       }
       field.linkageProperty = {
         ...field.linkageProperty,
         disabled: disableResult,
       };
       field.disabled = last(disableResult);
+      field.componentProps['disabled'] = last(disableResult);
       break;
     default:
       return null;

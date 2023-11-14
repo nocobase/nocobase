@@ -1,16 +1,32 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const useDateVariable = ({ operator, schema }) => {
+interface Props {
+  operator?: {
+    value: string;
+  };
+  schema: any;
+  /**
+   * 不需要禁用选项，一般会在表达式中使用
+   */
+  noDisabled?: boolean;
+}
+
+/**
+ * 变量：`日期变量`
+ * @param param0
+ * @returns
+ */
+export const useDateVariable = ({ operator, schema, noDisabled }: Props) => {
   const { t } = useTranslation();
   const operatorValue = operator?.value || '';
-  const disabled = !['DatePicker', 'DatePicker.RangePicker'].includes(schema?.['x-component']);
+  const disabled = noDisabled ? false : !['DatePicker', 'DatePicker.RangePicker'].includes(schema?.['x-component']);
   const dateOptions = [
     {
       key: 'now',
       value: 'now',
-      label: t('Now'),
-      disabled: schema?.['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween',
+      label: t('Current time'),
+      disabled: noDisabled ? false : schema?.['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween',
     },
     {
       key: 'yesterday',
@@ -143,14 +159,14 @@ export const useDateVariable = ({ operator, schema }) => {
   const result = useMemo(() => {
     return {
       label: t('Date variables'),
-      value: '$date',
-      key: '$date',
+      value: '$nDate',
+      key: '$nDate',
       disabled: dateOptions.every((option) => option.disabled),
       children: dateOptions,
     };
   }, [schema?.['x-component']]);
 
-  if (!operator || !schema) return null;
+  if (!schema) return null;
 
   return result;
 };

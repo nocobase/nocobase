@@ -1,8 +1,6 @@
-import { ISchema } from '@formily/react';
 import { G2PlotChart } from './g2plot';
 import { Pie as G2Pie } from '@ant-design/plots';
-import { FieldOption } from '../../hooks';
-import { QueryProps } from '../../renderer';
+import { ChartType } from '../chart';
 
 export class Pie extends G2PlotChart {
   constructor() {
@@ -23,16 +21,7 @@ export class Pie extends G2PlotChart {
     ];
   }
 
-  init(
-    fields: FieldOption[],
-    {
-      measures,
-      dimensions,
-    }: {
-      measures?: QueryProps['measures'];
-      dimensions?: QueryProps['dimensions'];
-    },
-  ) {
+  init: ChartType['init'] = (fields, { measures, dimensions }) => {
     const { xField, yField } = this.infer(fields, { measures, dimensions });
     return {
       general: {
@@ -40,5 +29,5 @@ export class Pie extends G2PlotChart {
         angleField: yField?.value,
       },
     };
-  }
+  };
 }

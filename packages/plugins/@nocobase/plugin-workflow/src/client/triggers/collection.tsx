@@ -170,9 +170,9 @@ export default {
     //   : 1;
     const result = getCollectionFieldOptions({
       // depth,
+      appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],
       ...options,
       fields: rootFields,
-      appends: ['data', ...(config.appends?.map((item) => `data.${item}`) || [])],
       compile,
       getCollectionFields,
     });

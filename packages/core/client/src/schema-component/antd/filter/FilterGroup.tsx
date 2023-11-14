@@ -42,7 +42,7 @@ export const FilterGroup = connect((props) => {
         }
       >
         {remove && !mergedDisabled && (
-          <a>
+          <a role="button" aria-label="icon-close">
             <CloseCircleOutlined
               style={{
                 position: 'absolute',
@@ -58,6 +58,9 @@ export const FilterGroup = connect((props) => {
           <Trans>
             {'Meet '}
             <Select
+              // @ts-ignore
+              role="button"
+              data-testid="filter-select-all-or-any"
               style={{ width: 'auto' }}
               value={logic}
               onChange={(value) => {

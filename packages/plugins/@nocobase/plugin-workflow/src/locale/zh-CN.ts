@@ -89,6 +89,7 @@ export default {
   Advanced: '高级模式',
   End: '结束',
   'Node result': '节点数据',
+  'Variable key of node': '节点变量标识',
   Calculator: '运算',
   'Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression can be static or dynamic one from an expression collections.':
     '基于计算引擎对一个表达式进行计算，并获得一个值作为结果。表达式中可以使用上游节点里的变量。表达式可以是静态的，也可以是表达式表中的动态表达式。',
@@ -107,6 +108,7 @@ export default {
   Aborted: '已终止',
   Canceled: '已取消',
   Rejected: '已拒绝',
+  'Retry needed': '需重试',
 
   'Triggered but still waiting in queue to execute.': '已触发但仍在队列中等待执行。',
   'Started and executing, maybe waiting for an async callback (manual, delay etc.).':
@@ -117,6 +119,7 @@ export default {
   'Running of some node was aborted by program flow.': '某个节点被程序流程终止。',
   'Manually canceled whole execution when waiting.': '等待时被手动取消整个执行。',
   'Rejected from a manual node.': '被人工节点拒绝继续。',
+  'General failed but should do another try.': '执行失败，需重试。',
 
   'Continue the process': '继续流程',
   'Terminate the process': '终止流程',
@@ -248,8 +251,7 @@ export default {
   Distinct: '去重',
   'Query result': '查询结果',
 
-  'Trigger in executed workflow cannot be modified': '已经执行过工作流的触发器不能被修改',
-  'Node in executed workflow cannot be modified': '已经执行过工作流中的节点不能被修改',
+  'Executed workflow cannot be modified': '已经执行过的工作流不能被修改',
   'Can not delete': '无法删除',
   'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.':
     '该节点的执行结果已被其他节点（{{nodes}}）引用，删除前请先移除引用。',
@@ -273,7 +275,7 @@ export default {
   'Only support standard JSON data': '仅支持标准 JSON 数据',
   '"Content-Type" only support "application/json", and no need to specify':
     '"Content-Type" 请求头仅支持 "application/json"，无需填写',
-  'Ignore fail request and continue workflow': '忽略失败的请求并继续工作流',
+  'Ignore failed request and continue workflow': '忽略失败的请求并继续工作流',
 
   'Workflow todos': '工作流待办',
   Task: '任务',

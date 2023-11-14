@@ -11,6 +11,14 @@ export const useStyles = genStyleHook('nb-variable', (token) => {
 
   return {
     [componentCls]: {
+      width: 'auto',
+      display: 'flex',
+      '&.ant-input-group-compact': { display: 'flex' },
+      '.ant-input-disabled': {
+        '.ant-tag': { color: '#bfbfbf', borderColor: '#d9d9d9' },
+      },
+      '.ant-input.null-value': { width: '4em', minWidth: '4em' },
+
       '.ant-formily-item .ant-formily-item-control .ant-formily-item-control-content .ant-formily-item-control-content-component':
         {
           lineHeight: 'normal',
@@ -53,7 +61,7 @@ export const useStyles = genStyleHook('nb-variable', (token) => {
         insetInlineStart: 'auto',
         insetInlineEnd: inputPaddingHorizontalBase,
         zIndex: 1,
-        display: 'inline-block',
+        display: 'none',
         width: token.fontSizeIcon,
         height: token.fontSizeIcon,
         marginTop: -token.fontSizeIcon / 2,
@@ -65,7 +73,7 @@ export const useStyles = genStyleHook('nb-variable', (token) => {
         textTransform: 'none',
         background: token.colorBgContainer,
         cursor: 'pointer',
-        opacity: 0,
+        opacity: 0.8,
         transition: `color ${token.motionDurationMid} ease, opacity ${token.motionDurationSlow} ease`,
         textRendering: 'auto',
         userSelect: 'none',
@@ -81,6 +89,10 @@ export const useStyles = genStyleHook('nb-variable', (token) => {
 
       '.ant-btn': {
         height: 'auto',
+      },
+
+      '.variable': {
+        flex: 1,
       },
     },
   };

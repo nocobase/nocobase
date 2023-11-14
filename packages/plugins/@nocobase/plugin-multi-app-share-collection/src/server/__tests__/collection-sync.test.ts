@@ -41,6 +41,74 @@ pgOnly()('enable plugin', () => {
   });
 });
 
+pgOnly()('collection sync after main', () => {
+  let mainApp: MockServer;
+
+  beforeEach(async () => {
+    const app = mockServer({
+      acl: false,
+      plugins: ['nocobase'],
+    });
+
+    await app.load();
+    await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub1 CASCADE`);
+    await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub2 CASCADE`);
+
+    await app.install({
+      clean: true,
+    });
+
+    await app.start();
+
+    mainApp = app;
+  });
+
+  afterEach(async () => {
+    await mainApp.destroy();
+  });
+
+  it('should sync collections in sub app', async () => {
+    await mainApp.db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [{ type: 'string', title: 'title' }],
+      },
+      context: {},
+    });
+
+    await mainApp.db.getRepository('posts').create({
+      values: {
+        title: 'test',
+      },
+    });
+
+    await mainApp.runCommand('pm', 'enable', 'multi-app-manager');
+    await mainApp.runCommand('pm', 'enable', 'multi-app-share-collection');
+
+    await mainApp.db.sync();
+
+    const subApp1Record = await mainApp.db.getRepository('applications').create({
+      values: {
+        name: 'sub1',
+      },
+      context: {
+        waitSubAppInstall: true,
+      },
+    });
+
+    const subApp1 = await AppSupervisor.getInstance().getApp(subApp1Record.name);
+
+    await subApp1.runCommand('restart');
+    const postCollection = subApp1.db.getCollection('posts');
+
+    expect(postCollection.options.schema).toBe(
+      process.env.COLLECTION_MANAGER_SCHEMA || mainApp.db.options.schema || 'public',
+    );
+
+    expect(await subApp1.db.getRepository('posts').count()).toBe(1);
+  });
+});
+
 pgOnly()('collection sync', () => {
   let mainDb: Database;
   let mainApp: MockServer;
@@ -301,7 +369,7 @@ pgOnly()('collection sync', () => {
     expect(user).toBeTruthy();
   });
 
-  it('should sync custom collections', async () => {
+  it('should sync custom collections after sub app created', async () => {
     const subApp1Record = await mainDb.getRepository('applications').create({
       values: {
         name: 'sub1',
@@ -323,6 +391,34 @@ pgOnly()('collection sync', () => {
 
     await subApp1.runCommand('restart');
 
+    const postCollection = subApp1.db.getCollection('posts');
+
+    expect(postCollection.options.schema).toBe(
+      process.env.COLLECTION_MANAGER_SCHEMA || mainDb.options.schema || 'public',
+    );
+  });
+
+  it('should sync custom collections before sub app created', async () => {
+    await mainApp.db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [{ type: 'string', title: 'title' }],
+      },
+      context: {},
+    });
+
+    const subApp1Record = await mainDb.getRepository('applications').create({
+      values: {
+        name: 'sub1',
+      },
+      context: {
+        waitSubAppInstall: true,
+      },
+    });
+
+    const subApp1 = await AppSupervisor.getInstance().getApp(subApp1Record.name);
+
+    await subApp1.runCommand('restart');
     const postCollection = subApp1.db.getCollection('posts');
 
     expect(postCollection.options.schema).toBe(

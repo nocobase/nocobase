@@ -1,4 +1,5 @@
 import { AuthConfig, BaseAuth } from '@nocobase/auth';
+import { AuthModel } from '@nocobase/plugin-auth';
 import { SAML, SamlConfig } from '@node-saml/node-saml';
 
 interface SAMLOptions {
@@ -23,7 +24,7 @@ export class SAMLAuth extends BaseAuth {
     const name = this.authenticator.get('name');
     const protocol = http ? 'http' : 'https';
     return {
-      callbackUrl: `${protocol}://${ctx.host}/api/saml:redirect?authenticator=${name}`,
+      callbackUrl: `${protocol}://${ctx.host}/api/saml:redirect?authenticator=${name}&app=${ctx.app.name}`,
       entryPoint: ssoUrl,
       issuer: name,
       cert: certificate,
@@ -35,38 +36,57 @@ export class SAMLAuth extends BaseAuth {
   async validate() {
     const ctx = this.ctx;
     const {
-      params: {
-        values: { samlResponse },
-      },
+      params: { values: samlResponse },
     } = ctx.action;
     const saml = new SAML(this.getOptions());
 
     const { profile } = await saml.validatePostResponseAsync(samlResponse);
-
-    const { nameID, nickname, username, email, firstName, lastName, phone } = profile as Record<string, string>;
-
-    const fullName = firstName && lastName && `${firstName} ${lastName}`;
-    const name = nickname ?? username ?? fullName ?? nameID;
-
-    // Compatible processing
-    // When email is provided or nameID is email, use email to find user
-    // If found, associate the user with the current authenticator
-    if (email || nameID.match(/^.+@.+\..+$/)) {
-      const user = await this.userRepository.findOne({
-        filter: { email: email || nameID },
-      });
-      if (user) {
-        await this.authenticator.addUser(user, {
-          through: {
-            uuid: nameID,
-          },
-        });
-        return user;
-      }
+    const { nameID, nickname, firstName, lastName, phone } = profile;
+    let { email, username } = profile;
+    const isEmail = nameID.match(/^.+@.+\..+$/);
+    if (!email && isEmail) {
+      email = nameID;
+    }
+    if (!username && !isEmail) {
+      username = nameID;
     }
 
-    return await this.authenticator.findOrCreateUser(nameID, {
-      nickname: name,
+    const authenticator = this.authenticator as AuthModel;
+    let user = await authenticator.findUser(nameID);
+    if (user) {
+      return user;
+    }
+    // Bind existed user
+    const { userBindField = 'email' } = this.options?.saml || {};
+    if (userBindField === 'email' && email) {
+      user = await this.userRepository.findOne({
+        filter: { email },
+      });
+    } else if (userBindField === 'username' && username) {
+      user = await this.userRepository.findOne({
+        filter: { username },
+      });
+    }
+    if (user) {
+      await this.authenticator.addUser(user.id, {
+        through: {
+          uuid: nameID,
+        },
+      });
+      return user;
+    }
+    // Create new user
+    const { autoSignup } = this.options?.public || {};
+    if (!autoSignup) {
+      throw new Error('User not found');
+    }
+    if (username && !this.validateUsername(username as string)) {
+      throw new Error('Username must be 2-16 characters in length (excluding @.<>"\'/)');
+    }
+    const fullName = firstName && lastName && `${firstName} ${lastName}`;
+    return await authenticator.newUser(nameID, {
+      username: username ?? null,
+      nickname: nickname || fullName || username || nameID,
       email: email ?? null,
       phone: phone ?? null,
     });

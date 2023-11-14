@@ -328,6 +328,9 @@ export default class WorkflowPlugin extends Plugin {
         const execution = (await this.db.getRepository('executions').findOne({
           filter: {
             status: EXECUTION_STATUS.QUEUEING,
+            'workflow.id': {
+              [Op.not]: null,
+            },
           },
           appends: ['workflow'],
           sort: 'createdAt',

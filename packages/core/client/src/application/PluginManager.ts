@@ -19,6 +19,7 @@ export class PluginManager {
 
   constructor(
     protected _plugins: PluginType[],
+    protected loadRemotePlugins: boolean,
     protected app: Application,
   ) {
     this.app = app;
@@ -27,7 +28,9 @@ export class PluginManager {
 
   async init(_plugins: PluginType[]) {
     await this.initStaticPlugins(_plugins);
-    await this.initRemotePlugins();
+    if (this.loadRemotePlugins) {
+      await this.initRemotePlugins();
+    }
   }
 
   private async initStaticPlugins(_plugins: PluginType[] = []) {
@@ -45,11 +48,10 @@ export class PluginManager {
       const plugins = await getPlugins({
         requirejs: this.app.requirejs,
         pluginData: pluginList,
-        baseURL: this.app.apiClient.axios?.defaults?.baseURL,
         devDynamicImport: this.app.devDynamicImport,
       });
-      for await (const plugin of plugins) {
-        await this.add(plugin);
+      for await (const [name, pluginClass] of plugins) {
+        await this.add(pluginClass, { name });
       }
     } catch (error) {
       if (401 === error?.response?.status) {
@@ -74,11 +76,11 @@ export class PluginManager {
 
   get<T extends typeof Plugin>(PluginClass: T): InstanceType<T>;
   get<T extends {}>(name: string): T;
-  get(name: any) {
-    if (typeof name === 'string') {
-      return this.pluginsAliases[name];
+  get(nameOrPluginClass: any) {
+    if (typeof nameOrPluginClass === 'string') {
+      return this.pluginsAliases[nameOrPluginClass];
     }
-    return this.pluginInstances.get(name);
+    return this.pluginInstances.get(nameOrPluginClass.default || nameOrPluginClass);
   }
 
   private getInstance<T>(plugin: typeof Plugin, opts?: T) {

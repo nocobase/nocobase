@@ -1,6 +1,5 @@
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
-import { routes } from './routes';
 
 export class MobileClientPlugin extends Plugin {
   afterAdd() {}
@@ -16,12 +15,12 @@ export class MobileClientPlugin extends Plugin {
   }
 
   async install() {
-    const repository = this.app.db.getRepository('uiRoutes');
-    for (const values of routes) {
-      await repository.create({
-        values,
-      });
-    }
+    // const repository = this.app.db.getRepository('uiRoutes');
+    // for (const values of routes) {
+    //   await repository.create({
+    //     values,
+    //   });
+    // }
     const uiSchemas = this.db.getRepository<any>('uiSchemas');
     const systemSettings = this.db.getRepository('systemSettings');
     const schema = await uiSchemas.insert({

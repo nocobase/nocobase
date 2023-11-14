@@ -17,6 +17,43 @@ describe('gateway', () => {
     await AppSupervisor.getInstance().destroy();
   });
 
+  describe('app selector', () => {
+    it('should get app as default main app', async () => {
+      expect(
+        await gateway.getRequestHandleAppName({
+          url: '/test',
+          headers: {},
+        }),
+      ).toBe('main');
+    });
+
+    it('should add middleware into app selector', async () => {
+      gateway.addAppSelectorMiddleware(async (ctx, next) => {
+        ctx.resolvedAppName = 'test';
+        await next();
+      });
+
+      expect(
+        await gateway.getRequestHandleAppName({
+          url: '/test',
+          headers: {},
+        }),
+      ).toEqual('test');
+    });
+
+    it('should add same middleware into app selector once', async () => {
+      const fn = async (ctx, next) => {
+        ctx.resolvedAppName = 'test';
+        await next();
+      };
+
+      gateway.addAppSelectorMiddleware(fn);
+      gateway.addAppSelectorMiddleware(fn);
+
+      expect(gateway.getAppSelectorMiddlewares().nodes.length).toBe(2);
+    });
+  });
+
   describe('http api', () => {
     it('should return error when app not found', async () => {
       const res = await supertest.agent(gateway.getCallback()).get('/api/app:getInfo');
@@ -60,8 +97,7 @@ describe('gateway', () => {
 
       expect(data).toMatchObject({
         error: {
-          code: 'APP_INITIALIZED',
-          message: errors.APP_INITIALIZED.message({ app: main }),
+          code: 'APP_COMMANDING',
           status: 503,
           maintaining: true,
         },
@@ -156,8 +192,12 @@ describe('gateway', () => {
       return JSON.parse(messages[messages.length - 1]);
     };
 
-    beforeEach(async () => {
+    const clearMessages = () => {
       messages = [];
+    };
+
+    beforeEach(async () => {
+      clearMessages();
       port = await startServerWithRandomPort(gateway.startHttpServer.bind(gateway));
     });
 
@@ -171,6 +211,55 @@ describe('gateway', () => {
       });
 
       await waitSecond();
+    });
+
+    describe('plugin manager api', () => {
+      let app;
+
+      beforeEach(async () => {
+        await connectClient(port);
+
+        app = new Application({
+          database: {
+            dialect: 'sqlite',
+            storage: ':memory:',
+          },
+          plugins: ['nocobase'],
+        });
+
+        await waitSecond();
+
+        await app.runAsCLI(['install'], { from: 'user' });
+        await app.runAsCLI(['start'], { from: 'user' });
+        await waitSecond();
+
+        clearMessages();
+      });
+
+      it('should silently handle the exception when the plugin does not exist', async () => {
+        await app.runAsCLI(['pm', 'add', 'not-exists-plugin'], { from: 'user' });
+        await waitSecond();
+      });
+
+      it('should display a notification-type error message when plugin installation fails', async () => {
+        const pluginClass = app.pm.get('mobile-client');
+        pluginClass.install = async () => {
+          throw new Error('install error');
+        };
+
+        await app.runAsCLI(['pm', 'enable', 'mobile-client'], { from: 'user' });
+        await waitSecond();
+
+        const runningMessage = messages
+          .map((m) => {
+            return JSON.parse(m);
+          })
+          .find((m) => {
+            return m.payload.code == 'APP_RUNNING';
+          });
+
+        expect(runningMessage.payload.refresh).not.toBeTruthy();
+      });
     });
 
     it('should receive app error message', async () => {

@@ -1,5 +1,7 @@
-import { requireModule } from '@nocobase/utils';
 import path from 'path';
+
+import { requireModule } from '@nocobase/utils';
+import { Transactionable } from '@nocobase/database';
 
 import Plugin from '..';
 import type { WorkflowModel } from '../types';
@@ -8,6 +10,7 @@ export abstract class Trigger {
   constructor(public readonly plugin: Plugin) {}
   abstract on(workflow: WorkflowModel): void;
   abstract off(workflow: WorkflowModel): void;
+  duplicateConfig?(workflow: WorkflowModel, options: Transactionable): object | Promise<object>;
 }
 
 export default function <T extends Trigger>(plugin, more: { [key: string]: { new (p: Plugin): T } } = {}) {

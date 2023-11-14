@@ -20,6 +20,7 @@ export default class Processor {
     [JOB_STATUS.ABORTED]: EXECUTION_STATUS.ABORTED,
     [JOB_STATUS.CANCELED]: EXECUTION_STATUS.CANCELED,
     [JOB_STATUS.REJECTED]: EXECUTION_STATUS.REJECTED,
+    [JOB_STATUS.RETRY_NEEDED]: EXECUTION_STATUS.RETRY_NEEDED,
   };
 
   logger: Logger;
@@ -29,7 +30,7 @@ export default class Processor {
   nodes: FlowNodeModel[] = [];
   nodesMap = new Map<number, FlowNodeModel>();
   jobsMap = new Map<number, JobModel>();
-  jobsMapByNodeId: { [key: number]: any } = {};
+  jobsMapByNodeKey: { [key: string]: any } = {};
 
   constructor(
     public execution: ExecutionModel,
@@ -60,8 +61,9 @@ export default class Processor {
   private makeJobs(jobs: Array<JobModel>) {
     jobs.forEach((job) => {
       this.jobsMap.set(job.id, job);
-      // TODO: should consider cycle, and from previous job
-      this.jobsMapByNodeId[job.nodeId] = job.result;
+
+      const node = this.nodesMap.get(job.nodeId);
+      this.jobsMapByNodeKey[node.key] = job.result;
     });
   }
 
@@ -251,7 +253,9 @@ export default class Processor {
       );
     }
     this.jobsMap.set(job.id, job);
-    this.jobsMapByNodeId[job.nodeId] = job.result;
+
+    const node = this.nodesMap.get(job.nodeId);
+    this.jobsMapByNodeKey[node.key] = job.result;
 
     return job;
   }
@@ -306,13 +310,18 @@ export default class Processor {
     return null;
   }
 
-  findBranchLastJob(node: FlowNodeModel): JobModel | null {
+  findBranchLastJob(node: FlowNodeModel, job: JobModel): JobModel | null {
+    const allJobs = Array.from(this.jobsMap.values());
+    const branchJobs = [];
     for (let n = this.findBranchEndNode(node); n && n !== node.upstream; n = n.upstream) {
-      const jobs = Array.from(this.jobsMap.values())
-        .filter((item) => item.nodeId === n.id)
-        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-      if (jobs.length) {
-        return jobs[jobs.length - 1];
+      branchJobs.push(...allJobs.filter((item) => item.nodeId === n.id));
+    }
+    branchJobs.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    for (let i = branchJobs.length - 1; i >= 0; i -= 1) {
+      for (let j = branchJobs[i]; j && j.id !== job.id; j = this.jobsMap.get(j.upstreamId)) {
+        if (j.upstreamId === job.id) {
+          return branchJobs[i];
+        }
       }
     }
     return null;
@@ -333,13 +342,13 @@ export default class Processor {
     for (let n = this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
       const instruction = this.options.plugin.instructions.get(n.type);
       if (typeof instruction.getScope === 'function') {
-        $scopes[n.id] = instruction.getScope(n, this.jobsMapByNodeId[n.id], this);
+        $scopes[n.id] = $scopes[n.key] = instruction.getScope(n, this.jobsMapByNodeKey[n.key], this);
       }
     }
 
     return {
       $context: this.execution.context,
-      $jobsMapByNodeId: this.jobsMapByNodeId,
+      $jobsMapByNodeKey: this.jobsMapByNodeKey,
       $system: systemFns,
       $scopes,
     };

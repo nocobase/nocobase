@@ -1,19 +1,20 @@
 import path from 'path';
 
 import { requireModule } from '@nocobase/utils';
+import { Transactionable } from '@nocobase/database';
 
 import Plugin from '..';
 import Processor from '../Processor';
 
 import type { FlowNodeModel } from '../types';
 
-export type Job = {
+export interface IJob {
   status: number;
   result?: unknown;
   [key: string]: unknown;
-} | null;
+}
 
-export type InstructionResult = Job | Promise<Job>;
+export type InstructionResult = IJob | Promise<IJob> | null;
 
 export type Runner = (node: FlowNodeModel, input: any, processor: Processor) => InstructionResult;
 
@@ -25,7 +26,9 @@ export interface Instruction {
   // for start node in main flow (or branch) to resume when manual sub branch triggered
   resume?: Runner;
 
-  getScope?: (node: FlowNodeModel, job: any, processor: Processor) => any;
+  getScope?: (node: FlowNodeModel, data: any, processor: Processor) => any;
+
+  duplicateConfig?: (node: FlowNodeModel, options: Transactionable) => object | Promise<object>;
 }
 
 type InstructionConstructor<T> = { new (p: Plugin): T };

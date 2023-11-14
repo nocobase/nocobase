@@ -4,7 +4,7 @@ import { App, Dropdown, Menu, MenuProps } from 'antd';
 import React, { createContext, useCallback, useMemo as useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useACLRoleContext, useAPIClient, useCurrentUserContext } from '..';
+import { useACLRoleContext, useAPIClient, useCurrentUserContext, useToken } from '..';
 import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
 import { useChangePassword } from './ChangePassword';
 import { useCurrentUserSettingsMenu } from './CurrentUserSettingsMenuProvider';
@@ -17,7 +17,14 @@ const useApplicationVersion = () => {
     return {
       key: 'version',
       disabled: true,
-      label: `Version ${data?.data?.version}`,
+      label: (
+        <span
+          role="button"
+          aria-label="app-version"
+          aria-disabled="false"
+          style={{ cursor: 'text' }}
+        >{`Version ${data?.data?.version}`}</span>
+      ),
     };
   }, [data?.data?.version]);
 };
@@ -69,6 +76,7 @@ export const SettingsMenu: React.FC<{
 
     return [
       {
+        role: 'button',
         key: 'cache',
         label: t('Clear cache'),
         onClick: async () => {
@@ -77,6 +85,7 @@ export const SettingsMenu: React.FC<{
         },
       },
       {
+        role: 'button',
         key: 'reboot',
         label: t('Restart application'),
         onClick: async () => {
@@ -120,6 +129,7 @@ export const SettingsMenu: React.FC<{
       },
       ...controlApp,
       {
+        role: 'button',
         key: 'signout',
         label: t('Sign out'),
         onClick: async () => {
@@ -158,6 +168,7 @@ export const DropdownVisibleContext = createContext(null);
 export const CurrentUser = () => {
   const [visible, setVisible] = useState(false);
   const { data } = useCurrentUserContext();
+  const { token } = useToken();
 
   return (
     <div style={{ display: 'inline-flex', verticalAlign: 'top' }}>
@@ -172,6 +183,7 @@ export const CurrentUser = () => {
           }}
         >
           <span
+            data-testid="user-center-button"
             className={css`
               max-width: 160px;
               overflow: hidden;
@@ -180,7 +192,7 @@ export const CurrentUser = () => {
               white-space: nowrap;
               text-overflow: ellipsis;
             `}
-            style={{ cursor: 'pointer', border: 0, padding: '16px', color: 'rgba(255, 255, 255, 0.65)' }}
+            style={{ cursor: 'pointer', border: 0, padding: '16px', color: token.colorTextHeaderMenu }}
           >
             {data?.data?.nickname || data?.data?.username || data?.data?.email}
           </span>

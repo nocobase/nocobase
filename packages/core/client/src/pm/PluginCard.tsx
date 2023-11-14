@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { DeleteOutlined, ReadOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { useAPIClient } from '../api-client';
+import { useApp } from '../application';
 import { PluginDetail } from './PluginDetail';
 import { PluginUpgradeModal } from './PluginForm/modal/PluginUpgradeModal';
 import { useStyles } from './style';
@@ -18,6 +19,7 @@ interface IPluginInfo extends IPluginCard {
 
 function PluginInfo(props: IPluginInfo) {
   const { data, onClick } = props;
+  const app = useApp();
   const { name, displayName, isCompatible, packageName, updatable, builtIn, enabled, description, type, error } = data;
   const { styles, theme } = useStyles();
   const navigate = useNavigate();
@@ -27,7 +29,7 @@ function PluginInfo(props: IPluginInfo) {
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [enabledVal, setEnabledVal] = useState(enabled);
   const reload = () => window.location.reload();
-
+  const title = displayName || name || packageName;
   return (
     <>
       {showUploadForm && (
@@ -40,6 +42,8 @@ function PluginInfo(props: IPluginInfo) {
         />
       )}
       <Card
+        role="button"
+        aria-label={title}
         size={'small'}
         bordered={false}
         onClick={() => {
@@ -48,7 +52,7 @@ function PluginInfo(props: IPluginInfo) {
         headStyle={{ border: 'none', minHeight: 'inherit', paddingTop: 14 }}
         bodyStyle={{ paddingTop: 10 }}
         // style={{ marginBottom: theme.marginLG }}
-        title={<div>{displayName || name || packageName}</div>}
+        title={<div>{title}</div>}
         hoverable
         className={css`
           .ant-card-actions {
@@ -89,14 +93,16 @@ function PluginInfo(props: IPluginInfo) {
               </a>
             )}
             {enabled ? (
-              <a
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/admin/settings/${name}`);
-                }}
-              >
-                <SettingOutlined /> {t('Setting')}
-              </a>
+              app.pluginSettingsManager.has(name) && (
+                <a
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(app.pluginSettingsManager.getRoutePath(name));
+                  }}
+                >
+                  <SettingOutlined /> {t('Settings')}
+                </a>
+              )
             ) : (
               <Popconfirm
                 key={'delete'}
@@ -127,6 +133,7 @@ function PluginInfo(props: IPluginInfo) {
             )}
           </Space>,
           <Switch
+            aria-label="enable"
             key={'enable'}
             size={'small'}
             disabled={builtIn || error}
@@ -169,7 +176,7 @@ function PluginInfo(props: IPluginInfo) {
             <Typography.Text type="danger">{t('Dependencies check failed')}</Typography.Text>
           </Button>
         )} */}
-        {/* 
+        {/*
           <Col span={8}>
             <Space direction="vertical" align="end" style={{ display: 'flex', marginTop: -10 }}>
               {type && (
@@ -184,7 +191,7 @@ function PluginInfo(props: IPluginInfo) {
                   {t('Update plugin')}
                 </Button>
               )}
-              
+
               {!error && (
                 <Button style={{ padding: 0 }} type="link">
                   {t('More details')}

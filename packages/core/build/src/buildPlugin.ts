@@ -1,14 +1,16 @@
-import fs from 'fs-extra';
-import chalk from 'chalk';
 import ncc from '@vercel/ncc';
-import path from 'path';
 import react from '@vitejs/plugin-react';
+import chalk from 'chalk';
+import fg from 'fast-glob';
+import fs from 'fs-extra';
+import path from 'path';
 import { build as tsupBuild } from 'tsup';
 import { build as viteBuild } from 'vite';
-import fg from 'fast-glob';
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 import { rspack } from '@rspack/core';
 
+import { EsbuildSupportExts, globExcludeFiles } from './constant';
+import { PkgLog, UserConfig, getPackageJson } from './utils';
 import {
   buildCheck,
   checkFileSize,
@@ -19,8 +21,6 @@ import {
   getSourcePackages,
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
-import { EsbuildSupportExts, globExcludeFiles } from './constant';
-import { PkgLog, UserConfig, getPackageJson } from './utils';
 
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];

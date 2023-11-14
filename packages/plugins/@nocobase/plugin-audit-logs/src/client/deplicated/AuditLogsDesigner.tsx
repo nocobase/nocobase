@@ -1,10 +1,10 @@
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
   SchemaSettings,
   useCollection,
-  useCollectionFilterOptions,
   useDesignable,
+  useFormBlockContext,
   useTableBlockContext,
 } from '@nocobase/client';
 import React from 'react';
@@ -14,30 +14,16 @@ export const AuditLogsDesigner = () => {
   const { name, title } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const dataSource = useCollectionFilterOptions(name);
+  const { form } = useFormBlockContext();
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   return (
     <GeneralSchemaDesigner title={title || name}>
-      <SchemaSettings.ModalItem
-        title={t('Set the data scope')}
-        schema={
-          {
-            type: 'object',
-            title: t('Set the data scope'),
-            properties: {
-              filter: {
-                default: defaultFilter,
-                // title: '数据范围',
-                enum: dataSource,
-                'x-component': 'Filter',
-                'x-decorator-props': {},
-              },
-            },
-          } as ISchema
-        }
+      <SchemaSettings.DataScope
+        collectionName={name}
+        defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
+        form={form}
         onSubmit={({ filter }) => {
           const params = field.decoratorProps.params || {};
           params.filter = filter;

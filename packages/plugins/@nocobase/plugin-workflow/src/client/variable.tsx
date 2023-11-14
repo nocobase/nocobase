@@ -1,4 +1,7 @@
-import { useCompile } from '@nocobase/client';
+import React from 'react';
+
+import { Variable, useCompile } from '@nocobase/client';
+
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE, lang } from './locale';
 import { instructions, useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
@@ -29,13 +32,16 @@ export type OptionsOfUseVariableOptions = {
     value?: string;
     children?: string;
   };
+  appends?: string[] | null;
+  depth?: number;
+  current?: any;
 };
 
 export const defaultFieldNames = { label: 'label', value: 'value', children: 'children' } as const;
 
 export const nodesOptions = {
   label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-  value: '$jobsMapByNodeId',
+  value: '$jobsMapByNodeKey',
   useOptions(options: OptionsOfUseVariableOptions) {
     const current = useNodeContext();
     const upstreams = useAvailableUpstreams(current);
@@ -65,17 +71,18 @@ export const scopeOptions = {
   label: `{{t("Scope variables", { ns: "${NAMESPACE}" })}}`,
   value: '$scopes',
   useOptions(options: OptionsOfUseVariableOptions) {
-    const { fieldNames = defaultFieldNames } = options;
-    const current = useNodeContext();
-    const scopes = useUpstreamScopes(current);
+    const { fieldNames = defaultFieldNames, current } = options;
+    const source = useNodeContext();
+    const from = current ?? source;
+    const scopes = useUpstreamScopes(from);
     const result: VariableOption[] = [];
     scopes.forEach((node) => {
       const instruction = instructions.get(node.type);
       const subOptions = instruction.useScopeVariables?.(node, options);
       if (subOptions) {
         result.push({
-          key: node.id.toString(),
-          [fieldNames.value]: node.id.toString(),
+          key: node.key,
+          [fieldNames.value]: node.key,
           [fieldNames.label]: node.title ?? `#${node.id}`,
           [fieldNames.children]: subOptions,
         });
@@ -126,7 +133,7 @@ export const BaseTypeSets = {
 // { type: 'reference', options: { collection: 'attachments', multiple: false } }
 // { type: 'reference', options: { collection: 'myExpressions', entity: false } }
 
-function matchFieldType(field, type, appends?: string[]): boolean {
+function matchFieldType(field, type): boolean {
   const inputType = typeof type;
   if (inputType === 'string') {
     return BaseTypeSets[type]?.has(field.interface);
@@ -148,7 +155,7 @@ function matchFieldType(field, type, appends?: string[]): boolean {
   }
 
   if (inputType === 'function') {
-    return type(field, appends);
+    return type(field);
   }
 
   return false;
@@ -158,49 +165,80 @@ function isAssociationField(field): boolean {
   return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type);
 }
 
-function getNextAppends(field, appends: string[]) {
+function getNextAppends(field, appends: string[] | null): string[] | null {
+  if (appends == null) {
+    return null;
+  }
   const fieldPrefix = `${field.name}.`;
   return appends.filter((item) => item.startsWith(fieldPrefix)).map((item) => item.replace(fieldPrefix, ''));
 }
 
-function filterTypedFields({ fields, types, appends, compile, getCollectionFields }) {
+function filterTypedFields({ fields, types, appends, depth = 1, compile, getCollectionFields }) {
   return fields.filter((field) => {
-    if (types?.length) {
-      return types.some((type) => matchFieldType(field, type, appends));
-    }
+    const match = types?.length ? types.some((type) => matchFieldType(field, type)) : true;
     if (isAssociationField(field)) {
+      if (appends === null) {
+        if (!depth) {
+          return false;
+        }
+        return (
+          match ||
+          filterTypedFields({
+            fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
+            types,
+            depth: depth - 1,
+            appends,
+            compile,
+            getCollectionFields,
+          })
+        );
+      }
       const nextAppends = getNextAppends(field, appends);
       const included = appends.includes(field.name);
-      return (
-        (nextAppends.length || included) &&
-        filterTypedFields({
-          fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
-          types,
-          // depth: depth - 1,
-          appends: nextAppends,
-          compile,
-          getCollectionFields,
-        }).length
-      );
+      if (match) {
+        return included;
+      } else {
+        return (
+          (nextAppends?.length || included) &&
+          filterTypedFields({
+            fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
+            types,
+            // depth: depth - 1,
+            appends: nextAppends,
+            compile,
+            getCollectionFields,
+          }).length
+        );
+      }
+    } else {
+      return match;
     }
-    return true;
   });
+}
+
+function useOptions(scope, opts) {
+  const compile = useCompile();
+  const children = scope.useOptions?.(opts)?.filter(Boolean);
+  const { fieldNames } = opts;
+  return {
+    [fieldNames.label]: compile(scope.label),
+    [fieldNames.value]: scope.value,
+    key: scope[fieldNames.value],
+    [fieldNames.children]: children,
+    disabled: !children || !children.length,
+  };
 }
 
 export function useWorkflowVariableOptions(options: OptionsOfUseVariableOptions = {}) {
   const fieldNames = Object.assign({}, defaultFieldNames, options.fieldNames ?? {});
   const opts = Object.assign(options, { fieldNames });
-  const compile = useCompile();
-  const result = [scopeOptions, nodesOptions, triggerOptions, systemOptions].map((item: any) => {
-    const children = item.useOptions?.(opts)?.filter(Boolean);
-    return {
-      [fieldNames.label]: compile(item.label),
-      [fieldNames.value]: item.value,
-      key: item[fieldNames.value],
-      [fieldNames.children]: children,
-      disabled: !children || !children.length,
-    };
-  });
+  const result = [
+    useOptions(scopeOptions, opts),
+    useOptions(nodesOptions, opts),
+    useOptions(triggerOptions, opts),
+    useOptions(systemOptions, opts),
+  ];
+  // const cache = useMemo(() => result, [result]);
 
   return result;
 }
@@ -266,6 +304,7 @@ function loadChildren(option) {
     collection: option.field.target,
     types: option.types,
     appends,
+    depth: option.depth - 1,
     ...this,
   });
   option.loadChildren = null;
@@ -273,7 +312,7 @@ function loadChildren(option) {
     option.children = result;
   } else {
     option.isLeaf = true;
-    const matchingType = option.types ? option.types.some((type) => matchFieldType(option.field, type, appends)) : true;
+    const matchingType = option.types ? option.types.some((type) => matchFieldType(option.field, type)) : true;
     if (!matchingType) {
       option.disabled = true;
     }
@@ -286,6 +325,7 @@ export function getCollectionFieldOptions(options): VariableOption[] {
     collection,
     types,
     appends = [],
+    depth = 1,
     compile,
     getCollectionFields,
     fieldNames = defaultFieldNames,
@@ -297,16 +337,17 @@ export function getCollectionFieldOptions(options): VariableOption[] {
   const result: VariableOption[] = filterTypedFields({
     fields: computedFields,
     types,
-    // depth,
+    depth,
     appends,
     compile,
     getCollectionFields,
   }).map((field) => {
     const label = compile(field.uiSchema?.title || field.name);
-    // console.log('===', label, field);
     const nextAppends = getNextAppends(field, appends);
     // TODO: no matching fields in next appends should consider isLeaf as true
-    const isLeaf = !isAssociationField(field) || (!nextAppends.length && !appends.includes(field.name));
+    const isLeaf =
+      !isAssociationField(field) || (nextAppends && !nextAppends.length && !appends.includes(field.name)) || false;
+
     return {
       [fieldNames.label]: label,
       key: field.name,
@@ -314,11 +355,31 @@ export function getCollectionFieldOptions(options): VariableOption[] {
       isLeaf,
       loadChildren: isLeaf ? null : boundLoadChildren,
       field,
-      // depth,
+      depth,
       appends,
       types,
     };
   });
 
   return result;
+}
+
+export function WorkflowVariableInput({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.Input scope={scope} {...props} />;
+}
+
+export function WorkflowVariableTextArea({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.TextArea scope={scope} {...props} />;
+}
+
+export function WorkflowVariableRawTextArea({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.RawTextArea scope={scope} {...props} />;
+}
+
+export function WorkflowVariableJSON({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.JSON scope={scope} {...props} />;
 }

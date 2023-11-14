@@ -7,7 +7,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { isPatternDisabled, SchemaSettings } from '../../../schema-settings';
+import { SchemaSettings, isPatternDisabled } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useOperatorList } from '../filter/useOperators';
 import { isFileCollection } from './FormItem';
@@ -167,6 +167,7 @@ export const EditRequired = () => {
   const { t } = useTranslation();
   const { dn, refresh } = useDesignable();
 
+  // TODO: FormField 好像被弃用了，应该删除掉
   return !field.readPretty && fieldSchema['x-component'] !== 'FormField' ? (
     <SchemaSettings.SwitchItem
       key="required"
@@ -382,7 +383,7 @@ export const EditComponent = () => {
   const fieldModeOptions = useFieldModeOptions();
   const isAssociationField = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collectionField?.type);
   const targetCollection = getCollection(collectionField?.target);
-  const isFileField = isFileCollection(targetCollection);
+  const isFileField = isFileCollection(targetCollection as any);
 
   return isAssociationField && fieldModeOptions ? (
     <SchemaSettings.SelectItem
@@ -496,6 +497,7 @@ export const useEnsureOperatorsValid = () => {
 export const EditOperator = () => {
   const compile = useCompile();
   const fieldSchema = useFieldSchema();
+  const field = useField<Field>();
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const operatorList = useOperatorList();
@@ -513,10 +515,39 @@ export const EditOperator = () => {
       options={compile(operatorList)}
       onChange={(v) => {
         storedOperators[fieldSchema.name] = v;
+        const operator = operatorList.find((item) => item.value === v);
         const schema: ISchema = {
           ['x-uid']: uid,
           ['x-filter-operators']: storedOperators,
         };
+
+        // 根据操作符的配置，设置组件的属性
+        if (operator?.schema?.['x-component']) {
+          _.set(fieldSchema, 'x-component-props.component', operator.schema['x-component']);
+          _.set(field, 'componentProps.component', operator.schema['x-component']);
+          field.reset();
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              ['x-component-props']: {
+                component: operator.schema['x-component'],
+              },
+            },
+          });
+        } else if (fieldSchema['x-component-props']?.component) {
+          _.set(fieldSchema, 'x-component-props.component', null);
+          _.set(field, 'componentProps.component', null);
+          field.reset();
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              ['x-component-props']: {
+                component: null,
+              },
+            },
+          });
+        }
+
         dn.emit('patch', {
           schema,
         });

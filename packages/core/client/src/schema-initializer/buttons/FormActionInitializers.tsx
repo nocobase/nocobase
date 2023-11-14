@@ -133,25 +133,7 @@ export const FormActionInitializers = {
         {
           type: 'item',
           title: '{{t("Custom request")}}',
-          component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{ t("Custom request") }}',
-            'x-component': 'Action',
-            'x-action': 'customize:form:request',
-            'x-designer': 'Action.Designer',
-            'x-action-settings': {
-              requestSettings: {},
-              skipValidator: false,
-              onSuccess: {
-                manualClose: false,
-                redirecting: false,
-                successMessage: '{{t("Request success")}}',
-              },
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeRequestActionProps }}',
-            },
-          },
+          component: 'CustomRequestInitializer',
         },
       ],
     },
@@ -266,25 +248,7 @@ export const CreateFormActionInitializers = {
         {
           type: 'item',
           title: '{{t("Custom request")}}',
-          component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{ t("Custom request") }}',
-            'x-component': 'Action',
-            'x-action': 'customize:form:request',
-            'x-designer': 'Action.Designer',
-            'x-action-settings': {
-              requestSettings: {},
-              skipValidator: false,
-              onSuccess: {
-                manualClose: false,
-                redirecting: false,
-                successMessage: '{{t("Request success")}}',
-              },
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeRequestActionProps }}',
-            },
-          },
+          component: 'CustomRequestInitializer',
         },
       ],
     },
@@ -398,25 +362,7 @@ export const UpdateFormActionInitializers = {
         {
           type: 'item',
           title: '{{t("Custom request")}}',
-          component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{ t("Custom request") }}',
-            'x-component': 'Action',
-            'x-action': 'customize:form:request',
-            'x-designer': 'Action.Designer',
-            'x-action-settings': {
-              requestSettings: {},
-              skipValidator: false,
-              onSuccess: {
-                manualClose: false,
-                redirecting: false,
-                successMessage: '{{t("Submitted successfully")}}',
-              },
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeRequestActionProps }}',
-            },
-          },
+          component: 'CustomRequestInitializer',
         },
       ],
     },
@@ -528,25 +474,7 @@ export const BulkEditFormActionInitializers = {
         {
           type: 'item',
           title: '{{t("Custom request")}}',
-          component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{ t("Custom request") }}',
-            'x-component': 'Action',
-            'x-action': 'customize:form:request',
-            'x-designer': 'Action.Designer',
-            'x-action-settings': {
-              requestSettings: {},
-              skipValidator: false,
-              onSuccess: {
-                manualClose: false,
-                redirecting: false,
-                successMessage: '{{t("Request success")}}',
-              },
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeRequestActionProps }}',
-            },
-          },
+          component: 'CustomRequestInitializer',
         },
       ],
     },

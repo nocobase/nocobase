@@ -22,8 +22,43 @@ export type CollectionSortable = string | boolean | { name?: string; scopeKey?: 
 
 type dumpable = 'required' | 'optional' | 'skip';
 
+function EnsureAtomicity(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  const originalMethod = descriptor.value;
+
+  descriptor.value = function (...args: any[]) {
+    const model = this.model;
+    const beforeAssociationKeys = Object.keys(model.associations);
+    const beforeRawAttributes = Object.keys(model.rawAttributes);
+
+    try {
+      return originalMethod.apply(this, args);
+    } catch (error) {
+      // remove associations created in this method
+      const afterAssociationKeys = Object.keys(model.associations);
+      const createdAssociationKeys = lodash.difference(afterAssociationKeys, beforeAssociationKeys);
+      for (const key of createdAssociationKeys) {
+        delete this.model.associations[key];
+      }
+
+      const afterRawAttributes = Object.keys(model.rawAttributes);
+      const createdRawAttributes = lodash.difference(afterRawAttributes, beforeRawAttributes);
+      console.log({
+        beforeRawAttributes,
+        afterRawAttributes,
+      });
+      for (const key of createdRawAttributes) {
+        delete this.model.rawAttributes[key];
+      }
+      throw error;
+    }
+  };
+
+  return descriptor;
+}
+
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
+  title?: string;
   namespace?: string;
   /**
    * Used for @nocobase/plugin-duplicator
@@ -61,6 +96,8 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   magicAttribute?: string;
 
   tree?: string;
+
+  template?: string;
 
   [key: string]: any;
 }
@@ -251,6 +288,7 @@ export class Collection<
     }
   }
 
+  @EnsureAtomicity
   setField(name: string, options: FieldOptions): Field {
     checkIdentifier(name);
     this.checkFieldType(name, options);
@@ -345,7 +383,7 @@ export class Collection<
   }
 
   remove() {
-    this.context.database.removeCollection(this.name);
+    return this.context.database.removeCollection(this.name);
   }
 
   async removeFromDb(options?: QueryInterfaceDropTableOptions) {
@@ -358,7 +396,8 @@ export class Collection<
       const queryInterface = this.db.sequelize.getQueryInterface();
       await queryInterface.dropTable(this.getTableNameWithSchema(), options);
     }
-    this.remove();
+
+    return this.remove();
   }
 
   async existsInDb(options?: Transactionable) {
@@ -575,7 +614,14 @@ export class Collection<
     });
 
     for (const model of models) {
-      await model.sync(syncOptions);
+      await model.sync(
+        syncOptions || {
+          force: false,
+          alter: {
+            drop: false,
+          },
+        },
+      );
     }
   }
 

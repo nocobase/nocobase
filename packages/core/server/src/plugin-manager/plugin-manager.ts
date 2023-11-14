@@ -415,7 +415,9 @@ export class PluginManager {
           installed: false,
         },
       });
-      await this.app.tryReloadOrRestart();
+      await this.app.tryReloadOrRestart({
+        recover: true,
+      });
       throw error;
     }
   }
@@ -467,7 +469,9 @@ export class PluginManager {
           enabled: true,
         },
       });
-      await this.app.tryReloadOrRestart();
+      await this.app.tryReloadOrRestart({
+        recover: true,
+      });
       throw error;
     }
   }

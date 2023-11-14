@@ -14,13 +14,18 @@ export const ImportInitializerProvider = (props: any) => {
       schema: {
         'x-align': 'right',
         'x-decorator': 'ACLActionProvider',
+        'x-acl-action': 'importXlsx',
         'x-acl-action-props': {
           skipScopeCheck: true,
         },
       },
       visible: function useVisible() {
         const collection = useCollection();
-        return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'file';
+        return (
+          (collection.template !== 'view' || collection?.writableView) &&
+          collection.template !== 'file' &&
+          collection.template !== 'sql'
+        );
       },
     });
   return props.children;

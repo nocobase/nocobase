@@ -85,12 +85,14 @@ export class BelongsToManyField extends RelationField {
       this.options.onDelete = 'CASCADE';
     }
 
-    const association = collection.model.belongsToMany(Target, {
+    const belongsToManyOptions = {
       constraints: false,
       ...omit(this.options, ['name', 'type', 'target']),
       as: this.name,
       through: Through.model,
-    });
+    };
+
+    const association = collection.model.belongsToMany(Target, belongsToManyOptions);
 
     // 建立关系之后从 pending 列表中删除
     database.removePendingField(this);

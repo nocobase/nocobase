@@ -1,11 +1,11 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
-import { actions as authActions, AuthManager } from '@nocobase/auth';
+import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
-import { applyMixins, AsyncEmitter, Toposort, ToposortOptions } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, measureExecutionTime, Toposort, ToposortOptions } from '@nocobase/utils';
 import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { IncomingMessage, Server, ServerResponse } from 'http';
@@ -14,6 +14,7 @@ import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultSta
 import compose from 'koa-compose';
 import lodash from 'lodash';
 import { createACL } from './acl';
+import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
 import { registerCli } from './commands';
 import { ApplicationNotInstall } from './errors/application-not-install';
@@ -22,7 +23,7 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { AppCommand } from './app-command';
+import { CronJobManager } from './cron/cron-job-manager';
 
 const packageJson = require('../package.json');
 
@@ -47,6 +48,7 @@ export interface ApplicationOptions {
   logger?: AppLoggerOptions;
   pmSock?: string;
   name?: string;
+  authManager?: AuthManagerOptions;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -88,6 +90,7 @@ interface StartOptions {
   cliArgs?: any[];
   dbSync?: boolean;
   checkInstall?: boolean;
+  recover?: boolean;
 }
 
 type MaintainingStatus = 'command_begin' | 'command_end' | 'command_running' | 'command_error';
@@ -138,6 +141,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get maintainingMessage() {
     return this._maintainingMessage;
+  }
+
+  protected _cronJobManager: CronJobManager;
+
+  get cronJobManager() {
+    return this._cronJobManager;
   }
 
   protected _db: Database;
@@ -330,6 +339,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._loaded = false;
 
+    await this.emitAsync('beforeReload', this, options);
+
     await this.load({
       ...options,
       reload: true,
@@ -471,14 +482,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.setMaintainingMessage('emit afterStart');
     await this.emitAsync('afterStart', this, options);
-    await this.emitStartedEvent();
+    await this.emitStartedEvent(options);
 
     this.stopped = false;
   }
 
-  async emitStartedEvent() {
+  async emitStartedEvent(options: StartOptions = {}) {
     await this.emitAsync('__started', this, {
       maintainingStatus: lodash.cloneDeep(this._maintainingCommandStatus),
+      options,
     });
   }
 
@@ -486,11 +498,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._started;
   }
 
-  async tryReloadOrRestart() {
+  async tryReloadOrRestart(options: StartOptions = {}) {
     if (this._started) {
-      await this.restart();
+      await this.restart(options);
     } else {
-      await this.reload();
+      await this.reload(options);
     }
   }
 
@@ -509,6 +521,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   async stop(options: any = {}) {
     this.log.debug('stop app...');
     this.setMaintainingMessage('stopping app...');
+
     if (this.stopped) {
       this.log.warn(`Application ${this.name} already stopped`);
       return;
@@ -620,18 +633,29 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   async upgrade(options: any = {}) {
     await this.emitAsync('beforeUpgrade', this, options);
     const force = false;
-    await this.db.migrator.up();
-    await this.db.sync({
-      force,
-      alter: {
-        drop: force,
-      },
-    });
+
+    await measureExecutionTime(async () => {
+      await this.db.migrator.up();
+    }, 'Migrator');
+
+    await measureExecutionTime(async () => {
+      await this.db.sync({
+        force,
+        alter: {
+          drop: force,
+        },
+      });
+    }, 'Sync');
+
     await this.version.update();
     await this.emitAsync('afterUpgrade', this, options);
+
     this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
+
     if (this._started) {
-      await this.restart();
+      await measureExecutionTime(async () => {
+        await this.restart();
+      }, 'Restart');
     }
   }
 
@@ -670,6 +694,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.plugins = new Map<string, Plugin>();
     this._acl = createACL();
 
+    this._cronJobManager = new CronJobManager(this);
+
     this.use(logger.middleware, { tag: 'logger' });
 
     if (this._db) {
@@ -698,6 +724,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._authManager = new AuthManager({
       authKey: 'X-Authenticator',
       default: 'basic',
+      ...(this.options.authManager || {}),
     });
 
     this.resource({
@@ -724,7 +751,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._version = new ApplicationVersion(this);
   }
 
-  private createDatabase(options: ApplicationOptions) {
+  protected createDatabase(options: ApplicationOptions) {
     const db = new Database({
       ...(options.database instanceof Database ? options.database.options : options.database),
       migrator: {

@@ -2,7 +2,7 @@ import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
 import { Input } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import sanitizeHTML from 'sanitize-html';
 
 import { error } from '@nocobase/utils/client';
@@ -222,30 +222,36 @@ export function TextArea(props) {
     }
     const nextRange = new Range();
     if (changed) {
-      setChanged(false);
+      // setChanged(false);
       if (range.join() === '-1,0,-1,0') {
         return;
       }
       const sel = window.getSelection?.();
       if (sel) {
-        const children = Array.from(current.childNodes) as HTMLElement[];
-        if (range[0] === -1) {
-          if (range[1]) {
-            nextRange.setStartAfter(children[range[1] - 1]);
+        try {
+          const children = Array.from(current.childNodes) as HTMLElement[];
+          if (children.length) {
+            if (range[0] === -1) {
+              if (range[1]) {
+                nextRange.setStartAfter(children[range[1] - 1]);
+              }
+            } else {
+              nextRange.setStart(children[range[0]], range[1]);
+            }
+            if (range[2] === -1) {
+              if (range[3]) {
+                nextRange.setEndAfter(children[range[3] - 1]);
+              }
+            } else {
+              nextRange.setEnd(children[range[2]], range[3]);
+            }
           }
-        } else {
-          nextRange.setStart(children[range[0]], range[1]);
+          nextRange.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(nextRange);
+        } catch (ex) {
+          // console.error(ex);
         }
-        if (range[2] === -1) {
-          if (range[3]) {
-            nextRange.setEndAfter(children[range[3] - 1]);
-          }
-        } else {
-          nextRange.setEnd(children[range[2]], range[3]);
-        }
-        nextRange.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(nextRange);
       }
     } else {
       const { lastChild } = current;
@@ -260,39 +266,45 @@ export function TextArea(props) {
     }
   }, [html]);
 
-  function onInsert(paths: string[]) {
-    const variable: string[] = paths.filter((key) => Boolean(key.trim()));
-    const { current } = inputRef;
-    if (!current || !variable) {
-      return;
-    }
+  const onInsert = useCallback(
+    function (paths: string[]) {
+      const variable: string[] = paths.filter((key) => Boolean(key.trim()));
+      const { current } = inputRef;
+      if (!current || !variable) {
+        return;
+      }
 
-    current.focus();
+      current.focus();
 
-    const content = createVariableTagHTML(variable.join('.'), keyLabelMap);
-    pasteHTML(current, content, {
-      range,
-    });
+      const content = createVariableTagHTML(variable.join('.'), keyLabelMap);
+      pasteHTML(current, content, {
+        range,
+      });
 
-    setChanged(true);
-    setRange(getCurrentRange(current));
-    onChange(getValue(current));
-  }
+      setChanged(true);
+      setRange(getCurrentRange(current));
+      onChange(getValue(current));
+    },
+    [keyLabelMap, onChange, range],
+  );
 
-  function onInput({ currentTarget }) {
-    if (ime) {
-      return;
-    }
-    setChanged(true);
+  const onInput = useCallback(
+    function ({ currentTarget }) {
+      if (ime) {
+        return;
+      }
+      setChanged(true);
+      setRange(getCurrentRange(currentTarget));
+      onChange(getValue(currentTarget));
+    },
+    [ime, onChange],
+  );
+
+  const onBlur = useCallback(function ({ currentTarget }) {
     setRange(getCurrentRange(currentTarget));
-    onChange(getValue(currentTarget));
-  }
+  }, []);
 
-  function onBlur({ currentTarget }) {
-    setRange(getCurrentRange(currentTarget));
-  }
-
-  function onKeyDown(ev) {
+  const onKeyDown = useCallback(function (ev) {
     if (ev.key === 'Enter') {
       ev.preventDefault();
     }
@@ -303,37 +315,40 @@ export function TextArea(props) {
     // if (ev.key === 'Alt') {
     //   console.debug(getCurrentRange(ev.currentTarget));
     // }
-  }
+  }, []);
 
-  function onPaste(ev) {
-    ev.preventDefault();
-    const input = ev.clipboardData.getData('text/html') || ev.clipboardData.getData('text');
-    const sanitizedHTML = sanitizeHTML(input, {
-      allowedTags: ['span'],
-      allowedAttributes: {
-        span: ['data-variable', 'contenteditable'],
-      },
-      allowedClasses: {
-        span: ['ant-tag', 'ant-tag-*'],
-      },
-      transformTags: {
-        span(tagName, attribs) {
-          return attribs['data-variable']
-            ? {
-                tagName: tagName,
-                attribs,
-              }
-            : {};
+  const onPaste = useCallback(
+    function (ev) {
+      ev.preventDefault();
+      const input = ev.clipboardData.getData('text/html') || ev.clipboardData.getData('text');
+      const sanitizedHTML = sanitizeHTML(input, {
+        allowedTags: ['span'],
+        allowedAttributes: {
+          span: ['data-variable', 'contenteditable'],
         },
-      },
-    }).replace(/\n/g, ' ');
-    // ev.clipboardData.setData('text/html', sanitizedHTML);
-    // console.log(input, sanitizedHTML);
-    setChanged(true);
-    pasteHTML(ev.currentTarget, sanitizedHTML);
-    setRange(getCurrentRange(ev.currentTarget));
-    onChange(getValue(ev.currentTarget));
-  }
+        allowedClasses: {
+          span: ['ant-tag', 'ant-tag-*'],
+        },
+        transformTags: {
+          span(tagName, attribs) {
+            return attribs['data-variable']
+              ? {
+                  tagName: tagName,
+                  attribs,
+                }
+              : {};
+          },
+        },
+      }).replace(/\n/g, ' ');
+      // ev.clipboardData.setData('text/html', sanitizedHTML);
+      // console.log(input, sanitizedHTML);
+      setChanged(true);
+      pasteHTML(ev.currentTarget, sanitizedHTML);
+      setRange(getCurrentRange(ev.currentTarget));
+      onChange(getValue(ev.currentTarget));
+    },
+    [onChange],
+  );
 
   const disabled = props.disabled || form.disabled;
 
@@ -365,6 +380,8 @@ export function TextArea(props) {
       )}
     >
       <div
+        role="button"
+        aria-label="textbox"
         onInput={onInput}
         onBlur={onBlur}
         onKeyDown={onKeyDown}
@@ -391,7 +408,13 @@ export function TextArea(props) {
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {!disabled ? (
-        <VariableSelect options={options} setOptions={setOptions} onInsert={onInsert} changeOnSelect={changeOnSelect} />
+        <VariableSelect
+          className=""
+          options={options}
+          setOptions={setOptions}
+          onInsert={onInsert}
+          changeOnSelect={changeOnSelect}
+        />
       ) : null}
     </Input.Group>,
   );
@@ -399,6 +422,10 @@ export function TextArea(props) {
 
 async function preloadOptions(scope, value) {
   const options = cloneDeep(scope ?? []);
+
+  // 重置正则的匹配位置
+  VARIABLE_RE.lastIndex = 0;
+
   for (let matcher; (matcher = VARIABLE_RE.exec(value ?? '')); ) {
     const keys = matcher[1].split('.');
 
@@ -424,7 +451,9 @@ async function preloadOptions(scope, value) {
 }
 
 TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
-  const { value, scope } = props;
+  const { value } = props;
+  const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
+
   const [options, setOptions] = useState([]);
   const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [options]);
 

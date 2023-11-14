@@ -83,7 +83,6 @@ describe('collection', () => {
   });
 
   test('removeFromDb', async () => {
-    await db.clean({ drop: true });
     const collection = db.collection({
       name: 'test',
       fields: [
@@ -107,6 +106,30 @@ describe('collection', () => {
     await collection.removeFromDb();
     const r4 = await collection.existsInDb();
     expect(r4).toBe(false);
+  });
+
+  test('remove from db with cascade', async () => {
+    const testCollection = db.collection({
+      name: 'test',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const viewName = `test_view`;
+    const viewSQL = `create view ${viewName} as select * from ${testCollection.getTableNameWithSchemaAsString()}`;
+    await db.sequelize.query(viewSQL);
+
+    await expect(
+      testCollection.removeFromDb({
+        cascade: true,
+      }),
+    ).resolves.toBeTruthy();
   });
 
   test('collection disable authGenId', async () => {

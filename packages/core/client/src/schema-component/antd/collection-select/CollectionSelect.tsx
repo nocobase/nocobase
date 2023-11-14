@@ -15,9 +15,9 @@ export type CollectionSelectProps = SelectProps<any, any> & {
 function useOptions({ filter, isTableOid }: CollectionSelectProps) {
   const compile = useCompile();
   const field: any = useField();
-  const ctx = useContext(FilterContext);
+  const ctx: any = useContext(FilterContext);
   const collection = useCollection();
-  const targetCollection = isTableOid && (ctx?.collectionName || collection.name);
+  const targetCollection = isTableOid && (ctx?.field?.collectionName || collection.name);
   const inheritCollections = useSelfAndChildrenCollections(targetCollection);
   const { collections = [] } = useCollectionManager();
   const currentCollections = field?.dataSource
@@ -27,7 +27,7 @@ function useOptions({ filter, isTableOid }: CollectionSelectProps) {
     : collections;
   const filtered =
     typeof filter === 'function'
-      ? (inheritCollections || currentCollections).filter(filter)
+      ? ((inheritCollections || currentCollections) as any[]).filter(filter)
       : inheritCollections || currentCollections;
   return filtered
     .filter((item) => !item.hidden)
@@ -45,6 +45,9 @@ export const CollectionSelect = connect(
     const { t } = useTranslation();
     return (
       <Select
+        // @ts-ignore
+        role="button"
+        data-testid="select-collection"
         placeholder={t('Select collection')}
         popupMatchSelectWidth={false}
         {...others}

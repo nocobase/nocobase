@@ -3,11 +3,11 @@ import { uniqBy } from 'lodash';
 import React, { createContext, useEffect, useRef } from 'react';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { SharedFilter, mergeFilter } from '../block-provider/SharedFilterProvider';
-import { CollectionFieldOptions, FieldOptions, useCollection } from '../collection-manager';
+import { CollectionFieldOptions, useCollection } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { useAssociatedFields } from './utils';
 
-export interface ForeignKeyField extends FieldOptions {
+export interface ForeignKeyField {
   /** 外键字段所在的数据表的名称 */
   collectionName: string;
   isForeignKey: boolean;
@@ -15,6 +15,8 @@ export interface ForeignKeyField extends FieldOptions {
   name: string;
   parentKey: null | string;
   reverseKey: null | string;
+
+  [key: string]: any;
 }
 
 type Collection = ReturnType<typeof useCollection>;
@@ -59,6 +61,11 @@ export const FilterBlockProvider: React.FC = ({ children }) => {
   return <FilterContext.Provider value={{ dataBlocks, setDataBlocks }}>{children}</FilterContext.Provider>;
 };
 
+/**
+ * 用于收集记录当前页面中的数据区块的信息
+ * @param param0
+ * @returns
+ */
 export const FilterBlockRecord = ({
   children,
   params,

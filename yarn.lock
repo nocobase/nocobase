@@ -3645,6 +3645,11 @@
   version "8.44.0"
   resolved "https://registry.npmmirror.com/@eslint/js/-/js-8.44.0.tgz#961a5903c74139390478bdc808bcde3fc45ab7af"
 
+"@faker-js/faker@8.1.0":
+  version "8.1.0"
+  resolved "https://registry.npmmirror.com/@faker-js/faker/-/faker-8.1.0.tgz#e14896f1c57af2495e341dc4c7bf04125c8aeafd"
+  integrity sha512-38DT60rumHfBYynif3lmtxMqMqmsOQIxQgEuPZxCk2yUYN0eqWpTACgxi0VpidvsJB8CRxCpvP7B3anK85FjtQ==
+
 "@floating-ui/core@^0.6.2":
   version "0.6.2"
   resolved "https://registry.npmmirror.com/@floating-ui/core/-/core-0.6.2.tgz#f2813f0e5f3d5ed7af5029e1a082203dadf02b7d"
@@ -3750,27 +3755,10 @@
     intl-messageformat "10.5.0"
     tslib "^2.4.0"
 
-"@formily/antd-v5@1.1.1":
-  version "1.1.1"
-  resolved "https://registry.npmmirror.com/@formily/antd-v5/-/antd-v5-1.1.1.tgz#b1f103cbb99b88d14ebf66a362e6fd2177046478"
-  dependencies:
-    "@ant-design/cssinjs" "^1.3.1"
-    "@ant-design/icons" "^5.0.0"
-    "@dnd-kit/core" "^6.0.0"
-    "@dnd-kit/sortable" "^7.0.0"
-    "@formily/core" "^2.2.0"
-    "@formily/grid" "^2.2.0"
-    "@formily/json-schema" "^2.2.0"
-    "@formily/react" "^2.2.0"
-    "@formily/reactive" "^2.2.0"
-    "@formily/reactive-react" "^2.2.0"
-    "@formily/shared" "^2.2.0"
-    classnames "^2.2.6"
-    react-sticky-box "^1.0.2"
-
-"@formily/antd-v5@1.x":
-  version "1.1.0"
-  resolved "https://registry.npmmirror.com/@formily/antd-v5/-/antd-v5-1.1.0.tgz#e2f20df64c62df348a78b4c44aa17c23a24887d1"
+"@formily/antd-v5@1.1.7", "@formily/antd-v5@1.x", "@formily/antd-v5@^1.1.7":
+  version "1.1.7"
+  resolved "https://registry.npmmirror.com/@formily/antd-v5/-/antd-v5-1.1.7.tgz#5dc0d395510bcaf3ecd13bef24bed5a238d08a1b"
+  integrity sha512-AWKtn4w3+sSasWyypmuYjXW5RMxp3Lc9UKjAUUtyhjD928SvFlF7kJI0IhMODQDuZLR5tbRtFic/sYopJK3v7w==
   dependencies:
     "@ant-design/cssinjs" "^1.3.1"
     "@ant-design/icons" "^5.0.0"
@@ -4024,6 +4012,13 @@
     pretty-format "^29.6.2"
     slash "^3.0.0"
     strip-ansi "^6.0.0"
+
+"@jest/create-cache-key-function@^27.4.2":
+  version "27.5.1"
+  resolved "https://registry.yarnpkg.com/@jest/create-cache-key-function/-/create-cache-key-function-27.5.1.tgz#7448fae15602ea95c828f5eceed35c202a820b31"
+  integrity sha512-dmH1yW+makpTSURTy8VzdUwFnfQh1G8R+DxO2Ho2FFmBbKFEVm+3jWdvFhE2VqB/LATCTokkP0dotjyQyw5/AQ==
+  dependencies:
+    "@jest/types" "^27.5.1"
 
 "@jest/environment@^29.6.1":
   version "29.6.1"
@@ -4289,7 +4284,7 @@
     slash "^3.0.0"
     write-file-atomic "^4.0.2"
 
-"@jest/types@27.5.1":
+"@jest/types@27.5.1", "@jest/types@^27.5.1":
   version "27.5.1"
   resolved "https://registry.npmmirror.com/@jest/types/-/types-27.5.1.tgz#3c79ec4a8ba61c170bf937bcf9e98a9df175ec80"
   dependencies:
@@ -5270,6 +5265,16 @@
     picocolors "^1.0.0"
     tslib "^2.5.0"
 
+"@playwright/test@^1.37.1":
+  version "1.37.1"
+  resolved "https://registry.npmmirror.com/@playwright/test/-/test-1.37.1.tgz#e7f44ae0faf1be52d6360c6bbf689fd0057d9b6f"
+  integrity sha512-bq9zTli3vWJo8S3LwB91U0qDNQDpEXnw7knhxLM0nwDvexQAwx9tO8iKDZSqqneVq+URd/WIoz+BALMqUTgdSg==
+  dependencies:
+    "@types/node" "*"
+    playwright-core "1.37.1"
+  optionalDependencies:
+    fsevents "2.3.2"
+
 "@pm2/agent@~2.0.0":
   version "2.0.1"
   resolved "https://registry.npmmirror.com/@pm2/agent/-/agent-2.0.1.tgz#0edffc54cd8ee2b12f90136264e7880f3f78c79d"
@@ -6180,41 +6185,91 @@
   version "1.3.57"
   resolved "https://registry.npmmirror.com/@swc/core-darwin-arm64/-/core-darwin-arm64-1.3.57.tgz#6af39458bf4ae58c8e4d12be2f2d69563b5a932a"
 
+"@swc/core-darwin-arm64@1.3.96":
+  version "1.3.96"
+  resolved "https://registry.yarnpkg.com/@swc/core-darwin-arm64/-/core-darwin-arm64-1.3.96.tgz#7c1c4245ce3f160a5b36a48ed071e3061a839e1d"
+  integrity sha512-8hzgXYVd85hfPh6mJ9yrG26rhgzCmcLO0h1TIl8U31hwmTbfZLzRitFQ/kqMJNbIBCwmNH1RU2QcJnL3d7f69A==
+
 "@swc/core-darwin-x64@1.3.57":
   version "1.3.57"
   resolved "https://registry.npmmirror.com/@swc/core-darwin-x64/-/core-darwin-x64-1.3.57.tgz#e7133f88e1aa166ad7e5966302df495551c3505c"
+
+"@swc/core-darwin-x64@1.3.96":
+  version "1.3.96"
+  resolved "https://registry.yarnpkg.com/@swc/core-darwin-x64/-/core-darwin-x64-1.3.96.tgz#4720ff897ca3f22fe77d0be688968161480c80f0"
+  integrity sha512-mFp9GFfuPg+43vlAdQZl0WZpZSE8sEzqL7sr/7Reul5McUHP0BaLsEzwjvD035ESfkY8GBZdLpMinblIbFNljQ==
 
 "@swc/core-linux-arm-gnueabihf@1.3.57":
   version "1.3.57"
   resolved "https://registry.npmmirror.com/@swc/core-linux-arm-gnueabihf/-/core-linux-arm-gnueabihf-1.3.57.tgz#f8d95c8a9e03d1cccbb85d214fe24ca95940852a"
 
+"@swc/core-linux-arm-gnueabihf@1.3.96":
+  version "1.3.96"
+  resolved "https://registry.yarnpkg.com/@swc/core-linux-arm-gnueabihf/-/core-linux-arm-gnueabihf-1.3.96.tgz#2c238ae00b13918ac058b132a31dc57dbcf94e39"
+  integrity sha512-8UEKkYJP4c8YzYIY/LlbSo8z5Obj4hqcv/fUTHiEePiGsOddgGf7AWjh56u7IoN/0uEmEro59nc1ChFXqXSGyg==
+
 "@swc/core-linux-arm64-gnu@1.3.57":
   version "1.3.57"
   resolved "https://registry.npmmirror.com/@swc/core-linux-arm64-gnu/-/core-linux-arm64-gnu-1.3.57.tgz#66fb53f081f43a652de79374d8b7c78b10469ef8"
+
+"@swc/core-linux-arm64-gnu@1.3.96":
+  version "1.3.96"
+  resolved "https://registry.yarnpkg.com/@swc/core-linux-arm64-gnu/-/core-linux-arm64-gnu-1.3.96.tgz#be2e84506b9761b561fb9a341e587f8594a8e55d"
+  integrity sha512-c/IiJ0s1y3Ymm2BTpyC/xr6gOvoqAVETrivVXHq68xgNms95luSpbYQ28rqaZC8bQC8M5zdXpSc0T8DJu8RJGw==
 
 "@swc/core-linux-arm64-musl@1.3.57":
   version "1.3.57"
   resolved "https://registry.npmmirror.com/@swc/core-linux-arm64-musl/-/core-linux-arm64-musl-1.3.57.tgz#28709d982d2eeb55b173c79a7d5feed1a2cc065d"
 
+"@swc/core-linux-arm64-musl@1.3.96":
+  version "1.3.96"
+  resolved "https://registry.yarnpkg.com/@swc/core-linux-arm64-musl/-/core-linux-arm64-musl-1.3.96.tgz#22c9ce17bd923ae358760e668ca33c90210c2ae5"
+  integrity sha512-i5/UTUwmJLri7zhtF6SAo/4QDQJDH2fhYJaBIUhrICmIkRO/ltURmpejqxsM/ye9Jqv5zG7VszMC0v/GYn/7BQ==
+
 "@swc/core-linux-x64-gnu@1.3.57":
   version "1.3.57"
   resolved "https://registry.npmmirror.com/@swc/core-linux-x64-gnu/-/core-linux-x64-gnu-1.3.57.tgz#3bea8b7d115fc2bf65a7b4b6930dd878f434034f"
+
+"@swc/core-linux-x64-gnu@1.3.96":
+  version "1.3.96"
+  resolved "https://registry.yarnpkg.com/@swc/core-linux-x64-gnu/-/core-linux-x64-gnu-1.3.96.tgz#c17c072e338341c0ac3507a31ab2a36d16d79c98"
+  integrity sha512-USdaZu8lTIkm4Yf9cogct/j5eqtdZqTgcTib4I+NloUW0E/hySou3eSyp3V2UAA1qyuC72ld1otXuyKBna0YKQ==
 
 "@swc/core-linux-x64-musl@1.3.57":
   version "1.3.57"
   resolved "https://registry.npmmirror.com/@swc/core-linux-x64-musl/-/core-linux-x64-musl-1.3.57.tgz#40bf395ac8971d561e38ef2af54b72d3705c199e"
 
+"@swc/core-linux-x64-musl@1.3.96":
+  version "1.3.96"
+  resolved "https://registry.yarnpkg.com/@swc/core-linux-x64-musl/-/core-linux-x64-musl-1.3.96.tgz#eb74594a48b4e9cabdce7f5525b3b946f8d6dd16"
+  integrity sha512-QYErutd+G2SNaCinUVobfL7jWWjGTI0QEoQ6hqTp7PxCJS/dmKmj3C5ZkvxRYcq7XcZt7ovrYCTwPTHzt6lZBg==
+
 "@swc/core-win32-arm64-msvc@1.3.57":
   version "1.3.57"
   resolved "https://registry.npmmirror.com/@swc/core-win32-arm64-msvc/-/core-win32-arm64-msvc-1.3.57.tgz#5edf457fb86c455b6cecb89e4fa29a8dfa47910b"
+
+"@swc/core-win32-arm64-msvc@1.3.96":
+  version "1.3.96"
+  resolved "https://registry.yarnpkg.com/@swc/core-win32-arm64-msvc/-/core-win32-arm64-msvc-1.3.96.tgz#6f7c0d20d80534b0676dc6761904288c16e93857"
+  integrity sha512-hjGvvAduA3Un2cZ9iNP4xvTXOO4jL3G9iakhFsgVhpkU73SGmK7+LN8ZVBEu4oq2SUcHO6caWvnZ881cxGuSpg==
 
 "@swc/core-win32-ia32-msvc@1.3.57":
   version "1.3.57"
   resolved "https://registry.npmmirror.com/@swc/core-win32-ia32-msvc/-/core-win32-ia32-msvc-1.3.57.tgz#0d9d4b851f5380dce04094412ecae8ac538f5dc8"
 
+"@swc/core-win32-ia32-msvc@1.3.96":
+  version "1.3.96"
+  resolved "https://registry.yarnpkg.com/@swc/core-win32-ia32-msvc/-/core-win32-ia32-msvc-1.3.96.tgz#47bb24ef2e4c81407a6786649246983cc69e7854"
+  integrity sha512-Far2hVFiwr+7VPCM2GxSmbh3ikTpM3pDombE+d69hkedvYHYZxtTF+2LTKl/sXtpbUnsoq7yV/32c9R/xaaWfw==
+
 "@swc/core-win32-x64-msvc@1.3.57":
   version "1.3.57"
   resolved "https://registry.npmmirror.com/@swc/core-win32-x64-msvc/-/core-win32-x64-msvc-1.3.57.tgz#4923a71e9bd3a1bae3ab3a1c6e07a31973d45f61"
+
+"@swc/core-win32-x64-msvc@1.3.96":
+  version "1.3.96"
+  resolved "https://registry.yarnpkg.com/@swc/core-win32-x64-msvc/-/core-win32-x64-msvc-1.3.96.tgz#c796e3df7afe2875d227c74add16a7d09c77d8bd"
+  integrity sha512-4VbSAniIu0ikLf5mBX81FsljnfqjoVGleEkCQv4+zRlyZtO3FHoDPkeLVoy6WRlj7tyrRcfUJ4mDdPkbfTO14g==
 
 "@swc/core@1.3.57":
   version "1.3.57"
@@ -6231,12 +6286,49 @@
     "@swc/core-win32-ia32-msvc" "1.3.57"
     "@swc/core-win32-x64-msvc" "1.3.57"
 
+"@swc/core@^1.3.92":
+  version "1.3.96"
+  resolved "https://registry.yarnpkg.com/@swc/core/-/core-1.3.96.tgz#f04d58b227ceed2fee6617ce2cdddf21d0803f96"
+  integrity sha512-zwE3TLgoZwJfQygdv2SdCK9mRLYluwDOM53I+dT6Z5ZvrgVENmY3txvWDvduzkV+/8IuvrRbVezMpxcojadRdQ==
+  dependencies:
+    "@swc/counter" "^0.1.1"
+    "@swc/types" "^0.1.5"
+  optionalDependencies:
+    "@swc/core-darwin-arm64" "1.3.96"
+    "@swc/core-darwin-x64" "1.3.96"
+    "@swc/core-linux-arm-gnueabihf" "1.3.96"
+    "@swc/core-linux-arm64-gnu" "1.3.96"
+    "@swc/core-linux-arm64-musl" "1.3.96"
+    "@swc/core-linux-x64-gnu" "1.3.96"
+    "@swc/core-linux-x64-musl" "1.3.96"
+    "@swc/core-win32-arm64-msvc" "1.3.96"
+    "@swc/core-win32-ia32-msvc" "1.3.96"
+    "@swc/core-win32-x64-msvc" "1.3.96"
+
+"@swc/counter@^0.1.1":
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/@swc/counter/-/counter-0.1.2.tgz#bf06d0770e47c6f1102270b744e17b934586985e"
+  integrity sha512-9F4ys4C74eSTEUNndnER3VJ15oru2NumfQxS8geE+f3eB5xvfxpWyqE5XlVnxb/R14uoXi6SLbBwwiDSkv+XEw==
+
 "@swc/helpers@0.5.1":
   version "0.5.1"
   resolved "https://registry.npmmirror.com/@swc/helpers/-/helpers-0.5.1.tgz#e9031491aa3f26bfcc974a67f48bd456c8a5357a"
   integrity sha512-sJ902EfIzn1Fa+qYmjdQqh8tPsoxyBz+8yBKC2HKUxyezKJFwPGOn7pv4WY6QuQW//ySQi5lJjA/ZT9sNWWNTg==
   dependencies:
     tslib "^2.4.0"
+
+"@swc/jest@^0.2.29":
+  version "0.2.29"
+  resolved "https://registry.yarnpkg.com/@swc/jest/-/jest-0.2.29.tgz#b27d647ec430c909f9bb567d1df2a47eaa3841f4"
+  integrity sha512-8reh5RvHBsSikDC3WGCd5ZTd2BXKkyOdK7QwynrCH58jk2cQFhhHhFBg/jvnWZehUQe/EoOImLENc9/DwbBFow==
+  dependencies:
+    "@jest/create-cache-key-function" "^27.4.2"
+    jsonc-parser "^3.2.0"
+
+"@swc/types@^0.1.5":
+  version "0.1.5"
+  resolved "https://registry.yarnpkg.com/@swc/types/-/types-0.1.5.tgz#043b731d4f56a79b4897a3de1af35e75d56bc63a"
+  integrity sha512-myfUej5naTBWnqOCc/MdVOLVjXUXtIA+NpDrDBKJtLLg2shUjBu3cZmB/85RyitKc55+lUUyl7oRfLOvkr2hsw==
 
 "@szmarczak/http-timer@^1.1.2":
   version "1.1.2"
@@ -6852,6 +6944,11 @@
 "@types/luxon@*":
   version "3.3.0"
   resolved "https://registry.yarnpkg.com/@types/luxon/-/luxon-3.3.0.tgz#a61043a62c0a72696c73a0a305c544c96501e006"
+
+"@types/luxon@~3.3.0":
+  version "3.3.2"
+  resolved "https://registry.npmjs.org/@types/luxon/-/luxon-3.3.2.tgz#f6e3524c2486b949a4db445e85d93c8e9886dfe2"
+  integrity sha512-l5cpE57br4BIjK+9BSkFBOsWtwv6J9bJpC7gdXIzZyI0vuKvNTk0wZZrkQxMGsUAuGW9+WMNWF2IJMD7br2yeQ==
 
 "@types/markdown-it-highlightjs@3.3.1":
   version "3.3.1"
@@ -8141,7 +8238,7 @@ antd-token-previewer@2.0.0-alpha.8, antd-token-previewer@^2.0.0-alpha.6:
     use-debouncy "^4.3.0"
     vanilla-jsoneditor "^0.16.1"
 
-antd@5.8.6, antd@5.x, antd@^5.4.2, antd@^5.5.1:
+antd@5.8.6, antd@5.x, antd@^5.4.2, antd@^5.5.1, antd@^5.8.6:
   version "5.8.6"
   resolved "https://registry.npmmirror.com/antd/-/antd-5.8.6.tgz#48af8d4221098dbd1faa5e56f0a1344741e2a3dc"
   dependencies:
@@ -10436,6 +10533,14 @@ cron@^2.3.1:
   dependencies:
     luxon "^3.2.1"
 
+cron@^2.4.4:
+  version "2.4.4"
+  resolved "https://registry.npmjs.org/cron/-/cron-2.4.4.tgz#988c1757b3f288d1dfcc360ee6d80087448916dc"
+  integrity sha512-MHlPImXJj3K7x7lyUHjtKEOl69CSlTOWxS89jiFgNkzXfvhVjhMz/nc7/EIfN9vgooZp8XTtXJ1FREdmbyXOiQ==
+  dependencies:
+    "@types/luxon" "~3.3.0"
+    luxon "~3.3.0"
+
 croner@~4.1.92:
   version "4.1.97"
   resolved "https://registry.npmmirror.com/croner/-/croner-4.1.97.tgz#6e373dc7bb3026fab2deb0d82685feef20796766"
@@ -11782,6 +11887,22 @@ ecdsa-sig-formatter@1.0.11:
   resolved "https://registry.npmmirror.com/ecdsa-sig-formatter/-/ecdsa-sig-formatter-1.0.11.tgz#ae0f0fa2d85045ef14a817daa3ce9acd0489e5bf"
   dependencies:
     safe-buffer "^5.0.1"
+
+echarts-for-react@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.npmjs.org/echarts-for-react/-/echarts-for-react-3.0.2.tgz#ac5859157048a1066d4553e34b328abb24f2b7c1"
+  integrity sha512-DRwIiTzx8JfwPOVgGttDytBqdp5VzCSyMRIxubgU/g2n9y3VLUmF2FK7Icmg/sNVkv4+rktmrLN9w22U2yy3fA==
+  dependencies:
+    fast-deep-equal "^3.1.3"
+    size-sensor "^1.0.1"
+
+echarts@^5.4.3:
+  version "5.4.3"
+  resolved "https://registry.npmjs.org/echarts/-/echarts-5.4.3.tgz#f5522ef24419164903eedcfd2b506c6fc91fb20c"
+  integrity sha512-mYKxLxhzy6zyTi/FaEbJMOZU1ULGEQHaeIeuMR5L+JnJTpz+YR03mnnpBhbR4+UYJAgiXgpyTVLffPAjOTLkZA==
+  dependencies:
+    tslib "2.3.0"
+    zrender "5.4.4"
 
 editions@^2.2.0:
   version "2.3.1"
@@ -13297,16 +13418,16 @@ fs.realpath@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmmirror.com/fs.realpath/-/fs.realpath-1.0.0.tgz#1504ad2523158caa40db4a2787cb01411994ea4f"
 
+fsevents@2.3.2, fsevents@^2.3.2, fsevents@~2.3.1, fsevents@~2.3.2:
+  version "2.3.2"
+  resolved "https://registry.npmmirror.com/fsevents/-/fsevents-2.3.2.tgz#8a526f78b8fdf4623b709e0b975c52c24c02fd1a"
+
 fsevents@^1.2.7:
   version "1.2.13"
   resolved "https://registry.npmmirror.com/fsevents/-/fsevents-1.2.13.tgz#f325cb0455592428bcf11b383370ef70e3bfcc38"
   dependencies:
     bindings "^1.5.0"
     nan "^2.12.1"
-
-fsevents@^2.3.2, fsevents@~2.3.1, fsevents@~2.3.2:
-  version "2.3.2"
-  resolved "https://registry.npmmirror.com/fsevents/-/fsevents-2.3.2.tgz#8a526f78b8fdf4623b709e0b975c52c24c02fd1a"
 
 ftp@^0.3.10:
   version "0.3.10"
@@ -16078,6 +16199,11 @@ jest@^29.6.2:
     import-local "^3.0.2"
     jest-cli "^29.6.2"
 
+jest_workaround@^0.79.19:
+  version "0.79.19"
+  resolved "https://registry.yarnpkg.com/jest_workaround/-/jest_workaround-0.79.19.tgz#f5bc569163c33c4533e1c4053c533a8811152a91"
+  integrity sha512-g/MtKSwyb4Ohnd5GHeJaduTgznkyst81x+eUBGOSGK7f8doWuRMPpt6XM/13sM2jLB2QNzT/7Djj7o2PhsozIA==
+
 jiti@^1.18.2:
   version "1.20.0"
   resolved "https://registry.npmmirror.com/jiti/-/jiti-1.20.0.tgz#2d823b5852ee8963585c8dd8b7992ffc1ae83b42"
@@ -16915,7 +17041,7 @@ lodash.union@^4.6.0:
   version "4.6.0"
   resolved "https://registry.npmmirror.com/lodash.union/-/lodash.union-4.6.0.tgz#48bb5088409f16f1821666641c44dd1aaae3cd88"
 
-lodash@4.17.21, lodash@^4.17.11, lodash@^4.17.12, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.20, lodash@^4.17.21, lodash@^4.17.4, lodash@^4.17.5, lodash@^4.7.0:
+lodash@4.17.21, lodash@4.x, lodash@^4.17.11, lodash@^4.17.12, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.20, lodash@^4.17.21, lodash@^4.17.4, lodash@^4.17.5, lodash@^4.7.0:
   version "4.17.21"
   resolved "https://registry.npmmirror.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
 
@@ -17025,7 +17151,7 @@ luxon@^1.28.0:
   version "1.28.1"
   resolved "https://registry.npmmirror.com/luxon/-/luxon-1.28.1.tgz#528cdf3624a54506d710290a2341aa8e6e6c61b0"
 
-luxon@^3.2.1:
+luxon@^3.2.1, luxon@~3.3.0:
   version "3.3.0"
   resolved "https://registry.npmmirror.com/luxon/-/luxon-3.3.0.tgz#d73ab5b5d2b49a461c47cedbc7e73309b4805b48"
 
@@ -19673,6 +19799,11 @@ platform@^1.3.1:
   version "1.3.6"
   resolved "https://registry.npmmirror.com/platform/-/platform-1.3.6.tgz#48b4ce983164b209c2d45a107adb31f473a6e7a7"
 
+playwright-core@1.37.1:
+  version "1.37.1"
+  resolved "https://registry.npmmirror.com/playwright-core/-/playwright-core-1.37.1.tgz#cb517d52e2e8cb4fa71957639f1cd105d1683126"
+  integrity sha512-17EuQxlSIYCmEMwzMqusJ2ztDgJePjrbttaefgdsiqeLWidjYz9BxXaTaZWxH1J95SHGk6tjE+dwgWILJoUZfA==
+
 plugin-error@^1.0.1:
   version "1.0.1"
   resolved "https://registry.npmmirror.com/plugin-error/-/plugin-error-1.0.1.tgz#77016bd8919d0ac377fdcdd0322328953ca5781c"
@@ -20601,7 +20732,7 @@ qrcode.react@^3.1.0:
   version "3.1.0"
   resolved "https://registry.npmmirror.com/qrcode.react/-/qrcode.react-3.1.0.tgz#5c91ddc0340f768316fbdb8fff2765134c2aecd8"
 
-qs@^6.10.1, qs@^6.11.0, qs@^6.4.0, qs@^6.5.2, qs@^6.9.4:
+qs@^6.10.1, qs@^6.11.0, qs@^6.11.2, qs@^6.4.0, qs@^6.5.2, qs@^6.9.4:
   version "6.11.2"
   resolved "https://registry.npmmirror.com/qs/-/qs-6.11.2.tgz#64bea51f12c1f5da1bc01496f48ffcff7c69d7d9"
   dependencies:
@@ -23920,6 +24051,11 @@ tslib@1.9.3:
   version "1.9.3"
   resolved "https://registry.npmmirror.com/tslib/-/tslib-1.9.3.tgz#d7e4dd79245d85428c4d7e4822a79917954ca286"
 
+tslib@2.3.0:
+  version "2.3.0"
+  resolved "https://registry.npmjs.org/tslib/-/tslib-2.3.0.tgz#803b8cdab3e12ba581a4ca41c8839bbb0dacb09e"
+  integrity sha512-N82ooyxVNm6h1riLCoyS9e3fuJ3AMG2zIZs2Gd1ATcSFjSA23Q0fzjjZeh0jbJvWVDZ0cJT8yaNNaaXHzueNjg==
+
 tslib@^1.10.0, tslib@^1.11.1, tslib@^1.8.1, tslib@^1.9.0:
   version "1.14.1"
   resolved "https://registry.npmmirror.com/tslib/-/tslib-1.14.1.tgz#cf2d38bdc34a134bcaf1091c41f6619e2f672d00"
@@ -24776,7 +24912,7 @@ vite@4.3.1:
 
 vite@^4.4.9:
   version "4.4.9"
-  resolved "https://registry.npmmirror.com/vite/-/vite-4.4.9.tgz#1402423f1a2f8d66fd8d15e351127c7236d29d3d"
+  resolved "https://registry.npmjs.org/vite/-/vite-4.4.9.tgz#1402423f1a2f8d66fd8d15e351127c7236d29d3d"
   integrity sha512-2mbUn2LlUmNASWwSCNSJ/EG2HuSRTnVNaydp6vMCm5VIqJsjMfbIWtbH2kDuwUVW5mMUKKZvGPX/rqeqVvv1XA==
   dependencies:
     esbuild "^0.18.10"
@@ -25469,6 +25605,13 @@ zod@^3.21.4:
   version "3.22.2"
   resolved "https://registry.npmmirror.com/zod/-/zod-3.22.2.tgz#3add8c682b7077c05ac6f979fea6998b573e157b"
   integrity sha512-wvWkphh5WQsJbVk1tbx1l1Ly4yg+XecD+Mq280uBGt9wa5BKSWf4Mhp6GmrkPixhMxmabYY7RbzlwVP32pbGCg==
+
+zrender@5.4.4:
+  version "5.4.4"
+  resolved "https://registry.yarnpkg.com/zrender/-/zrender-5.4.4.tgz#8854f1d95ecc82cf8912f5a11f86657cb8c9e261"
+  integrity sha512-0VxCNJ7AGOMCWeHVyTrGzUgrK4asT4ml9PEkeGirAkKNYXYzoPJCLvmyfdoOXcjTHPs10OZVMfD1Rwg16AZyYw==
+  dependencies:
+    tslib "2.3.0"
 
 zustand@^4.3.1:
   version "4.3.8"

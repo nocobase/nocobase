@@ -75,14 +75,17 @@ const LocalPlugins = () => {
 
   const pluginList = useMemo(() => {
     let list = filterList[filterIndex]?.list || [];
-    if (debouncedSearchValue) {
+    const searchLowerCaseValue = debouncedSearchValue.toLocaleLowerCase().trim();
+    if (searchLowerCaseValue) {
       list = _.filter(
         list,
         (item) =>
-          item.name?.includes(debouncedSearchValue) ||
-          item.description?.includes(debouncedSearchValue) ||
-          item.displayName?.includes(debouncedSearchValue) ||
-          item.packageName?.includes(debouncedSearchValue),
+          String(item.displayName || '')
+            .toLocaleLowerCase()
+            .includes(searchLowerCaseValue) ||
+          String(item.description || '')
+            .toLocaleLowerCase()
+            .includes(searchLowerCaseValue),
       );
     }
     return list;
@@ -118,6 +121,8 @@ const LocalPlugins = () => {
             <Space size={theme.marginXXS} split={<Divider type="vertical" />}>
               {filterList.map((item, index) => (
                 <a
+                  role="button"
+                  aria-label={item.type}
                   onClick={() => setFilterIndex(index)}
                   key={item.type}
                   style={{ fontWeight: filterIndex === index ? 'bold' : 'normal' }}

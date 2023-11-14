@@ -33,7 +33,6 @@ export function AssigneesSelect({ multiple = false, value = [], onChange }) {
         onChange={(v) => {
           onChange(v != null ? [v] : []);
         }}
-        className="auto-width"
       />
     </Variable.Input>
   );

@@ -10,6 +10,18 @@ describe('getDateRanges', () => {
     expect(end.toISOString()).toBe(dayjs().endOf('day').toISOString());
   });
 
+  test('yesterday', () => {
+    const [start, end] = dateRanges.yesterday();
+    expect(dayjs(start).isSame(dayjs().subtract(1, 'day'), 'day')).toBe(true);
+    expect(dayjs(end).isSame(dayjs().subtract(1, 'day'), 'day')).toBe(true);
+  });
+
+  test('tomorrow', () => {
+    const [start, end] = dateRanges.tomorrow();
+    expect(dayjs(start).isSame(dayjs().add(1, 'day'), 'day')).toBe(true);
+    expect(dayjs(end).isSame(dayjs().add(1, 'day'), 'day')).toBe(true);
+  });
+
   it('lastWeek', () => {
     const [start, end] = dateRanges.lastWeek();
     expect(start.toISOString()).toBe(dayjs().add(-1, 'week').startOf('isoWeek').toISOString());

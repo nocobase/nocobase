@@ -20,7 +20,14 @@ export const useStyles = genStyleHook('upload', (token) => {
             padding: '1px !important',
           },
       },
-
+      '&.nb-upload-large': {
+        [`${componentCls}-list-picture-card-container${componentCls}-list-picture-card-container`]: {
+          margin: '0 3px 3px 0 !important',
+          height: '160px !important',
+          width: '160px !important',
+          marginBlock: '0 28px !important',
+        },
+      },
       '&.nb-upload': {
         [`${componentCls}-list-item${componentCls}-list-item-list-type-picture-card`]: {
           padding: '3px !important',
