@@ -1,7 +1,7 @@
 import { SyncOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
 import { Loader } from '@googlemaps/js-api-loader';
-import { css, useAPIClient, useCollection } from '@nocobase/client';
+import { css, useAPIClient, useApp, useCollection } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Button, Spin } from 'antd';
 import React, { useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
@@ -369,12 +369,16 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
         },
       });
     });
+    const app = useApp();
 
     if (!accessKey || errMessage) {
       return (
         <Alert
           action={
-            <Button type="primary" onClick={() => navigate('/admin/settings/map/configuration?tab=google')}>
+            <Button
+              type="primary"
+              onClick={() => navigate(app.pluginSettingsManager.getRoutePath('map') + '?tab=google')}
+            >
               {t('Go to the configuration page')}
             </Button>
           }

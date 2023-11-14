@@ -15,12 +15,12 @@ import {
 import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
+import { EllipsisWithTooltip } from '../input';
 import { FileSelector, Preview } from '../preview';
 import { ReadPrettyInternalViewer } from './InternalViewer';
 import { useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, isShowFilePicker, useLabelUiSchema } from './util';
-import { EllipsisWithTooltip } from '../input';
 
 const useTableSelectorProps = () => {
   const field: any = useField();
@@ -88,7 +88,7 @@ const InternalFileManager = (props) => {
 
   useEffect(() => {
     if (value && Object.keys(value).length > 0) {
-      const opts = (Array.isArray(value) ? value : value ? [value] : []).map((option) => {
+      const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
         const label = option[fieldNames.label];
         return {
           ...option,

@@ -10,14 +10,17 @@ import { RemoteSelect, useCompile, useDesignable } from '../..';
 import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
-import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { SchemaSettings } from '../../../schema-settings/SchemaSettings';
+import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
 import { usePlugin } from '../../../application/hooks';
+import { SchemaSetting, SchemaSettingOptions } from '../../../application/schema-settings';
+import { useSchemaDesigner } from '../../../application/schema-designer';
+import { SchemaInitializerOpenModeSchemaItems } from '../../../schema-items';
 
 const Tree = connect(
   AntdTree,
@@ -715,6 +718,7 @@ function RemoveButton(
 }
 
 function WorkflowSelect({ types, ...props }) {
+  const { t } = useTranslation();
   const index = ArrayTable.useIndex();
   const { setValuesIn } = useForm();
   const baseCollection = useCollection();
@@ -740,7 +744,12 @@ function WorkflowSelect({ types, ...props }) {
 
   return (
     <RemoteSelect
-      {...props}
+      manual={false}
+      placeholder={t('Select workflow', { ns: 'workflow' })}
+      fieldNames={{
+        label: 'title',
+        value: 'key',
+      }}
       service={{
         resource: 'workflows',
         action: 'list',
@@ -752,6 +761,7 @@ function WorkflowSelect({ types, ...props }) {
           },
         },
       }}
+      {...props}
     />
   );
 }
@@ -847,11 +857,6 @@ function WorkflowConfig() {
                         'x-decorator': 'FormItem',
                         'x-component': 'WorkflowSelect',
                         'x-component-props': {
-                          placeholder: t('Select workflow', { ns: 'workflow' }),
-                          fieldNames: {
-                            label: 'title',
-                            value: 'key',
-                          },
                           types: workflowTypes.map((item) => item.value),
                         },
                         required: true,
@@ -898,42 +903,189 @@ function WorkflowConfig() {
   );
 }
 
+export const actionSettingsItems: SchemaSettingOptions['items'] = [
+  {
+    name: 'Customize',
+    Component: MenuGroup,
+    type: 'itemGroup',
+    children: [
+      {
+        name: 'editButton',
+        Component: ButtonEditor,
+        useComponentProps() {
+          const { buttonEditorProps } = useSchemaDesigner();
+          return buttonEditorProps;
+        },
+      },
+      {
+        name: 'saveMode',
+        Component: SaveMode,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return (
+            fieldSchema['x-action'] === 'submit' &&
+            fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers'
+          );
+        },
+      },
+      {
+        name: 'linkageRules',
+        Component: SchemaSettings.LinkageRules,
+        useVisible() {
+          const isAction = useLinkageAction();
+          const { linkageAction } = useSchemaDesigner();
+          return linkageAction || isAction;
+        },
+        useComponentProps() {
+          const { name } = useCollection();
+          const { linkageRulesProps } = useSchemaDesigner();
+          return {
+            ...linkageRulesProps,
+            collectionName: name,
+          };
+        },
+      },
+      {
+        name: 'duplicationMode',
+        Component: DuplicationMode,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
+          return isDuplicateAction;
+        },
+      },
+      {
+        name: 'openMode',
+        Component: SchemaInitializerOpenModeSchemaItems,
+        useComponentProps() {
+          const fieldSchema = useFieldSchema();
+          const isPopupAction = [
+            'create',
+            'update',
+            'view',
+            'customize:popup',
+            'duplicate',
+            'customize:create',
+          ].includes(fieldSchema['x-action'] || '');
+
+          return {
+            openMode: isPopupAction,
+            openSize: isPopupAction,
+          };
+        },
+      },
+      {
+        name: 'updateMode',
+        Component: UpdateMode,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(
+            fieldSchema['x-action'],
+          );
+          return isUpdateModePopupAction;
+        },
+      },
+      {
+        name: 'assignFieldValues',
+        Component: AssignedFieldValues,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return isValid(fieldSchema?.['x-action-settings']?.assignedValues);
+        },
+      },
+      {
+        name: 'requestSettings',
+        Component: RequestSettings,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return isValid(fieldSchema?.['x-action-settings']?.requestSettings);
+        },
+      },
+      {
+        name: 'skipValidator',
+        Component: SkipValidation,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return isValid(fieldSchema?.['x-action-settings']?.skipValidator);
+        },
+      },
+      {
+        name: 'afterSuccess',
+        Component: AfterSuccess,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
+        },
+      },
+      {
+        name: 'workflowConfig',
+        Component: WorkflowConfig,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows);
+        },
+      },
+      {
+        name: 'enableChildCollections',
+        Component: SchemaSettings.LinkageRules,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          const { name } = useCollection();
+          const { getChildrenCollections } = useCollectionManager();
+          const isChildCollectionAction =
+            getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
+          return isChildCollectionAction;
+        },
+        useComponentProps() {
+          const { name } = useCollection();
+          return {
+            collectionName: name,
+          };
+        },
+      },
+      {
+        name: 'remove',
+        sort: 100,
+        Component: RemoveButton as any,
+        useComponentProps() {
+          const { removeButtonProps } = useSchemaDesigner();
+          return removeButtonProps;
+        },
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return fieldSchema?.['x-action-settings']?.removable !== false;
+        },
+      },
+    ],
+  },
+];
+
+export const actionSettings = new SchemaSetting({
+  name: 'ActionSettings',
+  items: actionSettingsItems,
+});
+
 export const ActionDesigner = (props) => {
-  const { modalTip, linkageAction, removeButtonProps, buttonEditorProps, linkageRulesProps, ...restProps } = props;
+  const {
+    modalTip,
+    linkageAction,
+    removeButtonProps,
+    buttonEditorProps,
+    linkageRulesProps,
+    schemaSettings = 'ActionSettings',
+    ...restProps
+  } = props;
   const fieldSchema = useFieldSchema();
-  const { name } = useCollection();
-  const { getChildrenCollections } = useCollectionManager();
-  const isAction = useLinkageAction();
-  const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate', 'customize:create'].includes(
-    fieldSchema['x-action'] || '',
-  );
-  const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
-  const isLinkageAction = linkageAction || isAction;
-  const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
   const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
-  const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
 
   return (
-    <GeneralSchemaDesigner {...restProps} disableInitializer draggable={isDraggable}>
-      <MenuGroup>
-        <ButtonEditor {...buttonEditorProps} />
-        {fieldSchema['x-action'] === 'submit' &&
-          fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers' && <SaveMode />}
-        {isLinkageAction && <SchemaSettings.LinkageRules {...linkageRulesProps} collectionName={name} />}
-        {isDuplicateAction && <DuplicationMode />}
-        <SchemaSettingOpenModeSchemaItems openMode={isPopupAction} openSize={isPopupAction} />
-        {isUpdateModePopupAction && <UpdateMode />}
-        {isValid(fieldSchema?.['x-action-settings']?.assignedValues) && <AssignedFieldValues />}
-        {isValid(fieldSchema?.['x-action-settings']?.requestSettings) && <RequestSettings />}
-        {isValid(fieldSchema?.['x-action-settings']?.skipValidator) && <SkipValidation />}
-        {isValid(fieldSchema?.['x-action-settings']?.['onSuccess']) && <AfterSuccess />}
-        {isValid(fieldSchema?.['x-action-settings']?.triggerWorkflows) && <WorkflowConfig />}
-        {restProps.children}
-        {isChildCollectionAction && <SchemaSettings.EnableChildCollections collectionName={name} />}
-
-        {fieldSchema?.['x-action-settings']?.removable !== false && <RemoveButton {...removeButtonProps} />}
-      </MenuGroup>
-    </GeneralSchemaDesigner>
+    <GeneralSchemaDesigner
+      schemaSettings={schemaSettings}
+      contextValue={{ modalTip, linkageAction, removeButtonProps, buttonEditorProps, linkageRulesProps }}
+      {...restProps}
+      disableInitializer
+      draggable={isDraggable}
+    ></GeneralSchemaDesigner>
   );
 };
 

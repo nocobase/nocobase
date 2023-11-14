@@ -24,7 +24,7 @@ test.describe('trigger collection events', () => {
 
     const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
     //配置工作流
-    await page.goto('/admin/settings/workflow/workflows');
+    await page.goto('/admin/settings/workflow');
     await page.waitForLoadState('networkidle');
     await page.getByLabel('action-Action-Add new-workflows').click();
     const createWorkFlow = new CreateWorkFlow(page);
@@ -85,7 +85,7 @@ test.describe('trigger collection events', () => {
 
     // 3、预期结果：数据添加成功，工作流成功触发
     await expect(page.getByText(fieldData)).toBeVisible();
-    await page.goto('/admin/settings/workflow/workflows');
+    await page.goto('/admin/settings/workflow');
     await expect(page.getByRole('table').locator('a').filter({ hasText: '1' })).toBeVisible();
 
     // 4、后置处理：删除工作流

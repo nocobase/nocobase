@@ -4,7 +4,7 @@
   "displayName.zh-CN": "公式字段",
   "description": "You can configure and store calculation results between multi-field values of the same record, supporting both mathjs and excel functions engines.",
   "description.zh-CN": "可以配置并存储同一条记录的多字段值之间的计算结果，支持 mathjs 和 excel functions 两种引擎",
-  "version": "0.14.0-alpha.8",
+  "version": "0.15.0-alpha.2",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {

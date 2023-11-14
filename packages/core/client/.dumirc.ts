@@ -46,7 +46,7 @@ export default defineConfig({
                   link: '/apis/api-client',
                 },
                 {
-                  title: 'SettingsCenter',
+                  title: 'PluginSettingsManager',
                   link: '#',
                 },
               ],
@@ -64,7 +64,7 @@ export default defineConfig({
                 },
                 {
                   title: 'SchemaSettings',
-                  link: '#',
+                  link: '/apis/schema-settings',
                 },
                 {
                   title: 'DNDContext & DragHandler',

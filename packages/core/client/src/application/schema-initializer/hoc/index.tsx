@@ -110,7 +110,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
               </div>,
             )}
           >
-            <>{React.createElement(C, cProps)}</>
+            {React.createElement(C, cProps)}
           </Popover>
         )}
       </SchemaInitializerContext.Provider>

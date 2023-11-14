@@ -5,7 +5,7 @@ export default {
   namespace: 'api-keys',
   duplicator: 'optional',
   name: 'apiKeys',
-  title: '{{t("API keys")}}',
+  title: '{{t("API keys", {"ns": "api-keys"})}}',
   sortable: 'sort',
   model: 'ApiKeyModel',
   createdBy: true,
