@@ -1,11 +1,4 @@
-import {
-  Plugin,
-  SettingsCenterProvider,
-  createStyles,
-  defaultTheme,
-  useCurrentUserSettingsMenu,
-  useGlobalTheme,
-} from '@nocobase/client';
+import { Plugin, createStyles, defaultTheme, useCurrentUserSettingsMenu, useGlobalTheme } from '@nocobase/client';
 import { ConfigProvider } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useMemo } from 'react';
@@ -15,7 +8,7 @@ import ThemeList from './components/ThemeList';
 import { ThemeListProvider } from './components/ThemeListProvider';
 import CustomTheme from './components/theme-editor';
 import { useThemeSettings } from './hooks/useThemeSettings';
-import { useTranslation } from './locale';
+import { NAMESPACE } from './locale';
 
 const useStyles = createStyles(({ css, token }) => {
   return {
@@ -38,7 +31,6 @@ const useStyles = createStyles(({ css, token }) => {
 const CustomThemeProvider = React.memo((props) => {
   const { addMenuItem } = useCurrentUserSettingsMenu();
   const themeItem = useThemeSettings();
-  const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const { theme, setTheme } = useGlobalTheme();
   const { styles } = useStyles();
@@ -47,21 +39,6 @@ const CustomThemeProvider = React.memo((props) => {
     // 在页面右上角中添加一个 Theme 菜单项
     addMenuItem(themeItem, { before: 'divider_3' });
   }, [addMenuItem, themeItem]);
-
-  const settings = useMemo(() => {
-    return {
-      'theme-editor': {
-        title: t('Theme editor'),
-        icon: 'BgColorsOutlined',
-        tabs: {
-          themes: {
-            title: t('Themes'),
-            component: ThemeList,
-          },
-        },
-      },
-    };
-  }, []);
 
   const contentStyle = useMemo(() => {
     return open
@@ -89,7 +66,7 @@ const CustomThemeProvider = React.memo((props) => {
       <ThemeListProvider>
         <InitializeTheme>
           <ThemeEditorProvider open={open} setOpen={setOpen}>
-            <SettingsCenterProvider settings={settings}>{editor}</SettingsCenterProvider>
+            {editor}
           </ThemeEditorProvider>
         </InitializeTheme>
       </ThemeListProvider>
@@ -101,6 +78,12 @@ CustomThemeProvider.displayName = 'CustomThemeProvider';
 export class ThemeEditorPlugin extends Plugin {
   async load() {
     this.app.use(CustomThemeProvider);
+    this.app.pluginSettingsManager.add(NAMESPACE, {
+      title: `{{t("Theme editor", {ns:"${NAMESPACE}"})}}`,
+      icon: 'BgColorsOutlined',
+      Component: ThemeList,
+      aclSnippet: 'pm.theme-editor.themes',
+    });
   }
 }
 

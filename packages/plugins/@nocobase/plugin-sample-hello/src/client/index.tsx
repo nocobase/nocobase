@@ -1,11 +1,5 @@
 import { TableOutlined } from '@ant-design/icons';
-import {
-  SchemaInitializerItem,
-  Plugin,
-  SchemaComponentOptions,
-  SettingsCenterProvider,
-  useSchemaInitializer,
-} from '@nocobase/client';
+import { SchemaInitializerItem, Plugin, SchemaComponentOptions, useSchemaInitializer } from '@nocobase/client';
 import { Card } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -39,27 +33,20 @@ export const HelloBlockInitializer = (props) => {
 
 const HelloProvider = React.memo((props) => {
   return (
-    <SettingsCenterProvider
-      settings={{
-        'sample-hello': {
-          title: 'Hello',
-          icon: 'ApiOutlined',
-          tabs: {
-            tab1: {
-              title: 'Hello tab',
-              component: () => <Card bordered={false}>Hello Settings</Card>,
-            },
-          },
-        },
-      }}
-    >
-      <SchemaComponentOptions components={{ HelloDesigner, HelloBlockInitializer }}>
-        {props.children}
-      </SchemaComponentOptions>
-    </SettingsCenterProvider>
+    <SchemaComponentOptions components={{ HelloDesigner, HelloBlockInitializer }}>
+      {props.children}
+    </SchemaComponentOptions>
   );
 });
 HelloProvider.displayName = 'HelloProvider';
+
+const HelloPluginSettingPage = () => {
+  return (
+    <Card bordered={false}>
+      <div>Hello plugin setting page</div>
+    </Card>
+  );
+};
 
 class HelloPlugin extends Plugin {
   async load() {
@@ -68,6 +55,12 @@ class HelloPlugin extends Plugin {
     blockInitializers?.add('media.hello', {
       title: '{{t("Hello block")}}',
       Component: 'HelloBlockInitializer',
+    });
+    this.app.pluginSettingsManager.add('sample-hello', {
+      title: 'Hello',
+      icon: 'ApiOutlined',
+      Component: HelloPluginSettingPage,
+      sort: 100,
     });
   }
 }
