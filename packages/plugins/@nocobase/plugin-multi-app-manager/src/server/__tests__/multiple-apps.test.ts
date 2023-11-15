@@ -190,7 +190,7 @@ describe('multiple apps', () => {
 
     expect(AppSupervisor.getInstance().hasApp(name)).toBeFalsy();
 
-    Gateway.getInstance().appSelector = () => name;
+    Gateway.getInstance().addAppSelectorMiddleware((ctx) => (ctx.resolvedAppName = name));
 
     await AppSupervisor.getInstance().getApp(name);
 
@@ -244,6 +244,7 @@ describe('multiple apps', () => {
         waitSubAppInstall: true,
       },
     });
+
     await AppSupervisor.getInstance().removeApp(subAppName);
 
     await app.start();
@@ -264,6 +265,51 @@ describe('multiple apps', () => {
     await app.start();
 
     expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeTruthy();
+  });
+
+  it('should start automatically with quick start', async () => {
+    const subAppName = `t_${uid()}`;
+
+    const subApp = await app.db.getRepository('applications').create({
+      values: {
+        name: subAppName,
+        options: {
+          plugins: ['nocobase'],
+        },
+      },
+      context: {
+        waitSubAppInstall: true,
+      },
+    });
+
+    await AppSupervisor.getInstance().removeApp(subAppName);
+
+    await app.start();
+
+    expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeFalsy();
+
+    await subApp.update({
+      options: {
+        autoStart: true,
+      },
+    });
+
+    await AppSupervisor.getInstance().removeApp(subAppName);
+
+    expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeFalsy();
+
+    await app.stop();
+
+    await app.db.reconnect();
+    await AppSupervisor.getInstance().getApp(subAppName, {
+      upgrading: true,
+    });
+
+    await app.start();
+    await sleep(5000);
+    expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeTruthy();
+    const appStatus = AppSupervisor.getInstance().getAppStatus(subAppName);
+    expect(appStatus).toEqual('running');
   });
 
   it('should get same obj ref when asynchronously access with same sub app name', async () => {

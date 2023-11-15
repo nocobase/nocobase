@@ -20,9 +20,13 @@ export default defineConfig({
   resolve: {
     mainFields: ['module'],
   },
+  define: {
+    'process.env.__TEST__': true,
+    'process.env.__E2E__': false,
+  },
   test: {
     globals: true,
-    setupFiles: 'scripts/setupVitest.ts',
+    setupFiles: 'scripts/vitest.setup.ts',
     environment: 'jsdom',
     css: false,
     threads: true,
@@ -31,8 +35,15 @@ export default defineConfig({
       { find: /^~antd\/(.*)/, replacement: 'antd/$1' },
       ...alias,
     ],
-    include: ['packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['**/node_modules/**', '**/dist/**', '**/lib/**', '**/es/**', '**/{vitest,commitlint}.config.*'],
+    include: ['packages/**/{dumi-theme-nocobase,sdk,client,utils}/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/lib/**',
+      '**/es/**',
+      '**/e2e/**',
+      '**/{vitest,commitlint}.config.*',
+    ],
     testTimeout: 300000,
     bail: 1,
     // 在 GitHub Actions 中不输出日志

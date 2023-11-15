@@ -2,16 +2,11 @@ import { union } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../SchemaInitializer';
-import {
-  gridRowColWrap,
-  useAssociatedFormItemInitializerFields,
-  useCustomBulkEditFormItemInitializerFields,
-} from '../utils';
+import { gridRowColWrap, useCustomBulkEditFormItemInitializerFields } from '../utils';
 
 export const BulkEditFormItemInitializers = (props: any) => {
   const { t } = useTranslation();
   const { insertPosition, component } = props;
-  const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Form' });
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}

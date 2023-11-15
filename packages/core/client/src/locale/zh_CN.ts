@@ -42,6 +42,7 @@ export default {
   'System settings': '系统设置',
   'System title': '系统名称',
   Setting: '设置',
+  Settings: '设置',
   Enable: '启用',
   Disable: '禁用',
   On: '启用',
@@ -661,6 +662,7 @@ export default {
   'Dynamic value': '动态值',
   'Current user': '当前用户',
   'Current record': '当前记录',
+  'Parent record': '上级记录',
   'Current time': '当前时间',
   Now: '现在',
   'Popup close method': '弹窗关闭方式',
@@ -871,9 +873,12 @@ export default {
   'Sync successfully': '同步成功',
   'Sync from form fields': '同步表单字段',
   'Select all': '全选',
+  'UnSelect all':'取消全选',
   'Determine whether a record exists by the following fields': '通过以下字段判断记录是否存在',
   'Cascade Select': '级联选择',
   Execute: '执行',
   'Please use a valid SELECT or WITH AS statement': '请使用有效的 SELECT 或 WITH AS 语句',
   'Please confirm the SQL statement first': '请先确认 SQL 语句',
+  'Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects':
+  '自动删除依赖于该表的对象,以及依赖这些对象的对象',
 };

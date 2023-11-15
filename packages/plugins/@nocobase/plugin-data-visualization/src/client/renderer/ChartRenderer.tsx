@@ -10,11 +10,11 @@ import {
 import { Empty, Result, Spin, Typography } from 'antd';
 import React, { useContext } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { useChart } from '../chart/group';
 import { ChartConfigContext } from '../configure/ChartConfigure';
 import { useData, useFieldTransformer, useFieldsWithAssociation } from '../hooks';
 import { useChartsTranslation } from '../locale';
 import { createRendererSchema, getField } from '../utils';
-import { useCharts } from '../chart/library';
 import { ChartRendererContext } from './ChartRendererProvider';
 const { Paragraph, Text } = Typography;
 
@@ -30,8 +30,7 @@ export const ChartRenderer: React.FC & {
   const advanced = config?.advanced || {};
   const api = useAPIClient();
 
-  const charts = useCharts();
-  const chart = charts[config?.chartType];
+  const chart = useChart(config?.chartType);
   const locale = api.auth.getLocale();
   const transformers = useFieldTransformer(transform, locale);
   const Component = chart?.render({
@@ -42,7 +41,7 @@ export const ChartRenderer: React.FC & {
       if (!props[name]) {
         const field = getField(fields, name.split('.'));
         const transformer = transformers[name];
-        props[name] = { ...field, transformer };
+        props[name] = { label: field?.label || name, transformer };
       }
       return props;
     }, {}),
@@ -84,6 +83,7 @@ ChartRenderer.Designer = function Designer() {
   return (
     <GeneralSchemaDesigner disableInitializer title={title || name}>
       <SchemaSettings.Item
+        title="Configure"
         key="configure"
         onClick={() => {
           setCurrent({ schema, field, collection: name, service, data: service?.data });
@@ -93,6 +93,7 @@ ChartRenderer.Designer = function Designer() {
         {t('Configure')}
       </SchemaSettings.Item>
       <SchemaSettings.Item
+        title="Duplicate"
         key="duplicate"
         onClick={() => insertAdjacent('afterEnd', gridRowColWrap(createRendererSchema(schema?.['x-decorator-props'])))}
       >

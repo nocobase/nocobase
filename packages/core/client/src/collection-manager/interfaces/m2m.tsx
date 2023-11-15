@@ -1,10 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import {
-  defaultProps,
-  relationshipType,
-  reverseFieldProperties
-} from './properties';
+import { defaultProps, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
 
 export const m2m: IField = {
@@ -51,7 +47,8 @@ export const m2m: IField = {
   availableTypes: ['belongsToMany'],
   schemaInitialize(schema: ISchema, { readPretty, block, targetCollection }) {
     // schema['type'] = 'array';
-    if (targetCollection?.titleField && schema['x-component-props']) {
+    if (targetCollection?.titleField) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
@@ -246,5 +243,4 @@ export const m2m: IField = {
       // },
     ],
   },
-  invariable: true,
 };

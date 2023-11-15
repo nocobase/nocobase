@@ -37,7 +37,13 @@ export const Tabs: any = observer(
 
     return (
       <DndContext>
-        <AntdTabs {...contextProps} tabBarExtraContent={render()} style={props.style} items={items} />
+        <AntdTabs
+          {...contextProps}
+          destroyInactiveTabPane
+          tabBarExtraContent={render()}
+          style={props.style}
+          items={items}
+        />
       </DndContext>
     );
   },

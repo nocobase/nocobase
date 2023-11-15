@@ -12,7 +12,9 @@ export const ErrorFallback: FC<FallbackProps> = ({ error }) => {
   const subTitle = (
     <Trans>
       {'This is likely a NocoBase internals bug. Please open an issue at '}
-      <Link href="https://github.com/nocobase/nocobase/issues">here</Link>
+      <Link href="https://github.com/nocobase/nocobase/issues" target="_blank">
+        here
+      </Link>
     </Trans>
   );
 
@@ -24,8 +26,8 @@ export const ErrorFallback: FC<FallbackProps> = ({ error }) => {
         title={t('Render Failed')}
         subTitle={subTitle}
         extra={[
-          <Button type="primary" key="feedback">
-            <a href="https://github.com/nocobase/nocobase/issues">{t('Feedback')}</a>
+          <Button type="primary" key="feedback" href="https://github.com/nocobase/nocobase/issues" target="_blank">
+            {t('Feedback')}
           </Button>,
           <Button key="try" onClick={resetBoundary}>
             {t('Try again')}

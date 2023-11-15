@@ -15,12 +15,12 @@ import {
 import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
+import { EllipsisWithTooltip } from '../input';
 import { FileSelector, Preview } from '../preview';
 import { ReadPrettyInternalViewer } from './InternalViewer';
 import { useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, isShowFilePicker, useLabelUiSchema } from './util';
-import { EllipsisWithTooltip } from '../input';
 
 const useTableSelectorProps = () => {
   const field: any = useField();
@@ -73,7 +73,7 @@ const InternalFileManager = (props) => {
   const collectionField = getField(field.props.name);
   const labelUiSchema = useLabelUiSchema(collectionField?.target, fieldNames?.label || 'label');
   const compile = useCompile();
-  const { setVisible, modalProps } = useActionContext();
+  const { modalProps } = useActionContext();
   const getFilter = () => {
     const targetKey = collectionField?.targetKey || 'id';
     const list = options.map((option) => option[targetKey]).filter(Boolean);
@@ -88,7 +88,7 @@ const InternalFileManager = (props) => {
 
   useEffect(() => {
     if (value && Object.keys(value).length > 0) {
-      const opts = (Array.isArray(value) ? value : value ? [value] : []).map((option) => {
+      const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
         const label = option[fieldNames.label];
         return {
           ...option,
@@ -96,6 +96,8 @@ const InternalFileManager = (props) => {
         };
       });
       setOptions(opts);
+    } else {
+      setOptions([]);
     }
   }, [value, fieldNames?.label]);
 
@@ -110,7 +112,7 @@ const InternalFileManager = (props) => {
   const pickerProps = {
     size: 'small',
     fieldNames,
-    multiple: ['o2m', 'm2m'].includes(collectionField?.interface),
+    multiple: ['o2m', 'm2m'].includes(collectionField?.interface) && multiple,
     association: {
       target: collectionField?.target,
     },
@@ -121,6 +123,7 @@ const InternalFileManager = (props) => {
     collectionField,
   };
   const usePickActionProps = () => {
+    const { setVisible } = useActionContext();
     const { multiple, selectedRows, onChange, options, collectionField } = useContext(RecordPickerContext);
     return {
       onClick() {
@@ -166,7 +169,7 @@ const InternalFileManager = (props) => {
         }}
       >
         <RecordPickerProvider {...pickerProps}>
-          <CollectionProvider name={collectionField.target}>
+          <CollectionProvider name={collectionField?.target}>
             <FormProvider>
               <TableSelectorParamsProvider params={{ filter: getFilter() }}>
                 <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps }}>

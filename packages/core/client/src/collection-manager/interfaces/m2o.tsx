@@ -1,9 +1,5 @@
 import { ISchema } from '@formily/react';
-import {
-  constraintsProps,
-  relationshipType,
-  reverseFieldProperties
-} from './properties';
+import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
 
 export const m2o: IField = {
@@ -50,7 +46,8 @@ export const m2o: IField = {
   availableTypes: ['belongsTo'],
   schemaInitialize(schema: ISchema, { block, readPretty, targetCollection }) {
     // schema['type'] = 'object';
-    if (targetCollection?.titleField && schema['x-component-props']) {
+    if (targetCollection?.titleField) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
@@ -178,5 +175,4 @@ export const m2o: IField = {
       // },
     ],
   },
-  invariable: true,
 };

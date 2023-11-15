@@ -508,6 +508,7 @@ export default {
   "Single select and radio fields can be used as the grouping field": "Campos de seleção única e de rádio podem ser usados como o campo de agrupamento",
   "Tab name": "Nome da aba",
   "Current record blocks": "Blocos de registro atual",
+  "Parent record": "Registro pai",
   "Popup message": "Mensagem pop-up",
   "Delete role": "Excluir função",
   "Role display name": "Nome de exibição da função",
@@ -709,5 +710,7 @@ export default {
   'Form data templates': 'Modelos de dados do formulário',
   "Data template": "Modelo de dados",
   "Not found":"Não encontrado",
-  "Add":"Adicionar"
+  "Add":"Adicionar",
+  'Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects':
+  'Excluir automaticamente objetos que dependem desta tabela, bem como objetos que dependem desses objetos',
 };

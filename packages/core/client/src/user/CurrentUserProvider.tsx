@@ -33,9 +33,11 @@ export const CurrentUserProvider = (props) => {
   const result = useRequest<any>({
     url: 'auth:check',
   });
+
   if (result.loading) {
     return render();
   }
+
   return <CurrentUserContext.Provider value={result}>{props.children}</CurrentUserContext.Provider>;
 };
 

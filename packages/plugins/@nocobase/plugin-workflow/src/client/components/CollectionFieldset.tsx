@@ -124,6 +124,7 @@ const CollectionFieldSet = observer(
                     </Variable.Input>
                     {!mergedDisabled ? (
                       <Button
+                        aria-label="icon-close"
                         type="link"
                         icon={<CloseCircleOutlined />}
                         onClick={() => {

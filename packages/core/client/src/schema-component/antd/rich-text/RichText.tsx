@@ -1,6 +1,7 @@
-import { connect, mapReadPretty, mapProps } from '@formily/react';
+import { connect, mapProps, mapReadPretty } from '@formily/react';
 import React from 'react';
 import ReactQuill from 'react-quill';
+import { isVariable } from '../../../variables/utils/isVariable';
 import { ReadPretty as InputReadPretty } from '../input';
 import { useStyles } from './style';
 
@@ -23,24 +24,22 @@ export const RichText = connect(
       'link',
       'image',
     ];
-    const { value, onChange, disabled } = props;
+    const { value, defaultValue, onChange, disabled } = props;
+    const resultValue = isVariable(value || defaultValue) ? undefined : value || defaultValue || '';
+
     return wrapSSR(
       <ReactQuill
         className={`${componentCls} ${hashId}`}
         modules={modules}
         formats={formats}
-        value={typeof value === 'string' ? value : ''}
+        value={resultValue}
         onChange={onChange}
         readOnly={disabled}
       />,
     );
   },
-  mapProps((props) => {
-    const { value } = props;
-    return {
-      ...props,
-      value: typeof value === 'object' ? value?.default : value,
-    };
+  mapProps({
+    initialValue: 'defaultValue',
   }),
   mapReadPretty((props) => {
     return <InputReadPretty.Html {...props} />;

@@ -18,6 +18,7 @@ import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
 import sqlResourcer from './resourcers/sql';
+import { beforeCreateForValidateField } from './hooks/beforeCreateForValidateField';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -75,7 +76,18 @@ export class CollectionManagerPlugin extends Plugin {
     );
 
     this.app.db.on('collections.beforeDestroy', async (model: CollectionModel, options) => {
-      await model.remove(options);
+      const removeOptions = {};
+      if (options.transaction) {
+        removeOptions['transaction'] = options.transaction;
+      }
+
+      const cascade = lodash.get(options, 'context.action.params.cascade', false);
+
+      if (cascade === true || cascade === 'true') {
+        removeOptions['cascade'] = true;
+      }
+
+      await model.remove(removeOptions);
     });
 
     // 要在 beforeInitOptions 之前处理
@@ -109,6 +121,8 @@ export class CollectionManagerPlugin extends Plugin {
         await fn(model, { database: this.app.db });
       }
     });
+
+    this.app.db.on('fields.beforeCreate', beforeCreateForValidateField());
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 

@@ -1,5 +1,5 @@
-import React from 'react';
 import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
+import React from 'react';
 import { useSnapshotTranslation } from '../../locale';
 
 export const SnapshotBlockInitializers = (props: any) => {

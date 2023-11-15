@@ -167,6 +167,7 @@ export const EditRequired = () => {
   const { t } = useTranslation();
   const { dn, refresh } = useDesignable();
 
+  // TODO: FormField 好像被弃用了，应该删除掉
   return !field.readPretty && fieldSchema['x-component'] !== 'FormField' ? (
     <SchemaSettings.SwitchItem
       key="required"
@@ -382,7 +383,7 @@ export const EditComponent = () => {
   const fieldModeOptions = useFieldModeOptions();
   const isAssociationField = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collectionField?.type);
   const targetCollection = getCollection(collectionField?.target);
-  const isFileField = isFileCollection(targetCollection);
+  const isFileField = isFileCollection(targetCollection as any);
 
   return isAssociationField && fieldModeOptions ? (
     <SchemaSettings.SelectItem

@@ -7,6 +7,7 @@ export const EXECUTION_STATUS = {
   ABORTED: -3,
   CANCELED: -4,
   REJECTED: -5,
+  RETRY_NEEDED: -6,
 };
 
 export const JOB_STATUS = {
@@ -17,6 +18,7 @@ export const JOB_STATUS = {
   ABORTED: -3,
   CANCELED: -4,
   REJECTED: -5,
+  RETRY_NEEDED: -6,
 };
 
 export const BRANCH_INDEX = {

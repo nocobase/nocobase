@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettings } from './SchemaSettings';
+import { useGetAriaLabelOfDesigner } from './hooks/useGetAriaLabelOfDesigner';
 
 const titleCss = css`
   pointer-events: none;
@@ -35,7 +36,12 @@ const overrideAntdCSS = css`
   & .ant-space-item .anticon {
     margin: 0;
   }
+
+  &:hover {
+    display: block !important;
+  }
 `;
+
 export const GeneralSchemaDesigner = (props: any) => {
   const { disableInitializer, title, template, draggable = true } = props;
   const { dn, designable } = useDesignable();
@@ -43,6 +49,8 @@ export const GeneralSchemaDesigner = (props: any) => {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
+  const { getAriaLabel } = useGetAriaLabelOfDesigner();
+
   const schemaSettingsProps = {
     dn,
     field,
@@ -59,7 +67,11 @@ export const GeneralSchemaDesigner = (props: any) => {
       insertPosition: 'afterEnd',
       wrap: rowCtx?.cols?.length > 1 ? undefined : gridRowColWrap,
       component: (
-        <PlusOutlined data-testid="GeneralSchemaDesigner-Initializer" style={{ cursor: 'pointer', fontSize: 14 }} />
+        <PlusOutlined
+          role="button"
+          aria-label={getAriaLabel('schema-initializer')}
+          style={{ cursor: 'pointer', fontSize: 14 }}
+        />
       ),
     };
   }, [rowCtx?.cols?.length]);
@@ -86,7 +98,7 @@ export const GeneralSchemaDesigner = (props: any) => {
         <Space size={2} align={'center'}>
           {draggable && (
             <DragHandler>
-              <DragOutlined data-testid="GeneralSchemaDesigner-DragHandler" />
+              <DragOutlined role="button" aria-label={getAriaLabel('drag-handler')} />
             </DragHandler>
           )}
           {!disableInitializer &&
@@ -98,7 +110,8 @@ export const GeneralSchemaDesigner = (props: any) => {
           <SchemaSettings
             title={
               <MenuOutlined
-                data-testid="GeneralSchemaDesigner-SchemaSettings"
+                role="button"
+                aria-label={getAriaLabel('schema-settings')}
                 style={{ cursor: 'pointer', fontSize: 12 }}
               />
             }

@@ -41,9 +41,9 @@ export const useStyles = genStyleHook('nb-page', (token) => {
 
       '.pageHeaderCss': {
         backgroundColor: token.colorBgContainer,
+        paddingInline: token.paddingLG,
         '&.ant-page-header-has-footer': {
           paddingTop: token.paddingSM,
-          paddingInline: token.paddingLG,
           paddingBottom: '0',
           '.ant-page-header-heading-left': {},
           '.ant-page-header-footer': { marginBlockStart: '0' },

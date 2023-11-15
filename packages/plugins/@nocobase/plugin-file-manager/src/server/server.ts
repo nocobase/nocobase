@@ -1,5 +1,6 @@
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
+import { FileModel } from './FileModel';
 import initActions from './actions';
 import { getStorageConfig } from './storages';
 
@@ -8,6 +9,18 @@ export { default as storageTypes } from './storages';
 export default class PluginFileManager extends Plugin {
   storageType() {
     return process.env.DEFAULT_STORAGE_TYPE ?? 'local';
+  }
+
+  async loadStorages(options?: { transaction: any }) {
+    const repository = this.db.getRepository('storages');
+    const storages = await repository.find({
+      transaction: options?.transaction,
+    });
+    const map = new Map();
+    for (const storage of storages) {
+      map.set(storage.get('id'), storage.toJSON());
+    }
+    this.db['_fileStorages'] = map;
   }
 
   async install() {
@@ -34,8 +47,28 @@ export default class PluginFileManager extends Plugin {
     }
   }
 
+  async beforeLoad() {
+    this.db.registerModels({ FileModel });
+    this.db.on('beforeDefineCollection', (options) => {
+      if (options.template === 'file') {
+        options.model = 'FileModel';
+      }
+    });
+    this.app.on('afterStart', async () => {
+      await this.loadStorages();
+    });
+  }
+
   async load() {
     await this.importCollections(resolve(__dirname, './collections'));
+
+    const Storage = this.db.getModel('storages');
+    Storage.afterSave(async (m, { transaction }) => {
+      await this.loadStorages({ transaction });
+    });
+    Storage.afterDestroy(async (m, { transaction }) => {
+      await this.loadStorages({ transaction });
+    });
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.storages`,

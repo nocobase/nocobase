@@ -1,7 +1,9 @@
 import { useField, useForm } from '@formily/react';
 import { message } from 'antd';
+import _ from 'lodash';
+import cloneDeep from 'lodash/cloneDeep';
 import omit from 'lodash/omit';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollection, useCollectionManager } from '.';
 import { useRequest } from '../api-client';
@@ -23,10 +25,13 @@ export const useCancelAction = () => {
 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
-  const result = useRequest(() => Promise.resolve({ data: omit(record, ['__parent']) }), {
-    ...options,
-    manual: true,
-  });
+  const result = useRequest(
+    () => Promise.resolve({ data: omit(cloneDeep(record), ['__parent', '__collectionName']) }),
+    {
+      ...options,
+      manual: true,
+    },
+  );
   const ctx = useActionContext();
   useEffect(() => {
     if (ctx.visible) {
@@ -179,7 +184,65 @@ export const useCollectionFilterOptions = (collection: any) => {
     };
     const options = getOptions(fields, 1);
     return options;
-  }, [collection]);
+  }, [_.isString(collection) ? collection : collection?.name]);
+};
+
+export const useCollectionFilterOptionsV2 = (collection: any) => {
+  const { getCollectionFields, getInterface } = useCollectionManager();
+
+  const getFields = useCallback(() => {
+    const fields = getCollectionFields(collection);
+    const field2option = (field, depth) => {
+      if (!field.interface) {
+        return;
+      }
+      const fieldInterface = getInterface(field.interface);
+      if (!fieldInterface?.filterable) {
+        return;
+      }
+      const { nested, children, operators } = fieldInterface.filterable;
+      const option = {
+        name: field.name,
+        title: field?.uiSchema?.title || field.name,
+        schema: field?.uiSchema,
+        operators:
+          operators?.filter?.((operator) => {
+            return !operator?.visible || operator.visible(field);
+          }) || [],
+        interface: field.interface,
+      };
+      if (field.target && depth > 2) {
+        return;
+      }
+      if (depth > 2) {
+        return option;
+      }
+      if (children?.length) {
+        option['children'] = children;
+      }
+      if (nested) {
+        const targetFields = getCollectionFields(field.target);
+        const options = getOptions(targetFields, depth + 1).filter(Boolean);
+        option['children'] = option['children'] || [];
+        option['children'].push(...options);
+      }
+      return option;
+    };
+    const getOptions = (fields, depth) => {
+      const options = [];
+      fields.forEach((field) => {
+        const option = field2option(field, depth);
+        if (option) {
+          options.push(option);
+        }
+      });
+      return options;
+    };
+    const options = getOptions(fields, 1);
+    return options;
+  }, [_.isString(collection) ? collection : collection?.name]);
+
+  return { getFields };
 };
 
 export const useLinkageCollectionFilterOptions = (collectionName: string) => {

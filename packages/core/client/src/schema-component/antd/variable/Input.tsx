@@ -15,23 +15,6 @@ import { XButton } from './XButton';
 import { useStyles } from './style';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
-const groupClass = css`
-  width: auto;
-  display: flex;
-  &.ant-input-group-compact {
-    display: flex;
-  }
-  .ant-input-disabled {
-    .ant-tag {
-      color: #bfbfbf;
-      border-color: #d9d9d9;
-    }
-  }
-  .ant-input.null-value {
-    width: 4em;
-    min-width: 4em;
-  }
-`;
 
 function parseValue(value: any): string | string[] {
   if (value == null) {
@@ -57,23 +40,23 @@ const ConstantTypes = {
   string: {
     label: `{{t("String")}}`,
     value: 'string',
-    component: function StringComponent({ onChange, value }) {
-      return <AntInput value={value} onChange={(ev) => onChange(ev.target.value)} />;
+    component: function StringComponent({ onChange, value, ...otherProps }) {
+      return <AntInput value={value} onChange={(ev) => onChange(ev.target.value)} {...otherProps} />;
     },
     default: '',
   },
   number: {
     label: '{{t("Number")}}',
     value: 'number',
-    component: function NumberComponent({ onChange, value }) {
-      return <InputNumber value={value} onChange={onChange} />;
+    component: function NumberComponent({ onChange, value, ...otherProps }) {
+      return <InputNumber value={value} onChange={onChange} {...otherProps} />;
     },
     default: 0,
   },
   boolean: {
     label: `{{t("Boolean")}}`,
     value: 'boolean',
-    component: function BooleanComponent({ onChange, value }) {
+    component: function BooleanComponent({ onChange, value, ...otherProps }) {
       const { t } = useTranslation();
       return (
         <Select
@@ -84,6 +67,7 @@ const ConstantTypes = {
             { value: true, label: t('True') },
             { value: false, label: t('False') },
           ]}
+          {...otherProps}
         />
       );
     },
@@ -92,13 +76,14 @@ const ConstantTypes = {
   date: {
     label: '{{t("Date")}}',
     value: 'date',
-    component: function DateComponent({ onChange, value }) {
+    component: function DateComponent({ onChange, value, ...otherProps }) {
       return (
         <DatePicker
           value={dayjs(value)}
           onChange={(d) => (d ? onChange(d.toDate()) : null)}
           allowClear={false}
           showTime
+          {...otherProps}
         />
       );
     },
@@ -112,7 +97,7 @@ const ConstantTypes = {
     value: 'null',
     component: function NullComponent() {
       const { t } = useTranslation();
-      return <AntInput readOnly placeholder={t('Null')} className="null-value" />;
+      return <AntInput style={{ width: '100%' }} readOnly placeholder={t('Null')} className="null-value" />;
     },
     default: null,
   },
@@ -147,7 +132,6 @@ function getTypedConstantOption(type: string, types: true | string[], fieldNames
 export function Input(props) {
   const {
     value = '',
-    scope,
     onChange,
     children,
     button,
@@ -157,6 +141,7 @@ export function Input(props) {
     changeOnSelect,
     fieldNames,
   } = props;
+  const scope = typeof props.scope === 'function' ? props.scope() : props.scope;
   const { wrapSSR, hashId, componentCls, rootPrefixCls } = useStyles();
 
   // 添加 antd input 样式，防止样式缺失
@@ -216,20 +201,20 @@ export function Input(props) {
   };
 
   const onSwitch = useCallback(
-    (next) => {
+    (next, optionPath: any[]) => {
       if (next[0] === '') {
         if (next[1]) {
           if (next[1] !== type) {
-            onChange(ConstantTypes[next[1]]?.default ?? null);
+            onChange(ConstantTypes[next[1]]?.default ?? null, optionPath);
           }
         } else {
           if (variable) {
-            onChange(null);
+            onChange(null, optionPath);
           }
         }
         return;
       }
-      onChange(`{{${next.join('.')}}}`);
+      onChange(`{{${next.join('.')}}}`, optionPath);
     },
     [type, variable, onChange],
   );
@@ -253,6 +238,13 @@ export function Input(props) {
             }
             prevOption = prevOption.children.find((item) => item[names.value] === key);
           }
+
+          // 如果为空则说明相关字段已被删除
+          // fix T-1565
+          if (!prevOption) {
+            return;
+          }
+
           labels.push(prevOption[names.label]);
         } catch (err) {
           error(err);
@@ -269,7 +261,7 @@ export function Input(props) {
   const disabled = props.disabled || form.disabled;
 
   return wrapSSR(
-    <Space.Compact style={style} className={classNames(groupClass, componentCls, hashId, className)}>
+    <Space.Compact style={style} className={classNames(componentCls, hashId, className)}>
       {variable ? (
         <div
           className={cx(
@@ -280,7 +272,7 @@ export function Input(props) {
 
               &:hover {
                 .clear-button {
-                  opacity: 0.8;
+                  display: inline-block;
                 }
               }
 
@@ -302,6 +294,8 @@ export function Input(props) {
           )}
         >
           <div
+            role="button"
+            aria-label="variable-tag"
             onInput={(e) => e.preventDefault()}
             onKeyDown={(e) => {
               if (e.key !== 'Backspace') {
@@ -320,10 +314,11 @@ export function Input(props) {
           </div>
           {!disabled ? (
             <span
+              role="button"
+              aria-label="icon-close"
               className={cx('clear-button')}
               // eslint-disable-next-line react/no-unknown-property
               unselectable="on"
-              aria-hidden
               onClick={() => onChange(null)}
             >
               <CloseCircleFilled />
@@ -331,7 +326,11 @@ export function Input(props) {
           ) : null}
         </div>
       ) : (
-        children ?? <ConstantComponent value={value} onChange={onChange} />
+        <div style={{ flex: 1 }}>
+          {children ?? (
+            <ConstantComponent role="button" aria-label="variable-constant" value={value} onChange={onChange} />
+          )}
+        </div>
       )}
       {options.length > 1 && !disabled ? (
         <Cascader
@@ -342,7 +341,14 @@ export function Input(props) {
           changeOnSelect={changeOnSelect}
           fieldNames={fieldNames}
         >
-          {button ?? <XButton type={variable ? 'primary' : 'default'} />}
+          {button ?? (
+            <XButton
+              className={css(`
+                margin-left: -1px;
+              `)}
+              type={variable ? 'primary' : 'default'}
+            />
+          )}
         </Cascader>
       ) : null}
     </Space.Compact>,

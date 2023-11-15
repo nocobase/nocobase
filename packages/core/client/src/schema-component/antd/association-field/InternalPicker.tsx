@@ -23,9 +23,13 @@ import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
 
 const useTableSelectorProps = () => {
   const field: any = useField();
-  const { multiple, options = [], setSelectedRows, selectedRows: rcSelectRows = [], onChange } = useContext(
-    RecordPickerContext,
-  );
+  const {
+    multiple,
+    options = [],
+    setSelectedRows,
+    selectedRows: rcSelectRows = [],
+    onChange,
+  } = useContext(RecordPickerContext);
   const { onRowSelectionChange, rowKey = 'id', ...others } = useTsp();
   const { setVisible } = useActionContext();
   return {

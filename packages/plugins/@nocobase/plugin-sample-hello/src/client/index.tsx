@@ -1,11 +1,5 @@
 import { TableOutlined } from '@ant-design/icons';
-import {
-  Plugin,
-  SchemaComponentOptions,
-  SchemaInitializer,
-  SchemaInitializerContext,
-  SettingsCenterProvider,
-} from '@nocobase/client';
+import { Plugin, SchemaComponentOptions, SchemaInitializer, SchemaInitializerContext, useApp } from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -39,39 +33,47 @@ export const HelloBlockInitializer = (props) => {
 
 const HelloProvider = React.memo((props) => {
   const items = useContext<any>(SchemaInitializerContext);
-  const children = items.BlockInitializers.items[1].children;
-  children.push({
-    key: 'hello',
-    type: 'item',
-    title: '{{t("Hello block")}}',
-    component: 'HelloBlockInitializer',
-  });
+  const mediaItems = items.BlockInitializers.items.find((item) => item.key === 'media');
+
+  if (process.env.NODE_ENV !== 'production' && !mediaItems) {
+    throw new Error('media block initializer not found');
+  }
+
+  const children = mediaItems.children;
+  if (!children.find((item) => item.key === 'hello')) {
+    children.push({
+      key: 'hello',
+      type: 'item',
+      title: '{{t("Hello block")}}',
+      component: 'HelloBlockInitializer',
+    });
+  }
+
   return (
-    <SettingsCenterProvider
-      settings={{
-        'sample-hello': {
-          title: 'Hello',
-          icon: 'ApiOutlined',
-          tabs: {
-            tab1: {
-              title: 'Hello tab',
-              component: () => <Card bordered={false}>Hello Settings</Card>,
-            },
-          },
-        },
-      }}
-    >
-      <SchemaComponentOptions components={{ HelloDesigner, HelloBlockInitializer }}>
-        <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
-      </SchemaComponentOptions>
-    </SettingsCenterProvider>
+    <SchemaComponentOptions components={{ HelloDesigner, HelloBlockInitializer }}>
+      <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
+    </SchemaComponentOptions>
   );
 });
 HelloProvider.displayName = 'HelloProvider';
 
+const HelloPluginSettingPage = () => {
+  return (
+    <Card bordered={false}>
+      <div>Hello plugin setting page</div>
+    </Card>
+  );
+};
+
 class HelloPlugin extends Plugin {
   async load() {
     this.app.addProvider(HelloProvider);
+    this.app.pluginSettingsManager.add('sample-hello', {
+      title: 'Hello',
+      icon: 'ApiOutlined',
+      Component: HelloPluginSettingPage,
+      sort: 100,
+    });
   }
 }
 

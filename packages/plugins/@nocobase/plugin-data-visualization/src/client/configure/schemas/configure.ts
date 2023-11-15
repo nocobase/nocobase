@@ -374,7 +374,6 @@ export const querySchema: ISchema = {
               'x-component': 'InputNumber',
               'x-component-props': {
                 defaultValue: 2000,
-                max: 2000,
                 min: 1,
                 style: {
                   width: '100px',

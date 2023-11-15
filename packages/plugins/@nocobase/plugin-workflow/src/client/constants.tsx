@@ -7,6 +7,7 @@ import {
   ExclamationOutlined,
   HourglassOutlined,
   LoadingOutlined,
+  RedoOutlined,
 } from '@ant-design/icons';
 import { NAMESPACE } from './locale';
 
@@ -19,6 +20,7 @@ export const EXECUTION_STATUS = {
   ABORTED: -3,
   CANCELED: -4,
   REJECTED: -5,
+  RETRY_NEEDED: -6,
 };
 
 export const ExecutionStatusOptions = [
@@ -78,6 +80,13 @@ export const ExecutionStatusOptions = [
     icon: <MinusOutlined />,
     description: `{{t("Rejected from a manual node.", { ns: "${NAMESPACE}" })}}`,
   },
+  {
+    value: EXECUTION_STATUS.RETRY_NEEDED,
+    label: `{{t("Retry needed", { ns: "${NAMESPACE}" })}}`,
+    color: 'volcano',
+    icon: <RedoOutlined />,
+    description: `{{t("General failed but should do another try.", { ns: "${NAMESPACE}" })}}`,
+  },
 ];
 
 export const ExecutionStatusOptionsMap = ExecutionStatusOptions.reduce(
@@ -93,6 +102,7 @@ export const JOB_STATUS = {
   ABORTED: -3,
   CANCELED: -4,
   REJECTED: -5,
+  RETRY_NEEDED: -6,
 };
 
 export const JobStatusOptions = [
@@ -132,6 +142,12 @@ export const JobStatusOptions = [
     label: `{{t("Rejected", { ns: "${NAMESPACE}" })}}`,
     color: 'volcano',
     icon: <MinusOutlined />,
+  },
+  {
+    value: JOB_STATUS.RETRY_NEEDED,
+    label: `{{t("Retry needed", { ns: "${NAMESPACE}" })}}`,
+    color: 'volcano',
+    icon: <RedoOutlined />,
   },
 ];
 

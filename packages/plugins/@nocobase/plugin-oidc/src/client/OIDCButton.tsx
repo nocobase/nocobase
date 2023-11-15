@@ -1,76 +1,46 @@
 import { LoginOutlined } from '@ant-design/icons';
-import { Authenticator, css, useAPIClient, useRedirect } from '@nocobase/client';
-import { useMemoizedFn } from 'ahooks';
-import { Button, Space } from 'antd';
-import React, { useEffect, useState } from 'react';
+import { Authenticator, css, useAPIClient } from '@nocobase/client';
+import { Button, Space, message } from 'antd';
+import React, { useEffect } from 'react';
 import { useOidcTranslation } from './locale';
+import { useLocation } from 'react-router-dom';
 
 export interface OIDCProvider {
   clientId: string;
   title: string;
 }
 
-export const OIDCButton = (props: { authenticator: Authenticator }) => {
+export const OIDCButton = ({ authenticator }: { authenticator: Authenticator }) => {
   const { t } = useOidcTranslation();
-  const [windowHandler, setWindowHandler] = useState<Window | undefined>();
   const api = useAPIClient();
-  const redirect = useRedirect();
+  const location = useLocation();
 
-  /**
-   * 打开登录弹出框
-   */
-  const handleOpen = async (name: string) => {
+  const login = async () => {
     const response = await api.request({
       method: 'post',
       url: 'oidc:getAuthUrl',
       headers: {
-        'X-Authenticator': name,
+        'X-Authenticator': authenticator.name,
       },
     });
 
     const authUrl = response?.data?.data;
-    const { width, height } = screen;
-
-    const win = window.open(
-      authUrl,
-      '_blank',
-      `width=800,height=600,left=${(width - 800) / 2},top=${
-        (height - 600) / 2
-      },toolbar=no,menubar=no,location=no,status=no`,
-    );
-
-    setWindowHandler(win);
+    window.location.replace(authUrl);
   };
 
-  /**
-   * 从弹出窗口，发消息回来进行登录
-   */
-  const handleOIDCLogin = useMemoizedFn(async (event: MessageEvent) => {
-    const { state } = event.data;
-    const search = new URLSearchParams(state);
-    const authenticator = search.get('name');
-    try {
-      await api.auth.signIn(event.data, authenticator);
-      redirect();
-    } catch (err) {
-      console.error(err);
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const name = params.get('authenticator');
+    const error = params.get('error');
+    if (name !== authenticator.name) {
+      return;
+    }
+    if (error) {
+      message.error(t(error));
+      return;
     }
   });
 
-  /**
-   * 监听弹出窗口的消息
-   */
-  useEffect(() => {
-    if (!windowHandler) return;
-
-    const channel = new BroadcastChannel('nocobase-oidc-response');
-    channel.onmessage = handleOIDCLogin;
-    return () => {
-      channel.close();
-    };
-  }, [windowHandler, handleOIDCLogin]);
-
-  const authenticator = props.authenticator;
   return (
     <Space
       direction="vertical"
@@ -78,7 +48,7 @@ export const OIDCButton = (props: { authenticator: Authenticator }) => {
         display: flex;
       `}
     >
-      <Button shape="round" block icon={<LoginOutlined />} onClick={() => handleOpen(authenticator.name)}>
+      <Button shape="round" block icon={<LoginOutlined />} onClick={login}>
         {t(authenticator.title)}
       </Button>
     </Space>

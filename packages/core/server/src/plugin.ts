@@ -110,7 +110,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   async toJSON(options: any = {}) {
     const { locale = 'en-US' } = options;
-    const { packageName, packageJson } = this.options;
+    const { name, packageName, packageJson } = this.options;
     if (!packageName) {
       return {
         ...this.options,
@@ -127,7 +127,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
       lastUpdated,
       file,
       updatable: file.startsWith(process.env.PLUGIN_STORAGE_PATH),
-      displayName: packageJson[`displayName.${locale}`] || packageJson.displayName,
+      displayName: packageJson[`displayName.${locale}`] || packageJson.displayName || name,
       description: packageJson[`description.${locale}`] || packageJson.description,
     };
   }

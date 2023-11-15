@@ -1,9 +1,10 @@
 import { ISchema, useForm } from '@formily/react';
+import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useActionContext, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 // import { triggers } from '../triggers';
+import React from 'react';
 import { executionSchema } from './executions';
 
 const collection = {
@@ -170,6 +171,18 @@ export const workflowSchema: ISchema = {
               },
               'x-align': 'left',
             },
+            delete: {
+              type: 'void',
+              title: '{{t("Delete")}}',
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ cm.useBulkDestroyAction }}',
+                confirm: {
+                  title: "{{t('Delete record')}}",
+                  content: "{{t('Are you sure you want to delete it?')}}",
+                },
+              },
+            },
             create: {
               type: 'void',
               title: '{{t("Add new")}}',
@@ -215,18 +228,6 @@ export const workflowSchema: ISchema = {
                       },
                     },
                   },
-                },
-              },
-            },
-            delete: {
-              type: 'void',
-              title: '{{t("Delete")}}',
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ cm.useBulkDestroyAction }}',
-                confirm: {
-                  title: "{{t('Delete record')}}",
-                  content: "{{t('Are you sure you want to delete it?')}}",
                 },
               },
             },
@@ -289,7 +290,13 @@ export const workflowSchema: ISchema = {
                   type: 'number',
                   'x-decorator': 'OpenDrawer',
                   'x-decorator-props': {
-                    component: 'a',
+                    component: function Com(props) {
+                      const record = useRecord();
+                      return React.createElement('a', {
+                        'aria-label': `executed-${record.title}`,
+                        ...props,
+                      });
+                    },
                   },
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
@@ -311,7 +318,7 @@ export const workflowSchema: ISchema = {
                     split: '|',
                   },
                   properties: {
-                    view: {
+                    configure: {
                       type: 'void',
                       'x-component': 'WorkflowLink',
                     },

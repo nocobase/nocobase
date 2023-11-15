@@ -9,7 +9,7 @@ type Storer = {
   get: (name: string) => Promise<Model>;
 };
 
-type AuthManagerOptions = {
+export type AuthManagerOptions = {
   authKey: string;
   default?: string;
   jwt?: JwtOptions;
@@ -21,11 +21,11 @@ type AuthConfig = {
 };
 
 export class AuthManager {
+  jwt: JwtService;
   protected options: AuthManagerOptions;
   protected authTypes: Registry<AuthConfig> = new Registry();
   // authenticators collection manager.
   protected storer: Storer;
-  jwt: JwtService;
 
   constructor(options: AuthManagerOptions) {
     this.options = options;
