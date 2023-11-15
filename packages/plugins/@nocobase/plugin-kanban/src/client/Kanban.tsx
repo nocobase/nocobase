@@ -83,7 +83,6 @@ export const Kanban: any = observer(
       const updatedBoard = Board.moveCard({ columns: field.value }, fromColumn, toColumn);
       field.value = updatedBoard.columns;
     };
-
     return (
       <Spin wrapperClassName={styles.nbKanban} spinning={field.loading || false}>
         <Board

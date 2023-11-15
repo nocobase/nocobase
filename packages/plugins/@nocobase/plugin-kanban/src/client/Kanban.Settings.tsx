@@ -8,6 +8,7 @@ import {
   useDesignable,
   SchemaSettings,
   useSortFields,
+  FixedBlockDesignerItem,
   removeNullCondition,
 } from '@nocobase/client';
 import { useKanbanBlockContext } from './KanbanBlockProvider';
@@ -48,6 +49,10 @@ export const kanbanSettings = new SchemaSetting({
           },
         };
       },
+    },
+    {
+      name: 'fixedBlock',
+      Component: FixedBlockDesignerItem,
     },
     {
       name: 'dataTemplates',

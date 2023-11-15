@@ -27,7 +27,7 @@ const Board: any = (props) => {
   const { styles } = useStyles();
 
   return (
-    <div className={styles}>
+    <div className={styles.nbBord}>
       {props.initialBoard ? <UncontrolledBoard {...props} /> : <ControlledBoard {...props} />}
     </div>
   );
@@ -250,7 +250,7 @@ function BoardContainer(props) {
     onCardNew,
     allowAddCard,
   } = props;
-
+  const { styles } = useStyles();
   function handleOnDragEnd(event) {
     const coordinates = getCoordinates(event, board);
     if (!coordinates.source) return;
@@ -263,7 +263,7 @@ function BoardContainer(props) {
   }
   return (
     <DragDropContext onDragEnd={handleOnDragEnd}>
-      <div style={{ overflowY: 'hidden', display: 'flex', alignItems: 'flex-start' }} className="react-kanban-board">
+      <div style={{ overflowY: 'hidden', display: 'flex', alignItems: 'flex-start' }} className={styles.kanbanBoard}>
         <DroppableBoard droppableId="board-droppable" direction="horizontal" type="BOARD">
           {board.columns?.map((column, index) => (
             <Column

@@ -14,7 +14,7 @@ export const KanbanCard: any = observer(
     const fieldSchema = useFieldSchema();
     const [visible, setVisible] = useState(false);
     const labelDisabled = fieldSchema['x-label-disabled'];
-
+    console.log(labelDisabled);
     return (
       <SchemaComponentOptions components={{}} scope={{}}>
         <Card
@@ -25,45 +25,50 @@ export const KanbanCard: any = observer(
           hoverable
           style={{ cursor: 'pointer', overflow: 'hidden' }}
           // bodyStyle={{ paddingBottom: 0 }}
-          className={cls(
-            css`
-              .ant-card-body {
-                padding: 16px;
+          className={cls(css`
+            .ant-card-body {
+              padding: 16px;
+            }
+            .nb-row-divider {
+              height: 16px;
+              margin-top: -16px;
+              &:last-child {
+                margin-top: 0;
               }
-              .nb-row-divider {
-                height: 16px;
-                margin-top: -16px;
-                &:last-child {
-                  margin-top: 0;
-                }
-              }
-              .ant-description-input {
-                text-overflow: ellipsis;
-                width: 100%;
-                overflow: hidden;
-              }
-              .ant-description-textarea {
-                text-overflow: ellipsis;
-                width: 100%;
-                overflow: hidden;
-              }
-              .ant-formily-item {
-                margin-bottom: 12px;
-              }
-              .nb-grid-row:last-of-type {
-                .nb-grid-col {
-                  .nb-form-item:last-of-type {
-                    .ant-formily-item {
-                      margin-bottom: 0;
-                    }
+            }
+            .ant-description-input {
+              text-overflow: ellipsis;
+              width: 100%;
+              overflow: hidden;
+            }
+            .ant-description-textarea {
+              text-overflow: ellipsis;
+              width: 100%;
+              overflow: hidden;
+            }
+            .ant-formily-item {
+              margin-bottom: 12px;
+            }
+            .nb-grid-row:last-of-type {
+              .nb-grid-col {
+                .nb-form-item:last-of-type {
+                  .ant-formily-item {
+                    margin-bottom: 0;
                   }
                 }
               }
-            `,
-            {
-              'kanban-no-label': labelDisabled,
-            },
-          )}
+            }
+            .ant-formily-item-control .ant-space-item: {
+              whitespace: normal;
+              wordbreak: break-all;
+              wordwrap: break-word;
+            }
+            .ant-formily-item-label {
+              color: #8c8c8c;
+              fontweight: normal;
+              display: ${labelDisabled ? 'none' : 'flex'};
+            }
+          `)}
         >
           <DndContext
             onDragStart={() => {
