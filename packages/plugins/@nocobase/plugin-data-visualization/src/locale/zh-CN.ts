@@ -73,4 +73,5 @@ export default {
   isPercent: '显示为百分比',
   isGroup: '分组',
   smooth: '平滑曲线',
+  Distinct: '去重',
 };

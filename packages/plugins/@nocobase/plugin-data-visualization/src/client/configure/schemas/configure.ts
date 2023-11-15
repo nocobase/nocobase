@@ -213,6 +213,18 @@ export const querySchema: ISchema = {
                             { label: '{{t("Min")}}', value: 'min' },
                           ],
                         },
+                        distinct: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Select',
+                          'x-component-props': {
+                            placeholder: '{{t("Distinct")}}',
+                          },
+                          enum: [
+                            { label: '{{t("Yes")}}', value: true },
+                            { label: '{{t("No")}}', value: false },
+                          ],
+                        },
                         alias: {
                           type: 'string',
                           'x-decorator': 'FormItem',
