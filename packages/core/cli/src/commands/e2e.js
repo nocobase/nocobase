@@ -80,8 +80,8 @@ async function appReady() {
 
 async function runApp(options = {}) {
   console.log('installing...');
-  await run('nocobase', ['install', '-f'], options);
-  if (isPortReachable(process.env.APP_PORT)) {
+  await run('nocobase', ['install', '-f']);
+  if (await isPortReachable(process.env.APP_PORT)) {
     console.log('app started');
     return;
   }
