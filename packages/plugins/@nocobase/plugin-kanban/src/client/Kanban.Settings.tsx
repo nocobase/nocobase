@@ -55,15 +55,12 @@ export const kanbanSettings = new SchemaSetting({
       Component: FixedBlockDesignerItem,
     },
     {
-      name: 'dataTemplates',
-      Component: SchemaSettings.DataTemplates,
-      useVisible() {
-        const { action } = useFormBlockContext();
-        return !action;
-      },
+      name: 'template',
+      Component: SchemaSettings.Template,
       useComponentProps() {
         const { name } = useCollection();
         return {
+          componentName: 'Kanban',
           collectionName: name,
         };
       },
