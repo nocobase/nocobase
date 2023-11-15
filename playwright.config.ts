@@ -22,7 +22,9 @@ export default defineConfig({
   workers: 1,
 
   // Reporter to use
-  reporter: [['html', { outputFolder: './playwright/tests-report' }]],
+  reporter: process.env.PLAYWRIGHT_SKIP_REPORTER
+    ? undefined
+    : [['html', { outputFolder: './playwright/tests-report' }]],
 
   outputDir: './playwright/test-results',
 

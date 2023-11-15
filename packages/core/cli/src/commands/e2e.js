@@ -116,6 +116,9 @@ const filterArgv = () => {
     if (element.startsWith('--url=')) {
       continue;
     }
+    if (element === '--skip-reporter') {
+      continue;
+    }
     argv.push(element);
   }
   return argv;
@@ -127,18 +130,6 @@ const filterArgv = () => {
  */
 module.exports = (cli) => {
   const e2e = cli.command('e2e').hook('preAction', () => {
-    process.openStdin().on('keypress', function (chunk, key) {
-      if (key && key.name === 'c' && key.ctrl) {
-        console.log('bye bye');
-        process.exit();
-      }
-    });
-
-    process.on('SIGINT', () => {
-      console.log('bye bye');
-      process.exit();
-    });
-
     if (process.env.APP_BASE_URL) {
       process.env.APP_BASE_URL = process.env.APP_BASE_URL.replace('localhost', '127.0.0.1');
       console.log('APP_BASE_URL:', process.env.APP_BASE_URL);
@@ -148,7 +139,11 @@ module.exports = (cli) => {
     .command('test')
     .allowUnknownOption()
     .option('--url [url]')
+    .option('--skip-reporter')
     .action(async (options) => {
+      if (options.skipReporter) {
+        process.env.PLAYWRIGHT_SKIP_REPORTER = true;
+      }
       if (options.url) {
         process.env.APP_BASE_URL = options.url.replace('localhost', '127.0.0.1');
       } else {
