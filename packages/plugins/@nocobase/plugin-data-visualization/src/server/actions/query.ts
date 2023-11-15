@@ -292,7 +292,7 @@ export const parseVariables = async (ctx: Context, next: Next) => {
 
 export const cacheMiddleware = async (ctx: Context, next: Next) => {
   const { uid, cache: cacheConfig, refresh } = ctx.action.params.values as QueryParams;
-  const cache = ctx.app.cacheManager.get('data-visualization') as Cache;
+  const cache = ctx.app.cacheManager.getCache('data-visualization') as Cache;
   const useCache = cacheConfig?.enabled && uid;
 
   if (useCache && !refresh) {
