@@ -18,8 +18,9 @@ export class BulkEditPlugin extends Plugin {
       schema: {
         'x-align': 'right',
         'x-decorator': 'ACLActionProvider',
-        'x-action': 'bulk:edit',
-        'x-settings': 'ActionSettings:bulk:edit',
+        'x-designer': 'Action.Designer',
+        'x-action': 'customize:bulkEdit',
+        'x-settings': 'ActionSettings:customize:bulkEdit',
         'x-acl-action': 'update',
         'x-acl-action-props': {
           skipScopeCheck: true,

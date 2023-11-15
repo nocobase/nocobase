@@ -69,7 +69,7 @@ function RemoveButton(
   );
 }
 const bulkEditactionSettings = new SchemaSetting({
-  name: 'ActionSettings:bulk:edit',
+  name: 'ActionSettings:customize:bulkEdit',
   items: [
     {
       name: 'Customize',
@@ -137,7 +137,6 @@ const BulkEditActionSetting = () => {
   const settingsName = `ActionSettings:${filed['x-action']}`;
   const defaultActionSettings = 'ActionSettings';
   const hasAction = app.schemaSettingsManager.has(settingsName);
-
   return <GeneralSchemaDesigner schemaSettings={hasAction ? settingsName : defaultActionSettings} />;
 };
 
