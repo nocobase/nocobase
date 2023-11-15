@@ -97,7 +97,7 @@ export class Dumper extends AppMigrator {
       await Promise.all(
         [...this.app.db.collections.values()].map(async (c) => {
           try {
-            const options = DBCollectionGroupManager.unifyDuplicatorOption(c.options.duplicator);
+            const duplicatorOption = DBCollectionGroupManager.unifyDuplicatorOption(c.options.duplicator);
             let origin = c.origin;
             let originTitle = origin;
 
@@ -115,17 +115,23 @@ export class Dumper extends AppMigrator {
               origin = 'user';
             }
 
-            return {
+            const options: any = {
               name: c.name,
               title: c.options.title || c.name,
               options: c.options,
-              dataType: options?.dataType,
+              dataType: duplicatorOption?.dataType,
               isView: c.isView(),
               origin: {
                 name: origin,
                 title: originTitle,
               },
             };
+
+            if (c.options.inherits && c.options.inherits.length > 0) {
+              options.inherits = c.options.inherits;
+            }
+
+            return options;
           } catch (e) {
             console.error(e);
             throw new Error(`collection ${c.name} has invalid duplicator option`, { cause: e });
@@ -225,17 +231,8 @@ export class Dumper extends AppMigrator {
   }
 
   async dumpableCollectionsGroupByDataTypes() {
-    const dumpableCollections = (await this.dumpableCollections()).map((c) => {
-      return {
-        name: c.name,
-        dataType: c.dataType,
-        origin: c.origin,
-        title: c.title,
-        isView: c.isView,
-      };
-    });
-
-    return _(dumpableCollections)
+    return _(await this.dumpableCollections())
+      .map((c) => _.pick(c, ['name', 'dataType', 'origin', 'title', 'isView', 'inherits']))
       .groupBy('dataType')
       .mapValues((items) => _.sortBy(items, (item) => item.origin.name))
       .value();

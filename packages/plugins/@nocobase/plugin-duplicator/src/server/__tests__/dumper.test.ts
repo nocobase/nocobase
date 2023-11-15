@@ -19,6 +19,123 @@ describe('dumper', () => {
     await app.destroy();
   });
 
+  it('should sort collections by inherits', async () => {
+    const collections = [
+      {
+        name: 'parent1',
+        inherits: [],
+      },
+      {
+        name: 'parent2',
+        inherits: [],
+      },
+      {
+        name: 'child3',
+        inherits: ['child1', 'child2'],
+      },
+      {
+        name: 'child1',
+        inherits: ['parent1', 'parent2'],
+      },
+      {
+        name: 'child2',
+        inherits: ['parent1'],
+      },
+    ];
+
+    const sorted = Restorer.sortCollectionsByInherits(collections);
+
+    expect(sorted[0].name).toBe('parent1');
+    expect(sorted[1].name).toBe('parent2');
+    expect(sorted[2].name).toBe('child1');
+    expect(sorted[3].name).toBe('child2');
+    expect(sorted[4].name).toBe('child3');
+  });
+
+  it('should handle inherited collection order', async () => {
+    if (!db.inDialect('postgres')) {
+      return;
+    }
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'parent1',
+        fields: [
+          {
+            type: 'string',
+            name: 'parent1Name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'parent2',
+        fields: [
+          {
+            type: 'string',
+            name: 'parent2Name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'child1',
+        inherits: ['parent1', 'parent2'],
+        fields: [
+          {
+            type: 'string',
+            name: 'child1Name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('parent1').create({
+      values: {
+        parent1Name: 'parent1Name',
+      },
+    });
+
+    await db.getRepository('parent2').create({
+      values: {
+        parent2Name: 'parent2Name',
+      },
+    });
+
+    await db.getRepository('child1').create({
+      values: {
+        child1Name: 'child1Name',
+      },
+    });
+
+    const dumper = new Dumper(app);
+    const result = await dumper.dump({
+      dataTypes: new Set(['meta', 'business']),
+    });
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: result.filePath,
+    });
+
+    const meta = await restorer.parseBackupFile();
+
+    const businessCollections = meta.dumpableCollectionsGroupByDataTypes.business;
+    const child1 = businessCollections.find(({ name }) => name === 'child1');
+
+    expect(child1.inherits).toEqual(['parent1', 'parent2']);
+
+    await restorer.restore({
+      dataTypes: new Set(['meta', 'business']),
+    });
+  });
+
   it('should list dumped files', async () => {
     const dumper = new Dumper(app);
     const list = await dumper.allBackUpFilePaths({
@@ -76,8 +193,6 @@ describe('dumper', () => {
     const restorer = new Restorer(app, {
       backUpFilePath: result.filePath,
     });
-
-    const meta = await restorer.parseBackupFile();
 
     await restorer.restore({
       dataTypes: new Set(['meta', 'business']),

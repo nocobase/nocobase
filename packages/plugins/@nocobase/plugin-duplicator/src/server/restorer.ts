@@ -8,6 +8,7 @@ import { Application } from '@nocobase/server';
 import { DataTypes, DumpDataType } from '@nocobase/database';
 import lodash from 'lodash';
 import { FieldValueWriter } from './field-value-writer';
+import * as Topo from '@hapi/topo';
 
 type RestoreOptions = {
   dataTypes: Set<DumpDataType>;
@@ -31,6 +32,28 @@ export class Restorer extends AppMigrator {
     if (backUpFilePath) {
       this.setBackUpFilePath(backUpFilePath);
     }
+  }
+
+  static sortCollectionsByInherits(
+    collections: Array<{
+      name: string;
+      inherits: string[];
+    }>,
+  ): any {
+    const sorter = new Topo.Sorter();
+
+    for (const collection of collections) {
+      const options: any = {
+        group: collection.name,
+      };
+
+      if (collection.inherits?.length) {
+        options.after = collection.inherits;
+      }
+      sorter.add(collection, options);
+    }
+
+    return sorter.sort();
   }
 
   setBackUpFilePath(backUpFilePath: string) {
@@ -63,31 +86,9 @@ export class Restorer extends AppMigrator {
 
   async importCollections(options: RestoreOptions) {
     const importCollection = async (collectionName: string) => {
-      const collectionMetaPath = path.resolve(this.workDir, 'collections', collectionName, 'meta');
-
-      const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
-      const meta = JSON.parse(metaContent);
-      const tableName = this.app.db.utils.quoteTable(meta.tableName);
-
-      try {
-        // disable trigger
-        if (this.app.db.inDialect('postgres')) {
-          await this.app.db.sequelize.query(`ALTER TABLE IF EXISTS ${tableName} DISABLE TRIGGER ALL`);
-        }
-
-        await this.importCollection({
-          name: collectionName,
-        });
-      } catch (err) {
-        console.log(err);
-        this.app.log.warn(`import collection ${collectionName} failed`, {
-          err,
-        });
-      } finally {
-        if (this.app.db.inDialect('postgres')) {
-          await this.app.db.sequelize.query(`ALTER TABLE IF EXISTS ${tableName} ENABLE TRIGGER ALL`);
-        }
-      }
+      await this.importCollection({
+        name: collectionName,
+      });
     };
 
     const { dumpableCollectionsGroupByDataTypes, delayCollections } = await this.parseBackupFile();
@@ -103,16 +104,6 @@ export class Restorer extends AppMigrator {
       await importCollection(collection.name);
     }
 
-    // // load imported collections into database object
-    //
-    // // sync database
-    // await this.app.db.sync({
-    //   force: false,
-    //   alter: {
-    //     drop: false,
-    //   },
-    // });
-
     if (options.dataTypes.has('config')) {
       const configCollections = dumpableCollectionsGroupByDataTypes.config;
 
@@ -124,7 +115,7 @@ export class Restorer extends AppMigrator {
     if (options.dataTypes.has('business')) {
       const businessCollections = dumpableCollectionsGroupByDataTypes.business;
 
-      for (const collection of businessCollections) {
+      for (const collection of Restorer.sortCollectionsByInherits(businessCollections)) {
         // skip import view collection in logic level
         if (collection.isView) {
           continue;
@@ -161,7 +152,12 @@ export class Restorer extends AppMigrator {
     const db = app.db;
 
     const collectionName = options.name;
+    if (!collectionName) {
+      throw new Error('collection name is required');
+    }
+
     const dir = this.workDir;
+
     const collectionDataPath = path.resolve(dir, 'collections', collectionName, 'data');
     const collectionMetaPath = path.resolve(dir, 'collections', collectionName, 'meta');
 
@@ -212,7 +208,9 @@ export class Restorer extends AppMigrator {
 
     if (options.clear !== false) {
       // drop table
-      await db.sequelize.getQueryInterface().dropTable(addSchemaTableName);
+      await db.sequelize.getQueryInterface().dropTable(addSchemaTableName, {
+        cascade: true,
+      });
 
       // create table
       await db.sequelize.getQueryInterface().createTable(addSchemaTableName, rawAttributes);
