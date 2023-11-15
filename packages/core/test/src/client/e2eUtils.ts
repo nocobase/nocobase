@@ -125,6 +125,9 @@ interface CreatePageOptions {
   pageSchema?: any;
 }
 
+const PORT = process.env.APP_PORT || 20000;
+const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
+
 class NocoPage {
   private url: string;
   private uid: string;
@@ -247,7 +250,7 @@ export const test = Object.assign(_test, {
 
 const getStorageItem = (key: string, storageState: any) => {
   return storageState.origins
-    .find((item) => item.origin === process.env.APP_BASE_URL)
+    .find((item) => item.origin === APP_BASE_URL)
     ?.localStorage.find((item) => item.name === key)?.value;
 };
 
@@ -519,8 +522,8 @@ function getHeaders(storageState: any) {
   const headers: any = {};
   const token = getStorageItem('NOCOBASE_TOKEN', storageState);
   const auth = getStorageItem('NOCOBASE_AUTH', storageState);
-  const subAppName = new URL(process.env.APP_BASE_URL).pathname.match(/^\/apps\/([^/]*)\/*/)?.[1];
-  const hostName = new URL(process.env.APP_BASE_URL).host;
+  const subAppName = new URL(APP_BASE_URL).pathname.match(/^\/apps\/([^/]*)\/*/)?.[1];
+  const hostName = new URL(APP_BASE_URL).host;
   const locale = getStorageItem('NOCOBASE_LOCALE', storageState);
   const timezone = '+08:00';
   const withAclMeta = 'true';

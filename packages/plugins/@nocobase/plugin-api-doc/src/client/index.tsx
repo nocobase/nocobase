@@ -1,9 +1,9 @@
 import { RightOutlined } from '@ant-design/icons';
-import { Plugin, SettingsCenterProvider } from '@nocobase/client';
+import { Plugin } from '@nocobase/client';
 import { Button, Tooltip } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { lazy } from 'react';
-import { useTranslation } from '../locale';
+import { NAMESPACE } from '../locale';
 
 const DOCUMENTATION_PATH = '/api-documentation';
 const Documentation = lazy(() => import('./Document'));
@@ -37,32 +37,15 @@ const SCDocumentation = () => {
   );
 };
 
-const APIDocumentationProvider = React.memo((props) => {
-  const { t } = useTranslation();
-  return (
-    <SettingsCenterProvider
-      settings={{
-        ['api-doc']: {
-          title: t('API documentation'),
-          icon: 'BookOutlined',
-          tabs: {
-            documentation: {
-              title: t('Documentation'),
-              component: SCDocumentation,
-            },
-          },
-        },
-      }}
-    >
-      {props.children}
-    </SettingsCenterProvider>
-  );
-});
-APIDocumentationProvider.displayName = 'APIDocumentationProvider';
-
 export class APIDocumentationPlugin extends Plugin {
   async load() {
-    this.app.use(APIDocumentationProvider);
+    this.app.pluginSettingsManager.add(NAMESPACE, {
+      title: `{{t("API documentation", { ns: "${NAMESPACE}" })}}`,
+      icon: 'BookOutlined',
+      Component: SCDocumentation,
+      aclSnippet: 'pm.api-doc.documentation',
+    });
+
     this.app.router.add('api-documentation', {
       path: DOCUMENTATION_PATH,
       Component: Documentation,
