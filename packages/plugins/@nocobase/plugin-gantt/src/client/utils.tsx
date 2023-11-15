@@ -1,6 +1,24 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { useCompile, useCollection } from '@nocobase/client';
+import { useTranslation } from 'react-i18next';
 
+export const useGanttTranslation = () => {
+  return useTranslation('gantt');
+};
+export const useOptions = (type = 'string') => {
+  const compile = useCompile();
+  const { fields } = useCollection();
+  const options = fields
+    ?.filter((field) => field.type === type)
+    ?.map((field) => {
+      return {
+        value: field.name,
+        label: compile(field?.uiSchema?.title),
+      };
+    });
+  return options;
+};
 export const createGanttBlockSchema = (options) => {
   const { collection, resource, fieldNames, ...others } = options;
   const schema: ISchema = {

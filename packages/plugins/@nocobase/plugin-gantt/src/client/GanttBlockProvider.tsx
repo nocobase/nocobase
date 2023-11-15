@@ -20,7 +20,7 @@ const formatData = (
 ) => {
   data.forEach((item: any) => {
     const disable = checkPermassion(item);
-    const percent = item[fieldNames.progress] * 100;
+    const percent = parseFloat((item[fieldNames.progress] * 100).toFixed(2));
     if (item.children && item.children.length) {
       tasks.push({
         start: new Date(item[fieldNames.start] ?? undefined),
