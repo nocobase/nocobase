@@ -27,6 +27,7 @@ export default {
   'TTL (second)': '缓存时间 (秒)',
   Field: '字段',
   Aggregation: '聚合',
+  Distinct: '去重',
   Alias: '别名',
   Format: '格式',
   'The first 10 records of the query result:': '查询结果的前 10 条记录：',
