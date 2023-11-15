@@ -19,7 +19,7 @@ const checkServer = async (duration = 1000, max = 60 * 10) => {
       // }
 
       const url = `${process.env.APP_BASE_URL}/api/__health_check`;
-      console.log('url', url);
+      // console.log('url', url);
 
       axios
         .get(url)
@@ -137,14 +137,8 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .option('--url [url]')
     .action(async (options) => {
-      const abortController = new AbortController();
-      process.on('SIGINT', () => {
-        abortController.abort();
-        process.exit();
-      });
       if (options.url) {
         process.env.APP_BASE_URL = options.url.replace('localhost', '127.0.0.1');
-        console.log('options.url', options.url);
       } else {
         runApp({
           stdio: 'ignore',
@@ -152,7 +146,7 @@ module.exports = (cli) => {
       }
       await appReady();
       await run('npx', ['playwright', 'test', ...filterArgv()]);
-      abortController.abort();
+      process.exit();
     });
 
   e2e
@@ -160,11 +154,6 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .option('--url [url]')
     .action(async (options) => {
-      const abortController = new AbortController();
-      process.on('SIGINT', () => {
-        abortController.abort();
-        process.exit();
-      });
       if (options.url) {
         process.env.APP_BASE_URL = options.url.replace('localhost', '127.0.0.1');
       } else {
@@ -174,7 +163,6 @@ module.exports = (cli) => {
       }
       await appReady();
       runCodegenSync();
-      abortController.abort();
     });
 
   e2e
