@@ -475,9 +475,6 @@ const getItem = (
       title: field.uiSchema?.title,
       children: subFields
         .map((subField) =>
-          // 使用 | 分隔，是为了防止 form.values 中出现 { a: { b: 1 } } 的情况
-          // 使用 | 分隔后，form.values 中会出现 { 'a|b': 1 } 的情况，这种情况下
-          // 就可以知道该字段是一个关系字段中的输入框，进而特殊处理
           getItem(subField, `${schemaName}.${subField.name}`, collectionName, getCollectionFields, [
             ...processedCollections,
             field.target,
