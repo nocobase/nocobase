@@ -8,15 +8,15 @@ test.describe('page header', () => {
     await expect(page.getByTitle(pageTitle)).toBeVisible();
     await page.getByTitle(pageTitle).click();
     await page.getByLabel('designer-schema-settings-Page').hover();
-    await expect(page.getByLabel('Enable page header').getByRole('switch')).toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'Enable page header' }).getByRole('switch')).toBeChecked();
     //关闭
-    await page.getByLabel('Enable page header').getByRole('switch').click();
+    await page.getByRole('menuitem', { name: 'Enable page header' }).getByRole('switch').click();
     await expect(page.locator('.ant-page-header')).not.toBeVisible();
-    await expect(page.getByLabel('Enable page header').getByRole('switch')).not.toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'Enable page header' }).getByRole('switch')).not.toBeChecked();
     //开启
     await page.getByRole('main').locator('span').nth(1).click();
     await page.getByLabel('designer-schema-settings-Page').hover();
-    await page.getByLabel('Enable page header').getByRole('switch').click();
+    await page.getByRole('menuitem', { name: 'Enable page header' }).getByRole('switch').click();
     await expect(page.locator('.ant-page-header').getByTitle(pageTitle)).toBeVisible();
   });
 });
@@ -29,16 +29,16 @@ test.describe('page title', () => {
     await expect(page.getByTitle(pageTitle)).toBeVisible();
     await page.getByTitle(pageTitle).click();
     await page.getByLabel('designer-schema-settings-Page').hover();
-    await expect(page.getByLabel('Display page title').getByRole('switch')).toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch')).toBeChecked();
     //不显示
-    await page.getByLabel('Display page title').getByRole('switch').click();
+    await page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch').click();
     await expect(page.locator('.ant-page-header')).toBeVisible();
     await expect(page.locator('.ant-page-header').getByTitle(pageTitle)).not.toBeVisible();
-    await expect(page.getByLabel('Display page title').getByRole('switch')).not.toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch')).not.toBeChecked();
     //开启
     await page.locator('.ant-page-header').click();
     await page.getByLabel('designer-schema-settings-Page').hover();
-    await page.getByLabel('Display page title').getByRole('switch').click();
+    await page.getByRole('menuitem', { name: 'Display page title' }).getByRole('switch').click();
     await expect(page.locator('.ant-page-header').getByTitle(pageTitle)).toBeVisible();
   });
   test('edit page title', async ({ page, mockPage }) => {
@@ -47,7 +47,7 @@ test.describe('page title', () => {
     await expect(page.getByTitle('page title1')).toBeVisible();
     await page.getByTitle('page title1').click();
     await page.getByLabel('designer-schema-settings-Page').hover();
-    await page.getByText('Edit page title').click();
+    await page.getByRole('menuitem', { name: 'Edit page title' }).click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('page title2');
     await page.getByRole('button', { name: 'OK' }).click();
@@ -64,9 +64,9 @@ test.describe('page tabs', () => {
     await page.getByTitle('page tab').click();
     await page.getByLabel('designer-schema-settings-Page').hover();
     //默认不启用
-    await expect(page.getByLabel('Enable page tabs').getByRole('switch')).not.toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'Enable page tabs' }).getByRole('switch')).not.toBeChecked();
     //启用标签
-    await page.getByLabel('Enable page tabs').click();
+    await page.getByRole('menuitem', { name: 'Enable page tabs' }).click();
     await expect(page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' })).toBeVisible();
     await expect(page.getByLabel('schema-initializer-Page-tabs')).toBeVisible();
     await page.getByRole('tab').locator('div').filter({ hasText: 'Unnamed' }).click();
@@ -92,8 +92,8 @@ test.describe('page tabs', () => {
 
     //修改tab名称
     await page.getByText('Unnamed').click();
-    await page.getByRole('button', { name: 'designer-schema-settings-Page-tab' }).click();
-    await page.getByLabel('Edit', { exact: true }).click();
+    await page.getByRole('button', { name: 'designer-schema-settings-Page-tab' }).hover();
+    await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('textbox').fill('page tab');
     await page.getByRole('button', { name: 'OK' }).click();
 
@@ -108,8 +108,8 @@ test.describe('page tabs', () => {
 
     //删除 tab
     await page.getByRole('tab').getByText('page tab', { exact: true }).hover();
-    await page.getByRole('button', { name: 'designer-schema-settings-Page-tab' }).click();
-    await page.getByRole('button', { name: 'Delete' }).click();
+    await page.getByRole('button', { name: 'designer-schema-settings-Page-tab' }).hover();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
     await expect(page.getByRole('tab').getByText('page tab', { exact: true })).not.toBeVisible();
     await page.getByRole('tab').getByText('page tab 1').click();
@@ -117,7 +117,7 @@ test.describe('page tabs', () => {
     //禁用标签
     await page.getByTitle('page tab', { exact: true }).hover();
     await page.getByLabel('designer-schema-settings-Page', { exact: true }).hover();
-    await page.getByLabel('Enable page tabs').click();
+    await page.getByRole('menuitem', { name: 'Enable page tabs' }).click();
     await expect(page.getByText('page tab 2')).not.toBeVisible();
   });
 
