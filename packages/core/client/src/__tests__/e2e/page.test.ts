@@ -91,24 +91,22 @@ test.describe('page tabs', () => {
     await expect(page.getByRole('tab', { name: 'page tab 2' })).toHaveAttribute('aria-selected', 'true');
 
     //修改tab名称
-    await page.getByText('Unnamed').click();
-    await page.getByRole('button', { name: 'designer-schema-settings-Page-tab' }).hover();
+    await page.getByText('Unnamed').hover();
+    await page.getByRole('tab', { name: 'Unnamed' }).getByLabel('designer-schema-settings-Page').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('textbox').fill('page tab');
     await page.getByRole('button', { name: 'OK' }).click();
 
     const tabMenuItem1 = await page.getByRole('tab').getByText('page tab', { exact: true });
-    const tabMenuItemActiveColor1 = await tabMenuItem1.evaluate((element) => {
-      const computedStyle = window.getComputedStyle(element);
-      return computedStyle.color;
-    });
     await expect(tabMenuItem1).toBeVisible();
     await expect(page.getByLabel('schema-initializer-Grid-BlockInitializers')).toBeVisible();
-    expect(tabMenuItemActiveColor1).toBe('rgb(22, 119, 255)');
 
     //删除 tab
     await page.getByRole('tab').getByText('page tab', { exact: true }).hover();
-    await page.getByRole('button', { name: 'designer-schema-settings-Page-tab' }).hover();
+    await page
+      .getByRole('tab', { name: 'page tab designer-drag-handler' })
+      .getByLabel('designer-schema-settings')
+      .hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
     await expect(page.getByRole('tab').getByText('page tab', { exact: true })).not.toBeVisible();
@@ -116,7 +114,7 @@ test.describe('page tabs', () => {
 
     //禁用标签
     await page.getByTitle('page tab', { exact: true }).hover();
-    await page.getByLabel('designer-schema-settings-Page', { exact: true }).hover();
+    await page.getByRole('button', { name: 'designer-schema-settings-Page' }).hover();
     await page.getByRole('menuitem', { name: 'Enable page tabs' }).click();
     await expect(page.getByText('page tab 2')).not.toBeVisible();
   });

@@ -15,7 +15,7 @@ test.describe('create data block', () => {
     await mockPage().goto();
 
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
-    await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
+    await page.getByRole('menuitem', { name: 'Form' }).first().hover();
     await page.getByRole('menuitem', { name: 'Users' }).click();
     await page.mouse.move(300, 0);
 
