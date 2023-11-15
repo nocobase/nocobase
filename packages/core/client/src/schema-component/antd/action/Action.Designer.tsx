@@ -1,12 +1,13 @@
 import { ArrayTable } from '@formily/antd-v5';
-import { onFieldValueChange, onFieldInputValueChange, onFieldInit } from '@formily/core';
-import { connect, ISchema, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
+import { onFieldInputValueChange, onFieldValueChange } from '@formily/core';
+import { ISchema, connect, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Alert, Tree as AntdTree, ModalProps } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
+import { usePlugin } from '../../../application/hooks';
 import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
@@ -17,7 +18,6 @@ import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
-import { usePlugin } from '../../../application/hooks';
 
 const Tree = connect(
   AntdTree,
@@ -910,7 +910,7 @@ export const ActionDesigner = (props) => {
     fieldSchema['x-action'] || '',
   );
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
-  const isLinkageAction = linkageAction || isAction;
+  const isLinkageAction = (linkageAction || isAction) && !['destroy', 'refresh'].includes(fieldSchema['x-action']);
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
   const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
   const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
