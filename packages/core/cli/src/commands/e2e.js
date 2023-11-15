@@ -1,7 +1,8 @@
 const { Command } = require('commander');
-const { run, runAppCommand, promptForTs, genTsConfigPaths } = require('../util');
+const { run, isPortReachable } = require('../util');
 const { execSync } = require('node:child_process');
 const axios = require('axios');
+
 /**
  * 检查服务是否启动成功
  */
@@ -77,9 +78,15 @@ async function appReady() {
   console.log('UI is ready.');
 }
 
-async function runApp(options) {
+async function runApp(options = {}) {
+  console.log('installing...');
   await run('nocobase', ['install', '-f'], options);
-  return run('nocobase', [process.env.APP_ENV === 'production' ? 'start' : 'dev'], options);
+  if (isPortReachable(process.env.APP_PORT)) {
+    console.log('app started');
+    return;
+  }
+  console.log('starting...');
+  run('nocobase', [process.env.APP_ENV === 'production' ? 'start' : 'dev'], options);
 }
 
 const commonConfig = {
@@ -147,7 +154,7 @@ module.exports = (cli) => {
       if (options.url) {
         process.env.APP_BASE_URL = options.url.replace('localhost', '127.0.0.1');
       } else {
-        runApp({
+        await runApp({
           stdio: 'ignore',
         });
       }
@@ -164,7 +171,7 @@ module.exports = (cli) => {
       if (options.url) {
         process.env.APP_BASE_URL = options.url.replace('localhost', '127.0.0.1');
       } else {
-        runApp({
+        await runApp({
           stdio: 'ignore',
         });
       }
@@ -185,4 +192,8 @@ module.exports = (cli) => {
       }
       runApp();
     });
+
+  e2e.command('reinstall-app').action(async (options) => {
+    await run('nocobase', ['install', '-f'], options);
+  });
 };
