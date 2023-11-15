@@ -135,7 +135,7 @@ test.describe('menu page', () => {
     await expect(page.getByLabel('schema-initializer-Grid-BlockInitializers')).toBeVisible();
     //删除页面
     await page.getByLabel(pageTitle6).getByLabel('designer-schema-settings-Menu.Item').hover();
-    await page.getByRole('menu').getByLabel('Delete').click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
   });
 });
