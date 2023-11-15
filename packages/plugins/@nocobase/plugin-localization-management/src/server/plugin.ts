@@ -97,7 +97,11 @@ export class LocalizationManagementPlugin extends Plugin {
         .catch((err) => {});
     });
 
-    const cache = await this.app.cacheManager.createCache({ name: 'localization', prefix: 'localization' });
+    const cache = await this.app.cacheManager.createCache({
+      name: 'localization',
+      prefix: 'localization',
+      store: 'memory',
+    });
     this.resources = new Resources(this.db, cache);
 
     this.registerUISchemahook();

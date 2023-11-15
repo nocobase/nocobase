@@ -10,7 +10,7 @@ export type AppCacheManagerOptions = Partial<{
   defaultStore: string;
   stores: {
     [storeType: string]: {
-      store: 'memory' | FactoryStore<Store, any>;
+      store?: 'memory' | FactoryStore<Store, any>;
       // global config
       [key: string]: any;
     };
