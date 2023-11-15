@@ -2,10 +2,11 @@ import { Plugin, useCollection } from '@nocobase/client';
 import { BulkEditPluginProvider } from './BulkEditPluginProvider';
 import { BulkEditFormItemInitializers } from './BulkEditFormItemInitializers';
 import { CreateFormBulkEditBlockInitializers } from './CreateFormBulkEditBlockInitializers';
-
+import { bulkEditactionSettings } from './BulkEditAction.Setting';
 export class BulkEditPlugin extends Plugin {
   async load() {
     this.app.use(BulkEditPluginProvider);
+    this.app.schemaSettingsManager.add(bulkEditactionSettings);
     this.app.schemaInitializerManager.add(BulkEditFormItemInitializers);
     this.app.schemaInitializerManager.add(CreateFormBulkEditBlockInitializers);
 
@@ -17,6 +18,8 @@ export class BulkEditPlugin extends Plugin {
       schema: {
         'x-align': 'right',
         'x-decorator': 'ACLActionProvider',
+        'x-action': 'bulk:edit',
+        'x-settings': 'ActionSettings:bulk:edit',
         'x-acl-action': 'update',
         'x-acl-action-props': {
           skipScopeCheck: true,
