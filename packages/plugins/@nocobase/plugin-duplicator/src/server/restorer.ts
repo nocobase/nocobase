@@ -93,10 +93,18 @@ export class Restorer extends AppMigrator {
 
     const { dumpableCollectionsGroupByDataTypes, delayCollections } = await this.parseBackupFile();
 
+    // import plugins
+    await importCollection('applicationPlugins');
+    await this.app.reload();
+
     // import meta collections
     const metaCollections = dumpableCollectionsGroupByDataTypes.meta;
 
     for (const collection of metaCollections) {
+      if (collection.name === 'applicationPlugins') {
+        continue;
+      }
+
       if (delayCollections.includes(collection.name)) {
         continue;
       }
@@ -177,6 +185,8 @@ export class Restorer extends AppMigrator {
     const fieldAttributes = lodash.mapValues(meta.attributes, (attr) => {
       if (attr.isCollectionField) {
         const fieldClass = db.fieldTypes.get(attr.type);
+        if (!fieldClass) throw new Error(`field type ${attr.type} not found`);
+
         return new fieldClass(attr.typeOptions, {
           database: db,
         });
@@ -266,50 +276,6 @@ export class Restorer extends AppMigrator {
     await app.db.sequelize.query(sql, {
       type: 'INSERT',
     });
-
-    // const primaryKeyAttribute = collection.model.rawAttributes[collection.model.primaryKeyAttribute];
-    //
-    // if (primaryKeyAttribute && primaryKeyAttribute.autoIncrement) {
-    //   this.on('restoreCollectionsFinished', async () => {
-    //     if (this.app.db.inDialect('postgres')) {
-    //       const sequenceNameResult = await app.db.sequelize.query(
-    //         `SELECT column_default
-    //          FROM information_schema.columns
-    //          WHERE table_name = '${collection.model.tableName}'
-    //            and "column_name" = 'id'
-    //            and table_schema = '${app.db.options.schema || 'public'}';`,
-    //       );
-    //
-    //       if (sequenceNameResult[0].length) {
-    //         const columnDefault = sequenceNameResult[0][0]['column_default'];
-    //         if (columnDefault.includes(`${collection.model.tableName}_id_seq`)) {
-    //           const regex = new RegExp(/nextval\('(.*)'::regclass\)/);
-    //           const match = regex.exec(columnDefault);
-    //           const sequenceName = match[1];
-    //
-    //           const maxVal = await app.db.sequelize.query(
-    //             `SELECT MAX("${primaryKeyAttribute.field}")
-    //              FROM ${tableName}`,
-    //             {
-    //               type: 'SELECT',
-    //             },
-    //           );
-    //
-    //           const updateSeqSQL = `SELECT setval('${sequenceName}', ${maxVal[0]['max']})`;
-    //           await app.db.sequelize.query(updateSeqSQL);
-    //         }
-    //       }
-    //     }
-    //
-    //     if (this.app.db.inDialect('sqlite')) {
-    //       await app.db.sequelize.query(
-    //         `UPDATE sqlite_sequence
-    //          set seq = (SELECT MAX("${primaryKeyAttribute.field}") FROM "${collection.model.tableName}")
-    //          WHERE name = "${collection.model.tableName}"`,
-    //       );
-    //     }
-    //   });
-    // }
 
     app.logger.info(`${collectionName} imported with ${rowsWithMeta.length} rows`);
 
