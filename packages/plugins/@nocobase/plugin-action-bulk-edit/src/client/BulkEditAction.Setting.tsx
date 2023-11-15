@@ -131,13 +131,4 @@ const bulkEditactionSettings = new SchemaSetting({
   ],
 });
 
-const BulkEditActionSetting = () => {
-  const filed = useField;
-  const app = useApp();
-  const settingsName = `ActionSettings:${filed['x-action']}`;
-  const defaultActionSettings = 'ActionSettings';
-  const hasAction = app.schemaSettingsManager.has(settingsName);
-  return <GeneralSchemaDesigner schemaSettings={hasAction ? settingsName : defaultActionSettings} />;
-};
-
-export { BulkEditActionSetting, bulkEditactionSettings };
+export { bulkEditactionSettings };
