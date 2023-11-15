@@ -304,7 +304,7 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
   }
   await next();
   if (useCache) {
-    await cache.set(uid, ctx.body, cacheConfig?.ttl || 30);
+    await cache.set(uid, ctx.body, cacheConfig?.ttl * 1000);
   }
 };
 
