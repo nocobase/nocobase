@@ -1,11 +1,24 @@
 import { FactoryStore, Store, caching, Cache as BasicCache } from 'cache-manager';
 import { Cache } from './cache';
 import lodash from 'lodash';
+import { redisStore } from 'cache-manager-redis-yet';
+import deepmerge from 'deepmerge';
 
 type StoreType = {
   store: 'memory' | FactoryStore<Store, any>;
   globalConfig?: any;
 };
+
+export type CacheManagerOptions = Partial<{
+  defaultStore: string;
+  stores: {
+    [storeType: string]: {
+      store?: 'memory' | FactoryStore<Store, any>;
+      // global config
+      [key: string]: any;
+    };
+  };
+}>;
 
 export class CacheManager {
   defaultStore: string;
@@ -13,9 +26,27 @@ export class CacheManager {
   storeTypes = new Map<string, StoreType>();
   caches = new Map<string, Cache>();
 
-  constructor(options?: { defaultStore: string }) {
-    const { defaultStore = 'memory' } = options || {};
+  constructor(options?: CacheManagerOptions) {
+    const defaultOptions: CacheManagerOptions = {
+      defaultStore: 'memory',
+      stores: {
+        memory: {
+          store: 'memory',
+          // global config
+          max: 2000,
+        },
+        redis: {
+          store: redisStore,
+        },
+      },
+    };
+    const cacheOptions = deepmerge(defaultOptions, options || {});
+    const { defaultStore = 'memory', stores } = cacheOptions;
     this.defaultStore = defaultStore;
+    for (const [name, store] of Object.entries(stores)) {
+      const { store: s, ...globalConfig } = store;
+      this.registerStore({ name, store: s, ...globalConfig });
+    }
   }
 
   private async createStore(options: { name: string; storeType: string; [key: string]: any }) {

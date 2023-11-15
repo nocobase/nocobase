@@ -1,4 +1,4 @@
-import { AppCacheManagerOptions } from '@nocobase/cache';
+import { CacheManagerOptions } from '@nocobase/cache';
 
 export const cacheManager = {
   defaultStore: process.env.CACHE_DEFAULT_STORE || 'memory',
@@ -15,4 +15,4 @@ export const cacheManager = {
         }
       : {}),
   },
-} as AppCacheManagerOptions;
+} as CacheManagerOptions;
