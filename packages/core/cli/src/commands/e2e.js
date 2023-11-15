@@ -146,11 +146,11 @@ module.exports = (cli) => {
         process.env.APP_BASE_URL = options.url.replace('localhost', '127.0.0.1');
         console.log('options.url', options.url);
       } else {
-        runApp();
+        runApp({
+          stdio: 'ignore',
+        });
       }
-      await appReady({
-        stdio: 'ignore',
-      });
+      await appReady();
       await run('npx', ['playwright', 'test', ...filterArgv()]);
       abortController.abort();
     });
@@ -168,11 +168,11 @@ module.exports = (cli) => {
       if (options.url) {
         process.env.APP_BASE_URL = options.url.replace('localhost', '127.0.0.1');
       } else {
-        runApp();
+        runApp({
+          stdio: 'ignore',
+        });
       }
-      await appReady({
-        stdio: 'ignore',
-      });
+      await appReady();
       runCodegenSync();
       abortController.abort();
     });
