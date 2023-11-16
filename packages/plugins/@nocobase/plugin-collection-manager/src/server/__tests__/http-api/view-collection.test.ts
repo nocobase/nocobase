@@ -165,24 +165,18 @@ SELECT * FROM numbers;
     expect(response.status).toBe(200);
     const data = response.body.data;
 
-    if (app.db.isMySQLCompatibleDialect()) {
+    if (app.db.inDialect('mysql')) {
       expect(data.fields.n.type).toBe('bigInt');
-    } else if (app.db.options.dialect == 'postgres') {
+    } else if (app.db.inDialect('postgres', 'mariadb')) {
       expect(data.fields.n.type).toBe('integer');
     }
-
-    console.log(
-      JSON.stringify(
-        {
-          nField: data.fields.n,
-        },
-        null,
-        2,
-      ),
-    );
   });
 
   it('should return possible types for json fields', async () => {
+    if (app.db.inDialect('mariadb')) {
+      // can not get json type from mariadb
+      return;
+    }
     const jsonViewName = 'json_view';
     const dropSql = `DROP VIEW IF EXISTS ${jsonViewName}`;
     await app.db.sequelize.query(dropSql);
@@ -203,9 +197,11 @@ SELECT * FROM numbers;
 
     expect(response.status).toBe(200);
     const data = response.body.data;
+
     if (!app.db.inDialect('sqlite')) {
       expect(data.fields.json_field.type).toBe('json');
     }
+
     expect(data.fields.json_field.possibleTypes).toBeTruthy();
   });
 
