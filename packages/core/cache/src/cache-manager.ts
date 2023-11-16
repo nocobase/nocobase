@@ -1,12 +1,12 @@
 import { FactoryStore, Store, caching, Cache as BasicCache } from 'cache-manager';
 import { Cache } from './cache';
 import lodash from 'lodash';
-import { redisStore } from 'cache-manager-redis-yet';
+import { RedisStore, redisStore } from 'cache-manager-redis-yet';
 import deepmerge from 'deepmerge';
 
 type StoreOptions = {
   store?: 'memory' | FactoryStore<Store, any>;
-  close?: (store: BasicCache) => Promise<void>;
+  close?: (store: Store) => Promise<void>;
   // global config
   [key: string]: any;
 };
@@ -24,7 +24,7 @@ export class CacheManager {
     string,
     {
       store: BasicCache;
-      close?: (store: BasicCache) => Promise<void>;
+      close?: (store: Store) => Promise<void>;
     }
   >();
   storeTypes = new Map<string, StoreOptions>();
@@ -41,6 +41,9 @@ export class CacheManager {
         },
         redis: {
           store: redisStore,
+          close: async (redis: RedisStore) => {
+            await redis.client.quit();
+          },
         },
       },
     };
@@ -111,7 +114,7 @@ export class CacheManager {
     const promises = [];
     for (const s of this.stores.values()) {
       const { close, store } = s;
-      close && promises.push(close(store));
+      close && promises.push(close(store.store));
     }
     await Promise.all(promises);
   }
