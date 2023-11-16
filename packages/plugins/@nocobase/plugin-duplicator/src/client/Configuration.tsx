@@ -201,6 +201,7 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
   const handleCancel = () => {
     setIsModalOpen(false);
     setRestoreData(null);
+    setDataTypes(['meta']);
   };
   return (
     <>
@@ -230,7 +231,7 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
                     }),
                   )}
                   style={{ flexDirection: 'column' }}
-                  defaultValue={dataTypes}
+                  value={dataTypes}
                   onChange={(checkValue) => setDataTypes(checkValue)}
                 />
               </FormItem>
@@ -262,7 +263,7 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
       },
     });
     setIsModalOpen(false);
-    setBackupData(['meta'])
+    setBackupData(['meta']);
     setTimeout(() => {
       refresh();
     }, 500);
@@ -270,7 +271,7 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
 
   const handleCancel = () => {
     setIsModalOpen(false);
-    setBackupData(['meta'])
+    setBackupData(['meta']);
   };
 
   return (
@@ -289,7 +290,7 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
             options={compile(options)}
             style={{ flexDirection: 'column' }}
             onChange={(checkValue) => setBackupData(checkValue)}
-            defaultValue={dataTypes}
+            value={dataTypes}
           />
         </div>
       </Modal>
