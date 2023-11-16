@@ -1,10 +1,7 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
-  useApp,
-  GeneralSchemaDesigner,
   SchemaSetting,
   SchemaSettings,
-  useCompile,
   ActionDesigner,
   useSchemaDesigner,
   useDesignable,
@@ -17,10 +14,46 @@ import {
 } from '@nocobase/client';
 import { onFieldInputValueChange } from '@formily/core';
 import { cloneDeep } from 'lodash';
-import { ModalProps, Tree } from 'antd';
+import { ModalProps, Tree as AntdTree } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useField, useFieldSchema, ISchema, useForm } from '@formily/react';
+import { useField, useFieldSchema, ISchema, useForm, connect, mapProps } from '@formily/react';
 
+const Tree = connect(
+  AntdTree,
+  mapProps((props, field: any) => {
+    useEffect(() => {
+      field.value = props.defaultCheckedKeys || [];
+    }, []);
+    const [checkedKeys, setCheckedKeys] = useState(props.defaultCheckedKeys || []);
+    const onCheck = (checkedKeys) => {
+      setCheckedKeys(checkedKeys);
+      field.value = checkedKeys;
+    };
+    field.onCheck = onCheck;
+    const form = useForm();
+    return {
+      ...props,
+      checkedKeys,
+      onCheck,
+      treeData: props?.treeData.map((v: any) => {
+        if (form.values.duplicateMode === 'quickDulicate') {
+          const children = v?.children?.map((k) => {
+            return {
+              ...k,
+              disabled: false,
+            };
+          });
+          return {
+            ...v,
+            disabled: false,
+            children,
+          };
+        }
+        return v;
+      }),
+    };
+  }),
+);
 function RemoveButton(
   props: {
     onConfirmOk?: ModalProps['onOk'];
@@ -94,7 +127,7 @@ function DuplicationMode() {
           const selectFields = getAllkeys(f.componentProps.treeData, []);
           f.componentProps.defaultCheckedKeys = selectFields;
           f.setInitialValue(selectFields);
-          f?.onCheck(selectFields);
+          f?.onCheck?.(selectFields);
         });
       },
     };
