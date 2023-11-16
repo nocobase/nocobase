@@ -92,7 +92,7 @@ export class SortField extends Field {
 
       const quotedOrderField = queryInterface.quoteIdentifier(orderField);
 
-      const sortColumnName = this.collection.model.rawAttributes[this.name].field;
+      const sortColumnName = queryInterface.quoteIdentifier(this.collection.model.rawAttributes[this.name].field);
 
       let sql: string;
 
