@@ -13,7 +13,7 @@ import { SchemaSetting, SchemaSettingOptions } from '../../../application/schema
 import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
-import { SchemaInitializerOpenModeSchemaItems } from '../../../schema-items';
+import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
 import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
@@ -957,7 +957,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
       },
       {
         name: 'openMode',
-        Component: SchemaInitializerOpenModeSchemaItems,
+        Component: SchemaSettingOpenModeSchemaItems,
         useComponentProps() {
           const fieldSchema = useFieldSchema();
           const isPopupAction = [
