@@ -125,37 +125,37 @@ test.describe('Page.Grid', () => {
     // add table block
     await button.hover();
     await createBlock(page, 'Table');
-    await expect(page.getByLabel('block-item-CardItem-t_unp4scqamw9-table')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
 
     // add form block
     await button.hover();
     await createBlock(page, 'Form');
-    await expect(page.getByLabel('block-item-CardItem-t_unp4scqamw9-form')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
 
     // add detail block
     await button.hover();
     await createBlock(page, 'Details');
-    await expect(page.getByLabel('block-item-CardItem-t_unp4scqamw9-details')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-details')).toBeVisible();
 
     // add list block
     await button.hover();
     await createBlock(page, 'List');
-    await expect(page.getByLabel('block-item-CardItem-t_unp4scqamw9-list')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-list')).toBeVisible();
 
     // add grid card block
     await button.hover();
     await createBlock(page, 'Grid Card');
-    await expect(page.getByLabel('block-item-BlockItem-t_unp4scqamw9-grid-card')).toBeVisible();
+    await expect(page.getByLabel('block-item-BlockItem-users-grid-card')).toBeVisible();
 
     // add filter form block
     await button.hover();
     await createBlock(page, 'Filter form');
-    await expect(page.getByLabel('block-item-CardItem-t_unp4scqamw9-filter-form')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-filter-form')).toBeVisible();
 
     // add collapse block
     await button.hover();
     await createBlock(page, 'Collapse');
-    await expect(page.getByLabel('block-item-CardItem-t_unp4scqamw9-filter-collapse')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-filter-collapse')).toBeVisible();
 
     // add markdown block
     await button.hover();
@@ -385,13 +385,17 @@ test.describe('Form', () => {
   test('add fields', async ({ page, mockPage }) => {
     await mockPage(oneEmptyForm).goto();
 
-    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+    const formItemInitializer = page.getByLabel('schema-initializer-Grid-FormItemInitializers-general');
+
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'ID' }).click();
     await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).toBeChecked();
 
     // add association fields
     await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
+
+    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).toBeChecked();
 
     await page.mouse.move(300, 0);
@@ -399,12 +403,14 @@ test.describe('Form', () => {
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.manyToOne.nickname')).toBeVisible();
 
     // delete fields
-    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'ID' }).click();
     await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).not.toBeChecked();
 
     await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
+
+    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).not.toBeChecked();
 
     await page.mouse.move(300, 0);
@@ -414,7 +420,7 @@ test.describe('Form', () => {
     ).not.toBeVisible();
 
     // add text
-    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'Text' }).click();
     await expect(page.getByLabel('block-item-Markdown.Void-general-form')).toBeVisible();
   });
@@ -457,14 +463,18 @@ test.describe('Details block', () => {
   test('add fields', async ({ page, mockPage }) => {
     await mockPage(oneEmptyDetailsBlock).goto();
 
+    const formItemInitializer = page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general');
+
     // add fields
-    await page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general').hover();
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'ID' }).click();
     await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).toBeChecked();
 
     // add association fields
     await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
+
+    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).toBeChecked();
 
     await page.mouse.move(300, 0);
@@ -474,12 +484,14 @@ test.describe('Details block', () => {
     ).toBeVisible();
 
     // delete fields
-    await page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general').hover();
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'ID' }).click();
     await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).not.toBeChecked();
 
     await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
+
+    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).not.toBeChecked();
 
     await page.mouse.move(300, 0);
@@ -489,7 +501,7 @@ test.describe('Details block', () => {
     ).not.toBeVisible();
 
     // add text
-    await page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general').hover();
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'Add text' }).click();
     await expect(page.getByLabel('block-item-Markdown.Void-general-details')).toBeVisible();
   });
@@ -565,14 +577,21 @@ test.describe('List', () => {
   test('add fields', async ({ page, mockPage }) => {
     await mockPage(oneEmptyListBlock).goto();
 
+    const formItemInitializer = page
+      .getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general')
+      .first();
+
     // add fields
-    await page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general').first().hover();
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'ID' }).click();
     await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).toBeChecked();
 
     // add association fields
     await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
+
+    // TODO: 二级菜单点击后，不应该被关闭；只有在鼠标移出下拉列表的时候，才应该被关闭
+    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).toBeChecked();
 
     await page.mouse.move(300, 0);
@@ -582,12 +601,16 @@ test.describe('List', () => {
     ).toBeVisible();
 
     // delete fields
-    await page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general').first().hover();
+    await formItemInitializer.hover();
+    await page.getByRole('tooltip').getByText('Display association fields').hover();
+    await page.mouse.wheel(0, -300);
     await page.getByRole('menuitem', { name: 'ID' }).click();
     await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).not.toBeChecked();
 
     await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
+
+    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).not.toBeChecked();
 
     await page.mouse.move(300, 0);
@@ -597,7 +620,7 @@ test.describe('List', () => {
     ).not.toBeVisible();
 
     // add text
-    await page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general').first().hover();
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'Add text' }).click();
     await expect(page.getByLabel('block-item-Markdown.Void-general-list').first()).toBeVisible();
   });
@@ -688,7 +711,11 @@ test.describe('Grid Card', () => {
   test('add item fields', async ({ page, mockPage }) => {
     await mockPage(oneEmptyGridCardBlock).goto();
 
-    await page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general').first().hover();
+    const formItemInitializer = page
+      .getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general')
+      .first();
+
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'ID' }).click();
     await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).toBeChecked();
 
@@ -696,6 +723,8 @@ test.describe('Grid Card', () => {
     await page.mouse.wheel(0, 300);
     await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
+
+    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).toBeChecked();
 
     await page.mouse.move(300, 0);
@@ -705,13 +734,15 @@ test.describe('Grid Card', () => {
     ).toBeVisible();
 
     // delete fields
-    await page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general').first().hover();
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'ID' }).click();
     await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).not.toBeChecked();
 
     await page.mouse.wheel(0, 300);
     await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
+
+    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).not.toBeChecked();
 
     await page.mouse.move(300, 0);
@@ -723,7 +754,7 @@ test.describe('Grid Card', () => {
     ).not.toBeVisible();
 
     // add text
-    await page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general').first().hover();
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'ID' }).hover();
     await page.mouse.wheel(0, 300);
     await page.getByRole('menuitem', { name: 'Add text' }).click();
@@ -786,8 +817,10 @@ test.describe('Filter Form Block', () => {
   test('add fields', async ({ page, mockPage }) => {
     await mockPage(oneEmptyFilterFormBlock).goto();
 
+    const formItemInitializer = page.getByLabel('schema-initializer-Grid-FilterFormItemInitializers-general');
+
     // add fields
-    await page.getByLabel('schema-initializer-Grid-FilterFormItemInitializers-general').hover();
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'ID' }).click();
     await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).toBeChecked();
 
@@ -795,7 +828,7 @@ test.describe('Filter Form Block', () => {
     await expect(page.getByLabel('block-item-CollectionField-general-filter-form-general.id-ID')).toBeVisible();
 
     // delete fields
-    await page.getByLabel('schema-initializer-Grid-FilterFormItemInitializers-general').hover();
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'ID' }).click();
     await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).not.toBeChecked();
 
@@ -803,9 +836,11 @@ test.describe('Filter Form Block', () => {
     await expect(page.getByLabel('block-item-CollectionField-general-filter-form-general.id-ID')).not.toBeVisible();
 
     // add association fields
-    await page.getByLabel('schema-initializer-Grid-FilterFormItemInitializers-general').hover();
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
+
+    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).toBeChecked();
 
     await page.mouse.move(300, 0);
@@ -814,9 +849,11 @@ test.describe('Filter Form Block', () => {
     ).toBeVisible();
 
     // delete association fields
-    await page.getByLabel('schema-initializer-Grid-FilterFormItemInitializers-general').hover();
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
+
+    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).not.toBeChecked();
 
     await page.mouse.move(300, 0);
@@ -825,7 +862,7 @@ test.describe('Filter Form Block', () => {
     ).not.toBeVisible();
 
     // add text
-    await page.getByLabel('schema-initializer-Grid-FilterFormItemInitializers-general').hover();
+    await formItemInitializer.hover();
     await page.getByRole('menuitem', { name: 'Add text' }).click();
 
     await expect(page.getByLabel('block-item-Markdown.Void-general-filter-form')).toBeVisible();
@@ -1039,20 +1076,20 @@ test.describe('association fields with dialog', () => {
     await page.getByLabel('schema-initializer-Grid-TableSelectorInitializers-roles').hover();
     await page.getByRole('menuitem', { name: 'form Table' }).click();
 
-    // TODO: 不应该有二级菜单
+    // 筛选区块这里应该是可以直接点击的，不应该有二级菜单
     await page.getByText('Form').click();
     await page.getByRole('menuitem', { name: 'Collapse' }).click();
 
     await page.getByRole('menuitem', { name: 'Add text' }).click();
 
     await expect(page.getByLabel('block-item-CardItem-roles-table-selector')).toBeVisible();
-    await expect(page.getByLabel('block-item-CardItem-t_unp4scqamw9-filter-form')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-roles-filter-form')).toBeVisible();
 
     // 向下滚动一点距离，使得下方的区块可见
     await page.getByLabel('block-item-CardItem-roles-table-selector').hover();
     await page.mouse.wheel(0, 500);
 
-    await expect(page.getByLabel('block-item-CardItem-t_unp4scqamw9-filter-collapse')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-roles-filter-collapse')).toBeVisible();
     await expect(page.getByLabel('block-item-Markdown.Void-roles-form')).toBeVisible();
   });
 

@@ -2,7 +2,12 @@ import Icon, { TableOutlined } from '@ant-design/icons';
 import { Divider, Empty, Input, MenuProps, Spin } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerInternalMenu, useSchemaInitializer, useSchemaInitializerMenuItems } from '../../application';
+import {
+  SchemaInitializerInternalMenu,
+  SchemaInitializerItem,
+  useSchemaInitializer,
+  useSchemaInitializerMenuItems,
+} from '../../application';
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCollectionDataSourceItemsV2 } from '../utils';
@@ -204,7 +209,26 @@ export function useMenuSearch(items: any[], isOpenSubMenu: boolean, showType?: b
   return resultItems;
 }
 
-export const DataBlockInitializer = (props) => {
+export interface DataBlockInitializerProps {
+  templateWrap?: (
+    templateSchema: any,
+    {
+      item,
+    }: {
+      item: any;
+    },
+  ) => any;
+  onCreateBlockSchema?: (args: any) => void;
+  createBlockSchema?: (args: any) => any;
+  isCusomeizeCreate?: boolean;
+  icon?: string | React.ReactNode;
+  name: string;
+  title: string;
+  items?: any[];
+  componentType: string;
+}
+
+export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
   const {
     templateWrap,
     onCreateBlockSchema,
@@ -228,7 +252,7 @@ export const DataBlockInitializer = (props) => {
         if (onCreateBlockSchema) {
           onCreateBlockSchema({ item });
         } else if (createBlockSchema) {
-          insert(createBlockSchema({ collection: item.name, isCusomeizeCreate }));
+          insert(createBlockSchema({ collection: item.collectionName || item.name, isCusomeizeCreate }));
         }
       }
     },
@@ -255,12 +279,16 @@ export const DataBlockInitializer = (props) => {
     [name, compile, title, icon, searchedChildren, onClick, props],
   );
 
-  return (
-    <SchemaInitializerInternalMenu
-      onOpenChange={(keys) => {
-        setIsOpenSubMenu(keys.length > 0);
-      }}
-      items={compiledMenuItems}
-    />
-  );
+  if (menuChildren.length > 0) {
+    return (
+      <SchemaInitializerInternalMenu
+        onOpenChange={(keys) => {
+          setIsOpenSubMenu(keys.length > 0);
+        }}
+        items={compiledMenuItems}
+      />
+    );
+  }
+
+  return <SchemaInitializerItem {...props} onClick={onClick} />;
 };

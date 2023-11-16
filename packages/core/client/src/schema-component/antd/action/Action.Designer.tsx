@@ -679,7 +679,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
           const fieldSchema = useFieldSchema();
           const isAction = useLinkageAction();
           const { linkageAction } = useSchemaDesigner();
-          return (linkageAction || isAction) && !['destroy', 'refresh'].includes(fieldSchema['x-action']);
+          return linkageAction || isAction;
         },
         useComponentProps() {
           const { name } = useCollection();
