@@ -96,13 +96,25 @@ export class SortField extends Field {
 
       let sql: string;
 
+      const whereClause =
+        scopeKey && scopeValue
+          ? `
+  WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue
+    .filter((v) => v !== null)
+    .map((v) => `'${v}'`)
+    .join(', ')})${scopeValue.includes(null) ? ` OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL` : ''}`
+          : '';
+
       if (this.collection.db.inDialect('postgres')) {
         sql = `
     UPDATE ${this.collection.quotedTableName()}
     SET ${sortColumnName} = ordered_table.new_sequence_number
     FROM (
-      SELECT *, ROW_NUMBER() OVER (ORDER BY ${quotedOrderField}) AS new_sequence_number
+      SELECT *, ROW_NUMBER() OVER (${
+        scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
+      } ORDER BY ${quotedOrderField}) AS new_sequence_number
       FROM ${this.collection.quotedTableName()}
+      ${whereClause}
     ) AS ordered_table
     WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField};
   `;
@@ -112,8 +124,11 @@ export class SortField extends Field {
     SET ${sortColumnName} = (
       SELECT new_sequence_number
       FROM (
-        SELECT *, ROW_NUMBER() OVER (ORDER BY ${quotedOrderField}) AS new_sequence_number
+        SELECT *, ROW_NUMBER() OVER (${
+          scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
+        } ORDER BY ${quotedOrderField}) AS new_sequence_number
         FROM ${this.collection.quotedTableName()}
+        ${whereClause}
       ) AS ordered_table
       WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
     );
@@ -122,13 +137,15 @@ export class SortField extends Field {
         sql = `
     UPDATE ${this.collection.quotedTableName()}
     JOIN (
-      SELECT *, ROW_NUMBER() OVER (ORDER BY ${quotedOrderField}) AS new_sequence_number
+      SELECT *, ROW_NUMBER() OVER (${
+        scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
+      } ORDER BY ${quotedOrderField}) AS new_sequence_number
       FROM ${this.collection.quotedTableName()}
+      ${whereClause}
     ) AS ordered_table ON ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
     SET ${this.collection.quotedTableName()}.${sortColumnName} = ordered_table.new_sequence_number;
   `;
       }
-
       await this.collection.db.sequelize.query(sql, {
         transaction,
       });

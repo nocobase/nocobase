@@ -47,6 +47,10 @@ excludeSqlite()('collection', () => {
 
     const profileTableInfo = await db.sequelize.getQueryInterface().describeTable(profile.model.tableName);
 
-    expect(profileTableInfo[profile.model.rawAttributes['userId'].field].type).toBe('BIGINT');
+    if (db.inDialect('mariadb')) {
+      expect(profileTableInfo[profile.model.rawAttributes['userId'].field].type).toBe('BIGINT(20)');
+    } else {
+      expect(profileTableInfo[profile.model.rawAttributes['userId'].field].type).toBe('BIGINT');
+    }
   });
 });
