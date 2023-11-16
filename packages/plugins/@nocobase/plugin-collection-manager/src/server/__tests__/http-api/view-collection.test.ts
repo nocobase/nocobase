@@ -1,4 +1,4 @@
-import { Database, Repository, Field, DataTypes } from '@nocobase/database';
+import { Database, DataTypes, Field, Repository } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { createApp } from '../index';
@@ -56,10 +56,6 @@ SELECT * FROM numbers;
 
   it('should support preview field with getter', async () => {
     class TestField extends Field {
-      get dataType() {
-        return DataTypes.STRING;
-      }
-
       constructor(options: any, context: any) {
         const { name } = options;
         super(
@@ -71,6 +67,10 @@ SELECT * FROM numbers;
           },
           context,
         );
+      }
+
+      get dataType() {
+        return DataTypes.STRING;
       }
     }
 
@@ -165,7 +165,7 @@ SELECT * FROM numbers;
     expect(response.status).toBe(200);
     const data = response.body.data;
 
-    if (app.db.options.dialect === 'mysql') {
+    if (app.db.isMySQLCompatibleDialect()) {
       expect(data.fields.n.type).toBe('bigInt');
     } else if (app.db.options.dialect == 'postgres') {
       expect(data.fields.n.type).toBe('integer');

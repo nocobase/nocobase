@@ -6,7 +6,7 @@ import readline from 'readline';
 export const DUMPED_EXTENSION = 'nbdump';
 
 export function sqlAdapter(database: Database, sql: string) {
-  if (database.sequelize.getDialect() === 'mysql') {
+  if (database.isMySQLCompatibleDialect()) {
     return lodash.replace(sql, /"/g, '`');
   }
 

@@ -564,10 +564,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       mysql: '>=8.0.17',
       sqlite: '3.x',
       postgres: '>=10',
+      mariadb: '>=10.9',
     });
 
     if (!r) {
-      console.log(chalk.red('The database only supports MySQL 8.0.17 and above, SQLite 3.x and PostgreSQL 10+'));
+      console.log(chalk.red(`current database version is not supported`));
       if (options?.exit) {
         process.exit();
       }

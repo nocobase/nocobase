@@ -5805,6 +5805,11 @@
   version "7946.0.10"
   resolved "https://registry.npmmirror.com/@types/geojson/-/geojson-7946.0.10.tgz#6dfbf5ea17142f7f9a043809f1cd4c448cb68249"
 
+"@types/geojson@^7946.0.8":
+  version "7946.0.13"
+  resolved "https://registry.yarnpkg.com/@types/geojson/-/geojson-7946.0.13.tgz#e6e77ea9ecf36564980a861e24e62a095988775e"
+  integrity sha512-bmrNrgKMOhM3WsafmbGmC+6dsF2Z308vLFsQ3a/bT8X8Sv5clVYpPars/UPq+sAaJP+5OoLAYgwbkS5QEJdLUQ==
+
 "@types/glob-stream@*":
   version "8.0.0"
   resolved "https://registry.npmmirror.com/@types/glob-stream/-/glob-stream-8.0.0.tgz#ffa679e43d896de883ffac408a32a78ca123db33"
@@ -6073,7 +6078,7 @@
   version "14.18.53"
   resolved "https://registry.npmmirror.com/@types/node/-/node-14.18.53.tgz#42855629b8773535ab868238718745bf56c56219"
 
-"@types/node@^17.0.5":
+"@types/node@^17.0.10", "@types/node@^17.0.5":
   version "17.0.45"
   resolved "https://registry.npmmirror.com/@types/node/-/node-17.0.45.tgz#2c0fafd78705e7a18b7906b5201a522719dc5190"
 
@@ -15945,6 +15950,11 @@ long@^4.0.0:
   version "4.0.0"
   resolved "https://registry.npmmirror.com/long/-/long-4.0.0.tgz#9a7b71cfb7d361a194ea555241c92f7468d5bf28"
 
+long@^5.2.0:
+  version "5.2.3"
+  resolved "https://registry.yarnpkg.com/long/-/long-5.2.3.tgz#a3ba97f3877cf1d778eccbcb048525ebb77499e1"
+  integrity sha512-lcHwpNoggQTObv5apGNCTdJrO69eHOZMi4BNC+rTLER8iHAqGrUVeLh/irVIM7zTw2bOXA8T6uNPeujwOLg/2Q==
+
 longest-streak@^3.0.0:
   version "3.1.0"
   resolved "https://registry.npmmirror.com/longest-streak/-/longest-streak-3.1.0.tgz#62fa67cd958742a1574af9f39866364102d90cd4"
@@ -16143,6 +16153,19 @@ map-visit@^1.0.0:
   resolved "https://registry.npmmirror.com/map-visit/-/map-visit-1.0.0.tgz#ecdca8f13144e660f1b5bd41f12f3479d98dfb8f"
   dependencies:
     object-visit "^1.0.0"
+
+mariadb@^2.5.6:
+  version "2.5.6"
+  resolved "https://registry.yarnpkg.com/mariadb/-/mariadb-2.5.6.tgz#7314e9287cdba212831ebf16ef3b34dc6a1f0f06"
+  integrity sha512-zBx7loYY5GzLl8Y6AKxGXfY9DUYIIdGrmEORPOK9FEu0pg5ZLBKCGJuucHwKADxTBxKY7eM4rxndqxRcnMZKIw==
+  dependencies:
+    "@types/geojson" "^7946.0.8"
+    "@types/node" "^17.0.10"
+    denque "^2.0.1"
+    iconv-lite "^0.6.3"
+    long "^5.2.0"
+    moment-timezone "^0.5.34"
+    please-upgrade-node "^3.2.0"
 
 markdown-it-highlightjs@3.3.1:
   version "3.3.1"
@@ -17028,7 +17051,7 @@ module-details-from-path@^1.0.3:
   version "1.0.3"
   resolved "https://registry.npmmirror.com/module-details-from-path/-/module-details-from-path-1.0.3.tgz#114c949673e2a8a35e9d35788527aa37b679da2b"
 
-moment-timezone@^0.5.40, moment-timezone@^0.5.43:
+moment-timezone@^0.5.34, moment-timezone@^0.5.40, moment-timezone@^0.5.43:
   version "0.5.43"
   resolved "https://registry.npmmirror.com/moment-timezone/-/moment-timezone-0.5.43.tgz#3dd7f3d0c67f78c23cd1906b9b2137a09b3c4790"
   dependencies:
@@ -18652,6 +18675,13 @@ playwright-core@1.37.1:
   version "1.37.1"
   resolved "https://registry.npmmirror.com/playwright-core/-/playwright-core-1.37.1.tgz#cb517d52e2e8cb4fa71957639f1cd105d1683126"
   integrity sha512-17EuQxlSIYCmEMwzMqusJ2ztDgJePjrbttaefgdsiqeLWidjYz9BxXaTaZWxH1J95SHGk6tjE+dwgWILJoUZfA==
+
+please-upgrade-node@^3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/please-upgrade-node/-/please-upgrade-node-3.2.0.tgz#aeddd3f994c933e4ad98b99d9a556efa0e2fe942"
+  integrity sha512-gQR3WpIgNIKwBMVLkpMUeR3e1/E1y42bqDQZfql+kDeXd8COYfM8PQA4X6y7a8u9Ua9FHmsrrmirW2vHs45hWg==
+  dependencies:
+    semver-compare "^1.0.0"
 
 plugin-error@^1.0.1:
   version "1.0.1"
@@ -20992,6 +21022,11 @@ selderee@^0.6.0:
 select-hose@^2.0.0:
   version "2.0.0"
   resolved "https://registry.npmmirror.com/select-hose/-/select-hose-2.0.0.tgz#625d8658f865af43ec962bfc376a37359a4994ca"
+
+semver-compare@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/semver-compare/-/semver-compare-1.0.0.tgz#0dee216a1c941ab37e9efb1788f6afc5ff5537fc"
+  integrity sha512-YM3/ITh2MJ5MtzaM429anh+x2jiLVjqILF4m4oyQB18W7Ggea7BfqdH/wGMK7dDiMghv/6WG7znWMwUDzJiXow==
 
 semver-diff@^2.0.0:
   version "2.1.0"
