@@ -209,7 +209,7 @@ test.describe('action display config', () => {
     await page.getByLabel('action-Action-Add new-create-users-table').hover();
     await page.getByLabel('action-Action-Add new-create-users-table').getByLabel('designer-schema-settings').hover();
     //更新按钮图标、名称、样式
-    await page.getByLabel('Edit button').click();
+    await page.getByRole('menuitem', { name: 'Edit button' }).click();
     await page.getByRole('textbox').fill('Add new1');
     await page.getByRole('button', { name: 'close', exact: true }).click();
     await page.getByRole('button', { name: 'Select icon', exact: true }).click();
@@ -235,7 +235,7 @@ test.describe('action display config', () => {
     await page.locator('.ant-drawer-mask').click();
     await page.getByLabel('action-Action-Add new-create-users-table').hover();
     await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
-    await page.getByTitle('Open mode').click();
+    await page.getByRole('menuitem', { name: 'Open mode' }).click();
     await page.getByRole('option', { name: 'Dialog' }).click();
     await page.getByLabel('action-Action-Add new-create-users-table').click();
     const drawerComponent = page.getByTestId('modal-Action.Container-users-Add record');
@@ -252,7 +252,7 @@ test.describe('action display config', () => {
     //修改尺寸
     await page.getByLabel('action-Action-Add new-create-users-table').hover();
     await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
-    await page.getByTitle('Popup size').click();
+    await page.getByRole('menuitem', { name: 'Popup size' }).click();
 
     //默认尺寸为Middle
     await expect(page.getByTitle('Popup size').locator('.ant-select-selection-item')).toHaveText('Middle');
@@ -284,7 +284,7 @@ test.describe('action linkage rule', () => {
     await page.getByRole('menuitem', { name: 'View' }).click();
     await page.getByLabel('block-item-CardItem-users-table').getByLabel('View').hover();
     await page.getByLabel('View').getByLabel('designer-schema-settings').hover();
-    await page.getByRole('button', { name: 'Linkage rules' }).click();
+    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
     await page.getByRole('button', { name: 'plus Add linkage rule', exact: true }).click();
     await page.getByText('Add condition', { exact: true }).click();
     await page.getByTestId('select-filter-field').click();
@@ -315,7 +315,7 @@ test.describe('action linkage rule', () => {
     await page.getByRole('menuitem', { name: 'View' }).click();
     await page.getByLabel('block-item-CardItem-users-table').getByLabel('View').hover();
     await page.getByLabel('View').getByLabel('designer-schema-settings').hover();
-    await page.getByRole('button', { name: 'Linkage rules' }).click();
+    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
     await page.getByRole('button', { name: 'plus Add linkage rule', exact: true }).click();
     await page.getByText('Add condition', { exact: true }).click();
     await page.getByTestId('select-filter-field').click();

@@ -22,13 +22,15 @@ export default defineConfig({
   workers: 1,
 
   // Reporter to use
-  reporter: [['html', { outputFolder: './playwright/tests-report' }]],
+  reporter: process.env.PLAYWRIGHT_SKIP_REPORTER
+    ? undefined
+    : [['html', { outputFolder: './playwright/tests-report' }]],
 
   outputDir: './playwright/test-results',
 
   use: {
     // Base URL to use in actions like `await page.goto('/')`.
-    baseURL: process.env.APP_BASE_URL,
+    baseURL: process.env.APP_BASE_URL || `http://localhost:${process.env.APP_PORT || 20000}`,
 
     // Collect trace when retrying the failed test.
     trace: 'on-first-retry',

@@ -97,6 +97,9 @@ const useResource = (props: UseResourceProps) => {
   if (record?.__parent?.[association?.sourceKey || 'id']) {
     return api.resource(resource, record.__parent[association?.sourceKey || 'id']);
   }
+  if (record?.[association?.sourceKey || 'id']) {
+    return api.resource(resource, record[association?.sourceKey || 'id']);
+  }
   return api.resource(collection);
 };
 
