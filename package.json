@@ -25,6 +25,7 @@
     "tar": "nocobase tar",
     "test": "nocobase test",
     "test:client": "vitest",
+    "e2e": "nocobase e2e",
     "test:e2e": "tsx ./scripts/runE2e.setup.ts",
     "test:e2e:codegen": "tsx ./scripts/codegen.setup.ts",
     "test:e2e:server": "tsx ./scripts/nocobase.setup.ts",

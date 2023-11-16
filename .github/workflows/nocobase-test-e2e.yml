@@ -62,9 +62,10 @@ jobs:
           __E2E__: true
       - run: npx playwright install --with-deps
       - name: Test with postgres
-        run: yarn test:e2e
+        run: yarn e2e test -x --skip-reporter
         env:
           __E2E__: true
+          APP_ENV: production
           LOGGER_LEVEL: error
           DB_DIALECT: postgres
           DB_HOST: postgres
