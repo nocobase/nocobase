@@ -5,9 +5,7 @@ import path from 'path';
 const adminFile = 'playwright/.auth/admin.json';
 
 // 加载变量
-if (!process.env.APP_BASE_URL) {
-  dotenv.config({ path: path.resolve(process.cwd(), '.env.e2e') });
-}
+dotenv.config({ path: path.resolve(process.cwd(), '.env.e2e') });
 
 // 保存登录状态，避免每次都要登录
 setup('admin', async ({ page }) => {

@@ -516,8 +516,6 @@ SchemaSettings.Item = function Item(props: SchemaSettingsItemProps) {
   }
 
   const item = {
-    role: 'button',
-    'aria-label': name,
     key: title,
     ..._.omit(props, ['children', 'name']),
     eventKey: eventKey as any,
@@ -566,8 +564,6 @@ SchemaSettings.SubMenu = function SubMenu(props: SchemaSettingsSubMenuProps) {
   const { pushMenuItem } = useCollectMenuItems();
   const key = useMemo(() => uid(), []);
   const item = {
-    role: 'button',
-    'aria-label': props.title,
     key,
     label: props.title,
     title: props.title,
@@ -780,7 +776,7 @@ SchemaSettings.SelectItem = function SelectItem(props) {
   const { title, options, value, onChange, ...others } = props;
 
   return (
-    <SchemaSettings.Item title={title} role="none" aria-label="" {...others}>
+    <SchemaSettings.Item title={title} {...others}>
       <SelectWithTitle {...{ title, defaultValue: value, onChange, options }} />
     </SchemaSettings.Item>
   );
@@ -1996,8 +1992,6 @@ export function SelectWithTitle({ title, defaultValue, onChange, options }: Sele
   const { name } = useSchemaSettingsItem();
   return (
     <div
-      role="button"
-      aria-label={name}
       style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}
       onClick={(e) => {
         e.stopPropagation();

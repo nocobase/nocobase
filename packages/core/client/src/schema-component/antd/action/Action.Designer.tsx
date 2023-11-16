@@ -1,26 +1,26 @@
 import { ArrayTable } from '@formily/antd-v5';
-import { onFieldValueChange, onFieldInputValueChange, onFieldInit } from '@formily/core';
-import { connect, ISchema, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
+import { onFieldInputValueChange, onFieldValueChange } from '@formily/core';
+import { ISchema, connect, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Alert, Tree as AntdTree, ModalProps } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
+import { usePlugin } from '../../../application/hooks';
+import { useSchemaDesigner } from '../../../application/schema-designer';
+import { SchemaSetting, SchemaSettingOptions } from '../../../application/schema-settings';
 import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
-import { SchemaSettings } from '../../../schema-settings/SchemaSettings';
-import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
+import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
+import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
+import { SchemaSettings } from '../../../schema-settings/SchemaSettings';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
-import { usePlugin } from '../../../application/hooks';
-import { SchemaSetting, SchemaSettingOptions } from '../../../application/schema-settings';
-import { useSchemaDesigner } from '../../../application/schema-designer';
-import { SchemaInitializerOpenModeSchemaItems } from '../../../schema-items';
 
 const Tree = connect(
   AntdTree,
@@ -932,9 +932,10 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         name: 'linkageRules',
         Component: SchemaSettings.LinkageRules,
         useVisible() {
+          const fieldSchema = useFieldSchema();
           const isAction = useLinkageAction();
           const { linkageAction } = useSchemaDesigner();
-          return linkageAction || isAction;
+          return (linkageAction || isAction) && !['destroy', 'refresh'].includes(fieldSchema['x-action']);
         },
         useComponentProps() {
           const { name } = useCollection();
@@ -956,7 +957,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
       },
       {
         name: 'openMode',
-        Component: SchemaInitializerOpenModeSchemaItems,
+        Component: SchemaSettingOpenModeSchemaItems,
         useComponentProps() {
           const fieldSchema = useFieldSchema();
           const isPopupAction = [
