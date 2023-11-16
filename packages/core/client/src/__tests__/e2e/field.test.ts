@@ -170,8 +170,8 @@ test.describe('field setting config ', () => {
     await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').hover();
     await page.getByRole('menuitem', { name: 'Username' }).click();
     await page.getByLabel('block-item-CollectionField-users-form-users.username').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-users-users.username').click();
-    await page.getByLabel('Edit field title').click();
+    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-users-users.username').hover();
+    await page.getByRole('menuitem', { name: 'Edit field title' }).click();
     await page.getByLabel('block-item-Input-users-Field title').getByRole('textbox').fill('Username1');
     await page.getByRole('button', { name: 'OK' }).click();
     await expect(
@@ -183,7 +183,7 @@ test.describe('field setting config ', () => {
       .getByLabel('block-item-CollectionField-users-form-users.username')
       .getByLabel('designer-schema-settings')
       .hover();
-    await page.getByLabel('Edit field title').click();
+    await page.getByRole('menuitem', { name: 'Edit field title' }).click();
     await expect(page.getByLabel('block-item-Input-users-Field title').getByRole('textbox')).toHaveValue('Username1');
   });
   test('display & not display field label in block ', async ({ page, mockPage }) => {
@@ -195,11 +195,11 @@ test.describe('field setting config ', () => {
       .getByLabel('block-item-CollectionField-users-form-users.username')
       .getByLabel('designer-schema-settings')
       .hover();
-    await page.getByLabel('Display title').hover();
+    await page.getByRole('menuitem', { name: 'Display title' }).hover();
     //默认显示
-    await expect(page.getByLabel('Display title').getByRole('switch')).toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'Display title' }).getByRole('switch')).toBeChecked();
     //设置不显示标题
-    await page.getByLabel('Display title').click();
+    await page.getByRole('menuitem', { name: 'Display title' }).click();
     const labelItem = page
       .getByLabel('block-item-CollectionField-users-form-users.username')
       .locator('.ant-formily-item-label');
@@ -214,7 +214,7 @@ test.describe('field setting config ', () => {
       .getByLabel('block-item-CollectionField-users-form-users.username')
       .getByLabel('designer-schema-settings')
       .hover();
-    await page.getByLabel('Display title').click();
+    await page.getByRole('menuitem', { name: 'Display title' }).click();
     const labelDisplay1 = await labelItem.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.display;
@@ -232,7 +232,7 @@ test.describe('field setting config ', () => {
       .getByLabel('block-item-CollectionField-users-form-users.username')
       .getByLabel('designer-schema-settings')
       .hover();
-    await page.getByLabel('Edit description').click();
+    await page.getByRole('menuitem', { name: 'Edit description' }).click();
     await page.getByLabel('block-item-Input.TextArea-users').locator('textarea').fill(description);
     await page.getByRole('button', { name: 'OK' }).click();
     const descriptionItem = page
@@ -255,8 +255,8 @@ test.describe('field setting config ', () => {
     await page
       .getByLabel('block-item-CollectionField-users-form-users.nickname')
       .getByLabel('designer-schema-settings')
-      .click();
-    await page.getByLabel('Required').click();
+      .hover();
+    await page.getByRole('menuitem', { name: 'Required' }).click();
     await page.getByLabel('schema-initializer-ActionBar-FormActionInitializers-users').click();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     await page.getByLabel('action-Action-Submit-submit-users-form').click();
@@ -285,8 +285,8 @@ test.describe('field setting config ', () => {
     await page
       .getByLabel('block-item-CollectionField-users-form-users.nickname')
       .getByLabel('designer-schema-settings')
-      .click();
-    await page.getByText('Set validation rules').click();
+      .hover();
+    await page.getByRole('menuitem', { name: 'Set validation rules' }).click();
     await page.getByRole('button', { name: 'plus Add validation rule' }).click();
     await page.getByLabel('block-item-InputNumber-users-Max length').getByRole('spinbutton').fill('3');
     await page.getByRole('button', { name: 'Error message' }).locator('textarea').fill(errorMessage);
@@ -315,13 +315,13 @@ test.describe('field setting config ', () => {
     await page
       .getByLabel('block-item-CollectionField-users-form-users.nickname')
       .getByLabel('designer-schema-settings')
-      .click();
-    await page.getByLabel('Pattern').click();
+      .hover();
+    await page.getByRole('menuitem', { name: 'Pattern' }).click();
 
     //禁用
     await page.getByRole('option', { name: 'Readonly' }).click();
     await expect(inputElement).toBeDisabled();
-    await page.getByLabel('Pattern').click();
+    await page.getByRole('menuitem', { name: 'Pattern' }).click();
     //只读
     await page.getByText('Easy-reading').click();
     await expect(
