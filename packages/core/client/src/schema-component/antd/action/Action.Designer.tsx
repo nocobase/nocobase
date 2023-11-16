@@ -826,3 +826,4 @@ export const ActionDesigner = (props) => {
 };
 
 ActionDesigner.ButtonEditor = ButtonEditor;
+ActionDesigner.RemoveButton = RemoveButton;

@@ -54,32 +54,6 @@ const Tree = connect(
     };
   }),
 );
-function RemoveButton(
-  props: {
-    onConfirmOk?: ModalProps['onOk'];
-  } = {},
-) {
-  const { t } = useTranslation();
-  const fieldSchema = useFieldSchema();
-  const isDeletable = fieldSchema?.parent['x-component'] === 'CollectionField';
-  return (
-    !isDeletable && (
-      <>
-        <SchemaSettings.Divider />
-        <SchemaSettings.Remove
-          removeParentsIfNoChildren
-          breakRemoveOn={(s) => {
-            return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
-          }}
-          confirm={{
-            title: t('Delete action'),
-            onOk: props.onConfirmOk,
-          }}
-        />
-      </>
-    )
-  );
-}
 
 const getAllkeys = (data, result) => {
   for (let i = 0; i < data?.length; i++) {
@@ -400,7 +374,7 @@ const duplicateActionSettings = new SchemaSetting({
         {
           name: 'remove',
           sort: 100,
-          Component: RemoveButton as any,
+          Component: ActionDesigner.RemoveButton as any,
           useComponentProps() {
             const { removeButtonProps } = useSchemaDesigner();
             return removeButtonProps;
