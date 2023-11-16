@@ -73,6 +73,8 @@ import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
 import { CollectionFactory } from './collection-factory';
+import chalk from 'chalk';
+import { checkDatabaseVersion } from './helpers';
 
 export type MergeOptions = merge.Options;
 
@@ -768,7 +770,23 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  async checkVersion() {
+    return await checkDatabaseVersion(this);
+  }
+
   async prepare() {
+    if (this.isMySQLCompatibleDialect()) {
+      const result = await this.sequelize.query(`SHOW VARIABLES LIKE 'lower_case_table_names'`, { plain: true });
+
+      if (result?.Value === '1' && !this.options.underscored) {
+        console.log(
+          `Your database lower_case_table_names=1, please add ${chalk.yellow('DB_UNDERSCORED=true')} to the .env file`,
+        );
+
+        process.exit();
+      }
+    }
+
     if (this.inDialect('postgres') && this.options.schema && this.options.schema != 'public') {
       await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${this.options.schema}"`, null);
     }

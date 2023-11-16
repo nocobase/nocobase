@@ -95,44 +95,27 @@ export class SortField extends Field {
       const sortColumnName = this.collection.model.rawAttributes[this.name].field;
 
       const sql = `
-        WITH ordered_table AS (
-          SELECT *, ROW_NUMBER() OVER (${
-            scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
-          } ORDER BY ${quotedOrderField}) AS new_sequence_number
-          FROM ${this.collection.quotedTableName()}
-          ${(() => {
-            if (scopeKey && scopeValue) {
-              const hasNull = scopeValue.includes(null);
+  UPDATE ${this.collection.quotedTableName()}
+  JOIN (
+    SELECT *, ROW_NUMBER() OVER (${
+      scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
+    } ORDER BY ${quotedOrderField}) AS new_sequence_number
+    FROM ${this.collection.quotedTableName()}
+    ${(() => {
+      if (scopeKey && scopeValue) {
+        const hasNull = scopeValue.includes(null);
 
-              return `WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue
-                .filter((v) => v !== null)
-                .map((v) => `'${v}'`)
-                .join(',')}) ${hasNull ? `OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL` : ''} `;
-            }
+        return `WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue
+          .filter((v) => v !== null)
+          .map((v) => `'${v}'`)
+          .join(',')}) ${hasNull ? `OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL` : ''} `;
+      }
 
-            return '';
-          })()}
-
-        )
-        ${
-          this.collection.db.isMySQLCompatibleDialect()
-            ? `
-             UPDATE ${this.collection.quotedTableName()}, ordered_table
-             SET ${this.collection.quotedTableName()}.${sortColumnName} = ordered_table.new_sequence_number
-             WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
-            `
-            : `
-          UPDATE ${this.collection.quotedTableName()}
-        SET ${queryInterface.quoteIdentifier(sortColumnName)} = ordered_table.new_sequence_number
-        FROM ordered_table
-        WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ${queryInterface.quoteIdentifier(
-          'ordered_table',
-        )}.${quotedOrderField};
-        `
-        }
-
-      `;
-
+      return '';
+    })()}
+  ) AS ordered_table ON ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
+  SET ${this.collection.quotedTableName()}.${sortColumnName} = ordered_table.new_sequence_number
+`;
       await this.collection.db.sequelize.query(sql, {
         transaction,
       });
