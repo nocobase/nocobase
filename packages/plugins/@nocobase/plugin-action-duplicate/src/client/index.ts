@@ -1,6 +1,6 @@
 import { Plugin, useCollection } from '@nocobase/client';
 import { DuplicatePluginProvider } from './DuplicatePluginProvider';
-import { duplicateActionSettings } from './DuplicateAction.Setting';
+import { duplicateActionSettings } from './DuplicateAction.Settings';
 
 export class DuplicatePlugin extends Plugin {
   async load() {
