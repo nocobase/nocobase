@@ -515,10 +515,11 @@ const createFakerData = async (collectionSettings: CollectionSetting[]) => {
 export async function enableToConfig(page: Page) {
   // TODO: 更好的办法是通过判断 Initializer 按钮的显隐来判断页面是否已经是可配置态；
   // 但是 page.getByLabel('schema-initializer-Menu-MenuItemInitializers').isVisible() 一直返回的都是 false
-  const style = await page.getByTestId('ui-editor-button').getAttribute('style');
-
-  if (!style) {
-    await page.getByTestId('ui-editor-button').click();
+  if (page.url().includes('/admin/')) {
+    const style = await page.getByTestId('ui-editor-button').getAttribute('style');
+    if (!style) {
+      await page.getByTestId('ui-editor-button').click();
+    }
   }
 }
 
