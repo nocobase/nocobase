@@ -47,9 +47,6 @@ export const actionDesignerCss = css`
         width: 16px;
         padding-left: 1px;
         align-self: stretch;
-        .ant-nb-schema-initializer-menu-item {
-          display: none;
-        }
       }
     }
   }
