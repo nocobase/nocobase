@@ -19,7 +19,7 @@ export default class UpdateIdToBigIntMigrator extends Migration {
       },
     });
 
-    if (!db.inDialect('mysql', 'postgres')) {
+    if (!db.inDialect('mysql', 'mariadb', 'postgres')) {
       return;
     }
 
@@ -36,7 +36,7 @@ export default class UpdateIdToBigIntMigrator extends Migration {
       if (model.rawAttributes[fieldName].type instanceof DataTypes.INTEGER) {
         if (db.inDialect('postgres')) {
           sql = `ALTER TABLE "${tableName}" ALTER COLUMN "${fieldName}" SET DATA TYPE BIGINT;`;
-        } else if (db.inDialect('mysql')) {
+        } else if (db.inDialect('mysql', 'mariadb')) {
           const dataTypeOrOptions = model.rawAttributes[fieldName];
           const attributeName = fieldName;
 

@@ -575,7 +575,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       return false;
     }
 
-    if (this.db.inDialect('mysql')) {
+    if (this.db.isMySQLCompatibleDialect()) {
       const result = await this.db.sequelize.query(`SHOW VARIABLES LIKE 'lower_case_table_names'`, { plain: true });
       if (result?.Value === '1' && !this.db.options.underscored) {
         console.log(

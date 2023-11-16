@@ -115,7 +115,7 @@ export class SortField extends Field {
 
         )
         ${
-          this.collection.db.inDialect('mysql')
+          this.collection.db.isMySQLCompatibleDialect()
             ? `
              UPDATE ${this.collection.quotedTableName()}, ordered_table
              SET ${this.collection.quotedTableName()}.${sortColumnName} = ordered_table.new_sequence_number
