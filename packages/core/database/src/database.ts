@@ -72,6 +72,7 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
+import { CollectionFactory } from './collection-factory';
 
 export type MergeOptions = merge.Options;
 
@@ -177,23 +178,17 @@ export class Database extends EventEmitter implements AsyncEmitter {
   tableNameCollectionMap = new Map<string, Collection>();
   context: any = {};
   queryInterface: QueryInterface;
-
-  _instanceId: string;
-
   utils = new DatabaseUtils(this);
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
-
   importedFrom = new Map<string, Array<string>>();
-
   modelHook: ModelHook;
   version: DatabaseVersion;
-
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
-
   logger: Logger;
-
   collectionGroupManager = new CollectionGroupManager(this);
+
+  collectionFactory: CollectionFactory = new CollectionFactory(this);
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
   constructor(options: DatabaseOptions) {
@@ -307,10 +302,28 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.initListener();
     patchSequelizeQueryInterface(this);
+
+    this.registerCollectionType();
   }
+
+  _instanceId: string;
 
   get instanceId() {
     return this._instanceId;
+  }
+
+  registerCollectionType() {
+    this.collectionFactory.registerCollectionType(InheritedCollection, (options) => {
+      return options.inherits && lodash.castArray(options.inherits).length > 0;
+    });
+
+    this.collectionFactory.registerCollectionType(ViewCollection, (options) => {
+      return options.viewName || options.view;
+    });
+
+    this.collectionFactory.registerCollectionType(SqlCollection, (options) => {
+      return options.sql;
+    });
   }
 
   setContext(context: any) {
@@ -447,10 +460,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return dialect.includes(this.sequelize.getDialect());
   }
 
-  escapeId(identifier: string) {
-    return this.inDialect('mysql') ? `\`${identifier}\`` : `"${identifier}"`;
-  }
-
   /**
    * Add collection to database
    * @param options
@@ -466,29 +475,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.emit('beforeDefineCollection', options);
 
-    const hasValidInheritsOptions = (() => {
-      return options.inherits && lodash.castArray(options.inherits).length > 0;
-    })();
-
-    const hasViewOptions = options.viewName || options.view;
-
-    const collectionKlass = (() => {
-      if (hasValidInheritsOptions) {
-        return InheritedCollection;
-      }
-
-      if (hasViewOptions) {
-        return ViewCollection;
-      }
-
-      if (options.sql) {
-        return SqlCollection;
-      }
-
-      return Collection;
-    })();
-
-    const collection = new collectionKlass(options, { database: this });
+    const collection = this.collectionFactory.createCollection(options);
 
     this.collections.set(collection.name, collection);
 

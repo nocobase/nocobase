@@ -18,10 +18,6 @@ export class ErrorHandler {
         },
       ],
     };
-
-    if (ctx.status === 500) {
-      console.error(err);
-    }
   }
 
   middleware() {

@@ -228,7 +228,7 @@ export const toItem = (file) => {
 };
 
 export const toFileList = (fileList: any) => {
-  return toArr(fileList?.filter(Boolean)).map(toItem);
+  return toArr(fileList).filter(Boolean).map(toItem);
 };
 
 export const toValue = (fileList: any) => {
