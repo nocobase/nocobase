@@ -7,19 +7,11 @@ import {
   CurrentUserProvider,
   SchemaComponent,
   SchemaComponentProvider,
-  APIClient,
+  mockAPIClient,
 } from '@nocobase/client';
 import React from 'react';
 import collections from './collections';
 import data from './data';
-import MockAdapter from 'axios-mock-adapter';
-
-export const mockAPIClient = () => {
-  const apiClient = new APIClient();
-  const mockRequest = new MockAdapter(apiClient.axios);
-
-  return { apiClient, mockRequest };
-};
 
 const { apiClient, mockRequest } = mockAPIClient();
 const sleep = (value: number) => new Promise((resolve) => setTimeout(resolve, value));
