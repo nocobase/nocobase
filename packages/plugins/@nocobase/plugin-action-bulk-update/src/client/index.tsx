@@ -1,6 +1,6 @@
 import { Plugin, useCollection } from '@nocobase/client';
 import { BulkUpdatePluginProvider } from './BulkUpdatePluginProvider';
-import { bulkUpdateActionSettings } from './BulkUpdateAction.Setting';
+import { bulkUpdateActionSettings } from './BulkUpdateAction.Settings';
 export class BulkUpdatePlugin extends Plugin {
   async load() {
     this.app.use(BulkUpdatePluginProvider);
