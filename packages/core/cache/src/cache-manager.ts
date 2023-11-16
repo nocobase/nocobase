@@ -4,26 +4,30 @@ import lodash from 'lodash';
 import { redisStore } from 'cache-manager-redis-yet';
 import deepmerge from 'deepmerge';
 
-type StoreType = {
-  store: 'memory' | FactoryStore<Store, any>;
-  globalConfig?: any;
+type StoreOptions = {
+  store?: 'memory' | FactoryStore<Store, any>;
+  close?: (store: BasicCache) => Promise<void>;
+  // global config
+  [key: string]: any;
 };
 
 export type CacheManagerOptions = Partial<{
   defaultStore: string;
   stores: {
-    [storeType: string]: {
-      store?: 'memory' | FactoryStore<Store, any>;
-      // global config
-      [key: string]: any;
-    };
+    [storeType: string]: StoreOptions;
   };
 }>;
 
 export class CacheManager {
   defaultStore: string;
-  private stores = new Map<string, BasicCache>();
-  storeTypes = new Map<string, StoreType>();
+  private stores = new Map<
+    string,
+    {
+      store: BasicCache;
+      close?: (store: BasicCache) => Promise<void>;
+    }
+  >();
+  storeTypes = new Map<string, StoreOptions>();
   caches = new Map<string, Cache>();
 
   constructor(options?: CacheManagerOptions) {
@@ -55,15 +59,15 @@ export class CacheManager {
     if (!storeType) {
       throw new Error(`Create cache failed, store type [${type}] is unavailable or not registered`);
     }
-    const { store: s, globalConfig } = storeType;
+    const { store: s, close, ...globalConfig } = storeType;
     const store = await caching(s, { ...globalConfig, ...config });
-    this.stores.set(name, store);
+    this.stores.set(name, { close, store });
     return store;
   }
 
-  registerStore(options: { name: string; store: 'memory' | FactoryStore<Store, any>; [key: string]: any }) {
-    const { name, store, ...globalConfig } = options;
-    this.storeTypes.set(name, { store, globalConfig });
+  registerStore(options: { name: string } & StoreOptions) {
+    const { name, ...rest } = options;
+    this.storeTypes.set(name, rest);
   }
 
   private newCache(options: { name: string; prefix?: string; store: BasicCache }) {
@@ -84,7 +88,7 @@ export class CacheManager {
       const defaultStore = await this.createStore({ name: store, storeType: store });
       return this.newCache({ name, prefix, store: defaultStore });
     }
-    return this.newCache({ name, prefix, store: s });
+    return this.newCache({ name, prefix, store: s.store });
   }
 
   getCache(name: string): Cache {
@@ -99,6 +103,15 @@ export class CacheManager {
     const promises = [];
     for (const cache of this.caches.values()) {
       promises.push(cache.reset());
+    }
+    await Promise.all(promises);
+  }
+
+  async close() {
+    const promises = [];
+    for (const s of this.stores.values()) {
+      const { close, store } = s;
+      close && promises.push(close(store));
     }
     await Promise.all(promises);
   }

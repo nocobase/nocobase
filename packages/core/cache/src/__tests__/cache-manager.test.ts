@@ -27,4 +27,16 @@ describe('cache-manager', () => {
     expect(cache.name).toBe('test');
     expect(cacheManager.caches.has('test')).toBeTruthy();
   });
+
+  it('should close store', async () => {
+    const close = jest.fn();
+    cacheManager.registerStore({
+      name: 'memory',
+      store: 'memory',
+      close,
+    });
+    await cacheManager.createCache({ name: 'test', store: 'memory' });
+    await cacheManager.close();
+    expect(close).toBeCalled();
+  });
 });

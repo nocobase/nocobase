@@ -328,6 +328,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       if (!oldDb.closed()) {
         await oldDb.close();
       }
+      if (this._cacheManager) {
+        await this._cacheManager.close();
+      }
     }
 
     this._cacheManager = await createCacheManager(this, this.options.cacheManager);
