@@ -259,10 +259,10 @@ export const Calendar: any = observer(
             agendaDateFormat: 'M-DD',
             dayHeaderFormat: 'YYYY-M-DD',
             dayRangeHeaderFormat: ({ start, end }, culture, local) => {
-              if (eq(start, end, 'month')) {
-                return local.format(start, 'Y-M', culture);
-              }
-              return `${local.format(start, 'Y-M', culture)} - ${local.format(end, 'Y-M', culture)}`;
+              return local.format(start, 'YY-W', culture);
+              // if (eq(start, end, 'month')) {
+              // }
+              // return `${local.format(start, 'YY-W', culture)} - ${local.format(end, 'YY-W', culture)}`;
             },
           }}
           components={components}
