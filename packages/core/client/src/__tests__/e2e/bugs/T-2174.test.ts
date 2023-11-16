@@ -720,5 +720,5 @@ test('BUG: should show default value option', async ({ page, mockPage }) => {
     .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-t_ylz5vtxncxq-t_ylz5vtxncxq.f_nr8xi7ezw5t')
     .hover();
 
-  await expect(page.getByLabel('Set default value')).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
 });

@@ -307,7 +307,7 @@ test.describe('add block & delete block', () => {
       .getByLabel('block-item-CardItem-users-table')
       .getByRole('button', { name: 'designer-schema-settings' })
       .click();
-    await page.getByLabel('Delete').click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
     await expect(page.getByLabel('block-item-CardItem-users-table')).not.toBeVisible();
     await expect(page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users')).not.toBeVisible();
@@ -325,7 +325,7 @@ test.describe('block title', () => {
       .getByLabel('block-item-CardItem-users-table')
       .getByRole('button', { name: 'designer-schema-settings' })
       .hover();
-    await page.getByLabel('Edit block title').click();
+    await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     await page.getByLabel('block-item-Input-users-Block title').click();
     await page.getByLabel('block-item-Input-users-Block title').getByRole('textbox').fill('block title');
     await page.locator('.ant-modal').getByRole('button', { name: 'OK' }).click();
@@ -338,8 +338,8 @@ test.describe('block title', () => {
     await page
       .getByLabel('block-item-CardItem-users-table')
       .getByRole('button', { name: 'designer-schema-settings' })
-      .click();
-    await page.getByText('Edit block title').click();
+      .hover();
+    await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const inputValue = await page.getByRole('textbox').inputValue();
     expect(inputValue).toBe('block title');
   });
@@ -498,8 +498,8 @@ test.describe('block template', () => {
     await page
       .getByLabel('block-item-CardItem-users-form')
       .getByLabel('designer-schema-settings-CardItem-FormV2.Designer-users')
-      .click();
-    await page.getByLabel('Save as block template').click();
+      .hover();
+    await page.getByRole('menuitem', { name: 'Save as block template' }).click();
     await page.getByLabel('Save as template').getByRole('textbox').fill('Users_Form');
     await page.getByRole('button', { name: 'OK' }).click();
     await page.getByLabel('block-item-CardItem-users-form').hover();
