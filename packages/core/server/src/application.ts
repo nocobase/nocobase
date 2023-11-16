@@ -718,7 +718,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._db = this.createDatabase(options);
 
-    // this._cacheManager = createCacheManager(createAppProxy(this), options.cache);
     this._resourcer = createResourcer(options);
     this._cli = this.createCli();
     this._i18n = createI18n(options);
