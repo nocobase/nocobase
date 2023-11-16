@@ -155,6 +155,7 @@ test.describe('drag field in block', () => {
     await source.hover();
     await source.dragTo(targetElement2);
 
+    await sourceElement.hover();
     const nickname = await source.boundingBox();
     const username = await targetElement.boundingBox();
     const email = await targetElement2.boundingBox();

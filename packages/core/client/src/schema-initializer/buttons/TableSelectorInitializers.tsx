@@ -28,15 +28,13 @@ export const tableSelectorInitializers = new SchemaInitializer({
         const { name } = useCollection();
         return [
           {
-            name: 'filterTableBlockInTableSelector',
-            key: 'filterFormBlockInTableSelector',
+            name: 'filterFormBlockInTableSelector',
             title: '{{t("Form")}}',
             Component: 'FilterFormBlockInitializer',
             collectionName: name,
           },
           {
-            name: 'filterTableBlockInTableSelector',
-            key: 'filterCollapseBlockInTableSelector',
+            name: 'filterCollapseBlockInTableSelector',
             title: '{{t("Collapse")}}',
             Component: 'FilterCollapseBlockInitializer',
             collectionName: name,
