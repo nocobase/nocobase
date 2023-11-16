@@ -94,28 +94,41 @@ export class SortField extends Field {
 
       const sortColumnName = this.collection.model.rawAttributes[this.name].field;
 
-      const sql = `
-  UPDATE ${this.collection.quotedTableName()}
-  JOIN (
-    SELECT *, ROW_NUMBER() OVER (${
-      scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
-    } ORDER BY ${quotedOrderField}) AS new_sequence_number
-    FROM ${this.collection.quotedTableName()}
-    ${(() => {
-      if (scopeKey && scopeValue) {
-        const hasNull = scopeValue.includes(null);
+      let sql: string;
 
-        return `WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue
-          .filter((v) => v !== null)
-          .map((v) => `'${v}'`)
-          .join(',')}) ${hasNull ? `OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL` : ''} `;
+      if (this.collection.db.inDialect('postgres')) {
+        sql = `
+    UPDATE ${this.collection.quotedTableName()}
+    SET ${sortColumnName} = ordered_table.new_sequence_number
+    FROM (
+      SELECT *, ROW_NUMBER() OVER (ORDER BY ${quotedOrderField}) AS new_sequence_number
+      FROM ${this.collection.quotedTableName()}
+    ) AS ordered_table
+    WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField};
+  `;
+      } else if (this.collection.db.inDialect('sqlite')) {
+        sql = `
+    UPDATE ${this.collection.quotedTableName()}
+    SET ${sortColumnName} = (
+      SELECT new_sequence_number
+      FROM (
+        SELECT *, ROW_NUMBER() OVER (ORDER BY ${quotedOrderField}) AS new_sequence_number
+        FROM ${this.collection.quotedTableName()}
+      ) AS ordered_table
+      WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
+    );
+  `;
+      } else if (this.collection.db.inDialect('mysql') || this.collection.db.inDialect('mariadb')) {
+        sql = `
+    UPDATE ${this.collection.quotedTableName()}
+    JOIN (
+      SELECT *, ROW_NUMBER() OVER (ORDER BY ${quotedOrderField}) AS new_sequence_number
+      FROM ${this.collection.quotedTableName()}
+    ) AS ordered_table ON ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
+    SET ${this.collection.quotedTableName()}.${sortColumnName} = ordered_table.new_sequence_number;
+  `;
       }
 
-      return '';
-    })()}
-  ) AS ordered_table ON ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
-  SET ${this.collection.quotedTableName()}.${sortColumnName} = ordered_table.new_sequence_number
-`;
       await this.collection.db.sequelize.query(sql, {
         transaction,
       });
