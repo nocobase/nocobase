@@ -125,7 +125,7 @@ export const DuplicateAction = observer(
         }
       }
     };
-    console.log(formctx);
+
     return (
       <div
         className={cx(actionDesignerCss, {

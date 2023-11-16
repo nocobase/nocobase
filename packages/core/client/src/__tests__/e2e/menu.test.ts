@@ -35,7 +35,7 @@ test.describe('menu page', () => {
     // 删除页面，避免影响其他测试
     await page.getByLabel(pageTitle).click();
     await page.getByLabel(pageTitle).getByLabel('designer-schema-settings').hover();
-    await page.getByLabel('Delete').click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
     await mockPage().goto();
     await expect(page.getByTitle(pageTitle)).not.toBeVisible();
@@ -48,7 +48,7 @@ test.describe('menu page', () => {
     }).goto();
     await page.getByLabel(pageTitle).hover();
     await page.getByLabel(pageTitle).getByLabel('designer-schema-settings').hover();
-    await page.getByLabel('Edit').click();
+    await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.mouse.move(300, 0);
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill(newPageTitle);
@@ -69,7 +69,7 @@ test.describe('menu page', () => {
     await page.getByRole('menu').getByText(pageTitle1).click();
     await page.getByRole('menu').getByText(pageTitle1).hover();
     await page.getByLabel(pageTitle1).getByLabel('designer-schema-settings').hover();
-    await page.getByLabel('Move to').click();
+    await page.getByRole('menuitem', { name: 'Move to' }).click();
     await page.getByRole('dialog').click();
     await page.getByLabel('Search').click();
     await page.locator('.ant-select-dropdown').getByText(pageTitle2).click();
@@ -91,9 +91,9 @@ test.describe('menu page', () => {
     await page.getByLabel(pageTitle3).hover();
     await page.getByLabel(pageTitle3).getByLabel('designer-schema-settings').hover();
 
-    await page.getByLabel('Insert before').hover();
+    await page.getByRole('menuitem', { name: 'Insert before' }).hover();
 
-    await page.getByRole('button', { name: 'Page', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Page', exact: true }).click();
     await page.getByRole('textbox').fill(pageTitle4);
     await page.getByRole('button', { name: 'OK' }).click();
 
@@ -106,7 +106,7 @@ test.describe('menu page', () => {
     //删除页面
     await page.getByLabel(pageTitle4).click();
     await page.getByLabel(pageTitle4).getByLabel('designer-schema-settings').hover();
-    await page.getByLabel('Delete').click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
   });
 
@@ -121,9 +121,9 @@ test.describe('menu page', () => {
     await page.getByLabel(pageTitle5).hover();
     await page.getByLabel(pageTitle5).getByLabel('designer-schema-settings').hover();
 
-    await page.getByLabel('Insert after').hover();
+    await page.getByRole('menuitem', { name: 'Insert after' }).hover();
 
-    await page.getByRole('button', { name: 'Page', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Page', exact: true }).click();
     await page.getByRole('textbox').fill(pageTitle6);
     await page.getByRole('button', { name: 'OK' }).click();
 
@@ -134,8 +134,8 @@ test.describe('menu page', () => {
     await page.getByLabel(pageTitle6).click();
     await expect(page.getByLabel('schema-initializer-Grid-BlockInitializers')).toBeVisible();
     //删除页面
-    await page.getByLabel(pageTitle6).getByLabel('designer-schema-settings-Menu.Item').click();
-    await page.getByRole('menu').getByLabel('Delete').click();
+    await page.getByLabel(pageTitle6).getByLabel('designer-schema-settings-Menu.Item').hover();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
   });
 });
@@ -187,7 +187,7 @@ test.describe('menu group', () => {
     await page.getByLabel('menu Group').click();
     await page.getByLabel('menu Group').hover();
     await page.getByLabel('menu Group').getByLabel('designer-schema-settings').first().hover();
-    await page.getByLabel('Delete').click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
     await mockPage().goto();
     await expect(page.getByTitle('menu Group')).not.toBeVisible();
@@ -210,7 +210,7 @@ test.describe('menu link', () => {
     // 删除页面，避免影响其他测试
     await page.getByLabel('link menu').click();
     await page.getByLabel('link menu').getByLabel('designer-schema-settings').hover();
-    await page.getByLabel('Delete').click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
   });
 });
