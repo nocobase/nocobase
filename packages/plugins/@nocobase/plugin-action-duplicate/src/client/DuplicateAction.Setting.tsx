@@ -8,7 +8,7 @@ import {
   ActionDesigner,
   useSchemaDesigner,
   useDesignable,
-  SchemaInitializerOpenModeSchemaItems,
+  SchemaSettingOpenModeSchemaItems,
   useLinkageAction,
   useCollection,
   useRecord,
@@ -304,62 +304,76 @@ const duplicateActionSettings = new SchemaSetting({
   name: 'ActionSettings:duplicate',
   items: [
     {
-      name: 'editButton',
-      Component: ActionDesigner.ButtonEditor,
-      useComponentProps() {
-        const { buttonEditorProps } = useSchemaDesigner();
-        return buttonEditorProps;
+      name: 'Customize',
+      type: 'itemGroup',
+      Component: (props) => {
+        return props.children;
       },
-    },
-    {
-      name: 'linkageRules',
-      Component: SchemaSettings.LinkageRules,
-      useVisible() {
-        const isAction = useLinkageAction();
-        const { linkageAction } = useSchemaDesigner();
-        return linkageAction || isAction;
-      },
-      useComponentProps() {
-        const { name } = useCollection();
-        const { linkageRulesProps } = useSchemaDesigner();
-        return {
-          ...linkageRulesProps,
-          collectionName: name,
-        };
-      },
-    },
-    {
-      name: 'duplicationMode',
-      Component: DuplicationMode,
-      useVisible() {
-        const fieldSchema = useFieldSchema();
-        const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
-        return isDuplicateAction;
-      },
-    },
-    {
-      name: 'openMode',
-      Component: SchemaInitializerOpenModeSchemaItems,
-      useComponentProps() {
-        const fieldSchema = useFieldSchema();
-        const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate', 'customize:create'].includes(
-          fieldSchema['x-action'] || '',
-        );
+      children: [
+        {
+          name: 'editButton',
+          Component: ActionDesigner.ButtonEditor,
+          useComponentProps() {
+            const { buttonEditorProps } = useSchemaDesigner();
+            return buttonEditorProps;
+          },
+        },
+        {
+          name: 'linkageRules',
+          Component: SchemaSettings.LinkageRules,
+          useVisible() {
+            const isAction = useLinkageAction();
+            const { linkageAction } = useSchemaDesigner();
+            return linkageAction || isAction;
+          },
+          useComponentProps() {
+            const { name } = useCollection();
+            const { linkageRulesProps } = useSchemaDesigner();
+            return {
+              ...linkageRulesProps,
+              collectionName: name,
+            };
+          },
+        },
+        {
+          name: 'duplicationMode',
+          Component: DuplicationMode,
+          useVisible() {
+            const fieldSchema = useFieldSchema();
+            const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
+            return isDuplicateAction;
+          },
+        },
+        {
+          name: 'openMode',
+          Component: SchemaSettingOpenModeSchemaItems,
+          useComponentProps() {
+            const fieldSchema = useFieldSchema();
+            const isPopupAction = [
+              'create',
+              'update',
+              'view',
+              'customize:popup',
+              'duplicate',
+              'customize:create',
+            ].includes(fieldSchema['x-action'] || '');
 
-        return {
-          openMode: isPopupAction,
-          openSize: isPopupAction,
-        };
-      },
-    },
-    {
-      name: 'remove',
-      sort: 100,
-      Component: RemoveButton as any,
-      useComponentProps() {
-        const { removeButtonProps } = useSchemaDesigner();
-        return removeButtonProps;
-      },
+            return {
+              openMode: isPopupAction,
+              openSize: isPopupAction,
+            };
+          },
+        },
+        {
+          name: 'remove',
+          sort: 100,
+          Component: RemoveButton as any,
+          useComponentProps() {
+            const { removeButtonProps } = useSchemaDesigner();
+            return removeButtonProps;
+          },
+        },
+      ],
     },
   ],
 });
