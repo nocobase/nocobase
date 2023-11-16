@@ -47,3 +47,4 @@ export * from './style';
 export * from './system-settings';
 export * from './user';
 export * from './variables';
+export * from './flag-provider';

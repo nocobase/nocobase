@@ -1,9 +1,11 @@
 import { Plugin, useCollection } from '@nocobase/client';
 import { BulkUpdatePluginProvider } from './BulkUpdatePluginProvider';
-
+import { bulkUpdateActionSettings } from './BulkUpdateAction.Setting';
 export class BulkUpdatePlugin extends Plugin {
   async load() {
     this.app.use(BulkUpdatePluginProvider);
+    this.app.schemaSettingsManager.add(bulkUpdateActionSettings);
+
     const initializerData = {
       title: '{{t("Bulk update")}}',
       Component: 'CustomizeActionInitializer',
@@ -19,6 +21,7 @@ export class BulkUpdatePlugin extends Plugin {
           skipScopeCheck: true,
         },
         'x-action': 'customize:bulkUpdate',
+        'x-settings': 'ActionSettings:customize:bulkUpdate',
         'x-designer': 'Action.Designer',
         'x-action-settings': {
           assignedValues: {},
