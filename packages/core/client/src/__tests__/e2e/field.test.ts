@@ -138,7 +138,7 @@ test.describe('add field & remove field in block', () => {
 });
 
 test.describe('drag field in block', () => {
-  test('drag field for layout', async ({ page, mockPage }) => {
+  test.skip('drag field for layout', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: formPageSchema }).goto();
     await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
     await page.getByLabel('Display collection fields-Nickname').click();

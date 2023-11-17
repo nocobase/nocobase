@@ -551,13 +551,15 @@ const config = {
 };
 
 // fix https://nocobase.height.app/T-2174
-test('BUG: should show default value option', async ({ page, mockPage, mockRecords }) => {
+test('BUG: should show default value option', async ({ page, mockPage, mockRecord }) => {
   const nocoPage = await mockPage(config).waitForInit();
-  await mockRecords('t_ylz5vtxncxq', 3);
+  await mockRecord('t_ylz5vtxncxq');
   await nocoPage.goto();
 
   await page.getByLabel('action-Action.Link-View-view-t_ylz5vtxncxq-table-0').click();
-  await page.getByTestId('select-single').getByLabel('Search').hover();
+  await page
+    .getByLabel('block-item-CollectionField-t_ylz5vtxncxq-form-t_ylz5vtxncxq.f_nr8xi7ezw5t-Single select')
+    .hover();
   await page
     .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-t_ylz5vtxncxq-t_ylz5vtxncxq.f_nr8xi7ezw5t')
     .hover();
