@@ -3,147 +3,15 @@ import { expect, test } from '@nocobase/test/client';
 const phonePageConfig = {
   collections: [
     {
-      key: '94kecytzenp',
       name: 't_x3mxc1ymorw',
-      title: 'faker-testing',
-      inherit: false,
-      hidden: false,
-      description: null,
+      title: 'mock-testing',
       fields: [
         {
-          key: 'cgzlv8nu6fr',
-          name: 'id',
-          type: 'bigInt',
-          interface: 'id',
-          description: null,
-          collectionName: 't_x3mxc1ymorw',
-          parentKey: null,
-          reverseKey: null,
-          autoIncrement: true,
-          primaryKey: true,
-          allowNull: false,
-          uiSchema: {
-            type: 'number',
-            title: '{{t("ID")}}',
-            'x-component': 'InputNumber',
-            'x-read-pretty': true,
-          },
-        },
-        {
-          key: 'sd7xf79138a',
-          name: 'createdAt',
-          type: 'date',
-          interface: 'createdAt',
-          description: null,
-          collectionName: 't_x3mxc1ymorw',
-          parentKey: null,
-          reverseKey: null,
-          field: 'createdAt',
-          uiSchema: {
-            type: 'datetime',
-            title: '{{t("Created at")}}',
-            'x-component': 'DatePicker',
-            'x-component-props': {},
-            'x-read-pretty': true,
-          },
-        },
-        {
-          key: 'z063hvkfdtf',
-          name: 'createdBy',
-          type: 'belongsTo',
-          interface: 'createdBy',
-          description: null,
-          collectionName: 't_x3mxc1ymorw',
-          parentKey: null,
-          reverseKey: null,
-          target: 'users',
-          foreignKey: 'createdById',
-          uiSchema: {
-            type: 'object',
-            title: '{{t("Created by")}}',
-            'x-component': 'AssociationField',
-            'x-component-props': {
-              fieldNames: {
-                value: 'id',
-                label: 'nickname',
-              },
-            },
-            'x-read-pretty': true,
-          },
-          targetKey: 'id',
-        },
-        {
-          key: 'wlnvpjkuv3i',
-          name: 'updatedAt',
-          type: 'date',
-          interface: 'updatedAt',
-          description: null,
-          collectionName: 't_x3mxc1ymorw',
-          parentKey: null,
-          reverseKey: null,
-          field: 'updatedAt',
-          uiSchema: {
-            type: 'string',
-            title: '{{t("Last updated at")}}',
-            'x-component': 'DatePicker',
-            'x-component-props': {},
-            'x-read-pretty': true,
-          },
-        },
-        {
-          key: 'rxyq48pu0kd',
-          name: 'updatedBy',
-          type: 'belongsTo',
-          interface: 'updatedBy',
-          description: null,
-          collectionName: 't_x3mxc1ymorw',
-          parentKey: null,
-          reverseKey: null,
-          target: 'users',
-          foreignKey: 'updatedById',
-          uiSchema: {
-            type: 'object',
-            title: '{{t("Last updated by")}}',
-            'x-component': 'AssociationField',
-            'x-component-props': {
-              fieldNames: {
-                value: 'id',
-                label: 'nickname',
-              },
-            },
-            'x-read-pretty': true,
-          },
-          targetKey: 'id',
-        },
-        {
-          key: '3b24xiumcck',
-          name: 'f_fyjoexeqvuh',
-          type: 'string',
-          interface: 'phone',
-          description: null,
-          collectionName: 't_x3mxc1ymorw',
-          parentKey: null,
-          reverseKey: null,
-          uiSchema: {
-            type: 'string',
-            'x-component': 'Input',
-            'x-component-props': {
-              type: 'tel',
-            },
-            title: 'Phone',
-          },
+          name: 'email',
+          title: 'Email',
+          interface: 'email',
         },
       ],
-      category: [],
-      logging: true,
-      autoGenId: true,
-      createdBy: true,
-      updatedBy: true,
-      createdAt: true,
-      updatedAt: true,
-      sortable: true,
-      template: 'general',
-      view: false,
     },
   ],
   pageSchema: {
@@ -151,6 +19,7 @@ const phonePageConfig = {
     version: '2.0',
     type: 'void',
     'x-component': 'Page',
+    'x-index': 1,
     properties: {
       zyfy6q68u10: {
         _isJSONSchemaObject: true,
@@ -158,20 +27,21 @@ const phonePageConfig = {
         type: 'void',
         'x-component': 'Grid',
         'x-initializer': 'BlockInitializers',
+        'x-index': 1,
         properties: {
-          sfe29sssqks: {
+          nkbrwj149hw: {
             _isJSONSchemaObject: true,
             version: '2.0',
             type: 'void',
             'x-component': 'Grid.Row',
             properties: {
-              wr0q46863ri: {
+              t9wwr80ymdc: {
                 _isJSONSchemaObject: true,
                 version: '2.0',
                 type: 'void',
                 'x-component': 'Grid.Col',
                 properties: {
-                  '996h7puslon': {
+                  b0iohq28s9u: {
                     _isJSONSchemaObject: true,
                     version: '2.0',
                     type: 'void',
@@ -204,11 +74,11 @@ const phonePageConfig = {
                             marginBottom: 'var(--nb-spacing)',
                           },
                         },
-                        'x-uid': 'to6wvr2ymud',
+                        'x-uid': '0wksx4dtgum',
                         'x-async': false,
                         'x-index': 1,
                       },
-                      fmioqg3ac22: {
+                      zvooo4ygn4x: {
                         _isJSONSchemaObject: true,
                         version: '2.0',
                         type: 'array',
@@ -242,16 +112,16 @@ const phonePageConfig = {
                                 'x-component-props': {
                                   split: '|',
                                 },
-                                'x-uid': '7ueb2r7aiq2',
+                                'x-uid': '3gombpceyjl',
                                 'x-async': false,
                                 'x-index': 1,
                               },
                             },
-                            'x-uid': 'q6tqbavh1hz',
+                            'x-uid': 'vcjbrby0i27',
                             'x-async': false,
                             'x-index': 1,
                           },
-                          '7x5qve01k29': {
+                          olrr4chfvfh: {
                             _isJSONSchemaObject: true,
                             version: '2.0',
                             type: 'void',
@@ -259,12 +129,14 @@ const phonePageConfig = {
                             'x-designer': 'TableV2.Column.Designer',
                             'x-component': 'TableV2.Column',
                             properties: {
-                              f_fyjoexeqvuh: {
+                              email: {
                                 _isJSONSchemaObject: true,
                                 version: '2.0',
-                                'x-collection-field': 't_x3mxc1ymorw.f_fyjoexeqvuh',
+                                'x-collection-field': 't_x3mxc1ymorw.email',
                                 'x-component': 'CollectionField',
-                                'x-component-props': {},
+                                'x-component-props': {
+                                  ellipsis: true,
+                                },
                                 'x-read-pretty': true,
                                 'x-decorator': null,
                                 'x-decorator-props': {
@@ -272,53 +144,53 @@ const phonePageConfig = {
                                     display: 'none',
                                   },
                                 },
-                                'x-uid': 'bmewjcb9996',
+                                'x-uid': 'sqogd3z6o95',
                                 'x-async': false,
                                 'x-index': 1,
                               },
                             },
-                            'x-uid': '6vqo25ezxbr',
+                            'x-uid': 'vcve0j78imw',
                             'x-async': false,
                             'x-index': 2,
                           },
                         },
-                        'x-uid': 'esirxkr0lca',
+                        'x-uid': 'benml5cswa0',
                         'x-async': false,
                         'x-index': 2,
                       },
                     },
-                    'x-uid': 'zcbhgqtrof5',
+                    'x-uid': 'v0bydleh1ni',
                     'x-async': false,
                     'x-index': 1,
                   },
                 },
-                'x-uid': 'tsma8ix1lun',
+                'x-uid': 'rmplhh05qpr',
                 'x-async': false,
                 'x-index': 1,
               },
             },
-            'x-uid': 'q8bpsoqjz1b',
+            'x-uid': 'szfwommojdg',
             'x-async': false,
             'x-index': 1,
           },
         },
-        'x-uid': 'edhta7p0qtf',
+        'x-uid': 'k8t4d8im9lx',
         'x-async': false,
-        'x-index': 1,
       },
     },
-    'x-uid': '1o0p25d72br',
+    'x-uid': 't6726o68agh',
     'x-async': true,
-    'x-index': 1,
   },
 };
 
-test.describe('faker', () => {
-  test('phone', async ({ page, mockPage }) => {
-    await mockPage(phonePageConfig).goto();
+test.describe('mock record', () => {
+  test('email field', async ({ page, mockPage, mockRecords }) => {
+    const nocoPage = await mockPage(phonePageConfig).waitForInit();
+    const records = await mockRecords<{ email: string }>('t_x3mxc1ymorw', 3);
+    await nocoPage.goto();
 
-    await expect(page.getByRole('cell', { name: '1-979-213-9120 x313' })).toBeVisible();
-    await expect(page.getByRole('cell', { name: '(739) 684-3652 x482' })).toBeVisible();
-    await expect(page.getByRole('cell', { name: '669-545-4191' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: records[0].email })).toBeVisible();
+    await expect(page.getByRole('cell', { name: records[1].email })).toBeVisible();
+    await expect(page.getByRole('cell', { name: records[2].email })).toBeVisible();
   });
 });
