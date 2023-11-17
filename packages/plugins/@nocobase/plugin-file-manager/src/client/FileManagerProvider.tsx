@@ -1,12 +1,6 @@
-import {
-  CollectionManagerProvider,
-  PluginManagerContext,
-  registerField,
-  registerTemplate,
-  SchemaComponentOptions,
-} from '@nocobase/client';
+import { CollectionManagerProvider, registerField, registerTemplate, SchemaComponentOptions } from '@nocobase/client';
 import { forEach } from '@nocobase/utils/client';
-import React, { FC, useContext } from 'react';
+import React, { FC } from 'react';
 import * as hooks from './hooks';
 import { UploadActionInitializer } from './initializers';
 import { attachment } from './interfaces/attachment';
@@ -20,21 +14,11 @@ forEach(templates, (template, key: string) => {
 registerField(attachment.group, 'attachment', attachment);
 
 export const FileManagerProvider: FC = (props) => {
-  const ctx = useContext(PluginManagerContext);
-
   return (
-    <PluginManagerContext.Provider
-      value={{
-        components: {
-          ...ctx?.components,
-        },
-      }}
-    >
-      <CollectionManagerProvider interfaces={{ attachment }}>
-        <SchemaComponentOptions scope={hooks} components={{ UploadActionInitializer }}>
-          {props.children}
-        </SchemaComponentOptions>
-      </CollectionManagerProvider>
-    </PluginManagerContext.Provider>
+    <CollectionManagerProvider interfaces={{ attachment }}>
+      <SchemaComponentOptions scope={hooks} components={{ UploadActionInitializer }}>
+        {props.children}
+      </SchemaComponentOptions>
+    </CollectionManagerProvider>
   );
 };
