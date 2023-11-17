@@ -138,9 +138,9 @@ class NocoPage {
       await createCollections(collections);
 
       // 默认为每个 collection 生成 3 条数据
-      await createFakerData(collections);
-      await createFakerData(collections);
-      await createFakerData(collections);
+      for (const collectionName of this.collectionsName) {
+        await createRandomData(collectionName, 3);
+      }
     }
 
     this.uid = await createPage(this.page, {
@@ -170,6 +170,10 @@ class NocoPage {
 
 const _test = base.extend<{
   mockPage: (config?: PageConfig) => NocoPage;
+  mockCollections: <T>(collectionSettings: CollectionSetting[]) => Promise<T>;
+  mockCollection: <T>(collectionSetting: CollectionSetting) => Promise<T>;
+  mockRecord: <T>(collectionName: string, data?: any) => Promise<T>;
+  mockRecords: <T>(collectionName: string, count?: number, data?: any) => Promise<T[]>;
   createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
 }>({
   mockPage: async ({ page }, use) => {
@@ -206,6 +210,51 @@ const _test = base.extend<{
     if (collectionsName.length) {
       await deleteCollections(collectionsName);
     }
+  },
+  mockCollections: async ({ page }, use) => {
+    let collectionsName = [];
+
+    const mockCollections = async (collectionSettings: CollectionSetting[]) => {
+      collectionSettings = omitSomeFields(collectionSettings);
+      collectionsName = collectionSettings.map((item) => item.name);
+      return createCollections(collectionSettings);
+    };
+
+    await use(mockCollections);
+
+    if (collectionsName.length) {
+      await deleteCollections(collectionsName);
+    }
+  },
+  mockCollection: async ({ page }, use) => {
+    let collectionsName = [];
+
+    const mockCollection = async (collectionSetting: CollectionSetting) => {
+      const collectionSettings = omitSomeFields([collectionSetting]);
+      collectionsName = collectionSettings.map((item) => item.name);
+      return createCollections(collectionSettings);
+    };
+
+    await use(mockCollection);
+
+    if (collectionsName.length) {
+      await deleteCollections(collectionsName);
+    }
+  },
+  mockRecords: async ({ page }, use) => {
+    const mockRecords = async (collectionName: string, count = 3, data?: any) => {
+      return createRandomData(collectionName, count, data);
+    };
+
+    await use(mockRecords);
+  },
+  mockRecord: async ({ page }, use) => {
+    const mockRecord = async (collectionName: string, data?: any) => {
+      const result = await createRandomData(collectionName, 1, data);
+      return result[0];
+    };
+
+    await use(mockRecord);
   },
 });
 
@@ -394,6 +443,8 @@ const createCollections = async (collectionSettings: CollectionSetting | Collect
   if (!result.ok()) {
     throw new Error(await result.text());
   }
+
+  return (await result.json()).data;
 };
 
 /**
@@ -429,7 +480,6 @@ const generateFakerData = (collectionSetting: CollectionSetting) => {
 
     if (basicInterfaceToData[field.interface]) {
       result[field.name] = basicInterfaceToData[field.interface]();
-      return;
     }
   });
 
@@ -460,12 +510,40 @@ const createFakerData = async (collectionSettings: CollectionSetting[]) => {
   }
 };
 
+const createRandomData = async (collectionName: string, count = 10, data?: any) => {
+  const api = await request.newContext({
+    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+  });
+
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+
+  const result = await api.post(`/api/${collectionName}:mock?count=${count}`, {
+    headers,
+    data,
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+
+  return (await result.json()).data;
+};
+
 /**
  * 使页面成为可配置态
  */
 export async function enableToConfig(page: Page) {
-  if (!(await page.getByRole('button', { name: 'plus Add menu item' }).isVisible())) {
-    await page.getByRole('button', { name: 'highlight' }).click();
+  try {
+    // 根据是否有 style 判断是否已经是可配置态（因为配置状态的按钮样式是通过 style 属性设置的）
+    const style = await page.getByTestId('ui-editor-button').getAttribute('style', {
+      timeout: 2000,
+    });
+    if (!style) {
+      await page.getByTestId('ui-editor-button').click();
+    }
+  } catch (e) {
+    // ignore
   }
 }
 
