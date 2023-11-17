@@ -136,6 +136,10 @@ class NocoPage {
       this.collectionsName = collections.map((item) => item.name);
 
       await createCollections(collections);
+
+      for (const collectionName of this.collectionsName) {
+        await createRandomData(collectionName, 3);
+      }
     }
 
     this.uid = await createPage(this.page, {
