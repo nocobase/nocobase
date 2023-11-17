@@ -65,6 +65,4 @@ const app = new Application({
   plugins: [MyPlugin, MyPlugin2],
 });
 
-app.use(CSSVariableProvider);
-
 export default app.getRootComponent();

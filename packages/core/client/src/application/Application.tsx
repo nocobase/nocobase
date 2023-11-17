@@ -61,7 +61,7 @@ export class Application {
     ...defaultAppComponents,
     ...schemaInitializerComponents,
   };
-  public pm: PluginManager;
+  public pluginManager: PluginManager;
   public pluginSettingsManager: PluginSettingsManager;
   public devDynamicImport: DevDynamicImport;
   public requirejs: RequireJS;
@@ -73,8 +73,8 @@ export class Application {
   maintained = false;
   maintaining = false;
   error = null;
-  get pluginManager() {
-    return this.pm;
+  get pm() {
+    return this.pluginManager;
   }
 
   constructor(protected options: ApplicationOptions = {}) {
@@ -96,7 +96,7 @@ export class Application {
       renderComponent: this.renderComponent.bind(this),
     });
     this.schemaSettingsManager = new SchemaSettingsManager(options.schemaSettings, this);
-    this.pm = new PluginManager(options.plugins, options.loadRemotePlugins, this);
+    this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
     this.addDefaultProviders();
     this.addReactRouterComponents();
@@ -229,7 +229,7 @@ export class Application {
     return React.createElement(this.getComponent(Component), props);
   }
 
-  addComponent(component: ComponentType, name?: string) {
+  protected addComponent(component: ComponentType, name?: string) {
     const componentName = name || component.displayName || component.name;
     if (!componentName) {
       console.error('Component must have a displayName or pass name as second argument');
