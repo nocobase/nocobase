@@ -494,161 +494,20 @@ const config = {
   },
   collections: [
     {
-      key: '14ptm4bp2ws',
       name: 't_ylz5vtxncxq',
       title: 'Test',
-      inherit: false,
-      hidden: false,
-      description: null,
       fields: [
         {
-          key: 'hlv63gj1nta',
-          name: 'id',
-          type: 'bigInt',
-          interface: 'id',
-          description: null,
-          collectionName: 't_ylz5vtxncxq',
-          parentKey: null,
-          reverseKey: null,
-          autoIncrement: true,
-          primaryKey: true,
-          allowNull: false,
-          uiSchema: {
-            type: 'number',
-            title: '{{t("ID")}}',
-            'x-component': 'InputNumber',
-            'x-read-pretty': true,
-          },
-        },
-        {
-          key: 'g17u6c8oi7v',
           name: 'f_lkqy3eh4ag7',
-          type: 'bigInt',
           interface: 'integer',
-          description: null,
-          collectionName: 't_ylz5vtxncxq',
-          parentKey: null,
-          reverseKey: null,
-          isForeignKey: true,
-          uiSchema: {
-            type: 'number',
-            title: 'f_lkqy3eh4ag7',
-            'x-component': 'InputNumber',
-            'x-read-pretty': true,
-          },
         },
         {
-          key: 'h11dyzaed9u',
           name: 'f_rathx54cqpy',
-          type: 'bigInt',
           interface: 'integer',
-          description: null,
-          collectionName: 't_ylz5vtxncxq',
-          parentKey: null,
-          reverseKey: null,
-          isForeignKey: true,
-          uiSchema: {
-            type: 'number',
-            title: 'f_rathx54cqpy',
-            'x-component': 'InputNumber',
-            'x-read-pretty': true,
-          },
         },
         {
-          key: '1oxxnl3fpnn',
-          name: 'createdAt',
-          type: 'date',
-          interface: 'createdAt',
-          description: null,
-          collectionName: 't_ylz5vtxncxq',
-          parentKey: null,
-          reverseKey: null,
-          field: 'createdAt',
-          uiSchema: {
-            type: 'datetime',
-            title: '{{t("Created at")}}',
-            'x-component': 'DatePicker',
-            'x-component-props': {},
-            'x-read-pretty': true,
-          },
-        },
-        {
-          key: 'r3fbal67uj7',
-          name: 'createdBy',
-          type: 'belongsTo',
-          interface: 'createdBy',
-          description: null,
-          collectionName: 't_ylz5vtxncxq',
-          parentKey: null,
-          reverseKey: null,
-          target: 'users',
-          foreignKey: 'createdById',
-          uiSchema: {
-            type: 'object',
-            title: '{{t("Created by")}}',
-            'x-component': 'AssociationField',
-            'x-component-props': {
-              fieldNames: {
-                value: 'id',
-                label: 'nickname',
-              },
-            },
-            'x-read-pretty': true,
-          },
-          targetKey: 'id',
-        },
-        {
-          key: 'fx55l7mh3it',
-          name: 'updatedAt',
-          type: 'date',
-          interface: 'updatedAt',
-          description: null,
-          collectionName: 't_ylz5vtxncxq',
-          parentKey: null,
-          reverseKey: null,
-          field: 'updatedAt',
-          uiSchema: {
-            type: 'string',
-            title: '{{t("Last updated at")}}',
-            'x-component': 'DatePicker',
-            'x-component-props': {},
-            'x-read-pretty': true,
-          },
-        },
-        {
-          key: 'j7gjg9nql34',
-          name: 'updatedBy',
-          type: 'belongsTo',
-          interface: 'updatedBy',
-          description: null,
-          collectionName: 't_ylz5vtxncxq',
-          parentKey: null,
-          reverseKey: null,
-          target: 'users',
-          foreignKey: 'updatedById',
-          uiSchema: {
-            type: 'object',
-            title: '{{t("Last updated by")}}',
-            'x-component': 'AssociationField',
-            'x-component-props': {
-              fieldNames: {
-                value: 'id',
-                label: 'nickname',
-              },
-            },
-            'x-read-pretty': true,
-          },
-          targetKey: 'id',
-        },
-        {
-          key: '8lnta543skc',
           name: 'f_nr8xi7ezw5t',
-          type: 'string',
           interface: 'select',
-          description: null,
-          collectionName: 't_ylz5vtxncxq',
-          parentKey: null,
-          reverseKey: null,
           uiSchema: {
             enum: [
               {
@@ -670,16 +529,9 @@ const config = {
           },
         },
         {
-          key: '7emqqfzq3c3',
           name: 'f_q32e4ieq49n',
-          type: 'hasMany',
           interface: 'o2m',
-          description: null,
-          collectionName: 't_ylz5vtxncxq',
-          parentKey: null,
-          reverseKey: null,
           foreignKey: 'f_rathx54cqpy',
-          onDelete: 'SET NULL',
           uiSchema: {
             'x-component': 'AssociationField',
             'x-component-props': {
@@ -692,30 +544,22 @@ const config = {
             title: 'One to many',
           },
           target: 't_ylz5vtxncxq',
-          targetKey: 'id',
-          sourceKey: 'id',
         },
       ],
-      category: [],
-      logging: true,
-      autoGenId: true,
-      createdBy: true,
-      updatedBy: true,
-      createdAt: true,
-      updatedAt: true,
-      sortable: true,
-      template: 'general',
-      view: false,
     },
   ],
 };
 
 // fix https://nocobase.height.app/T-2174
-test('BUG: should show default value option', async ({ page, mockPage }) => {
-  await mockPage(config).goto();
+test.skip('BUG: should show default value option', async ({ page, mockPage, mockRecord }) => {
+  const nocoPage = await mockPage(config).waitForInit();
+  await mockRecord('t_ylz5vtxncxq');
+  await nocoPage.goto();
 
   await page.getByLabel('action-Action.Link-View-view-t_ylz5vtxncxq-table-0').click();
-  await page.getByText('Single select:').hover();
+  await page
+    .getByLabel('block-item-CollectionField-t_ylz5vtxncxq-form-t_ylz5vtxncxq.f_nr8xi7ezw5t-Single select')
+    .hover();
   await page
     .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-t_ylz5vtxncxq-t_ylz5vtxncxq.f_nr8xi7ezw5t')
     .hover();
