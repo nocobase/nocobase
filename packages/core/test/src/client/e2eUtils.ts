@@ -6,8 +6,8 @@ import _ from 'lodash';
 export * from '@playwright/test';
 
 interface CollectionSetting {
-  title: string;
   name: string;
+  title?: string;
   /**
    * @default 'general'
    */
@@ -55,10 +55,10 @@ interface CollectionSetting {
   description?: string;
   view?: boolean;
   key?: string;
-  fields: Array<{
-    type: string;
+  fields?: Array<{
     interface: string;
-    name: string;
+    type?: string;
+    name?: string;
     unique?: boolean;
     uiSchema?: {
       type?: string;
@@ -121,13 +121,13 @@ class NocoPage {
   private url: string;
   private uid: string;
   private collectionsName: string[];
-  private waitForInit: Promise<void>;
+  private _waitForInit: Promise<void>;
 
   constructor(
     private page: Page,
     private options?: PageConfig,
   ) {
-    this.waitForInit = this.init();
+    this._waitForInit = this.init();
   }
 
   async init() {
@@ -136,11 +136,6 @@ class NocoPage {
       this.collectionsName = collections.map((item) => item.name);
 
       await createCollections(collections);
-
-      // 默认为每个 collection 生成 3 条数据
-      for (const collectionName of this.collectionsName) {
-        await createRandomData(collectionName, 3);
-      }
     }
 
     this.uid = await createPage(this.page, {
@@ -151,9 +146,14 @@ class NocoPage {
   }
 
   async goto() {
-    await this.waitForInit;
+    await this._waitForInit;
     await this.page.goto(this.url);
     await enableToConfig(this.page);
+  }
+
+  async waitForInit(this: NocoPage) {
+    await this._waitForInit;
+    return this;
   }
 
   async destroy() {
@@ -170,10 +170,10 @@ class NocoPage {
 
 const _test = base.extend<{
   mockPage: (config?: PageConfig) => NocoPage;
-  mockCollections: <T>(collectionSettings: CollectionSetting[]) => Promise<T>;
-  mockCollection: <T>(collectionSetting: CollectionSetting) => Promise<T>;
-  mockRecord: <T>(collectionName: string, data?: any) => Promise<T>;
-  mockRecords: <T>(collectionName: string, count?: number, data?: any) => Promise<T[]>;
+  mockCollections: <T = any>(collectionSettings: CollectionSetting[]) => Promise<T>;
+  mockCollection: <T = any>(collectionSetting: CollectionSetting) => Promise<T>;
+  mockRecord: <T = any>(collectionName: string, data?: any) => Promise<T>;
+  mockRecords: <T = any>(collectionName: string, count?: number, data?: any) => Promise<T[]>;
   createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
 }>({
   mockPage: async ({ page }, use) => {
