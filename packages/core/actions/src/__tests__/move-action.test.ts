@@ -1,9 +1,102 @@
 import { mockServer, MockServer } from './index';
 import { registerActions } from '@nocobase/actions';
 import { Database } from '@nocobase/database';
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+import { waitSecond } from '@nocobase/test';
 
 describe('sort action', () => {
+  describe('associations', () => {
+    let api: MockServer;
+
+    beforeEach(async () => {
+      api = mockServer();
+
+      registerActions(api);
+      api.db.collection({
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          {
+            type: 'hasMany',
+            name: 'posts',
+          },
+          { type: 'sort', name: 'sort' },
+        ],
+      });
+
+      api.db.collection({
+        name: 'posts',
+        fields: [
+          { type: 'string', name: 'title' },
+          { type: 'sort', name: 'sort' },
+          { type: 'belongsTo', name: 'user' },
+        ],
+      });
+
+      await api.db.sync();
+      const UserCollection = api.db.getCollection('users');
+
+      for (let index = 1; index < 5; index++) {
+        await UserCollection.repository.create({
+          values: {
+            name: `u${index}`,
+            posts: [
+              {
+                title: `u${index}p1`,
+              },
+              {
+                title: `u${index}p2`,
+              },
+              {
+                title: `u${index}p3`,
+              },
+            ],
+          },
+        });
+      }
+    });
+
+    afterEach(async () => {
+      return api.destroy();
+    });
+
+    it('should move association item', async () => {
+      const u1 = await api.db.getRepository('users').findOne({
+        filter: {
+          name: 'u1',
+        },
+      });
+
+      await api.agent().resource('users.posts', u1.get('id')).move({
+        sourceId: 1,
+        targetId: 3,
+      });
+
+      const u1Posts = await api
+        .agent()
+        .resource('users.posts', u1.get('id'))
+        .list({
+          sort: ['sort'],
+        });
+
+      expect(u1Posts.body).toMatchObject({
+        rows: [
+          {
+            title: 'u1p2',
+            sort: 1,
+          },
+          {
+            title: 'u1p3',
+            sort: 2,
+          },
+          {
+            title: 'u1p1',
+            sort: 3,
+          },
+        ],
+      });
+    });
+  });
+
   describe('same scope', () => {
     let api: MockServer;
 
@@ -250,7 +343,7 @@ describe('sort action', () => {
 
       const beforeUpdatedAts = await getUpdatedAts();
 
-      await sleep(1000);
+      await waitSecond(1000);
 
       await api.agent().resource('tests').move({
         sourceId: moveItemId,

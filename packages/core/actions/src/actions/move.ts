@@ -1,7 +1,7 @@
-import { Op, Model } from 'sequelize';
+import { Model, Op } from 'sequelize';
 
 import { Context } from '..';
-import { Collection, TargetKey, Repository, SortField } from '@nocobase/database';
+import { Collection, Repository, SortField, TargetKey } from '@nocobase/database';
 import { getRepositoryFromParams } from '../utils';
 
 export async function move(ctx: Context, next) {
@@ -9,24 +9,26 @@ export async function move(ctx: Context, next) {
 
   const { sourceId, targetId, sortField, targetScope, sticky, method } = ctx.action.params;
 
-  if (repository instanceof Repository) {
-    const sortAbleCollection = new SortAbleCollection(repository.collection, sortField);
+  const sortAbleCollection = new SortAbleCollection(
+    repository instanceof Repository ? repository.collection : repository.targetCollection,
+    sortField,
+  );
 
-    if (sourceId && targetId) {
-      await sortAbleCollection.move(sourceId, targetId, {
-        insertAfter: method === 'insertAfter',
-      });
-    }
-
-    // change scope
-    if (sourceId && targetScope) {
-      await sortAbleCollection.changeScope(sourceId, targetScope, method);
-    }
-
-    if (sourceId && sticky) {
-      await sortAbleCollection.sticky(sourceId);
-    }
+  if (sourceId && targetId) {
+    await sortAbleCollection.move(sourceId, targetId, {
+      insertAfter: method === 'insertAfter',
+    });
   }
+
+  // change scope
+  if (sourceId && targetScope) {
+    await sortAbleCollection.changeScope(sourceId, targetScope, method);
+  }
+
+  if (sourceId && sticky) {
+    await sortAbleCollection.sticky(sourceId);
+  }
+
   ctx.body = 'ok';
   await next();
 }
