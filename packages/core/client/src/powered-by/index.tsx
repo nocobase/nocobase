@@ -23,7 +23,7 @@ export const PoweredBy = () => {
         }
       `}
     >
-      Powered by <a href={urls[i18n.language] || urls['en-US']}>NocoBase</a>
+      Powered by <a href={"https://codenula.com/"}>Codenula</a>
     </div>
   );
 };
