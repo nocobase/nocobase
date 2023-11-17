@@ -198,151 +198,24 @@ const config = {
   },
   collections: [
     {
-      key: '2msxqih7erw',
       name: 't_fhdhd0nk7b9',
       title: 'test',
-      inherit: false,
-      hidden: false,
-      description: null,
       fields: [
         {
-          key: 'gdzq595upa9',
-          name: 'id',
-          type: 'bigInt',
-          interface: 'id',
-          description: null,
-          collectionName: 't_fhdhd0nk7b9',
-          parentKey: null,
-          reverseKey: null,
-          autoIncrement: true,
-          primaryKey: true,
-          allowNull: false,
-          uiSchema: {
-            type: 'number',
-            title: '{{t("ID")}}',
-            'x-component': 'InputNumber',
-            'x-read-pretty': true,
-          },
-        },
-        {
-          key: '29a0p3so5dm',
-          name: 'createdAt',
-          type: 'date',
-          interface: 'createdAt',
-          description: null,
-          collectionName: 't_fhdhd0nk7b9',
-          parentKey: null,
-          reverseKey: null,
-          field: 'createdAt',
-          uiSchema: {
-            type: 'datetime',
-            title: '{{t("Created at")}}',
-            'x-component': 'DatePicker',
-            'x-component-props': {},
-            'x-read-pretty': true,
-          },
-        },
-        {
-          key: 'd3v2o9bozd8',
-          name: 'createdBy',
-          type: 'belongsTo',
-          interface: 'createdBy',
-          description: null,
-          collectionName: 't_fhdhd0nk7b9',
-          parentKey: null,
-          reverseKey: null,
-          target: 'users',
-          foreignKey: 'createdById',
-          uiSchema: {
-            type: 'object',
-            title: '{{t("Created by")}}',
-            'x-component': 'AssociationField',
-            'x-component-props': {
-              fieldNames: {
-                value: 'id',
-                label: 'nickname',
-              },
-            },
-            'x-read-pretty': true,
-          },
-          targetKey: 'id',
-        },
-        {
-          key: '9b2y04n3eiw',
-          name: 'updatedAt',
-          type: 'date',
-          interface: 'updatedAt',
-          description: null,
-          collectionName: 't_fhdhd0nk7b9',
-          parentKey: null,
-          reverseKey: null,
-          field: 'updatedAt',
-          uiSchema: {
-            type: 'string',
-            title: '{{t("Last updated at")}}',
-            'x-component': 'DatePicker',
-            'x-component-props': {},
-            'x-read-pretty': true,
-          },
-        },
-        {
-          key: 'o8jej996mnu',
-          name: 'updatedBy',
-          type: 'belongsTo',
-          interface: 'updatedBy',
-          description: null,
-          collectionName: 't_fhdhd0nk7b9',
-          parentKey: null,
-          reverseKey: null,
-          target: 'users',
-          foreignKey: 'updatedById',
-          uiSchema: {
-            type: 'object',
-            title: '{{t("Last updated by")}}',
-            'x-component': 'AssociationField',
-            'x-component-props': {
-              fieldNames: {
-                value: 'id',
-                label: 'nickname',
-              },
-            },
-            'x-read-pretty': true,
-          },
-          targetKey: 'id',
-        },
-        {
-          key: '37cbs72sgdn',
           name: 'f_vbrlno0zej9',
-          type: 'string',
           interface: 'input',
-          description: null,
-          collectionName: 't_fhdhd0nk7b9',
-          parentKey: null,
-          reverseKey: null,
-          uiSchema: {
-            type: 'string',
-            'x-component': 'Input',
-            title: 'name',
-          },
         },
       ],
-      category: [],
-      logging: true,
-      autoGenId: true,
-      createdBy: true,
-      updatedBy: true,
-      createdAt: true,
-      updatedAt: true,
-      sortable: true,
-      template: 'general',
-      view: false,
     },
   ],
 };
 
-test('check table row', async ({ page, mockPage }) => {
-  await mockPage(config).goto();
-  await expect(page.getByText('cur vulpes suppellex')).toBeVisible();
+test('check table row', async ({ page, mockPage, mockRecords }) => {
+  const nocoPage = await mockPage(config).waitForInit();
+  const records = await mockRecords('t_fhdhd0nk7b9', 3);
+  await nocoPage.goto();
+
+  await expect(page.getByText(records[0].f_vbrlno0zej9)).toBeVisible();
 
   await page.getByLabel('table-index-1').hover();
   await page.getByRole('checkbox', { name: 'checkbox' }).click();
@@ -352,8 +225,8 @@ test('check table row', async ({ page, mockPage }) => {
   await expect(page.getByText('Are you sure you want to delete it?')).toBeVisible();
 
   // 点击确认
-  await page.getByText('ok').click();
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
 
   // 确认内容已被删除
-  await expect(page.getByText('cur vulpes suppellex')).not.toBeVisible();
+  await expect(page.getByText(records[0].f_vbrlno0zej9)).not.toBeVisible();
 });
