@@ -70,10 +70,7 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
   };
   const { render: schemaSettingsRender, exists: schemaSettingsExists } = useSchemaSettingsRender(
     fieldSchema['x-settings'] || schemaSettings,
-    {
-      ...fieldSchema['x-settings-props'],
-      ...schemaSettingsProps,
-    },
+    fieldSchema['x-settings-props'],
   );
   const rowCtx = useGridRowContext();
   const ctx = useGridContext();
