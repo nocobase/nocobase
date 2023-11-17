@@ -500,10 +500,24 @@ const config = {
         {
           name: 'f_lkqy3eh4ag7',
           interface: 'integer',
+          isForeignKey: true,
+          uiSchema: {
+            type: 'number',
+            title: 'f_lkqy3eh4ag7',
+            'x-component': 'InputNumber',
+            'x-read-pretty': true,
+          },
         },
         {
           name: 'f_rathx54cqpy',
           interface: 'integer',
+          isForeignKey: true,
+          uiSchema: {
+            type: 'number',
+            title: 'f_rathx54cqpy',
+            'x-component': 'InputNumber',
+            'x-read-pretty': true,
+          },
         },
         {
           name: 'f_nr8xi7ezw5t',
@@ -544,6 +558,8 @@ const config = {
             title: 'One to many',
           },
           target: 't_ylz5vtxncxq',
+          targetKey: 'id',
+          sourceKey: 'id',
         },
       ],
     },
