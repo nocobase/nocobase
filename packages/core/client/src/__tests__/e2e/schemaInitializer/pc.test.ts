@@ -253,8 +253,10 @@ test.describe('Table', () => {
   // TODO: 继承表相关测试
   test.pgOnly('inherit column', async ({ page, mockPage }) => {});
 
-  test('add column action buttons', async ({ page, mockPage }) => {
-    await mockPage(oneEmptyTable).goto();
+  test('add column action buttons', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneEmptyTable).waitForInit();
+    await mockRecord('t_unp4scqamw9');
+    await nocoPage.goto();
 
     // add view & Edit & Delete & Duplicate ------------------------------------------------------------
     await page.getByText('Actions', { exact: true }).hover();
@@ -574,8 +576,10 @@ test.describe('List', () => {
     await expect(page.getByRole('button', { name: 'Refresh' })).not.toBeVisible();
   });
 
-  test('add fields', async ({ page, mockPage }) => {
-    await mockPage(oneEmptyListBlock).goto();
+  test('add fields', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneEmptyListBlock).waitForInit();
+    await mockRecord('general');
+    await nocoPage.goto();
 
     const formItemInitializer = page
       .getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general')
@@ -625,8 +629,10 @@ test.describe('List', () => {
     await expect(page.getByLabel('block-item-Markdown.Void-general-list').first()).toBeVisible();
   });
 
-  test('add item actions', async ({ page, mockPage }) => {
-    await mockPage(oneEmptyListBlock).goto();
+  test('add item actions', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneEmptyListBlock).waitForInit();
+    await mockRecord('general');
+    await nocoPage.goto();
 
     await page.getByLabel('schema-initializer-ActionBar-ListItemActionInitializers-general').first().hover();
     await page.getByRole('menuitem', { name: 'View' }).click();
@@ -658,8 +664,10 @@ test.describe('List', () => {
     await expect(page.getByLabel('action-Action.Link-Delete-destroy-general-list').first()).not.toBeVisible();
   });
 
-  test('add custom action buttons', async ({ page, mockPage }) => {
-    await mockPage(oneEmptyListBlock).goto();
+  test('add custom action buttons', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneEmptyListBlock).waitForInit();
+    await mockRecord('general');
+    await nocoPage.goto();
 
     await page.getByLabel('schema-initializer-ActionBar-ListItemActionInitializers-general').first().hover();
     await page.getByRole('menuitem', { name: 'Customize' }).hover();
@@ -708,8 +716,10 @@ test.describe('Grid Card', () => {
     await expect(page.getByRole('button', { name: 'Refresh' })).not.toBeVisible();
   });
 
-  test('add item fields', async ({ page, mockPage }) => {
-    await mockPage(oneEmptyGridCardBlock).goto();
+  test('add item fields', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneEmptyGridCardBlock).waitForInit();
+    await mockRecord('general');
+    await nocoPage.goto();
 
     const formItemInitializer = page
       .getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general')
@@ -764,8 +774,10 @@ test.describe('Grid Card', () => {
 
   test.pgOnly('add inherit fields', async ({ page, mockPage }) => {});
 
-  test('add item actions', async ({ page, mockPage }) => {
-    await mockPage(oneEmptyGridCardBlock).goto();
+  test('add item actions', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneEmptyGridCardBlock).waitForInit();
+    await mockRecord('general');
+    await nocoPage.goto();
 
     await page.getByLabel('schema-initializer-ActionBar-GridCardItemActionInitializers-general').first().hover();
     await page.getByRole('menuitem', { name: 'View' }).click();
@@ -797,8 +809,10 @@ test.describe('Grid Card', () => {
     await expect(page.getByLabel('action-Action.Link-Delete-destroy-general-grid-card').first()).not.toBeVisible();
   });
 
-  test('add item custom action buttons', async ({ page, mockPage }) => {
-    await mockPage(oneEmptyGridCardBlock).goto();
+  test('add item custom action buttons', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneEmptyGridCardBlock).waitForInit();
+    await mockRecord('general');
+    await nocoPage.goto();
 
     await page.getByLabel('schema-initializer-ActionBar-GridCardItemActionInitializers-general').first().hover();
     await page.getByRole('menuitem', { name: 'Customize' }).hover();
@@ -980,8 +994,10 @@ test.describe('Actions with dialog', () => {
     await expect(page.getByLabel('block-item-Markdown.Void-general-markdown')).toBeVisible();
   });
 
-  test('view & edit & popup', async ({ page, mockPage }) => {
-    await mockPage(oneEmptyTableBlockWithActions).goto();
+  test('view & edit & popup', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneEmptyTableBlockWithActions).waitForInit();
+    await mockRecord('general');
+    await nocoPage.goto();
 
     // open dialog
     await page.getByLabel('action-Action.Link-View-view-general-table-0').click();

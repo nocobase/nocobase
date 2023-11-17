@@ -551,7 +551,7 @@ const config = {
 };
 
 // fix https://nocobase.height.app/T-2174
-test.skip('BUG: should show default value option', async ({ page, mockPage, mockRecord }) => {
+test('BUG: should show default value option', async ({ page, mockPage, mockRecord }) => {
   const nocoPage = await mockPage(config).waitForInit();
   await mockRecord('t_ylz5vtxncxq');
   await nocoPage.goto();
