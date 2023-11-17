@@ -21,6 +21,8 @@ export default defineConfig({
   // workers: process.env.CI ? 1 : undefined,
   workers: 1,
 
+  maxFailures: 1,
+
   // Reporter to use
   reporter: process.env.PLAYWRIGHT_SKIP_REPORTER
     ? undefined
