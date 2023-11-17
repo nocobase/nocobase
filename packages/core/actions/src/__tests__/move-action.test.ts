@@ -394,7 +394,7 @@ describe('sort action', () => {
       });
 
       const beforeUpdated = t1.get('updatedAt');
-      await sleep(1000);
+      await waitSecond(1000);
 
       await api
         .agent()
