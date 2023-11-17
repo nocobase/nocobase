@@ -129,6 +129,14 @@ export class RouterManager {
     this.routes[name] = route;
   }
 
+  get(name: string) {
+    return this.routes[name];
+  }
+
+  has(name: string) {
+    return !!this.get(name);
+  }
+
   remove(name: string) {
     delete this.routes[name];
   }
