@@ -43,11 +43,27 @@ association 示例
 
 ## RecordProvider
 
+Record
+
+```ts
+class Record {
+  protected current = {};
+  protected parent?: Record;
+  public isNew = false;
+  constructor(options = {}) {
+    const { current, parent, isNew } = options;
+    this.current = current || {};
+    this.parent = parent;
+    this.isNew = isNew;
+  }
+}
+```
+
 a:list（**list 外层不套空 RecordPicker**）
 
 ```jsx | pure
 {list.map((item) => {
-  const record = new Record({ collection, data: item, exists: true });
+  const record = new Record({ current: item });
   return <RecordProvider record={record}></RecordProvider>
 })}
 ```
@@ -55,14 +71,14 @@ a:list（**list 外层不套空 RecordPicker**）
 a:get(view、edit)
 
 ```jsx | pure
-const record = new Record({ collection, data: item, exists: true });
+const record = new Record({ current: item });
 <RecordProvider record={item}></RecordProvider>
 ```
 
 a:create
 
 ```jsx | pure
-const record = new Record({ collection, data: {}, exists: false });
+const record = new Record({ current, isNew: true });
 <RecordProvider record={record}></RecordProvider>
 ```
 
@@ -72,9 +88,7 @@ a.b:list
 <RecordProvider record={recordA}>
   {list.map((item) => {
     const recordB = new Record({
-      collection: collectionB,
-      data: item,
-      exists: true,
+      current: item,
     });
     return <RecordProvider record={recordB}></RecordProvider>
   })}
@@ -85,15 +99,15 @@ a.b:get
 
 ```jsx | pure
 const recordA = new Record({
-  collection: collectionA,
-  data: itemA,
-  exists: true,
+  current: itemA,
 });
 const recordB = new Record({
-  collection: collectionB,
-  data: itemB,
-  exists: true,
+  current: itemB,
+  parent: recordA,
 });
+// 或者
+recordB.setParent(recordA);
+
 <RecordProvider record={recordA}>
   <RecordProvider record={recordB}></RecordProvider>
 </RecordProvider>
@@ -103,14 +117,11 @@ a.b:create
 
 ```jsx | pure
 const recordA = new Record({
-  collection: collectionA,
-  data: itemA,
-  exists: true,
+  current: itemA,
 });
 const recordB = new Record({
-  collection: collectionB,
-  data: {},
-  exists: false,
+  isNew: true,
+  parent: recordA,
 });
 <RecordProvider record={recordA}>
   <RecordProvider record={recordB}></RecordProvider>
