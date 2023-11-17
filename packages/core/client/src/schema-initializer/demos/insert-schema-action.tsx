@@ -53,12 +53,11 @@ const addActionInitializer = new SchemaInitializer({
 });
 
 const Root = () => {
-  const app = useApp();
   return (
     <div>
       <SchemaComponentProvider designable>
         <SchemaComponent
-          components={{ ActionBar, Action, ActionInitializer, ...app.components }}
+          components={{ ActionBar, Action, ActionInitializer }}
           schema={{
             type: 'void',
             name: 'page',
