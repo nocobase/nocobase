@@ -431,16 +431,7 @@ function useSchemaSettingsRender(
 const MyDesigner = (props) => {
   const { modalTip } = props;
 
-  const { dn } = useDesignable();
-  const field = useField();
-  const fieldSchema = useFieldSchema();
-
-  const { render, exists } = useSchemaSettingsRender(fieldSchema['x-settings'], {
-    ...fieldSchema['x-settings-props']
-    dn,
-    field,
-    modalTip,
-  });
+  const { render, exists } = useSchemaSettingsRender(fieldSchema['x-settings'], fieldSchema['x-settings-props']);
 
   return <div>{render()}</div>
 }
