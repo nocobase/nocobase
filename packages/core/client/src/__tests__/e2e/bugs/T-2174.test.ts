@@ -557,7 +557,7 @@ test('BUG: should show default value option', async ({ page, mockPage, mockRecor
   await nocoPage.goto();
 
   await page.getByLabel('action-Action.Link-View-view-t_ylz5vtxncxq-table-0').click();
-  await page.getByText('Single select:').hover();
+  await page.getByTestId('select-single').getByLabel('Search').hover();
   await page
     .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-t_ylz5vtxncxq-t_ylz5vtxncxq.f_nr8xi7ezw5t')
     .hover();
