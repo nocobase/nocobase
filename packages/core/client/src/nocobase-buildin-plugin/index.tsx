@@ -9,7 +9,6 @@ import { Application } from '../application';
 import { Plugin } from '../application/Plugin';
 import { SigninPage, SigninPageExtensionPlugin, SignupPage } from '../auth';
 import { BlockSchemaComponentPlugin } from '../block-provider';
-import CSSVariableProvider from '../css-variable/CSSVariableProvider';
 import { RemoteDocumentTitlePlugin } from '../document-title';
 import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
 import { PinnedListPlugin } from '../plugin-manager';
@@ -228,7 +227,6 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.app.use(CurrentUserProvider);
     this.app.use(GlobalThemeProvider);
     this.app.use(AntdAppProvider);
-    this.app.use(CSSVariableProvider);
     this.app.use(CurrentUserSettingsMenuProvider);
 
     this.app.schemaInitializerManager.add(menuItemInitializer);

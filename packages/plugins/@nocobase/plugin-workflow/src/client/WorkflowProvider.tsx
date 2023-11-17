@@ -1,9 +1,4 @@
-import {
-  CollectionManagerContext,
-  PluginManagerContext,
-  SchemaComponent,
-  SchemaComponentContext,
-} from '@nocobase/client';
+import { CollectionManagerContext, SchemaComponent, SchemaComponentContext } from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useContext } from 'react';
 import { ExecutionLink } from './ExecutionLink';
@@ -48,27 +43,18 @@ export function WorkflowPane() {
 }
 
 export const WorkflowProvider = (props) => {
-  const pmCtx = useContext(PluginManagerContext);
   const cmCtx = useContext(CollectionManagerContext);
   return (
-    <PluginManagerContext.Provider
+    <CollectionManagerContext.Provider
       value={{
-        components: {
-          ...pmCtx?.components,
+        ...cmCtx,
+        interfaces: {
+          ...cmCtx.interfaces,
+          expression: expressionField,
         },
       }}
     >
-      <CollectionManagerContext.Provider
-        value={{
-          ...cmCtx,
-          interfaces: {
-            ...cmCtx.interfaces,
-            expression: expressionField,
-          },
-        }}
-      >
-        <WorkflowContext.Provider value={{ triggers, instructions }}>{props.children}</WorkflowContext.Provider>
-      </CollectionManagerContext.Provider>
-    </PluginManagerContext.Provider>
+      <WorkflowContext.Provider value={{ triggers, instructions }}>{props.children}</WorkflowContext.Provider>
+    </CollectionManagerContext.Provider>
   );
 };

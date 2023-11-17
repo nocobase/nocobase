@@ -431,16 +431,7 @@ function useSchemaSettingsRender(
 const MyDesigner = (props) => {
   const { modalTip } = props;
 
-  const { dn } = useDesignable();
-  const field = useField();
-  const fieldSchema = useFieldSchema();
-
-  const { render, exists } = useSchemaSettingsRender(fieldSchema['x-settings'], {
-    ...fieldSchema['x-settings-props']
-    dn,
-    field,
-    modalTip,
-  });
+  const { render, exists } = useSchemaSettingsRender(fieldSchema['x-settings'], fieldSchema['x-settings-props']);
 
   return <div>{render()}</div>
 }
@@ -522,3 +513,7 @@ NocoBase 提供了几个内置的组件，可以直接使用。
 ### Schema
 
 <code src="./demos/schema-basic.tsx"></code>
+
+### 动态显示、隐藏
+
+### Designer 上下文

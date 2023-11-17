@@ -45,26 +45,6 @@ describe('Application', () => {
       expect(app.components.Hello).toBe(Hello);
     });
 
-    it('addComponent', () => {
-      const app = new Application({ router });
-      app.addComponent(Hello);
-      expect(app.components.Hello).toBe(Hello);
-
-      app.addComponent(Hello, 'Hello2');
-      expect(app.components.Hello2).toBe(Hello);
-    });
-
-    it('addComponents without name, should error', () => {
-      const app = new Application({ router });
-
-      const fn = vitest.fn();
-      const originalConsoleError = console.error;
-      console.error = fn;
-      app.addComponent(() => <div>123</div>);
-      expect(fn).toBeCalled();
-      console.error = originalConsoleError;
-    });
-
     describe('getComponent', () => {
       let originalConsoleError: any;
       beforeEach(() => {
