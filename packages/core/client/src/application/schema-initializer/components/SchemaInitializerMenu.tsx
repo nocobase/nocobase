@@ -41,6 +41,7 @@ export const SchemaInitializerInternalMenu: FC<MenuProps> = (props) => {
   return (
     <SchemaInitializerMenuProvider>
       <Menu
+        selectable={false}
         expandIcon={<RightOutlined style={{ fontSize: token.fontSizeSM, color: token.colorTextDescription }} />}
         rootClassName={css`
           box-shadow: none !important;
