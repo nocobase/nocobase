@@ -13,6 +13,8 @@ import { PluginManager, PluginType } from './PluginManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
 import { PluginSettingsManager } from './PluginSettingsManager';
+import { CSSVariableProvider } from '../css-variable';
+import { SchemaComponentProvider } from '../schema-component';
 
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
@@ -115,6 +117,8 @@ export class Application {
   private addDefaultProviders() {
     this.use(APIClientProvider, { apiClient: this.apiClient });
     this.use(I18nextProvider, { i18n: this.i18n });
+    this.use(CSSVariableProvider);
+    this.use(SchemaComponentProvider, { components: this.components, scope: this.scopes });
   }
 
   private addReactRouterComponents() {

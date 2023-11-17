@@ -20,8 +20,8 @@ describe('collection factory', function () {
       static type = 'child';
     }
 
-    db.collectionFactory.registerCollectionType(ChildCollection, (options) => {
-      return options.child == true;
+    db.collectionFactory.registerCollectionType(ChildCollection, {
+      condition: (options) => options.child,
     });
 
     const collection = db.collectionFactory.createCollection({
@@ -36,5 +36,28 @@ describe('collection factory', function () {
     });
 
     expect(collection2).toBeInstanceOf(Collection);
+  });
+
+  it('should register collection type with sync logic', async () => {
+    class ChildCollection extends Collection {
+      static type = 'child';
+    }
+
+    const fn = jest.fn();
+
+    db.collectionFactory.registerCollectionType(ChildCollection, {
+      condition: (options) => options.child,
+      onSync(model, options) {
+        fn();
+      },
+    });
+
+    const collection = db.collectionFactory.createCollection({
+      name: 'child',
+      child: true,
+    });
+
+    await collection.sync();
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 });
