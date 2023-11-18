@@ -1,23 +1,31 @@
 import { mockServer, MockServer } from './index';
 import { registerActions } from '@nocobase/actions';
-import { Database } from '@nocobase/database';
+import { Collection, Database } from '@nocobase/database';
 import { waitSecond } from '@nocobase/test';
 
 describe('sort action', () => {
   describe('associations', () => {
     let api: MockServer;
 
+    let UserCollection: Collection;
+
     beforeEach(async () => {
       api = mockServer();
 
       registerActions(api);
-      api.db.collection({
+
+      UserCollection = api.db.collection({
         name: 'users',
         fields: [
           { type: 'string', name: 'name' },
           {
             type: 'hasMany',
             name: 'posts',
+          },
+          {
+            type: 'hasMany',
+            name: 'posts2',
+            sortable: true,
           },
           { type: 'sort', name: 'sort' },
         ],
@@ -33,7 +41,6 @@ describe('sort action', () => {
       });
 
       await api.db.sync();
-      const UserCollection = api.db.getCollection('users');
 
       for (let index = 1; index < 5; index++) {
         await UserCollection.repository.create({
@@ -57,6 +64,21 @@ describe('sort action', () => {
 
     afterEach(async () => {
       return api.destroy();
+    });
+
+    it('should not move association items when association not sortable', async () => {
+      const u1 = await api.db.getRepository('users').findOne({
+        filter: {
+          name: 'u1',
+        },
+      });
+
+      const response = await api.agent().resource('users.posts', u1.get('id')).move({
+        sourceId: 1,
+        targetId: 3,
+      });
+
+      expect(response.status).not.toEqual(200);
     });
 
     it('should move association item', async () => {

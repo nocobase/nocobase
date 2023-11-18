@@ -1,13 +1,33 @@
 import { Model, Op } from 'sequelize';
 
 import { Context } from '..';
-import { Collection, Repository, SortField, TargetKey } from '@nocobase/database';
+import {
+  BelongsToManyRepository,
+  Collection,
+  HasManyRepository,
+  Repository,
+  SortField,
+  TargetKey,
+} from '@nocobase/database';
 import { getRepositoryFromParams } from '../utils';
 
 export async function move(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
 
   const { sourceId, targetId, sortField, targetScope, sticky, method } = ctx.action.params;
+
+  if (repository instanceof BelongsToManyRepository) {
+    throw new Error("Sorting association as 'belongs-to-many' type is not supported.");
+  }
+
+  if (repository instanceof HasManyRepository) {
+    const hasManyField = repository.sourceCollection.getField(repository.associationName);
+    if (!hasManyField.options.sortable) {
+      throw new Error(
+        `association ${hasManyField.options.name} in ${repository.sourceCollection.name} is not sortable`,
+      );
+    }
+  }
 
   const sortAbleCollection = new SortAbleCollection(
     repository instanceof Repository ? repository.collection : repository.targetCollection,
