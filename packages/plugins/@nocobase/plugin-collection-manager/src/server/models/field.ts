@@ -52,7 +52,14 @@ export class FieldModel extends MagicAttributeModel {
           },
         );
 
-        await collection.sync();
+        await collection.sync({
+          force: false,
+          alter: {
+            drop: false,
+          },
+          // @ts-ignore
+          transaction,
+        });
       }
     }
 
