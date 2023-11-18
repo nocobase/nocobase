@@ -153,7 +153,7 @@ export class CollectionManagerPlugin extends Plugin {
         }
       }
       // todo: 目前只支持一对多
-      if (model.get('sortable')) {
+      if (model.get('sortable') && model.get('type') === 'hasMany') {
         model.set('sortBy', model.get('foreignKey') + 'Sort');
       }
     });
@@ -185,7 +185,7 @@ export class CollectionManagerPlugin extends Plugin {
         await model.syncReferenceCheckOption({ transaction });
       }
 
-      if (model.get('sortable') && model.get('sortBy')) {
+      if (model.get('type') === 'hasMany' && model.get('sortable') && model.get('sortBy')) {
         await model.syncSortByField({ transaction });
       }
     });
