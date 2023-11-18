@@ -81,9 +81,9 @@ export const TableBlockProvider = (props) => {
   const record = useRecord();
 
   const collection = getCollection(props.collection);
-  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
+  const { treeTable, dragSortBy } = fieldSchema?.['x-decorator-props'] || {};
   if (props.dragSort) {
-    params['sort'] = ['sort'];
+    params['sort'] = dragSortBy || ['sort'];
   }
   let childrenColumnName = 'children';
   if (collection?.tree && treeTable !== false) {

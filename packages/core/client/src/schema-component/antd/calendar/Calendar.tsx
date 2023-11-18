@@ -2,12 +2,12 @@ import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
 import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
 import { parseExpression } from 'cron-parser';
-import { eq } from 'date-arithmetic';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import get from 'lodash/get';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Calendar as BigCalendar, View, dayjsLocalizer } from 'react-big-calendar';
+import * as dates from 'react-big-calendar/lib/utils/dates';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider } from '../../../';
 import { i18n } from '../../../i18n';
@@ -259,10 +259,10 @@ export const Calendar: any = observer(
             agendaDateFormat: 'M-DD',
             dayHeaderFormat: 'YYYY-M-DD',
             dayRangeHeaderFormat: ({ start, end }, culture, local) => {
-              if (eq(start, end, 'month')) {
-                return local.format(start, 'Y-M', culture);
+              if (dates.eq(start, end, 'month')) {
+                return local.format(start, 'YYYY-M', culture);
               }
-              return `${local.format(start, 'Y-M', culture)} - ${local.format(end, 'Y-M', culture)}`;
+              return `${local.format(start, 'YYYY-M', culture)} - ${local.format(end, 'YYYY-M', culture)}`;
             },
           }}
           components={components}
