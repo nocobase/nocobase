@@ -17,16 +17,66 @@ describe('hasMany field options', () => {
       values: {
         name: 'tests',
       },
+      context: {},
     });
+
     await Collection.repository.create({
       values: {
         name: 'foos',
       },
+      context: {},
     });
   });
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should create fields with sortable option', async () => {
+    const field = await Field.repository.create({
+      values: {
+        type: 'hasMany',
+        collectionName: 'tests',
+        target: 'foos',
+        sortable: true,
+        foreignKey: 'test_id',
+      },
+      context: {},
+    });
+
+    await field.reload();
+    expect(field.get('sortable')).toBe(true);
+    expect(field.get('sortBy')).toBe('test_idSort');
+  });
+
+  it('should update field with sortable option', async () => {
+    const field = await Field.repository.create({
+      values: {
+        type: 'hasMany',
+        collectionName: 'tests',
+        target: 'foos',
+        foreignKey: 'test_id',
+      },
+      context: {},
+    });
+
+    await field.reload();
+
+    expect(field.get('sortBy')).toBe(undefined);
+
+    await Field.repository.update({
+      values: {
+        sortable: true,
+      },
+      filter: {
+        key: field.get('key'),
+      },
+      context: {},
+    });
+
+    await field.reload();
+
+    expect(field.get('sortBy')).toBe('test_idSort');
   });
 
   it('should generate the foreignKey randomly', async () => {

@@ -45,6 +45,19 @@ export class FieldModel extends MagicAttributeModel {
       transaction,
     });
 
+    if (field.type == 'hasMany') {
+      if (this.get('sortBy') !== field.options.sortBy) {
+        await this.update(
+          {
+            sortBy: field.options.sortBy,
+          },
+          {
+            hooks: false,
+            transaction,
+          },
+        );
+      }
+    }
     return field;
   }
 
