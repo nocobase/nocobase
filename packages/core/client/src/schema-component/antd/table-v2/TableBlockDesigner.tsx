@@ -99,13 +99,14 @@ export const TableBlockDesigner = () => {
             checked={field.decoratorProps.dragSort}
             onChange={async (dragSort) => {
               if (dragSort && collectionField) {
-                await api.resource('collections.fields', collectionField.collectionName).update({
+                const { data } = await api.resource('collections.fields', collectionField.collectionName).update({
                   filterByTk: collectionField.name,
                   values: {
                     sortable: true,
                   },
                 });
-                fieldSchema['x-decorator-props'].dragSortBy = `${collectionField.foreignKey}_sort`;
+                const sortBy = data?.data?.[0]?.sortBy;
+                fieldSchema['x-decorator-props'].dragSortBy = sortBy;
               }
               field.decoratorProps.dragSort = dragSort;
               fieldSchema['x-decorator-props'].dragSort = dragSort;
