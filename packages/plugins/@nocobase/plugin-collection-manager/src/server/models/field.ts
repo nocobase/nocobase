@@ -56,8 +56,11 @@ export class FieldModel extends MagicAttributeModel {
             transaction,
           },
         );
+
+        await collection.sync();
       }
     }
+
     return field;
   }
 

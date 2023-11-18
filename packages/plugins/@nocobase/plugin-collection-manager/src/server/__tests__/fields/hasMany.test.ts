@@ -77,6 +77,9 @@ describe('hasMany field options', () => {
     await field.reload();
 
     expect(field.get('sortBy')).toBe('test_idSort');
+    const collection = db.getCollection('foos');
+    const columns = await db.sequelize.getQueryInterface().describeTable(collection.getTableNameWithSchema());
+    expect(columns).toHaveProperty(collection.model.rawAttributes['test_idSort'].field);
   });
 
   it('should generate the foreignKey randomly', async () => {
