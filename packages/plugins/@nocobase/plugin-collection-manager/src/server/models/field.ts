@@ -40,35 +40,26 @@ export class FieldModel extends MagicAttributeModel {
       return collection.setField(name, options);
     })();
 
-    if (field.type == 'hasMany') {
-      if (this.get('sortBy') !== field.options.sortBy) {
-        await this.update(
-          {
-            sortBy: field.options.sortBy,
-          },
-          {
-            hooks: false,
-            transaction,
-          },
-        );
-
-        await collection.sync({
-          force: false,
-          alter: {
-            drop: false,
-          },
-          // @ts-ignore
-          transaction,
-        });
-      }
-    }
-
     await this.db.emitAsync('field:loaded', {
       fieldKey: this.get('key'),
       transaction,
     });
 
     return field;
+  }
+
+  async syncSortByField(options: Transactionable) {
+    const collectionName = this.get('collectionName');
+    const collection = this.db.getCollection(collectionName);
+    await this.load(options);
+    await collection.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+      // @ts-ignore
+      transaction: options.transaction,
+    });
   }
 
   async migrate({ isNew, ...options }: MigrateOptions = {}) {
