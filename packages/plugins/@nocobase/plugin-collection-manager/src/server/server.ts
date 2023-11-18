@@ -13,12 +13,12 @@ import {
   beforeDestroyForeignKey,
   beforeInitOptions,
 } from './hooks';
+import { beforeCreateForValidateField } from './hooks/beforeCreateForValidateField';
 import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
-import viewResourcer from './resourcers/views';
 import sqlResourcer from './resourcers/sql';
-import { beforeCreateForValidateField } from './hooks/beforeCreateForValidateField';
+import viewResourcer from './resourcers/views';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -152,6 +152,10 @@ export class CollectionManagerPlugin extends Plugin {
           throw new Error('cant update field without a reverseField key');
         }
       }
+      // todo: 目前只支持一对多
+      if (model.get('sortable') && model.get('type') === 'hasMany') {
+        model.set('sortBy', model.get('foreignKey') + 'Sort');
+      }
     });
 
     this.app.db.on('fields.afterUpdate', async (model: FieldModel, { context, transaction }) => {
@@ -179,6 +183,10 @@ export class CollectionManagerPlugin extends Plugin {
 
       if (prevOnDelete != currentOnDelete) {
         await model.syncReferenceCheckOption({ transaction });
+      }
+
+      if (model.get('type') === 'hasMany' && model.get('sortable') && model.get('sortBy')) {
+        await model.syncSortByField({ transaction });
       }
     });
 
