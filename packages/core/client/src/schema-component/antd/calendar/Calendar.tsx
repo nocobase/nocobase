@@ -2,12 +2,12 @@ import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
 import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
 import { parseExpression } from 'cron-parser';
-import { eq } from 'date-arithmetic';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import get from 'lodash/get';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Calendar as BigCalendar, View, dayjsLocalizer } from 'react-big-calendar';
+import * as dates from 'react-big-calendar/lib/utils/dates';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider } from '../../../';
 import { i18n } from '../../../i18n';
@@ -59,12 +59,20 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
       const intervalTime = end.diff(start, 'millisecond', true);
 
       const dateM = dayjs(date);
-      const startDate = dateM.clone().startOf('month');
-      const endDate = startDate.clone().endOf('month');
+      let startDate = dateM.clone().startOf('month');
+      let endDate = startDate.clone().endOf('month');
+
+      /**
+       * view === month 时，会显示当月日程
+       * 但这个日历一般情况下需要展示 6w * 7d 的日程，总共 42 天
+       * 假设 10.1 号是星期六，我们需要将日程的开始时间调整为这一周的星期一，也就是 9.25 号
+       * 而结束时间需要调整为 10.31 号这一周的星期日，也就是 10.5 号
+       */
       if (view === 'month') {
-        startDate.startOf('week');
-        endDate.endOf('week');
+        startDate = startDate.startOf('week');
+        endDate = endDate.endOf('week');
       }
+
       const push = (eventStart: Dayjs = start.clone()) => {
         // 必须在这个月的开始时间和结束时间，且在日程的开始时间之后
         if (eventStart.isBefore(start) || !eventStart.isBetween(startDate, endDate)) {
@@ -251,10 +259,10 @@ export const Calendar: any = observer(
             agendaDateFormat: 'M-DD',
             dayHeaderFormat: 'YYYY-M-DD',
             dayRangeHeaderFormat: ({ start, end }, culture, local) => {
-              if (eq(start, end, 'month')) {
-                return local.format(start, 'Y-M', culture);
+              if (dates.eq(start, end, 'month')) {
+                return local.format(start, 'YYYY-M', culture);
               }
-              return `${local.format(start, 'Y-M', culture)} - ${local.format(end, 'Y-M', culture)}`;
+              return `${local.format(start, 'YYYY-M', culture)} - ${local.format(end, 'YYYY-M', culture)}`;
             },
           }}
           components={components}

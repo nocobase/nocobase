@@ -19,7 +19,7 @@ import {
   Space,
   Switch,
 } from 'antd';
-import _, { cloneDeep } from 'lodash';
+import _, { cloneDeep, get, set } from 'lodash';
 import React, {
   ReactNode,
   createContext,
@@ -55,7 +55,6 @@ import {
   useActionContext,
   useBlockRequestContext,
   useCollection,
-  useCollectionFilterOptions,
   useCollectionManager,
   useCompile,
   useDesignable,
@@ -72,6 +71,7 @@ import {
   updateFilterTargets,
   useFormActiveFields,
 } from '../block-provider/hooks';
+import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks';
 import {
   FilterBlockType,
   getSupportFieldsByAssociation,
@@ -133,7 +133,7 @@ interface ModalItemProps {
   title: string;
   onSubmit: (values: any) => void;
   initialValues?: any;
-  schema?: ISchema;
+  schema?: ISchema | (() => ISchema);
   modalTip?: string;
   components?: any;
   hidden?: boolean;
@@ -725,7 +725,6 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
           });
           dn.refresh();
         }}
-        onClick={(e) => e.stopPropagation()}
         onMouseEnter={onHover}
         onMouseLeave={onLeave}
       />
@@ -750,11 +749,11 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
 };
 
 SchemaSettings.SelectItem = function SelectItem(props) {
-  const { title, name, options, value, onChange, onClick, ...others } = props;
+  const { title, name, options, value, onChange, ...others } = props;
 
   return (
     <SchemaSettings.Item name={name} title={title} role="none" aria-label="" {...others}>
-      <SelectWithTitle {...{ name, title, defaultValue: value, onChange, options, onClick }} />
+      <SelectWithTitle {...{ name, title, defaultValue: value, onChange, options }} />
     </SchemaSettings.Item>
   );
 };
@@ -937,7 +936,6 @@ SchemaSettings.ModalItem = function ModalItem(props: ModalItemProps) {
     components,
     scope,
     effects,
-    schema,
     onSubmit,
     asyncGetInitialValues,
     initialValues,
@@ -957,10 +955,11 @@ SchemaSettings.ModalItem = function ModalItem(props: ModalItemProps) {
   }
   return (
     <SchemaSettings.Item
-      title={schema.title || title}
+      title={title}
       {...others}
       onClick={async () => {
         const values = asyncGetInitialValues ? await asyncGetInitialValues() : initialValues;
+        const schema = _.isFunction(props.schema) ? props.schema() : props.schema;
         FormDialog(
           { title: schema.title || title, width },
           () => {
@@ -1059,17 +1058,56 @@ SchemaSettings.BlockTitleItem = function BlockTitleItem() {
 };
 
 SchemaSettings.DefaultSortingRules = function DefaultSortingRules(props) {
-  const { sort, sortFields, onSubmit } = props;
+  const { path = 'x-component-props.params.sort' } = props;
   const { t } = useTranslation();
+  const { dn } = useDesignable();
+
+  const fieldSchema = useFieldSchema();
+  const field = useField();
+  const title = props.title || t('Set default sorting rules');
+  const { name } = useCollection();
+  const defaultSort = get(fieldSchema, path) || [];
+  const sort = defaultSort?.map((item: string) => {
+    return item.startsWith('-')
+      ? {
+          field: item.substring(1),
+          direction: 'desc',
+        }
+      : {
+          field: item,
+          direction: 'asc',
+        };
+  });
+  const sortFields = useSortFields(props.name || name);
+
+  const onSubmit = async ({ sort }) => {
+    if (props?.onSubmit) {
+      return props.onSubmit({ sort });
+    }
+    const value = sort.map((item) => {
+      return item.direction === 'desc' ? `-${item.field}` : item.field;
+    });
+    set(
+      field,
+      path.replace('x-component-props', 'componentProps').replace('x-decorator-props', 'decoratorProps'),
+      value,
+    );
+
+    set(fieldSchema, path, value);
+    await dn.emit('patch', {
+      schema: fieldSchema,
+    });
+    return props.onSubmitAfter?.();
+  };
 
   return (
     <SchemaSettings.ModalItem
-      title={t('Set default sorting rules')}
+      title={title}
       components={{ ArrayItems }}
       schema={
         {
           type: 'object',
-          title: t('Set default sorting rules'),
+          title,
           properties: {
             sort: {
               type: 'array',
@@ -1546,6 +1584,7 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchem
   const { t } = useTranslation();
   const actionCtx = useActionContext();
   let targetField;
+
   const { getField } = useCollection();
   const { getCollectionJoinField, getCollectionFields, getAllCollectionsInheritChain } = useCollectionManager();
   const variables = useVariables();
@@ -1553,17 +1592,21 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchem
   const collection = useCollection();
   const record = useRecord();
   const { form } = useFormBlockContext();
-  const currentFormFields = useCollectionFilterOptions(collection);
+  const { getFields } = useCollectionFilterOptionsV2(collection);
   const { isInSubForm, isInSubTable } = useFlag() || {};
 
   const { name } = collection;
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const collectionField = useMemo(
+    () => getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']),
+    [fieldSchema, getCollectionJoinField, getField],
+  );
   const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
   if (collectionField?.target) {
     targetField = getCollectionJoinField(
       `${collectionField.target}.${fieldSchema['x-component-props']?.fieldNames?.label || 'id'}`,
     );
   }
+
   const parentFieldSchema = collectionField?.interface === 'm2o' && findParentFieldSchema(fieldSchema);
   const parentCollectionField = parentFieldSchema && getCollectionJoinField(parentFieldSchema?.['x-collection-field']);
   const tableCtx = useTableBlockContext();
@@ -1580,123 +1623,147 @@ SchemaSettings.DefaultValue = function DefaultValueConfigure(props: { fieldSchem
       // fix https://nocobase.height.app/T-1355
       // 工作流人工节点的 `自定义表单` 区块，与其它表单区块不同，根据它的数据表名称，获取到的字段列表为空，所以需要在这里特殊处理一下
       if (!fields?.length && currentForm) {
-        currentForm.children = formatVariableScop(currentFormFields);
+        currentForm.children = formatVariableScop(getFields());
       }
 
       return scope;
     },
-    [currentFormFields, name],
+    [getFields, name],
+  );
+
+  const DefaultValueComponent: any = useMemo(() => {
+    return {
+      ArrayCollapse,
+      FormLayout,
+      VariableInput: (props) => {
+        return (
+          <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable} isInSetDefaultValueDialog>
+            <VariableInput {...props} />
+          </FlagProvider>
+        );
+      },
+    };
+  }, [isInSubForm, isInSubTable]);
+
+  const schema = useMemo(() => {
+    return {
+      type: 'object',
+      title: t('Set default value'),
+      properties: {
+        default: {
+          'x-decorator': 'FormItem',
+          'x-component': 'VariableInput',
+          'x-component-props': {
+            ...(fieldSchema?.['x-component-props'] || {}),
+            collectionField,
+            contextCollectionName: isAllowContextVariable && tableCtx.collection,
+            schema: collectionField?.uiSchema,
+            targetFieldSchema: fieldSchema,
+            className: defaultInputStyle,
+            form,
+            record,
+            returnScope,
+            shouldChange: getShouldChange({
+              collectionField,
+              variables,
+              localVariables,
+              getAllCollectionsInheritChain,
+            }),
+            renderSchemaComponent: function Com(props) {
+              const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
+              s.title = '';
+              s.name = 'default';
+              s['x-read-pretty'] = false;
+              s['x-disabled'] = false;
+
+              const defaultValue = getFieldDefaultValue(s, collectionField);
+
+              if (collectionField.target && s['x-component-props']) {
+                s['x-component-props'].mode = 'Select';
+              }
+
+              if (collectionField?.uiSchema.type) {
+                s.type = collectionField.uiSchema.type;
+              }
+
+              if (collectionField?.uiSchema['x-component'] === 'Checkbox') {
+                s['x-component-props'].defaultChecked = defaultValue;
+
+                // 在这里如果不设置 type 为 void，会导致设置的默认值不生效
+                // 但是我不知道为什么必须要设置为 void ？
+                s.type = 'void';
+              }
+
+              const schema = {
+                ...(s || {}),
+                'x-decorator': 'FormItem',
+                'x-component-props': {
+                  ...s['x-component-props'],
+                  collectionName: collectionField?.collectionName,
+                  targetField,
+                  onChange: props.onChange,
+                  defaultValue: isVariable(defaultValue) ? '' : defaultValue,
+                  style: {
+                    width: '100%',
+                    verticalAlign: 'top',
+                    minWidth: '200px',
+                  },
+                },
+                default: isVariable(defaultValue) ? '' : defaultValue,
+              } as ISchema;
+
+              return (
+                <FormProvider>
+                  <SchemaComponent schema={schema} />
+                </FormProvider>
+              );
+            },
+          },
+          title: t('Default value'),
+          default: getFieldDefaultValue(fieldSchema, collectionField),
+        },
+      },
+    } as ISchema;
+  }, [
+    collectionField,
+    fieldSchema,
+    fieldSchemaWithoutRequired,
+    form,
+    getAllCollectionsInheritChain,
+    isAllowContextVariable,
+    localVariables,
+    record,
+    returnScope,
+    t,
+    tableCtx.collection,
+    targetField,
+    variables,
+  ]);
+  const handleSubmit: (values: any) => void = useCallback(
+    (v) => {
+      const schema: ISchema = {
+        ['x-uid']: fieldSchema['x-uid'],
+      };
+      fieldSchema.default = v.default;
+      if (!v.default && v.default !== 0) {
+        field.value = null;
+      }
+      schema.default = v.default;
+      dn.emit('patch', {
+        schema,
+        currentSchema,
+      });
+    },
+    [currentSchema, dn, field, fieldSchema],
   );
 
   return (
     <SchemaSettings.ModalItem
       title={t('Set default value')}
-      components={{
-        ArrayCollapse,
-        FormLayout,
-        VariableInput: (props) => {
-          return (
-            <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable} isInSetDefaultValueDialog>
-              <VariableInput {...props} />
-            </FlagProvider>
-          );
-        },
-      }}
+      components={DefaultValueComponent}
       width={800}
-      schema={
-        {
-          type: 'object',
-          title: t('Set default value'),
-          properties: {
-            default: {
-              'x-decorator': 'FormItem',
-              'x-component': 'VariableInput',
-              'x-component-props': {
-                ...(fieldSchema?.['x-component-props'] || {}),
-                collectionField,
-                contextCollectionName: isAllowContextVariable && tableCtx.collection,
-                schema: collectionField?.uiSchema,
-                targetFieldSchema: fieldSchema,
-                className: defaultInputStyle,
-                form,
-                record,
-                returnScope,
-                shouldChange: getShouldChange({
-                  collectionField,
-                  variables,
-                  localVariables,
-                  getAllCollectionsInheritChain,
-                }),
-                renderSchemaComponent: function Com(props) {
-                  const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
-                  s.title = '';
-                  s.name = 'default';
-                  s['x-read-pretty'] = false;
-                  s['x-disabled'] = false;
-
-                  const defaultValue = getFieldDefaultValue(s, collectionField);
-
-                  if (collectionField.target && s['x-component-props']) {
-                    s['x-component-props'].mode = 'Select';
-                  }
-
-                  if (collectionField?.uiSchema.type) {
-                    s.type = collectionField.uiSchema.type;
-                  }
-
-                  if (collectionField?.uiSchema['x-component'] === 'Checkbox') {
-                    s['x-component-props'].defaultChecked = defaultValue;
-
-                    // 在这里如果不设置 type 为 void，会导致设置的默认值不生效
-                    // 但是我不知道为什么必须要设置为 void ？
-                    s.type = 'void';
-                  }
-
-                  const schema = {
-                    ...(s || {}),
-                    'x-decorator': 'FormItem',
-                    'x-component-props': {
-                      ...s['x-component-props'],
-                      collectionName: collectionField?.collectionName,
-                      targetField,
-                      onChange: props.onChange,
-                      defaultValue: isVariable(defaultValue) ? '' : defaultValue,
-                      style: {
-                        width: '100%',
-                        verticalAlign: 'top',
-                        minWidth: '200px',
-                      },
-                    },
-                    default: isVariable(defaultValue) ? '' : defaultValue,
-                  } as ISchema;
-
-                  return (
-                    <FormProvider>
-                      <SchemaComponent schema={schema} />
-                    </FormProvider>
-                  );
-                },
-              },
-              title: t('Default value'),
-              default: getFieldDefaultValue(fieldSchema, collectionField),
-            },
-          },
-        } as ISchema
-      }
-      onSubmit={(v) => {
-        const schema: ISchema = {
-          ['x-uid']: fieldSchema['x-uid'],
-        };
-        fieldSchema.default = v.default;
-        if (!v.default && v.default !== 0) {
-          field.value = null;
-        }
-        schema.default = v.default;
-        dn.emit('patch', {
-          schema,
-          currentSchema,
-        });
-      }}
+      schema={schema}
+      onSubmit={handleSubmit}
     />
   );
 };
@@ -1819,7 +1886,7 @@ SchemaSettings.SortingRule = function SortRuleConfigure(props) {
 
 SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
   const { t } = useTranslation();
-  const options = useCollectionFilterOptions(props.collectionName);
+  const { getFields } = useCollectionFilterOptionsV2(props.collectionName);
   const record = useRecord();
   const { form } = useFormBlockContext();
   const variables = useVariables();
@@ -1827,54 +1894,59 @@ SchemaSettings.DataScope = function DataScopeConfigure(props: DataScopeProps) {
   const { getAllCollectionsInheritChain } = useCollectionManager();
   const { isInSubForm, isInSubTable } = useFlag() || {};
 
-  const dynamicComponent = (props: DynamicComponentProps) => {
-    return (
-      <DatePickerProvider value={{ utc: false }}>
-        <VariableInput
-          {...props}
-          form={form}
-          record={record}
-          shouldChange={getShouldChange({
-            collectionField: props.collectionField,
-            variables,
-            localVariables,
-            getAllCollectionsInheritChain,
-          })}
-        />
-      </DatePickerProvider>
-    );
+  const dynamicComponent = useCallback(
+    (props: DynamicComponentProps) => {
+      return (
+        <DatePickerProvider value={{ utc: false }}>
+          <VariableInput
+            {...props}
+            form={form}
+            record={record}
+            shouldChange={getShouldChange({
+              collectionField: props.collectionField,
+              variables,
+              localVariables,
+              getAllCollectionsInheritChain,
+            })}
+          />
+        </DatePickerProvider>
+      );
+    },
+    [form, getAllCollectionsInheritChain, localVariables, record, variables],
+  );
+
+  const getSchema = () => {
+    return {
+      type: 'object',
+      title: t('Set the data scope'),
+      properties: {
+        filter: {
+          enum: props.collectionFilterOption || getFields(),
+          'x-decorator': (props) => (
+            <BaseVariableProvider {...props}>
+              <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable}>
+                {props.children}
+              </FlagProvider>
+            </BaseVariableProvider>
+          ),
+          'x-decorator-props': {
+            isDisabled,
+          },
+          'x-component': 'Filter',
+          'x-component-props': {
+            collectionName: props.collectionName,
+            dynamicComponent: props.dynamicComponent || dynamicComponent,
+          },
+        },
+      },
+    };
   };
 
   return (
     <SchemaSettings.ModalItem
       title={t('Set the data scope')}
       initialValues={{ filter: props.defaultFilter }}
-      schema={
-        {
-          type: 'object',
-          title: t('Set the data scope'),
-          properties: {
-            filter: {
-              enum: props.collectionFilterOption || options,
-              'x-decorator': (props) => (
-                <BaseVariableProvider {...props}>
-                  <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable}>
-                    {props.children}
-                  </FlagProvider>
-                </BaseVariableProvider>
-              ),
-              'x-decorator-props': {
-                isDisabled,
-              },
-              'x-component': 'Filter',
-              'x-component-props': {
-                collectionName: props.collectionName,
-                dynamicComponent: props.dynamicComponent || dynamicComponent,
-              },
-            },
-          },
-        } as ISchema
-      }
+      schema={getSchema as () => ISchema}
       onSubmit={props.onSubmit}
     />
   );
@@ -1890,20 +1962,18 @@ export const isPatternDisabled = (fieldSchema: Schema) => {
   return fieldSchema?.['x-component-props']?.['pattern-disable'] == true;
 };
 
-function SelectWithTitle({
+export function SelectWithTitle({
   name,
   title,
   defaultValue,
   onChange,
   options,
-  onClick,
 }: {
   name?: string;
   title?: any;
   defaultValue?: any;
   options?: any;
   onChange?: (...args: any[]) => void;
-  onClick?: (...args: any[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef<any>(null);
@@ -1913,7 +1983,10 @@ function SelectWithTitle({
       role="button"
       aria-label={name || title}
       style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}
-      onClick={() => setOpen((v) => !v)}
+      onClick={(e) => {
+        e.stopPropagation();
+        setOpen((v) => !v);
+      }}
       onMouseLeave={() => {
         timerRef.current = setTimeout(() => {
           setOpen(false);
@@ -1929,7 +2002,6 @@ function SelectWithTitle({
         onChange={onChange}
         options={options}
         style={{ textAlign: 'right', minWidth: 100 }}
-        onClick={onClick}
         onMouseEnter={() => {
           clearTimeout(timerRef.current);
         }}

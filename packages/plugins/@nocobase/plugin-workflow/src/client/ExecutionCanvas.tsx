@@ -3,6 +3,7 @@ import {
   cx,
   SchemaComponent,
   useAPIClient,
+  useApp,
   useCompile,
   useDocumentTitle,
   useResourceActionContext,
@@ -20,6 +21,7 @@ import useStyles from './style';
 import { linkNodes } from './utils';
 import { DownOutlined } from '@ant-design/icons';
 import { StatusButton } from './components/StatusButton';
+import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './constant';
 
 function attachJobs(nodes, jobs: any[] = []): void {
   const nodesMap = new Map();
@@ -165,7 +167,7 @@ function ExecutionsDropdown(props) {
   const onClick = useCallback(
     ({ key }) => {
       if (key != execution.id) {
-        navigate(`/admin/settings/workflow/executions/${key}`);
+        navigate(getWorkflowExecutionsPath(key));
       }
     },
     [execution],
@@ -208,6 +210,7 @@ export function ExecutionCanvas() {
   const { data, loading } = useResourceActionContext();
   const { setTitle } = useDocumentTitle();
   const [viewJob, setViewJob] = useState(null);
+  const app = useApp();
   useEffect(() => {
     const { workflow } = data?.data ?? {};
     setTitle?.(`${workflow?.title ? `${workflow.title} - ` : ''}${lang('Execution history')}`);
@@ -244,8 +247,8 @@ export function ExecutionCanvas() {
         <header>
           <Breadcrumb
             items={[
-              { title: <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link> },
-              { title: <Link to={`/admin/settings/workflow/workflows/${workflow.id}`}>{workflow.title}</Link> },
+              { title: <Link to={app.pluginSettingsManager.getRoutePath('workflow')}>{lang('Workflow')}</Link> },
+              { title: <Link to={getWorkflowDetailPath(workflow.id)}>{workflow.title}</Link> },
               { title: <ExecutionsDropdown /> },
             ]}
           />

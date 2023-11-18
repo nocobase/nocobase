@@ -502,7 +502,6 @@ export default {
   "Dynamic value": "動的値",
   "Current user": "現在のユーザー",
   "Current record": "現在のレコード",
-  "Current parent record": "現在の親レコード",
   "Popup close method": "ポップアップを閉じる方法",
   "Automatic close": "自動で閉じる",
   "Manually close": "手動で閉じる",
@@ -669,4 +668,6 @@ export default {
   "Search plugin": "プラグインを検索",
   "Author": "著者",
   "Plugin loading failed. Please check the server logs.": "プラグインのロードに失敗しました。サーバーログを確認してください。",
+  'Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects':
+  'テーブルに依存するオブジェクト、およびそれらに依存するオブジェクトを自動的に削除する',
 }

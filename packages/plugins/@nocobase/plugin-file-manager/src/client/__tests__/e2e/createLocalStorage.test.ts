@@ -12,16 +12,16 @@ test.describe('file manager', () => {
     // 1、前置条件：已登录
 
     // 2、测试步骤：进入“文件管理器”-“新建”按钮，填写表单，点击“确定”按钮
-    await page.goto('/admin/settings/file-manager/storages');
+    await page.goto('/admin/settings/file-manager');
     await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'plus Add new' }).hover();
     await page.getByRole('menuitem', { name: 'Local storage' }).click();
     const createLocalStorage = new CreateLocalStorage(page);
     await createLocalStorage.title.fill(caseTitle);
-    const storageName = caseNum + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
+    const storageName = caseNum + dayjs().format('YYYYMMDDHHmmssSSS').toString();
     await createLocalStorage.storageName.fill(storageName);
-    await createLocalStorage.storagebaseURL.fill('/storage/uploadsFM01AA');
-    await createLocalStorage.destination.fill('storage/uploadsFM01AA');
+    // await createLocalStorage.storagebaseURL.fill('/storage/uploadsFM01AA');
+    // await createLocalStorage.destination.fill('storage/uploadsFM01AA');
     // await createLocalStorage.path.fill('');
     // await createLocalStorage.defaultStorage.check();
     // await createLocalStorage.deleteRecordRetentionFile.check();

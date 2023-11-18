@@ -1,30 +1,14 @@
-import { Plugin, SettingsCenterProvider } from '@nocobase/client';
-import React from 'react';
+import { Plugin } from '@nocobase/client';
 import { Localization } from './Localization';
-import { useLocalTranslation } from './locale';
+import { NAMESPACE } from './locale';
 
 export class LocalizationManagementPlugin extends Plugin {
   async load() {
-    this.app.use((props) => {
-      const { t } = useLocalTranslation();
-      return (
-        <SettingsCenterProvider
-          settings={{
-            ['localization-management']: {
-              title: t('Localization management'),
-              icon: 'GlobalOutlined',
-              tabs: {
-                localization: {
-                  title: t('Translations'),
-                  component: () => <Localization />,
-                },
-              },
-            },
-          }}
-        >
-          {props.children}
-        </SettingsCenterProvider>
-      );
+    this.app.pluginSettingsManager.add(NAMESPACE, {
+      title: `{{t("Localization management", { ns: "${NAMESPACE}" })}}`,
+      icon: 'GlobalOutlined',
+      Component: Localization,
+      aclSnippet: 'pm.localization-management.localization',
     });
   }
 }

@@ -28,6 +28,7 @@ const subMenuDesignerCss = css`
   margin-right: -34px;
   padding: 0 34px 0 24px;
   width: calc(100% + 58px);
+  height: 100%;
   &:hover {
     > .general-schema-designer {
       display: block;
@@ -79,6 +80,7 @@ const designerCss = css`
   margin-right: -20px;
   padding: 0 20px;
   width: calc(100% + 40px);
+  height: 100%;
   &:hover {
     > .general-schema-designer {
       display: block;
@@ -137,6 +139,7 @@ const sideMenuClass = css`
   overflow-x: hidden;
   .ant-menu-item {
     > .ant-menu-title-content {
+      height: 100%;
       margin-left: -24px;
       margin-right: -16px;
       padding: 0 16px 0 24px;
@@ -149,6 +152,7 @@ const sideMenuClass = css`
   }
   .ant-menu-submenu-title {
     .ant-menu-title-content {
+      height: 100%;
       margin-left: -24px;
       margin-right: -34px;
       padding: 0 34px 0 24px;
@@ -555,7 +559,7 @@ Menu.URL = observer(
         label: (
           <SchemaContext.Provider value={schema}>
             <FieldContext.Provider value={field}>
-              <SortableItem className={designerCss} removeParentsIfNoChildren={false}>
+              <SortableItem className={designerCss} removeParentsIfNoChildren={false} aria-label={t(field.title)}>
                 <Icon type={icon} />
                 <span
                   style={{
@@ -601,7 +605,11 @@ Menu.SubMenu = observer(
         label: (
           <SchemaContext.Provider value={schema}>
             <FieldContext.Provider value={field}>
-              <SortableItem className={subMenuDesignerCss} removeParentsIfNoChildren={false}>
+              <SortableItem
+                className={subMenuDesignerCss}
+                removeParentsIfNoChildren={false}
+                aria-label={t(field.title)}
+              >
                 <Icon type={icon} />
                 {t(field.title)}
                 <Designer />

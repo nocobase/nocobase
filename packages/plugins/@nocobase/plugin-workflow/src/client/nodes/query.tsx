@@ -12,7 +12,7 @@ import { appends, collection, filter, pagination, sort } from '../schemas/collec
 import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
-import { getCollectionFieldOptions, useWorkflowVariableOptions } from '../variable';
+import { WorkflowVariableInput, getCollectionFieldOptions } from '../variable';
 import { useForm } from '@formily/react';
 
 export default {
@@ -59,7 +59,6 @@ export default {
   view: {},
   scope: {
     useCollectionDataSource,
-    useWorkflowVariableOptions,
     useSortableFields() {
       const compile = useCompile();
       const { getCollectionFields, getInterface } = useCollectionManager();
@@ -88,6 +87,7 @@ export default {
     ArrayItems,
     FilterDynamicComponent,
     SchemaComponentContext,
+    WorkflowVariableInput,
   },
   useVariables({ key: name, title, config }, options) {
     const compile = useCompile();

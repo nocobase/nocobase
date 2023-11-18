@@ -8,11 +8,11 @@ NocoBase is in early stage of development and is subject to frequent changes, pl
 
 ## Recent major updates
 
-- [v0.14: New plugin manager, supports adding plugins through UI - 2023/09/11](https://docs.nocobase.com/welcome/release/v14-changelog)
-- [v0.13: New application status flow - 2023/08/24](https://docs.nocobase.com/welcome/release/v13-changelog)
-- [v0.12: New plugin build tool - 2023/08/01](https://docs.nocobase.com/welcome/release/v12-changelog)
-- [v0.11: New client application, plugin and router - 2023/07/08](http://docs.nocobase.com/welcome/release/v11-changelog)
-- [v0.10: Update instructions - 2023/06/23](http://docs.nocobase.com/welcome/release/v10-changelog)
+- [v0.15: New plugin settings manager - 2023/11/13](https://blog.nocobase.com/posts/release-v015/)
+- [v0.14: New plugin manager, supports adding plugins through UI - 2023/09/11](https://blog.nocobase.com/posts/release-v014/)
+- [v0.13: New application status flow - 2023/08/24](https://blog.nocobase.com/posts/release-v013/)
+- [v0.12: New plugin build tool - 2023/08/01](https://blog.nocobase.com/posts/release-v012/)
+- [v0.11: New client application, plugin and router - 2023/07/08](https://blog.nocobase.com/posts/release-v011/)
 
 ## What is NocoBase
 

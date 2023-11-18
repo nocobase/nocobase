@@ -1,14 +1,15 @@
 const locale = {
-  'API key created successfully': 'API key 创建成功',
+  'API keys': 'API 密钥',
+  'API key created successfully': 'API 密钥创建成功',
   'Make sure to copy your personal access key now as you will not be able to see this again.':
     '请确保现在复制你的个人访问密钥，因为你将无法再次看到这个密钥。',
   'Key name': '密钥名称',
   Expiration: '过期时间',
-  'Delete API key': '删除 API key',
+  'Delete API key': '删除 API 密钥',
   Role: '角色',
   'Keys manager': '密钥管理',
   'Created at': '创建时间',
-  'Add API key': '添加 API key',
+  'Add API key': '添加 API 密钥',
   Never: '永不',
   Custom: '自定义',
   'Never expires': '永不过期',

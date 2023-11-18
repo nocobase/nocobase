@@ -114,7 +114,6 @@ const sidebar = {
         '/manual/quick-start/the-first-app',
         '/manual/quick-start/functional-zoning',
         '/manual/quick-start/ui-editor-mode',
-        '/manual/quick-start/plugins',
       ],
     },
     {
@@ -201,7 +200,7 @@ const sidebar = {
           ],
         },
         '/development/client/ui-router',
-        '/development/client/settings-center',
+        '/development/client/plugin-settings',
         '/development/client/i18n',
         '/development/client/test',
       ],

@@ -70,8 +70,8 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
         //支持深层次子表单
         onFieldChange('*', (fieldPath: any) => {
           if (linkageFields.includes(fieldPath.props.name) && field.value) {
-            props.onChange(null);
-            setInnerValue(null);
+            props.onChange(field.initialValue);
+            setInnerValue(field.initialValue);
           }
         });
       }

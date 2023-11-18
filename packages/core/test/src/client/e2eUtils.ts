@@ -6,8 +6,8 @@ import _ from 'lodash';
 export * from '@playwright/test';
 
 interface CollectionSetting {
-  title: string;
   name: string;
+  title?: string;
   /**
    * @default 'general'
    */
@@ -55,10 +55,10 @@ interface CollectionSetting {
   description?: string;
   view?: boolean;
   key?: string;
-  fields: Array<{
-    type: string;
+  fields?: Array<{
     interface: string;
-    name: string;
+    type?: string;
+    name?: string;
     unique?: boolean;
     uiSchema?: {
       type?: string;
@@ -114,17 +114,20 @@ interface CreatePageOptions {
   pageSchema?: any;
 }
 
+const PORT = process.env.APP_PORT || 20000;
+const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
+
 class NocoPage {
   private url: string;
   private uid: string;
   private collectionsName: string[];
-  private waitForInit: Promise<void>;
+  private _waitForInit: Promise<void>;
 
   constructor(
     private page: Page,
     private options?: PageConfig,
   ) {
-    this.waitForInit = this.init();
+    this._waitForInit = this.init();
   }
 
   async init() {
@@ -133,11 +136,6 @@ class NocoPage {
       this.collectionsName = collections.map((item) => item.name);
 
       await createCollections(collections);
-
-      // 默认为每个 collection 生成 3 条数据
-      await createFakerData(collections);
-      await createFakerData(collections);
-      await createFakerData(collections);
     }
 
     this.uid = await createPage(this.page, {
@@ -148,9 +146,14 @@ class NocoPage {
   }
 
   async goto() {
-    await this.waitForInit;
+    await this._waitForInit;
     await this.page.goto(this.url);
     await enableToConfig(this.page);
+  }
+
+  async waitForInit(this: NocoPage) {
+    await this._waitForInit;
+    return this;
   }
 
   async destroy() {
@@ -167,6 +170,10 @@ class NocoPage {
 
 const _test = base.extend<{
   mockPage: (config?: PageConfig) => NocoPage;
+  mockCollections: <T = any>(collectionSettings: CollectionSetting[]) => Promise<T>;
+  mockCollection: <T = any>(collectionSetting: CollectionSetting) => Promise<T>;
+  mockRecord: <T = any>(collectionName: string, data?: any) => Promise<T>;
+  mockRecords: <T = any>(collectionName: string, count?: number, data?: any) => Promise<T[]>;
   createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
 }>({
   mockPage: async ({ page }, use) => {
@@ -204,6 +211,51 @@ const _test = base.extend<{
       await deleteCollections(collectionsName);
     }
   },
+  mockCollections: async ({ page }, use) => {
+    let collectionsName = [];
+
+    const mockCollections = async (collectionSettings: CollectionSetting[]) => {
+      collectionSettings = omitSomeFields(collectionSettings);
+      collectionsName = collectionSettings.map((item) => item.name);
+      return createCollections(collectionSettings);
+    };
+
+    await use(mockCollections);
+
+    if (collectionsName.length) {
+      await deleteCollections(collectionsName);
+    }
+  },
+  mockCollection: async ({ page }, use) => {
+    let collectionsName = [];
+
+    const mockCollection = async (collectionSetting: CollectionSetting) => {
+      const collectionSettings = omitSomeFields([collectionSetting]);
+      collectionsName = collectionSettings.map((item) => item.name);
+      return createCollections(collectionSettings);
+    };
+
+    await use(mockCollection);
+
+    if (collectionsName.length) {
+      await deleteCollections(collectionsName);
+    }
+  },
+  mockRecords: async ({ page }, use) => {
+    const mockRecords = async (collectionName: string, count = 3, data?: any) => {
+      return createRandomData(collectionName, count, data);
+    };
+
+    await use(mockRecords);
+  },
+  mockRecord: async ({ page }, use) => {
+    const mockRecord = async (collectionName: string, data?: any) => {
+      const result = await createRandomData(collectionName, 1, data);
+      return result[0];
+    };
+
+    await use(mockRecord);
+  },
 });
 
 export const test = Object.assign(_test, {
@@ -213,7 +265,7 @@ export const test = Object.assign(_test, {
 
 const getStorageItem = (key: string, storageState: any) => {
   return storageState.origins
-    .find((item) => item.origin === `http://localhost:${process.env.APP_PORT}`)
+    .find((item) => item.origin === APP_BASE_URL)
     ?.localStorage.find((item) => item.name === key)?.value;
 };
 
@@ -248,12 +300,10 @@ const createPage = async (page: Page, options?: CreatePageOptions) => {
   });
 
   const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
+  const headers = getHeaders(state);
 
   const systemSettings = await api.get(`/api/systemSettings:get/1`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
   });
 
   const pageUid = uid();
@@ -262,9 +312,7 @@ const createPage = async (page: Page, options?: CreatePageOptions) => {
   if (systemSettings.ok()) {
     const { data } = await systemSettings.json();
     const result = await api.post(`/api/uiSchemas:insertAdjacent/${data.options.adminSchemaUid}?position=beforeEnd`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
       data: {
         schema: {
           _isJSONSchemaObject: true,
@@ -329,12 +377,10 @@ const deletePage = async (pageUid: string) => {
   });
 
   const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
+  const headers = getHeaders(state);
 
   const result = await api.post(`/api/uiSchemas:remove/${pageUid}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
   });
 
   if (!result.ok()) {
@@ -348,13 +394,11 @@ const deleteCollections = async (collectionNames: string[]) => {
   });
 
   const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
+  const headers = getHeaders(state);
   const params = collectionNames.map((name) => `filterByTk[]=${name}`).join('&');
 
   const result = await api.post(`/api/collections:destroy?${params}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
   });
 
   if (!result.ok()) {
@@ -388,32 +432,19 @@ const createCollections = async (collectionSettings: CollectionSetting | Collect
   });
 
   const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
-  // const defaultCollectionSetting: Partial<CollectionSetting> = {
-  //   template: 'general',
-  //   logging: true,
-  //   autoGenId: true,
-  //   createdBy: true,
-  //   updatedBy: true,
-  //   createdAt: true,
-  //   updatedAt: true,
-  //   sortable: true,
-  //   view: false,
-  // };
-
+  const headers = getHeaders(state);
   collectionSettings = Array.isArray(collectionSettings) ? collectionSettings : [collectionSettings];
 
-  const result = await api.post(`/api/collections:create`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    // data: collectionSettings.map((item) => Object.assign(defaultCollectionSetting, item)),
-    data: collectionSettings.filter((item) => !['users', 'roles'].includes(item.name)),
+  const result = await api.post(`/api/collections:mock`, {
+    headers,
+    data: collectionSettings,
   });
 
   if (!result.ok()) {
     throw new Error(await result.text());
   }
+
+  return (await result.json()).data;
 };
 
 /**
@@ -449,7 +480,6 @@ const generateFakerData = (collectionSetting: CollectionSetting) => {
 
     if (basicInterfaceToData[field.interface]) {
       result[field.name] = basicInterfaceToData[field.interface]();
-      return;
     }
   });
 
@@ -465,14 +495,12 @@ const createFakerData = async (collectionSettings: CollectionSetting[]) => {
   });
 
   const state = await api.storageState();
-  const token = getStorageItem('NOCOBASE_TOKEN', state);
+  const headers = getHeaders(state);
 
   for (const item of collectionSettings) {
     const data = generateFakerData(item);
     const result = await api.post(`/api/${item.name}:create`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
       form: data,
     });
 
@@ -482,11 +510,78 @@ const createFakerData = async (collectionSettings: CollectionSetting[]) => {
   }
 };
 
+const createRandomData = async (collectionName: string, count = 10, data?: any) => {
+  const api = await request.newContext({
+    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+  });
+
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+
+  const result = await api.post(`/api/${collectionName}:mock?count=${count}`, {
+    headers,
+    data,
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+
+  return (await result.json()).data;
+};
+
 /**
  * 使页面成为可配置态
  */
 export async function enableToConfig(page: Page) {
-  if (!(await page.getByRole('button', { name: 'plus Add menu item' }).isVisible())) {
-    await page.getByRole('button', { name: 'highlight' }).click();
+  try {
+    // 根据是否有 style 判断是否已经是可配置态（因为配置状态的按钮样式是通过 style 属性设置的）
+    const style = await page.getByTestId('ui-editor-button').getAttribute('style', {
+      timeout: 2000,
+    });
+    if (!style) {
+      await page.getByTestId('ui-editor-button').click();
+    }
+  } catch (e) {
+    // ignore
   }
+}
+
+function getHeaders(storageState: any) {
+  const headers: any = {};
+  const token = getStorageItem('NOCOBASE_TOKEN', storageState);
+  const auth = getStorageItem('NOCOBASE_AUTH', storageState);
+  const subAppName = new URL(APP_BASE_URL).pathname.match(/^\/apps\/([^/]*)\/*/)?.[1];
+  const hostName = new URL(APP_BASE_URL).host;
+  const locale = getStorageItem('NOCOBASE_LOCALE', storageState);
+  const timezone = '+08:00';
+  const withAclMeta = 'true';
+  const role = getStorageItem('NOCOBASE_ROLE', storageState);
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  if (auth) {
+    headers['X-Authenticator'] = auth;
+  }
+  if (subAppName) {
+    headers['X-App'] = subAppName;
+  }
+  if (hostName) {
+    headers['X-Hostname'] = hostName;
+  }
+  if (locale) {
+    headers['X-Locale'] = locale;
+  }
+  if (timezone) {
+    headers['X-Timezone'] = timezone;
+  }
+  if (withAclMeta) {
+    headers['X-With-Acl-Meta'] = withAclMeta;
+  }
+  if (role) {
+    headers['X-Role'] = role;
+  }
+
+  return headers;
 }

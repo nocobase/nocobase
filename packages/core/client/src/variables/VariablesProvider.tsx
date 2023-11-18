@@ -11,7 +11,7 @@ import { filterEmptyValues } from './utils/filterEmptyValues';
 import { getAction } from './utils/getAction';
 import { getPath } from './utils/getPath';
 import { clearRequested, getRequested, hasRequested, stashRequested } from './utils/hasRequested';
-import { REGEX_OF_VARIABLE, isVariable } from './utils/isVariable';
+import { isVariable } from './utils/isVariable';
 import { uniq } from './utils/uniq';
 
 export const VariablesContext = createContext<VariablesContextType>(null);
@@ -234,9 +234,7 @@ const VariablesProvider = ({ children }) => {
       let result = null;
 
       await onLocalVariablesReady(localVariables, async () => {
-        const matches = variableString.match(REGEX_OF_VARIABLE);
-        const path = matches[0].replace(REGEX_OF_VARIABLE, '$1');
-
+        const path = getPath(variableString);
         result = getCollectionJoinField(getFieldPath(path));
 
         // 当仅有一个例如 `$user` 这样的字符串时，需要拼一个假的 `collectionField` 返回
@@ -279,13 +277,12 @@ VariablesProvider.displayName = 'VariablesProvider';
 
 export default VariablesProvider;
 
-/**
- * 判断是否应该请求关系字段的数据。如果是 null 则可以确定后端的数据为空，此时不需要请求；如果是 undefined 则需要请求。
- *
- * 注意：如果后端接口的这一 “规则” 发生了变更，那么可能会出现问题。
- * @param value
- * @returns
- */
 function shouldToRequest(value) {
-  return value === undefined;
+  // fix https://nocobase.height.app/T-2502
+  // 兼容 `对多` 和 `对一` 子表单子表格字段的情况
+  if (JSON.stringify(value) === '[{}]' || JSON.stringify(value) === '{}') {
+    return true;
+  }
+
+  return _.isEmpty(value);
 }

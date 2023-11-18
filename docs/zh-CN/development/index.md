@@ -57,6 +57,6 @@ yarn pm remove hello
 - Client
   - UI Schema Designer：页面设计器
   - UI Router：有自定义页面需求时
-  - Settings Center：为插件提供配置页面
+  - Plugin Settings Manager：为插件提供配置页面
   - I18n：客户端国际化
 

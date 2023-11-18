@@ -19,7 +19,7 @@ export const useParentRecordVariable = (props: Props) => {
     collectionField: props.collectionField,
     uiSchema: props.schema,
     name: '$nParentRecord',
-    title: t('Current parent record'),
+    title: t('Parent record'),
     collectionName: props.collectionName,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
