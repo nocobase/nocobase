@@ -150,6 +150,17 @@ export class HasManyField extends RelationField {
 
     this.database.referenceMap.addReference(this.reference(association));
 
+    // add sort field if association is sortable
+    if (this.options.sortable) {
+      const targetCollection = database.modelCollection.get(this.TargetModel);
+
+      targetCollection.setField(`${this.options.foreignKey}Sort`, {
+        type: 'sort',
+        hidden: true,
+        scopeKey: this.options.foreignKey,
+      });
+    }
+
     return true;
   }
 

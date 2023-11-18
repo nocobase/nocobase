@@ -22,11 +22,7 @@ describe('sort action', () => {
             type: 'hasMany',
             name: 'posts',
           },
-          {
-            type: 'hasMany',
-            name: 'posts2',
-            sortable: true,
-          },
+
           { type: 'sort', name: 'sort' },
         ],
       });
@@ -82,37 +78,72 @@ describe('sort action', () => {
     });
 
     it('should move association item', async () => {
+      UserCollection.setField('posts', {
+        sortable: true,
+        type: 'hasMany',
+      });
+
+      await api.db.sync({
+        alter: {
+          drop: false,
+        },
+        force: false,
+      });
+
+      const PostCollection = api.db.getCollection('posts');
+
+      expect(PostCollection.fields.get(`${UserCollection.model.associations.posts.foreignKey}Sort`)).toBeDefined();
+
       const u1 = await api.db.getRepository('users').findOne({
         filter: {
           name: 'u1',
         },
       });
 
-      await api.agent().resource('users.posts', u1.get('id')).move({
-        sourceId: 1,
-        targetId: 3,
+      await api
+        .agent()
+        .resource('users.posts', u1.get('id'))
+        .create({
+          values: {
+            title: 'u1p4',
+          },
+        });
+
+      const u1p4 = await api.db.getRepository('posts').findOne({
+        filter: {
+          title: 'u1p4',
+        },
       });
+
+      // should move by association sort field
+      await api
+        .agent()
+        .resource('users.posts', u1.get('id'))
+        .move({
+          sourceId: 1,
+          targetId: u1p4.get('id'),
+        });
 
       const u1Posts = await api
         .agent()
         .resource('users.posts', u1.get('id'))
         .list({
-          sort: ['sort'],
+          fields: ['title', 'sort'],
         });
 
       expect(u1Posts.body).toMatchObject({
         rows: [
           {
             title: 'u1p2',
-            sort: 1,
           },
           {
             title: 'u1p3',
-            sort: 2,
+          },
+          {
+            title: 'u1p4',
           },
           {
             title: 'u1p1',
-            sort: 3,
           },
         ],
       });

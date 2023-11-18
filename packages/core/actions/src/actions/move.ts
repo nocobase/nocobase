@@ -31,7 +31,7 @@ export async function move(ctx: Context, next) {
 
   const sortAbleCollection = new SortAbleCollection(
     repository instanceof Repository ? repository.collection : repository.targetCollection,
-    sortField,
+    repository instanceof Repository ? sortField : `${repository.association.foreignKey}Sort`,
   );
 
   if (sourceId && targetId) {

@@ -13,12 +13,12 @@ import {
   beforeDestroyForeignKey,
   beforeInitOptions,
 } from './hooks';
-import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
 import sqlResourcer from './resourcers/sql';
 import { beforeCreateForValidateField } from './hooks/beforeCreateForValidateField';
+import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
