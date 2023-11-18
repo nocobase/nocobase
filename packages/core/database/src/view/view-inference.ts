@@ -102,7 +102,14 @@ export class ViewFieldInference {
       }
 
       if (!inferResult.type) {
-        Object.assign(inferResult, this.inferToFieldType({ db, name, type: column.type }));
+        Object.assign(
+          inferResult,
+          this.inferToFieldType({
+            dialect: db.sequelize.getDialect(),
+            name,
+            type: column.type,
+          }),
+        );
       }
 
       rawFields.push([name, inferResult]);
@@ -111,9 +118,8 @@ export class ViewFieldInference {
     return Object.fromEntries(rawFields);
   }
 
-  static inferToFieldType(options: { db: Database; name: string; type: string }) {
-    const { db } = options;
-    const dialect = db.sequelize.getDialect();
+  static inferToFieldType(options: { name: string; type: string; dialect: string }) {
+    const { dialect } = options;
     const fieldTypeMap = FieldTypeMap[dialect];
 
     if (!options.type) {
