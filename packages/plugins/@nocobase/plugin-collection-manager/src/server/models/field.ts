@@ -40,11 +40,6 @@ export class FieldModel extends MagicAttributeModel {
       return collection.setField(name, options);
     })();
 
-    await this.db.emitAsync('field:loaded', {
-      fieldKey: this.get('key'),
-      transaction,
-    });
-
     if (field.type == 'hasMany') {
       if (this.get('sortBy') !== field.options.sortBy) {
         await this.update(
@@ -60,6 +55,11 @@ export class FieldModel extends MagicAttributeModel {
         await collection.sync();
       }
     }
+
+    await this.db.emitAsync('field:loaded', {
+      fieldKey: this.get('key'),
+      transaction,
+    });
 
     return field;
   }

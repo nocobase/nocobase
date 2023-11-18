@@ -92,7 +92,8 @@ describe('sort action', () => {
 
       const PostCollection = api.db.getCollection('posts');
 
-      expect(PostCollection.fields.get(`${UserCollection.model.associations.posts.foreignKey}Sort`)).toBeDefined();
+      const sortFieldName = `${UserCollection.model.associations.posts.foreignKey}Sort`;
+      expect(PostCollection.fields.get(sortFieldName)).toBeDefined();
 
       const u1 = await api.db.getRepository('users').findOne({
         filter: {
@@ -128,7 +129,8 @@ describe('sort action', () => {
         .agent()
         .resource('users.posts', u1.get('id'))
         .list({
-          fields: ['title', 'sort'],
+          fields: ['title'],
+          sort: [sortFieldName],
         });
 
       expect(u1Posts.body).toMatchObject({
