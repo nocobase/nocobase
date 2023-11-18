@@ -5,7 +5,7 @@ export class IframeBlockPlugin extends Plugin {
   async load() {
     this.app.use(IframeBlockProvider);
     const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
-    blockInitializers?.add('media.iframe', {
+    blockInitializers?.add('otherBlocks.iframe', {
       title: '{{t("Iframe")}}',
       Component: 'IframeBlockInitializer',
     });

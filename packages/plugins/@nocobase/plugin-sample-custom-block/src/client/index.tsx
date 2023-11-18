@@ -39,7 +39,7 @@ class CustomBlockPlugin extends Plugin {
     });
 
     const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
-    blockInitializers?.add('media.customBlock', {
+    blockInitializers?.add('otherBlocks.customBlock', {
       title: '{{t("Hello block")}}',
       Component: 'HelloBlockInitializer',
     });
