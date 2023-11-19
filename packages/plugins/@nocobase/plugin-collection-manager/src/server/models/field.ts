@@ -48,6 +48,20 @@ export class FieldModel extends MagicAttributeModel {
     return field;
   }
 
+  async syncSortByField(options: Transactionable) {
+    const collectionName = this.get('collectionName');
+    const collection = this.db.getCollection(collectionName);
+    await this.load(options);
+    await collection.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+      // @ts-ignore
+      transaction: options.transaction,
+    });
+  }
+
   async migrate({ isNew, ...options }: MigrateOptions = {}) {
     let field;
     try {

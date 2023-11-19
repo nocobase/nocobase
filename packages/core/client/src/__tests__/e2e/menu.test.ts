@@ -195,7 +195,7 @@ test.describe('menu group', () => {
 });
 
 test.describe('menu link', () => {
-  test('create new menu link, then delete', async ({ page, mockPage }) => {
+  test('create new menu link, then delete', async ({ page, mockPage, deletePage }) => {
     await mockPage().goto();
     await page.getByTestId('schema-initializer-Menu-header').hover();
     await page.getByRole('menuitem', { name: 'Link' }).click();
@@ -203,14 +203,10 @@ test.describe('menu link', () => {
     await page.getByLabel('block-item-Input-Link').getByRole('textbox').fill('https://www.baidu.com/');
     await page.getByRole('button', { name: 'OK' }).click();
     await page.getByLabel('link menu').click();
-    const page2Promise = page.waitForEvent('popup');
-    const page2 = await page2Promise;
+    const page2 = await page.waitForEvent('popup');
 
-    await expect(page2.getByRole('button', { name: '百度一下' })).toBeVisible();
+    expect(page2.url()).toBe('https://www.baidu.com/');
     // 删除页面，避免影响其他测试
-    await page.getByLabel('link menu').click();
-    await page.getByLabel('link menu').getByLabel('designer-schema-settings').hover();
-    await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await deletePage('link menu');
   });
 });
