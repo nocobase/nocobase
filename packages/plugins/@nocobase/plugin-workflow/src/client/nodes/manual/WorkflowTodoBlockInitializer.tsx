@@ -25,4 +25,4 @@ export const WorkflowTodoBlockInitializer: FC<any> = ({ insert, ...rest }) => {
       }}
     />
   );
-}
+};
