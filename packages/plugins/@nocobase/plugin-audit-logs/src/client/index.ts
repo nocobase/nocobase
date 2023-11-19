@@ -19,7 +19,7 @@ export class AuditLogsPlugin extends Plugin {
       title: '{{t("Audit logs")}}',
       Component: 'AuditLogsBlockInitializer',
     };
-    blockInitializers.add('media.auditLogs', auditLogs);
+    blockInitializers.add('otherBlocks.auditLogs', auditLogs);
     recordBlockInitializers.add('otherBlocks.auditLogs', auditLogs);
   }
 }
