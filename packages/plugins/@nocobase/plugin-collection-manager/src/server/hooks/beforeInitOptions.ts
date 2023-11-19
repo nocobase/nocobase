@@ -73,6 +73,9 @@ export const beforeInitOptions = {
     }
     setTargetKey(database, model);
     setSourceKey(database, model);
+    if (model.get('sortable') && model.get('type') === 'hasMany') {
+      model.set('sortBy', model.get('foreignKey') + 'Sort');
+    }
   },
   hasOne(model: Model, { database }) {
     const defaults = {

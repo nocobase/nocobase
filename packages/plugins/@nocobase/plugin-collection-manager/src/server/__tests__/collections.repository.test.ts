@@ -66,6 +66,24 @@ describe('collections repository', () => {
     expect(duplicator.dataType).toEqual('meta');
   });
 
+  it('should create collection with sortable option', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+        ],
+        sortable: true,
+      },
+      context: {},
+    });
+
+    expect(db.getCollection('posts').getField('sort')).toBeTruthy();
+  });
+
   it('should create through table when pending fields', async () => {
     await Collection.repository.create({
       values: {

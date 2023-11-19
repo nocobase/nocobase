@@ -69,22 +69,20 @@ export const SettingsCenterComponent = () => {
   }, [settings]);
 
   const currentSetting = useMemo(() => settingsMapByPath[location.pathname], [location.pathname, settingsMapByPath]);
-  const currentPlugin = useMemo(() => {
+  const currentTopLevelSetting = useMemo(() => {
     if (!currentSetting) {
       return null;
     }
-    return settings.find((item) => item.name === currentSetting.pluginName);
+    return settings.find((item) => item.name === currentSetting.topLevelName);
   }, [currentSetting, settings]);
-
   const sidebarMenus = useMemo(() => {
     return getMenuItems(settings.map((item) => ({ ...item, children: null })));
   }, [settings]);
-
   if (!currentSetting || location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
     return <Navigate replace to={getFirstDeepChildPath(settings)} />;
   }
-  if (location.pathname === currentPlugin.path && currentPlugin.children?.length > 0) {
-    return <Navigate replace to={getFirstDeepChildPath(currentPlugin.children)} />;
+  if (location.pathname === currentTopLevelSetting.path && currentTopLevelSetting.children?.length > 0) {
+    return <Navigate replace to={getFirstDeepChildPath(currentTopLevelSetting.children)} />;
   }
   return (
     <div>
@@ -106,7 +104,7 @@ export const SettingsCenterComponent = () => {
           theme={'light'}
         >
           <Menu
-            selectedKeys={[currentSetting?.pluginName]}
+            selectedKeys={[currentSetting?.topLevelName]}
             style={{ height: 'calc(100vh - 46px)', overflowY: 'auto', overflowX: 'hidden' }}
             onClick={({ key }) => {
               const plugin = settings.find((item) => item.name === key);
@@ -124,12 +122,12 @@ export const SettingsCenterComponent = () => {
             <PageHeader
               className={styles.pageHeader}
               style={{
-                paddingBottom: currentPlugin.children?.length > 0 ? 0 : theme.paddingSM,
+                paddingBottom: currentTopLevelSetting.children?.length > 0 ? 0 : theme.paddingSM,
               }}
               ghost={false}
-              title={currentPlugin.title}
+              title={currentTopLevelSetting.title}
               footer={
-                currentPlugin.children?.length > 0 && (
+                currentTopLevelSetting.children?.length > 0 && (
                   <Menu
                     style={{ marginLeft: -theme.margin }}
                     onClick={({ key }) => {
@@ -137,7 +135,7 @@ export const SettingsCenterComponent = () => {
                     }}
                     selectedKeys={[currentSetting?.name]}
                     mode="horizontal"
-                    items={getMenuItems(currentPlugin.children)}
+                    items={getMenuItems(currentTopLevelSetting.children)}
                   ></Menu>
                 )
               }

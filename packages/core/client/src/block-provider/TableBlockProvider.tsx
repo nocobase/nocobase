@@ -81,9 +81,9 @@ export const TableBlockProvider = (props) => {
   const record = useRecord();
 
   const collection = getCollection(props.collection);
-  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
+  const { treeTable, dragSortBy } = fieldSchema?.['x-decorator-props'] || {};
   if (props.dragSort) {
-    params['sort'] = ['sort'];
+    params['sort'] = dragSortBy || ['sort'];
   }
   let childrenColumnName = 'children';
   if (collection?.tree && treeTable !== false) {
@@ -139,6 +139,7 @@ export const useTableBlockProps = () => {
     if (!ctx?.service?.loading) {
       field.value = [];
       field.value = ctx?.service?.data?.data;
+      field.setInitialValue(ctx?.service?.data?.data);
       field.data = field.data || {};
       field.data.selectedRowKeys = ctx?.field?.data?.selectedRowKeys;
       field.componentProps.pagination = field.componentProps.pagination || {};

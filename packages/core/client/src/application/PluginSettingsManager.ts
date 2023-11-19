@@ -1,5 +1,6 @@
 import { set } from 'lodash';
 import { createElement } from 'react';
+import { Outlet } from 'react-router-dom';
 
 import { Icon } from '../icon';
 import type { Application } from './Application';
@@ -11,14 +12,16 @@ export const SNIPPET_PREFIX = 'pm.';
 
 export interface PluginSettingsManagerSettingOptionsType {
   title: string;
-  Component: RouteType['Component'];
+  /**
+   * @default Outlet
+   */
+  Component?: RouteType['Component'];
   icon?: string;
   /**
    * sort, the smaller the number, the higher the priority
    * @default 0
    */
   sort?: number;
-  isBookmark?: boolean;
   aclSnippet?: string;
   [index: string]: any;
 }
@@ -31,8 +34,9 @@ export interface PluginSettingsPageType {
   path: string;
   sort?: number;
   name?: string;
-  pluginName?: string;
-  isBookmark?: boolean;
+  isAllow?: boolean;
+  topLevelName?: string;
+  aclSnippet: string;
   children?: PluginSettingsPageType[];
   [index: string]: any;
 }
@@ -64,8 +68,8 @@ export class PluginSettingsManager {
 
   add(name: string, options: PluginSettingsManagerSettingOptionsType) {
     const nameArr = name.split('.');
-    const pluginName = nameArr[0];
-    this.settings[name] = { ...options, name, pluginName };
+    const topLevelName = nameArr[0];
+    this.settings[name] = { Component: Outlet, ...options, name, topLevelName };
 
     // add children
     if (nameArr.length > 1) {
@@ -75,7 +79,7 @@ export class PluginSettingsManager {
     // add route
     this.app.router.add(this.getRouteName(name), {
       path: this.getRoutePath(name),
-      Component: options.Component,
+      Component: this.settings[name].Component,
     });
   }
 
@@ -127,8 +131,7 @@ export class PluginSettingsManager {
   }
 
   getList(filterAuth = true): PluginSettingsPageType[] {
-    return Object.keys(this.settings)
-      .filter((item) => !item.includes('.')) // top level
+    return Array.from(new Set(Object.values(this.settings).map((item) => item.topLevelName)))
       .sort((a, b) => a.localeCompare(b)) // sort by name
       .map((name) => this.get(name, filterAuth))
       .filter(Boolean)

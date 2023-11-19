@@ -145,6 +145,12 @@ export class Gateway extends EventEmitter {
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
     const { pathname } = parse(req.url);
 
+    if (pathname === '/__umi/api/bundle-status') {
+      res.statusCode = 200;
+      res.end('ok');
+      return;
+    }
+
     if (pathname.startsWith('/storage/uploads/')) {
       await compress(req, res);
       return handler(req, res, {

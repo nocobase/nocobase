@@ -103,4 +103,15 @@ describe('transformVariableValue', () => {
       }
     `);
   });
+
+  test('value is undefined', () => {
+    const value = undefined;
+    const deps = {
+      targetCollectionField: { type: 'belongsToMany', uiSchema: { 'x-component': 'AssociationField' } },
+    };
+
+    const result = transformVariableValue(value, deps as any);
+
+    expect(result).toMatchInlineSnapshot(`undefined`);
+  });
 });
