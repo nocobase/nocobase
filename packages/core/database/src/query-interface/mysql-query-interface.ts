@@ -76,4 +76,8 @@ export default class MysqlQueryInterface extends QueryInterface {
     const sql = match[0];
     return sql;
   }
+
+  showTableDefinition(tableInfo: { name: string; schema?: string }): Promise<any> {
+    return Promise.resolve(undefined);
+  }
 }
