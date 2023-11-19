@@ -52,7 +52,7 @@ class HelloPlugin extends Plugin {
   async load() {
     this.app.addProvider(HelloProvider);
     const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
-    blockInitializers?.add('media.hello', {
+    blockInitializers?.add('otherBlocks.hello', {
       title: '{{t("Hello block")}}',
       Component: 'HelloBlockInitializer',
     });

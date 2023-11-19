@@ -1,7 +1,6 @@
 import { expect, test } from '@nocobase/test/client';
 
 async function waitForModalToBeHidden(page) {
-  test.slow();
   await page.waitForFunction(() => {
     const modal = document.querySelector('.ant-modal');
     if (modal) {
@@ -13,6 +12,7 @@ async function waitForModalToBeHidden(page) {
 }
 
 test.describe('add plugin in front', () => {
+  test.slow();
   test('add plugin npm registry,then remove plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
     await page.getByTestId('plugin-manager-button').click();
@@ -50,6 +50,7 @@ test.describe('add plugin in front', () => {
 });
 
 test.describe('remove plugin', () => {
+  test.slow();
   test('remove plugin,then add plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
     await page.getByTestId('plugin-manager-button').click();
@@ -95,6 +96,7 @@ test.describe('remove plugin', () => {
 });
 
 test.describe('enable & disabled plugin', () => {
+  test.slow();
   test('enable plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
     await page.getByTestId('plugin-manager-button').click();

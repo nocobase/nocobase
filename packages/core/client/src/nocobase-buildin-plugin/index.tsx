@@ -1,4 +1,4 @@
-import { LoadingOutlined } from '@ant-design/icons';
+import { DisconnectOutlined, LoadingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import { Button, Modal, Result, Spin } from 'antd';
@@ -10,7 +10,7 @@ import { Plugin } from '../application/Plugin';
 import { SigninPage, SigninPageExtensionPlugin, SignupPage } from '../auth';
 import { BlockSchemaComponentPlugin } from '../block-provider';
 import { RemoteDocumentTitlePlugin } from '../document-title';
-import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
+import { AntdAppProvider } from '../global-theme';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
@@ -53,8 +53,9 @@ const getProps = (app: Application) => {
   if (app.ws.serverDown) {
     return {
       status: 'error',
-      title: 'App error',
-      subTitle: 'The server is down',
+      icon: <DisconnectOutlined />,
+      title: "You're offline",
+      subTitle: 'Please check the server status or network connection status',
     };
   }
 
@@ -220,7 +221,6 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.addRoutes();
 
     this.app.use(CurrentUserProvider);
-    this.app.use(GlobalThemeProvider);
     this.app.use(AntdAppProvider);
     this.app.use(CurrentUserSettingsMenuProvider);
 

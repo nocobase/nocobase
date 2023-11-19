@@ -313,16 +313,22 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   registerCollectionType() {
-    this.collectionFactory.registerCollectionType(InheritedCollection, (options) => {
-      return options.inherits && lodash.castArray(options.inherits).length > 0;
+    this.collectionFactory.registerCollectionType(InheritedCollection, {
+      condition: (options) => {
+        return options.inherits && lodash.castArray(options.inherits).length > 0;
+      },
     });
 
-    this.collectionFactory.registerCollectionType(ViewCollection, (options) => {
-      return options.viewName || options.view;
+    this.collectionFactory.registerCollectionType(ViewCollection, {
+      condition: (options) => {
+        return options.viewName || options.view;
+      },
     });
 
-    this.collectionFactory.registerCollectionType(SqlCollection, (options) => {
-      return options.sql;
+    this.collectionFactory.registerCollectionType(SqlCollection, {
+      condition: (options) => {
+        return options.sql;
+      },
     });
   }
 

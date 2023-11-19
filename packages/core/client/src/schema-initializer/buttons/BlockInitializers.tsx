@@ -67,7 +67,7 @@ export const blockInitializers = new SchemaInitializer({
       ],
     },
     {
-      name: 'media',
+      name: 'otherBlocks',
       type: 'itemGroup',
       title: '{{t("Other blocks")}}',
       children: [

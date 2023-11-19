@@ -1,9 +1,157 @@
 import { mockServer, MockServer } from './index';
 import { registerActions } from '@nocobase/actions';
-import { Database } from '@nocobase/database';
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+import { Collection, Database } from '@nocobase/database';
+import { waitSecond } from '@nocobase/test';
 
 describe('sort action', () => {
+  describe('associations', () => {
+    let api: MockServer;
+
+    let UserCollection: Collection;
+
+    beforeEach(async () => {
+      api = mockServer();
+
+      registerActions(api);
+
+      UserCollection = api.db.collection({
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          {
+            type: 'hasMany',
+            name: 'posts',
+          },
+
+          { type: 'sort', name: 'sort' },
+        ],
+      });
+
+      api.db.collection({
+        name: 'posts',
+        fields: [
+          { type: 'string', name: 'title' },
+          { type: 'sort', name: 'sort' },
+          { type: 'belongsTo', name: 'user' },
+        ],
+      });
+
+      await api.db.sync();
+
+      for (let index = 1; index < 5; index++) {
+        await UserCollection.repository.create({
+          values: {
+            name: `u${index}`,
+            posts: [
+              {
+                title: `u${index}p1`,
+              },
+              {
+                title: `u${index}p2`,
+              },
+              {
+                title: `u${index}p3`,
+              },
+            ],
+          },
+        });
+      }
+    });
+
+    afterEach(async () => {
+      return api.destroy();
+    });
+
+    it('should not move association items when association not sortable', async () => {
+      const u1 = await api.db.getRepository('users').findOne({
+        filter: {
+          name: 'u1',
+        },
+      });
+
+      const response = await api.agent().resource('users.posts', u1.get('id')).move({
+        sourceId: 1,
+        targetId: 3,
+      });
+
+      expect(response.status).not.toEqual(200);
+    });
+
+    it('should move association item', async () => {
+      UserCollection.setField('posts', {
+        sortable: true,
+        type: 'hasMany',
+      });
+
+      await api.db.sync({
+        alter: {
+          drop: false,
+        },
+        force: false,
+      });
+
+      const PostCollection = api.db.getCollection('posts');
+
+      const sortFieldName = `${UserCollection.model.associations.posts.foreignKey}Sort`;
+      expect(PostCollection.fields.get(sortFieldName)).toBeDefined();
+
+      const u1 = await api.db.getRepository('users').findOne({
+        filter: {
+          name: 'u1',
+        },
+      });
+
+      await api
+        .agent()
+        .resource('users.posts', u1.get('id'))
+        .create({
+          values: {
+            title: 'u1p4',
+          },
+        });
+
+      const u1p4 = await api.db.getRepository('posts').findOne({
+        filter: {
+          title: 'u1p4',
+        },
+      });
+
+      // should move by association sort field
+      await api
+        .agent()
+        .resource('users.posts', u1.get('id'))
+        .move({
+          sourceId: 1,
+          targetId: u1p4.get('id'),
+        });
+
+      const u1Posts = await api
+        .agent()
+        .resource('users.posts', u1.get('id'))
+        .list({
+          fields: ['title'],
+          sort: [sortFieldName],
+        });
+
+      expect(u1Posts.body).toMatchObject({
+        rows: [
+          {
+            title: 'u1p2',
+          },
+          {
+            title: 'u1p3',
+          },
+          {
+            title: 'u1p4',
+          },
+          {
+            title: 'u1p1',
+          },
+        ],
+      });
+    });
+  });
+
   describe('same scope', () => {
     let api: MockServer;
 
@@ -250,7 +398,7 @@ describe('sort action', () => {
 
       const beforeUpdatedAts = await getUpdatedAts();
 
-      await sleep(1000);
+      await waitSecond(1000);
 
       await api.agent().resource('tests').move({
         sourceId: moveItemId,
@@ -301,7 +449,7 @@ describe('sort action', () => {
       });
 
       const beforeUpdated = t1.get('updatedAt');
-      await sleep(1000);
+      await waitSecond(1000);
 
       await api
         .agent()
