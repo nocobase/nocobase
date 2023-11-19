@@ -77,7 +77,13 @@ export default class MysqlQueryInterface extends QueryInterface {
     return sql;
   }
 
-  showTableDefinition(tableInfo: { name: string; schema?: string }): Promise<any> {
-    return Promise.resolve(undefined);
+  async showTableDefinition(tableInfo: { name: string; schema?: string }): Promise<any> {
+    const { name } = tableInfo;
+
+    const sql = `SHOW CREATE TABLE ${name}`;
+
+    const results = await this.db.sequelize.query(sql, { type: 'SELECT' });
+
+    return results[0]['Create Table'];
   }
 }

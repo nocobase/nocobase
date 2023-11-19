@@ -140,6 +140,6 @@ $BODY$
       },
     );
 
-    return res[0].show_create_table;
+    return res[0]['show_create_table'];
   }
 }
