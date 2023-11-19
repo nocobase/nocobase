@@ -2048,3 +2048,168 @@ export const oneFormBlockWithRolesFieldBasedUsers: PageConfig = {
     'x-async': true,
   },
 };
+
+/**
+ * 页面中有一个详情区块，且有一个名为 toGeneral 的关系字段（m2o），指向 General 表
+ */
+export const oneDetailBlockWithM2oFieldToGeneral: PageConfig = {
+  collections: generalWithM2oSingleSelect,
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      yxmahmlh8o5: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'BlockInitializers',
+        properties: {
+          '40g1gedv1hg': {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            properties: {
+              mxhw6wlhgc4: {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                properties: {
+                  '5o5axia74l4': {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-acl-action': 'targetToGeneral:view',
+                    'x-decorator': 'DetailsBlockProvider',
+                    'x-decorator-props': {
+                      resource: 'targetToGeneral',
+                      collection: 'targetToGeneral',
+                      readPretty: true,
+                      action: 'list',
+                      params: {
+                        pageSize: 1,
+                      },
+                      rowKey: 'id',
+                    },
+                    'x-designer': 'DetailsDesigner',
+                    'x-component': 'CardItem',
+                    properties: {
+                      '7dqm8cyv75w': {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-component': 'Details',
+                        'x-read-pretty': true,
+                        'x-component-props': {
+                          useProps: '{{ useDetailsBlockProps }}',
+                        },
+                        properties: {
+                          m0k3c7eifes: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-initializer': 'DetailsActionInitializers',
+                            'x-component': 'ActionBar',
+                            'x-component-props': {
+                              style: {
+                                marginBottom: 24,
+                              },
+                            },
+                            'x-uid': 'm1xeg7mvm1a',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                          grid: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-component': 'Grid',
+                            'x-initializer': 'ReadPrettyFormItemInitializers',
+                            properties: {
+                              rp7rbwiym41: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-component': 'Grid.Row',
+                                properties: {
+                                  ior8lf4w5gf: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Grid.Col',
+                                    properties: {
+                                      toGeneral: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'string',
+                                        'x-designer': 'FormItem.Designer',
+                                        'x-component': 'CollectionField',
+                                        'x-decorator': 'FormItem',
+                                        'x-collection-field': 'targetToGeneral.toGeneral',
+                                        'x-component-props': {},
+                                        'x-uid': 'l5h0d3oaa8e',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'wwuo805yebc',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': 'oksxa8by2wg',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': 'asrxyva98lw',
+                            'x-async': false,
+                            'x-index': 2,
+                          },
+                          pagination: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-component': 'Pagination',
+                            'x-component-props': {
+                              useProps: '{{ useDetailsPaginationProps }}',
+                            },
+                            'x-uid': 'wjxgz8a9t8b',
+                            'x-async': false,
+                            'x-index': 3,
+                          },
+                        },
+                        'x-uid': 'iqpn46h8u32',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                    },
+                    'x-uid': 'vzk3p6iebpy',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': 'cqg2o7ll6os',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'ux1de9di7wc',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'ldw6jqzvx10',
+        'x-async': false,
+        'x-index': 1,
+      },
+    },
+    'x-uid': 'jvs9rrb5ifu',
+    'x-async': true,
+    'x-index': 1,
+  },
+};

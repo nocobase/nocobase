@@ -1106,4 +1106,15 @@ export const generalWithM2oSingleSelect: CollectionSetting[] = [
       },
     ],
   },
+  {
+    name: 'targetToGeneral',
+    title: 'Target to general',
+    fields: [
+      {
+        name: 'toGeneral',
+        interface: 'm2o',
+        target: 'general',
+      },
+    ],
+  },
 ];
