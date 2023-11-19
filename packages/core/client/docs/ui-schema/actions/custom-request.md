@@ -1,7 +1,7 @@
 # 自定义请求
 
-<Alert>
-x-component 不统一，x-action 也不统一
+<Alert type="warning">
+x-component 不统一，x-action 也不统一，有三种风格的 schema
 </Alert>
 
 ## UI Schema
