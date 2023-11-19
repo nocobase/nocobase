@@ -82,12 +82,13 @@ export class SortField extends Field {
       const queryInterface = this.collection.db.sequelize.getQueryInterface();
 
       if (scopeKey) {
-        const scopeField = this.collection.getField(scopeKey);
-        if (!scopeField) {
+        const scopeAttribute = this.collection.model.rawAttributes[scopeKey];
+
+        if (!scopeAttribute) {
           throw new Error(`can not find scope field ${scopeKey} for collection ${this.collection.name}`);
         }
 
-        scopeKey = this.collection.model.rawAttributes[scopeKey].field;
+        scopeKey = scopeAttribute.field;
       }
 
       const quotedOrderField = queryInterface.quoteIdentifier(orderField);

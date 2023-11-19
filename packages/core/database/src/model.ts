@@ -40,6 +40,15 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       return;
     }
 
+    // @ts-ignore
+    const collectionSyncOptions = this.database.collectionFactory.collectionTypes.get(this.collection.constructor)
+      ?.onSync;
+
+    if (collectionSyncOptions) {
+      await collectionSyncOptions(this, options);
+      return;
+    }
+
     const model = this as any;
 
     const _schema = model._schema;
@@ -53,7 +62,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
 
     // fix sequelize sync with model that not have any column
     if (Object.keys(model.tableAttributes).length === 0) {
-      if (this.database.inDialect('sqlite', 'mysql', 'mariadb')) {
+      if (this.database.inDialect('sqlite', 'mysql')) {
         console.error(`Zero-column tables aren't supported in ${this.database.sequelize.getDialect()}`);
         return;
       }

@@ -1,4 +1,4 @@
-import { LoadingOutlined } from '@ant-design/icons';
+import { DisconnectOutlined, LoadingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import { Button, Modal, Result, Spin } from 'antd';
@@ -54,8 +54,9 @@ const getProps = (app: Application) => {
   if (app.ws.serverDown) {
     return {
       status: 'error',
-      title: 'App error',
-      subTitle: 'The server is down',
+      icon: <DisconnectOutlined />,
+      title: "You're offline",
+      subTitle: 'Please check the server status or network connection status',
     };
   }
 
