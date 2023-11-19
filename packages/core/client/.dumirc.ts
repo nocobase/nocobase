@@ -154,6 +154,10 @@ export default defineConfig({
               title: 'Data blocks',
               children: [
                 {
+                  title: 'Overview',
+                  link: '/ui-schema/blocks/data',
+                },
+                {
                   title: 'Table',
                   link: '/ui-schema/blocks/data/table',
                 },

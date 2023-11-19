@@ -49,7 +49,7 @@ export class WorkflowPlugin extends Plugin {
     this.app.schemaInitializerManager.add(addCustomFormField);
 
     const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
-    blockInitializers.add('media.workflowTodos', {
+    blockInitializers.add('otherBlocks.workflowTodos', {
       title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
       Component: 'WorkflowTodoBlockInitializer',
       icon: 'CheckSquareOutlined',

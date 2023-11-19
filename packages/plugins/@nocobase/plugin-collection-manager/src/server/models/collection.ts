@@ -25,6 +25,7 @@ export class CollectionModel extends MagicAttributeModel {
       ...this.get(),
       fields: [],
     };
+
     if (this.db.hasCollection(name)) {
       collection = this.db.getCollection(name);
 

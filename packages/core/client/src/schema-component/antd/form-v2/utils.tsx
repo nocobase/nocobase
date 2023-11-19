@@ -1,6 +1,6 @@
 import { Field } from '@formily/core';
 import { evaluators } from '@nocobase/evaluators/client';
-import { uid } from '@nocobase/utils';
+import { uid } from '@nocobase/utils/client';
 import _, { last } from 'lodash';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
