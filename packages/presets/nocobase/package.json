@@ -45,6 +45,7 @@
     "@nocobase/plugin-users": "0.15.0-alpha.4",
     "@nocobase/plugin-verification": "0.15.0-alpha.4",
     "@nocobase/plugin-workflow": "0.15.0-alpha.4",
+    "@nocobase/plugin-action-bulk-update": "0.15.0-alpha.4",
     "@nocobase/plugin-action-bulk-edit": "0.15.0-alpha.4",
     "@nocobase/server": "0.15.0-alpha.4",
     "cronstrue": "^2.11.0"

@@ -1,10 +1,8 @@
 import { useFieldSchema } from '@formily/react';
-import { useCollection } from '../../';
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
+import { useCollection, SchemaInitializer } from '@nocobase/client';
 
-// 表格操作配置
-export const tableActionInitializers = new SchemaInitializer({
-  name: 'TableActionInitializers',
+export const GanttActionInitializers = new SchemaInitializer({
+  name: 'GanttActionInitializers',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -94,6 +92,20 @@ export const tableActionInitializers = new SchemaInitializer({
       name: 'customize',
       title: '{{t("Customize")}}',
       children: [
+        {
+          type: 'item',
+          title: '{{t("Bulk edit")}}',
+          name: 'bulkEdit',
+          Component: 'CustomizeBulkEditActionInitializer',
+          schema: {
+            'x-align': 'right',
+            'x-decorator': 'ACLActionProvider',
+            'x-acl-action': 'update',
+            'x-acl-action-props': {
+              skipScopeCheck: true,
+            },
+          },
+        },
         {
           type: 'item',
           title: '{{t("Add record")}}',
