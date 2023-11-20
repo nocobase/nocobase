@@ -21,6 +21,7 @@ import { SchemaSettings } from '../../../schema-settings/SchemaSettings';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
+import { useApp } from '../../../application';
 
 const Tree = connect(
   AntdTree,
@@ -1076,12 +1077,16 @@ export const ActionDesigner = (props) => {
     schemaSettings = 'ActionSettings',
     ...restProps
   } = props;
+  const app = useApp();
   const fieldSchema = useFieldSchema();
   const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
+  const settingsName = `ActionSettings:${fieldSchema['x-action']}`;
+  const defaultActionSettings = 'ActionSettings';
+  const hasAction = app.schemaSettingsManager.has(settingsName);
 
   return (
     <GeneralSchemaDesigner
-      schemaSettings={schemaSettings}
+      schemaSettings={hasAction ? settingsName : defaultActionSettings}
       contextValue={{ modalTip, linkageAction, removeButtonProps, buttonEditorProps, linkageRulesProps }}
       {...restProps}
       disableInitializer

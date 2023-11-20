@@ -1,5 +1,3 @@
-import { SchemaSetting } from '../../../application/schema-settings';
-import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
 import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
@@ -7,9 +5,11 @@ import { Select } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { SchemaSetting } from '../../../application/schema-settings';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { Collection, useCollection, useCollectionManager } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
+import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
 import { isPatternDisabled } from '../../../schema-settings';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
