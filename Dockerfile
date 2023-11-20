@@ -17,7 +17,7 @@ RUN cd /tmp && \
         && jq ".version = \"${NEWVERSION}\"" lerna.json > "$tmp" && mv "$tmp" lerna.json
 RUN  yarn install && yarn build --no-dts
 
-RUN git checkout -b release \
+RUN git checkout -b release-$(date +'%Y%m%d%H%M%S') \
     && yarn version:alpha -y  \
     && git config user.email "test@mail.com"  \
     && git config user.name "test" && git add .  \
