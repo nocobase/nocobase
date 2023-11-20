@@ -17,6 +17,7 @@ import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadAssociationFieldOfForm from './hooks/useLazyLoadAssociationFieldOfForm';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
+import { useApp } from '../../../application';
 
 export const FormItem: any = observer(
   (props: any) => {
@@ -81,7 +82,14 @@ export const FormItem: any = observer(
 );
 
 FormItem.Designer = function Designer() {
-  return <GeneralSchemaDesigner schemaSettings="FormItemSettings"></GeneralSchemaDesigner>;
+  const app = useApp();
+  const fieldSchema = useFieldSchema();
+  const settingsName = `FormItemSettings:${fieldSchema['x-interface']}`;
+  const defaultActionSettings = 'FormItemSettings';
+  const hasFieldItem = app.schemaSettingsManager.has(settingsName);
+  return (
+    <GeneralSchemaDesigner schemaSettings={hasFieldItem ? settingsName : defaultActionSettings}></GeneralSchemaDesigner>
+  );
 };
 
 export function isFileCollection(collection: Collection) {
