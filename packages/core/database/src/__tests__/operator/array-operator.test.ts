@@ -14,6 +14,8 @@ describe('array field operator', function () {
 
   beforeEach(async () => {
     db = mockDatabase({});
+    await db.clean({ drop: true });
+
     Test = db.collection({
       name: 'test',
       fields: [
