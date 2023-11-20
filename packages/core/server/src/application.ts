@@ -1,7 +1,7 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
-import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
+import { CacheManagerOptions, Cache, CacheManager } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
@@ -24,6 +24,7 @@ import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import { CronJobManager } from './cron/cron-job-manager';
+import { createCacheManager } from './cache';
 
 const packageJson = require('../package.json');
 
@@ -36,7 +37,7 @@ export interface ResourcerOptions {
 
 export interface ApplicationOptions {
   database?: IDatabaseOptions | Database;
-  cache?: ICacheConfig | ICacheConfig[];
+  cacheManager?: CacheManagerOptions;
   resourcer?: ResourcerOptions;
   bodyParser?: any;
   cors?: any;
@@ -167,7 +168,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._resourcer;
   }
 
+  protected _cacheManager: CacheManager;
+
+  get cacheManager() {
+    return this._cacheManager;
+  }
+
   protected _cache: Cache;
+
+  set cache(cache: Cache) {
+    this._cache = cache;
+  }
 
   get cache() {
     return this._cache;
@@ -317,7 +328,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       if (!oldDb.closed()) {
         await oldDb.close();
       }
+      if (this._cacheManager) {
+        await this._cacheManager.close();
+      }
     }
+
+    this._cacheManager = await createCacheManager(this, this.options.cacheManager);
 
     this.setMaintainingMessage('init plugins');
     await this.pm.initPlugins();
@@ -677,10 +693,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._resourcer = createResourcer(options);
     this._cli = this.createCli();
     this._i18n = createI18n(options);
-    this._cache = createCache(options.cache);
     this.context.db = this._db;
     this.context.logger = this._logger;
     this.context.resourcer = this._resourcer;
+    this.context.cacheManager = this._cacheManager;
     this.context.cache = this._cache;
 
     const plugins = this._pm ? this._pm.options.plugins : options.plugins;
