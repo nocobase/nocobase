@@ -3,7 +3,6 @@ import nodemailer from 'nodemailer';
 import format from 'string-template';
 import CryptoJS from 'crypto-js';
 
-
 function createTransPort({ host, port }) {
   return nodemailer.createTransport({
     host,
@@ -123,13 +122,12 @@ export class PluginSmtpServer extends Plugin {
           const port = process.env.APP_PORT_1;
           const linkOrigin = origin.replace(/:\d+$/, `:13000`);
 
-          const link = `${linkOrigin}/resetPassword/${email}/${resetToken}`;
+          const link = `${linkOrigin ? linkOrigin : origin}/resetPassword/${email}/${resetToken}`;
           const custom_variable_object = Object.assign(
             {
               username: userdata.username,
               email: email,
               link,
-
             },
             userdata.dataValues,
           );
@@ -147,7 +145,6 @@ export class PluginSmtpServer extends Plugin {
             subject: data[subject],
             text: mappedStringWithValue,
             html: mappedStringWithValue,
-
           };
           const info = await transporter.sendMail(emailOption);
 
@@ -161,7 +158,6 @@ export class PluginSmtpServer extends Plugin {
             emailBody,
             subject,
             custom_variable_object,
-
           };
 
           await next();
@@ -211,7 +207,6 @@ export class PluginSmtpServer extends Plugin {
             subject: data[subject],
             text: mappedStringWithValue,
             html: mappedStringWithValue,
-
           };
           const info = await transporter.sendMail(emailOption);
 
@@ -224,7 +219,6 @@ export class PluginSmtpServer extends Plugin {
 
           await next();
         },
-
 
         //signup email API
         //signup email API
@@ -276,17 +270,13 @@ export class PluginSmtpServer extends Plugin {
             html: mappedStringWithValue,
           };
           const info = await transporter.sendMail(emailOption);
-           // Respond to the request with a success message.
+          // Respond to the request with a success message.
           ctx.body = {
             message: 'Signup success, Welcome',
           };
-       
-
-         
 
           await next();
         },
-
       },
     });
     //applying condition on who can access the API
@@ -313,8 +303,6 @@ export class PluginSmtpServer extends Plugin {
     });
 
     this.app.acl.allowManager.registerAllowCondition('signupEmailCheck', async (ctx) => {
-     
-
       const token = ctx.request.header.authorization.split(' ')[1].trim().toString();
 
       // Decrypt

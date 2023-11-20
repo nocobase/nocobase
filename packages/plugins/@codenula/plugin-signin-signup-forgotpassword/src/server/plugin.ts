@@ -49,8 +49,8 @@ export class PluginSigninSignupForgotpasswordServer extends Plugin {
           'Hello {name}. Your password has been successfully reset. If its not you please contact undersigned',
         signupEmailSubject: 'welcome to the website',
         signinEmailSubject: 'Login successfull',
-        forgotPasswordEmailConfirmationSubject: 'Reset Password Confirmation',
-        forgotPasswordEmailSubject: 'Reset Password Successfull',
+        confirmForgotPasswordEmail: 'Here is your link {link} Reset',
+        confirmForgotPasswordEmailSubject: 'Password Confirmation',
         custom_variables: '{"name":"",companyName:"metadesign"}',
       },
     });
