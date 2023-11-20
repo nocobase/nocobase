@@ -123,8 +123,6 @@ export const linkageAction = async ({
     case ActionType.Active:
       if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         disableResult.push(false);
-      } else {
-        disableResult.push(true);
       }
       field.linkageProperty = {
         ...field.linkageProperty,
