@@ -1,8 +1,7 @@
 import { CollectionSetting } from './e2eUtils';
 
 /**
- * 1. 创建一个名为 through 的 collection，作为中间表
- * 2. 创建一个名为 general 的 collection，其包含所有类型的字段
+ * 创建一个名为 general 的 collection，其包含所有类型的字段
  */
 export const general: CollectionSetting[] = [
   {
