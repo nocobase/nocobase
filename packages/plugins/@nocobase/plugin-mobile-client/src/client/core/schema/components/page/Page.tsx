@@ -15,7 +15,7 @@ const InternalPage: React.FC = (props) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabsSchema = fieldSchema.properties?.['tabs'];
   const isHeaderEnabled = field.componentProps.headerEnabled !== false;
-  const isTabsEnabled = field.componentProps.tabsEnabled !== false;
+  const isTabsEnabled = field.componentProps.tabsEnabled !== false && tabsSchema;
 
   let pageSchema = findSchema(fieldSchema, 'MPage');
   if (!isTabsEnabled && !pageSchema && tabsSchema) {
