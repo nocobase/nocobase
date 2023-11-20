@@ -55,4 +55,4 @@ const sqlite = {
   json: ['json', 'array'],
 };
 
-export default { postgres, mysql, sqlite };
+export default { postgres, mysql, sqlite, mariadb: mysql };

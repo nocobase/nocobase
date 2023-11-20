@@ -366,7 +366,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
     this._authenticated = true;
     await this.db.auth();
-    await this.dbVersionCheck({ exit: true });
+    await this.db.checkVersion();
     await this.db.prepare();
   }
 
@@ -557,37 +557,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterDestroy', this, options);
 
     this.logger.debug('finish destroy app');
-  }
-
-  async dbVersionCheck(options?: { exit?: boolean }) {
-    const r = await this.db.version.satisfies({
-      mysql: '>=8.0.17',
-      sqlite: '3.x',
-      postgres: '>=10',
-    });
-
-    if (!r) {
-      console.log(chalk.red('The database only supports MySQL 8.0.17 and above, SQLite 3.x and PostgreSQL 10+'));
-      if (options?.exit) {
-        process.exit();
-      }
-      return false;
-    }
-
-    if (this.db.inDialect('mysql')) {
-      const result = await this.db.sequelize.query(`SHOW VARIABLES LIKE 'lower_case_table_names'`, { plain: true });
-      if (result?.Value === '1' && !this.db.options.underscored) {
-        console.log(
-          `Your database lower_case_table_names=1, please add ${chalk.yellow('DB_UNDERSCORED=true')} to the .env file`,
-        );
-        if (options?.exit) {
-          process.exit();
-        }
-        return false;
-      }
-    }
-
-    return true;
   }
 
   async isInstalled() {
