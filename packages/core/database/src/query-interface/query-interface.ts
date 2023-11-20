@@ -25,6 +25,8 @@ export default abstract class QueryInterface {
 
   abstract parseSQL(sql: string): any;
 
+  abstract showTableDefinition(tableInfo: { name: string; schema?: string }): Promise<any>;
+
   async dropAll(options) {
     if (options.drop !== true) return;
 
