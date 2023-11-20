@@ -67,7 +67,6 @@ export const SearchCollections = ({ value: outValue, onChange }) => {
 
 const LoadingItem = ({ loadMore, maxHeight }) => {
   const spinRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const el = spinRef.current;
     if (!el) return;
@@ -80,7 +79,7 @@ const LoadingItem = ({ loadMore, maxHeight }) => {
     const checkLoadMore = function () {
       if (!container) return;
       // 判断滚动是否到达底部
-      if (Math.floor(container.scrollHeight - container.scrollTop - container.clientHeight) === 0) {
+      if (Math.abs(container.scrollHeight - container.scrollTop - container.clientHeight) <= MENU_ITEM_HEIGHT) {
         // 到达底部，执行加载更多的操作
         loadMore();
       }
@@ -88,8 +87,10 @@ const LoadingItem = ({ loadMore, maxHeight }) => {
 
     // 监听滚动，滚动到底部触发加载更多
     if (container) {
+      container.style.height = `${maxHeight - MENU_ITEM_HEIGHT}px`;
+      container.style.maxHeight = 'inherit';
+      container.style.overflowY = 'scroll';
       container.addEventListener('scroll', checkLoadMore);
-      container.style.height = `${maxHeight}px`;
     }
 
     return () => {
