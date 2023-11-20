@@ -140,7 +140,7 @@ test.describe('icon', () => {
     await nocoPage.goto();
     await page.getByRole('button', { name: 'Add new' }).click();
     await page.getByLabel('block-item-CollectionField-general-form-general.icon-icon').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.email').hover();
+    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.icon').hover();
   };
 
   commonTesting(showMenu, 'icon');
@@ -152,7 +152,9 @@ test.describe('single line text', () => {
     await nocoPage.goto();
     await page.getByRole('button', { name: 'Add new' }).click();
     await page.getByLabel('block-item-CollectionField-general-form-general.singleLineText-singleLineText').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.email').hover();
+    await page
+      .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.singleLineText')
+      .hover();
   };
 
   commonTesting(showMenu, 'singleLineText');
@@ -164,7 +166,7 @@ test.describe('integer', () => {
     await nocoPage.goto();
     await page.getByRole('button', { name: 'Add new' }).click();
     await page.getByLabel('block-item-CollectionField-general-form-general.integer-integer').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.email').hover();
+    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.integer').hover();
   };
 
   commonTesting(showMenu, 'integer');
@@ -176,7 +178,7 @@ test.describe('number', () => {
     await nocoPage.goto();
     await page.getByRole('button', { name: 'Add new' }).click();
     await page.getByLabel('block-item-CollectionField-general-form-general.number-number').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.email').hover();
+    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.number').hover();
   };
 
   commonTesting(showMenu, 'number');
@@ -188,7 +190,9 @@ test.describe('password', () => {
     await nocoPage.goto();
     await page.getByRole('button', { name: 'Add new' }).click();
     await page.getByLabel('block-item-CollectionField-general-form-general.password-password').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.email').hover();
+    await page
+      .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.password')
+      .hover();
   };
 
   commonTesting(showMenu, 'password');
@@ -200,7 +204,7 @@ test.describe('percent', () => {
     await nocoPage.goto();
     await page.getByRole('button', { name: 'Add new' }).click();
     await page.getByLabel('block-item-CollectionField-general-form-general.percent-percent').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.email').hover();
+    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.percent').hover();
   };
 
   commonTesting(showMenu, 'percent');
@@ -212,7 +216,7 @@ test.describe('phone', () => {
     await nocoPage.goto();
     await page.getByRole('button', { name: 'Add new' }).click();
     await page.getByLabel('block-item-CollectionField-general-form-general.phone-phone').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.email').hover();
+    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.phone').hover();
   };
 
   commonTesting(showMenu, 'phone');
@@ -224,7 +228,9 @@ test.describe('long text', () => {
     await nocoPage.goto();
     await page.getByRole('button', { name: 'Add new' }).click();
     await page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.email').hover();
+    await page
+      .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.longText')
+      .hover();
   };
 
   commonTesting(showMenu, 'longText');
@@ -236,7 +242,7 @@ test.describe('URL', () => {
     await nocoPage.goto();
     await page.getByRole('button', { name: 'Add new' }).click();
     await page.getByLabel('block-item-CollectionField-general-form-general.url-url').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.email').hover();
+    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.url').hover();
   };
 
   commonTesting(showMenu, 'url');

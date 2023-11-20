@@ -14,7 +14,7 @@ export async function testDisplayTitle(page: Page, title: string) {
   await expect(page.getByRole('menuitem', { name: 'Display title' }).getByRole('switch')).toBeChecked();
   await page.getByRole('menuitem', { name: 'Display title' }).click();
   await expect(page.getByRole('menuitem', { name: 'Display title' }).getByRole('switch')).not.toBeChecked();
-  await expect(page.getByText(title)).not.toBeVisible();
+  await expect(page.getByText(`${title}:`, { exact: true })).not.toBeVisible();
 }
 
 export async function testEditDescription(page: Page) {
