@@ -1,7 +1,7 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
-import { CacheManagerOptions, Cache, CacheManager } from '@nocobase/cache';
+import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
@@ -16,15 +16,15 @@ import lodash from 'lodash';
 import { createACL } from './acl';
 import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
+import { createCacheManager } from './cache';
 import { registerCli } from './commands';
+import { CronJobManager } from './cron/cron-job-manager';
 import { ApplicationNotInstall } from './errors/application-not-install';
 import { createAppProxy, createI18n, createResourcer, getCommandFullName, registerMiddlewares } from './helper';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { CronJobManager } from './cron/cron-job-manager';
-import { createCacheManager } from './cache';
 
 const packageJson = require('../package.json');
 
@@ -217,6 +217,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected _locales: Locale;
 
   get locales() {
+    return this._locales;
+  }
+
+  get localeManager() {
     return this._locales;
   }
 
