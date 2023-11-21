@@ -94,9 +94,9 @@ test('configure fields in kanban block', async ({ page, mockPage, mockRecord, mo
 });
 
 //看板的区块参数配置
-test('configure params in kanban block', async ({ page, mockPage, mockRecord, mockCollections }) => {
+test('configure params in kanban block', async ({ page, mockPage, mockRecords, mockCollections }) => {
   await mockCollections(generalWithSingleSelect);
-  await mockRecord('general', { singleLineText: 'singleLineText', manyToOne: { id: 1 } });
+  await mockRecords('general', 4);
   await mockPage().goto();
   await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
   await expect(page.getByRole('menuitem', { name: 'form Kanban right' })).toBeVisible();
@@ -107,6 +107,22 @@ test('configure params in kanban block', async ({ page, mockPage, mockRecord, mo
   await page.getByRole('option', { name: 'Single select' }).click();
   await page.getByRole('button', { name: 'OK' }).click();
   await expect(page.getByLabel('block-item-CardItem-general-kanban')).toBeVisible();
+  //固定区块
+  await page.getByLabel('block-item-CardItem-general-kanban').hover();
+  await page.getByLabel('designer-schema-settings-CardItem-Kanban.Designer-general').hover();
+  await page.getByRole('menuitem', { name: 'Fix block' }).click();
+  const kanbanBoard = page.getByLabel('block-item-CardItem-general-kanban');
+  const kanbanBoardHeight = await kanbanBoard.evaluate((element) => {
+    const computedStyle = window.getComputedStyle(element);
+    return parseInt(computedStyle.height, 10);
+  });
+  const windowHeight = await page.evaluate(() => {
+    return window.innerHeight;
+  });
+  const expectedHeight = windowHeight - 147;
+
+  // 断言高度为预期值
+  expect(kanbanBoardHeight).toBe(expectedHeight);
   //设置数据范围
   await page.getByLabel('block-item-CardItem-general-kanban').hover();
   await page.getByLabel('designer-schema-settings-CardItem-Kanban.Designer-general').hover();
@@ -128,5 +144,4 @@ test('configure params in kanban block', async ({ page, mockPage, mockRecord, mo
   } catch {
     console.log('error');
   }
-  //固定区块
 });
