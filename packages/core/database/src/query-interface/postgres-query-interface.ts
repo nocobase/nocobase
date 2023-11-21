@@ -112,4 +112,34 @@ export default class PostgresQueryInterface extends QueryInterface {
       return {};
     }
   }
+
+  async showTableDefinition(tableInfo: { name: string; schema?: string }) {
+    const showFunc = `
+CREATE OR REPLACE FUNCTION show_create_table(p_schema text, p_table_name text)
+RETURNS text AS
+$BODY$
+SELECT 'CREATE TABLE ' || p_schema || '.' || p_table_name || ' (' || E'\\n' || '' ||
+    string_agg(column_list.column_expr, ', ' || E'\\n' || '') ||
+    '' || E'\\n' || ');'
+FROM (
+  SELECT '    ' || column_name || ' ' || data_type ||
+       coalesce('(' || character_maximum_length || ')', '') ||
+       case when is_nullable = 'YES' then '' else ' NOT NULL' end as column_expr
+  FROM information_schema.columns
+  WHERE table_schema = p_schema AND table_name = p_table_name
+  ORDER BY ordinal_position) column_list;
+$BODY$
+  LANGUAGE SQL STABLE;
+    `;
+    await this.db.sequelize.query(showFunc, { type: 'RAW' });
+
+    const res = await this.db.sequelize.query(
+      `SELECT show_create_table('${tableInfo.schema}', '${tableInfo.name || 'public'}')`,
+      {
+        type: 'SELECT',
+      },
+    );
+
+    return res[0]['show_create_table'];
+  }
 }
