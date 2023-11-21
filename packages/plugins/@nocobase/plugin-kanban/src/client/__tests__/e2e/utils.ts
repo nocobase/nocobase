@@ -9,6 +9,15 @@ export const generalWithSingleSelect: CollectionSetting[] = [
     title: 'General',
     fields: [
       {
+        name: 'singleLineText',
+        interface: 'input',
+        uiSchema: {
+          type: 'string',
+          'x-component': 'Input',
+          title: 'Single line text',
+        },
+      },
+      {
         name: 'singleSelect',
         interface: 'select',
         uiSchema: {
@@ -33,6 +42,35 @@ export const generalWithSingleSelect: CollectionSetting[] = [
           'x-component': 'Select',
           title: 'Single select',
         },
+      },
+      {
+        name: 'f_t22o7loai3j',
+        interface: 'integer',
+        isForeignKey: true,
+        uiSchema: {
+          type: 'number',
+          title: 'f_t22o7loai3j',
+          'x-component': 'InputNumber',
+          'x-read-pretty': true,
+        },
+      },
+      {
+        name: 'manyToOne',
+        interface: 'm2o',
+        foreignKey: 'f_t22o7loai3j',
+        uiSchema: {
+          'x-component': 'AssociationField',
+          'x-component-props': {
+            multiple: false,
+            fieldNames: {
+              label: 'id',
+              value: 'id',
+            },
+          },
+          title: 'Many to one',
+        },
+        target: 'users',
+        targetKey: 'id',
       },
     ],
   },
