@@ -1,5 +1,5 @@
 import { PageConfig } from './e2eUtils';
-import { general, generalWithM2oSingleSelect, generalWithSingleLineText } from './templatesOfCollection';
+import { generalWithBasic, generalWithM2oSingleSelect, generalWithSingleLineText } from './templatesOfCollection';
 
 /**
  * 一个空的 group 页面
@@ -3084,7 +3084,7 @@ export const oneDetailBlockWithM2oFieldToGeneral: PageConfig = {
  * 4. 点击 Edit 有一个 Form 区块
  */
 export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
-  collections: general,
+  collections: generalWithBasic,
   pageSchema: {
     _isJSONSchemaObject: true,
     version: '2.0',
