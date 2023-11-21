@@ -8,7 +8,7 @@ on:
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
-    container: node:16
+    container: node:18
     steps:
       -
         name: Checkout
