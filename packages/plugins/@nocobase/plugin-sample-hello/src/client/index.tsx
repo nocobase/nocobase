@@ -1,5 +1,11 @@
 import { TableOutlined } from '@ant-design/icons';
-import { SchemaInitializerItem, Plugin, SchemaComponentOptions, useSchemaInitializer } from '@nocobase/client';
+import {
+  SchemaInitializerItem,
+  Plugin,
+  SchemaComponentOptions,
+  useSchemaInitializer,
+  SchemaSetting,
+} from '@nocobase/client';
 import { Card } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -47,6 +53,11 @@ const HelloPluginSettingPage = () => {
     </Card>
   );
 };
+
+const mySettings = new SchemaSetting({
+  name: 'MySetting',
+  items: [],
+});
 
 class HelloPlugin extends Plugin {
   async load() {

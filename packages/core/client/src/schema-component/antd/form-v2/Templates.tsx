@@ -157,6 +157,9 @@ export const Templates = ({ style = {}, form }) => {
       <Space wrap>
         <label style={labelStyle}>{t('Data template')}: </label>
         <Select
+          // @ts-ignore
+          role="button"
+          data-testid="select-form-data-template"
           popupMatchSelectWidth={false}
           options={templateOptions}
           fieldNames={{ label: 'title', value: 'key' }}
