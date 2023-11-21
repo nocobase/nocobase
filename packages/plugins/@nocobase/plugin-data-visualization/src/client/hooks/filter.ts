@@ -203,7 +203,7 @@ export const useChartFilter = () => {
           name: field.name,
           type: 'subMenu',
           title: field?.uiSchema?.title || field.name,
-          children: items,
+          children: items.filter(Boolean),
         };
       }
       return item;
