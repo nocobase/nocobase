@@ -1,4 +1,4 @@
-import { SchemaInitializerItemOptions, i18n, useActionContext, useCollectionManager } from '@nocobase/client';
+import { SchemaInitializerItemType, i18n, useActionContext, useCollectionManager } from '@nocobase/client';
 import { useContext, useMemo } from 'react';
 import { ChartDataContext } from '../block/ChartDataProvider';
 import { CollectionOptions } from '@nocobase/database';
@@ -95,10 +95,11 @@ export const useChartFilter = () => {
       if (['oho', 'o2m'].includes(field.interface)) {
         schema['x-component-props'].useOriginalFilter = true;
       }
-      const resultItem: SchemaInitializerItemOptions = {
+      const resultItem: SchemaInitializerItemType = {
+        name: field.name,
         type: 'item',
         title: field?.uiSchema?.title || field.name,
-        component: 'CollectionFieldInitializer',
+        Component: 'CollectionFieldInitializer',
         remove: (schema, cb) => {
           cb(schema, {
             breakRemoveOn: {
@@ -148,10 +149,11 @@ export const useChartFilter = () => {
           },
         };
       }
-      const resultItem: SchemaInitializerItemOptions = {
+      const resultItem: SchemaInitializerItemType = {
+        name: child.name,
         type: 'item',
         title: child.title || child.name,
-        component: 'CollectionFieldInitializer',
+        Component: 'CollectionFieldInitializer',
         remove: (schema, cb) => {
           cb(schema, {
             breakRemoveOn: {
@@ -165,7 +167,7 @@ export const useChartFilter = () => {
       return resultItem;
     };
 
-    const field2option = (field: any, depth: number, title: string, name: string) => {
+    const field2option = (field: any, depth: number, title: string, name: string): SchemaInitializerItemType => {
       if (!field.interface) {
         return;
       }
@@ -183,6 +185,7 @@ export const useChartFilter = () => {
       if (children?.length && !['chinaRegion', 'createdBy', 'updatedBy'].includes(field.interface)) {
         const items = children.map((child: any) => children2item(child, title, `${name}.${field.name}`));
         return {
+          name: field.name,
           type: 'subMenu',
           title: field?.uiSchema?.title || field.name,
           children: items,
@@ -197,6 +200,7 @@ export const useChartFilter = () => {
           field2option(targetField, depth + 1, '', `${name}.${field.name}`),
         );
         return {
+          name: field.name,
           type: 'subMenu',
           title: field?.uiSchema?.title || field.name,
           children: items,
@@ -205,7 +209,7 @@ export const useChartFilter = () => {
       return item;
     };
 
-    const options = [];
+    const options: SchemaInitializerItemType[] = [];
     const associationOptions = [];
     fields.forEach((field) => {
       const fieldInterface = field.interface;
@@ -223,9 +227,11 @@ export const useChartFilter = () => {
     if (associationOptions.length) {
       options.push(
         {
+          name: 'divider',
           type: 'divider',
         },
         {
+          name: 'displayAssociationFields',
           type: 'itemGroup',
           title: i18n.t('Display association fields'),
           children: associationOptions,
