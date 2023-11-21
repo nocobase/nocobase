@@ -1,8 +1,7 @@
 import { CollectionSetting } from './e2eUtils';
 
 /**
- * 1. 创建一个名为 through 的 collection，作为中间表
- * 2. 创建一个名为 general 的 collection，其包含所有类型的字段
+ * 创建一个名为 general 的 collection，其包含所有类型的字段
  */
 export const general: CollectionSetting[] = [
   {
@@ -230,6 +229,62 @@ export const general: CollectionSetting[] = [
       {
         name: 'collection',
         interface: 'collection',
+      },
+    ],
+  },
+];
+
+/**
+ * 创建一个名为 general 的 collection，其包含所有 basic 类型的字段
+ */
+export const generalWithBasic: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'singleLineText',
+        interface: 'input',
+      },
+      {
+        name: 'longText',
+        interface: 'textarea',
+      },
+      {
+        name: 'phone',
+        interface: 'phone',
+      },
+      {
+        name: 'email',
+        interface: 'email',
+      },
+      {
+        name: 'url',
+        interface: 'url',
+      },
+      {
+        name: 'integer',
+        interface: 'integer',
+      },
+      {
+        name: 'number',
+        interface: 'number',
+      },
+      {
+        name: 'percent',
+        interface: 'percent',
+      },
+      {
+        name: 'password',
+        interface: 'password',
+      },
+      {
+        name: 'color',
+        interface: 'color',
+      },
+      {
+        name: 'icon',
+        interface: 'icon',
       },
     ],
   },
