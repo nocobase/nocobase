@@ -1,6 +1,12 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
-import { SchemaInitializer, useCollection, useCompile, useDesignable } from '@nocobase/client';
+import {
+  SchemaInitializerSwitch,
+  useCollection,
+  useDesignable,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+} from '@nocobase/client';
 import React from 'react';
 import { useFields } from './useFields';
 
@@ -37,10 +43,10 @@ const initExportSettings = (fields) => {
   return exportSettings;
 };
 
-export const ExportActionInitializer = (props) => {
-  const { item, insert } = props;
-  const { exists, remove } = useCurrentSchema('export', 'x-action', item.find, item.remove);
-  const compile = useCompile();
+export const ExportActionInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { insert } = useSchemaInitializer();
+  const { exists, remove } = useCurrentSchema('export', 'x-action', itemConfig.find, itemConfig.remove);
   const { name } = useCollection();
   const fields = useFields(name);
 
@@ -60,16 +66,17 @@ export const ExportActionInitializer = (props) => {
     },
   };
   return (
-    <SchemaInitializer.SwitchItem
+    <SchemaInitializerSwitch
+      {...itemConfig}
       checked={exists}
-      title={item.title}
+      title={itemConfig.title}
       onClick={() => {
         if (exists) {
           return remove();
         }
         schema['x-action-settings']['exportSettings'] = initExportSettings(fields);
-        const s = merge(schema || {}, item.schema || {});
-        item?.schemaInitialize?.(s);
+        const s = merge(schema || {}, itemConfig.schema || {});
+        itemConfig?.schemaInitialize?.(s);
         insert(s);
       }}
     />

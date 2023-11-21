@@ -21,7 +21,6 @@ export const AppComponent: FC<AppComponentProps> = observer((props) => {
   if (app.loading) return app.renderComponent('AppSpin', { app });
   if (!app.maintained && app.maintaining) return app.renderComponent('AppMaintaining', { app });
   if (app.error?.code === 'LOAD_ERROR') return app.renderComponent('AppError', { app });
-
   return (
     <ErrorBoundary FallbackComponent={app.getComponent<FallbackProps>('AppError')} onError={handleErrors}>
       <ApplicationContext.Provider value={app}>

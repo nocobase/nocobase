@@ -1,4 +1,4 @@
-import { SchemaComponentOptions, SchemaInitializerButtonContext } from '@nocobase/client';
+import { SchemaComponentOptions, SchemaInitializerContext, useSchemaInitializer } from '@nocobase/client';
 import React, { useState } from 'react';
 import { ChartConfigProvider } from '../configure';
 import { ChartDataProvider } from './ChartDataProvider';
@@ -8,8 +8,11 @@ import { ChartFilterProvider } from '../filter/FilterProvider';
 
 export const ChartV2Block: React.FC = (props) => {
   const [initialVisible, setInitialVisible] = useState(false);
+  const schemaInitializerContextData = useSchemaInitializer();
   return (
-    <SchemaInitializerButtonContext.Provider value={{ visible: initialVisible, setVisible: setInitialVisible }}>
+    <SchemaInitializerContext.Provider
+      value={{ ...schemaInitializerContextData, visible: initialVisible, setVisible: setInitialVisible }}
+    >
       <SchemaComponentOptions
         components={{ ChartRenderer, ChartRendererProvider, ChartFilterBlockProvider, ChartFilterBlockDesigner }}
       >
@@ -19,6 +22,6 @@ export const ChartV2Block: React.FC = (props) => {
           </ChartFilterProvider>
         </ChartDataProvider>
       </SchemaComponentOptions>
-    </SchemaInitializerButtonContext.Provider>
+    </SchemaInitializerContext.Provider>
   );
 };

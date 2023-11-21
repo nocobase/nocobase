@@ -1,7 +1,8 @@
-import { useCollection } from '@nocobase/client';
+import { SchemaInitializer, useCollection } from '@nocobase/client';
 
 // 表格操作配置
-export const MapActionInitializers = {
+export const mapActionInitializers = new SchemaInitializer({
+  name: 'MapActionInitializers',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -11,19 +12,20 @@ export const MapActionInitializers = {
     {
       type: 'itemGroup',
       title: "{{t('Enable actions')}}",
+      name: 'enableActions',
       children: [
         {
-          type: 'item',
+          name: 'filter',
           title: "{{t('Filter')}}",
-          component: 'FilterActionInitializer',
+          Component: 'FilterActionInitializer',
           schema: {
             'x-align': 'left',
           },
         },
         {
-          type: 'item',
+          name: 'addNew',
           title: "{{t('Add new')}}",
-          component: 'CreateActionInitializer',
+          Component: 'CreateActionInitializer',
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
@@ -31,15 +33,15 @@ export const MapActionInitializers = {
               skipScopeCheck: true,
             },
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return collection.template !== 'sql';
           },
         },
         {
-          type: 'item',
+          name: 'refresh',
           title: "{{t('Refresh')}}",
-          component: 'RefreshActionInitializer',
+          Component: 'RefreshActionInitializer',
           schema: {
             'x-align': 'right',
           },
@@ -47,8 +49,9 @@ export const MapActionInitializers = {
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
-      visible: function useVisible() {
+      useVisible() {
         const collection = useCollection();
         return collection.template !== 'sql';
       },
@@ -56,11 +59,12 @@ export const MapActionInitializers = {
     {
       type: 'subMenu',
       title: '{{t("Customize")}}',
+      name: 'customize',
       children: [
         {
-          type: 'item',
+          name: 'bulkUpdate',
           title: '{{t("Bulk update")}}',
-          component: 'CustomizeActionInitializer',
+          Component: 'CustomizeActionInitializer',
           schema: {
             type: 'void',
             title: '{{ t("Bulk update") }}',
@@ -89,9 +93,9 @@ export const MapActionInitializers = {
           },
         },
         {
-          type: 'item',
+          name: 'bulkEdit',
           title: '{{t("Bulk edit")}}',
-          component: 'CustomizeBulkEditActionInitializer',
+          Component: 'CustomizeBulkEditActionInitializer',
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
@@ -102,10 +106,10 @@ export const MapActionInitializers = {
           },
         },
       ],
-      visible: function useVisible() {
+      useVisible() {
         const collection = useCollection();
         return collection.template !== 'sql';
       },
     },
   ],
-};
+});

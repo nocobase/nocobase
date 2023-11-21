@@ -1,5 +1,5 @@
 import { FormItem, FormLayout } from '@formily/antd-v5';
-import { SchemaInitializerItemOptions, Variable, defaultFieldNames, useCollectionManager } from '@nocobase/client';
+import { SchemaInitializerItemType, Variable, defaultFieldNames, useCollectionManager } from '@nocobase/client';
 import { Evaluator, evaluators, getOptions } from '@nocobase/evaluators/client';
 import { Radio } from 'antd';
 import React from 'react';
@@ -172,11 +172,12 @@ export default {
       [fieldNames.label]: title,
     };
   },
-  useInitializers(node): SchemaInitializerItemOptions {
+  useInitializers(node): SchemaInitializerItemType {
     return {
+      name: node.title ?? `#${node.id}`,
       type: 'item',
       title: node.title ?? `#${node.id}`,
-      component: ValueBlock.Initializer,
+      Component: ValueBlock.Initializer,
       node,
       resultTitle: lang('Calculation result'),
     };

@@ -25,15 +25,11 @@
 
 ```tsx |pure
 import React, { useContext } from 'react';
-import { SchemaInitializerContext } from '@nocobase/client';
+import { Plugin } from '@nocobase/client';
 
-export default React.memo((props) => {
-  const items = useContext(SchemaInitializerContext);
-  const BlockInitializers = {};
-  return (
-    <SchemaInitializerContext.Provider value={{ ...items, BlockInitializers }}>
-      {props.children}
-    </SchemaInitializerContext.Provider>
-  );
-});
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.schemaInitializerManager.add('BlockInitializers', BlockInitializers)
+  }
+}
 ```

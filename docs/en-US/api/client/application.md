@@ -35,7 +35,6 @@ Add Providers, build-in Providers are:
 - SystemSettingsProvider
 - PluginManagerProvider
 - SchemaComponentProvider
-- SchemaInitializerProvider
 - BlockSchemaComponentProvider
 - AntdSchemaComponentProvider
 - ACLProvider

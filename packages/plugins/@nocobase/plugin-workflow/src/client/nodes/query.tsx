@@ -2,18 +2,18 @@ import { ArrayItems } from '@formily/antd-v5';
 
 import {
   SchemaComponentContext,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItemType,
   useCollectionDataSource,
   useCollectionManager,
   useCompile,
 } from '@nocobase/client';
 
-import { appends, collection, filter, pagination, sort } from '../schemas/collection';
-import { NAMESPACE } from '../locale';
+import { useForm } from '@formily/react';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
+import { NAMESPACE } from '../locale';
+import { appends, collection, filter, pagination, sort } from '../schemas/collection';
 import { WorkflowVariableInput, getCollectionFieldOptions } from '../variable';
-import { useForm } from '@formily/react';
 
 export default {
   title: `{{t("Query record", { ns: "${NAMESPACE}" })}}`,
@@ -117,15 +117,16 @@ export default {
 
     return result;
   },
-  useInitializers(node): SchemaInitializerItemOptions | null {
+  useInitializers(node): SchemaInitializerItemType | null {
     if (!node.config.collection || node.config.multiple) {
       return null;
     }
 
     return {
+      name: node.title ?? `#${node.id}`,
       type: 'item',
       title: node.title ?? `#${node.id}`,
-      component: CollectionBlockInitializer,
+      Component: CollectionBlockInitializer,
       collection: node.config.collection,
       dataSource: `{{$jobsMapByNodeKey.${node.key}}}`,
     };

@@ -13,13 +13,18 @@ import { PluginManager, PluginType } from './PluginManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
 import { PluginSettingsManager } from './PluginSettingsManager';
+import { CSSVariableProvider } from '../css-variable';
+import { SchemaComponentProvider } from '../schema-component';
 
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
+import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
+import * as schemaInitializerComponents from './schema-initializer/components';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
+import { SchemaSetting, SchemaSettingsManager } from './schema-settings';
 
 import type { RequireJS } from './utils/requirejs';
 import type { Plugin } from './Plugin';
@@ -41,7 +46,9 @@ export interface ApplicationOptions {
   components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
+  schemaSettings?: SchemaSetting[];
   devDynamicImport?: DevDynamicImport;
+  schemaInitializers?: SchemaInitializer[];
   loadRemotePlugins?: boolean;
 }
 
@@ -52,18 +59,24 @@ export class Application {
   public i18n: i18next;
   public ws: WebSocketClient;
   public apiClient: APIClient;
-  public components: Record<string, ComponentType> = { ...defaultAppComponents };
-  public pm: PluginManager;
+  public components: Record<string, ComponentType<any> | any> = {
+    ...defaultAppComponents,
+    ...schemaInitializerComponents,
+  };
+  public pluginManager: PluginManager;
   public pluginSettingsManager: PluginSettingsManager;
   public devDynamicImport: DevDynamicImport;
   public requirejs: RequireJS;
   public notification;
+  public schemaInitializerManager: SchemaInitializerManager;
+  public schemaSettingsManager: SchemaSettingsManager;
+
   loading = true;
   maintained = false;
   maintaining = false;
   error = null;
-  get pluginManager() {
-    return this.pm;
+  get pm() {
+    return this.pluginManager;
   }
 
   constructor(protected options: ApplicationOptions = {}) {
@@ -84,7 +97,9 @@ export class Application {
       ...options.router,
       renderComponent: this.renderComponent.bind(this),
     });
-    this.pm = new PluginManager(options.plugins, options.loadRemotePlugins, this);
+    this.schemaSettingsManager = new SchemaSettingsManager(options.schemaSettings, this);
+    this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
+    this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
@@ -102,6 +117,8 @@ export class Application {
   private addDefaultProviders() {
     this.use(APIClientProvider, { apiClient: this.apiClient });
     this.use(I18nextProvider, { i18n: this.i18n });
+    this.use(CSSVariableProvider);
+    this.use(SchemaComponentProvider, { components: this.components, scope: this.scopes });
   }
 
   private addReactRouterComponents() {
@@ -216,7 +233,7 @@ export class Application {
     return React.createElement(this.getComponent(Component), props);
   }
 
-  addComponent(component: ComponentType, name?: string) {
+  protected addComponent(component: ComponentType, name?: string) {
     const componentName = name || component.displayName || component.name;
     if (!componentName) {
       console.error('Component must have a displayName or pass name as second argument');

@@ -1,7 +1,6 @@
 import { expect, test } from '@nocobase/test/client';
 
 async function waitForModalToBeHidden(page) {
-  test.slow();
   await page.waitForFunction(() => {
     const modal = document.querySelector('.ant-modal');
     if (modal) {
@@ -13,6 +12,7 @@ async function waitForModalToBeHidden(page) {
 }
 
 test.describe('add plugin in front', () => {
+  test.slow();
   test('add plugin npm registry,then remove plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
     await page.getByTestId('plugin-manager-button').click();
@@ -23,7 +23,6 @@ test.describe('add plugin in front', () => {
       .getByRole('textbox')
       .fill('@nocobase/plugin-sample-custom-collection-template');
     await page.getByLabel('Submit').click();
-    await page.waitForTimeout(1000); // 等待1秒钟
     //等待页面刷新结束
     await page.waitForFunction(() => {
       const modal = document.querySelector('.ant-modal');
@@ -39,7 +38,7 @@ test.describe('add plugin in front', () => {
     //将添加的插件删除
     await page.getByLabel('sample-custom-collection-template').getByText('Remove').click();
     await page.getByRole('button', { name: 'Yes' }).click();
-    await page.waitForTimeout(2000); // 等待2秒钟
+    await page.waitForTimeout(300);
     //等待页面刷新结束
     await waitForModalToBeHidden(page);
     await page.waitForLoadState('load');
@@ -51,6 +50,7 @@ test.describe('add plugin in front', () => {
 });
 
 test.describe('remove plugin', () => {
+  test.slow();
   test('remove plugin,then add plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
     await page.getByTestId('plugin-manager-button').click();
@@ -74,7 +74,6 @@ test.describe('remove plugin', () => {
       .getByRole('textbox')
       .fill('@nocobase/plugin-sample-hello');
     await page.getByLabel('Submit').click();
-    await page.waitForTimeout(1000);
     //等待弹窗消失和页面刷新结束
     await page.waitForFunction(() => {
       const modal = document.querySelector('.ant-modal');
@@ -97,27 +96,26 @@ test.describe('remove plugin', () => {
 });
 
 test.describe('enable & disabled plugin', () => {
+  test.slow();
   test('enable plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
     await page.getByTestId('plugin-manager-button').click();
     await page.getByPlaceholder('Search plugin').fill('hello');
     await expect(page.getByLabel('Hello')).toBeVisible();
-    const isActive = await page.getByLabel('Hello').getByLabel('enable').isChecked();
-    expect(isActive).toBe(false);
-    // 激活插件
+    await expect(page.getByLabel('Hello').getByLabel('enable')).not.toBeChecked();
+    //激活插件
     await page.getByLabel('Hello').getByLabel('enable').click();
     await page.waitForTimeout(1000); // 等待1秒钟
     //等待弹窗消失和页面刷新结束
     await waitForModalToBeHidden(page);
     await page.waitForLoadState('load');
     await page.getByPlaceholder('Search plugin').fill('hello');
-    await expect(await page.getByLabel('Hello').getByLabel('enable').isChecked()).toBe(true);
+    await expect(page.getByLabel('Hello').getByLabel('enable')).toBeChecked();
     //将激活的插件禁用
     await page.getByLabel('Hello').getByLabel('enable').click();
-    await page.waitForTimeout(1000); // 等待1秒钟
     //等待弹窗消失和页面刷新结束
     await waitForModalToBeHidden(page);
     await page.waitForLoadState('load');
-    await expect(await page.getByLabel('Hello').getByLabel('enable').isChecked()).toBe(false);
+    await expect(page.getByLabel('Hello').getByLabel('enable')).not.toBeChecked();
   });
 });

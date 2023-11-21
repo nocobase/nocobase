@@ -1,15 +1,15 @@
 import { TableOutlined } from '@ant-design/icons';
-import { Plugin, SchemaComponentOptions, SchemaInitializer, SchemaInitializerContext, useApp } from '@nocobase/client';
+import { SchemaInitializerItem, Plugin, SchemaComponentOptions, useSchemaInitializer } from '@nocobase/client';
 import { Card } from 'antd';
-import React, { useContext } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { HelloDesigner } from './HelloDesigner';
 
 export const HelloBlockInitializer = (props) => {
-  const { insert } = props;
+  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
       {...props}
       icon={<TableOutlined />}
       onClick={() => {
@@ -32,26 +32,9 @@ export const HelloBlockInitializer = (props) => {
 };
 
 const HelloProvider = React.memo((props) => {
-  const items = useContext<any>(SchemaInitializerContext);
-  const mediaItems = items.BlockInitializers.items.find((item) => item.key === 'media');
-
-  if (process.env.NODE_ENV !== 'production' && !mediaItems) {
-    throw new Error('media block initializer not found');
-  }
-
-  const children = mediaItems.children;
-  if (!children.find((item) => item.key === 'hello')) {
-    children.push({
-      key: 'hello',
-      type: 'item',
-      title: '{{t("Hello block")}}',
-      component: 'HelloBlockInitializer',
-    });
-  }
-
   return (
     <SchemaComponentOptions components={{ HelloDesigner, HelloBlockInitializer }}>
-      <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
+      {props.children}
     </SchemaComponentOptions>
   );
 });
@@ -68,6 +51,11 @@ const HelloPluginSettingPage = () => {
 class HelloPlugin extends Plugin {
   async load() {
     this.app.addProvider(HelloProvider);
+    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    blockInitializers?.add('media.hello', {
+      title: '{{t("Hello block")}}',
+      Component: 'HelloBlockInitializer',
+    });
     this.app.pluginSettingsManager.add('sample-hello', {
       title: 'Hello',
       icon: 'ApiOutlined',

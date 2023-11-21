@@ -6,13 +6,16 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   SchemaInitializer,
+  SchemaInitializerItem,
   gridRowColWrap,
   useCollectionManager,
   useDesignable,
   useGlobalTheme,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import React, { useCallback, useContext, useMemo } from 'react';
-import { useChartsTranslation } from '../locale';
+import { lang, useChartsTranslation } from '../locale';
 import { Schema, SchemaOptionsContext, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { useMemoizedFn } from 'ahooks';
 import { FormLayout, FormItem } from '@formily/antd-v5';
@@ -81,6 +84,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
   const { scope, components } = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const { insert } = props;
+  const itemConfig = useSchemaInitializerItem();
   const { getCollectionJoinField, getInterface } = useCollectionManager();
   const sourceFields = useChartFilterSourceFields();
   const { options: fieldComponents, values: fieldComponentValues } = useFieldComponents();
@@ -192,46 +196,49 @@ export const ChartFilterCustomItemInitializer: React.FC<{
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme]);
-  return <SchemaInitializer.Item {...props} onClick={handleClick} />;
+  return <SchemaInitializerItem {...itemConfig} {...props} onClick={handleClick} />;
 };
 
-export const ChartFilterItemInitializers: React.FC = (props) => {
-  const { t } = useChartsTranslation();
-  const { getCollection } = useCollectionManager();
-  const { getChartCollections } = useChartData();
-  const { getChartFilterFields } = useChartFilter();
-  const collections = getChartCollections();
-  const { insertAdjacent } = useDesignable();
-  return (
-    <SchemaInitializer.Button
-      data-testid="configure-fields-button-of-chart-filter-item"
-      wrap={gridRowColWrap}
-      icon={'SettingOutlined'}
-      items={[
-        {
-          type: 'itemGroup',
-          title: t('Display fields'),
-          children: collections.map((name: any) => {
-            const collection = getCollection(name);
-            const fields = getChartFilterFields(collection);
-            return {
-              key: collection.key,
-              type: 'subMenu',
-              title: collection.title,
-              children: fields,
-            };
-          }),
-        },
-        {
-          type: 'divider',
-        },
-        {
-          type: 'item',
-          title: t('Custom'),
-          component: () => <ChartFilterCustomItemInitializer insert={(s: Schema) => insertAdjacent('beforeEnd', s)} />,
-        },
-      ]}
-      title={t('Configure fields')}
-    />
-  );
-};
+export const chartFilterItemInitializers = new SchemaInitializer({
+  name: 'ChartFilterItemInitializers',
+  'data-testid': 'configure-fields-button-of-chart-filter-item',
+  wrap: gridRowColWrap,
+  icon: 'SettingOutlined',
+  title: '{{ t("Configure fields") }}',
+  items: [
+    {
+      type: 'itemGroup',
+      name: 'displayFields',
+      title: '{{ t("Display fields") }}',
+      useChildren: () => {
+        const { getCollection } = useCollectionManager();
+        const { getChartCollections } = useChartData();
+        const { getChartFilterFields } = useChartFilter();
+        const collections = getChartCollections();
+        return collections.map((name: any) => {
+          const collection = getCollection(name);
+          const fields = getChartFilterFields(collection);
+          return {
+            name: collection.key,
+            type: 'subMenu',
+            title: collection.title,
+            children: fields,
+          };
+        });
+      },
+    },
+    {
+      name: 'divider',
+      type: 'divider',
+    },
+    {
+      name: 'custom',
+      type: 'item',
+      title: lang('Custom'),
+      Component: () => {
+        const { insertAdjacent } = useDesignable();
+        return <ChartFilterCustomItemInitializer insert={(s: Schema) => insertAdjacent('beforeEnd', s)} />;
+      },
+    },
+  ],
+});

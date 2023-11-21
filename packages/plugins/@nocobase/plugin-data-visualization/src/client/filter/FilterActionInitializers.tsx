@@ -1,11 +1,10 @@
 import { useForm } from '@formily/react';
-import { Action, ActionInitializer, GeneralSchemaDesigner, SchemaSettings } from '@nocobase/client';
+import { Action, ActionInitializer, GeneralSchemaDesigner, SchemaInitializer, SchemaSettings } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useChartFilter } from '../hooks/filter';
 import { ChartFilterContext } from './FilterProvider';
 import { useChartsTranslation } from '../locale';
 import { DownOutlined } from '@ant-design/icons';
-import { Divider } from 'antd';
 
 export const useChartFilterActionProps = () => {
   const { filter } = useChartFilter();
@@ -118,16 +117,19 @@ const ChartFilterCollapseInitializer = (props) => {
   return <ActionInitializer {...props} schema={schema} />;
 };
 
-export const ChartFilterActionInitializers = {
+export const chartFilterActionInitializers = new SchemaInitializer({
+  name: 'ChartFilterActionInitializers',
   'data-testid': 'configure-actions-button-of-chart-filter',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [
     {
+      name: 'enbaleActions',
       type: 'itemGroup',
       title: '{{t("Enable actions")}}',
       children: [
         {
+          name: 'filter',
           type: 'item',
           title: '{{t("Filter")}}',
           component: ChartFilterActionInitializer,
@@ -136,6 +138,7 @@ export const ChartFilterActionInitializers = {
           },
         },
         {
+          name: 'reset',
           type: 'item',
           title: '{{t("Reset")}}',
           component: ChartFilterResetInitializer,
@@ -144,6 +147,7 @@ export const ChartFilterActionInitializers = {
           },
         },
         {
+          name: 'collapse',
           type: 'item',
           title: '{{t("Collapse")}}',
           component: ChartFilterCollapseInitializer,
@@ -154,4 +158,4 @@ export const ChartFilterActionInitializers = {
       ],
     },
   ],
-};
+});

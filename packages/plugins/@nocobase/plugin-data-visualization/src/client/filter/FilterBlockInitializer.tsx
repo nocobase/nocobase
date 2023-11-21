@@ -1,6 +1,13 @@
 import React, { useContext } from 'react';
 import { FilterOutlined } from '@ant-design/icons';
-import { Grid, gridRowColWrap, useDesignable, useCurrentSchema, SchemaInitializer, FormV2 } from '@nocobase/client';
+import {
+  Grid,
+  gridRowColWrap,
+  useDesignable,
+  useCurrentSchema,
+  SchemaInitializerSwitch,
+  useSchemaInitializerItem,
+} from '@nocobase/client';
 import { uid, merge } from '@formily/shared';
 import { ChartFilterContext } from './FilterProvider';
 import { css } from '@emotion/css';
@@ -65,10 +72,11 @@ export const ChartFilterGrid: React.FC = (props) => {
   );
 };
 
-export const FilterBlockInitializer: React.FC = (props: any) => {
+export const FilterBlockInitializer: React.FC = () => {
   const { insertAdjacent } = useDesignable();
   const { setEnabled } = useContext(ChartFilterContext);
-  const { item, remove: _remove, disabled } = props;
+  const item = useSchemaInitializerItem();
+  const { remove: _remove, disabled } = item;
   const type = 'x-action';
   const schema = createFilterSchema();
   const { exists, remove } = useCurrentSchema(
@@ -79,7 +87,7 @@ export const FilterBlockInitializer: React.FC = (props: any) => {
   );
 
   return (
-    <SchemaInitializer.SwitchItem
+    <SchemaInitializerSwitch
       icon={<FilterOutlined />}
       checked={exists}
       disabled={disabled}

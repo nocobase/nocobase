@@ -3,7 +3,7 @@ import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerItemOptions, useFormActiveFields, useFormBlockContext } from '../';
+import { SchemaInitializerItemType, useFormActiveFields, useFormBlockContext } from '../';
 import { CollectionFieldOptions, FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
@@ -126,8 +126,9 @@ export const useTableColumnInitializerFields = () => {
       // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
       return {
         type: 'item',
+        name: field.name,
         title: field?.uiSchema?.title || field.name,
-        component: 'TableCollectionFieldInitializer',
+        Component: 'TableCollectionFieldInitializer',
         find: findTableColumn,
         remove: removeTableColumn,
         schemaInitialize: (s) => {
@@ -140,7 +141,7 @@ export const useTableColumnInitializerFields = () => {
         },
         field,
         schema,
-      } as SchemaInitializerItemOptions;
+      } as SchemaInitializerItemType;
     });
 };
 
@@ -173,8 +174,9 @@ export const useAssociatedTableColumnInitializerFields = () => {
 
           return {
             type: 'item',
+            name: subField.name,
             title: subField?.uiSchema?.title || subField.name,
-            component: 'TableCollectionFieldInitializer',
+            Component: 'TableCollectionFieldInitializer',
             find: findTableColumn,
             remove: removeTableColumn,
             schemaInitialize: (s) => {
@@ -187,13 +189,13 @@ export const useAssociatedTableColumnInitializerFields = () => {
             },
             field: subField,
             schema,
-          } as SchemaInitializerItemOptions;
+          } as SchemaInitializerItemType;
         });
       return {
         type: 'subMenu',
         title: field.uiSchema?.title,
         children: items,
-      } as SchemaInitializerItemOptions;
+      } as SchemaInitializerItemType;
     });
 
   return groups;
@@ -243,9 +245,10 @@ export const useInheritsTableColumnInitializerFields = () => {
             },
           };
           return {
+            name: k?.uiSchema?.title || k.name,
             type: 'item',
             title: k?.uiSchema?.title || k.name,
-            component: 'TableCollectionFieldInitializer',
+            Component: 'TableCollectionFieldInitializer',
             find: findTableColumn,
             remove: removeTableColumn,
             schemaInitialize: (s) => {
@@ -258,7 +261,7 @@ export const useInheritsTableColumnInitializerFields = () => {
             },
             field: k,
             schema,
-          } as SchemaInitializerItemOptions;
+          } as SchemaInitializerItemType;
         }),
     };
   });
@@ -301,8 +304,9 @@ export const useFormItemInitializerFields = (options?: any) => {
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
       const resultItem = {
         type: 'item',
+        name: field.name,
         title: field?.uiSchema?.title || field.name,
-        component: 'CollectionFieldInitializer',
+        Component: 'CollectionFieldInitializer',
         remove: removeGridFormItem,
         schemaInitialize: (s) => {
           interfaceConfig?.schemaInitialize?.(s, {
@@ -314,7 +318,7 @@ export const useFormItemInitializerFields = (options?: any) => {
           });
         },
         schema,
-      } as SchemaInitializerItemOptions;
+      } as SchemaInitializerItemType;
       if (block == 'Kanban') {
         resultItem['find'] = (schema: Schema, key: string, action: string) => {
           const s = findSchema(schema, 'x-component', block);
@@ -367,9 +371,10 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         };
       }
       const resultItem = {
+        name: field?.uiSchema?.title || field.name,
         type: 'item',
         title: field?.uiSchema?.title || field.name,
-        component: 'CollectionFieldInitializer',
+        Component: 'CollectionFieldInitializer',
         remove: removeGridFormItem,
         schemaInitialize: (s) => {
           interfaceConfig?.schemaInitialize?.(s, {
@@ -381,7 +386,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
           });
         },
         schema,
-      } as SchemaInitializerItemOptions;
+      } as SchemaInitializerItemType;
 
       return resultItem;
     });
@@ -427,9 +432,10 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
           };
           return {
+            name: subField?.uiSchema?.title || subField.name,
             type: 'item',
             title: subField?.uiSchema?.title || subField.name,
-            component: 'CollectionFieldInitializer',
+            Component: 'CollectionFieldInitializer',
             remove: removeGridFormItem,
             schemaInitialize: (s) => {
               interfaceConfig?.schemaInitialize?.(s, {
@@ -440,14 +446,14 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
               });
             },
             schema,
-          } as SchemaInitializerItemOptions;
+          } as SchemaInitializerItemType;
         });
 
       return {
         type: 'subMenu',
         title: field.uiSchema?.title,
         children: items,
-      } as SchemaInitializerItemOptions;
+      } as SchemaInitializerItemType;
     });
   return groups;
 };
@@ -469,16 +475,13 @@ const getItem = (
       title: field.uiSchema?.title,
       children: subFields
         .map((subField) =>
-          // 使用 | 分隔，是为了防止 form.values 中出现 { a: { b: 1 } } 的情况
-          // 使用 | 分隔后，form.values 中会出现 { 'a|b': 1 } 的情况，这种情况下
-          // 就可以知道该字段是一个关系字段中的输入框，进而特殊处理
           getItem(subField, `${schemaName}.${subField.name}`, collectionName, getCollectionFields, [
             ...processedCollections,
             field.target,
           ]),
         )
         .filter(Boolean),
-    } as SchemaInitializerItemOptions;
+    } as SchemaInitializerItemType;
   }
 
   if (isAssocField(field)) return null;
@@ -498,12 +501,13 @@ const getItem = (
   };
 
   return {
+    name: field.uiSchema?.title || field.name,
     type: 'item',
     title: field.uiSchema?.title || field.name,
-    component: 'CollectionFieldInitializer',
+    Component: 'CollectionFieldInitializer',
     remove: removeGridFormItem,
     schema,
-  } as SchemaInitializerItemOptions;
+  } as SchemaInitializerItemType;
 };
 
 // 筛选表单相关
@@ -552,9 +556,10 @@ export const useInheritsFormItemInitializerFields = (options?) => {
             'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
           };
           return {
+            name: field?.uiSchema?.title || field.name,
             type: 'item',
             title: field?.uiSchema?.title || field.name,
-            component: 'CollectionFieldInitializer',
+            Component: 'CollectionFieldInitializer',
             remove: removeGridFormItem,
             schemaInitialize: (s) => {
               interfaceConfig?.schemaInitialize?.(s, {
@@ -565,7 +570,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
               });
             },
             schema,
-          } as SchemaInitializerItemOptions;
+          } as SchemaInitializerItemType;
         }),
     };
   });
@@ -606,9 +611,10 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
             'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
           };
           return {
+            name: field?.uiSchema?.title || field.name,
             type: 'item',
             title: field?.uiSchema?.title || field.name,
-            component: 'CollectionFieldInitializer',
+            Component: 'CollectionFieldInitializer',
             remove: removeGridFormItem,
             schemaInitialize: (s) => {
               interfaceConfig?.schemaInitialize?.(s, {
@@ -619,7 +625,7 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
               });
             },
             schema,
-          } as SchemaInitializerItemOptions;
+          } as SchemaInitializerItemType;
         }),
     };
   });
@@ -651,9 +657,10 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
         'x-collection-field': `${name}.${field.name}`,
       };
       return {
+        name: field?.uiSchema?.title || field.name,
         type: 'item',
         title: field?.uiSchema?.title || field.name,
-        component: 'CollectionFieldInitializer',
+        Component: 'CollectionFieldInitializer',
         remove: remove,
         schemaInitialize: (s) => {
           interfaceConfig?.schemaInitialize?.(s, {
@@ -664,7 +671,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
           });
         },
         schema,
-      } as SchemaInitializerItemOptions;
+      } as SchemaInitializerItemType;
     });
 };
 
@@ -697,9 +704,10 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
             'x-collection-field': `${name}.${field.name}`,
           };
           return {
+            name: field?.uiSchema?.title || field.name,
             type: 'item',
             title: field?.uiSchema?.title || field.name,
-            component: 'CollectionFieldInitializer',
+            Component: 'CollectionFieldInitializer',
             remove: remove,
             schemaInitialize: (s) => {
               interfaceConfig?.schemaInitialize?.(s, {
@@ -710,7 +718,7 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
               });
             },
             schema,
-          } as SchemaInitializerItemOptions;
+          } as SchemaInitializerItemType;
         }),
     [fields],
   );
@@ -868,6 +876,25 @@ export const useCollectionDataSourceItems = (componentName) => {
       },
     },
   ];
+};
+
+export const useCollectionDataSourceItemsV2 = (componentName) => {
+  const { t } = useTranslation();
+  const { collections, getCollectionFields } = useCollectionManager();
+  const { getTemplatesByCollection } = useSchemaTemplateManager();
+
+  const res = useMemo(() => {
+    return getChildren({
+      collections,
+      getCollectionFields,
+      componentName,
+      searchValue: '',
+      getTemplatesByCollection,
+      t,
+    });
+  }, [collections, componentName, getCollectionFields, getTemplatesByCollection, t]);
+
+  return res;
 };
 
 export const createDetailsBlockSchema = (options) => {
@@ -1299,7 +1326,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
       },
     },
   };
-  // console.log(JSON.stringify(schema, null, 2));
+
   return schema;
 };
 
@@ -1558,7 +1585,7 @@ export const createCalendarBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
+
   return schema;
 };
 
@@ -1688,7 +1715,7 @@ export const createGanttBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
+
   return schema;
 };
 export const createKanbanBlockSchema = (options) => {

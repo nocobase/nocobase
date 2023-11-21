@@ -31,10 +31,10 @@ const config = {
                     version: '2.0',
                     type: 'void',
                     'x-decorator': 'TableBlockProvider',
-                    'x-acl-action': 't_ylz5vtxncxq:list',
+                    'x-acl-action': 'test2174:list',
                     'x-decorator-props': {
-                      collection: 't_ylz5vtxncxq',
-                      resource: 't_ylz5vtxncxq',
+                      collection: 'test2174',
+                      resource: 'test2174',
                       action: 'list',
                       params: {
                         pageSize: 20,
@@ -167,15 +167,15 @@ const config = {
                                                                 'x-acl-action-props': {
                                                                   skipScopeCheck: true,
                                                                 },
-                                                                'x-acl-action': 't_ylz5vtxncxq.f_q32e4ieq49n:create',
+                                                                'x-acl-action': 'test2174.f_q32e4ieq49n:create',
                                                                 'x-decorator': 'FormBlockProvider',
                                                                 'x-decorator-props': {
                                                                   useSourceId: '{{ useSourceIdFromParentRecord }}',
                                                                   useParams: '{{ useParamsFromRecord }}',
                                                                   action: null,
-                                                                  resource: 't_ylz5vtxncxq.f_q32e4ieq49n',
-                                                                  collection: 't_ylz5vtxncxq',
-                                                                  association: 't_ylz5vtxncxq.f_q32e4ieq49n',
+                                                                  resource: 'test2174.f_q32e4ieq49n',
+                                                                  collection: 'test2174',
+                                                                  association: 'test2174.f_q32e4ieq49n',
                                                                 },
                                                                 'x-designer': 'FormV2.Designer',
                                                                 'x-component': 'CardItem',
@@ -209,7 +209,7 @@ const config = {
                                                                                 type: 'void',
                                                                                 'x-component': 'Grid.Col',
                                                                                 properties: {
-                                                                                  f_nr8xi7ezw5t: {
+                                                                                  singleSelect: {
                                                                                     _isJSONSchemaObject: true,
                                                                                     version: '2.0',
                                                                                     type: 'string',
@@ -217,7 +217,7 @@ const config = {
                                                                                     'x-component': 'CollectionField',
                                                                                     'x-decorator': 'FormItem',
                                                                                     'x-collection-field':
-                                                                                      't_ylz5vtxncxq.f_nr8xi7ezw5t',
+                                                                                      'test2174.singleSelect',
                                                                                     'x-component-props': {
                                                                                       style: {
                                                                                         width: '100%',
@@ -343,11 +343,11 @@ const config = {
                             'x-designer': 'TableV2.Column.Designer',
                             'x-component': 'TableV2.Column',
                             properties: {
-                              f_nr8xi7ezw5t: {
+                              singleSelect: {
                                 'x-uid': 'if1clbvakzu',
                                 _isJSONSchemaObject: true,
                                 version: '2.0',
-                                'x-collection-field': 't_ylz5vtxncxq.f_nr8xi7ezw5t',
+                                'x-collection-field': 'test2174.singleSelect',
                                 'x-component': 'CollectionField',
                                 'x-component-props': {
                                   style: {
@@ -383,13 +383,13 @@ const config = {
                                 'x-uid': 'nmevvkp1dyq',
                                 _isJSONSchemaObject: true,
                                 version: '2.0',
-                                'x-collection-field': 't_ylz5vtxncxq.f_q32e4ieq49n',
+                                'x-collection-field': 'test2174.f_q32e4ieq49n',
                                 'x-component': 'CollectionField',
                                 'x-component-props': {
                                   ellipsis: true,
                                   size: 'small',
                                   fieldNames: {
-                                    label: 'f_nr8xi7ezw5t',
+                                    label: 'singleSelect',
                                     value: 'id',
                                   },
                                 },
@@ -494,19 +494,33 @@ const config = {
   },
   collections: [
     {
-      name: 't_ylz5vtxncxq',
+      name: 'test2174',
       title: 'Test',
       fields: [
         {
           name: 'f_lkqy3eh4ag7',
           interface: 'integer',
+          isForeignKey: true,
+          uiSchema: {
+            type: 'number',
+            title: 'f_lkqy3eh4ag7',
+            'x-component': 'InputNumber',
+            'x-read-pretty': true,
+          },
         },
         {
           name: 'f_rathx54cqpy',
           interface: 'integer',
+          isForeignKey: true,
+          uiSchema: {
+            type: 'number',
+            title: 'f_rathx54cqpy',
+            'x-component': 'InputNumber',
+            'x-read-pretty': true,
+          },
         },
         {
-          name: 'f_nr8xi7ezw5t',
+          name: 'singleSelect',
           interface: 'select',
           uiSchema: {
             enum: [
@@ -543,26 +557,27 @@ const config = {
             },
             title: 'One to many',
           },
-          target: 't_ylz5vtxncxq',
+          target: 'test2174',
+          targetKey: 'id',
+          sourceKey: 'id',
         },
       ],
     },
   ],
 };
 
+// TODO: 之所以跳过这个测试，是因为在测试环境中，这个测试会失败，但是在本地环境中，这个测试会成功，原因不明
 // fix https://nocobase.height.app/T-2174
 test.skip('BUG: should show default value option', async ({ page, mockPage, mockRecord }) => {
   const nocoPage = await mockPage(config).waitForInit();
-  await mockRecord('t_ylz5vtxncxq');
+  await mockRecord('test2174');
   await nocoPage.goto();
 
-  await page.getByLabel('action-Action.Link-View-view-t_ylz5vtxncxq-table-0').click();
+  await page.getByLabel('action-Action.Link-View-view-test2174-table-0').click();
+  await page.getByLabel('block-item-CollectionField-test2174-form-test2174.singleSelect-Single select').hover();
   await page
-    .getByLabel('block-item-CollectionField-t_ylz5vtxncxq-form-t_ylz5vtxncxq.f_nr8xi7ezw5t-Single select')
-    .hover();
-  await page
-    .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-t_ylz5vtxncxq-t_ylz5vtxncxq.f_nr8xi7ezw5t')
+    .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-test2174-test2174.singleSelect')
     .hover();
 
-  await expect(page.getByLabel('Set default value')).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
 });

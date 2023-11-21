@@ -1,39 +1,41 @@
 import { LineChartOutlined, BarChartOutlined } from '@ant-design/icons';
-import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   DataBlockInitializer,
   SchemaInitializer,
+  SchemaInitializerItem,
   useACLRoleContext,
-  useCollectionDataSourceItems,
+  useCollectionDataSourceItemsV2,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { ChartConfigContext } from '../configure';
-import { useChartsTranslation } from '../locale';
+import { lang } from '../locale';
 import { FilterBlockInitializer } from '../filter';
 
-const ChartInitializer = (props: any) => {
+const ChartInitializer = () => {
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
-  const collections = useCollectionDataSourceItems('Chart');
+  const collections = useCollectionDataSourceItemsV2('Chart');
   const { allowAll, parseAction } = useACLRoleContext();
+  const itemConfig = useSchemaInitializerItem();
 
-  if (collections[0].loadChildren) {
-    const originalLoadChildren = collections[0].loadChildren;
-    collections[0].loadChildren = ({ searchValue }) => {
-      const children = originalLoadChildren({ searchValue });
-      return children.filter((item) => {
-        if (allowAll) {
-          return true;
-        }
-        const params = parseAction(`${item.name}:list`);
-        return params;
-      });
-    };
-  }
+  const items = collections
+    .filter((item) => {
+      if (allowAll) {
+        return true;
+      }
+      const params = parseAction(`${item.name}:list`);
+      return params;
+    })
+    .map((item) => ({
+      ...item,
+    }));
+
   return (
     <DataBlockInitializer
-      {...props}
-      items={collections}
+      {...itemConfig}
+      items={items}
       icon={<BarChartOutlined />}
       componentType={'Chart'}
       onCreateBlockSchema={async ({ item }) => {
@@ -44,45 +46,38 @@ const ChartInitializer = (props: any) => {
   );
 };
 
-export const ChartInitializers = () => {
-  const { t } = useChartsTranslation();
-
-  return (
-    <SchemaInitializer.Button
-      data-testid="add-block-button-in-chart-block"
-      title={t('Add block')}
-      icon={'PlusOutlined'}
-      items={[
+export const chartInitializers = new SchemaInitializer({
+  name: 'ChartInitializers',
+  icon: 'PlusOutlined',
+  title: '{{t("Add block")}}',
+  items: [
+    {
+      name: 'chart',
+      title: lang('Chart'),
+      component: ChartInitializer,
+    },
+    {
+      name: 'otherBlocks',
+      type: 'itemGroup',
+      title: lang('Other blocks'),
+      children: [
         {
-          key: 'chart',
+          name: 'filter',
           type: 'item',
-          title: t('Chart'),
-          component: ChartInitializer,
+          title: lang('Filter'),
+          component: FilterBlockInitializer,
         },
-        {
-          type: 'itemGroup',
-          title: t('Other blocks'),
-          children: [
-            {
-              key: 'filter',
-              type: 'item',
-              title: t('Filter'),
-              component: FilterBlockInitializer,
-            },
-          ],
-        },
-      ]}
-    />
-  );
-};
+      ],
+    },
+  ],
+});
 
-export const ChartV2BlockInitializer: React.FC<{
-  insert: (s: ISchema) => void;
-}> = (props) => {
-  const { insert } = props;
+export const ChartV2BlockInitializer: React.FC = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { insert } = useSchemaInitializer();
   return (
-    <SchemaInitializer.Item
-      {...props}
+    <SchemaInitializerItem
+      {...itemConfig}
       icon={<LineChartOutlined />}
       onClick={() => {
         insert({
