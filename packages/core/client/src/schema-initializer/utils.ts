@@ -193,6 +193,7 @@ export const useAssociatedTableColumnInitializerFields = () => {
         });
       return {
         type: 'subMenu',
+        name: field.uiSchema?.title,
         title: field.uiSchema?.title,
         children: items,
       } as SchemaInitializerItemType;
@@ -451,6 +452,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
 
       return {
         type: 'subMenu',
+        name: field.uiSchema?.title,
         title: field.uiSchema?.title,
         children: items,
       } as SchemaInitializerItemType;
@@ -472,6 +474,7 @@ const getItem = (
 
     return {
       type: 'subMenu',
+      name: field.uiSchema?.title,
       title: field.uiSchema?.title,
       children: subFields
         .map((subField) =>
