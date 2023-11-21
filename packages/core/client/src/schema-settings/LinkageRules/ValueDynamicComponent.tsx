@@ -106,6 +106,9 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
   return (
     <Input.Group compact>
       <Select
+        // @ts-ignore
+        role="button"
+        data-testid="select-linkage-value-type"
         value={mode}
         style={{ width: 150 }}
         onChange={(value) => {
