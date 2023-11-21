@@ -43,12 +43,8 @@ export const linkageMergeAction = async ({
         ...field.linkageProperty,
         required: requiredResult,
       };
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          field.required = last(field.linkageProperty.required);
-        });
-        resolve(void 0);
-      });
+      field.required = last(field.linkageProperty.required);
+      break;
     case ActionType.InRequired:
       if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         requiredResult.push(false);
@@ -57,12 +53,8 @@ export const linkageMergeAction = async ({
         ...field.linkageProperty,
         required: requiredResult,
       };
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          field.required = last(field.linkageProperty.required);
-        });
-        resolve(void 0);
-      });
+      field.required = last(field.linkageProperty.required);
+      break;
     case ActionType.Visible:
     case ActionType.None:
     case ActionType.Hidden:
@@ -73,12 +65,8 @@ export const linkageMergeAction = async ({
         ...field.linkageProperty,
         display: displayResult,
       };
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          field.display = last(displayResult);
-        });
-        resolve(void 0);
-      });
+      field.display = last(displayResult);
+      break;
     case ActionType.Editable:
     case ActionType.ReadOnly:
     case ActionType.ReadPretty:
@@ -89,12 +77,8 @@ export const linkageMergeAction = async ({
         ...field.linkageProperty,
         pattern: patternResult,
       };
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          field.pattern = last(patternResult);
-        });
-        resolve(void 0);
-      });
+      field.pattern = last(patternResult);
+      break;
     case ActionType.Value:
       if (isConditionEmpty(condition) || (await conditionAnalyses({ rules: condition, variables, localVariables }))) {
         if (value?.mode === 'express') {
