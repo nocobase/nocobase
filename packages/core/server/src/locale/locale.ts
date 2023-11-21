@@ -56,6 +56,9 @@ export class Locale {
   }
 
   async loadResourcesByLang(lang: string) {
+    if (!this.cache) {
+      return;
+    }
     if (!this.resourceCached.has(lang)) {
       await this.getCacheResources(lang);
     }
