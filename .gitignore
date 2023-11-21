@@ -36,3 +36,6 @@ storage/uploads-e2e
 tsconfig.paths.json
 playwright
 .swc
+ncc-cache/
+yarn--**
+v8-compile-cache-**

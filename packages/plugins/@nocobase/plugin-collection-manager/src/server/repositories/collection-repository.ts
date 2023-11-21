@@ -90,6 +90,7 @@ export class CollectionRepository extends Repository {
       if (lodash.isArray(skipField) && skipField.length) {
         lazyCollectionFields[instanceName] = skipField;
       }
+
       this.database.logger.debug(`load ${instanceName} collection`);
       this.app.setMaintainingMessage(`load ${instanceName} collection`);
 
