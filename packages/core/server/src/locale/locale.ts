@@ -8,6 +8,7 @@ export class Locale {
   cache: Cache;
   defaultLang = 'en-US';
   localeFn = new Map();
+  resourceCached = new Map();
 
   constructor(app: Application) {
     this.app = app;
@@ -54,7 +55,17 @@ export class Locale {
     });
   }
 
+  async loadResourcesByLang(lang: string) {
+    if (!this.cache) {
+      return;
+    }
+    if (!this.resourceCached.has(lang)) {
+      await this.getCacheResources(lang);
+    }
+  }
+
   async getCacheResources(lang: string) {
+    this.resourceCached.set(lang, true);
     return await this.wrapCache(`resources:${lang}`, () => this.getResources(lang));
   }
 
@@ -81,6 +92,9 @@ export class Locale {
         // empty
       }
     }
+    Object.keys(resources).forEach((name) => {
+      this.app.i18n.addResources(lang, name, resources[name]);
+    });
     return resources;
   }
 }
