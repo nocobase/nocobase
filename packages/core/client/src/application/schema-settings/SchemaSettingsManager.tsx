@@ -9,7 +9,7 @@ interface ActionType {
 }
 
 export class SchemaSettingsManager {
-  public schemaSettings: Record<string, SchemaSetting<any>> = {};
+  protected schemaSettings: Record<string, SchemaSetting<any>> = {};
   protected actionList: Record<string, ActionType[]> = {};
 
   constructor(
