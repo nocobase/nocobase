@@ -61,19 +61,28 @@ export const commonTesting = ({
     await expect(page.getByText(fieldName)).not.toBeVisible();
   });
 
-  if (blockType === 'creating') {
+  if (['creating', 'editing'].includes(blockType)) {
     test('edit description', async ({ page, mockPage, mockRecord }) => {
       await openDialogAndShowMenu(page, mockPage, mockRecord, fieldName);
       await testEditDescription(page);
     });
-    // TODO: BUG，现在没有该选项
-    test.skip('edit tooltip', async ({ page, mockPage }) => {});
-  }
 
-  if (['creating', 'editing'].includes(blockType)) {
     test('required', async ({ page, mockPage, mockRecord }) => {
       await openDialogAndShowMenu(page, mockPage, mockRecord, fieldName);
       await testRequired(page);
+    });
+  }
+
+  if (blockType === 'viewing') {
+    test('edit tooltip', async ({ page, mockPage, mockRecord }) => {
+      await openDialogAndShowMenu(page, mockPage, mockRecord, fieldName);
+      await page.getByRole('menuitem', { name: 'Edit tooltip' }).click();
+      await page.getByRole('dialog').getByRole('textbox').click();
+      await page.getByRole('dialog').getByRole('textbox').fill('testing edit tooltip');
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
+
+      await page.getByRole('img', { name: 'question-circle' }).hover();
+      await expect(page.getByText('testing edit tooltip')).toBeVisible();
     });
   }
 
