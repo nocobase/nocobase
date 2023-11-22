@@ -10,7 +10,7 @@ interface ActionType {
 }
 
 export class SchemaInitializerManager {
-  public schemaInitializers: Record<string, SchemaInitializer<any, any>> = {};
+  protected schemaInitializers: Record<string, SchemaInitializer<any, any>> = {};
   protected actionList: Record<string, ActionType[]> = {};
 
   constructor(
