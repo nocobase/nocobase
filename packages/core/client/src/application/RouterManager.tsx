@@ -37,7 +37,7 @@ export class RouterManager {
     this.options = options || {};
   }
 
-  protected getRoutesTree(): RouteObject[] {
+  getRoutesTree(): RouteObject[] {
     type RouteTypeWithChildren = RouteType & { children?: RouteTypeWithChildren };
     const routes: Record<string, RouteTypeWithChildren> = {};
 

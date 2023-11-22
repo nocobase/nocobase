@@ -18,17 +18,19 @@ export class SchemaSettingsManager {
   ) {
     this.app = app;
 
-    _schemaSettings.forEach((item) => this.add(item));
+    this.add(..._schemaSettings);
   }
 
-  add<T>(schemaSetting: SchemaSetting<T>) {
-    this.schemaSettings[schemaSetting.name] = schemaSetting;
-    if (Array.isArray(this.actionList[schemaSetting.name])) {
-      this.actionList[schemaSetting.name].forEach((item) => {
-        schemaSetting[item.type](item.itemName, item.data);
-      });
-      this.actionList[schemaSetting.name] = undefined;
-    }
+  add<T>(...schemaSettingList: SchemaSetting<T>[]) {
+    schemaSettingList.forEach((schemaSetting) => {
+      this.schemaSettings[schemaSetting.name] = schemaSetting;
+      if (Array.isArray(this.actionList[schemaSetting.name])) {
+        this.actionList[schemaSetting.name].forEach((item) => {
+          schemaSetting[item.type](item.itemName, item.data);
+        });
+        this.actionList[schemaSetting.name] = undefined;
+      }
+    });
   }
 
   addItem(schemaSettingName: string, itemName: string, data: Omit<SchemaSettingItemType, 'name'>) {
