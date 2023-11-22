@@ -3,7 +3,7 @@ import { generalWithSingleSelect } from './utils';
 
 //在页面中可以创建看板区块
 test.describe('configure Kanban', () => {
-  test(' create kanban blocks in the page && add field', async ({ page, mockPage, mockCollections, mockRecord }) => {
+  test(' create kanban blocks in the page', async ({ page, mockPage, mockCollections, mockRecord }) => {
     await mockCollections(generalWithSingleSelect);
     await mockRecord('general');
     await mockPage().goto();
@@ -169,16 +169,16 @@ test('configure action in kanban block', async ({ page, mockPage, mockCollection
   await page.getByLabel('block-item-Kanban.Card-general-kanban').hover();
   await page.getByLabel('designer-schema-initializer-Kanban.Card-Kanban.Card.Designer-general').hover();
   await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Created at' }).getByRole('switch').click();
+
   //拖拽看板
+
   const sourceElement = await page.getByLabel('block-item-Kanban.Card-general-kanban');
   await sourceElement.click();
   await page.getByLabel('drawer-Action.Container-general-View record-mask').click();
-  await sourceElement.hover();
   const targetElement = await page.getByTestId('column-option2');
-  await targetElement.hover();
   await sourceElement.dragTo(targetElement);
-
-  await page.waitForTimeout(3000);
+  //看板字段调整
 
   //   await expect(page.getByTestId('column-option2').getByTestId('card-1')).toBeVisible();
 
