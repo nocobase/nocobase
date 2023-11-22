@@ -290,6 +290,42 @@ export const generalWithBasic: CollectionSetting[] = [
   },
 ];
 
+/**
+ * 创建一个名为 general 的 collection，其包含所有 choices 类型的字段
+ */
+export const generalWithChoices: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'checkbox',
+        interface: 'checkbox',
+      },
+      {
+        name: 'checkboxGroup',
+        interface: 'checkboxGroup',
+      },
+      {
+        name: 'chinaRegion',
+        interface: 'chinaRegion',
+      },
+      {
+        name: 'multipleSelect',
+        interface: 'multipleSelect',
+      },
+      {
+        name: 'radioGroup',
+        interface: 'radioGroup',
+      },
+      {
+        name: 'singleSelect',
+        interface: 'select',
+      },
+    ],
+  },
+];
+
 export const generalWithSingleLineText: CollectionSetting[] = [
   {
     name: 'general',

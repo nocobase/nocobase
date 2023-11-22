@@ -68,7 +68,7 @@ export const commonTesting = ({
   test('delete', async ({ page, mockPage, mockRecord }) => {
     await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName });
     await clickDeleteAndOk(page);
-    await expect(page.getByText(fieldName)).not.toBeVisible();
+    await expect(page.getByText(`${fieldName}:`)).not.toBeVisible();
   });
 
   if (['creating', 'editing'].includes(blockType)) {
