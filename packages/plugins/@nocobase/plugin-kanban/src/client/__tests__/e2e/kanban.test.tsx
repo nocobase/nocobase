@@ -1,5 +1,5 @@
 import { test, expect } from '@nocobase/test/client';
-import { oneEmptyKanbanBlock, generalWithSingleSelect } from './utils';
+import { generalWithSingleSelect } from './utils';
 
 //在页面中可以创建看板区块
 test.describe('configure Kanban', () => {
@@ -17,19 +17,6 @@ test.describe('configure Kanban', () => {
     await page.getByRole('button', { name: 'OK' }).click();
     await expect(page.getByLabel('block-item-CardItem-general-kanban')).toBeVisible();
   });
-});
-
-//看板的操作配置
-test('configure action in kanban block', async ({ page, mockPage, mockCollections }) => {
-  await mockPage(oneEmptyKanbanBlock).goto();
-  await expect(page.getByLabel('block-item-CardItem-general-kanban')).toBeVisible();
-  await expect(page.getByLabel('schema-initializer-ActionBar-KanbanActionInitializers-general')).toBeVisible();
-  await page.getByLabel('schema-initializer-ActionBar-KanbanActionInitializers-general').click();
-  await page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch').click();
-  await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
-  //按钮正常显示
-  await expect(page.getByLabel('action-Filter.Action-Filter-filter-general-kanban')).toBeVisible();
-  await expect(page.getByLabel('action-Action-Add ')).toBeVisible();
 });
 
 //看板的字段配置
@@ -144,4 +131,64 @@ test('configure params in kanban block', async ({ page, mockPage, mockRecords, m
   } catch {
     console.log('error');
   }
+});
+
+//看板的操作配置
+test('configure action in kanban block', async ({ page, mockPage, mockCollections }) => {
+  await mockCollections(generalWithSingleSelect);
+  await mockPage().goto();
+  await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+  await expect(page.getByRole('menuitem', { name: 'form Kanban right' })).toBeVisible();
+  await page.getByRole('menuitem', { name: 'form Kanban right' }).click();
+  await page.getByRole('menuitem', { name: 'form Kanban right' }).hover();
+  await page.getByRole('menuitem', { name: 'General' }).click();
+  await page.getByLabel('block-item-Select-Grouping field').getByLabel('Search').click();
+  await page.getByRole('option', { name: 'Single select' }).click();
+  await page.getByRole('button', { name: 'OK' }).click();
+  await expect(page.getByLabel('block-item-CardItem-general-kanban')).toBeVisible();
+  await expect(page.getByLabel('schema-initializer-ActionBar-KanbanActionInitializers-general')).toBeVisible();
+  await page.getByLabel('schema-initializer-ActionBar-KanbanActionInitializers-general').click();
+  await page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch').click();
+  await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
+  //按钮正常显示
+  await expect(page.getByLabel('action-Filter.Action-Filter-filter-general-kanban')).toBeVisible();
+  await expect(page.getByLabel('action-Action-Add ')).toBeVisible();
+  //添加数据
+  await page.getByLabel('action-Action-Add new-create-general-kanban').click();
+  await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-general').click();
+  await page.getByRole('menuitem', { name: 'form Form' }).click();
+  await page.mouse.move(300, 0);
+  await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').click();
+  await page.getByRole('menuitem', { name: 'Single Select' }).click();
+  await page.getByLabel('Search').click();
+  await page.getByRole('option', { name: 'option1' }).click();
+  await page.getByLabel('schema-initializer-ActionBar-CreateFormActionInitializers-general').hover();
+  await page.getByRole('menuitem', { name: 'Submit' }).click();
+  await page.getByLabel('action-Action-Submit-submit-general-form').click();
+
+  await page.getByLabel('block-item-Kanban.Card-general-kanban').hover();
+  await page.getByLabel('designer-schema-initializer-Kanban.Card-Kanban.Card.Designer-general').hover();
+  await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+  //拖拽看板
+  const sourceElement = await page.getByLabel('block-item-Kanban.Card-general-kanban');
+  await sourceElement.click();
+  await page.getByLabel('drawer-Action.Container-general-View record-mask').click();
+  await sourceElement.hover();
+  const targetElement = await page.getByTestId('column-option2');
+  await targetElement.hover();
+  await sourceElement.dragTo(targetElement);
+
+  await page.waitForTimeout(3000);
+
+  //   await expect(page.getByTestId('column-option2').getByTestId('card-1')).toBeVisible();
+
+  //   try {
+  //     const [request] = await Promise.all([page.waitForRequest((request) => request.url().includes('api/general:move'))]);
+  //     const postData = request.postDataJSON();
+  //     //move请求参数符合预期
+  //     expect(postData.sourceId).toBe(1);
+  //     expect(postData.sortField).toBe('singleSelect_sort');
+  //   } catch {
+  //     console.log('error');
+  //   }
 });
