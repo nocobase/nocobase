@@ -21,7 +21,6 @@ describe('ui_schema repository with cache', () => {
     });
 
     db = app.db;
-    cache = app.cache;
 
     await db.clean({ drop: true });
 
@@ -35,6 +34,7 @@ describe('ui_schema repository with cache', () => {
       },
     });
     repository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
+    cache = app.cache;
     repository.setCache(cache);
 
     schema = {

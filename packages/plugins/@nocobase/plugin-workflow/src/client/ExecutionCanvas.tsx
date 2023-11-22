@@ -9,7 +9,7 @@ import {
   useResourceActionContext,
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
-import { Breadcrumb, Dropdown, Space, Tag } from 'antd';
+import { Breadcrumb, Dropdown, Result, Space, Spin, Tag } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CanvasContent } from './CanvasContent';
@@ -58,7 +58,7 @@ function JobModal() {
         schema={{
           type: 'void',
           properties: {
-            [`${job?.id}-modal`]: {
+            [`${job?.id}-${job?.updatedAt}-modal`]: {
               type: 'void',
               'x-decorator': 'Form',
               'x-decorator-props': {
@@ -218,10 +218,9 @@ export function ExecutionCanvas() {
 
   if (!data?.data) {
     if (loading) {
-      return <div>{lang('Loading')}</div>;
-    } else {
-      return <div>{lang('Load failed')}</div>;
+      return <Spin />;
     }
+    return <Result status="404" title="Not found" />;
   }
 
   const { jobs = [], workflow: { nodes = [], revisions = [], ...workflow } = {}, ...execution } = data?.data ?? {};

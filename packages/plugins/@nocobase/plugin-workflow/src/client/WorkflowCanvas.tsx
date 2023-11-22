@@ -10,7 +10,7 @@ import {
   useResourceContext,
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
-import { App, Breadcrumb, Button, Dropdown, Switch, message } from 'antd';
+import { App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
@@ -60,7 +60,10 @@ export function WorkflowCanvas() {
   }, [data?.data]);
 
   if (!data?.data) {
-    return <div>{loading ? lang('Loading') : lang('Load failed')}</div>;
+    if (loading) {
+      return <Spin />;
+    }
+    return <Result status="404" title="Not found" />;
   }
 
   const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};

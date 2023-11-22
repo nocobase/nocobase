@@ -37,7 +37,7 @@ describe('collection', () => {
   });
 
   it('should not throw error when create empty collection in sqlite and mysql', async () => {
-    if (!db.inDialect('sqlite', 'mysql')) {
+    if (!db.inDialect('sqlite', 'mysql', 'mariadb')) {
       return;
     }
 
