@@ -27,7 +27,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const { isInSubForm, isInSubTable } = useFlag() || {};
 
   const schemaName = fieldSchema.name.toString();
-  const formValue = isInSubForm || isInSubTable ? subFormValue : form.values;
+  const formValue = _.cloneDeep(isInSubForm || isInSubTable ? subFormValue : form.values);
   const collectionFieldRef = useRef(null);
 
   if (collectionFieldRef.current == null) {
@@ -66,7 +66,13 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
       .parseVariable(variableString, formVariable)
       .then((value) => {
         nextTick(() => {
-          field.value = transformVariableValue(value, { targetCollectionField: collectionFieldRef.current });
+          const result = transformVariableValue(value, { targetCollectionField: collectionFieldRef.current });
+          // fix https://nocobase.height.app/T-2608
+          if (_.isEmpty(result)) {
+            field.value = null;
+          } else {
+            field.value = result;
+          }
         });
       })
       .catch((err) => {
