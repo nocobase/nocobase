@@ -18,6 +18,15 @@ export const generalWithDatetimeFields: CollectionSetting[] = [
         },
       },
       {
+        name: 'singleLineText2',
+        interface: 'input',
+        uiSchema: {
+          type: 'string',
+          'x-component': 'Input',
+          title: 'Single line text2',
+        },
+      },
+      {
         name: 'startDatetime',
         interface: 'datetime',
         uiSchema: {
@@ -27,12 +36,30 @@ export const generalWithDatetimeFields: CollectionSetting[] = [
         },
       },
       {
+        name: 'startDatetime2',
+        interface: 'datetime',
+        uiSchema: {
+          type: 'string',
+          'x-component': 'DatePicker',
+          title: 'Start date time2',
+        },
+      },
+      {
         name: 'endDatetime',
         interface: 'datetime',
         uiSchema: {
           type: 'string',
           'x-component': 'DatePicker',
           title: 'End date time',
+        },
+      },
+      {
+        name: 'endDatetime2',
+        interface: 'datetime',
+        uiSchema: {
+          type: 'string',
+          'x-component': 'DatePicker',
+          title: 'End date time2',
         },
       },
       {
@@ -65,7 +92,6 @@ export const generalWithDatetimeFields: CollectionSetting[] = [
         targetKey: 'id',
       },
       {
-        key: '46kjnywaamt',
         name: 'percent',
         type: 'float',
         interface: 'percent',
@@ -77,6 +103,20 @@ export const generalWithDatetimeFields: CollectionSetting[] = [
           },
           'x-component': 'Percent',
           title: 'Percent',
+        },
+      },
+      {
+        name: 'percent2',
+        type: 'float',
+        interface: 'percent',
+        uiSchema: {
+          'x-component-props': {
+            step: '0.01',
+            stringMode: true,
+            addonAfter: '%',
+          },
+          'x-component': 'Percent',
+          title: 'Percent2',
         },
       },
     ],

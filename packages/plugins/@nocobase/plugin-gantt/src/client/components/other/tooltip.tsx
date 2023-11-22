@@ -121,7 +121,7 @@ export const StandardTooltipContent: React.FC<{
     fontFamily,
   };
   return (
-    <div className={cx(styles.nbGridOther, styles.tooltipDefaultContainer)} style={style}>
+    <div className={cx(styles.nbGridOther, styles.tooltipDefaultContainer, 'nbGanttTooltip')} style={style}>
       <b style={{ fontSize: fontSize }}>
         {task.name}: {getYmd(task.start)} ~ {getYmd(task.end)}
       </b>
