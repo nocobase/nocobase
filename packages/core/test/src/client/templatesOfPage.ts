@@ -3766,7 +3766,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                     _isJSONSchemaObject: true,
                                     version: '2.0',
                                     type: 'void',
-                                    title: '{{ t("View") }}',
+                                    title: '{{ t("View record") }}', // 使用较长的命名，是为了防止在 linux 环境下点击没反应的问题
                                     'x-action': 'view',
                                     'x-designer': 'Action.Designer',
                                     'x-component': 'Action.Link',
@@ -4404,7 +4404,7 @@ export const oneTableBlockWithAddNewAndViewAndEditAndBasicFields: PageConfig = {
                                     _isJSONSchemaObject: true,
                                     version: '2.0',
                                     type: 'void',
-                                    title: '{{ t("Edit") }}',
+                                    title: '{{ t("Edit record") }}',
                                     'x-action': 'update',
                                     'x-designer': 'Action.Designer',
                                     'x-component': 'Action.Link',
