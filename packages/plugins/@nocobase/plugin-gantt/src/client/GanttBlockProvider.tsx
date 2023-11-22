@@ -76,11 +76,13 @@ const InternalGanttBlockProvider = (props) => {
 export const GanttBlockProvider = (props) => {
   const params = { filter: props.params.filter, tree: true, paginate: false, sort: props.fieldNames.start };
   return (
-    <BlockProvider name="gantt" {...props} params={params}>
-      <TableBlockProvider {...props} params={params}>
-        <InternalGanttBlockProvider {...props} />
-      </TableBlockProvider>
-    </BlockProvider>
+    <div aria-label="block-item-gantt" role="button">
+      <BlockProvider name="gantt" {...props} params={params}>
+        <TableBlockProvider {...props} params={params}>
+          <InternalGanttBlockProvider {...props} />
+        </TableBlockProvider>
+      </BlockProvider>
+    </div>
   );
 };
 
