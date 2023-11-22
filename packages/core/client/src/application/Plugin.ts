@@ -9,12 +9,24 @@ export class Plugin<T = any> {
     this.app = app;
   }
 
+  get pluginManager() {
+    return this.app.pluginManager;
+  }
+
   get pm() {
     return this.app.pm;
   }
 
   get router() {
     return this.app.router;
+  }
+
+  get pluginSettingsManager() {
+    return this.app.pluginSettingsManager;
+  }
+
+  get schemaInitializerManager() {
+    return this.app.schemaInitializerManager;
   }
 
   async afterAdd() {}

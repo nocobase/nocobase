@@ -19,17 +19,19 @@ export class SchemaInitializerManager {
   ) {
     this.app = app;
 
-    _schemaInitializers.forEach((item) => this.add(item));
+    this.add(..._schemaInitializers);
   }
 
-  add<P1 = any, P2 = any>(schemaInitializer: SchemaInitializer<P1, P2>) {
-    this.schemaInitializers[schemaInitializer.name] = schemaInitializer;
-    if (Array.isArray(this.actionList[schemaInitializer.name])) {
-      this.actionList[schemaInitializer.name].forEach((item) => {
-        schemaInitializer[item.type](item.itemName, item.data);
-      });
-      this.actionList[schemaInitializer.name] = undefined;
-    }
+  add<P1 = any, P2 = any>(...schemaInitializerList: SchemaInitializer<P1, P2>[]) {
+    schemaInitializerList.forEach((schemaInitializer) => {
+      this.schemaInitializers[schemaInitializer.name] = schemaInitializer;
+      if (Array.isArray(this.actionList[schemaInitializer.name])) {
+        this.actionList[schemaInitializer.name].forEach((item) => {
+          schemaInitializer[item.type](item.itemName, item.data);
+        });
+        this.actionList[schemaInitializer.name] = undefined;
+      }
+    });
   }
 
   addItem(schemaInitializerName: string, itemName: string, data: Omit<SchemaInitializerItemType, 'name'>) {
