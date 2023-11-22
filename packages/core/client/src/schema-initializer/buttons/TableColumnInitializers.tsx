@@ -1,5 +1,5 @@
 import { useFieldSchema } from '@formily/react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializerChildren } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
@@ -33,16 +33,17 @@ const AssociatedFields = () => {
   const associatedFields = useAssociatedTableColumnInitializerFields();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-
+  const schema: any = useMemo(
+    () => [
+      {
+        type: 'itemGroup',
+        title: t('Display association fields'),
+        children: associatedFields,
+      },
+    ],
+    [associatedFields, t],
+  );
   if (!associatedFields?.length || fieldSchema['x-component'] === 'AssociationField.SubTable') return null;
-  // TODO: 修改类型
-  const schema: any = [
-    {
-      type: 'itemGroup',
-      title: t('Display association fields'),
-      children: associatedFields,
-    },
-  ];
   return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
 
