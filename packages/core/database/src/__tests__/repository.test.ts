@@ -396,6 +396,7 @@ describe('repository.update', () => {
         { type: 'hasMany', name: 'posts' },
       ],
     });
+
     Post = db.collection({
       name: 'posts',
       fields: [
@@ -404,6 +405,7 @@ describe('repository.update', () => {
         { type: 'belongsTo', name: 'user' },
       ],
     });
+
     Comment = db.collection({
       name: 'comments',
       fields: [{ type: 'string', name: 'name' }],
@@ -413,6 +415,100 @@ describe('repository.update', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should update through table', async () => {
+    const throughCollection = db.collection({
+      name: 'postsTags',
+      fields: [
+        {
+          type: 'boolean',
+          name: 'default',
+        },
+      ],
+    });
+
+    const Tag = db.collection({
+      name: 'tags',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'belongsToMany',
+          name: 'posts',
+          through: 'postsTags',
+        },
+      ],
+    });
+
+    Post.setField('tags', {
+      type: 'belongsToMany',
+      target: 'tags',
+      through: 'postsTags',
+    });
+
+    await db.sync();
+
+    await Post.repository.create({
+      values: [
+        {
+          name: 'post1',
+          tags: [{ name: 't1' }, { name: 't2' }],
+        },
+        {
+          name: 'post2',
+          tags: [{ name: 't1' }, { name: 't2' }],
+        },
+      ],
+    });
+
+    throughCollection.updateOptions({
+      name: 'postsTags',
+      timestamps: true,
+      autoGenId: false,
+      isThrough: true,
+      fields: [],
+    });
+
+    const primaryKeys = throughCollection.model.primaryKeyAttributes;
+
+    throughCollection.setField('postId', {
+      type: 'bigInt',
+      isForeignKey: true,
+    });
+
+    throughCollection.setField('tagId', {
+      type: 'bigInt',
+      isForeignKey: true,
+    });
+
+    expect(throughCollection.model.primaryKeyAttributes).toEqual(['postId', 'tagId']);
+
+    const tag1 = await Tag.repository.findOne({
+      filter: {
+        name: 't1',
+      },
+    });
+
+    await throughCollection.repository.update({
+      filter: {
+        tagId: tag1.get('id'),
+      },
+      values: {
+        default: true,
+      },
+    });
+
+    await throughCollection.repository.update({
+      filter: {
+        tagId: tag1.get('id'),
+      },
+      values: {
+        default: false,
+      },
+    });
   });
 
   it('update with filterByTk and with associations', async () => {
