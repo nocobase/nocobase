@@ -17,7 +17,7 @@ const showMenu = async (page: Page, fieldName: string) => {
     .hover();
 };
 
-const openDialogAndShowMenu = async (page: Page, mockPage, fieldName: string) => {
+const openDialogAndShowMenu = async (page: Page, mockPage, mockRecord, fieldName: string) => {
   await gotoPage(mockPage);
   await openDialog(page);
   await showMenu(page, fieldName);
@@ -26,8 +26,8 @@ const openDialogAndShowMenu = async (page: Page, mockPage, fieldName: string) =>
 test.describe('color', () => {
   commonTesting({ openDialogAndShowMenu, fieldName: 'color' });
 
-  test('set default value', async ({ page, mockPage }) => {
-    await openDialogAndShowMenu(page, mockPage, 'color');
+  test('set default value', async ({ page, mockPage, mockRecord }) => {
+    await openDialogAndShowMenu(page, mockPage, mockRecord, 'color');
     // 简单测试下是否有选项，值的话无法选中，暂时测不了
     await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
   });
