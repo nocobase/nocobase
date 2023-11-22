@@ -326,6 +326,30 @@ export const generalWithChoices: CollectionSetting[] = [
   },
 ];
 
+/**
+ * 创建一个名为 general 的 collection，其包含所有 media 类型的字段
+ */
+export const generalWithMedia: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'markdown',
+        interface: 'markdown',
+      },
+      {
+        name: 'richText',
+        interface: 'richText',
+      },
+      {
+        name: 'attachment',
+        interface: 'attachment',
+      },
+    ],
+  },
+];
+
 export const generalWithSingleLineText: CollectionSetting[] = [
   {
     name: 'general',
