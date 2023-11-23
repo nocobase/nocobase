@@ -1,9 +1,10 @@
-import { assign, MergeStrategies, requireModule } from '@nocobase/utils';
+import { assign, MergeStrategies, prePerfHooksWrap, requireModule } from '@nocobase/utils';
 import compose from 'koa-compose';
 import _ from 'lodash';
 import Middleware, { MiddlewareType } from './middleware';
 import Resource from './resource';
 import { HandlerType } from './resourcer';
+import { RecordableHistogram, performance } from 'perf_hooks';
 
 export type ActionType = string | HandlerType | ActionOptions;
 
@@ -303,11 +304,13 @@ export class Action {
   }
 
   getHandlers() {
-    const handlers = [
+    let handlers = [
       ...this.resource.resourcer.getMiddlewares(),
       ...this.getMiddlewareHandlers(),
       this.getHandler(),
     ].filter(Boolean);
+
+    handlers = handlers.map((handler) => prePerfHooksWrap(handler));
 
     return handlers;
   }

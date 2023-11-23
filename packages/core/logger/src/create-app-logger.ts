@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import Koa from 'koa';
 import { pick } from 'lodash';
 import { createLogger, LoggerOptions } from './create-logger';
+import { performance } from 'perf_hooks';
 
 const defaultRequestWhitelist = [
   'action',
@@ -43,7 +44,9 @@ export function createAppLogger(options: AppLoggerOptions = {}) {
     ctx.reqId = ctx.req['id'] = randomUUID();
     ctx.logger = ctx.log = logger.child({ reqId: ctx.reqId });
 
+    const beginTime = performance.now();
     ctx.logger.info(`BEGIN: ${ctx.method} ${ctx.url}`);
+    const beginLogDuration = performance.now() - beginTime;
 
     let error;
 
@@ -67,7 +70,15 @@ export function createAppLogger(options: AppLoggerOptions = {}) {
       }
       info['req'] = pick(info['req'], requestWhitelist);
       info['res'] = pick(info['res'], responseWhitelist);
+
+      const endTime = performance.now();
       ctx.logger.log(info);
+      const endLogDuration = performance.now() - endTime;
+
+      if (ctx.getPerfHistogram) {
+        ctx.getPerfHistogram('beginLog').record(Math.ceil(beginLogDuration * 1e6));
+        ctx.getPerfHistogram('endLog').record(Math.ceil(endLogDuration * 1e6));
+      }
     }
 
     if (error) {
