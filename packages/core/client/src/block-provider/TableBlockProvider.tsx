@@ -139,7 +139,7 @@ export const useTableBlockProps = () => {
     if (!ctx?.service?.loading) {
       field.value = [];
       field.value = ctx?.service?.data?.data;
-      field.setInitialValue(ctx?.service?.data?.data);
+      field?.setInitialValue(ctx?.service?.data?.data);
       field.data = field.data || {};
       field.data.selectedRowKeys = ctx?.field?.data?.selectedRowKeys;
       field.componentProps.pagination = field.componentProps.pagination || {};

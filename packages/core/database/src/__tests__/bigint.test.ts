@@ -27,7 +27,11 @@ excludeSqlite()('collection', () => {
     await db.sync();
     const tableInfo = await db.sequelize.getQueryInterface().describeTable(collection.model.tableName);
 
-    expect(tableInfo['id'].type).toBe('BIGINT');
+    if (db.inDialect('mariadb')) {
+      expect(tableInfo['id'].type).toBe('BIGINT(20)');
+    } else {
+      expect(tableInfo['id'].type).toBe('BIGINT');
+    }
 
     const profile = db.collection({
       name: 'profiles',
@@ -43,6 +47,10 @@ excludeSqlite()('collection', () => {
 
     const profileTableInfo = await db.sequelize.getQueryInterface().describeTable(profile.model.tableName);
 
-    expect(profileTableInfo[profile.model.rawAttributes['userId'].field].type).toBe('BIGINT');
+    if (db.inDialect('mariadb')) {
+      expect(profileTableInfo[profile.model.rawAttributes['userId'].field].type).toBe('BIGINT(20)');
+    } else {
+      expect(profileTableInfo[profile.model.rawAttributes['userId'].field].type).toBe('BIGINT');
+    }
   });
 });

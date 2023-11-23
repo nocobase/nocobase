@@ -57,9 +57,9 @@ export class ClientPlugin extends Plugin {
   }
 
   async load() {
-    this.app.locales.setLocaleFn('antd', async (lang) => getAntdLocale(lang));
-    this.app.locales.setLocaleFn('cronstrue', async (lang) => getCronstrueLocale(lang));
-    this.app.locales.setLocaleFn('cron', async (lang) => getCronLocale(lang));
+    this.app.localeManager.setLocaleFn('antd', async (lang) => getAntdLocale(lang));
+    this.app.localeManager.setLocaleFn('cronstrue', async (lang) => getCronstrueLocale(lang));
+    this.app.localeManager.setLocaleFn('cron', async (lang) => getCronLocale(lang));
     this.db.addMigrations({
       namespace: 'client',
       directory: resolve(__dirname, './migrations'),
@@ -107,7 +107,7 @@ export class ClientPlugin extends Plugin {
         },
         async getLang(ctx, next) {
           const lang = await getLang(ctx);
-          const resources = await ctx.app.locales.get(lang);
+          const resources = await ctx.app.localeManager.get(lang);
           ctx.body = {
             lang,
             ...resources,

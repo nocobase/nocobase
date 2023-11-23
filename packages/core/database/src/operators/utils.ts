@@ -7,7 +7,7 @@ const isPg = (ctx) => {
 };
 
 const isMySQL = (ctx) => {
-  return getDialect(ctx) === 'mysql';
+  return getDialect(ctx) === 'mysql' || getDialect(ctx) === 'mariadb';
 };
 
 export { getDialect, isPg, isMySQL };

@@ -1,18 +1,17 @@
-import { Cache, createCache } from '@nocobase/cache';
+import { Cache } from '@nocobase/cache';
 import { Database } from '@nocobase/database';
 
 export default class Resources {
   cache: Cache;
   db: Database;
-  CACHE_KEY_PREFIX = 'localization:';
 
-  constructor(db: Database) {
-    this.cache = createCache();
+  constructor(db: Database, cache: Cache) {
+    this.cache = cache;
     this.db = db;
   }
 
   async getTexts() {
-    return await this.cache.wrap(`${this.CACHE_KEY_PREFIX}texts`, async () => {
+    return await this.cache.wrap(`texts`, async () => {
       return await this.db.getRepository('localizationTexts').find({
         fields: ['id', 'module', 'text'],
         raw: true,
@@ -21,7 +20,7 @@ export default class Resources {
   }
 
   async getTranslations(locale: string) {
-    return await this.cache.wrap(`${this.CACHE_KEY_PREFIX}translations:${locale}`, async () => {
+    return await this.cache.wrap(`translations:${locale}`, async () => {
       return await this.db.getRepository('localizationTranslations').find({
         fields: ['textId', 'translation'],
         filter: { locale },
@@ -69,10 +68,10 @@ export default class Resources {
       text: text.text,
     }));
     const existTexts = await this.getTexts();
-    await this.cache.set(`${this.CACHE_KEY_PREFIX}texts`, [...existTexts, ...newTexts]);
+    await this.cache.set(`texts`, [...existTexts, ...newTexts]);
   }
 
   async resetCache(locale: string) {
-    await this.cache.del(`${this.CACHE_KEY_PREFIX}translations:${locale}`);
+    await this.cache.del(`translations:${locale}`);
   }
 }
