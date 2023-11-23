@@ -41,41 +41,51 @@ export const commonTesting = ({
   fieldName,
   blockType = 'creating',
 }: {
-  openDialogAndShowMenu: (page: Page, mockPage: any, mockRecord: any, fieldName: string) => Promise<void>;
+  openDialogAndShowMenu: ({
+    page,
+    mockPage,
+    mockRecord,
+    fieldName,
+  }: {
+    page: Page;
+    mockPage: any;
+    mockRecord: any;
+    fieldName: string;
+  }) => Promise<void>;
   fieldName: string;
   blockType?: 'creating' | 'viewing' | 'editing';
 }) => {
   test('edit field title', async ({ page, mockPage, mockRecord }) => {
-    await openDialogAndShowMenu(page, mockPage, mockRecord, fieldName);
+    await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName });
     await testEditFieldTitle(page);
   });
 
   test('display title', async ({ page, mockPage, mockRecord }) => {
-    await openDialogAndShowMenu(page, mockPage, mockRecord, fieldName);
+    await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName });
     await testDisplayTitle(page, fieldName);
   });
 
   test('delete', async ({ page, mockPage, mockRecord }) => {
-    await openDialogAndShowMenu(page, mockPage, mockRecord, fieldName);
+    await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName });
     await clickDeleteAndOk(page);
-    await expect(page.getByText(fieldName)).not.toBeVisible();
+    await expect(page.getByText(`${fieldName}:`)).not.toBeVisible();
   });
 
   if (['creating', 'editing'].includes(blockType)) {
     test('edit description', async ({ page, mockPage, mockRecord }) => {
-      await openDialogAndShowMenu(page, mockPage, mockRecord, fieldName);
+      await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName });
       await testEditDescription(page);
     });
 
     test('required', async ({ page, mockPage, mockRecord }) => {
-      await openDialogAndShowMenu(page, mockPage, mockRecord, fieldName);
+      await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName });
       await testRequired(page);
     });
   }
 
   if (blockType === 'viewing') {
     test('edit tooltip', async ({ page, mockPage, mockRecord }) => {
-      await openDialogAndShowMenu(page, mockPage, mockRecord, fieldName);
+      await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName });
       await page.getByRole('menuitem', { name: 'Edit tooltip' }).click();
       await page.getByRole('dialog').getByRole('textbox').click();
       await page.getByRole('dialog').getByRole('textbox').fill('testing edit tooltip');
@@ -88,7 +98,7 @@ export const commonTesting = ({
 
   if (['editing', 'viewing'].includes(blockType)) {
     test('should not allow to set default value', async ({ page, mockPage, mockRecord }) => {
-      await openDialogAndShowMenu(page, mockPage, mockRecord, fieldName);
+      await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName });
       // 编辑模式和阅读模式下，不应该有设置默认值的选项
       await expect(page.getByRole('menuitem', { name: 'Set default value' })).not.toBeVisible();
     });
