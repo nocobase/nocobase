@@ -18,7 +18,7 @@ export const Bar: React.FC<TaskItemProps> = ({
   const progressPoint = getProgressPoint(+!rtl * task.progressWidth + task.progressX, task.y, task.height);
   const handleHeight = task.height - 2;
   return (
-    <g className={cx(barWrapper)} aria-label="task-bar" role="button" tabIndex={0}>
+    <g className={cx(barWrapper)} aria-label="task-bar" tabIndex={0}>
       <BarDisplay
         x={task.x1}
         y={task.y}
@@ -47,7 +47,6 @@ export const Bar: React.FC<TaskItemProps> = ({
               onMouseDown={(e) => {
                 onEventStart('start', task, e);
               }}
-              barKey="start"
             />
             {/* right */}
             <BarDateHandle
@@ -59,7 +58,6 @@ export const Bar: React.FC<TaskItemProps> = ({
               onMouseDown={(e) => {
                 onEventStart('end', task, e);
               }}
-              barKey="end"
             />
           </g>
         )}

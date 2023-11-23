@@ -126,21 +126,13 @@ test.describe('configure params in gantt block', () => {
     await page.mouse.move(300, 0);
     const barLabel = await page.getByLabel('block-item-gantt').locator('.barLabel');
     await barLabel.hover();
-    // await page.getByLabel('task-bar').hover();
-    // const tooltip = await page.getByLabel('nb-gantt-tooltip');
     expect(await barLabel.textContent()).toBe(mockData['singleLineText2']);
-    // await expect(await tooltip.textContent()).toContain(mockData['singleLineText2']);
   });
   test('set start date field in gantt block', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
     await mockRecord('general', mockData);
     await page.getByLabel('block-item-gantt').hover();
-
     await page.getByLabel('designer-schema-settings-CardItem-Gantt.Designer-general').hover();
-    // await page.locator('.bar').hover();
-    // const tooltip = await page.getByLabel('nb-gantt-tooltip');
-    // await expect(await tooltip.innerText()).toContain(getYmd(new Date(mockData['startDatetime'])));
-    //修改开始时间字段
     await page.getByRole('menuitem', { name: 'Start date field' }).click();
     await page.getByRole('option', { name: 'Start date time2' }).locator('div').click();
     await page.mouse.move(300, 0);
@@ -182,10 +174,31 @@ test.describe('configure params in gantt block', () => {
 test.describe('action in gantt block', () => {
   test('drag and adjust start time, end time, and progress', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
-    await mockRecord('general', mockData);
-    await page.waitForTimeout(1000);
-    // await page.getByLabel('task-bar').hover();
-    // await page.getByLabel('barHandle-start').hover();
+    await mockRecord('general', {
+      singleLineText: 'within apropos leaker whoever how',
+      startDatetime: '2023-04-26T11:02:51.129Z',
+      endDatetime: '2023-06-13T22:11:11.999Z',
+      percent: 0,
+    });
+    await page.getByLabel('block-item-gantt').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-Gantt.Designer-general').hover();
+    await page.getByRole('menuitem', { name: 'Time scale' }).click();
+    await page.getByRole('option', { name: 'Week' }).click();
+    await page.getByRole('menuitem', { name: 'Time scale' }).hover();
+    await page.mouse.move(300, 0);
+    await page.getByRole('button', { name: 'Actions' }).click();
+    await expect(await page.locator('.calendarBottomText').first().textContent()).toContain('W');
+    await page.locator('svg.ganttBody').hover();
+    await page.locator('.bar ').hover();
+    await page.locator('.handleGroup').hover();
+    console.log('Before hover');
+    const barHandle = await page.locator('rect.barHandle').first();
+    await page.mouse.down();
+    await page.mouse.move(1000, 0);
+    await page.mouse.up();
+    console.log('After hover action');
+
+    // await page.getByRole('button', { name: 'Actions' }).click();
     // try {
     //   const [request] = await Promise.all([
     //     page.waitForRequest((request) => request.url().includes('api/general:update')),
@@ -197,7 +210,7 @@ test.describe('action in gantt block', () => {
     //   console.log('error');
     // }
   });
-  test('configure button in gannt block', async ({ page, mockPage, mockRecords }) => {
+  test('configure button in gannt block', async ({ page, mockPage }) => {
     await mockPage(oneEmptyGantt).goto();
     await page.getByLabel('schema-initializer-ActionBar-GanttActionInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch').click();
