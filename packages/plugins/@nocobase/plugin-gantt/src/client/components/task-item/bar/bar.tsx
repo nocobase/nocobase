@@ -47,7 +47,7 @@ export const Bar: React.FC<TaskItemProps> = ({
               onMouseDown={(e) => {
                 onEventStart('start', task, e);
               }}
-              key="start"
+              barKey="start"
             />
             {/* right */}
             <BarDateHandle
@@ -59,7 +59,7 @@ export const Bar: React.FC<TaskItemProps> = ({
               onMouseDown={(e) => {
                 onEventStart('end', task, e);
               }}
-              key="end"
+              barKey="end"
             />
           </g>
         )}

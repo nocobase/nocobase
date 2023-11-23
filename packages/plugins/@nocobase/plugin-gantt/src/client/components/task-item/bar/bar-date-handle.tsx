@@ -7,7 +7,7 @@ type BarDateHandleProps = {
   height: number;
   barCornerRadius: number;
   onMouseDown: (event: React.MouseEvent<SVGRectElement, MouseEvent>) => void;
-  key: string;
+  barKey: string;
 };
 export const BarDateHandle: React.FC<BarDateHandleProps> = ({
   x,
@@ -16,7 +16,7 @@ export const BarDateHandle: React.FC<BarDateHandleProps> = ({
   height,
   barCornerRadius,
   onMouseDown,
-  key,
+  barKey,
 }) => {
   return (
     <rect
@@ -25,7 +25,7 @@ export const BarDateHandle: React.FC<BarDateHandleProps> = ({
       width={width}
       height={height}
       className={'barHandle'}
-      aria-label={`barHandle-${key}`}
+      aria-label={`barHandle-${barKey}`}
       role="button"
       ry={barCornerRadius}
       rx={barCornerRadius}
