@@ -181,29 +181,21 @@ test.describe('configure params in gantt block', () => {
 
 test.describe('action in gantt block', () => {
   test('drag and adjust start time, end time, and progress', async ({ page, mockPage, mockRecord }) => {
-    await mockRecord('general', mockData);
     await mockPage(oneEmptyGantt).goto();
+    await mockRecord('general', mockData);
     await page.waitForTimeout(1000);
-    await page.getByLabel('task-bar').hover();
-    await page.getByLabel('barHandle-start').hover();
-
-    // await page.getByLabel('block-item-gantt').hover();
-    // await page.getByLabel('designer-schema-settings-CardItem-Gantt.Designer-general').hover();
-    // await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
-    // await page.getByText('Add condition', { exact: true }).click();
-    // await page.getByTestId('select-filter-field').getByLabel('Search').click();
-    // await page.getByTitle('ID').getByText('ID').click();
-    // await page.getByRole('spinbutton').fill('1');
-    try {
-      const [request] = await Promise.all([
-        page.waitForRequest((request) => request.url().includes('api/general:update')),
-        page.mouse.move(500, 0),
-      ]);
-      const postData = request.postDataJSON();
-      console.log(postData);
-    } catch {
-      console.log('error');
-    }
+    // await page.getByLabel('task-bar').hover();
+    // await page.getByLabel('barHandle-start').hover();
+    // try {
+    //   const [request] = await Promise.all([
+    //     page.waitForRequest((request) => request.url().includes('api/general:update')),
+    //     page.mouse.move(500, 0),
+    //   ]);
+    //   const postData = request.postDataJSON();
+    //   console.log(postData);
+    // } catch {
+    //   console.log('error');
+    // }
   });
   test('configure button in gannt block', async ({ page, mockPage, mockRecords }) => {
     await mockPage(oneEmptyGantt).goto();
