@@ -608,9 +608,8 @@ export const formItemSettings = new SchemaSetting({
       type: 'select',
       useVisible() {
         const { form } = useFormBlockContext();
-        const collectionField = useCollectionField();
         const fieldSchema = useFieldSchema();
-        return form && !form?.readPretty && collectionField?.interface !== 'o2m' && !isPatternDisabled(fieldSchema);
+        return form && !form?.readPretty && !isPatternDisabled(fieldSchema);
       },
       useComponentProps() {
         const { t } = useTranslation();

@@ -189,7 +189,7 @@ export abstract class Field {
       sql = `SELECT *
              from pragma_table_info('${this.collection.model.tableName}')
              WHERE name = '${this.columnName()}'`;
-    } else if (this.database.inDialect('mysql')) {
+    } else if (this.database.inDialect('mysql', 'mariadb')) {
       sql = `
         select column_name
         from INFORMATION_SCHEMA.COLUMNS

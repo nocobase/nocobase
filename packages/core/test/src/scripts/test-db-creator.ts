@@ -4,12 +4,13 @@ import pg from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 import mysql from 'mysql2/promise';
+import mariadb from 'mariadb';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
 
 abstract class BaseClient<Client> {
-  private createdDBs: Set<string> = new Set();
   protected _client: Client | null = null;
+  private createdDBs: Set<string> = new Set();
 
   abstract _createDB(name: string): Promise<void>;
   abstract _createConnection(): Promise<Client>;
@@ -89,12 +90,37 @@ class MySQLClient extends BaseClient<any> {
   }
 }
 
+class MariaDBClient extends BaseClient<any> {
+  async _removeDB(name: string): Promise<void> {
+    await this._client.query(`DROP DATABASE IF EXISTS ${name}`);
+  }
+
+  async _createDB(name: string): Promise<void> {
+    await this._client.query(`CREATE DATABASE IF NOT EXISTS ${name}`);
+  }
+
+  async _createConnection(): Promise<mariadb.Connection> {
+    const connection = await mariadb.createConnection({
+      host: process.env['DB_HOST'],
+      port: Number(process.env['DB_PORT']),
+      user: process.env['DB_USER'],
+      password: process.env['DB_PASSWORD'],
+      database: process.env['DB_DATABASE'],
+    });
+
+    return connection;
+  }
+}
+
 const client = {
   postgres: () => {
     return new PostgresClient();
   },
   mysql: () => {
     return new MySQLClient();
+  },
+  mariadb: () => {
+    return new MariaDBClient();
   },
 };
 

@@ -70,6 +70,7 @@ class AppGenerator extends Generator {
 
     if (allDbDialect) {
       dependencies.push(`"mysql2": "^2.3.3"`);
+      dependencies.push(`"mariadb": "^2.5.6"`);
       dependencies.push(`"pg": "^8.7.3"`);
       dependencies.push(`"pg-hstore": "^2.3.4"`);
       dependencies.push(`"sqlite3": "^5.0.8"`);
@@ -85,6 +86,16 @@ class AppGenerator extends Generator {
       case 'mysql':
         if (!allDbDialect) {
           dependencies.push(`"mysql2": "^2.3.3"`);
+        }
+        envs.push(`DB_HOST=${env.DB_HOST || 'localhost'}`);
+        envs.push(`DB_PORT=${env.DB_PORT || 3306}`);
+        envs.push(`DB_DATABASE=${env.DB_DATABASE || ''}`);
+        envs.push(`DB_USER=${env.DB_USER || ''}`);
+        envs.push(`DB_PASSWORD=${env.DB_PASSWORD || ''}`);
+        break;
+      case 'mariadb':
+        if (!allDbDialect) {
+          dependencies.push(`"mariadb": "^2.5.6"`);
         }
         envs.push(`DB_HOST=${env.DB_HOST || 'localhost'}`);
         envs.push(`DB_PORT=${env.DB_PORT || 3306}`);
