@@ -433,6 +433,9 @@ export class PluginACL extends Plugin {
       });
     });
 
+    this.app.on('beforeSignOut', ({ userId }) => {
+      this.app.cache.del(`roles:${userId}`);
+    });
     this.app.resourcer.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'auth' });
 
     this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');

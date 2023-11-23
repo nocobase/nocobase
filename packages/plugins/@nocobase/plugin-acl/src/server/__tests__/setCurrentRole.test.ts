@@ -19,6 +19,7 @@ describe('role', () => {
 
     ctx = {
       db,
+      cache: api.cache,
       state: {
         currentRole: '',
       },

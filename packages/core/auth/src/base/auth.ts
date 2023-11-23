@@ -52,7 +52,7 @@ export class BaseAuth extends Auth {
         this.ctx.headers['x-role'] = roleName;
       }
 
-      const cache = this.ctx.app.cache as Cache;
+      const cache = this.ctx.cache as Cache;
       return await cache.wrap(
         `auth:${userId}`,
         () =>
@@ -78,7 +78,6 @@ export class BaseAuth extends Auth {
     try {
       user = await this.validate();
     } catch (err) {
-      console.log(err);
       this.ctx.throw(401, err.message);
     }
     if (!user) {
@@ -98,6 +97,9 @@ export class BaseAuth extends Auth {
     if (!token) {
       return;
     }
+    const { userId } = await this.jwt.decode(token);
+    await this.ctx.app.emitAsync('beforeSignOut', { userId });
+    await this.ctx.cache.del(`auth:${userId}`);
     return await this.jwt.block(token);
   }
 }
