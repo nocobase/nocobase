@@ -350,6 +350,26 @@ export const generalWithMedia: CollectionSetting[] = [
   },
 ];
 
+/**
+ * 创建一个名为 general 的 collection，其包含所有 datetime 类型的字段
+ */
+export const generalWithDatetime: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'datetime',
+        interface: 'datetime',
+      },
+      {
+        name: 'time',
+        interface: 'time',
+      },
+    ],
+  },
+];
+
 export const generalWithSingleLineText: CollectionSetting[] = [
   {
     name: 'general',
