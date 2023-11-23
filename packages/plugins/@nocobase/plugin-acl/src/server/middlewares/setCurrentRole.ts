@@ -1,5 +1,6 @@
 import { Context } from '@nocobase/actions';
-import { Repository } from '@nocobase/database';
+import { Cache } from '@nocobase/cache';
+import { Model, Repository } from '@nocobase/database';
 
 export async function setCurrentRole(ctx: Context, next) {
   const currentRole = ctx.get('X-Role');
@@ -13,8 +14,9 @@ export async function setCurrentRole(ctx: Context, next) {
     return next();
   }
 
+  const cache = ctx.app.cache as Cache;
   const repository = ctx.db.getRepository('users.roles', ctx.state.currentUser.id) as unknown as Repository;
-  const roles = await repository.find();
+  const roles = (await cache.wrap(`roles:${ctx.state.currentUser.id}`, () => repository.find(), 120 * 1000)) as Model[];
   ctx.state.currentUser.setDataValue('roles', roles);
 
   // 1. If the X-Role is set, use the specified role

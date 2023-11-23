@@ -21,7 +21,8 @@
     "@nocobase/database": "0.x",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
-    "@nocobase/utils": "0.x"
+    "@nocobase/utils": "0.x",
+    "@nocobase/cache": "0.x"
   },
   "repository": {
     "type": "git",

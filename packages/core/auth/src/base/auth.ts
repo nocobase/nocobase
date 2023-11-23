@@ -1,6 +1,7 @@
 import { Collection, Model } from '@nocobase/database';
 import { Auth, AuthConfig } from '../auth';
 import { JwtService } from './jwt-service';
+import { Cache } from '@nocobase/cache';
 
 /**
  * BaseAuth
@@ -51,11 +52,17 @@ export class BaseAuth extends Auth {
         this.ctx.headers['x-role'] = roleName;
       }
 
-      return await this.userRepository.findOne({
-        filter: {
-          id: userId,
-        },
-      });
+      const cache = this.ctx.app.cache as Cache;
+      return await cache.wrap(
+        `auth:${userId}`,
+        () =>
+          this.userRepository.findOne({
+            filter: {
+              id: userId,
+            },
+          }),
+        120 * 1000,
+      );
     } catch (err) {
       this.ctx.logger.error(err);
       return null;

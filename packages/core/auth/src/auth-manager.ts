@@ -5,9 +5,9 @@ import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
 
-type Storer = {
+export interface Storer {
   get: (name: string) => Promise<Model>;
-};
+}
 
 export type AuthManagerOptions = {
   authKey: string;
