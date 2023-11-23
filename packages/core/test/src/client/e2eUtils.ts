@@ -86,7 +86,7 @@ interface CollectionSetting {
   }>;
 }
 
-interface PageConfig {
+export interface PageConfig {
   /**
    * 用户可见的页面名称
    * @default uid()
