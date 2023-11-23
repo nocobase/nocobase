@@ -33,6 +33,7 @@ export const generalWithDatetimeFields: CollectionSetting[] = [
           type: 'string',
           'x-component': 'DatePicker',
           title: 'Start date time',
+          required: true,
         },
       },
       {
@@ -42,6 +43,7 @@ export const generalWithDatetimeFields: CollectionSetting[] = [
           type: 'string',
           'x-component': 'DatePicker',
           title: 'Start date time2',
+          required: true,
         },
       },
       {
@@ -51,6 +53,7 @@ export const generalWithDatetimeFields: CollectionSetting[] = [
           type: 'string',
           'x-component': 'DatePicker',
           title: 'End date time',
+          required: true,
         },
       },
       {
@@ -60,6 +63,7 @@ export const generalWithDatetimeFields: CollectionSetting[] = [
           type: 'string',
           'x-component': 'DatePicker',
           title: 'End date time2',
+          required: true,
         },
       },
       {

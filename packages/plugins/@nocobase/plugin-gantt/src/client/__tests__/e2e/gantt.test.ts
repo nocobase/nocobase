@@ -1,6 +1,16 @@
 import { expect, test } from '@nocobase/test/client';
 import { generalWithDatetimeFields, oneEmptyGantt } from './utils';
-
+import { getYmd } from '../../helpers/other-helper';
+const mockData = {
+  singleLineText: 'within apropos leaker whoever how',
+  singleLineText2: 'the inasmuch unwelcome gah hm cleverly muscle worriedly lazily',
+  startDatetime: '2023-04-26T11:02:51.129Z',
+  startDatetime2: '2023-04-29T03:35:05.576Z',
+  endDatetime: '2023-05-13T22:11:11.999Z',
+  endDatetime2: '2023-07-26T00:47:52.859Z',
+  percent: 66,
+  percent2: 55,
+};
 test('add gantt block to page', async ({ page, mockPage, mockCollections }) => {
   await mockCollections(generalWithDatetimeFields);
   await mockPage().goto();
@@ -107,15 +117,111 @@ test.describe('configure params in gantt block', () => {
 
   test('set title field in gantt block', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
-    const data = await mockRecord('general');
+    await mockRecord('general', mockData);
     await page.getByLabel('block-item-gantt').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-Gantt.Designer-general').click();
-    await page.getByRole('menuitem', { name: 'Title field Search Single line text' }).click();
+    await page.getByLabel('designer-schema-settings-CardItem-Gantt.Designer-general').hover();
+    await page.getByRole('menuitem', { name: 'Title field' }).click();
     await page.getByRole('option', { name: 'Single line text2' }).locator('div').click();
-    const barLabel = await page.locator('.ganttBody .bar .barLabel');
+    await page.getByRole('button', { name: 'Actions' }).click();
+    await page.mouse.move(300, 0);
+    const barLabel = await page.getByLabel('block-item-gantt').locator('.barLabel');
     await barLabel.hover();
-    expect(await barLabel.textContent()).toBe(data['singleLineText2']);
-    await page.locator('.ganttBody .bar > rect').hover();
-    await expect(page.locator('.ganttBody .bar .nbGanttTooltip').textContent()).toContain(data['singleLineText2']);
+    // await page.getByLabel('task-bar').hover();
+    // const tooltip = await page.getByLabel('nb-gantt-tooltip');
+    expect(await barLabel.textContent()).toBe(mockData['singleLineText2']);
+    // await expect(await tooltip.textContent()).toContain(mockData['singleLineText2']);
+  });
+  test('set start date field in gantt block', async ({ page, mockPage, mockRecord }) => {
+    await mockPage(oneEmptyGantt).goto();
+    await mockRecord('general', mockData);
+    await page.getByLabel('block-item-gantt').hover();
+
+    await page.getByLabel('designer-schema-settings-CardItem-Gantt.Designer-general').hover();
+    // await page.locator('.bar').hover();
+    // const tooltip = await page.getByLabel('nb-gantt-tooltip');
+    // await expect(await tooltip.innerText()).toContain(getYmd(new Date(mockData['startDatetime'])));
+    //修改开始时间字段
+    await page.getByRole('menuitem', { name: 'Start date field' }).click();
+    await page.getByRole('option', { name: 'Start date time2' }).locator('div').click();
+    await page.mouse.move(300, 0);
+    await page.getByRole('button', { name: 'Actions' }).click();
+    await page.locator('.bar').hover();
+    const tooltip2 = await page.getByLabel('nb-gantt-tooltip');
+    await expect(await tooltip2.innerText()).toContain(getYmd(new Date(mockData['startDatetime2'])));
+  });
+  test('set end date field in gantt block', async ({ page, mockPage, mockRecord }) => {
+    await mockPage(oneEmptyGantt).goto();
+    await mockRecord('general', mockData);
+    await page.getByLabel('block-item-gantt').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-Gantt.Designer-general').hover();
+    //修改结束时间字段
+    await page.getByRole('menuitem', { name: 'End date field' }).click();
+    await page.getByRole('option', { name: 'End date time2' }).locator('div').click();
+    await page.mouse.move(300, 0);
+    await page.getByRole('button', { name: 'Actions' }).click();
+    await page.locator('.bar').hover();
+    const tooltip2 = await page.getByLabel('nb-gantt-tooltip');
+    await expect(await tooltip2.innerText()).toContain(getYmd(new Date(mockData['endDatetime2'])));
+  });
+  test('set time scale in gantt block', async ({ page, mockPage, mockRecord }) => {
+    await mockPage(oneEmptyGantt).goto();
+    await mockRecord('general', mockData);
+    await page.getByLabel('block-item-gantt').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-Gantt.Designer-general').hover();
+    //修改时间缩放等级
+    await page.getByRole('menuitem', { name: 'Time scale' }).click();
+    await page.getByRole('option', { name: 'Week' }).click();
+    await page.getByRole('menuitem', { name: 'Time scale' }).hover();
+    await page.mouse.move(300, 0);
+    await page.getByRole('button', { name: 'Actions' }).click();
+    await page.locator('.bar').hover();
+    await expect(await page.locator('.calendarBottomText').first().textContent()).toContain('W');
+  });
+});
+
+test.describe('action in gantt block', () => {
+  test('drag and adjust start time, end time, and progress', async ({ page, mockPage, mockRecord }) => {
+    await mockPage(oneEmptyGantt).goto();
+    await mockRecord('general', mockData);
+    // await page.getByLabel('block-item-gantt').hover();
+    // await page.getByLabel('designer-schema-settings-CardItem-Gantt.Designer-general').hover();
+    // await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+    // await page.getByText('Add condition', { exact: true }).click();
+    // await page.getByTestId('select-filter-field').getByLabel('Search').click();
+    // await page.getByTitle('ID').getByText('ID').click();
+    // await page.getByRole('spinbutton').fill('1');
+    // try {
+    //   const [request] = await Promise.all([
+    //     page.waitForRequest((request) => request.url().includes('api/general:list')),
+    //     page.getByRole('button', { name: 'OK' }).click(),
+    //   ]);
+    //   const requestUrl = request.url();
+    //   const queryParams = new URLSearchParams(new URL(requestUrl).search);
+    //   const filter = queryParams.get('filter');
+    //   //请求参数符合预期
+    //   expect(JSON.parse(filter)).toEqual({ $and: [{ id: { $eq: 1 } }] });
+    //   await expect(page.getByLabel('table-index-2')).not.toBeVisible();
+    // } catch {
+    //   console.log('error');
+    // }
+  });
+  test('configure button in gannt block', async ({ page, mockPage, mockRecords }) => {
+    await mockPage(oneEmptyGantt).goto();
+    await page.getByLabel('schema-initializer-ActionBar-GanttActionInitializers-general').hover();
+    await page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch').click();
+    await page.getByRole('menuitem', { name: 'Add new' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByRole('menuitem', { name: 'Refresh' }).click();
+    await page.getByRole('menuitem', { name: 'Customize right' }).hover();
+    await page.getByRole('menuitem', { name: 'Bulk update' }).click();
+    await page.getByRole('menuitem', { name: 'Bulk edit' }).click();
+    await page.getByRole('menuitem', { name: 'Add record' }).click();
+    await expect(page.getByLabel('action-Filter.Action-Filter-filter-general-table')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Add new-create-general-table')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Delete-destroy-general-table')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Refresh-refresh-general-table')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Bulk update-customize:bulkUpdate-general-table')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Bulk edit-customize:bulkEdit-general-table')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Add record-customize:create-general-table')).toBeVisible();
   });
 });

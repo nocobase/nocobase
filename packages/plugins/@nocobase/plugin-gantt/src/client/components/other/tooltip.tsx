@@ -121,7 +121,7 @@ export const StandardTooltipContent: React.FC<{
     fontFamily,
   };
   return (
-    <div className={cx(styles.nbGridOther, styles.tooltipDefaultContainer, 'nbGanttTooltip')} style={style}>
+    <div className={cx(styles.nbGridOther, styles.tooltipDefaultContainer)} aria-label="nb-gantt-tooltip" style={style}>
       <b style={{ fontSize: fontSize }}>
         {task.name}: {getYmd(task.start)} ~ {getYmd(task.end)}
       </b>
