@@ -20,7 +20,17 @@ const showMenu = async (page: Page, fieldName: string) => {
     .hover();
 };
 
-const openDialogAndShowMenu = async (page: Page, mockPage, mockRecord, fieldName: string) => {
+const openDialogAndShowMenu = async ({
+  page,
+  mockPage,
+  mockRecord,
+  fieldName,
+}: {
+  page: Page;
+  mockPage;
+  mockRecord;
+  fieldName: string;
+}) => {
   await gotoPage(mockPage, mockRecord);
   await openDialog(page);
   await showMenu(page, fieldName);
