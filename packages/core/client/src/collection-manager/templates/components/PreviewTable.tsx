@@ -70,7 +70,7 @@ export const PreviewTable = (props) => {
                   'x-component': schema && fieldSource ? 'CollectionField' : 'Input',
                   'x-read-pretty': true,
                   'x-collection-field': fieldSource?.join('.'),
-                  default: content,
+                  default: JSON.stringify(content),
                 },
               },
             };
