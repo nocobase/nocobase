@@ -7,7 +7,7 @@ import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
 import { gridRowColWrap } from '../schema-initializer/utils';
-import { SchemaSettings } from './SchemaSettings';
+import { SchemaSettingsDropdown } from './SchemaSettings';
 import { useGetAriaLabelOfDesigner } from './hooks/useGetAriaLabelOfDesigner';
 import { SchemaDesignerProvider, useSchemaSettingsRender } from '../application';
 
@@ -127,7 +127,7 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
             {schemaSettingsExists ? (
               schemaSettingsRender(contextValue)
             ) : (
-              <SchemaSettings
+              <SchemaSettingsDropdown
                 title={
                   <MenuOutlined
                     role="button"
@@ -138,7 +138,7 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
                 {...schemaSettingsProps}
               >
                 {props.children}
-              </SchemaSettings>
+              </SchemaSettingsDropdown>
             )}
           </Space>
         </div>

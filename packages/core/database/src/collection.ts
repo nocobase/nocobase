@@ -42,10 +42,6 @@ function EnsureAtomicity(target: any, propertyKey: string, descriptor: PropertyD
 
       const afterRawAttributes = Object.keys(model.rawAttributes);
       const createdRawAttributes = lodash.difference(afterRawAttributes, beforeRawAttributes);
-      console.log({
-        beforeRawAttributes,
-        afterRawAttributes,
-      });
       for (const key of createdRawAttributes) {
         delete this.model.rawAttributes[key];
       }

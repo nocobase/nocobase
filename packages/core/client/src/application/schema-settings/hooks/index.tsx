@@ -18,7 +18,7 @@ export function useSchemaSettingsRender<T = {}>(name: string, options?: UseSchem
   }
 
   if (!schemaSetting) {
-    console.error(`[nocobase]: SchemaSetting "${name}" not found`);
+    console.error(`[nocobase]: SchemaSettings "${name}" not found`);
     return {
       exists: false,
       render: () => null,

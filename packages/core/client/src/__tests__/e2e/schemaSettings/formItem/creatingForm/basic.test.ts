@@ -1,249 +1,750 @@
 import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndBasicFields, test } from '@nocobase/test/client';
-import { commonTesting } from '../commonTesting';
+import { commonTesting, testDefaultValue, testPattern, testSetValidationRules } from '../commonTesting';
+
+const gotoPage = async (mockPage) => {
+  const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
+  await nocoPage.goto();
+};
+
+const openDialog = async (page: Page) => {
+  await page.getByRole('button', { name: 'Add new' }).click();
+};
+
+const showMenu = async (page: Page, fieldName: string) => {
+  await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
+  await page
+    .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
+    .hover();
+};
+
+const openDialogAndShowMenu = async ({
+  page,
+  mockPage,
+  mockRecord,
+  fieldName,
+}: {
+  page: Page;
+  mockPage;
+  mockRecord;
+  fieldName: string;
+}) => {
+  await gotoPage(mockPage);
+  await openDialog(page);
+  await showMenu(page, fieldName);
+};
 
 test.describe('color', () => {
-  const showMenu = async (page: Page, mockPage) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    await nocoPage.goto();
-    await page.getByRole('button', { name: 'Add new' }).click();
-    await page.getByLabel('block-item-CollectionField-general-form-general.color-color').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.color').hover();
-  };
+  commonTesting({ openDialogAndShowMenu, fieldName: 'color' });
 
-  commonTesting(showMenu, 'color');
-
-  test('pattern', async ({ page, mockPage }) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    await nocoPage.goto();
-    await page.getByRole('button', { name: 'Add new' }).click();
-
-    // 默认情况下显示颜色选择框
-    await page.getByLabel('color-picker-normal').hover();
-    await expect(page.getByRole('button', { name: 'right Recommended', exact: true })).toBeVisible();
-
-    await page.getByLabel('block-item-CollectionField-general-form-general.color-color').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.color').hover();
-    await page.getByRole('menuitem', { name: 'Pattern' }).click();
-    await page.getByRole('option', { name: 'Readonly' }).click();
-
-    // 只读模式下，不会显示颜色弹窗
-    await page.getByLabel('color-picker-normal').hover();
-    await expect(page.getByRole('button', { name: 'right Recommended', exact: true })).not.toBeVisible();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.color').hover();
-
-    await page.getByRole('menuitem', { name: 'Pattern' }).click();
-    await page.getByRole('option', { name: 'Easy-reading' }).click();
-    await expect(page.getByLabel('color-picker-read-pretty')).toBeVisible();
+  test('set default value', async ({ page, mockPage, mockRecord }) => {
+    await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName: 'color' });
+    // 简单测试下是否有选项，值的话无法选中，暂时测不了
+    await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
   });
 
-  test('set default value', async ({ page, mockPage }) => {
-    await showMenu(page, mockPage);
-    // 简单测试下是否有选项，值的话不太好测
-    await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
+  test('pattern', async ({ page, mockPage }) => {
+    await testPattern({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'color'),
+      expectEditable: async () => {
+        // 默认情况下显示颜色选择框
+        await page.getByLabel('color-picker-normal').hover();
+        await expect(page.getByRole('button', { name: 'right Recommended', exact: true })).toBeVisible();
+      },
+      expectReadonly: async () => {
+        // 只读模式下，不会显示颜色弹窗
+        await page.getByLabel('color-picker-normal').hover();
+        await expect(page.getByRole('button', { name: 'right Recommended', exact: true })).not.toBeVisible();
+      },
+      expectEasyReading: async () => {
+        await expect(page.getByLabel('color-picker-read-pretty')).toBeVisible();
+      },
+    });
   });
 });
 
 test.describe('email', () => {
-  const gotoPage = async (mockPage) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    await nocoPage.goto();
-  };
-
-  const openDialog = async (page: Page) => {
-    await page.getByRole('button', { name: 'Add new' }).click();
-  };
-
-  const showMenu = async (page: Page) => {
-    await page.getByLabel('block-item-CollectionField-general-form-general.email-email').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.email').hover();
-  };
-
-  const openDialogAndShowMenu = async (page: Page, mockPage) => {
-    await gotoPage(mockPage);
-    await openDialog(page);
-    await showMenu(page);
-  };
-
-  commonTesting(openDialogAndShowMenu, 'email');
+  commonTesting({ openDialogAndShowMenu, fieldName: 'email' });
 
   test('set default value', async ({ page, mockPage }) => {
-    await openDialogAndShowMenu(page, mockPage);
-
-    // 设置一个常量作为默认值
-    await page.getByRole('menuitem', { name: 'Set default value' }).click();
-    await page.getByLabel('block-item-VariableInput-').getByRole('textbox').click();
-    await page.getByLabel('block-item-VariableInput-').getByRole('textbox').fill('test@nocobase.com');
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
-
-    // 关闭弹窗，然后再次打开后，应该显示刚才设置的默认值
-    await page.getByLabel('drawer-Action.Container-general-Add record-mask').click();
-    await openDialog(page);
-    await expect(
-      page.getByLabel('block-item-CollectionField-general-form-general.email-email').getByRole('textbox'),
-    ).toHaveValue('test@nocobase.com');
-
-    // 设置一个变量作为默认值
-    await showMenu(page);
-    await page.getByRole('menuitem', { name: 'Set default value' }).click();
-    await page.getByLabel('variable-button').click();
-    await page.getByRole('menuitemcheckbox', { name: 'Current user' }).click();
-    await page.getByRole('menuitemcheckbox', { name: 'Email' }).click();
-    await page.getByRole('button', { name: 'OK' }).click();
-
-    // 关闭弹窗，然后再次打开后，应该显示当前用户的邮箱：admin@nocobase.com
-    await page.getByLabel('drawer-Action.Container-general-Add record-mask').click();
-    await openDialog(page);
-    await expect(
-      page.getByLabel('block-item-CollectionField-general-form-general.email-email').getByRole('textbox'),
-    ).toHaveValue('admin@nocobase.com');
+    await testDefaultValue({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      closeDialog: () => page.getByLabel('drawer-Action.Container-general-Add record-mask').click(),
+      showMenu: () => showMenu(page, 'email'),
+      supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
+      constantValue: 'test@nocobase.com',
+      variableValue: ['Current user', 'Email'],
+      expectConstantValue: () =>
+        expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.email-email').getByRole('textbox'),
+        ).toHaveValue('test@nocobase.com'),
+      expectVariableValue: () =>
+        expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.email-email').getByRole('textbox'),
+        ).toHaveValue('admin@nocobase.com'),
+    });
   });
 
   test('pattern', async ({ page, mockPage }) => {
-    await gotoPage(mockPage);
-    await openDialog(page);
-
-    // 填充上一个值，方便后面断言
-    await page.getByLabel('block-item-CollectionField-general-form-general.email-email').getByRole('textbox').click();
-    await page
-      .getByLabel('block-item-CollectionField-general-form-general.email-email')
-      .getByRole('textbox')
-      .fill('admin@nocobase.com');
-
-    // 默认情况下，显示的是 Editable
-    await showMenu(page);
-    await expect(page.getByText('PatternEditable')).toBeVisible();
-
-    // 更改为 Readonly
-    await page.getByRole('menuitem', { name: 'Pattern' }).click();
-    await page.getByRole('option', { name: 'Readonly' }).click();
-    // 输入框应该被禁用
-    await expect(
-      page.getByLabel('block-item-CollectionField-general-form-general.email-email').getByRole('textbox'),
-    ).toBeDisabled();
-
-    // 更改为 Easy-reading
-    await showMenu(page);
-    await page.getByRole('menuitem', { name: 'Pattern' }).click();
-    await page.getByRole('option', { name: 'Easy-reading' }).click();
-    await expect(
-      page.getByLabel('block-item-CollectionField-general-form-general.email-email').getByRole('textbox'),
-    ).not.toBeVisible();
-    await expect(page.getByLabel('block-item-CollectionField-general-form-general.email-email')).toHaveText(
-      'email:admin@nocobase.com',
-    );
+    await testPattern({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'email'),
+      expectEditable: async () => {
+        // 填充一个值，方便后面断言
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.email-email')
+          .getByRole('textbox')
+          .click();
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.email-email')
+          .getByRole('textbox')
+          .fill('admin@nocobase.com');
+      },
+      expectReadonly: async () => {
+        // 输入框应该被禁用
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.email-email').getByRole('textbox'),
+        ).toBeDisabled();
+      },
+      expectEasyReading: async () => {
+        // 输入框应该消失，直接显示值
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.email-email').getByRole('textbox'),
+        ).not.toBeVisible();
+        await expect(page.getByLabel('block-item-CollectionField-general-form-general.email-email')).toHaveText(
+          'email:admin@nocobase.com',
+        );
+      },
+    });
   });
 });
 
 test.describe('icon', () => {
-  const showMenu = async (page: Page, mockPage) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    await nocoPage.goto();
-    await page.getByRole('button', { name: 'Add new' }).click();
-    await page.getByLabel('block-item-CollectionField-general-form-general.icon-icon').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.icon').hover();
-  };
+  commonTesting({ openDialogAndShowMenu, fieldName: 'icon' });
 
-  commonTesting(showMenu, 'icon');
+  test('set default value', async ({ page, mockPage }) => {
+    await testDefaultValue({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      closeDialog: () => page.getByLabel('drawer-Action.Container-general-Add record-mask').click(),
+      showMenu: () => showMenu(page, 'icon'),
+      supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
+      inputConstantValue: async () => {
+        await page.getByLabel('block-item-VariableInput-').getByRole('button', { name: 'Select icon' }).click();
+        await page.getByLabel('account-book').locator('svg').click();
+      },
+      expectConstantValue: async () => {
+        await expect(
+          page
+            .getByLabel('block-item-CollectionField-general-form-general.icon-icon')
+            .getByRole('button', { name: 'account-book' }),
+        ).toBeVisible();
+      },
+    });
+  });
+
+  test('pattern', async ({ page, mockPage }) => {
+    await testPattern({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'icon'),
+      expectEditable: async () => {
+        // 默认情况下可以编辑图标
+        await page.getByRole('button', { name: 'Select icon' }).click();
+        await page.getByLabel('account-book').locator('svg').click();
+      },
+      expectReadonly: async () => {
+        // 只读模式下，选择图标按钮会被禁用
+        await expect(page.getByRole('button', { name: 'account-book' })).toBeDisabled();
+      },
+      expectEasyReading: async () => {
+        // 按钮会消失，只剩下图标
+        await expect(page.getByRole('button', { name: 'account-book' })).not.toBeVisible();
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.icon-icon').getByLabel('account-book'),
+        ).toBeVisible();
+      },
+    });
+  });
 });
 
 test.describe('single line text', () => {
-  const showMenu = async (page: Page, mockPage) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    await nocoPage.goto();
-    await page.getByRole('button', { name: 'Add new' }).click();
-    await page.getByLabel('block-item-CollectionField-general-form-general.singleLineText-singleLineText').hover();
-    await page
-      .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.singleLineText')
-      .hover();
-  };
+  commonTesting({ openDialogAndShowMenu, fieldName: 'singleLineText' });
 
-  commonTesting(showMenu, 'singleLineText');
+  test('set default value', async ({ page, mockPage }) => {
+    await testDefaultValue({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      closeDialog: () => page.getByLabel('drawer-Action.Container-general-Add record-mask').click(),
+      showMenu: () => showMenu(page, 'singleLineText'),
+      supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
+      constantValue: 'test single line text',
+      variableValue: ['Current user', 'Email'], // 值为 admin@nocobase.com
+      expectConstantValue: async () => {
+        await expect(
+          page
+            .getByLabel('block-item-CollectionField-general-form-general.singleLineText-singleLineText')
+            .getByRole('textbox'),
+        ).toHaveValue('test single line text');
+      },
+      expectVariableValue: async () => {
+        await expect(
+          page
+            .getByLabel('block-item-CollectionField-general-form-general.singleLineText-singleLineText')
+            .getByRole('textbox'),
+        ).toHaveValue('admin@nocobase.com');
+      },
+    });
+  });
+
+  test('pattern', async ({ page, mockPage }) => {
+    await testPattern({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'singleLineText'),
+      expectEditable: async () => {
+        // 默认情况下可以编辑
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.singleLineText-singleLineText')
+          .getByRole('textbox')
+          .click();
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.singleLineText-singleLineText')
+          .getByRole('textbox')
+          .fill('test single line text');
+      },
+      expectReadonly: async () => {
+        // 只读模式下，输入框会被禁用
+        await expect(
+          page
+            .getByLabel('block-item-CollectionField-general-form-general.singleLineText-singleLineText')
+            .getByRole('textbox'),
+        ).toBeDisabled();
+      },
+      expectEasyReading: async () => {
+        // 输入框会消失，只剩下值
+        await expect(
+          page
+            .getByLabel('block-item-CollectionField-general-form-general.singleLineText-singleLineText')
+            .getByRole('textbox'),
+        ).not.toBeVisible();
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.singleLineText-singleLineText'),
+        ).toHaveText('singleLineText:test single line text');
+      },
+    });
+  });
+
+  test('Set validation rules', async ({ page, mockPage }) => {
+    await testSetValidationRules({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'singleLineText'),
+    });
+  });
 });
 
 test.describe('integer', () => {
-  const showMenu = async (page: Page, mockPage) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    await nocoPage.goto();
-    await page.getByRole('button', { name: 'Add new' }).click();
-    await page.getByLabel('block-item-CollectionField-general-form-general.integer-integer').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.integer').hover();
-  };
+  commonTesting({ openDialogAndShowMenu, fieldName: 'integer' });
 
-  commonTesting(showMenu, 'integer');
+  test('set default value', async ({ page, mockPage }) => {
+    await testDefaultValue({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      closeDialog: () => page.getByLabel('drawer-Action.Container-general-Add record-mask').click(),
+      showMenu: () => showMenu(page, 'integer'),
+      supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
+      variableValue: ['Current user', 'ID'], // 值为 1
+      inputConstantValue: async () => {
+        await page.getByLabel('block-item-VariableInput-').getByRole('spinbutton').click();
+        await page.getByLabel('block-item-VariableInput-').getByRole('spinbutton').fill('112233');
+      },
+      expectConstantValue: async () => {
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.integer-integer').getByRole('spinbutton'),
+        ).toHaveValue('112233');
+      },
+      expectVariableValue: async () => {
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.integer-integer').getByRole('spinbutton'),
+        ).toHaveValue('1');
+      },
+    });
+  });
+
+  test('pattern', async ({ page, mockPage }) => {
+    await testPattern({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'integer'),
+      expectEditable: async () => {
+        // 默认情况下可以编辑
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.integer-integer')
+          .getByRole('spinbutton')
+          .click();
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.integer-integer')
+          .getByRole('spinbutton')
+          .fill('112233');
+      },
+      expectReadonly: async () => {
+        // 只读模式下，输入框会被禁用
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.integer-integer').getByRole('spinbutton'),
+        ).toBeDisabled();
+      },
+      expectEasyReading: async () => {
+        // 输入框会消失，只剩下值
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.integer-integer').getByRole('spinbutton'),
+        ).not.toBeVisible();
+        await expect(page.getByLabel('block-item-CollectionField-general-form-general.integer-integer')).toHaveText(
+          'integer:112233',
+        );
+      },
+    });
+  });
+
+  test('set validation rules', async ({ page, mockPage }) => {
+    await testSetValidationRules({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'integer'),
+    });
+  });
 });
 
 test.describe('number', () => {
-  const showMenu = async (page: Page, mockPage) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    await nocoPage.goto();
-    await page.getByRole('button', { name: 'Add new' }).click();
-    await page.getByLabel('block-item-CollectionField-general-form-general.number-number').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.number').hover();
-  };
+  commonTesting({ openDialogAndShowMenu, fieldName: 'number' });
 
-  commonTesting(showMenu, 'number');
+  test('set default value', async ({ page, mockPage }) => {
+    await testDefaultValue({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      closeDialog: () => page.getByLabel('drawer-Action.Container-general-Add record-mask').click(),
+      showMenu: () => showMenu(page, 'number'),
+      supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
+      inputConstantValue: async () => {
+        await page.getByLabel('block-item-VariableInput-').getByRole('spinbutton').click();
+        await page.getByLabel('block-item-VariableInput-').getByRole('spinbutton').fill('11.22');
+      },
+      variableValue: ['Current user', 'ID'], // 值为 1
+      expectConstantValue: async () => {
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.number-number').getByRole('spinbutton'),
+        ).toHaveValue('11.22');
+      },
+      expectVariableValue: async () => {
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.number-number').getByRole('spinbutton'),
+        ).toHaveValue('1');
+      },
+    });
+  });
+
+  test('pattern', async ({ page, mockPage }) => {
+    // TODO: number 类型的字段，当输入了小数，然后把 Pattern 切换成 Easy-reading 模式，小数不应该被去掉；
+    test.fail();
+    await testPattern({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'number'),
+      expectEditable: async () => {
+        // 默认情况下可以编辑
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.number-number')
+          .getByRole('spinbutton')
+          .click();
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.number-number')
+          .getByRole('spinbutton')
+          .fill('11.22');
+      },
+      expectReadonly: async () => {
+        // 只读模式下，输入框会被禁用
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.number-number').getByRole('spinbutton'),
+        ).toBeDisabled();
+      },
+      expectEasyReading: async () => {
+        // 输入框会消失，只剩下值
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.number-number').getByRole('spinbutton'),
+        ).not.toBeVisible();
+        await expect(page.getByLabel('block-item-CollectionField-general-form-general.number-number')).toHaveText(
+          'number:11.22',
+        );
+      },
+    });
+  });
+
+  test('set validation rules', async ({ page, mockPage }) => {
+    await testSetValidationRules({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'number'),
+    });
+  });
 });
 
 test.describe('password', () => {
-  const showMenu = async (page: Page, mockPage) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    await nocoPage.goto();
-    await page.getByRole('button', { name: 'Add new' }).click();
-    await page.getByLabel('block-item-CollectionField-general-form-general.password-password').hover();
-    await page
-      .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.password')
-      .hover();
-  };
+  commonTesting({ openDialogAndShowMenu, fieldName: 'password' });
 
-  commonTesting(showMenu, 'password');
+  test('set default value', async ({ page, mockPage }) => {
+    await testDefaultValue({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      closeDialog: () => page.getByLabel('drawer-Action.Container-general-Add record-mask').click(),
+      showMenu: () => showMenu(page, 'password'),
+      supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
+      constantValue: 'test112233password',
+      variableValue: ['Current user', 'Email'], // 值为 admin@nocobase.com
+      expectConstantValue: async () => {
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.password-password').getByRole('textbox'),
+        ).toHaveValue('test112233password');
+      },
+      expectVariableValue: async () => {
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.password-password').getByRole('textbox'),
+        ).toHaveValue('admin@nocobase.com');
+      },
+    });
+  });
+
+  test('pattern', async ({ page, mockPage }) => {
+    await testPattern({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'password'),
+      expectEditable: async () => {
+        // 默认情况下可以编辑
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.password-password')
+          .getByRole('textbox')
+          .click();
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.password-password')
+          .getByRole('textbox')
+          .fill('test112233password');
+      },
+      expectReadonly: async () => {
+        // 只读模式下，输入框会被禁用
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.password-password').getByRole('textbox'),
+        ).toBeDisabled();
+      },
+      expectEasyReading: async () => {
+        // 输入框会消失，只剩下值
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.password-password').getByRole('textbox'),
+        ).not.toBeVisible();
+        await expect(page.getByLabel('block-item-CollectionField-general-form-general.password-password')).toHaveText(
+          'password:********',
+        );
+      },
+    });
+  });
+
+  test('set validation rules', async ({ page, mockPage }) => {
+    await testSetValidationRules({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'password'),
+    });
+  });
 });
 
 test.describe('percent', () => {
-  const showMenu = async (page: Page, mockPage) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    await nocoPage.goto();
-    await page.getByRole('button', { name: 'Add new' }).click();
-    await page.getByLabel('block-item-CollectionField-general-form-general.percent-percent').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.percent').hover();
-  };
+  commonTesting({ openDialogAndShowMenu, fieldName: 'percent' });
 
-  commonTesting(showMenu, 'percent');
+  test('set default value', async ({ page, mockPage }) => {
+    await testDefaultValue({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      closeDialog: () => page.getByLabel('drawer-Action.Container-general-Add record-mask').click(),
+      showMenu: () => showMenu(page, 'percent'),
+      supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
+      inputConstantValue: async () => {
+        await page.getByLabel('block-item-VariableInput-').getByRole('spinbutton').click();
+        await page.getByLabel('block-item-VariableInput-').getByRole('spinbutton').fill('11.22');
+      },
+      variableValue: ['Current user', 'ID'], // 值为 1
+      expectConstantValue: async () => {
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.percent-percent').getByRole('spinbutton'),
+        ).toHaveValue('11.22');
+      },
+      expectVariableValue: async () => {
+        // 数字 1 转换为百分比后为 100%
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.percent-percent').getByRole('spinbutton'),
+        ).toHaveValue('100');
+      },
+    });
+  });
+
+  test('pattern', async ({ page, mockPage }) => {
+    // TODO: percent 类型的字段，当输入了小数，然后把 Pattern 切换成 Easy-reading 模式，小数点不应该被去掉；
+    test.fail();
+    await testPattern({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'percent'),
+      expectEditable: async () => {
+        // 默认情况下可以编辑
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.percent-percent')
+          .getByRole('spinbutton')
+          .click();
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.percent-percent')
+          .getByRole('spinbutton')
+          .fill('11.22');
+      },
+      expectReadonly: async () => {
+        // 只读模式下，输入框会被禁用
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.percent-percent').getByRole('spinbutton'),
+        ).toBeDisabled();
+      },
+      expectEasyReading: async () => {
+        // 输入框会消失，只剩下值
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.percent-percent').getByRole('spinbutton'),
+        ).not.toBeVisible();
+        await expect(page.getByLabel('block-item-CollectionField-general-form-general.percent-percent')).toHaveText(
+          'percent:11.22%',
+        );
+      },
+    });
+  });
+
+  test('set validation rules', async ({ page, mockPage }) => {
+    await testSetValidationRules({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'percent'),
+    });
+  });
 });
 
 test.describe('phone', () => {
-  const showMenu = async (page: Page, mockPage) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    await nocoPage.goto();
-    await page.getByRole('button', { name: 'Add new' }).click();
-    await page.getByLabel('block-item-CollectionField-general-form-general.phone-phone').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.phone').hover();
-  };
+  commonTesting({ openDialogAndShowMenu, fieldName: 'phone' });
 
-  commonTesting(showMenu, 'phone');
+  test('set default value', async ({ page, mockPage }) => {
+    await testDefaultValue({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      closeDialog: () => page.getByLabel('drawer-Action.Container-general-Add record-mask').click(),
+      showMenu: () => showMenu(page, 'phone'),
+      supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
+      constantValue: '17777777777',
+      variableValue: ['Current user', 'ID'], // 值为 1
+      expectConstantValue: async () => {
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.phone-phone').getByRole('textbox'),
+        ).toHaveValue('17777777777');
+      },
+      expectVariableValue: async () => {
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.phone-phone').getByRole('textbox'),
+        ).toHaveValue('1');
+      },
+    });
+  });
+
+  test('pattern', async ({ page, mockPage }) => {
+    await testPattern({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'phone'),
+      expectEditable: async () => {
+        // 默认情况下可以编辑
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.phone-phone')
+          .getByRole('textbox')
+          .click();
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.phone-phone')
+          .getByRole('textbox')
+          .fill('17777777777');
+      },
+      expectReadonly: async () => {
+        // 只读模式下，输入框会被禁用
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.phone-phone').getByRole('textbox'),
+        ).toBeDisabled();
+      },
+      expectEasyReading: async () => {
+        // 输入框会消失，只剩下值
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.phone-phone').getByRole('textbox'),
+        ).not.toBeVisible();
+        await expect(page.getByLabel('block-item-CollectionField-general-form-general.phone-phone')).toHaveText(
+          'phone:17777777777',
+        );
+      },
+    });
+  });
 });
 
 test.describe('long text', () => {
-  const showMenu = async (page: Page, mockPage) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    await nocoPage.goto();
-    await page.getByRole('button', { name: 'Add new' }).click();
-    await page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').hover();
-    await page
-      .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.longText')
-      .hover();
-  };
+  commonTesting({ openDialogAndShowMenu, fieldName: 'longText' });
 
-  commonTesting(showMenu, 'longText');
+  test('set default value', async ({ page, mockPage }) => {
+    await testDefaultValue({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      closeDialog: async () => {
+        await page.getByLabel('drawer-Action.Container-general-Add record-mask').click();
+      },
+      showMenu: () => showMenu(page, 'longText'),
+      supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
+      constantValue: 'test long text',
+      variableValue: ['Current user', 'Email'], // 值为 admin@nocobase.com
+      expectConstantValue: async () => {
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').getByRole('textbox'),
+        ).toHaveValue('test long text');
+      },
+      expectVariableValue: async () => {
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').getByRole('textbox'),
+        ).toHaveValue('admin@nocobase.com');
+      },
+    });
+  });
+
+  test('pattern', async ({ page, mockPage }) => {
+    await testPattern({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'longText'),
+      expectEditable: async () => {
+        // 默认情况下可以编辑
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.longText-longText')
+          .getByRole('textbox')
+          .click();
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.longText-longText')
+          .getByRole('textbox')
+          .fill('test long text');
+      },
+      expectReadonly: async () => {
+        // 只读模式下，输入框会被禁用
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').getByRole('textbox'),
+        ).toBeDisabled();
+      },
+      expectEasyReading: async () => {
+        // 输入框会消失，只剩下值
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').getByRole('textbox'),
+        ).not.toBeVisible();
+        await expect(page.getByLabel('block-item-CollectionField-general-form-general.longText-longText')).toHaveText(
+          'longText:test long text',
+        );
+      },
+    });
+  });
+
+  test('set validation rules', async ({ page, mockPage }) => {
+    await testSetValidationRules({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'longText'),
+    });
+  });
 });
 
 test.describe('URL', () => {
-  const showMenu = async (page: Page, mockPage) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    await nocoPage.goto();
-    await page.getByRole('button', { name: 'Add new' }).click();
-    await page.getByLabel('block-item-CollectionField-general-form-general.url-url').hover();
-    await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-general-general.url').hover();
-  };
+  commonTesting({ openDialogAndShowMenu, fieldName: 'url' });
 
-  commonTesting(showMenu, 'url');
+  test('set default value', async ({ page, mockPage }) => {
+    await testDefaultValue({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      closeDialog: async () => {
+        await page.getByLabel('drawer-Action.Container-general-Add record-mask').click();
+      },
+      showMenu: () => showMenu(page, 'url'),
+      supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
+      constantValue: 'https://nocobase.com',
+      variableValue: ['Current user', 'Email'], // 值为 admin@nocobase.com
+      expectConstantValue: async () => {
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.url-url').getByRole('textbox'),
+        ).toHaveValue('https://nocobase.com');
+      },
+      expectVariableValue: async () => {
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.url-url').getByRole('textbox'),
+        ).toHaveValue('admin@nocobase.com');
+      },
+    });
+  });
+
+  test('pattern', async ({ page, mockPage }) => {
+    await testPattern({
+      page,
+      gotoPage: () => gotoPage(mockPage),
+      openDialog: () => openDialog(page),
+      showMenu: () => showMenu(page, 'url'),
+      expectEditable: async () => {
+        // 默认情况下可以编辑
+        await page.getByLabel('block-item-CollectionField-general-form-general.url-url').getByRole('textbox').click();
+        await page
+          .getByLabel('block-item-CollectionField-general-form-general.url-url')
+          .getByRole('textbox')
+          .fill('https://nocobase.com');
+      },
+      expectReadonly: async () => {
+        // 只读模式下，输入框会被禁用
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.url-url').getByRole('textbox'),
+        ).toBeDisabled();
+      },
+      expectEasyReading: async () => {
+        // 输入框会消失，只剩下值
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.url-url').getByRole('textbox'),
+        ).not.toBeVisible();
+        await expect(page.getByLabel('block-item-CollectionField-general-form-general.url-url')).toHaveText(
+          'url:https://nocobase.com',
+        );
+      },
+    });
+  });
 });

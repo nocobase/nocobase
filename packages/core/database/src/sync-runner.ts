@@ -20,106 +20,108 @@ export class SyncRunner {
 
     if (!parents) {
       throw new Error(
-        `Inherit model ${
-          inheritedCollection.name
-        } can't be created without parents, parents option is ${lodash
+        `Inherit model ${inheritedCollection.name} can't be created without parents, parents option is ${lodash
           .castArray(inheritedCollection.options.inherits)
           .join(', ')}`,
       );
     }
 
     const tableName = inheritedCollection.getTableNameWithSchema();
-
     const attributes = model.tableAttributes;
-
     const childAttributes = lodash.pickBy(attributes, (value) => {
       return !value.inherit;
     });
 
-    let maxSequenceVal = 0;
-    let maxSequenceName;
+    if (
+      !(await inheritedCollection.existsInDb({
+        transaction,
+      }))
+    ) {
+      let maxSequenceVal = 0;
+      let maxSequenceName;
 
-    // find max sequence
-    if (childAttributes.id && childAttributes.id.autoIncrement) {
-      for (const parent of parents) {
-        const sequenceNameResult = await queryInterface.sequelize.query(
-          `SELECT column_default
+      // find max sequence
+      if (childAttributes.id && childAttributes.id.autoIncrement) {
+        for (const parent of parents) {
+          const sequenceNameResult = await queryInterface.sequelize.query(
+            `SELECT column_default
            FROM information_schema.columns
            WHERE table_name = '${parent.model.tableName}'
              and table_schema = '${parent.collectionSchema()}'
              and "column_name" = 'id';`,
-          {
-            transaction,
-          },
-        );
+            {
+              transaction,
+            },
+          );
 
-        if (!sequenceNameResult[0].length) {
-          continue;
-        }
+          if (!sequenceNameResult[0].length) {
+            continue;
+          }
 
-        const columnDefault = sequenceNameResult[0][0]['column_default'];
+          const columnDefault = sequenceNameResult[0][0]['column_default'];
 
-        if (!columnDefault) {
-          throw new Error(`Can't find sequence name of parent collection ${parent.options.name}`);
-        }
+          if (!columnDefault) {
+            throw new Error(`Can't find sequence name of parent collection ${parent.options.name}`);
+          }
 
-        const regex = new RegExp(/nextval\('(.*)'::regclass\)/);
-        const match = regex.exec(columnDefault);
+          const regex = new RegExp(/nextval\('(.*)'::regclass\)/);
+          const match = regex.exec(columnDefault);
 
-        const sequenceName = match[1];
-        const sequenceCurrentValResult = await queryInterface.sequelize.query(
-          `select last_value
+          const sequenceName = match[1];
+          const sequenceCurrentValResult = await queryInterface.sequelize.query(
+            `select last_value
            from ${sequenceName}`,
-          {
-            transaction,
-          },
-        );
+            {
+              transaction,
+            },
+          );
 
-        const sequenceCurrentVal = parseInt(sequenceCurrentValResult[0][0]['last_value']);
+          const sequenceCurrentVal = parseInt(sequenceCurrentValResult[0][0]['last_value']);
 
-        if (sequenceCurrentVal > maxSequenceVal) {
-          maxSequenceName = sequenceName;
-          maxSequenceVal = sequenceCurrentVal;
+          if (sequenceCurrentVal > maxSequenceVal) {
+            maxSequenceName = sequenceName;
+            maxSequenceVal = sequenceCurrentVal;
+          }
         }
       }
-    }
 
-    await this.createTable(tableName, childAttributes, options, model, parents);
+      await this.createTable(tableName, childAttributes, options, model, parents);
 
-    // if we have max sequence, set it to child table
-    if (maxSequenceName) {
-      const parentsDeep = Array.from(db.inheritanceMap.getParents(inheritedCollection.name)).map((parent) =>
-        db.getCollection(parent).getTableNameWithSchema(),
-      );
+      // if we have max sequence, set it to child table
+      if (maxSequenceName) {
+        const parentsDeep = Array.from(db.inheritanceMap.getParents(inheritedCollection.name)).map((parent) =>
+          db.getCollection(parent).getTableNameWithSchema(),
+        );
 
-      const sequenceTables = [...parentsDeep, tableName];
+        const sequenceTables = [...parentsDeep, tableName];
 
-      for (const sequenceTable of sequenceTables) {
-        const tableName = sequenceTable.tableName;
-        const schemaName = sequenceTable.schema;
+        for (const sequenceTable of sequenceTables) {
+          const tableName = sequenceTable.tableName;
+          const schemaName = sequenceTable.schema;
 
-        const idColumnSql = `SELECT column_name
+          const idColumnSql = `SELECT column_name
            FROM information_schema.columns
            WHERE table_name = '${tableName}'
              and column_name = 'id'
              and table_schema = '${schemaName}';
           `;
 
-        const idColumnQuery = await queryInterface.sequelize.query(idColumnSql, {
-          transaction,
-        });
-
-        if (idColumnQuery[0].length == 0) {
-          continue;
-        }
-
-        await queryInterface.sequelize.query(
-          `alter table ${db.utils.quoteTable(sequenceTable)}
-            alter column id set default nextval('${maxSequenceName}')`,
-          {
+          const idColumnQuery = await queryInterface.sequelize.query(idColumnSql, {
             transaction,
-          },
-        );
+          });
+
+          if (idColumnQuery[0].length == 0) {
+            continue;
+          }
+
+          await queryInterface.sequelize.query(
+            `alter table ${db.utils.quoteTable(sequenceTable)}
+            alter column id set default nextval('${maxSequenceName}')`,
+            {
+              transaction,
+            },
+          );
+        }
       }
     }
 

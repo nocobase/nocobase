@@ -5,21 +5,27 @@ import { useFormBlockContext } from '../../../block-provider';
 import { useDetailsBlockContext } from '../../../block-provider/DetailsBlockProvider';
 import { useCollection } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
-import { SchemaSettings } from '../../../schema-settings/SchemaSettings';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { SchemaSetting } from '../../../application/schema-settings';
+import { SchemaSettings } from '../../../application/schema-settings';
+import {
+  SchemaSettingsLinkageRules,
+  SchemaSettingsDataTemplates,
+  SchemaSettingsFormItemTemplate,
+  SchemaSettingsDataScope,
+  SchemaSettingsBlockTitleItem,
+} from '../../../schema-settings';
 
-export const formSettings = new SchemaSetting({
+export const formSettings = new SchemaSettings({
   name: 'FormSettings',
   items: [
     {
       name: 'title',
-      type: 'blockTitle',
+      Component: SchemaSettingsBlockTitleItem,
     },
     {
       name: 'linkageRules',
-      Component: SchemaSettings.LinkageRules,
+      Component: SchemaSettingsLinkageRules,
       useComponentProps() {
         const { name } = useCollection();
         return {
@@ -29,7 +35,7 @@ export const formSettings = new SchemaSetting({
     },
     {
       name: 'dataTemplates',
-      Component: SchemaSettings.DataTemplates,
+      Component: SchemaSettingsDataTemplates,
       useVisible() {
         const { action } = useFormBlockContext();
         return !action;
@@ -47,7 +53,7 @@ export const formSettings = new SchemaSetting({
     },
     {
       name: 'formItemTemplate',
-      Component: SchemaSettings.FormItemTemplate,
+      Component: SchemaSettingsFormItemTemplate,
       useComponentProps() {
         const { name } = useCollection();
         const fieldSchema = useFieldSchema();
@@ -76,16 +82,16 @@ export const formSettings = new SchemaSetting({
   ],
 });
 
-export const readPrettyFormSettings = new SchemaSetting({
+export const readPrettyFormSettings = new SchemaSettings({
   name: 'ReadPrettyFormSettings',
   items: [
     {
       name: 'title',
-      type: 'blockTitle',
+      Component: SchemaSettingsBlockTitleItem,
     },
     {
       name: 'formItemTemplate',
-      Component: SchemaSettings.FormItemTemplate,
+      Component: SchemaSettingsFormItemTemplate,
       useComponentProps() {
         const { name } = useCollection();
         const fieldSchema = useFieldSchema();
@@ -115,16 +121,16 @@ export const readPrettyFormSettings = new SchemaSetting({
   ],
 });
 
-export const formDetailsSettings = new SchemaSetting({
+export const formDetailsSettings = new SchemaSettings({
   name: 'FormDetailsSettings',
   items: [
     {
       name: 'title',
-      type: 'blockTitle',
+      Component: SchemaSettingsBlockTitleItem,
     },
     {
       name: 'dataScope',
-      Component: SchemaSettings.DataScope,
+      Component: SchemaSettingsDataScope,
       useComponentProps() {
         const { name } = useCollection();
         const fieldSchema = useFieldSchema();
@@ -272,7 +278,7 @@ export const formDetailsSettings = new SchemaSetting({
     },
     {
       name: 'formItemTemplate',
-      Component: SchemaSettings.FormItemTemplate,
+      Component: SchemaSettingsFormItemTemplate,
       useComponentProps() {
         const { name } = useCollection();
         const fieldSchema = useFieldSchema();

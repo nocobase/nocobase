@@ -1,6 +1,6 @@
 import { Application } from '../Application';
-import { SchemaSetting } from './SchemaSetting';
-import { SchemaSettingItemType } from './types';
+import { SchemaSettings } from './SchemaSettings';
+import { SchemaSettingsItemType } from './types';
 
 interface ActionType {
   type: 'add' | 'remove';
@@ -9,29 +9,31 @@ interface ActionType {
 }
 
 export class SchemaSettingsManager {
-  public schemaSettings: Record<string, SchemaSetting<any>> = {};
+  protected schemaSettings: Record<string, SchemaSettings<any>> = {};
   protected actionList: Record<string, ActionType[]> = {};
 
   constructor(
-    protected _schemaSettings: SchemaSetting<any>[] = [],
+    protected _schemaSettings: SchemaSettings<any>[] = [],
     protected app: Application,
   ) {
     this.app = app;
 
-    _schemaSettings.forEach((item) => this.add(item));
+    this.add(..._schemaSettings);
   }
 
-  add<T>(schemaSetting: SchemaSetting<T>) {
-    this.schemaSettings[schemaSetting.name] = schemaSetting;
-    if (Array.isArray(this.actionList[schemaSetting.name])) {
-      this.actionList[schemaSetting.name].forEach((item) => {
-        schemaSetting[item.type](item.itemName, item.data);
-      });
-      this.actionList[schemaSetting.name] = undefined;
-    }
+  add<T = any>(...schemaSettingList: SchemaSettings<T>[]) {
+    schemaSettingList.forEach((schemaSetting) => {
+      this.schemaSettings[schemaSetting.name] = schemaSetting;
+      if (Array.isArray(this.actionList[schemaSetting.name])) {
+        this.actionList[schemaSetting.name].forEach((item) => {
+          schemaSetting[item.type](item.itemName, item.data);
+        });
+        this.actionList[schemaSetting.name] = undefined;
+      }
+    });
   }
 
-  addItem(schemaSettingName: string, itemName: string, data: Omit<SchemaSettingItemType, 'name'>) {
+  addItem(schemaSettingName: string, itemName: string, data: Omit<SchemaSettingsItemType, 'name'>) {
     const schemaSetting = this.get(schemaSettingName);
     if (!schemaSetting) {
       if (!this.actionList[schemaSettingName]) {
@@ -47,7 +49,7 @@ export class SchemaSettingsManager {
     }
   }
 
-  get<T>(name: string): SchemaSetting<T> | undefined {
+  get<T>(name: string): SchemaSettings<T> | undefined {
     return this.schemaSettings[name];
   }
 

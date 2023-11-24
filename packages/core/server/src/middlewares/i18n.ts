@@ -14,6 +14,7 @@ export async function i18n(ctx, next) {
   const lng = ctx.getCurrentLocale();
   if (lng !== '*' && lng) {
     i18n.changeLanguage(lng);
+    await ctx.app.localeManager.loadResourcesByLang(lng);
   }
   await next();
 }
