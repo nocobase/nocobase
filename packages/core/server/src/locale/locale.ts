@@ -97,4 +97,11 @@ export class Locale {
     });
     return resources;
   }
+
+  async getI18nInstance(lang: string) {
+    if (lang === '*' || !lang) {
+      return this.app.i18n.cloneInstance({ initImmediate: false });
+    }
+    return this.cache.wrap(`i18n:instances:${lang}`, async () => this.app.i18n.cloneInstance({ initImmediate: false }));
+  }
 }

@@ -1,7 +1,6 @@
+import { Locale } from '../locale';
+
 export async function i18n(ctx, next) {
-  const i18n = ctx.app.i18n.cloneInstance({ initImmediate: false });
-  ctx.i18n = i18n;
-  ctx.t = i18n.t.bind(i18n);
   ctx.getCurrentLocale = () => {
     const lng =
       ctx.get('X-Locale') ||
@@ -12,9 +11,13 @@ export async function i18n(ctx, next) {
     return lng;
   };
   const lng = ctx.getCurrentLocale();
+  const localeManager = ctx.app.localeManager as Locale;
+  const i18n = await localeManager.getI18nInstance(lng);
+  ctx.i18n = i18n;
+  ctx.t = i18n.t.bind(i18n);
   if (lng !== '*' && lng) {
     i18n.changeLanguage(lng);
-    await ctx.app.localeManager.loadResourcesByLang(lng);
+    await localeManager.loadResourcesByLang(lng);
   }
   await next();
 }
