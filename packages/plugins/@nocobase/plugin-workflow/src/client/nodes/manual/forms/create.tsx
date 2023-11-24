@@ -1,6 +1,15 @@
 import React, { useMemo, useState } from 'react';
 
-import { GeneralSchemaDesigner, SchemaSettings, useCollection, useMenuSearch } from '@nocobase/client';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsDataTemplates,
+  SchemaSettingsDivider,
+  SchemaSettingsLinkageRules,
+  SchemaSettingsRemove,
+  useCollection,
+  useMenuSearch,
+} from '@nocobase/client';
 
 import _ from 'lodash';
 import { NAMESPACE } from '../../../locale';
@@ -13,11 +22,11 @@ function CreateFormDesigner() {
 
   return (
     <GeneralSchemaDesigner title={title || name}>
-      <SchemaSettings.BlockTitleItem />
-      <SchemaSettings.LinkageRules collectionName={name} />
-      <SchemaSettings.DataTemplates collectionName={name} />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsBlockTitleItem />
+      <SchemaSettingsLinkageRules collectionName={name} />
+      <SchemaSettingsDataTemplates collectionName={name} />
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',

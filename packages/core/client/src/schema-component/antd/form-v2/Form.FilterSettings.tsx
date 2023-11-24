@@ -1,20 +1,25 @@
 import { useFieldSchema } from '@formily/react';
-import { SchemaSetting } from '../../../application/schema-settings';
+import { SchemaSettings } from '../../../application/schema-settings';
 import { useCollection } from '../../../collection-manager';
-import { SchemaSettings } from '../../../schema-settings/SchemaSettings';
 import { FilterBlockType } from '../../../filter-provider';
 import { useTranslation } from 'react-i18next';
+import {
+  SchemaSettingsFormItemTemplate,
+  SchemaSettingsLinkageRules,
+  SchemaSettingsConnectDataBlocks,
+  SchemaSettingsBlockTitleItem,
+} from '../../../schema-settings';
 
-export const formFilterSettings = new SchemaSetting({
+export const formFilterSettings = new SchemaSettings({
   name: 'FormFilterSettings',
   items: [
     {
       name: 'title',
-      type: 'blockTitle',
+      Component: SchemaSettingsBlockTitleItem,
     },
     {
       name: 'formItemTemplate',
-      Component: SchemaSettings.FormItemTemplate,
+      Component: SchemaSettingsFormItemTemplate,
       useComponentProps() {
         const { name } = useCollection();
         const fieldSchema = useFieldSchema();
@@ -28,7 +33,7 @@ export const formFilterSettings = new SchemaSetting({
     },
     {
       name: 'linkageRules',
-      Component: SchemaSettings.LinkageRules,
+      Component: SchemaSettingsLinkageRules,
       useComponentProps() {
         const { name } = useCollection();
         return {
@@ -37,8 +42,8 @@ export const formFilterSettings = new SchemaSetting({
       },
     },
     {
-      name: 'linkageRules',
-      Component: SchemaSettings.ConnectDataBlocks,
+      name: 'connectDataBlocks',
+      Component: SchemaSettingsConnectDataBlocks,
       useComponentProps() {
         const { t } = useTranslation();
         return {

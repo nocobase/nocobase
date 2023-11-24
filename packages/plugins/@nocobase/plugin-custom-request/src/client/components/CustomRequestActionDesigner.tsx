@@ -2,8 +2,8 @@ import { useFieldSchema } from '@formily/react';
 import { ArrayItems } from '@formily/antd-v5';
 import {
   Action,
-  SchemaSetting,
   SchemaSettings,
+  SchemaSettingsActionModalItem,
   actionSettingsItems,
   useCollection,
   useCurrentRoles,
@@ -27,7 +27,7 @@ function CustomRequestSettingsItem() {
 
   return (
     <>
-      <SchemaSettings.ActionModalItem
+      <SchemaSettingsActionModalItem
         title={t('Request settings')}
         components={{
           ArrayItems,
@@ -78,7 +78,7 @@ function CustomRequestACL() {
 
   return (
     <>
-      <SchemaSettings.ActionModalItem
+      <SchemaSettingsActionModalItem
         title={t('Access Control')}
         schema={CustomRequestACLSchema}
         scope={{ currentRoles }}
@@ -103,7 +103,7 @@ function CustomRequestACL() {
   );
 }
 
-export const customRequestActionSettings = new SchemaSetting({
+export const customRequestActionSettings = new SchemaSettings({
   name: 'CustomRequestActionSettings',
   items: [
     {

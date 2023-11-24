@@ -235,7 +235,7 @@ test.describe('field setting config ', () => {
       .hover();
     await page.getByRole('menuitem', { name: 'Edit description' }).click();
     await page.getByLabel('block-item-Input.TextArea-users').locator('textarea').fill(description);
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     const descriptionItem = page
       .getByLabel('block-item-CollectionField-users-form-users.username')
       .locator('.ant-formily-item-extra');

@@ -14,8 +14,8 @@ export function useIsShowMultipleSwitch() {
     : null;
   const uiSchema = collectionField?.uiSchema || fieldSchema;
   const hasMultiple = uiSchema['x-component-props']?.multiple === true;
-  const fieldMode=field?.componentProps?.['mode'];
+  const fieldMode = field?.componentProps?.['mode'];
   return function IsShowMultipleSwitch() {
-    return !field.readPretty && fieldSchema['x-component'] !== 'TableField' && hasMultiple&&fieldMode!=='SubTable';
+    return !field.readPretty && fieldSchema['x-component'] !== 'TableField' && hasMultiple && fieldMode !== 'SubTable';
   };
 }

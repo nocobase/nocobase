@@ -2,9 +2,9 @@ import { css, cx } from '@emotion/css';
 import { FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
-import _ from 'lodash';
 import React, { useEffect, useMemo } from 'react';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
+import { useApp } from '../../../application';
 import { useFormActiveFields } from '../../../block-provider';
 import { Collection } from '../../../collection-manager';
 import { GeneralSchemaDesigner } from '../../../schema-settings';
@@ -81,7 +81,14 @@ export const FormItem: any = observer(
 );
 
 FormItem.Designer = function Designer() {
-  return <GeneralSchemaDesigner schemaSettings="FormItemSettings"></GeneralSchemaDesigner>;
+  const app = useApp();
+  const fieldSchema = useFieldSchema();
+  const settingsName = `FormItemSettings:${fieldSchema['x-interface']}`;
+  const defaultActionSettings = 'FormItemSettings';
+  const hasFieldItem = app.schemaSettingsManager.has(settingsName);
+  return (
+    <GeneralSchemaDesigner schemaSettings={hasFieldItem ? settingsName : defaultActionSettings}></GeneralSchemaDesigner>
+  );
 };
 
 export function isFileCollection(collection: Collection) {

@@ -4,7 +4,15 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollection, useResourceActionContext } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  SchemaSettingsSwitchItem,
+  SchemaSettingsTemplate,
+} from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 
@@ -33,7 +41,7 @@ export const TableVoidDesigner = () => {
   const template = useSchemaTemplate();
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
-      <SchemaSettings.SwitchItem
+      <SchemaSettingsSwitchItem
         title={t('Enable drag and drop sorting')}
         checked={field.decoratorProps.dragSort}
         onChange={(dragSort) => {
@@ -48,7 +56,7 @@ export const TableVoidDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={'设置数据范围'}
         schema={
           {
@@ -79,7 +87,7 @@ export const TableVoidDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Set default sorting rules')}
         components={{ ArrayItems }}
         schema={
@@ -171,7 +179,7 @@ export const TableVoidDesigner = () => {
           ctx.run({ ...ctx.params?.[0], sort: sortArr });
         }}
       />
-      <SchemaSettings.SelectItem
+      <SchemaSettingsSelectItem
         title={'每页显示'}
         value={field.decoratorProps.request.params?.pageSize || 20}
         options={[
@@ -195,10 +203,10 @@ export const TableVoidDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Template componentName={'Table'} collectionName={name} />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsTemplate componentName={'Table'} collectionName={name} />
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',

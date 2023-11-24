@@ -1,8 +1,8 @@
 import React from 'react';
-import { Application, Plugin, SchemaSetting, useSchemaSettingsRender } from '@nocobase/client';
+import { Application, Plugin, SchemaSettings, useSchemaSettingsRender } from '@nocobase/client';
 import { Button } from 'antd';
 
-const mySchemaSetting = new SchemaSetting({
+const mySchemaSetting = new SchemaSettings({
   name: 'MySchemaSetting',
   Component: Button, // 自定义组件
   componentProps: {

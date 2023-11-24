@@ -1,7 +1,7 @@
-import React from 'react';
-import { Application, Plugin, SchemaSetting, SchemaSettings, useSchemaSettingsRender } from '@nocobase/client';
+import React, { FC } from 'react';
+import { Application, Plugin, SchemaSettings, SchemaSettingsItem, useSchemaSettingsRender } from '@nocobase/client';
 
-const mySchemaSetting = new SchemaSetting({
+const mySchemaSetting = new SchemaSettings({
   name: 'MySchemaSetting',
   items: [
     {
@@ -16,7 +16,7 @@ const mySchemaSetting = new SchemaSetting({
     },
     {
       name: 'demo2',
-      Component: () => <SchemaSettings.Item title="DEMO2" onClick={() => alert('DEMO2')} />, // 直接使用 Component 组件
+      Component: () => <SchemaSettingsItem title="DEMO2" onClick={() => alert('DEMO2')} />, // 直接使用 Component 组件
     },
   ],
 });
@@ -38,8 +38,9 @@ class MyPlugin2 extends Plugin {
     const mySchemaSetting = this.app.schemaSettingsManager.get('MySchemaSetting');
 
     // 添加或者修改 schema settings 的 items
+    const Demo3 = () => <SchemaSettingsItem title="DEMO3" onClick={() => alert('DEMO3')} />;
     mySchemaSetting.add('demo3', {
-      Component: () => <SchemaSettings.Item title="DEMO3" onClick={() => alert('DEMO3')} />,
+      Component: Demo3,
     });
 
     // 移除 demo2

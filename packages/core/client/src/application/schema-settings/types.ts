@@ -14,68 +14,72 @@ export interface SchemaSettingOptions<T = {}> {
   name: string;
   Component?: ComponentType<T>;
   componentProps?: T;
-  items: SchemaSettingItemType[];
+  items: SchemaSettingsItemType[];
   style?: React.CSSProperties;
 }
 
-interface SchemaSettingItemCommon<T = {}> {
+interface SchemaSettingsItemCommon<T = {}> {
   name: string;
   sort?: number;
   useVisible?: () => boolean;
-  children?: SchemaSettingItemType[];
-  useChildren?: () => SchemaSettingItemType[];
+  children?: SchemaSettingsItemType[];
+  useChildren?: () => SchemaSettingsItemType[];
   checkChildrenLength?: boolean;
   componentProps?: Omit<T, 'children'>;
   useComponentProps?: () => Omit<T, 'children'>;
-  [index: string]: any;
 }
 
-export interface SchemaSettingItemNoProps extends SchemaSettingItemCommon {
-  type: 'divider' | 'blockTitle';
-}
-
-export interface SchemaSettingItemItemType extends SchemaSettingItemCommon<SchemaSettingsItemProps> {
+export interface SchemaSettingItemItemType extends SchemaSettingsItemCommon<SchemaSettingsItemProps> {
   type: 'item';
 }
 
-export type SchemaSettingItemWithChildrenType = SchemaSettingItemCommon<SchemaSettingsSubMenuProps> & {
-  type: 'subMenu' | 'itemGroup';
-};
+export interface SchemaSettingItemGroupType extends SchemaSettingsItemCommon<SchemaSettingsSubMenuProps> {
+  type: 'itemGroup';
+}
 
-export type SchemaSettingItemRemoveType = SchemaSettingItemCommon<SchemaSettingsRemoveProps> & {
+export interface SchemaSettingItemSubMenuType extends SchemaSettingsItemCommon<SchemaSettingsSubMenuProps> {
+  type: 'subMenu';
+}
+
+export interface SchemaSettingItemDividerProps extends SchemaSettingsItemCommon {
+  type: 'divider';
+}
+
+export type SchemaSettingItemRemoveType = SchemaSettingsItemCommon<SchemaSettingsRemoveProps> & {
   type: 'remove';
 };
 
-interface SchemaSettingItemSwitchType extends SchemaSettingItemCommon<SchemaSettingsSwitchItemProps> {
-  type: 'switch';
-}
-
-export type SchemaSettingItemPopupType = SchemaSettingItemCommon<SchemaSettingsPopupProps> & {
-  type: 'popup';
+export type SchemaSettingItemSelectType = SchemaSettingsItemCommon<SchemaSettingsSelectItemProps> & {
+  type: 'select';
 };
 
-export type SchemaSettingItemCascaderType = SchemaSettingItemCommon<SchemaSettingsCascaderItemProps> & {
+export type SchemaSettingItemCascaderType = SchemaSettingsItemCommon<SchemaSettingsCascaderItemProps> & {
   type: 'cascader';
 };
 
-export type SchemaSettingItemModalType = SchemaSettingItemCommon<SchemaSettingsModalItemProps> & {
+interface SchemaSettingItemSwitchType extends SchemaSettingsItemCommon<SchemaSettingsSwitchItemProps> {
+  type: 'switch';
+}
+
+export type SchemaSettingItemPopupType = SchemaSettingsItemCommon<SchemaSettingsPopupProps> & {
+  type: 'popup';
+};
+
+export type SchemaSettingItemModalType = SchemaSettingsItemCommon<SchemaSettingsModalItemProps> & {
   type: 'modal';
 };
 
-export type SchemaSettingItemSelectType = SchemaSettingItemCommon<SchemaSettingsSelectItemProps> & {
-  type: 'select';
+export type SchemaSettingItemActionModalType = SchemaSettingsItemCommon<SchemaSettingsSelectItemProps> & {
+  type: 'actionModal';
 };
 
-export type SchemaSettingItemActionModalType = SchemaSettingItemCommon<SchemaSettingsSelectItemProps> & {
-  type: 'select';
-};
-
-interface SchemaSettingItemComponentType<T = {}> extends SchemaSettingItemCommon<T> {
-  Component: string | ComponentType;
+export interface SchemaSettingItemComponentType<T = {}> extends SchemaSettingsItemCommon<T> {
+  Component: string | ComponentType<T>;
 }
 
-export type SchemaSettingItemType =
-  | SchemaSettingItemNoProps
+export type SchemaSettingsItemType =
+  | SchemaSettingItemComponentType
+  | SchemaSettingItemDividerProps
   | SchemaSettingItemRemoveType
   | SchemaSettingItemActionModalType
   | SchemaSettingItemSwitchType
@@ -84,5 +88,5 @@ export type SchemaSettingItemType =
   | SchemaSettingItemModalType
   | SchemaSettingItemItemType
   | SchemaSettingItemSelectType
-  | SchemaSettingItemWithChildrenType
-  | SchemaSettingItemComponentType;
+  | SchemaSettingItemGroupType
+  | SchemaSettingItemSubMenuType;

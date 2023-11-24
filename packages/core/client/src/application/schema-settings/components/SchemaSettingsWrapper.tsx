@@ -1,5 +1,5 @@
 import { FC, useMemo } from 'react';
-import { SchemaSettings } from '../../../schema-settings';
+import { SchemaSettingsDropdown } from '../../../schema-settings';
 import { SchemaSettingOptions } from '../types';
 import { SchemaSettingChildren } from './SchemaSettingsChildren';
 import { SchemaSettingsIcon } from './SchemaSettingsIcon';
@@ -23,7 +23,7 @@ export const SchemaSettingsWrapper: FC<SchemaSettingOptions<any>> = (props) => {
   Component.displayName = `${Component.displayName || Component.name}(${name})`;
 
   return (
-    <SchemaSettings
+    <SchemaSettingsDropdown
       title={React.createElement(Component, cProps)}
       dn={dn}
       field={field}
@@ -31,6 +31,6 @@ export const SchemaSettingsWrapper: FC<SchemaSettingOptions<any>> = (props) => {
       {...others}
     >
       <SchemaSettingChildren>{items}</SchemaSettingChildren>
-    </SchemaSettings>
+    </SchemaSettingsDropdown>
   );
 };

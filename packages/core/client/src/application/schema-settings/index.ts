@@ -1,4 +1,4 @@
-export * from './SchemaSetting';
+export * from './SchemaSettings';
 export * from './SchemaSettingsManager';
 export * from './hooks';
 export * from './components';

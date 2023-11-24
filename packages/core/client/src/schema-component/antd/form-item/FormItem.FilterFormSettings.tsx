@@ -1,4 +1,4 @@
-import { SchemaSetting } from '../../../application/schema-settings';
+import { SchemaSettings } from '../../../application/schema-settings';
 import { useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
@@ -13,7 +13,7 @@ import {
   EditValidationRules,
 } from './SchemaSettingOptions';
 
-export const filterFormItemSettings = new SchemaSetting({
+export const filterFormItemSettings = new SchemaSettings({
   name: 'FilterFormItemSettings',
   items: [
     {

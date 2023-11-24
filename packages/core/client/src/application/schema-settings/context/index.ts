@@ -1,9 +1,9 @@
 import { createContext, useContext } from 'react';
-import { SchemaSettingItemType } from '../types';
+import { SchemaSettingsItemType } from '../types';
 
-export const SchemaSettingItemContext = createContext<SchemaSettingItemType>({} as any);
+export const SchemaSettingItemContext = createContext<SchemaSettingsItemType>({} as any);
 SchemaSettingItemContext.displayName = 'SchemaSettingItemContext';
 
 export function useSchemaSettingsItem() {
-  return useContext(SchemaSettingItemContext) as SchemaSettingItemType;
+  return useContext(SchemaSettingItemContext) as SchemaSettingsItemType;
 }
