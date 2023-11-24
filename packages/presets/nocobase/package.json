@@ -45,9 +45,9 @@
     "@nocobase/plugin-users": "0.16.0-alpha.3",
     "@nocobase/plugin-verification": "0.16.0-alpha.3",
     "@nocobase/plugin-workflow": "0.16.0-alpha.3",
-    "@nocobase/server": "0.16.0-alpha.3",
     "@nocobase/plugin-action-bulk-update": "0.16.0-alpha.3",
     "@nocobase/plugin-action-bulk-edit": "0.16.0-alpha.3",
+    "@nocobase/server": "0.16.0-alpha.3",
     "cronstrue": "^2.11.0"
   },
   "repository": {

@@ -1,12 +1,12 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import {
-  SchemaSetting,
   SchemaSettings,
   ActionDesigner,
   useSchemaDesigner,
   useDesignable,
   useCompile,
   DefaultValueProvider,
+  SchemaSettingsItemGroup,
   FlagProvider,
 } from '@nocobase/client';
 import { isValid, uid } from '@formily/shared';
@@ -20,7 +20,7 @@ const MenuGroup = (props) => {
   const actionTitle = fieldSchema.title ? compile(fieldSchema.title) : '';
 
   return (
-    <SchemaSettings.ItemGroup title={`${t('Customize')} > ${actionTitle}`}>{props.children}</SchemaSettings.ItemGroup>
+    <SchemaSettingsItemGroup title={`${t('Customize')} > ${actionTitle}`}>{props.children}</SchemaSettingsItemGroup>
   );
 };
 
@@ -175,12 +175,11 @@ function AssignedFieldValues() {
   );
 }
 
-const bulkUpdateActionSettings = new SchemaSetting({
+const bulkUpdateActionSettings = new SchemaSettings({
   name: 'ActionSettings:customize:bulkUpdate',
   items: [
     {
       name: 'Customize',
-      type: 'itemGroup',
       Component: MenuGroup,
       children: [
         {
