@@ -1,27 +1,37 @@
 import React from 'react';
 import {
-  useApp,
-  GeneralSchemaDesigner,
-  SchemaSetting,
   SchemaSettings,
   useCompile,
   ActionDesigner,
   useSchemaDesigner,
   useDesignable,
   SchemaInitializerOpenModeSchemaItems,
+  SchemaSettingsSelectItem,
+  SchemaSettingsDivider,
+  SchemaSettingsRemove,
+  SchemaSettingsItemGroup,
 } from '@nocobase/client';
 import { ModalProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useField, useFieldSchema } from '@formily/react';
 import { useBulkEditTranslation } from './locale';
 
+const MenuGroup = (props) => {
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+  const compile = useCompile();
+  const actionTitle = fieldSchema.title ? compile(fieldSchema.title) : '';
+  return (
+    <SchemaSettingsItemGroup title={`${t('Customize')} > ${actionTitle}`}>{props.children}</SchemaSettingsItemGroup>
+  );
+};
 function UpdateMode() {
   const { dn } = useDesignable();
   const { t } = useBulkEditTranslation();
   const fieldSchema = useFieldSchema();
 
   return (
-    <SchemaSettings.SelectItem
+    <SchemaSettingsSelectItem
       title={t('Data will be updated')}
       options={[
         { label: t('Selected'), value: 'selected' },
@@ -53,8 +63,8 @@ function RemoveButton(
   return (
     !isDeletable && (
       <>
-        <SchemaSettings.Divider />
-        <SchemaSettings.Remove
+        <SchemaSettingsDivider />
+        <SchemaSettingsRemove
           removeParentsIfNoChildren
           breakRemoveOn={(s) => {
             return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
@@ -68,22 +78,12 @@ function RemoveButton(
     )
   );
 }
-const bulkEditactionSettings = new SchemaSetting({
+const bulkEditactionSettings = new SchemaSettings({
   name: 'ActionSettings:customize:bulkEdit',
   items: [
     {
       name: 'Customize',
-      Component: SchemaSettings.ItemGroup,
-      useComponentProps() {
-        const { t } = useBulkEditTranslation();
-        const fieldSchema = useFieldSchema();
-        const compile = useCompile();
-        const actionTitle = fieldSchema.title ? compile(fieldSchema.title) : '';
-        return {
-          title: `${t('Customize')} > ${actionTitle}`,
-        };
-      },
-      type: 'itemGroup',
+      Component: MenuGroup,
       children: [
         {
           name: 'editButton',
