@@ -126,6 +126,7 @@ const WithForm = (props: WithFormProps) => {
 
             // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `autorun` 代替
             onFieldInit(`*(${fields})`, (field: any, form) => {
+              field.linkageProperty = {};
               disposes.push(
                 autorun(async () => {
                   linkagefields.push(field);
@@ -138,15 +139,6 @@ const WithForm = (props: WithFormProps) => {
                     variables,
                     localVariables,
                   });
-                  // 如果是 linkageRules 数组的最后一个元素
-                  if (index === linkageRules.length - 1) {
-                    // 清空 linkagefields 数组中对象的属性
-                    linkagefields.forEach((v) => {
-                      v.linkageProperty = {};
-                    });
-                    // 清空 linkagefields 数组
-                    linkagefields.length = 0;
-                  }
                 }),
               );
             });
