@@ -12,5 +12,9 @@ export function getErrorLevel(e: Error): ErrorLevel {
     return 'warn';
   }
 
+  if (e.name === 'RestoreCheckError') {
+    return 'warn';
+  }
+
   return 'fatal';
 }

@@ -340,15 +340,19 @@ export class Dumper extends AppMigrator {
   async dumpMeta(additionalMeta: object = {}) {
     const metaPath = path.resolve(this.workDir, 'meta');
 
-    await fsPromises.writeFile(
-      metaPath,
-      JSON.stringify({
-        version: await this.app.version.get(),
-        dialect: this.app.db.sequelize.getDialect(),
-        ...additionalMeta,
-      }),
-      'utf8',
-    );
+    const metaObj = {
+      version: await this.app.version.get(),
+      dialect: this.app.db.sequelize.getDialect(),
+      ...additionalMeta,
+    };
+
+    if (this.app.db.inDialect('postgres')) {
+      if (this.app.db.inheritanceMap.nodes.size > 0) {
+        metaObj['dialectOnly'] = true;
+      }
+    }
+
+    await fsPromises.writeFile(metaPath, JSON.stringify(metaObj), 'utf8');
   }
 
   async dumpCollection(options: { name: string }) {

@@ -74,6 +74,7 @@ export class Restorer extends AppMigrator {
 
   async restore(options: RestoreOptions) {
     await this.decompressBackup(this.backUpFilePath);
+    await this.checkMeta();
     await this.importCollections(options);
     await this.importDb();
     await this.clearWorkDir();
@@ -82,6 +83,13 @@ export class Restorer extends AppMigrator {
   async getImportMeta() {
     const metaFile = path.resolve(this.workDir, 'meta');
     return JSON.parse(await fsPromises.readFile(metaFile, 'utf8')) as any;
+  }
+
+  async checkMeta() {
+    const meta = await this.getImportMeta();
+    if (meta['dialectOnly'] && !this.app.db.inDialect(meta['dialect'])) {
+      throw new RestoreCheckError(`this backup file can only be imported in database ${meta['dialect']}`);
+    }
   }
 
   async importCollections(options: RestoreOptions) {
