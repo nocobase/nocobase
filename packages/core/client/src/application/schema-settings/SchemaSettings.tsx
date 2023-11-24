@@ -1,14 +1,14 @@
-import { SchemaSettingsOptions, SchemaSettingsItemType, SchemaSettingItemComponentType } from './types';
+import { SchemaSettingOptions, SchemaSettingsItemType, SchemaSettingItemComponentType } from './types';
 
 export class SchemaSettings<T = {}> {
-  options: SchemaSettingsOptions<T>;
+  options: SchemaSettingOptions<T>;
   name: string;
 
   get items() {
     return this.options.items;
   }
 
-  constructor(options: SchemaSettingsOptions<T>) {
+  constructor(options: SchemaSettingOptions<T>) {
     this.options = Object.assign({ items: [] }, options);
     this.name = options.name;
   }

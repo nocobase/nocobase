@@ -1,15 +1,8 @@
 import { TableOutlined } from '@ant-design/icons';
-import {
-  SchemaInitializerItem,
-  Plugin,
-  SchemaComponentOptions,
-  useSchemaInitializer,
-  SchemaSettings,
-} from '@nocobase/client';
+import { SchemaInitializerItem, Plugin, useSchemaInitializer, SchemaSettings } from '@nocobase/client';
 import { Card } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { HelloDesigner } from './HelloDesigner';
 
 export const HelloBlockInitializer = (props) => {
   const { insert } = useSchemaInitializer();
@@ -22,7 +15,7 @@ export const HelloBlockInitializer = (props) => {
         insert({
           type: 'void',
           'x-component': 'CardItem',
-          'x-designer': 'HelloDesigner',
+          'x-settings': 'HelloSettings',
           properties: {
             hello: {
               type: 'void',
@@ -37,15 +30,6 @@ export const HelloBlockInitializer = (props) => {
   );
 };
 
-const HelloProvider = React.memo((props) => {
-  return (
-    <SchemaComponentOptions components={{ HelloDesigner, HelloBlockInitializer }}>
-      {props.children}
-    </SchemaComponentOptions>
-  );
-});
-HelloProvider.displayName = 'HelloProvider';
-
 const HelloPluginSettingPage = () => {
   return (
     <Card bordered={false}>
@@ -54,13 +38,23 @@ const HelloPluginSettingPage = () => {
   );
 };
 
+const helloSettings = new SchemaSettings({
+  name: 'HelloSettings',
+  items: [
+    {
+      name: 'remove',
+      type: 'remove',
+    },
+  ],
+});
+
 class HelloPlugin extends Plugin {
   async load() {
-    this.app.addProvider(HelloProvider);
+    // this.app.addProvider(HelloProvider);
     const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
     blockInitializers?.add('otherBlocks.hello', {
       title: '{{t("Hello block")}}',
-      Component: 'HelloBlockInitializer',
+      Component: HelloBlockInitializer,
     });
     this.app.pluginSettingsManager.add('sample-hello', {
       title: 'Hello',
@@ -68,6 +62,7 @@ class HelloPlugin extends Plugin {
       Component: HelloPluginSettingPage,
       sort: 100,
     });
+    this.schemaSettingsManager.add(helloSettings);
   }
 }
 

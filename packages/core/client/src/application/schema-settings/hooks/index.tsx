@@ -1,12 +1,11 @@
 import { useMemo } from 'react';
 import { useApp } from '../../hooks';
-import { SchemaSettingsOptions } from '../types';
+import { SchemaSettingOptions } from '../types';
 import React from 'react';
 import { SchemaSettingsWrapper } from '../components';
 import { SchemaSettingsProps } from '../../../schema-settings';
 
-type UseSchemaSettingsRenderOptions<T = {}> = SchemaSettingsOptions<T> &
-  Omit<SchemaSettingsProps, 'title' | 'children'>;
+type UseSchemaSettingsRenderOptions<T = {}> = SchemaSettingOptions<T> & Omit<SchemaSettingsProps, 'title' | 'children'>;
 
 export function useSchemaSettingsRender<T = {}>(name: string, options?: UseSchemaSettingsRenderOptions<T>) {
   const app = useApp();

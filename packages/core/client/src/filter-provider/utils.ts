@@ -12,7 +12,7 @@ import {
   useCollectionManager,
 } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
-import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingsOptions';
+import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
 import { DataBlock, useFilterBlock } from './FilterProvider';
 
 export enum FilterBlockType {

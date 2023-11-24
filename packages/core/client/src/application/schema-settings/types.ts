@@ -10,7 +10,7 @@ import {
   SchemaSettingsSwitchItemProps,
 } from '../../schema-settings';
 
-export interface SchemaSettingsOptions<T = {}> {
+export interface SchemaSettingOptions<T = {}> {
   name: string;
   Component?: ComponentType<T>;
   componentProps?: T;

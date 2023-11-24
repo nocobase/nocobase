@@ -15,7 +15,7 @@ group:
 #### 参数类型
 
 ```ts | pure
-interface SchemaSettingsOptions<T = {}>{
+interface SchemaSettingOptions<T = {}>{
   name: string;
   Component?: ComponentType<T>;
   componentProps?: T;
@@ -400,7 +400,7 @@ class MyPlugin extends Plugin {
 - 类型
 
 ```tsx | pure
-interface SchemaSettingsOptions<T = {}>{
+interface SchemaSettingOptions<T = {}>{
   name: string;
   Component?: ComponentType<T>;
   componentProps?: T;
@@ -409,7 +409,7 @@ interface SchemaSettingsOptions<T = {}>{
 }
 
 interface SchemaSettingsRenderResult {
-  render: (options?: SchemaSettingsOptions) => React.ReactElement;
+  render: (options?: SchemaSettingOptions) => React.ReactElement;
   exists: boolean;
 }
 
@@ -441,7 +441,7 @@ const MyDesigner = (props) => {
 - 类型
 
 ```ts | pure
-interface UseSchemaSettingsResult<T> extends SchemaSettingsOptions {
+interface UseSchemaSettingsResult<T> extends SchemaSettingOptions {
   dn?: Designable;
   field?: GeneralField;
   fieldSchema?: Schema;
