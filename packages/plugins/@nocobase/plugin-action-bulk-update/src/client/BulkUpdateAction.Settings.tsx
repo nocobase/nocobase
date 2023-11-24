@@ -9,6 +9,7 @@ import {
   SchemaSettingsItemGroup,
   SchemaSettingsModalItem,
   SchemaSettingsActionModalItem,
+  SchemaSettingsSelectItem,
   FlagProvider,
 } from '@nocobase/client';
 import { isValid, uid } from '@formily/shared';
@@ -32,7 +33,7 @@ function UpdateMode() {
   const fieldSchema = useFieldSchema();
 
   return (
-    <SchemaSettings.SelectItem
+    <SchemaSettingsSelectItem
       title={t('Data will be updated')}
       options={[
         { label: t('Selected'), value: 'selected' },
