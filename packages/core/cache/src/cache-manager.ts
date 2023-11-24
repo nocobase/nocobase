@@ -3,6 +3,9 @@ import { Cache } from './cache';
 import lodash from 'lodash';
 import { RedisStore, redisStore } from 'cache-manager-redis-yet';
 import deepmerge from 'deepmerge';
+import { MemoryBloomFilter } from './bloom-filter/memory-bloom-filter';
+import { BloomFilter } from './bloom-filter';
+import { RedisBloomFilter } from './bloom-filter/redis-bloom-filter';
 
 type StoreOptions = {
   store?: 'memory' | FactoryStore<Store, any>;
@@ -117,5 +120,24 @@ export class CacheManager {
       close && promises.push(close(store.store));
     }
     await Promise.all(promises);
+  }
+
+  async createBloomFilter(options?: { store?: string }): Promise<BloomFilter> {
+    const name = 'bloom-filter';
+    const { store = this.defaultStore } = options || {};
+    let cache: Cache;
+    try {
+      cache = this.getCache(name);
+    } catch (error) {
+      cache = await this.createCache({ name, store });
+    }
+    switch (store) {
+      case 'memory':
+        return new MemoryBloomFilter(cache);
+      case 'redis':
+        return new RedisBloomFilter(cache);
+      default:
+        throw new Error(`BloomFilter store [${store}] is not supported`);
+    }
   }
 }

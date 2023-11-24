@@ -36,6 +36,10 @@ export class BaseAuth extends Auth {
     return this.ctx.state.currentUser;
   }
 
+  getCacheKey(userId: number) {
+    return `auth:${userId}`;
+  }
+
   validateUsername(username: string) {
     return /^[^@.<>"'/]{2,16}$/.test(username);
   }
@@ -54,7 +58,7 @@ export class BaseAuth extends Auth {
 
       const cache = this.ctx.cache as Cache;
       return await cache.wrap(
-        `auth:${userId}`,
+        this.getCacheKey(userId),
         () =>
           this.userRepository.findOne({
             filter: {
@@ -99,7 +103,7 @@ export class BaseAuth extends Auth {
     }
     const { userId } = await this.jwt.decode(token);
     await this.ctx.app.emitAsync('beforeSignOut', { userId });
-    await this.ctx.cache.del(`auth:${userId}`);
+    await this.ctx.cache.del(this.getCacheKey(userId));
     return await this.jwt.block(token);
   }
 }
