@@ -36,7 +36,7 @@ const openDialogAndShowMenu = async ({
 };
 
 test.describe('many to many', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'manyToMany', mode: 'options' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'manyToMany', fieldType: 'relation', mode: 'options' });
 
   test('set default value', async ({ page, mockPage, mockRecords }) => {
     await testDefaultValue({
@@ -119,10 +119,81 @@ test.describe('many to many', () => {
     await expect(page.getByRole('option', { name: '3', exact: true })).toBeVisible();
     await expect(page.getByRole('option')).toHaveCount(1);
   });
+
+  test('set default sorting rules', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'manyToMany');
+    await page.getByRole('menuitem', { name: 'Set default sorting rules' }).click();
+
+    // 配置
+    await page.getByRole('button', { name: 'Add sort field' }).click();
+    await page.getByTestId('select-single').getByLabel('Search').click();
+    await page.getByRole('option', { name: 'ID' }).click();
+    await page.getByText('DESC', { exact: true }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+
+    // 再次打开弹窗，设置的值应该还在
+    await showMenu(page, 'manyToMany');
+    await page.getByRole('menuitem', { name: 'Set default sorting rules' }).click();
+    await expect(page.getByRole('dialog').getByTestId('select-single')).toHaveText('ID');
+  });
+
+  test('field component', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'manyToMany');
+    await page.getByRole('menuitem', { name: 'Field component' }).click();
+
+    // 断言支持的选项
+    await expect(page.getByRole('option', { name: 'Select', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Record picker', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Sub-table', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Sub-form', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Sub-form(Popover)', exact: true })).toBeVisible();
+
+    // 选择 Record picker
+    await page.getByRole('option', { name: 'Record picker', exact: true }).click();
+    await expect(
+      page
+        .getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany')
+        .getByTestId('select-data-picker'),
+    ).toBeVisible();
+
+    // 选择 Sub-table
+    await showMenu(page, 'manyToMany');
+    await page.getByRole('menuitem', { name: 'Field component' }).click();
+    await page.getByRole('option', { name: 'Sub-table', exact: true }).click();
+    await expect(
+      page
+        .getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany')
+        .getByLabel('schema-initializer-AssociationField.SubTable-TableColumnInitializers-users'),
+    ).toBeVisible();
+
+    // 选择 Sub-form
+    await showMenu(page, 'manyToMany');
+    await page.getByRole('menuitem', { name: 'Field component' }).click();
+    await page.getByRole('option', { name: 'Sub-form', exact: true }).click();
+    await expect(
+      page
+        .getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany')
+        .getByLabel('schema-initializer-Grid-FormItemInitializers-users'),
+    ).toBeVisible();
+
+    // 选择 Sub-form(Popover)
+    await showMenu(page, 'manyToMany');
+    await page.getByRole('menuitem', { name: 'Field component' }).click();
+    await page.getByRole('option', { name: 'Sub-form(Popover)', exact: true }).click();
+    await page
+      .getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany')
+      .getByRole('img', { name: 'edit' })
+      .click();
+    await expect(page.getByTestId('popover-CollectionField-general')).toBeVisible();
+  });
 });
 
 test.describe('many to one', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'manyToOne', mode: 'options' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'manyToOne', fieldType: 'relation', mode: 'options' });
 
   test('set default value', async ({ page, mockPage, mockRecords }) => {
     await testDefaultValue({
@@ -216,10 +287,23 @@ test.describe('many to one', () => {
     await expect(page.getByRole('option', { name: '3', exact: true })).toBeVisible();
     await expect(page.getByRole('option')).toHaveCount(1);
   });
+
+  test('field component', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'manyToOne');
+    await page.getByRole('menuitem', { name: 'Field component' }).click();
+
+    // 断言支持的选项
+    await expect(page.getByRole('option', { name: 'Select', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Record picker', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Sub-form', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Sub-form(Popover)', exact: true })).toBeVisible();
+  });
 });
 
 test.describe('one to many', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'oneToMany', mode: 'options' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'oneToMany', fieldType: 'relation', mode: 'options' });
 
   test('set default value', async ({ page, mockPage, mockRecord, mockRecords }) => {
     await openDialogAndShowMenu({ page, mockPage, mockRecord, mockRecords, fieldName: 'oneToMany' });
@@ -285,10 +369,24 @@ test.describe('one to many', () => {
     // 默认只显示 id 为 1 的数据，因为设置了只过滤 id 为 3 的数据，所以这里的下拉列表应该为空
     await expect(page.getByRole('option')).toHaveCount(0);
   });
+
+  test('field component', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'oneToMany');
+    await page.getByRole('menuitem', { name: 'Field component' }).click();
+
+    // 断言支持的选项
+    await expect(page.getByRole('option', { name: 'Select', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Record picker', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Sub-table', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Sub-form', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Sub-form(Popover)', exact: true })).toBeVisible();
+  });
 });
 
 test.describe('one to one (belongs to)', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'oneToOneBelongsTo', mode: 'options' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'oneToOneBelongsTo', fieldType: 'relation', mode: 'options' });
 
   test('set default value', async ({ page, mockPage, mockRecord, mockRecords }) => {
     await openDialogAndShowMenu({ page, mockPage, mockRecord, mockRecords, fieldName: 'oneToOneBelongsTo' });
@@ -352,10 +450,23 @@ test.describe('one to one (belongs to)', () => {
     await expect(page.getByRole('option', { name: '3', exact: true })).toBeVisible();
     await expect(page.getByRole('option')).toHaveCount(1);
   });
+
+  test('field component', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'oneToOneBelongsTo');
+    await page.getByRole('menuitem', { name: 'Field component' }).click();
+
+    // 断言支持的选项
+    await expect(page.getByRole('option', { name: 'Select', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Record picker', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Sub-form', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Sub-form(Popover)', exact: true })).toBeVisible();
+  });
 });
 
 test.describe('one to one (has one)', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'oneToOneHasOne', mode: 'options' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'oneToOneHasOne', fieldType: 'relation', mode: 'options' });
 
   test('set default value', async ({ page, mockPage, mockRecord, mockRecords }) => {
     await openDialogAndShowMenu({ page, mockPage, mockRecord, mockRecords, fieldName: 'oneToOneHasOne' });
@@ -418,5 +529,18 @@ test.describe('one to one (has one)', () => {
       .click();
     // 默认只显示 id 为 1 的数据，因为设置了只过滤 id 为 3 的数据，所以这里的下拉列表应该为空
     await expect(page.getByRole('option')).toHaveCount(0);
+  });
+
+  test('field component', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'oneToOneHasOne');
+    await page.getByRole('menuitem', { name: 'Field component' }).click();
+
+    // 断言支持的选项
+    await expect(page.getByRole('option', { name: 'Select', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Record picker', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Sub-form', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Sub-form(Popover)', exact: true })).toBeVisible();
   });
 });
