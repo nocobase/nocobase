@@ -7,6 +7,8 @@ import {
   useCompile,
   DefaultValueProvider,
   SchemaSettingsItemGroup,
+  SchemaSettingsModalItem,
+  SchemaSettingsActionModalItem,
   FlagProvider,
 } from '@nocobase/client';
 import { isValid, uid } from '@formily/shared';
@@ -56,7 +58,7 @@ function AfterSuccess() {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   return (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       title={t('After successful submission')}
       initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
       schema={
@@ -161,7 +163,7 @@ function AssignedFieldValues() {
   return (
     <FlagProvider isInAssignFieldValues={true}>
       <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
-        <SchemaSettings.ActionModalItem
+        <SchemaSettingsActionModalItem
           title={t('Assign field values')}
           maskClosable={false}
           initialSchema={initialSchema}
