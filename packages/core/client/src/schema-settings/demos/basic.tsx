@@ -41,7 +41,7 @@ class MyPlugin2 extends Plugin {
     const Demo3 = () => <SchemaSettingsItem title="DEMO3" onClick={() => alert('DEMO3')} />;
     mySchemaSetting.add('demo3', {
       Component: Demo3,
-    } as any);
+    });
 
     // 移除 demo2
     mySchemaSetting.remove('demo2');

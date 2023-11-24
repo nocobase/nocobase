@@ -2,11 +2,11 @@ import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../schema-component';
-import { SchemaSettingOptions } from '../application';
+import { SchemaSettingsOptions } from '../application';
 import { useSchemaDesigner } from '../application/schema-designer';
 import { useCollection, useCollectionManager } from '../collection-manager';
 
-export const generalSettingsItems: SchemaSettingOptions['items'] = [
+export const generalSettingsItems: SchemaSettingsOptions['items'] = [
   {
     name: 'editFieldTitle',
     type: 'modal',

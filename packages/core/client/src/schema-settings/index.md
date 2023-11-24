@@ -15,12 +15,12 @@ group:
 #### 参数类型
 
 ```ts | pure
-interface SchemaSettingOptions<T = {}>{
+interface SchemaSettingsOptions<T = {}>{
   name: string;
   Component?: ComponentType<T>;
   componentProps?: T;
   style?: React.CSSProperties;
-  items: SchemaSettingItemType[];
+  items: SchemaSettingsItemType[];
 }
 ```
 
@@ -72,10 +72,10 @@ const mySettings = new SchemaSettings({
 
 - items
 
-items 的类型为 `SchemaSettingItemType[]`，具体如下：
+items 的类型为 `SchemaSettingsItemType[]`，具体如下：
 
 ```ts | pure
-export type SchemaSettingItemType<T = {}> = {
+export type SchemaSettingsItemType<T = {}> = {
   name: string;
   type?: string;
   sort?: number;
@@ -83,7 +83,7 @@ export type SchemaSettingItemType<T = {}> = {
   componentProps?: T;
   useComponentProps?: () => T;
   useVisible?: () => boolean;
-  children?: SchemaSettingItemType[];
+  children?: SchemaSettingsItemType[];
   [index]: any;
 };
 ```
@@ -188,7 +188,7 @@ schemaSetting 实例用于对 `items` 进行增删改查。
 
 ```ts | pure
 interface SchemaSettings {
-  get(name: string): SchemaSettingItemType | undefined;
+  get(name: string): SchemaSettingsItemType | undefined;
 }
 ```
 
@@ -246,7 +246,7 @@ mySchemaSettings.remove('demo.child2');
 
 ```ts | pure
 interface SchemaSettings {
-  add(name: string, item: Omit<SchemaSettingItemType, 'name'>): void;
+  add(name: string, item: Omit<SchemaSettingsItemType, 'name'>): void;
 }
 ```
 
@@ -400,16 +400,16 @@ class MyPlugin extends Plugin {
 - 类型
 
 ```tsx | pure
-interface SchemaSettingOptions<T = {}>{
+interface SchemaSettingsOptions<T = {}>{
   name: string;
   Component?: ComponentType<T>;
   componentProps?: T;
   style?: React.CSSProperties;
-  items: SchemaSettingItemType[];
+  items: SchemaSettingsItemType[];
 }
 
 interface SchemaSettingsRenderResult {
-  render: (options?: SchemaSettingOptions) => React.ReactElement;
+  render: (options?: SchemaSettingsOptions) => React.ReactElement;
   exists: boolean;
 }
 
@@ -441,7 +441,7 @@ const MyDesigner = (props) => {
 - 类型
 
 ```ts | pure
-interface UseSchemaSettingsResult<T> extends SchemaSettingOptions {
+interface UseSchemaSettingsResult<T> extends SchemaSettingsOptions {
   dn?: Designable;
   field?: GeneralField;
   fieldSchema?: Schema;
@@ -463,7 +463,7 @@ const { dn } = useSchemaSettings();
 - 类型
 
 ```ts
-export type SchemaSettingItemType<T = {}> = {
+export type SchemaSettingsItemType<T = {}> = {
   name: string;
   type?: string;
   sort?: number;
@@ -471,11 +471,11 @@ export type SchemaSettingItemType<T = {}> = {
   componentProps?: T;
   useComponentProps?: () => T;
   useVisible?: () => boolean;
-  children?: SchemaSettingItemType[];
+  children?: SchemaSettingsItemType[];
   [index]: any;
 };
 
-function useSchemaSettingsItem(): SchemaSettingItemType;
+function useSchemaSettingsItem(): SchemaSettingsItemType;
 ```
 
 - 示例

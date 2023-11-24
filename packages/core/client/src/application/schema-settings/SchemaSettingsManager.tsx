@@ -1,6 +1,6 @@
 import { Application } from '../Application';
 import { SchemaSettings } from './SchemaSettings';
-import { SchemaSettingItemType } from './types';
+import { SchemaSettingsItemType } from './types';
 
 interface ActionType {
   type: 'add' | 'remove';
@@ -33,7 +33,7 @@ export class SchemaSettingsManager {
     });
   }
 
-  addItem(schemaSettingName: string, itemName: string, data: Omit<SchemaSettingItemType, 'name'>) {
+  addItem(schemaSettingName: string, itemName: string, data: Omit<SchemaSettingsItemType, 'name'>) {
     const schemaSetting = this.get(schemaSettingName);
     if (!schemaSetting) {
       if (!this.actionList[schemaSettingName]) {

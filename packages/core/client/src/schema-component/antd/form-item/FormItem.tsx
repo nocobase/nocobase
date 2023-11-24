@@ -13,7 +13,7 @@ import useContextVariable from '../../../variables/hooks/useContextVariable';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
-import { useEnsureOperatorsValid } from './SchemaSettingOptions';
+import { useEnsureOperatorsValid } from './SchemaSettingsOptions';
 import useLazyLoadAssociationFieldOfForm from './hooks/useLazyLoadAssociationFieldOfForm';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';

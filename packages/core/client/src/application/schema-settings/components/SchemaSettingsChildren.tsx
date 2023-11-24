@@ -1,7 +1,7 @@
 import React, { FC, useMemo, useRef, useEffect } from 'react';
 
 import { useFindComponent } from '../../../schema-component';
-import { SchemaSettingItemType } from '../types';
+import { SchemaSettingsItemType } from '../types';
 import {
   SchemaSettingsActionModalItem,
   SchemaSettingsCascaderItem,
@@ -18,7 +18,7 @@ import {
 import { SchemaSettingItemContext } from '../context';
 
 export interface SchemaSettingChildrenProps {
-  children: SchemaSettingItemType[];
+  children: SchemaSettingsItemType[];
 }
 
 const typeComponentMap = {
@@ -60,7 +60,7 @@ export const SchemaSettingChildren: FC<SchemaSettingChildrenProps> = (props) => 
 const useChildrenDefault = () => undefined;
 const useComponentPropsDefault = () => undefined;
 const useVisibleDefault = () => true;
-export const SchemaSettingChild: FC<SchemaSettingItemType> = (props) => {
+export const SchemaSettingChild: FC<SchemaSettingsItemType> = (props) => {
   const {
     useVisible = useVisibleDefault,
     useChildren = useChildrenDefault,

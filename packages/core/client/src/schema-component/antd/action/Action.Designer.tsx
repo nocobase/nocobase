@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
 import { usePlugin } from '../../../application/hooks';
 import { useSchemaDesigner } from '../../../application/schema-designer';
-import { SchemaSettings, SchemaSettingOptions } from '../../../application/schema-settings';
+import { SchemaSettings, SchemaSettingsOptions } from '../../../application/schema-settings';
 import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
@@ -913,11 +913,10 @@ function WorkflowConfig() {
   );
 }
 
-export const actionSettingsItems: SchemaSettingOptions['items'] = [
+export const actionSettingsItems: SchemaSettingsOptions['items'] = [
   {
     name: 'Customize',
     Component: MenuGroup,
-    type: 'itemGroup',
     children: [
       {
         name: 'editButton',
