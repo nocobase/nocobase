@@ -103,7 +103,6 @@ const WithForm = (props: WithFormProps) => {
   useEffect(() => {
     const id = uid();
     const disposes = [];
-    const linkagefields = [];
 
     form.addEffects(id, () => {
       linkageRules.forEach((v, index) => {
@@ -129,7 +128,6 @@ const WithForm = (props: WithFormProps) => {
               field.linkageProperty = {};
               disposes.push(
                 autorun(async () => {
-                  linkagefields.push(field);
                   await linkageMergeAction({
                     operator: h.operator,
                     value: h.value,
