@@ -2,6 +2,9 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'themeConfig',
+  duplicator: {
+    dataType: 'config',
+  },
   fields: [
     // 主题配置内容，一个 JSON 字符串
     {
