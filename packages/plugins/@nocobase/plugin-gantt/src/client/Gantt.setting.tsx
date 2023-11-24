@@ -5,22 +5,25 @@ import {
   SchemaSettings,
   useDesignable,
   removeNullCondition,
-  SchemaSetting,
   useCompile,
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsSelectItem,
+  SchemaSettingsDataScope,
+  SchemaSettingsFormItemTemplate,
 } from '@nocobase/client';
 import { useGanttTranslation, useOptions } from './utils';
 import { useGanttBlockContext } from './GanttBlockProvider';
 
-export const ganttSettings = new SchemaSetting({
+export const ganttSettings = new SchemaSettings({
   name: 'GanttBlockSettings',
   items: [
     {
       name: 'title',
-      type: 'blockTitle',
+      Component: SchemaSettingsBlockTitleItem,
     },
     {
       name: 'titleField',
-      Component: SchemaSettings.SelectItem,
+      Component: SchemaSettingsSelectItem,
       useComponentProps() {
         const { t } = useGanttTranslation();
         const fieldSchema = useFieldSchema();
@@ -53,7 +56,7 @@ export const ganttSettings = new SchemaSetting({
     },
     {
       name: 'timeScale',
-      Component: SchemaSettings.SelectItem,
+      Component: SchemaSettingsSelectItem,
       useComponentProps() {
         const { t } = useGanttTranslation();
         const fieldSchema = useFieldSchema();
@@ -96,7 +99,7 @@ export const ganttSettings = new SchemaSetting({
     },
     {
       name: 'startDateField',
-      Component: SchemaSettings.SelectItem,
+      Component: SchemaSettingsSelectItem,
       useComponentProps() {
         const { t } = useGanttTranslation();
         const fieldSchema = useFieldSchema();
@@ -127,7 +130,7 @@ export const ganttSettings = new SchemaSetting({
     },
     {
       name: 'endDateField',
-      Component: SchemaSettings.SelectItem,
+      Component: SchemaSettingsSelectItem,
       useComponentProps() {
         const { t } = useGanttTranslation();
         const fieldSchema = useFieldSchema();
@@ -158,7 +161,7 @@ export const ganttSettings = new SchemaSetting({
     },
     {
       name: 'processField',
-      Component: SchemaSettings.SelectItem,
+      Component: SchemaSettingsSelectItem,
       useComponentProps() {
         const { t } = useGanttTranslation();
         const fieldSchema = useFieldSchema();
@@ -190,7 +193,7 @@ export const ganttSettings = new SchemaSetting({
     },
     {
       name: 'dataScope',
-      Component: SchemaSettings.DataScope,
+      Component: SchemaSettingsDataScope,
       useComponentProps() {
         const { name } = useCollection();
         const fieldSchema = useFieldSchema();
@@ -224,8 +227,8 @@ export const ganttSettings = new SchemaSetting({
       type: 'divider',
     },
     {
-      name: 'template',
-      Component: SchemaSettings.Template,
+      name: 'formItemTemplate',
+      Component: SchemaSettingsFormItemTemplate,
       useComponentProps() {
         const { name } = useCollection();
         return {
