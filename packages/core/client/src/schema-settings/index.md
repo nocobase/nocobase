@@ -8,7 +8,7 @@ group:
 
 ## API
 
-### new SchemaSetting(options)
+### new SchemaSettings(options)
 
 创建一个 Schema 配置实例。
 
@@ -33,7 +33,7 @@ interface SchemaSettingOptions<T = {}>{
 会用在 schema 中的 `x-settings` 配置值以及读取 schema 的值会传给 [useSchemaSettingRender()](#useschemasettingsrender) 的第一个参数。
 
 ```ts | pure
-const mySettings = new SchemaSetting({
+const mySettings = new SchemaSettings({
    //  定义 name
   name: 'MySettings',
 })
@@ -45,7 +45,7 @@ Component 默认是一个 Icon，如果需要定制化，可以为一个 React �
 
 ```tsx | pure
 import { SettingOutlined } from '@ant-design/icons';
-const mySettings = new SchemaSetting({
+const mySettings = new SchemaSettings({
   Component: () => <SettingOutlined style={{ cursor: 'pointer' }} />
 })
 ```
@@ -54,7 +54,7 @@ const mySettings = new SchemaSetting({
 
 ```tsx | pure
 import { Button } from '@ant-design/icons';
-const mySettings = new SchemaSetting({
+const mySettings = new SchemaSettings({
   Component: Button,
   componentProps: {
     type: 'primary'
@@ -65,7 +65,7 @@ const mySettings = new SchemaSetting({
 当然也可以这样是使用。
 
 ```tsx | pure
-const mySettings = new SchemaSetting({
+const mySettings = new SchemaSettings({
   Component: () => <Button type="primary" />
 })
 ```
@@ -91,7 +91,7 @@ export type SchemaSettingItemType<T = {}> = {
 最简单的配置如下：
 
 ```ts | pure
-const mySettings = new SchemaSetting({
+const mySettings = new SchemaSettings({
   items: [
     {
       name: 'edit',
@@ -104,7 +104,7 @@ const mySettings = new SchemaSetting({
 `type` 内置类型：为了更简单的使用，我们提供了一些内置的类型，可以直接使用。
 
 ```ts | pure
-const mySettings = new SchemaSetting({
+const mySettings = new SchemaSettings({
   items: [
     {
       name: 'edit',
@@ -114,26 +114,26 @@ const mySettings = new SchemaSetting({
 })
 ```
 
-其底层对应的是 `SchemaSettings.ModalItem` 组件。具体内置类型和对应的组件如下：
+其底层对应的是 `SchemaSettingsModalItem` 组件。具体内置类型和对应的组件如下：
 
 | type | Component | 效果 |
 | --- | --- | --- |
-| item | SchemaSettings.Item | 文本 |
-| itemGroup | SchemaSettings.ItemGroup | 分组，同 Menu 组件的 `type: 'group'` |
-| subMenu | SchemaSettings.SubMenu | 子菜单，同 Menu 组件的子菜单 |
-| divider | SchemaSettings.Divider | 分割线，同 Menu 组件的  `type: 'divider'` |
-| remove | SchemaSettings.Remove | 删除，用于删除一个区块 |
-| select | SchemaSettings.SelectItem | 下拉选择 |
-| cascader | SchemaSettings.CascaderItem | 级联选择 |
-| switch | SchemaSettings.SwitchItem | 开关 |
-| popup | SchemaSettings.PopupItem | 弹出层 |
-| actionModal | SchemaSettings.ActionModalItem | 操作弹窗 |
-| modal | SchemaSettings.ModalItem | 弹窗 |
+| item | SchemaSettingsItem | 文本 |
+| itemGroup | SchemaSettingsItemGroup | 分组，同 Menu 组件的 `type: 'group'` |
+| subMenu | SchemaSettingsSubMenu | 子菜单，同 Menu 组件的子菜单 |
+| divider | SchemaSettingsDivider | 分割线，同 Menu 组件的  `type: 'divider'` |
+| remove | SchemaSettingsRemove | 删除，用于删除一个区块 |
+| select | SchemaSettingsSelectItem | 下拉选择 |
+| cascader | SchemaSettingsCascaderItem | 级联选择 |
+| switch | SchemaSettingsSwitchItem | 开关 |
+| popup | SchemaSettingsPopupItem | 弹出层 |
+| actionModal | SchemaSettingsActionModalItem | 操作弹窗 |
+| modal | SchemaSettingsModalItem | 弹窗 |
 
 `componentProps` 和 `useComponentProps`：用于定制化内置组件的 props，两者的区别是后面的可以使用一些 hooks。
 
 ```ts | pure
-const mySettings = new SchemaSetting({
+const mySettings = new SchemaSettings({
   items: [
     {
       name: 'allowAddNew',
@@ -162,7 +162,7 @@ const mySettings = new SchemaSetting({
 `useVisible` 则是控制组件是否显示，可以使用 hooks。
 
 ```ts | pure
-const mySettings = new SchemaSetting({
+const mySettings = new SchemaSettings({
   items: [
     {
       name: 'upload',
@@ -195,7 +195,7 @@ interface SchemaSettings {
 - 示例
 
 ```ts | pure
-const mySchemaSettings = new SchemaSetting({
+const mySchemaSettings = new SchemaSettings({
   name: 'MySchemaSettings',
   items: [
     {
@@ -297,7 +297,7 @@ interface SchemaSettingsManager {
 
 - 参数说明
 
-name 为 `new SchemaSetting(options)` 中的 name。
+name 为 `new SchemaSettings(options)` 中的 name。
 
 - 示例
 
@@ -324,7 +324,7 @@ interface SchemaSettingsManager {
 
 - 参数说明
 
-name 为 `new SchemaSetting(options)` 中的 name。
+name 为 `new SchemaSettings(options)` 中的 name。
 
 - 示例
 
@@ -345,7 +345,7 @@ class MyPlugin extends Plugin {
 
 ```ts | pure
 interface SchemaSettingsManager {
-  add(schemaSetting: SchemaSetting): void;
+  add(schemaSetting: SchemaSettings): void;
 }
 ```
 
@@ -354,7 +354,7 @@ interface SchemaSettingsManager {
 ```ts | pure
 import { Plugin } from '@nocobase/plugin'
 
-const mySchemaSettings = new SchemaSetting({
+const mySchemaSettings = new SchemaSettings({
   name: 'MySchemaSettings',
   items: [],
 });

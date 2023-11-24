@@ -1,6 +1,6 @@
 import { SchemaSettingOptions, SchemaSettingItemType } from './types';
 
-export class SchemaSetting<T = {}> {
+export class SchemaSettings<T = {}> {
   options: SchemaSettingOptions<T>;
   name: string;
 

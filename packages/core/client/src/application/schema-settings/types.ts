@@ -27,7 +27,6 @@ interface SchemaSettingItemCommon<T = {}> {
   checkChildrenLength?: boolean;
   componentProps?: Omit<T, 'children'>;
   useComponentProps?: () => Omit<T, 'children'>;
-  [index: string]: any;
 }
 
 export interface SchemaSettingItemNoProps extends SchemaSettingItemCommon {
@@ -67,14 +66,15 @@ export type SchemaSettingItemSelectType = SchemaSettingItemCommon<SchemaSettings
 };
 
 export type SchemaSettingItemActionModalType = SchemaSettingItemCommon<SchemaSettingsSelectItemProps> & {
-  type: 'select';
+  type: 'actionModal';
 };
 
 interface SchemaSettingItemComponentType<T = {}> extends SchemaSettingItemCommon<T> {
-  Component: string | ComponentType;
+  Component: string | ComponentType<any>;
 }
 
 export type SchemaSettingItemType =
+  | SchemaSettingItemComponentType
   | SchemaSettingItemNoProps
   | SchemaSettingItemRemoveType
   | SchemaSettingItemActionModalType

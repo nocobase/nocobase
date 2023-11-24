@@ -5,7 +5,17 @@ import { FixedBlockDesignerItem, removeNullCondition, useDesignable } from '../.
 import { useCalendarBlockContext, useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsCascaderItem,
+  SchemaSettingsDataScope,
+  SchemaSettingsDivider,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  SchemaSettingsSwitchItem,
+  SchemaSettingsTemplate,
+} from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 
 export const CalendarDesigner = () => {
@@ -25,8 +35,8 @@ export const CalendarDesigner = () => {
   return (
     <RecordProvider parent={record} record={{}}>
       <GeneralSchemaDesigner template={template} title={title || name}>
-        <SchemaSettings.BlockTitleItem />
-        <SchemaSettings.SelectItem
+        <SchemaSettingsBlockTitleItem />
+        <SchemaSettingsSelectItem
           title={t('Title field')}
           value={fieldNames.title}
           options={getCollectionFieldsOptions(name, 'string')}
@@ -47,7 +57,7 @@ export const CalendarDesigner = () => {
             dn.refresh();
           }}
         />
-        <SchemaSettings.SwitchItem
+        <SchemaSettingsSwitchItem
           title={t('Show lunar')}
           checked={field.decoratorProps.showLunar}
           onChange={(v) => {
@@ -63,7 +73,7 @@ export const CalendarDesigner = () => {
           }}
         />
         <FixedBlockDesignerItem />
-        <SchemaSettings.CascaderItem
+        <SchemaSettingsCascaderItem
           title={t('Start date field')}
           value={fieldNames.start}
           options={getCollectionFieldsOptions(name, 'date', {
@@ -84,7 +94,7 @@ export const CalendarDesigner = () => {
             dn.refresh();
           }}
         />
-        <SchemaSettings.CascaderItem
+        <SchemaSettingsCascaderItem
           title={t('End date field')}
           value={fieldNames.end}
           options={getCollectionFieldsOptions(name, 'date', {
@@ -105,7 +115,7 @@ export const CalendarDesigner = () => {
             dn.refresh();
           }}
         />
-        <SchemaSettings.DataScope
+        <SchemaSettingsDataScope
           collectionName={name}
           defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
           form={form}
@@ -124,10 +134,10 @@ export const CalendarDesigner = () => {
             });
           }}
         />
-        <SchemaSettings.Divider />
-        <SchemaSettings.Template componentName={'Calendar'} collectionName={name} resourceName={defaultResource} />
-        <SchemaSettings.Divider />
-        <SchemaSettings.Remove
+        <SchemaSettingsDivider />
+        <SchemaSettingsTemplate componentName={'Calendar'} collectionName={name} resourceName={defaultResource} />
+        <SchemaSettingsDivider />
+        <SchemaSettingsRemove
           removeParentsIfNoChildren
           breakRemoveOn={{
             'x-component': 'Grid',

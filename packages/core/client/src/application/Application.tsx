@@ -25,7 +25,7 @@ import * as schemaInitializerComponents from './schema-initializer/components';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
-import { SchemaSetting, SchemaSettingsManager } from './schema-settings';
+import { SchemaSettings, SchemaSettingsManager } from './schema-settings';
 
 import type { RequireJS } from './utils/requirejs';
 import type { Plugin } from './Plugin';
@@ -47,7 +47,7 @@ export interface ApplicationOptions {
   components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
-  schemaSettings?: SchemaSetting[];
+  schemaSettings?: SchemaSettings[];
   devDynamicImport?: DevDynamicImport;
   schemaInitializers?: SchemaInitializer[];
   loadRemotePlugins?: boolean;

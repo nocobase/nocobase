@@ -4,7 +4,7 @@ import {
   Plugin,
   SchemaComponentOptions,
   useSchemaInitializer,
-  SchemaSetting,
+  SchemaSettings,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import React from 'react';
@@ -53,11 +53,6 @@ const HelloPluginSettingPage = () => {
     </Card>
   );
 };
-
-const mySettings = new SchemaSetting({
-  name: 'MySetting',
-  items: [],
-});
 
 class HelloPlugin extends Plugin {
   async load() {

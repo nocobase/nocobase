@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { ISchema } from '@formily/json-schema';
 import { useDesignable } from '../../hooks';
 import { useSchemaDesigner } from '../../../application/schema-designer';
-import { SchemaSetting } from '../../../application/schema-settings/SchemaSetting';
+import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 
-export const pageTabSettings = new SchemaSetting({
+export const pageTabSettings = new SchemaSettings({
   name: 'PageTabSettings',
   items: [
     {

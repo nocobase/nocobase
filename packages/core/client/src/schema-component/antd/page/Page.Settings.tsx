@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useDesignable } from '../..';
-import { SchemaSetting } from '../../../application/schema-settings';
+import { SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaDesigner } from '../../../application/schema-designer';
 
 function useNotDisableHeader() {
@@ -9,7 +9,7 @@ function useNotDisableHeader() {
   return !fieldSchema['x-component-props']?.disablePageHeader;
 }
 
-export const pageSettings = new SchemaSetting({
+export const pageSettings = new SchemaSettings({
   name: 'PageSettings',
   items: [
     {
