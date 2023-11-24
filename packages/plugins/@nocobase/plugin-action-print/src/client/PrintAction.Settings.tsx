@@ -1,19 +1,18 @@
 import {
-  SchemaSetting,
   SchemaSettings,
   ActionDesigner,
   useSchemaDesigner,
+  SchemaSettingsLinkageRules,
   useLinkageAction,
   useCollection,
 } from '@nocobase/client';
 
-const printActionSettings = new SchemaSetting({
+const printActionSettings = new SchemaSettings({
   name: 'ActionSettings:print',
   items: [
     {
       name: 'Customize',
-      type: 'itemGroup',
-      Component: (props) => {
+      Component: (props): any => {
         return props.children;
       },
       children: [
@@ -27,12 +26,7 @@ const printActionSettings = new SchemaSetting({
         },
         {
           name: 'linkageRules',
-          Component: SchemaSettings.LinkageRules,
-          useVisible() {
-            const isAction = useLinkageAction();
-            const { linkageAction } = useSchemaDesigner();
-            return linkageAction || isAction;
-          },
+          Component: SchemaSettingsLinkageRules,
           useComponentProps() {
             const { name } = useCollection();
             const { linkageRulesProps } = useSchemaDesigner();
