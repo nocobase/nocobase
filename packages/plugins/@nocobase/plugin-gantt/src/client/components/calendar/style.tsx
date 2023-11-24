@@ -1,5 +1,5 @@
 import { TinyColor } from '@ctrl/tinycolor';
-import { createStyles } from '@nocobase/client';
+import { createStyles } from 'antd-style';
 
 const useStyles = createStyles(({ token, css }) => {
   const colorFillAlterSolid = new TinyColor(token.colorFillAlter)
