@@ -408,14 +408,8 @@ interface SchemaSettingOptions<T = {}>{
   items: SchemaSettingItemType[];
 }
 
-interface SchemaSettingsRenderOptions extends SchemaSettingOptions {
-  dn?: Designable;
-  field?: GeneralField;
-  fieldSchema?: Schema;
-}
-
 interface SchemaSettingsRenderResult {
-  render: (options?: SchemaSettingsRenderOptions) => React.ReactElement;
+  render: (options?: SchemaSettingOptions) => React.ReactElement;
   exists: boolean;
 }
 
@@ -468,7 +462,7 @@ const { dn } = useSchemaSettings();
 
 - 类型
 
-```ts | pure
+```ts
 export type SchemaSettingItemType<T = {}> = {
   name: string;
   type?: string;
@@ -486,7 +480,7 @@ function useSchemaSettingsItem(): SchemaSettingItemType;
 
 - 示例
 
-```tsx | pure
+```tsx
 const { name } = useSchemaSettingsItem();
 ```
 

@@ -10,7 +10,7 @@ export const ADMIN_SETTINGS_KEY = 'admin.settings.';
 export const ADMIN_SETTINGS_PATH = '/admin/settings/';
 export const SNIPPET_PREFIX = 'pm.';
 
-export interface PluginSettingsManagerSettingOptionsType {
+export interface PluginSettingOptions {
   title: string;
   /**
    * @default Outlet
@@ -42,7 +42,7 @@ export interface PluginSettingsPageType {
 }
 
 export class PluginSettingsManager {
-  protected settings: Record<string, PluginSettingsManagerSettingOptionsType> = {};
+  protected settings: Record<string, PluginSettingOptions> = {};
   protected aclSnippets: string[] = [];
 
   constructor(protected app: Application) {
@@ -66,7 +66,7 @@ export class PluginSettingsManager {
     return `${ADMIN_SETTINGS_PATH}${name.replaceAll('.', '/')}`;
   }
 
-  add(name: string, options: PluginSettingsManagerSettingOptionsType) {
+  add(name: string, options: PluginSettingOptions) {
     const nameArr = name.split('.');
     const topLevelName = nameArr[0];
     this.settings[name] = { Component: Outlet, ...options, name, topLevelName };
