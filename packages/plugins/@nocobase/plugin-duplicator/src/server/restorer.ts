@@ -172,8 +172,6 @@ export class Restorer extends AppMigrator {
     const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
     const meta = JSON.parse(metaContent);
 
-    app.log.info(`collection meta ${metaContent}`);
-
     const addSchemaTableName = meta.tableName;
     const columns = meta['columns'];
 
@@ -231,6 +229,7 @@ export class Restorer extends AppMigrator {
 
     if (rows.length == 0) {
       app.logger.info(`${collectionName} has no data to import`);
+      this.importedCollections.push(collectionName);
       return;
     }
 
@@ -256,6 +255,7 @@ export class Restorer extends AppMigrator {
 
     if (rowsWithMeta.length == 0) {
       app.logger.info(`${collectionName} has no data to import`);
+      this.importedCollections.push(collectionName);
       return;
     }
 

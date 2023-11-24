@@ -19,6 +19,17 @@ describe('dumper', () => {
     await app.destroy();
   });
 
+  it.skip('should restore from file', async () => {
+    const file = '/home/chareice/Downloads/backup_20231121_100606_4495.nbdump';
+    const restorer = new Restorer(app, {
+      backUpFilePath: file,
+    });
+
+    await restorer.restore({
+      dataTypes: new Set(['meta', 'business']),
+    });
+  });
+
   it('should sort collections by inherits', async () => {
     const collections = [
       {
@@ -197,6 +208,49 @@ describe('dumper', () => {
     await restorer.restore({
       dataTypes: new Set(['meta', 'business']),
     });
+  });
+
+  it('should dump & restore sequence data', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tests',
+        fields: [
+          {
+            type: 'sequence',
+            name: 'name',
+            patterns: [
+              {
+                type: 'integer',
+                options: { key: 1 },
+              },
+            ],
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const Test = db.getCollection('tests');
+
+    const sequenceCollection = db.getCollection('sequences');
+    expect(await sequenceCollection.repository.count()).toBe(1);
+
+    const dumper = new Dumper(app);
+    const result = await dumper.dump({
+      dataTypes: new Set(['meta', 'business']),
+    });
+
+    await sequenceCollection.removeFromDb();
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: result.filePath,
+    });
+
+    await restorer.restore({
+      dataTypes: new Set(['meta', 'business']),
+    });
+
+    expect(await app.db.getCollection('sequences').repository.count()).toBe(1);
   });
 
   it('should dump and restore map file', async () => {

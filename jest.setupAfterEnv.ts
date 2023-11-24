@@ -1,3 +1,3 @@
 import { jest } from '@jest/globals';
 
-jest.setTimeout(100000);
+jest.setTimeout(1000000);

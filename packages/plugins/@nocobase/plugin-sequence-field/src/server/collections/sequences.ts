@@ -18,7 +18,7 @@ export default defineCollection({
       // a single sequence field refers to a single row in sequences table
       const sequencesAttributes = sequenceFields
         .map((field) => {
-          const patterns = field.get('patterns').filter((pattern) => pattern.type === 'integer');
+          const patterns = field.get('patterns');
 
           return patterns.map((pattern) => {
             return {
@@ -28,7 +28,8 @@ export default defineCollection({
             };
           });
         })
-        .flat();
+        .flat()
+        .filter((attr) => attr.collection && attr.field && attr.key);
 
       if (sequencesAttributes.length > 0) {
         await app.db.getRepository('sequences').destroy({
