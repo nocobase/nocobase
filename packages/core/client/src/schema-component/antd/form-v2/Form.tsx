@@ -138,14 +138,14 @@ const WithForm = (props: WithFormProps) => {
                     variables,
                     localVariables,
                   });
-                  // 如果是 linkageRules 数组的最后一个元素
                   if (index === linkageRules.length - 1) {
-                    // 清空 linkagefields 数组中对象的属性
-                    linkagefields.forEach((v) => {
-                      v.linkageProperty = {};
+                    // 如果不在这里使用 setTimeout 会在某些未知情况下导致死循环，原因未知
+                    setTimeout(() => {
+                      linkagefields.forEach((v) => {
+                        v.linkageProperty = {};
+                      });
+                      linkagefields.length = 0;
                     });
-                    // 清空 linkagefields 数组
-                    linkagefields.length = 0;
                   }
                 }),
               );
