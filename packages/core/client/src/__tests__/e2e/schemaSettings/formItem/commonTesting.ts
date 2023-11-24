@@ -46,11 +46,13 @@ export const commonTesting = ({
     page,
     mockPage,
     mockRecord,
+    mockRecords,
     fieldName,
   }: {
     page: Page;
     mockPage: any;
     mockRecord: any;
+    mockRecords: any;
     fieldName: string;
   }) => Promise<void>;
   fieldName: string;
@@ -62,37 +64,37 @@ export const commonTesting = ({
   mode?: 'options' | 'details';
 }) => {
   if (mode === 'details') {
-    test('edit field title', async ({ page, mockPage, mockRecord }) => {
-      await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName });
+    test('edit field title', async ({ page, mockPage, mockRecord, mockRecords }) => {
+      await openDialogAndShowMenu({ page, mockPage, mockRecord, mockRecords, fieldName });
       await testEditFieldTitle(page);
     });
 
-    test('display title', async ({ page, mockPage, mockRecord }) => {
-      await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName });
+    test('display title', async ({ page, mockPage, mockRecord, mockRecords }) => {
+      await openDialogAndShowMenu({ page, mockPage, mockRecord, mockRecords, fieldName });
       await testDisplayTitle(page, fieldName);
     });
 
-    test('delete', async ({ page, mockPage, mockRecord }) => {
-      await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName });
+    test('delete', async ({ page, mockPage, mockRecord, mockRecords }) => {
+      await openDialogAndShowMenu({ page, mockPage, mockRecord, mockRecords, fieldName });
       await clickDeleteAndOk(page);
       await expect(page.getByText(`${fieldName}:`)).not.toBeVisible();
     });
 
     if (['creating', 'editing'].includes(blockType)) {
-      test('edit description', async ({ page, mockPage, mockRecord }) => {
-        await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName });
+      test('edit description', async ({ page, mockPage, mockRecord, mockRecords }) => {
+        await openDialogAndShowMenu({ page, mockPage, mockRecord, mockRecords, fieldName });
         await testEditDescription(page);
       });
 
-      test('required', async ({ page, mockPage, mockRecord }) => {
-        await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName });
+      test('required', async ({ page, mockPage, mockRecord, mockRecords }) => {
+        await openDialogAndShowMenu({ page, mockPage, mockRecord, mockRecords, fieldName });
         await testRequired(page);
       });
     }
 
     if (blockType === 'viewing') {
-      test('edit tooltip', async ({ page, mockPage, mockRecord }) => {
-        await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName });
+      test('edit tooltip', async ({ page, mockPage, mockRecord, mockRecords }) => {
+        await openDialogAndShowMenu({ page, mockPage, mockRecord, mockRecords, fieldName });
         await page.getByRole('menuitem', { name: 'Edit tooltip' }).click();
         await page.getByRole('dialog').getByRole('textbox').click();
         await page.getByRole('dialog').getByRole('textbox').fill('testing edit tooltip');
@@ -105,8 +107,8 @@ export const commonTesting = ({
   }
 
   if (mode === 'options') {
-    test('should display correct options', async ({ page, mockPage, mockRecord }) => {
-      await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName });
+    test('should display correct options', async ({ page, mockPage, mockRecord, mockRecords }) => {
+      await openDialogAndShowMenu({ page, mockPage, mockRecord, mockRecords, fieldName });
       await expect(page.getByRole('menuitem', { name: 'Edit field title' })).toBeVisible();
       await expect(page.getByRole('menuitem', { name: 'Display title' })).toBeVisible();
       await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
@@ -117,7 +119,7 @@ export const commonTesting = ({
       if (blockType === 'viewing') {
         await expect(page.getByRole('menuitem', { name: 'Edit tooltip' })).toBeVisible();
       }
-      if (blockType === 'creating') {
+      if (blockType === 'creating' && !fieldName.startsWith('oneTo')) {
         await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
       }
       if (['editing', 'viewing'].includes(blockType)) {
