@@ -350,6 +350,63 @@ export const generalWithMedia: CollectionSetting[] = [
   },
 ];
 
+/**
+ * 创建一个名为 general 的 collection，其包含所有 datetime 类型的字段
+ */
+export const generalWithDatetime: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'datetime',
+        interface: 'datetime',
+      },
+      {
+        name: 'time',
+        interface: 'time',
+      },
+    ],
+  },
+];
+
+/**
+ * 创建一个名为 general 的 collection，其包含所有 relation 类型的字段
+ */
+export const generalWithRelation: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'oneToOneBelongsTo',
+        interface: 'obo',
+        target: 'users',
+      },
+      {
+        name: 'oneToOneHasOne',
+        interface: 'oho',
+        target: 'users',
+      },
+      {
+        name: 'oneToMany',
+        interface: 'o2m',
+        target: 'users',
+      },
+      {
+        name: 'manyToOne',
+        interface: 'm2o',
+        target: 'users',
+      },
+      {
+        name: 'manyToMany',
+        interface: 'm2m',
+        target: 'users',
+      },
+    ],
+  },
+];
+
 export const generalWithSingleLineText: CollectionSetting[] = [
   {
     name: 'general',

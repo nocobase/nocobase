@@ -29,6 +29,10 @@ export class Plugin<T = any> {
     return this.app.schemaInitializerManager;
   }
 
+  get schemaSettingsManager() {
+    return this.app.schemaSettingsManager;
+  }
+
   async afterAdd() {}
 
   async beforeLoad() {}

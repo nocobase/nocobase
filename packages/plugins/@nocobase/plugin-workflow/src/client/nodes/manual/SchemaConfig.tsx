@@ -17,7 +17,10 @@ import {
   SchemaInitializer,
   SchemaInitializerItem,
   SchemaInitializerItemType,
-  SchemaSettings,
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsDivider,
+  SchemaSettingsItem,
+  SchemaSettingsRemove,
   VariableScopeProvider,
   gridRowColWrap,
   useCollectionManager,
@@ -101,9 +104,9 @@ function SimpleDesigner() {
   const compile = useCompile();
   return (
     <GeneralSchemaDesigner title={compile(title)}>
-      <SchemaSettings.BlockTitleItem />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsBlockTitleItem />
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',
@@ -233,9 +236,9 @@ function AssignedFieldValues() {
 
   return (
     <>
-      <SchemaSettings.Item title={title} onClick={() => setOpen(true)}>
+      <SchemaSettingsItem title={title} onClick={() => setOpen(true)}>
         {title}
-      </SchemaSettings.Item>
+      </SchemaSettingsItem>
       <Modal
         width={'50%'}
         title={title}
@@ -288,8 +291,8 @@ function ManualActionDesigner(props) {
     <GeneralSchemaDesigner {...props} disableInitializer>
       <Action.Designer.ButtonEditor />
       <AssignedFieldValues />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'ActionBar',

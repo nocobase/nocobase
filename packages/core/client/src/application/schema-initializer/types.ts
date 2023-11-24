@@ -62,28 +62,28 @@ export type SchemaInitializerItemType<T = {}> =
 
 // TODO: 类型需要优化
 export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = {}> {
-  title?: string;
-  insertPosition?: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd';
-
   Component?: ComponentType<P1>;
   componentProps?: P1;
-  // Like the `style` parameter, it is used to modify the style of the `Component` component.
-  componentStyle?: React.CSSProperties;
   style?: React.CSSProperties;
+  title?: string;
+  icon?: ReactNode;
 
+  items?: SchemaInitializerItemType[];
   ItemsComponent?: ComponentType<P2>;
   itemsComponentProps?: P2;
   itemsComponentStyle?: React.CSSProperties;
 
-  noPopover?: boolean;
-  popoverProps?: PopoverProps;
+  insertPosition?: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd';
   designable?: boolean;
   wrap?: (s: ISchema) => ISchema;
+  onSuccess?: (data: any) => void;
   insert?: InsertType;
   useInsert?: () => InsertType;
-  onSuccess?: (data: any) => void;
-  items?: SchemaInitializerItemType[];
-  icon?: ReactNode;
-  'data-testid'?: string;
+
+  /**
+   * @default true
+   */
+  popover?: boolean;
+  popoverProps?: PopoverProps;
   [index: string]: any;
 }

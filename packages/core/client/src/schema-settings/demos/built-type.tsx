@@ -5,11 +5,11 @@ import {
   FormItem,
   SchemaComponentOptions,
   SchemaComponentPlugin,
-  SchemaSetting,
+  SchemaSettings,
   useSchemaSettingsRender,
 } from '@nocobase/client';
 
-const mySchemaSetting = new SchemaSetting({
+const mySchemaSetting = new SchemaSettings({
   name: 'MySchemaSetting',
   items: [
     {
