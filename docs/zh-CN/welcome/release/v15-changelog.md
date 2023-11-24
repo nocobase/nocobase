@@ -55,7 +55,7 @@ const blockInitializers = new SchemaInitializer({
 - 新增 `componentProps`、`style` 用于配置 `Component` 的属性和样式。
 - 新增 `ItemsComponent` 参数，用于定制化渲染的列表。默认为 `SchemaInitializerItems`。
 - 新增 `itemsComponentProps`、`itemsComponentStyle` 用于配置 `ItemsComponent` 的属性和样式。
-- 新增 `noPopover` 参数，用于配置是否显示 `popover` 效果。
+- 新增 `popover` 参数，用于配置是否显示 `popover` 效果。
 - 新增 `useInsert` 参数，用于当 `insert` 函数需要使用 hooks 时。
 - 更改 将 `dropdown` 参数改为了 `popoverProps`，使用 `Popover` 代替了 `Dropdown`。
 - items 参数变更

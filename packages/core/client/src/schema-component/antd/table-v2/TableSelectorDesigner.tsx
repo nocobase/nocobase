@@ -7,7 +7,15 @@ import { useFormBlockContext, useTableSelectorContext } from '../../../block-pro
 import { recursiveParent } from '../../../block-provider/TableSelectorProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDataScope,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  SchemaSettingsSwitchItem,
+} from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
@@ -41,7 +49,7 @@ export const TableSelectorDesigner = () => {
   const { dragSort } = field.decoratorProps;
   return (
     <GeneralSchemaDesigner template={template} title={title || name} disableInitializer>
-      <SchemaSettings.DataScope
+      <SchemaSettingsDataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
         form={form}
@@ -71,7 +79,7 @@ export const TableSelectorDesigner = () => {
         }}
       />
       {collection?.tree && collectionField?.target === collectionField?.collectionName && (
-        <SchemaSettings.SwitchItem
+        <SchemaSettingsSwitchItem
           title={t('Tree table')}
           defaultChecked={true}
           checked={field.decoratorProps.treeTable !== false}
@@ -92,7 +100,7 @@ export const TableSelectorDesigner = () => {
         />
       )}
       {!dragSort && (
-        <SchemaSettings.ModalItem
+        <SchemaSettingsModalItem
           title={t('Set default sorting rules')}
           components={{ ArrayItems }}
           schema={
@@ -186,7 +194,7 @@ export const TableSelectorDesigner = () => {
         />
       )}
 
-      <SchemaSettings.SelectItem
+      <SchemaSettingsSelectItem
         title={t('Records per page')}
         value={field.decoratorProps?.params?.pageSize || 20}
         options={[
@@ -210,8 +218,8 @@ export const TableSelectorDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',

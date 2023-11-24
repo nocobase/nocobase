@@ -1,7 +1,10 @@
 import { useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
-  SchemaSettings,
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsDivider,
+  SchemaSettingsItem,
+  SchemaSettingsRemove,
   gridRowColWrap,
   useAPIClient,
   useCollection,
@@ -82,7 +85,7 @@ ChartRenderer.Designer = function Designer() {
   const { name, title } = useCollection();
   return (
     <GeneralSchemaDesigner disableInitializer title={title || name}>
-      <SchemaSettings.Item
+      <SchemaSettingsItem
         title="Configure"
         key="configure"
         onClick={() => {
@@ -91,17 +94,17 @@ ChartRenderer.Designer = function Designer() {
         }}
       >
         {t('Configure')}
-      </SchemaSettings.Item>
-      <SchemaSettings.Item
+      </SchemaSettingsItem>
+      <SchemaSettingsItem
         title="Duplicate"
         key="duplicate"
         onClick={() => insertAdjacent('afterEnd', gridRowColWrap(createRendererSchema(schema?.['x-decorator-props'])))}
       >
         {t('Duplicate')}
-      </SchemaSettings.Item>
-      <SchemaSettings.BlockTitleItem />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      </SchemaSettingsItem>
+      <SchemaSettingsBlockTitleItem />
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         // removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'ChartV2Block',

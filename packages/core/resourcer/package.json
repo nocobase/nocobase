@@ -1,12 +1,12 @@
 {
   "name": "@nocobase/resourcer",
-  "version": "0.15.0-alpha.4",
+  "version": "0.16.0-alpha.3",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
   "dependencies": {
-    "@nocobase/utils": "0.15.0-alpha.4",
+    "@nocobase/utils": "0.16.0-alpha.3",
     "deepmerge": "^4.2.2",
     "koa-compose": "^4.1.0",
     "lodash": "^4.17.21",

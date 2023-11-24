@@ -5,7 +5,7 @@
     "packages/*/*"
   ],
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18"
   },
   "scripts": {
     "nocobase": "nocobase",
