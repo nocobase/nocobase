@@ -70,7 +70,7 @@ export const SchemaSettingChild: FC<SchemaSettingsItemType> = (props) => {
     children,
     checkChildrenLength,
     componentProps,
-  } = props;
+  } = props as any;
   const useChildrenRes = useChildren();
   const useComponentPropsRes = useComponentProps();
   const findComponent = useFindComponent();

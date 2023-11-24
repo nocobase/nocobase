@@ -579,10 +579,12 @@ export const SchemaSettingsRemove: FC<SchemaSettingsRemoveProps> = (props) => {
   );
 };
 
-export const SchemaSettingsConnectDataBlocks = function ConnectDataBlocks(props: {
+interface SchemaSettingsConnectDataBlocksProps {
   type: FilterBlockType;
   emptyDescription?: string;
-}) {
+}
+
+export const SchemaSettingsConnectDataBlocks: FC<SchemaSettingsConnectDataBlocksProps> = (props) => {
   const { type, emptyDescription } = props;
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();

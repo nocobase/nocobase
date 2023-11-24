@@ -42,7 +42,7 @@ export const formFilterSettings = new SchemaSettings({
       },
     },
     {
-      name: 'linkageRules',
+      name: 'connectDataBlocks',
       Component: SchemaSettingsConnectDataBlocks,
       useComponentProps() {
         const { t } = useTranslation();
