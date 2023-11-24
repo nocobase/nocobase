@@ -21,7 +21,7 @@ export class SchemaSettingsManager {
     this.add(..._schemaSettings);
   }
 
-  add<T>(...schemaSettingList: SchemaSetting<T>[]) {
+  add<T = any>(...schemaSettingList: SchemaSetting<T>[]) {
     schemaSettingList.forEach((schemaSetting) => {
       this.schemaSettings[schemaSetting.name] = schemaSetting;
       if (Array.isArray(this.actionList[schemaSetting.name])) {

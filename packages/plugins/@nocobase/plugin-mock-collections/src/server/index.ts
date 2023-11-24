@@ -188,7 +188,7 @@ export class PluginMockCollectionsServer extends Plugin {
       mock: async (ctx, next) => {
         const { resourceName } = ctx.action;
         const { values, count = 10 } = ctx.action.params;
-        const mockCollectionData = async (collectionName, count = 1, skipAssoc = false) => {
+        const mockCollectionData = async (collectionName, count = 1, depth = 0, maxDepth = 2) => {
           const collection = ctx.db.getCollection(collectionName) as Collection;
           const items = await Promise.all(
             _.range(count).map(async (i) => {
@@ -203,12 +203,12 @@ export class PluginMockCollectionsServer extends Plugin {
                 if (!field.options.interface) {
                   continue;
                 }
-                if (skipAssoc && ['m2o', 'm2m', 'o2m', 'obo', 'oho'].includes(field.options.interface)) {
+                if (depth >= maxDepth && ['m2o', 'm2m', 'o2m', 'obo', 'oho'].includes(field.options.interface)) {
                   continue;
                 }
                 const fn = fieldInterfaces[field.options.interface];
                 if (fn?.mock) {
-                  values[field.name] = await fn.mock(field.options, { mockCollectionData });
+                  values[field.name] = await fn.mock(field.options, { mockCollectionData, maxDepth, depth });
                 }
               }
               return values;

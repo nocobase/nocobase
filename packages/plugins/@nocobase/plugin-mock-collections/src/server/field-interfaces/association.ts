@@ -106,8 +106,8 @@ export const oho = {
     ];
     return reverseFieldHandle(defaults, options);
   },
-  mock: async (options, { mockCollectionData }) => {
-    return mockCollectionData(options.target, 1, true);
+  mock: async (options, { mockCollectionData, maxDepth, depth }) => {
+    return mockCollectionData(options.target, 1, depth + 1, maxDepth);
   },
 };
 
@@ -159,8 +159,8 @@ export const obo = {
     ];
     return reverseFieldHandle(defaults, options);
   },
-  mock: async (options, { mockCollectionData }) => {
-    return mockCollectionData(options.target, 1, true);
+  mock: async (options, { mockCollectionData, depth, maxDepth }) => {
+    return mockCollectionData(options.target, 1, depth + 1, maxDepth);
   },
 };
 
@@ -213,8 +213,8 @@ export const o2m = {
     ];
     return reverseFieldHandle(defaults, options);
   },
-  mock: async (options, { mockCollectionData }) => {
-    return mockCollectionData(options.target, faker.number.int({ min: 2, max: 5 }), true);
+  mock: async (options, { mockCollectionData, depth, maxDepth }) => {
+    return mockCollectionData(options.target, faker.number.int({ min: 2, max: 5 }), depth + 1, maxDepth);
   },
 };
 
@@ -268,8 +268,8 @@ export const m2o = {
     ];
     return reverseFieldHandle(defaults, options);
   },
-  mock: async (options, { mockCollectionData }) => {
-    return mockCollectionData(options.target, 1, true);
+  mock: async (options, { mockCollectionData, depth, maxDepth }) => {
+    return mockCollectionData(options.target, 1, depth + 1, maxDepth);
   },
 };
 
@@ -351,7 +351,7 @@ export const m2m = {
     };
     return reverseFieldHandle(defaults, options);
   },
-  mock: async (options, { mockCollectionData }) => {
-    return mockCollectionData(options.target, faker.number.int({ min: 2, max: 5 }), true);
+  mock: async (options, { mockCollectionData, depth, maxDepth }) => {
+    return mockCollectionData(options.target, faker.number.int({ min: 2, max: 5 }), depth + 1, maxDepth);
   },
 };

@@ -14,7 +14,6 @@ interface CreateDesignableProps {
   api?: APIClient;
   refresh?: () => void;
   onSuccess?: any;
-  i18n?: any;
   t?: any;
 }
 

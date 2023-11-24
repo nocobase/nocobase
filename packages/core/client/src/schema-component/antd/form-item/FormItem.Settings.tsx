@@ -19,6 +19,7 @@ import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { isSubMode } from '../association-field/util';
 import { DynamicComponentProps } from '../filter/DynamicComponent';
 import { useColorFields } from '../table-v2/Table.Column.Designer';
+import { removeNullCondition } from '../filter';
 
 export const formItemSettings = new SchemaSetting({
   name: 'FormItemSettings',
@@ -244,11 +245,13 @@ export const formItemSettings = new SchemaSetting({
         const { getField } = useCollection();
         const { form } = useFormBlockContext();
         const record = useRecord();
+        const field = useField();
         const fieldSchema = useFieldSchema();
         const collectionField =
           getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
         const variables = useVariables();
         const localVariables = useLocalVariables();
+        const { dn } = useDesignable();
         return {
           collectionName: collectionField?.target,
           defaultFilter: fieldSchema?.['x-component-props']?.service?.params?.filter || {},
@@ -268,6 +271,17 @@ export const formItemSettings = new SchemaSetting({
                 })}
               />
             );
+          },
+          onSubmit: ({ filter }) => {
+            filter = removeNullCondition(filter);
+            _.set(field.componentProps, 'service.params.filter', filter);
+            fieldSchema['x-component-props'] = field.componentProps;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-component-props': field.componentProps,
+              },
+            });
           },
         };
       },
