@@ -537,7 +537,7 @@ export async function enableToConfig(page: Page) {
   try {
     // 根据是否有 style 判断是否已经是可配置态（因为配置状态的按钮样式是通过 style 属性设置的）
     const style = await page.getByTestId('ui-editor-button').getAttribute('style', {
-      timeout: 2000,
+      timeout: 5000,
     });
     if (!style) {
       await page.getByTestId('ui-editor-button').click();

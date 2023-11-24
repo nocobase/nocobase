@@ -3,7 +3,6 @@ import { e2e_GeneralFormsTable, appendJsonCollectionName, generateRandomLetters 
 import { CreateWorkFlow, EditWorkFlow, CollectionTriggerNode, FromEventTriggerNode } from './pageobject/workFlow';
 import { WorkflowManagement, WorkflowListRecords, ScheduleTriggerNode, ClculationNode } from './pageobject/workFlow';
 import { QueryRecordNode, CreateRecordNode, AggregateNode, ManualNode } from './pageobject/workFlow';
-
 import { dayjs } from '@nocobase/utils';
 
 test.describe('clculation node', () => {
@@ -1445,8 +1444,12 @@ test.describe('clculation node', () => {
     await expect(page.getByText(workFlowName)).toBeHidden();
   });
 
-  test.skip('Collection event add data trigger, static type Math engine get front manual node add data form single line text data', async ({
+  test('Collection event add data trigger, static type Math engine get front manual node add data form single line text data', async ({
     page,
+    mockCollection,
+    mockCollections,
+    mockRecord,
+    mockRecords,
     mockPage,
   }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
@@ -1465,16 +1468,16 @@ test.describe('clculation node', () => {
     const triggerNodeCollectionName = e2eJsonCollectionName + triggerNodeAppendText;
     const triggerNodeFieldName = 'orgname';
     const triggerNodeFieldDisplayName = '公司名称(单行文本)';
-    const triggerNodeCollection = mockPage(
-      appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText),
+    await mockCollections(
+      appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections,
     );
-    await page.waitForTimeout(2000);
+    // await page.waitForTimeout(2000);
     // 创建人工节点新增数据表
     const createRecordFormCollectionDisplayName = e2eJsonCollectionDisplayName + createRecordFormAppendText;
     const createRecordFormCollectionName = e2eJsonCollectionName + createRecordFormAppendText;
     const createRecordFormFieldName = 'orgname';
     const createRecordFormFieldDisplayName = '公司名称(单行文本)';
-    const createRecordFormCollection = mockPage(
+    await mockCollections(
       appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), createRecordFormAppendText),
     );
 
@@ -1604,10 +1607,13 @@ test.describe('clculation node', () => {
     await page.getByLabel('media-workflowTodos').click();
 
     // 2、测试步骤：添加数据触发工作流，进入待办区块页面办理任务
+    await addDataPage.goto();
+    await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
     const fieldData = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByRole('textbox').fill(fieldData);
     await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
     await page.waitForLoadState('networkidle');
+    await workflowTodoPage.goto();
 
     // 3、预期结果：数据添加成功，工作流成功触发,计算节点获取到人工节点新增表单的单行文本字段值正确
     await expect(page.getByText(fieldData)).toBeVisible();
