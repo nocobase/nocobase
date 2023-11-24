@@ -1,20 +1,20 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
-  SchemaSetting,
   SchemaSettings,
   ActionDesigner,
   useSchemaDesigner,
   useDesignable,
   SchemaSettingOpenModeSchemaItems,
-  useLinkageAction,
   useCollection,
   useRecord,
+  SchemaSettingsModalItem,
+  SchemaSettingsLinkageRules,
   useCollectionState,
   useSyncFromForm,
 } from '@nocobase/client';
 import { onFieldInputValueChange } from '@formily/core';
 import { cloneDeep } from 'lodash';
-import { ModalProps, Tree as AntdTree } from 'antd';
+import { Tree as AntdTree } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useField, useFieldSchema, ISchema, useForm, connect, mapProps } from '@formily/react';
 
@@ -118,7 +118,7 @@ function DuplicationMode() {
     };
   };
   return (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       title={t('Duplicate mode')}
       components={{ Tree }}
       scope={{
@@ -307,13 +307,12 @@ function DuplicationMode() {
   );
 }
 
-const duplicateActionSettings = new SchemaSetting({
+const duplicateActionSettings = new SchemaSettings({
   name: 'ActionSettings:duplicate',
   items: [
     {
       name: 'Customize',
-      type: 'itemGroup',
-      Component: (props) => {
+      Component: (props): any => {
         return props.children;
       },
       children: [
@@ -327,12 +326,7 @@ const duplicateActionSettings = new SchemaSetting({
         },
         {
           name: 'linkageRules',
-          Component: SchemaSettings.LinkageRules,
-          useVisible() {
-            const isAction = useLinkageAction();
-            const { linkageAction } = useSchemaDesigner();
-            return linkageAction || isAction;
-          },
+          Component: SchemaSettingsLinkageRules,
           useComponentProps() {
             const { name } = useCollection();
             const { linkageRulesProps } = useSchemaDesigner();
