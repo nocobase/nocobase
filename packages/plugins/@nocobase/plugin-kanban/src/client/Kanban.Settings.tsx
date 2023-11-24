@@ -1,27 +1,26 @@
-import { ArrayItems } from '@formily/antd-v5';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { useTranslation } from 'react-i18next';
+import { useField, useFieldSchema } from '@formily/react';
 import {
   useFormBlockContext,
-  SchemaSetting,
+  SchemaSettingsDataScope,
   useCollection,
   useDesignable,
   SchemaSettings,
-  useSortFields,
   FixedBlockDesignerItem,
+  SchemaSettingsBlockTitleItem,
   removeNullCondition,
+  SchemaSettingsFormItemTemplate,
 } from '@nocobase/client';
 import { useKanbanBlockContext } from './KanbanBlockProvider';
-export const kanbanSettings = new SchemaSetting({
+export const kanbanSettings = new SchemaSettings({
   name: 'KanbanSettings',
   items: [
     {
       name: 'title',
-      type: 'blockTitle',
+      Component: SchemaSettingsBlockTitleItem,
     },
     {
       name: 'dataScope',
-      Component: SchemaSettings.DataScope,
+      Component: SchemaSettingsDataScope,
       useComponentProps() {
         const { name } = useCollection();
         const fieldSchema = useFieldSchema();
@@ -56,12 +55,15 @@ export const kanbanSettings = new SchemaSetting({
     },
     {
       name: 'template',
-      Component: SchemaSettings.Template,
+      Component: SchemaSettingsFormItemTemplate,
       useComponentProps() {
         const { name } = useCollection();
+        const fieldSchema = useFieldSchema();
+        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
         return {
-          componentName: 'Kanban',
+          componentName: 'Details',
           collectionName: name,
+          resourceName: defaultResource,
         };
       },
     },
