@@ -67,17 +67,17 @@ test.describe('association fields with dialog', () => {
     await page.getByText('GeneralConfigure actionsConfigure fields').hover();
     await page.getByLabel('designer-schema-settings-CardItem-FormV2.ReadPrettyDesigner-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     // delete form block
     await page.getByLabel('block-item-CardItem-general-form').hover();
     await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     // delete markdown block
     await page.getByLabel('block-item-Markdown.Void-general-markdown').hover();
     await page.getByLabel('designer-schema-settings-Markdown.Void-Markdown.Void.Designer-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // add relationship blocks
     await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-general').hover();

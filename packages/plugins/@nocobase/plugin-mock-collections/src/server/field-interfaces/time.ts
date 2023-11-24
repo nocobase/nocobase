@@ -1,3 +1,6 @@
+import { faker } from '@faker-js/faker';
+import { dayjs } from '@nocobase/utils';
+
 export const time = {
   options: () => ({
     type: 'time',
@@ -10,4 +13,5 @@ export const time = {
       },
     },
   }),
+  mock: () => dayjs(faker.date.anytime()).format('HH:mm:ss'),
 };

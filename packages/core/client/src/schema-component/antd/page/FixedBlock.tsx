@@ -3,9 +3,9 @@ import { useField, useFieldSchema } from '@formily/react';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRecord } from '../../../record-provider';
-import { SchemaSettings } from '../../../schema-settings';
 import { useDesignable } from '../../hooks';
 import { useIsBlockInPage } from './hooks/useIsBlockInPage';
+import { SchemaSettingsSwitchItem } from '../../../schema-settings';
 
 const FixedBlockContext = React.createContext<{
   setFixedBlock: (value: string | false) => void;
@@ -78,7 +78,7 @@ export const FixedBlockDesignerItem = () => {
     return null;
   }
   return (
-    <SchemaSettings.SwitchItem
+    <SchemaSettingsSwitchItem
       title={t('Fix block')}
       checked={fieldSchema['x-decorator-props']?.fixedBlock}
       onChange={async (fixedBlock) => {

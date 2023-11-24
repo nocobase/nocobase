@@ -173,3 +173,53 @@ jobs:
           DB_TEST_DISTRIBUTOR_PORT: 23450
           DB_TEST_PREFIX: test_
     timeout-minutes: 40
+  mariadb-test:
+    strategy:
+      matrix:
+        node_version: ['18']
+        underscored: [true, false]
+    runs-on: ubuntu-latest
+    container: node:${{ matrix.node_version }}
+    services:
+      mariadb:
+        image: mariadb:10.9
+        env:
+          MARIADB_ROOT_PASSWORD: password
+          MARIADB_DATABASE: nocobase
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node_version }}
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - uses: actions/cache@v3
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+      - name: Install project dependencies
+        run: yarn --prefer-offline
+      - name: Test with MariaDB
+        run: |
+          ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
+          sleep 1
+          node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
+        env:
+          LOGGER_LEVEL: error
+          DB_DIALECT: mariadb
+          DB_HOST: mariadb
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: password
+          DB_DATABASE: nocobase
+          DB_UNDERSCORED: ${{ matrix.underscored }}
+          DB_TEST_DISTRIBUTOR_PORT: 23450
+          DB_TEST_PREFIX: test_
+    timeout-minutes: 40

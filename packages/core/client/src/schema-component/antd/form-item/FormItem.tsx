@@ -2,9 +2,9 @@ import { css, cx } from '@emotion/css';
 import { FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
-import _ from 'lodash';
 import React, { useEffect, useMemo } from 'react';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
+import { useApp } from '../../../application';
 import { useFormActiveFields } from '../../../block-provider';
 import { Collection } from '../../../collection-manager';
 import { GeneralSchemaDesigner } from '../../../schema-settings';
@@ -17,7 +17,6 @@ import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadAssociationFieldOfForm from './hooks/useLazyLoadAssociationFieldOfForm';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
-import { useApp } from '../../../application';
 
 export const FormItem: any = observer(
   (props: any) => {

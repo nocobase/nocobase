@@ -30,8 +30,8 @@ describe('Router', () => {
         element: <div />,
       };
       router.add('test', route1);
-      expect(router.getRoutes()).toHaveLength(1);
-      expect(router.getRoutes()).toEqual([route1]);
+      expect(router.getRoutesTree()).toHaveLength(1);
+      expect(router.getRoutesTree()).toEqual([route1]);
 
       const route2: RouteType = {
         path: '/test2',
@@ -39,8 +39,8 @@ describe('Router', () => {
       };
 
       router.add('test2', route2);
-      expect(router.getRoutes()).toHaveLength(2);
-      expect(router.getRoutes()).toEqual([route1, route2]);
+      expect(router.getRoutesTree()).toHaveLength(2);
+      expect(router.getRoutesTree()).toEqual([route1, route2]);
     });
 
     it('nested route', () => {
@@ -55,7 +55,7 @@ describe('Router', () => {
 
       router.add('test', route1);
       router.add('test.test2', route2);
-      expect(router.getRoutes()).toEqual([{ ...route1, children: [route2] }]);
+      expect(router.getRoutesTree()).toEqual([{ ...route1, children: [route2] }]);
     });
 
     it('nested route with empty parent', () => {
@@ -75,7 +75,7 @@ describe('Router', () => {
       router.add('test', route1);
       router.add('test.empty.test2', route2);
       router.add('test.empty2.empty3.test3', route3);
-      expect(router.getRoutes()).toEqual([{ ...route1, children: [route2, route3] }]);
+      expect(router.getRoutesTree()).toEqual([{ ...route1, children: [route2, route3] }]);
     });
 
     it('Component', () => {
@@ -85,7 +85,7 @@ describe('Router', () => {
         Component: Hello,
       };
       router.add('test', route);
-      expect(router.getRoutes()).toEqual([{ path: '/', element: <Hello />, children: undefined }]);
+      expect(router.getRoutesTree()).toEqual([{ path: '/', element: <Hello />, children: undefined }]);
     });
 
     it('Component is string', () => {
@@ -101,7 +101,7 @@ describe('Router', () => {
         Component: 'Hello',
       };
       router.add('test', route);
-      expect(router.getRoutes()).toEqual([{ path: '/', element: <Hello />, children: undefined }]);
+      expect(router.getRoutesTree()).toEqual([{ path: '/', element: <Hello />, children: undefined }]);
     });
   });
 
@@ -117,9 +117,9 @@ describe('Router', () => {
         element: <div />,
       };
       router.add('test', route1);
-      expect(router.getRoutes()).toEqual([route1]);
+      expect(router.getRoutesTree()).toEqual([route1]);
       router.remove('test');
-      expect(router.getRoutes()).toEqual([]);
+      expect(router.getRoutesTree()).toEqual([]);
     });
   });
 

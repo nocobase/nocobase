@@ -1,7 +1,10 @@
 import { useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
-  SchemaSettings,
+  SchemaSettingsDataScope,
+  SchemaSettingsDivider,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
   useCollection,
   useDesignable,
   useFormBlockContext,
@@ -20,7 +23,7 @@ export const AuditLogsDesigner = () => {
   const { dn } = useDesignable();
   return (
     <GeneralSchemaDesigner title={title || name}>
-      <SchemaSettings.DataScope
+      <SchemaSettingsDataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
         form={form}
@@ -38,7 +41,7 @@ export const AuditLogsDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.SelectItem
+      <SchemaSettingsSelectItem
         title={t('Records per page')}
         value={field.decoratorProps?.params?.pageSize || 20}
         options={[
@@ -62,8 +65,8 @@ export const AuditLogsDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',

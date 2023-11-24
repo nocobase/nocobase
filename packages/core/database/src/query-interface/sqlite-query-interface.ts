@@ -86,4 +86,8 @@ export default class SqliteQueryInterface extends QueryInterface {
 
     return sql;
   }
+
+  showTableDefinition(tableInfo: { name: string; schema?: string }): Promise<any> {
+    return Promise.resolve(undefined);
+  }
 }

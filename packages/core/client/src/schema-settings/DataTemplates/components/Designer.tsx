@@ -5,7 +5,7 @@ import { Select } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { GeneralSchemaDesigner, SchemaSettings } from '../..';
+import { GeneralSchemaDesigner, SchemaSettingsDataScope, SchemaSettingsItem } from '../..';
 import { mergeFilter, useFormBlockContext } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
 import { removeNullCondition, useCompile, useDesignable } from '../../../schema-component';
@@ -62,7 +62,7 @@ export const Designer = observer(
 
     return (
       <GeneralSchemaDesigner draggable={false}>
-        <SchemaSettings.DataScope
+        <SchemaSettingsDataScope
           collectionName={collectionName}
           defaultFilter={getFilter()}
           form={form}
@@ -151,7 +151,7 @@ function SelectItem(props) {
   const { title, options, value, onChange, ...others } = props;
 
   return (
-    <SchemaSettings.Item title={title} {...others}>
+    <SchemaSettingsItem title={title} {...others}>
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Select
@@ -164,6 +164,6 @@ function SelectItem(props) {
           {...others}
         />
       </div>
-    </SchemaSettings.Item>
+    </SchemaSettingsItem>
   );
 }

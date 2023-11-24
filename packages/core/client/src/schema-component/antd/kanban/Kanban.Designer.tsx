@@ -2,7 +2,14 @@ import { useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useFormBlockContext, useKanbanBlockContext } from '../../../block-provider';
 import { useCollection } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsDataScope,
+  SchemaSettingsDivider,
+  SchemaSettingsRemove,
+  SchemaSettingsTemplate,
+} from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
@@ -20,8 +27,8 @@ export const KanbanDesigner = () => {
 
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
-      <SchemaSettings.BlockTitleItem />
-      <SchemaSettings.DataScope
+      <SchemaSettingsBlockTitleItem />
+      <SchemaSettingsDataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
         form={form}
@@ -41,10 +48,10 @@ export const KanbanDesigner = () => {
         }}
       />
       <FixedBlockDesignerItem />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Template componentName={'Kanban'} collectionName={name} resourceName={defaultResource} />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsTemplate componentName={'Kanban'} collectionName={name} resourceName={defaultResource} />
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',

@@ -6,7 +6,16 @@ import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollection, useSortFields } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsDataScope,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  SchemaSettingsTemplate,
+} from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
@@ -38,8 +47,8 @@ export const ListDesigner = () => {
     // fix https://nocobase.height.app/T-2259
     <RecordProvider parent={record} record={{}}>
       <GeneralSchemaDesigner template={template} title={title || name}>
-        <SchemaSettings.BlockTitleItem />
-        <SchemaSettings.DataScope
+        <SchemaSettingsBlockTitleItem />
+        <SchemaSettingsDataScope
           collectionName={name}
           defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
           form={form}
@@ -55,7 +64,7 @@ export const ListDesigner = () => {
             });
           }}
         />
-        <SchemaSettings.ModalItem
+        <SchemaSettingsModalItem
           title={t('Set default sorting rules')}
           components={{ ArrayItems }}
           schema={
@@ -144,7 +153,7 @@ export const ListDesigner = () => {
             });
           }}
         />
-        <SchemaSettings.SelectItem
+        <SchemaSettingsSelectItem
           title={t('Records per page')}
           value={field.decoratorProps?.params?.pageSize || 20}
           options={[
@@ -165,9 +174,9 @@ export const ListDesigner = () => {
             });
           }}
         />
-        <SchemaSettings.Template componentName={'List'} collectionName={name} resourceName={defaultResource} />
-        <SchemaSettings.Divider />
-        <SchemaSettings.Remove
+        <SchemaSettingsTemplate componentName={'List'} collectionName={name} resourceName={defaultResource} />
+        <SchemaSettingsDivider />
+        <SchemaSettingsRemove
           removeParentsIfNoChildren
           breakRemoveOn={{
             'x-component': 'Grid',
