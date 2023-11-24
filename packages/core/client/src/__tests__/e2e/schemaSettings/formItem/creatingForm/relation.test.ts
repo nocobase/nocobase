@@ -190,6 +190,28 @@ test.describe('many to many', () => {
       .click();
     await expect(page.getByTestId('popover-CollectionField-general')).toBeVisible();
   });
+
+  test('quick create', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'manyToMany');
+
+    await expect(page.getByRole('menuitem', { name: 'Quick create' })).toBeVisible();
+  });
+
+  test('allow multiple', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'manyToMany');
+    await expect(page.getByRole('menuitem', { name: 'Allow multiple' })).toBeVisible();
+  });
+
+  test('title field', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'manyToMany');
+    await expect(page.getByRole('menuitem', { name: 'Title field' })).toBeVisible();
+  });
 });
 
 test.describe('many to one', () => {
@@ -300,6 +322,21 @@ test.describe('many to one', () => {
     await expect(page.getByRole('option', { name: 'Sub-form', exact: true })).toBeVisible();
     await expect(page.getByRole('option', { name: 'Sub-form(Popover)', exact: true })).toBeVisible();
   });
+
+  test('quick create', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'manyToOne');
+
+    await expect(page.getByRole('menuitem', { name: 'Quick create' })).toBeVisible();
+  });
+
+  test('title field', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'manyToOne');
+    await expect(page.getByRole('menuitem', { name: 'Title field' })).toBeVisible();
+  });
 });
 
 test.describe('one to many', () => {
@@ -383,6 +420,28 @@ test.describe('one to many', () => {
     await expect(page.getByRole('option', { name: 'Sub-form', exact: true })).toBeVisible();
     await expect(page.getByRole('option', { name: 'Sub-form(Popover)', exact: true })).toBeVisible();
   });
+
+  test('quick create', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'oneToMany');
+
+    await expect(page.getByRole('menuitem', { name: 'Quick create' })).toBeVisible();
+  });
+
+  test('allow multiple', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'oneToMany');
+    await expect(page.getByRole('menuitem', { name: 'Allow multiple' })).toBeVisible();
+  });
+
+  test('title field', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'oneToMany');
+    await expect(page.getByRole('menuitem', { name: 'Title field' })).toBeVisible();
+  });
 });
 
 test.describe('one to one (belongs to)', () => {
@@ -463,6 +522,21 @@ test.describe('one to one (belongs to)', () => {
     await expect(page.getByRole('option', { name: 'Sub-form', exact: true })).toBeVisible();
     await expect(page.getByRole('option', { name: 'Sub-form(Popover)', exact: true })).toBeVisible();
   });
+
+  test('quick create', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'oneToOneBelongsTo');
+
+    await expect(page.getByRole('menuitem', { name: 'Quick create' })).toBeVisible();
+  });
+
+  test('title field', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'oneToOneBelongsTo');
+    await expect(page.getByRole('menuitem', { name: 'Title field' })).toBeVisible();
+  });
 });
 
 test.describe('one to one (has one)', () => {
@@ -542,5 +616,20 @@ test.describe('one to one (has one)', () => {
     await expect(page.getByRole('option', { name: 'Record picker', exact: true })).toBeVisible();
     await expect(page.getByRole('option', { name: 'Sub-form', exact: true })).toBeVisible();
     await expect(page.getByRole('option', { name: 'Sub-form(Popover)', exact: true })).toBeVisible();
+  });
+
+  test('quick create', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'oneToOneHasOne');
+
+    await expect(page.getByRole('menuitem', { name: 'Quick create' })).toBeVisible();
+  });
+
+  test('title field', async ({ page, mockPage, mockRecords }) => {
+    await gotoPage(mockPage, mockRecords);
+    await openDialog(page);
+    await showMenu(page, 'oneToOneHasOne');
+    await expect(page.getByRole('menuitem', { name: 'Title field' })).toBeVisible();
   });
 });
