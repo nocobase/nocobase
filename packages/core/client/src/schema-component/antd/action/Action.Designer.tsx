@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
 import { usePlugin } from '../../../application/hooks';
 import { useSchemaDesigner } from '../../../application/schema-designer';
-import { SchemaSetting, SchemaSettingOptions } from '../../../application/schema-settings';
+import { SchemaSettings, SchemaSettingOptions } from '../../../application/schema-settings';
 import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
 import { useRecord } from '../../../record-provider';
@@ -17,7 +17,16 @@ import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { useSyncFromForm } from '../../../schema-settings/DataTemplates/utils';
 import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
-import { SchemaSettings } from '../../../schema-settings/SchemaSettings';
+import {
+  SchemaSettingsActionModalItem,
+  SchemaSettingsDivider,
+  SchemaSettingsItemGroup,
+  SchemaSettingsLinkageRules,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  SchemaSettingsSwitchItem,
+} from '../../../schema-settings/SchemaSettings';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
@@ -69,7 +78,7 @@ const MenuGroup = (props) => {
     return props.children;
   }
   return (
-    <SchemaSettings.ItemGroup title={`${t('Customize')} > ${actionTitle}`}>{props.children}</SchemaSettings.ItemGroup>
+    <SchemaSettingsItemGroup title={`${t('Customize')} > ${actionTitle}`}>{props.children}</SchemaSettingsItemGroup>
   );
 };
 
@@ -81,7 +90,7 @@ function ButtonEditor(props) {
   const isLink = props?.isLink || fieldSchema['x-component'] === 'Action.Link';
 
   return (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       title={t('Edit button')}
       schema={
         {
@@ -158,7 +167,7 @@ function SaveMode() {
   const { getEnableFieldTree, getOnLoadData } = useCollectionState(name);
 
   return (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       title={t('Save mode')}
       components={{ Tree }}
       scope={{ getEnableFieldTree, name, getOnLoadData }}
@@ -302,7 +311,7 @@ function DuplicationMode() {
     };
   };
   return (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       title={t('Duplicate mode')}
       components={{ Tree }}
       scope={{
@@ -497,7 +506,7 @@ function UpdateMode() {
   const fieldSchema = useFieldSchema();
 
   return (
-    <SchemaSettings.SelectItem
+    <SchemaSettingsSelectItem
       title={t('Data will be updated')}
       options={[
         { label: t('Selected'), value: 'selected' },
@@ -560,7 +569,7 @@ function AssignedFieldValues() {
   return (
     <FlagProvider isInAssignFieldValues={true}>
       <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
-        <SchemaSettings.ActionModalItem
+        <SchemaSettingsActionModalItem
           title={t('Assign field values')}
           maskClosable={false}
           initialSchema={initialSchema}
@@ -580,7 +589,7 @@ function RequestSettings() {
   const fieldSchema = useFieldSchema();
 
   return (
-    <SchemaSettings.ActionModalItem
+    <SchemaSettingsActionModalItem
       title={t('Request settings')}
       schema={requestSettingsSchema}
       initialValues={fieldSchema?.['x-action-settings']?.requestSettings}
@@ -604,7 +613,7 @@ function SkipValidation() {
   const fieldSchema = useFieldSchema();
 
   return (
-    <SchemaSettings.SwitchItem
+    <SchemaSettingsSwitchItem
       title={t('Skip required validation')}
       checked={!!fieldSchema?.['x-action-settings']?.skipValidator}
       onChange={(value) => {
@@ -627,7 +636,7 @@ function AfterSuccess() {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   return (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       title={t('After successful submission')}
       initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
       schema={
@@ -702,8 +711,8 @@ function RemoveButton(
   return (
     !isDeletable && (
       <>
-        <SchemaSettings.Divider />
-        <SchemaSettings.Remove
+        <SchemaSettingsDivider />
+        <SchemaSettingsRemove
           removeParentsIfNoChildren
           breakRemoveOn={(s) => {
             return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
@@ -785,7 +794,7 @@ function WorkflowConfig() {
   }[fieldSchema?.['x-action']];
 
   return (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       title={t('Bind workflows', { ns: 'workflow' })}
       scope={{
         fieldFilter(field) {
@@ -908,7 +917,6 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
   {
     name: 'Customize',
     Component: MenuGroup,
-    type: 'itemGroup',
     children: [
       {
         name: 'editButton',
@@ -931,7 +939,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
       },
       {
         name: 'linkageRules',
-        Component: SchemaSettings.LinkageRules,
+        Component: SchemaSettingsLinkageRules,
         useVisible() {
           const fieldSchema = useFieldSchema();
           const isAction = useLinkageAction();
@@ -1029,7 +1037,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
       },
       {
         name: 'enableChildCollections',
-        Component: SchemaSettings.LinkageRules,
+        Component: SchemaSettingsLinkageRules,
         useVisible() {
           const fieldSchema = useFieldSchema();
           const { name } = useCollection();
@@ -1062,7 +1070,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
   },
 ];
 
-export const actionSettings = new SchemaSetting({
+export const actionSettings = new SchemaSettings({
   name: 'ActionSettings',
   items: actionSettingsItems,
 });

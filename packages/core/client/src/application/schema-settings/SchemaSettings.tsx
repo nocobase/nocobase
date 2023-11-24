@@ -1,6 +1,6 @@
-import { SchemaSettingOptions, SchemaSettingItemType } from './types';
+import { SchemaSettingOptions, SchemaSettingsItemType, SchemaSettingItemComponentType } from './types';
 
-export class SchemaSetting<T = {}> {
+export class SchemaSettings<T = {}> {
   options: SchemaSettingOptions<T>;
   name: string;
 
@@ -13,7 +13,7 @@ export class SchemaSetting<T = {}> {
     this.name = options.name;
   }
 
-  add(name: string, item: Omit<SchemaSettingItemType, 'name'>) {
+  add(name: string, item: Omit<SchemaSettingsItemType, 'name'> | Omit<SchemaSettingItemComponentType, 'name'>) {
     const arr = name.split('.');
     const data: any = { ...item, name: arr[arr.length - 1] };
     if (arr.length === 1) {
@@ -41,7 +41,7 @@ export class SchemaSetting<T = {}> {
     }
   }
 
-  get(nestedName: string): SchemaSettingItemType | undefined {
+  get(nestedName: string): SchemaSettingsItemType | undefined {
     const arr = nestedName.split('.');
     let current: any = this.items;
 

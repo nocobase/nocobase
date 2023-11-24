@@ -4,12 +4,12 @@ import {
   Plugin,
   SchemaComponent,
   SchemaComponentProvider,
-  SchemaSetting,
+  SchemaSettings,
   useSchemaSettingsRender,
 } from '@nocobase/client';
 import { observer, useFieldSchema } from '@formily/react';
 
-const mySchemaSetting = new SchemaSetting({
+const mySchemaSetting = new SchemaSettings({
   name: 'MySchemaSetting',
   items: [
     {

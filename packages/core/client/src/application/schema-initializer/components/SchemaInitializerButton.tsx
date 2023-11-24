@@ -16,6 +16,7 @@ export const SchemaInitializerButton: FC<SchemaInitializerButtonProps> = React.m
 
   return (
     <Button
+      data-testid={options['data-testid']}
       aria-label={getAriaLabel()}
       aria-disabled="false"
       type={'dashed'}

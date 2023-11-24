@@ -1,16 +1,22 @@
 import { ISchema, useField, useFieldSchema, useForm } from '@formily/react';
 import React from 'react';
 import { useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDivider,
+  SchemaSettingsPopupItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+} from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 import { useActionContext } from '../action';
 
 const useLabelFields = (collectionName?: any) => {
+  const compile = useCompile();
+  const { getCollectionFields } = useCollectionManager();
   if (!collectionName) {
     return [];
   }
-  const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
   const targetFields = getCollectionFields(collectionName);
   return targetFields
     ?.filter?.((field) => !field?.target && field.type !== 'boolean')
@@ -33,7 +39,7 @@ export const TableColumnDesigner = (props) => {
   const options = useLabelFields(collectionField?.target);
   return (
     <GeneralSchemaDesigner>
-      <SchemaSettings.PopupItem
+      <SchemaSettingsPopupItem
         title={'编辑'}
         schema={
           {
@@ -110,7 +116,7 @@ export const TableColumnDesigner = (props) => {
         }
       />
       {collectionField?.target && (
-        <SchemaSettings.SelectItem
+        <SchemaSettingsSelectItem
           title={'标题字段'}
           options={options}
           value={fieldSchema?.['x-component-props']?.['fieldNames']?.['label']}
@@ -135,8 +141,8 @@ export const TableColumnDesigner = (props) => {
           }}
         />
       )}
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',

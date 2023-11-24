@@ -5,12 +5,18 @@ import { Select } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaSetting } from '../../../application/schema-settings';
+import { SchemaSettings } from '../../../application/schema-settings';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { Collection, useCollection, useCollectionManager } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
 import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
-import { isPatternDisabled } from '../../../schema-settings';
+import {
+  SchemaSettingsDataFormat,
+  SchemaSettingsDataScope,
+  SchemaSettingsDefaultValue,
+  SchemaSettingsSortingRule,
+  isPatternDisabled,
+} from '../../../schema-settings';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
@@ -21,7 +27,7 @@ import { DynamicComponentProps } from '../filter/DynamicComponent';
 import { useColorFields } from '../table-v2/Table.Column.Designer';
 import { removeNullCondition } from '../filter';
 
-export const formItemSettings = new SchemaSetting({
+export const formItemSettings = new SchemaSettings({
   name: 'FormItemSettings',
   items: [
     ...(generalSettingsItems as any),
@@ -226,7 +232,7 @@ export const formItemSettings = new SchemaSetting({
     },
     {
       name: 'defaultValue',
-      type: 'defaultValue',
+      Component: SchemaSettingsDefaultValue,
       useVisible() {
         const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
         return isAllowToSetDefaultValue();
@@ -234,7 +240,7 @@ export const formItemSettings = new SchemaSetting({
     },
     {
       name: 'dataScope',
-      type: 'dataScope',
+      Component: SchemaSettingsDataScope,
       useVisible() {
         const isSelectFieldMode = useIsSelectFieldMode();
         const isFormReadPretty = useIsFormReadPretty();
@@ -288,7 +294,7 @@ export const formItemSettings = new SchemaSetting({
     },
     {
       name: 'sortingRule',
-      type: 'sortingRule',
+      Component: SchemaSettingsSortingRule,
       useVisible() {
         const isSelectFieldMode = useIsSelectFieldMode();
         const isFormReadPretty = useIsFormReadPretty();
@@ -731,7 +737,7 @@ export const formItemSettings = new SchemaSetting({
     },
     {
       name: 'dateFormat',
-      type: 'dataFormat',
+      Component: SchemaSettingsDataFormat,
       useVisible() {
         const collectionField = useCollectionField();
         const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
