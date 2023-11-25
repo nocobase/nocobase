@@ -13,7 +13,7 @@ export class TokenBlacklistService implements ITokenBlacklistService {
   constructor(protected plugin: AuthPlugin) {
     this.repo = plugin.db.getRepository('tokenBlacklist');
 
-    plugin.app.on('afterLoad', async () => {
+    plugin.app.on('beforeStart', async () => {
       this.bloomFilter = await plugin.app.cacheManager.createBloomFilter();
       // https://redis.io/docs/data-types/probabilistic/bloom-filter/#reserving-bloom-filters
       // 0.1% error rate requires 14.4 bits per item
