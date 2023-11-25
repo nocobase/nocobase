@@ -49,6 +49,7 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
   const form = useMemo(() => props.form || createForm(), [formId]);
   const { t } = useTranslation();
   const scope = { ...props.scope, t, randomString };
+  const [active, setActive] = useState(designable);
   return (
     <SchemaComponentContext.Provider
       value={{
@@ -56,8 +57,13 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
         components,
         reset: () => setFormId(uid()),
         refresh: () => setUid(uid()),
-        designable,
-        setDesignable: (value) => onDesignableChange?.(value),
+        designable: typeof designable === 'boolean' ? designable : active,
+        setDesignable: (value) => {
+          if (typeof designable !== 'boolean') {
+            setActive(value);
+          }
+          onDesignableChange?.(value);
+        },
       }}
     >
       <FormProvider form={form}>
