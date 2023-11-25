@@ -27,16 +27,20 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const { isInSubForm, isInSubTable } = useFlag() || {};
 
   const schemaName = fieldSchema.name.toString();
-  const formValue = isInSubForm || isInSubTable ? subFormValue : form.values;
+  const formValue = _.cloneDeep(isInSubForm || isInSubTable ? subFormValue : form.values);
   const collectionFieldRef = useRef(null);
+  const sourceCollectionFieldRef = useRef(null);
 
-  if (collectionFieldRef.current == null) {
+  if (collectionFieldRef.current == null && isDisplayField(schemaName)) {
     collectionFieldRef.current = getCollectionJoinField(`${name}.${schemaName}`);
+  }
+  if (sourceCollectionFieldRef.current == null && isDisplayField(schemaName)) {
+    sourceCollectionFieldRef.current = getCollectionJoinField(`${name}.${schemaName.split('.')[0]}`);
   }
 
   const sourceKeyValue =
-    isDisplayField(schemaName) && collectionFieldRef.current
-      ? _.get(formValue, `${schemaName.split('.')[0]}.${collectionFieldRef.current.sourceKey}`)
+    isDisplayField(schemaName) && sourceCollectionFieldRef.current
+      ? _.get(formValue, `${schemaName.split('.')[0]}.${sourceCollectionFieldRef.current?.targetKey || 'id'}`)
       : undefined;
 
   useEffect(() => {
@@ -66,7 +70,13 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
       .parseVariable(variableString, formVariable)
       .then((value) => {
         nextTick(() => {
-          field.value = transformVariableValue(value, { targetCollectionField: collectionFieldRef.current });
+          const result = transformVariableValue(value, { targetCollectionField: collectionFieldRef.current });
+          // fix https://nocobase.height.app/T-2608
+          if (_.isEmpty(result) && !_.isNumber(result)) {
+            field.value = null;
+          } else {
+            field.value = result;
+          }
         });
       })
       .catch((err) => {
