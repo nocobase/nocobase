@@ -99,7 +99,7 @@ export class Locale {
   }
 
   async getI18nInstance(lang: string) {
-    if (lang === '*' || !lang) {
+    if (lang === '*' || !lang || !this.cache) {
       return this.app.i18n.cloneInstance({ initImmediate: false });
     }
     return this.cache.wrap(`i18n:instances:${lang}`, async () => this.app.i18n.cloneInstance({ initImmediate: false }));
