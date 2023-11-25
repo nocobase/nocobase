@@ -480,7 +480,7 @@ function useSchemaSettingsItem(): SchemaSettingsItemType;
 
 - 示例
 
-```tsx
+```ts
 const { name } = useSchemaSettingsItem();
 ```
 
@@ -511,3 +511,5 @@ NocoBase 提供了几个内置的组件，可以直接使用。
 ### 动态显示、隐藏
 
 ### Designer 上下文
+
+<code src="./demos/demo3.tsx"></code>
