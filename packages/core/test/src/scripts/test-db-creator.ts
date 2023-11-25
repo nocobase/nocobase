@@ -44,7 +44,7 @@ abstract class BaseClient<Client> {
   }
 }
 
-class PostgresClient extends BaseClient<typeof pg.Client> {
+class PostgresClient extends BaseClient<pg.Client> {
   async _removeDB(name: string): Promise<void> {
     await this._client.query(`DROP DATABASE IF EXISTS ${name}`);
   }
@@ -54,7 +54,7 @@ class PostgresClient extends BaseClient<typeof pg.Client> {
     await this._client.query(`CREATE DATABASE ${name};`);
   }
 
-  async _createConnection(): Promise<typeof pg.Client> {
+  async _createConnection(): Promise<pg.Client> {
     const client = new pg.Client({
       host: process.env['DB_HOST'],
       port: Number(process.env['DB_PORT']),
@@ -78,15 +78,13 @@ class MySQLClient extends BaseClient<any> {
   }
 
   async _createConnection(): Promise<mysql.Connection> {
-    const connection = await mysql.createConnection({
+    return mysql.createConnection({
       host: process.env['DB_HOST'],
       port: Number(process.env['DB_PORT']),
       user: process.env['DB_USER'],
       password: process.env['DB_PASSWORD'],
       database: process.env['DB_DATABASE'],
     });
-
-    return connection;
   }
 }
 
@@ -100,15 +98,13 @@ class MariaDBClient extends BaseClient<any> {
   }
 
   async _createConnection(): Promise<mariadb.Connection> {
-    const connection = await mariadb.createConnection({
+    return await mariadb.createConnection({
       host: process.env['DB_HOST'],
       port: Number(process.env['DB_PORT']),
       user: process.env['DB_USER'],
       password: process.env['DB_PASSWORD'],
       database: process.env['DB_DATABASE'],
     });
-
-    return connection;
   }
 }
 
@@ -138,7 +134,6 @@ const server = http.createServer((req, res) => {
   const trimmedPath = path.replace(/^\/+|\/+$/g, '');
 
   if (trimmedPath === 'acquire') {
-    const via = parsedUrl.query.via as string;
     const name = parsedUrl.query.name as string | undefined;
 
     dbClient
@@ -147,8 +142,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end();
       })
-      .catch((error) => {
-        console.error(error);
+      .catch((error: Error) => {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error }));
       });
@@ -159,8 +153,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end();
       })
-      .catch((error) => {
-        console.error(error);
+      .catch((error: Error) => {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error }));
       });
