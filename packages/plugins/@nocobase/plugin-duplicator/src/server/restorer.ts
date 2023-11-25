@@ -9,6 +9,7 @@ import { DataTypes, DumpDataType } from '@nocobase/database';
 import lodash from 'lodash';
 import { FieldValueWriter } from './field-value-writer';
 import * as Topo from '@hapi/topo';
+import { RestoreCheckError } from './errors/restore-check-error';
 
 type RestoreOptions = {
   dataTypes: Set<DumpDataType>;
