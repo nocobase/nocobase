@@ -44,7 +44,7 @@ const Registry = {
 Schema.registerCompiler(Registry.compile);
 
 export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (props) => {
-  const { designable, components, children } = props;
+  const { designable, designableState, components, children } = props;
   const [, setUid] = useState(uid());
   const [formId, setFormId] = useState(uid());
   const form = useMemo(() => props.form || createForm(), [formId]);
@@ -60,9 +60,13 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
         components,
         reset: () => setFormId(uid()),
         refresh: () => setUid(uid()),
-        designable: active === 'true',
+        designable: designableState ? designableState[0] : active === 'true',
         setDesignable(value) {
-          setActive(value ? 'true' : 'false');
+          if (designableState?.[1]) {
+            designableState[1](value);
+          } else {
+            setActive(value ? 'true' : 'false');
+          }
         },
       }}
     >
