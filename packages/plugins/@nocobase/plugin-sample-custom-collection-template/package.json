@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-custom-collection-template",
-  "version": "0.16.0-alpha.3",
+  "version": "0.16.0-alpha.4",
   "main": "./dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "0.x",
