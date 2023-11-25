@@ -6,6 +6,7 @@ import {
   SchemaSettingsActionModalItem,
   SchemaSettingsCascaderItem,
   SchemaSettingsDivider,
+  SchemaSettingsItem,
   SchemaSettingsItemGroup,
   SchemaSettingsModalItem,
   SchemaSettingsPopupItem,
@@ -22,6 +23,7 @@ export interface SchemaSettingChildrenProps {
 }
 
 const typeComponentMap = {
+  item: SchemaSettingsItem,
   itemGroup: SchemaSettingsItemGroup,
   subMenu: SchemaSettingsSubMenu,
   divider: SchemaSettingsDivider,
