@@ -14,7 +14,7 @@ export interface ISchemaComponentContext {
 
 export interface ISchemaComponentProvider {
   designable?: boolean;
-  designableState?: [boolean, (value: boolean) => void];
+  onDesignableChange?: (value: boolean) => void;
   form?: Form;
   scope?: any;
   components?: SchemaReactComponents;

@@ -4,16 +4,15 @@ import {
   Grid,
   Plugin,
   SchemaComponent,
-  SchemaComponentContext,
-  SchemaComponentProvider,
   SchemaInitializer,
   SchemaInitializerItem,
   SchemaSettings,
+  useSchemaComponentContext,
   useSchemaInitializer,
   useSchemaInitializerItem,
 } from '@nocobase/client';
 import { Button } from 'antd';
-import React, { useContext, useState } from 'react';
+import React from 'react';
 
 const mySettings = new SchemaSettings({
   name: 'mySettings',
@@ -30,8 +29,6 @@ const mySettings = new SchemaSettings({
 
 const myInitializer = new SchemaInitializer({
   name: 'MyInitializer',
-  // 正常情况下这个值为 false，通过点击页面左上角的设计按钮切换，这里为了显示设置为 true
-  designable: true,
   //  按钮标题标题
   title: 'Button Text',
   wrap: Grid.wrap,
@@ -61,15 +58,15 @@ const myInitializer = new SchemaInitializer({
 const Hello = () => <h1>Hello, world!</h1>;
 
 const Btn = () => {
-  const ctx = useContext(SchemaComponentContext);
+  const { designable, setDesignable } = useSchemaComponentContext();
   return (
     <Button
       style={{ marginBottom: 24 }}
       onClick={() => {
-        ctx.setDesignable(!ctx.designable);
+        setDesignable(!designable);
       }}
     >
-      designable: {ctx.designable ? 'true' : 'false'}
+      designable: {designable ? 'true' : 'false'}
     </Button>
   );
 };
@@ -92,14 +89,6 @@ const HelloPage = () => {
 
 class PluginHello extends Plugin {
   async load() {
-    this.app.addProvider((props) => {
-      const state = useState(false);
-      return (
-        <SchemaComponentProvider designableState={state} scope={this.app.scopes} components={this.app.components}>
-          {props.children}
-        </SchemaComponentProvider>
-      );
-    });
     this.app.addComponents({ Grid, CardItem, Hello });
     this.app.schemaSettingsManager.add(mySettings);
     this.app.schemaInitializerManager.add(myInitializer);
@@ -114,6 +103,7 @@ const app = new Application({
   router: {
     type: 'memory',
   },
+  designable: true,
   plugins: [PluginHello],
 });
 

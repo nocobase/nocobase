@@ -1,5 +1,5 @@
 import { define, observable } from '@formily/reactive';
-import { APIClientOptions } from '@nocobase/sdk';
+import { APIClientOptions, getSubAppName } from '@nocobase/sdk';
 import { i18n as i18next } from 'i18next';
 import get from 'lodash/get';
 import merge from 'lodash/merge';
@@ -9,26 +9,26 @@ import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
 
-import { PluginManager, PluginType } from './PluginManager';
-import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
-import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
-import { PluginSettingsManager } from './PluginSettingsManager';
 import { CSSVariableProvider } from '../css-variable';
 import { GlobalThemeProvider } from '../global-theme';
-import { SchemaComponentProvider } from '../schema-component';
+import { PluginManager, PluginType } from './PluginManager';
+import { PluginSettingsManager } from './PluginSettingsManager';
+import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
+import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
 
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
 import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
 import * as schemaInitializerComponents from './schema-initializer/components';
+import { SchemaSettings, SchemaSettingsManager } from './schema-settings';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
-import { SchemaSettings, SchemaSettingsManager } from './schema-settings';
 
-import type { RequireJS } from './utils/requirejs';
+import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
+import type { RequireJS } from './utils/requirejs';
 
 declare global {
   interface Window {
@@ -39,6 +39,7 @@ declare global {
 export type DevDynamicImport = (packageName: string) => Promise<{ default: typeof Plugin }>;
 export type ComponentAndProps<T = any> = [ComponentType, T];
 export interface ApplicationOptions {
+  name?: string;
   apiClient?: APIClientOptions;
   ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
@@ -51,6 +52,7 @@ export interface ApplicationOptions {
   devDynamicImport?: DevDynamicImport;
   schemaInitializers?: SchemaInitializer[];
   loadRemotePlugins?: boolean;
+  designable?: boolean;
 }
 
 export class Application {
@@ -71,6 +73,8 @@ export class Application {
   public notification;
   public schemaInitializerManager: SchemaInitializerManager;
   public schemaSettingsManager: SchemaSettingsManager;
+
+  public name: string;
 
   loading = true;
   maintained = false;
@@ -107,6 +111,7 @@ export class Application {
     this.ws = new WebSocketClient(options.ws);
     this.pluginSettingsManager = new PluginSettingsManager(this);
     this.addRoutes();
+    this.name = this.options.name || getSubAppName() || 'main';
   }
 
   private initRequireJs() {
@@ -120,7 +125,12 @@ export class Application {
     this.use(I18nextProvider, { i18n: this.i18n });
     this.use(GlobalThemeProvider);
     this.use(CSSVariableProvider);
-    this.use(SchemaComponentProvider, { components: this.components, scope: this.scopes });
+    this.use(AppSchemaComponentProvider, {
+      designable: this.options.designable,
+      appName: this.name,
+      components: this.components,
+      scope: this.scopes,
+    });
   }
 
   private addReactRouterComponents() {
