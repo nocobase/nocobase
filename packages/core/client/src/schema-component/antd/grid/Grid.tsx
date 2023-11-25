@@ -1,14 +1,14 @@
 import { TinyColor } from '@ctrl/tinycolor';
 import { useDndContext, useDndMonitor, useDraggable, useDroppable } from '@dnd-kit/core';
-import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { ISchema, RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useDesignable, useFormBlockContext, useSchemaInitializerRender } from '../../../';
+import { useFormBlockType } from '../../../block-provider';
 import { DndContext } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import useStyles from './Grid.style';
-import { useFormBlockType } from '../../../block-provider';
 
 const GridRowContext = createContext<any>({});
 const GridColContext = createContext<any>({});
@@ -464,3 +464,19 @@ Grid.Col = observer(
   },
   { displayName: 'Grid.Row' },
 );
+
+Grid.wrap = (schema: ISchema) => {
+  return {
+    type: 'void',
+    'x-component': 'Grid.Row',
+    properties: {
+      [uid()]: {
+        type: 'void',
+        'x-component': 'Grid.Col',
+        properties: {
+          [schema.name || uid()]: schema,
+        },
+      },
+    },
+  };
+};
