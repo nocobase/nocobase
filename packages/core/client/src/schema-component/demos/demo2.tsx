@@ -18,7 +18,7 @@ const Test = () => {
 
 export default () => {
   return (
-    <SchemaComponentProvider designable={true}>
+    <SchemaComponentProvider>
       <Test />
     </SchemaComponentProvider>
   );
