@@ -103,6 +103,7 @@ const WithForm = (props: WithFormProps) => {
   useEffect(() => {
     const id = uid();
     const disposes = [];
+    const linkagefields = [];
 
     form.addEffects(id, () => {
       linkageRules.forEach((v, index) => {
@@ -125,9 +126,9 @@ const WithForm = (props: WithFormProps) => {
 
             // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `autorun` 代替
             onFieldInit(`*(${fields})`, (field: any, form) => {
-              field.linkageProperty = {};
               disposes.push(
                 autorun(async () => {
+                  linkagefields.push(field);
                   await linkageMergeAction({
                     operator: h.operator,
                     value: h.value,
@@ -137,6 +138,15 @@ const WithForm = (props: WithFormProps) => {
                     variables,
                     localVariables,
                   });
+                  if (index === linkageRules.length - 1) {
+                    // 如果不在这里使用 setTimeout 会在某些未知情况下导致死循环，原因未知
+                    setTimeout(() => {
+                      linkagefields.forEach((v) => {
+                        v.linkageProperty = {};
+                      });
+                      linkagefields.length = 0;
+                    });
+                  }
                 }),
               );
             });
