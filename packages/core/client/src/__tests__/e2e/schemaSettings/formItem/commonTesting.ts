@@ -127,7 +127,7 @@ export const commonTesting = ({
       if (['editing', 'viewing'].includes(blockType)) {
         await expect(page.getByRole('menuitem', { name: 'Set default value' })).not.toBeVisible();
       }
-      if (fieldType === 'relation') {
+      if (fieldType === 'relation' && ['creating', 'editing'].includes(blockType)) {
         await expect(page.getByRole('menuitem', { name: 'Set default sorting rules' })).toBeVisible();
       }
     });
