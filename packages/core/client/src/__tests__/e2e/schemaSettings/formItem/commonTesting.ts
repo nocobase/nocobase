@@ -197,7 +197,7 @@ export async function testDefaultValue({
     for (const value of variableValue) {
       await page.getByRole('menuitemcheckbox', { name: value }).click();
     }
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     await closeDialog();
     await openDialog();
