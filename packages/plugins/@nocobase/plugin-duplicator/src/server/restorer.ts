@@ -181,7 +181,7 @@ export class Restorer extends AppMigrator {
     const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
     const meta = JSON.parse(metaContent);
 
-    const addSchemaTableName = meta.tableName;
+    const addSchemaTableName: any = meta.tableName;
     const columns = meta['columns'];
 
     if (columns.length == 0) {
@@ -231,6 +231,16 @@ export class Restorer extends AppMigrator {
 
       // create table
       await db.sequelize.getQueryInterface().createTable(addSchemaTableName, rawAttributes);
+
+      if (meta.inherits) {
+        for (const inherit of meta.inherits) {
+          const tableNameQuoted = db.sequelize
+            .getQueryInterface()
+            .quoteIdentifiers(`${addSchemaTableName.schema}.${addSchemaTableName.tableName}`);
+          const sql = `ALTER TABLE ${tableNameQuoted} INHERIT "${inherit}";`;
+          await db.sequelize.query(sql);
+        }
+      }
     }
 
     // read file content from collection data

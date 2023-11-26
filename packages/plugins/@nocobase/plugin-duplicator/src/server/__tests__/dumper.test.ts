@@ -30,6 +30,116 @@ describe('dumper', () => {
     });
   });
 
+  it('should restore parent collection', async () => {
+    if (!db.inDialect('postgres')) {
+      return;
+    }
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'parent',
+        fields: [
+          {
+            type: 'string',
+            name: 'parentName',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'child',
+        inherits: ['parent'],
+        fields: [
+          {
+            type: 'string',
+            name: 'childName',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('parent').create({
+      values: {
+        parentName: 'parentName',
+      },
+    });
+
+    await db.getRepository('child').create({
+      values: {
+        childName: 'childName',
+      },
+    });
+
+    expect(await app.db.getRepository('parent').count()).toEqual(2);
+
+    const dumper = new Dumper(app);
+    const result = await dumper.dump({
+      dataTypes: new Set(['meta', 'business']),
+    });
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: result.filePath,
+    });
+
+    await restorer.restore({
+      dataTypes: new Set(['meta', 'business']),
+    });
+
+    expect(await app.db.getRepository('parent').count()).toEqual(2);
+  });
+
+  it('should restore with audit logs', async () => {
+    await app.runCommand('pm', 'enable', 'audit-logs');
+
+    await app.db.getRepository('collections').create({
+      values: {
+        name: 'tests',
+        logging: true,
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const Post = app.db.getCollection('tests').model;
+    const post = await Post.create({ name: '123456' });
+    await post.update({ name: '223456' });
+    await post.destroy();
+    const auditLogs = await app.db.getCollection('auditLogs').repository.find({
+      appends: ['changes'],
+    });
+
+    expect(auditLogs.length).toBe(3);
+
+    const dumper = new Dumper(app);
+    const result = await dumper.dump({
+      dataTypes: new Set(['meta', 'business']),
+    });
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: result.filePath,
+    });
+
+    await restorer.restore({
+      dataTypes: new Set(['meta', 'business']),
+    });
+
+    const log = await app.db.getCollection('auditLogs').repository.findOne({
+      filter: { type: 'update' },
+      appends: ['changes'],
+    });
+    const changes = log.get('changes');
+    expect(typeof changes[0].before).toBe('string');
+  });
+
   it('should sort collections by inherits', async () => {
     const collections = [
       {

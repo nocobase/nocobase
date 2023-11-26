@@ -451,6 +451,10 @@ export class Dumper extends AppMigrator {
       attributes: metaAttributes,
     };
 
+    if (collection.options.inherits) {
+      meta['inherits'] = collection.options.inherits;
+    }
+
     // write meta file
     await fsPromises.writeFile(path.resolve(collectionDataDir, 'meta'), JSON.stringify(meta), 'utf8');
   }

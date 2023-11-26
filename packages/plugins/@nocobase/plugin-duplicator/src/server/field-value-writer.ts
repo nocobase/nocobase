@@ -58,9 +58,18 @@ export class FieldValueWriter {
   }
 }
 
+function isJSONObjectOrArrayString(str) {
+  try {
+    const parsed = JSON.parse(str);
+    return typeof parsed === 'object' && parsed !== null;
+  } catch (e) {
+    return false;
+  }
+}
+
 FieldValueWriter.registerWriter([DataTypes.JSON.toString(), DataTypes.JSONB.toString()], (val) => {
   try {
-    return lodash.isString(val) ? JSON.parse(val) : val;
+    return isJSONObjectOrArrayString(val) ? JSON.parse(val) : val;
   } catch (err) {
     if (err instanceof SyntaxError && err.message.includes('Unexpected')) {
       return val;
