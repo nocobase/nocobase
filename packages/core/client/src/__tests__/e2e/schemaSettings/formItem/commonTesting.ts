@@ -40,6 +40,7 @@ export const commonTesting = ({
   openDialogAndShowMenu,
   fieldName,
   blockType = 'creating',
+  fieldType,
   mode = 'details',
 }: {
   openDialogAndShowMenu: ({
@@ -57,6 +58,7 @@ export const commonTesting = ({
   }) => Promise<void>;
   fieldName: string;
   blockType?: 'creating' | 'viewing' | 'editing';
+  fieldType?: string;
   /**
    * options 模式下，只会测试选项是否正确显示；
    * details 模式下，会测试每个选项的功能是否正常；
@@ -125,6 +127,9 @@ export const commonTesting = ({
       if (['editing', 'viewing'].includes(blockType)) {
         await expect(page.getByRole('menuitem', { name: 'Set default value' })).not.toBeVisible();
       }
+      if (fieldType === 'relation') {
+        await expect(page.getByRole('menuitem', { name: 'Set default sorting rules' })).toBeVisible();
+      }
     });
   }
 };
@@ -192,7 +197,7 @@ export async function testDefaultValue({
     for (const value of variableValue) {
       await page.getByRole('menuitemcheckbox', { name: value }).click();
     }
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     await closeDialog();
     await openDialog();
