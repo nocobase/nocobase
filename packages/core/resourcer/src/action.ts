@@ -304,13 +304,13 @@ export class Action {
   }
 
   getHandlers() {
-    let handlers = [
+    const handlers = [
       ...this.resource.resourcer.getMiddlewares(),
       ...this.getMiddlewareHandlers(),
       this.getHandler(),
     ].filter(Boolean);
 
-    handlers = handlers.map((handler) => prePerfHooksWrap(handler));
+    // handlers = handlers.map((handler) => prePerfHooksWrap(handler));
 
     return handlers;
   }

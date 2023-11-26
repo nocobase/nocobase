@@ -54,15 +54,12 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   if (options.bodyParser !== false) {
     const bodyLimit = '10mb';
     app.use(
-      prePerfHooksWrap(
-        bodyParser({
-          jsonLimit: bodyLimit,
-          formLimit: bodyLimit,
-          textLimit: bodyLimit,
-          ...options.bodyParser,
-        }),
-        { name: 'bodyParser' },
-      ),
+      bodyParser({
+        jsonLimit: bodyLimit,
+        formLimit: bodyLimit,
+        textLimit: bodyLimit,
+        ...options.bodyParser,
+      }),
       {
         tag: 'bodyParser',
         after: 'logger',
@@ -78,19 +75,19 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     await next();
   });
 
-  app.use(prePerfHooksWrap(i18n, { name: 'i18n' }), { tag: 'i18n', after: 'cors' });
+  app.use(i18n, { tag: 'i18n', after: 'cors' });
 
   if (options.dataWrapping !== false) {
-    app.use(postPerfHooksWrap(dataWrapping(), { name: 'dataWrapping' }), { tag: 'dataWrapping', after: 'i18n' });
+    app.use(dataWrapping(), { tag: 'dataWrapping', after: 'i18n' });
   }
 
-  app.resourcer.use(prePerfHooksWrap(parseVariables, { name: 'parseVariables' }), {
+  app.resourcer.use(parseVariables, {
     tag: 'parseVariables',
     after: 'acl',
   });
-  app.resourcer.use(postPerfHooksWrap(dateTemplate, { name: 'dataTemplate' }), { tag: 'dateTemplate', after: 'acl' });
+  app.resourcer.use(dateTemplate, { tag: 'dateTemplate', after: 'acl' });
 
-  app.use(prePerfHooksWrap(db2resource, { name: 'db2resource' }), { tag: 'db2resource', after: 'dataWrapping' });
+  app.use(db2resource, { tag: 'db2resource', after: 'dataWrapping' });
   app.use(app.resourcer.restApiMiddleware(), { tag: 'restApi', after: 'db2resource' });
 }
 
@@ -146,6 +143,11 @@ export const enablePerfHooks = (app: Application) => {
           result[name] = histogram;
         });
         ctx.body = result;
+        await next();
+      },
+      reset: async (ctx, next) => {
+        const histograms = ctx.app.perfHistograms as Map<string, RecordableHistogram>;
+        histograms.forEach((histogram: RecordableHistogram) => histogram.reset());
         await next();
       },
     },
