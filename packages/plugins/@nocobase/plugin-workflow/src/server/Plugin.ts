@@ -280,14 +280,19 @@ export default class WorkflowPlugin extends Plugin {
           { transaction },
         );
 
-        await workflow.increment('executed', { transaction });
+        await workflow.increment(['executed', 'allExecuted'], { transaction });
 
-        await (<typeof WorkflowModel>workflow.constructor).increment('allExecuted', {
-          where: {
-            key: workflow.key,
+        await (<typeof WorkflowModel>workflow.constructor).update(
+          {
+            allExecuted: workflow.allExecuted,
           },
-          transaction,
-        });
+          {
+            where: {
+              key: workflow.key,
+            },
+            transaction,
+          },
+        );
 
         execution.workflow = workflow;
 
