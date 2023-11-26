@@ -1,7 +1,7 @@
 import { FC, useMemo } from 'react';
 import { SchemaSettingsDropdown } from '../../../schema-settings';
 import { SchemaSettingOptions } from '../types';
-import { SchemaSettingChildren } from './SchemaSettingsChildren';
+import { SchemaSettingsChildren } from './SchemaSettingsChildren';
 import { SchemaSettingsIcon } from './SchemaSettingsIcon';
 import React from 'react';
 import { useDesignable } from '../../../schema-component';
@@ -30,7 +30,7 @@ export const SchemaSettingsWrapper: FC<SchemaSettingOptions<any>> = (props) => {
       fieldSchema={fieldSchema}
       {...others}
     >
-      <SchemaSettingChildren>{items}</SchemaSettingChildren>
+      <SchemaSettingsChildren>{items}</SchemaSettingsChildren>
     </SchemaSettingsDropdown>
   );
 };

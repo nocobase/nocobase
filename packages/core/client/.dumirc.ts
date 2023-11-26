@@ -25,7 +25,7 @@ export default defineConfig({
     nav: [
       {
         title: 'API',
-        link: '/apis/application',
+        link: '/core/application/application',
       },
       {
         title: 'UI Schema',
@@ -33,7 +33,7 @@ export default defineConfig({
       },
     ],
     sidebarEnhance: {
-      '/apis': [
+      '/core': [
         {
           title: 'Core',
           type: 'group',
@@ -43,36 +43,56 @@ export default defineConfig({
               children: [
                 {
                   title: 'Application',
-                  link: '/apis/application',
+                  link: '/core/application/application',
                 },
                 {
-                  title: 'APIClient',
-                  link: '/apis/api-client',
+                  title: 'Plugin',
+                  link: '/core/application/plugin',
+                },
+                {
+                  title: 'PluginManager',
+                  link: '/core/application/plugin-manager',
+                },
+                {
+                  title: 'RouterManager',
+                  link: '/core/application/router-manager',
                 },
                 {
                   title: 'PluginSettingsManager',
-                  link: '#',
+                  link: '/core/application/plugin-settings-manager',
                 },
               ],
             },
             {
-              title: 'UI schema designer',
+              title: 'UI Schema',
               children: [
                 {
                   title: 'SchemaComponent',
-                  link: '/apis/schema-component',
+                  link: '/core/ui-schema/schema-component',
+                },
+                {
+                  title: 'Designable',
+                  link: '/core/ui-schema/designable',
                 },
                 {
                   title: 'SchemaInitializer',
-                  link: '/apis/schema-initializer',
+                  link: '/core/ui-schema/schema-initializer',
+                },
+                {
+                  title: 'SchemaInitializerManager',
+                  link: '/core/ui-schema/schema-initializer-manager',
                 },
                 {
                   title: 'SchemaSettings',
-                  link: '/apis/schema-settings',
+                  link: '/core/ui-schema/schema-settings',
                 },
                 {
-                  title: 'DNDContext & DragHandler',
-                  link: '#',
+                  title: 'SchemaSettingsManager',
+                  link: '/core/ui-schema/schema-settings-manager',
+                },
+                {
+                  title: 'Designer',
+                  link: '/core/ui-schema/designer',
                 },
               ],
             },
@@ -82,11 +102,11 @@ export default defineConfig({
             },
             {
               title: 'BlockProvider',
-              link: '#',
+              link: '#1',
             },
             {
               title: 'RecordProvider',
-              link: '#',
+              link: '#2',
             },
           ],
         },
@@ -96,11 +116,11 @@ export default defineConfig({
           children: [
             {
               title: 'Board',
-              link: '#',
+              link: '#3',
             },
             {
               title: 'Icon',
-              link: '#',
+              link: '#4',
             },
           ],
         },
@@ -118,6 +138,16 @@ export default defineConfig({
             },
           ],
         },
+        {
+          title: 'Utils',
+          type: 'group',
+          children: [
+            {
+              title: 'Utils',
+              link: '/core/utils',
+            }
+          ]
+        }
       ],
       '/ui-schema': [
         {
