@@ -50,9 +50,7 @@ const helloSettings = new SchemaSettings({
 
 class HelloPlugin extends Plugin {
   async load() {
-    // this.app.addProvider(HelloProvider);
-    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
-    blockInitializers?.add('otherBlocks.hello', {
+    this.app.schemaInitializerManager.addItem('BlockInitializers', 'otherBlocks.hello', {
       title: '{{t("Hello block")}}',
       Component: HelloBlockInitializer,
     });

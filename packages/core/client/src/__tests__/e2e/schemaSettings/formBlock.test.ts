@@ -47,7 +47,7 @@ test.describe('SchemaSettings: creating form block', () => {
     await page.getByText('singleLineText', { exact: true }).click();
     await page.getByTestId('select-linkage-action-field').click();
     await page.getByRole('option', { name: 'Visible' }).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     const runExpect = async () => {
       await expect(page.getByTestId('select-linkage-property-field').getByText('singleLineText')).toBeVisible();
@@ -208,7 +208,7 @@ test.describe('SchemaSettings: editing list block', () => {
     await page.getByText('singleLineText', { exact: true }).click();
     await page.getByTestId('select-linkage-action-field').click();
     await page.getByRole('option', { name: 'Visible' }).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     const runExpect = async () => {
       await expect(page.getByTestId('select-linkage-property-field').getByText('singleLineText')).toBeVisible();
