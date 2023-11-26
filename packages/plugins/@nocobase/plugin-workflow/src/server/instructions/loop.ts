@@ -1,3 +1,4 @@
+import { Instruction } from '.';
 import Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel, JobModel } from '../types';
@@ -16,7 +17,7 @@ function getTargetLength(target) {
   return length;
 }
 
-export default {
+export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob: JobModel, processor: Processor) {
     const [branch] = processor.getBranches(node);
     const target = processor.getParsedValue(node.config.target, node.id);
@@ -46,7 +47,7 @@ export default {
     await processor.run(branch, job);
 
     return null;
-  },
+  }
 
   async resume(node: FlowNodeModel, branchJob, processor: Processor) {
     const job = processor.findBranchParentJob(branchJob, node) as JobModel;
@@ -80,7 +81,7 @@ export default {
     });
 
     return job;
-  },
+  }
 
   getScope(node, index, processor) {
     const target = processor.getParsedValue(node.config.target, node.id);
@@ -95,5 +96,5 @@ export default {
     };
 
     return result;
-  },
-};
+  }
+}

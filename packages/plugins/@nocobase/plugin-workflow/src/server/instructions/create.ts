@@ -1,8 +1,9 @@
 import { JOB_STATUS } from '../constants';
 import { toJSON } from '../utils';
 import type { FlowNodeModel } from '../types';
+import { Instruction } from '.';
 
-export default {
+export default class extends Instruction {
   async run(node: FlowNodeModel, input, processor) {
     const { collection, params: { appends = [], ...params } = {} } = node.config;
 
@@ -35,5 +36,5 @@ export default {
       result: toJSON(result),
       status: JOB_STATUS.RESOLVED,
     };
-  },
-};
+  }
+}

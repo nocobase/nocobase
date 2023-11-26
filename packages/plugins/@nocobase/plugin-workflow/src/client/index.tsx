@@ -4,18 +4,19 @@ export * from './FlowContext';
 export * from './nodes';
 export { triggers, useTrigger, getTriggersOptions } from './triggers';
 export * from './variable';
+export * from './components';
+export * from './utils';
 export { default as useStyles } from './style';
 
-import { Plugin } from '@nocobase/client';
 import React from 'react';
+
+import { Plugin } from '@nocobase/client';
+
 import { ExecutionPage } from './ExecutionPage';
 import { WorkflowPage } from './WorkflowPage';
-import { WorkflowPane, WorkflowProvider } from './WorkflowProvider';
-import { DynamicExpression } from './components/DynamicExpression';
-import { triggers, useTrigger, getTriggersOptions } from './triggers';
+import { WorkflowPane } from './WorkflowPane';
+import { triggers, getTriggersOptions } from './triggers';
 import { instructions } from './nodes';
-import { WorkflowTodo } from './nodes/manual/WorkflowTodo';
-import { WorkflowTodoBlockInitializer } from './nodes/manual/WorkflowTodoBlockInitializer';
 import { useTriggerWorkflowsActionProps } from './triggers/form';
 import { NAMESPACE } from './locale';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './constant';
@@ -29,7 +30,6 @@ export class WorkflowPlugin extends Plugin {
     this.addRoutes();
     this.addScopes();
     this.addComponents();
-    this.app.addProvider(WorkflowProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'PartitionOutlined',
       title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
@@ -48,9 +48,6 @@ export class WorkflowPlugin extends Plugin {
     this.app.addComponents({
       WorkflowPage,
       ExecutionPage,
-      WorkflowTodo,
-      WorkflowTodoBlockInitializer,
-      DynamicExpression,
     });
   }
 

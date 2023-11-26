@@ -37,7 +37,6 @@ import create from './create';
 import delay from './delay';
 import destroy from './destroy';
 import loop from './loop';
-import manual from './manual';
 import parallel from './parallel';
 import query from './query';
 import request from './request';
@@ -66,16 +65,15 @@ export const instructions = new Registry<Instruction>();
 
 instructions.register('calculation', calculation);
 instructions.register('condition', condition);
-instructions.register('parallel', parallel);
-instructions.register('loop', loop);
-instructions.register('delay', delay);
-
-instructions.register('manual', manual);
 
 instructions.register('query', query);
 instructions.register('create', create);
 instructions.register('update', update);
 instructions.register('destroy', destroy);
+
+instructions.register('parallel', parallel);
+instructions.register('loop', loop);
+instructions.register('delay', delay);
 instructions.register('aggregate', aggregate);
 
 instructions.register('request', request);

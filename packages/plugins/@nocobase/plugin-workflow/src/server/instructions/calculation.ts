@@ -11,7 +11,7 @@ interface CalculationConfig {
   expression?: string;
 }
 
-export default {
+export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { dynamic = false } = <CalculationConfig>node.config || {};
     let { engine = 'math.js', expression = '' } = node.config;
@@ -37,5 +37,5 @@ export default {
         status: JOB_STATUS.ERROR,
       };
     }
-  },
-} as Instruction;
+  }
+}

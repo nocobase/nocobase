@@ -3,6 +3,7 @@ import { BelongsToManyRepository, DataTypes, HasManyRepository } from '@nocobase
 import Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel } from '../types';
+import { Instruction } from '.';
 
 const aggregators = {
   count: 'count',
@@ -12,7 +13,7 @@ const aggregators = {
   max: 'max',
 };
 
-export default {
+export default class extends Instruction {
   async run(node: FlowNodeModel, input, processor: Processor) {
     const { aggregator, associated, collection, association = {}, params = {} } = node.config;
     const options = processor.getParsedValue(params, node.id);
@@ -38,5 +39,5 @@ export default {
       result: options.dataType === DataTypes.DOUBLE ? Number(result) : result,
       status: JOB_STATUS.RESOLVED,
     };
-  },
-};
+  }
+}

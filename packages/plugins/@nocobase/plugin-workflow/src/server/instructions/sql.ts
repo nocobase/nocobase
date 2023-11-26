@@ -1,7 +1,8 @@
 import { Processor, JOB_STATUS } from '..';
 import type { FlowNodeModel } from '../types';
+import { Instruction } from '.';
 
-export default {
+export default class extends Instruction {
   async run(node: FlowNodeModel, input, processor: Processor) {
     const { sequelize } = (<typeof FlowNodeModel>node.constructor).database;
     const sql = processor.getParsedValue(node.config.sql ?? '', node.id).trim();
@@ -21,5 +22,5 @@ export default {
       result,
       status: JOB_STATUS.RESOLVED,
     };
-  },
-};
+  }
+}

@@ -42,9 +42,7 @@ async function request(config) {
   });
 }
 
-export default class implements Instruction {
-  constructor(public plugin) {}
-
+export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const job = await processor.saveJob({
       status: JOB_STATUS.PENDING,

@@ -2,7 +2,7 @@ import Plugin from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
 import Processor from '../Processor';
 import { Instruction } from '.';
-import type { ExecutionModel, JobModel } from '../types';
+import type { JobModel } from '../types';
 
 type ValueOf<T> = T[keyof T];
 
@@ -11,10 +11,12 @@ interface DelayConfig {
   duration: number;
 }
 
-export default class implements Instruction {
+export default class extends Instruction {
   timers: Map<number, NodeJS.Timeout> = new Map();
 
-  constructor(protected plugin: Plugin) {
+  constructor(public plugin: Plugin) {
+    super(plugin);
+
     plugin.app.on('beforeStart', this.load);
     plugin.app.on('beforeStop', this.unload);
   }
@@ -82,7 +84,7 @@ export default class implements Instruction {
     }
   }
 
-  run = async (node, prevJob, processor: Processor) => {
+  async run(node, prevJob, processor: Processor) {
     const job = await processor.saveJob({
       status: JOB_STATUS.PENDING,
       result: null,
@@ -95,11 +97,11 @@ export default class implements Instruction {
     this.schedule(job);
 
     return processor.exit();
-  };
+  }
 
-  resume = async (node, prevJob, processor: Processor) => {
+  async resume(node, prevJob, processor: Processor) {
     const { endStatus } = node.config as DelayConfig;
     prevJob.set('status', endStatus);
     return prevJob;
-  };
+  }
 }

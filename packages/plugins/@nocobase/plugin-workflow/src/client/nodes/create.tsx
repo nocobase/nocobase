@@ -10,7 +10,6 @@ import CollectionFieldset from '../components/CollectionFieldset';
 import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { getCollectionFieldOptions } from '../variable';
-import { FieldsSelect } from '../components/FieldsSelect';
 
 export default {
   title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,

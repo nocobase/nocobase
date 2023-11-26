@@ -8,7 +8,8 @@ import {
   useRecordCollectionDataSourceItems,
   useSchemaTemplateManager,
 } from '@nocobase/client';
-import { traverseSchema } from '../nodes/manual/utils';
+
+import { traverseSchema } from '../utils';
 
 function InnerCollectionBlockInitializer({ insert, collection, dataSource, ...props }) {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();

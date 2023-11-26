@@ -20,33 +20,38 @@ export type Runner = (node: FlowNodeModel, input: any, processor: Processor) => 
 
 // what should a instruction do?
 // - base on input and context, do any calculations or system call (io), and produce a result or pending.
-export interface Instruction {
-  run: Runner;
+export abstract class Instruction {
+  constructor(public plugin: Plugin) {}
 
-  // for start node in main flow (or branch) to resume when manual sub branch triggered
-  resume?: Runner;
+  abstract run(node: FlowNodeModel, input: any, processor: Processor): InstructionResult;
 
-  getScope?: (node: FlowNodeModel, data: any, processor: Processor) => any;
+  resume(node: FlowNodeModel, input: any, processor: Processor): InstructionResult {
+    return null;
+  }
 
-  duplicateConfig?: (node: FlowNodeModel, options: Transactionable) => object | Promise<object>;
+  getScope(node: FlowNodeModel, data: any, processor: Processor): any {}
+
+  duplicateConfig(node: FlowNodeModel, options: Transactionable): object | Promise<object> {
+    return node.config;
+  }
 }
 
-type InstructionConstructor<T> = { new (p: Plugin): T };
+type InstructionConstructor = { new (plugin: Plugin): Instruction };
 
-export default function <T extends Instruction>(plugin, more: { [key: string]: T | InstructionConstructor<T> } = {}) {
+export default function <T extends Instruction>(plugin, more: { [key: string]: T | InstructionConstructor } = {}) {
   const { instructions } = plugin;
 
   const natives = [
     'calculation',
     'condition',
-    'parallel',
-    'loop',
-    'delay',
-    'manual',
     'query',
     'create',
     'update',
     'destroy',
+
+    'parallel',
+    'loop',
+    'delay',
     'aggregate',
     'request',
     'sql',
@@ -61,7 +66,7 @@ export default function <T extends Instruction>(plugin, more: { [key: string]: T
   for (const [name, instruction] of Object.entries({ ...more, ...natives })) {
     instructions.register(
       name,
-      typeof instruction === 'function' ? new (instruction as InstructionConstructor<T>)(plugin) : instruction,
+      typeof instruction === 'function' ? new (instruction as InstructionConstructor)(plugin) : instruction,
     );
   }
 }

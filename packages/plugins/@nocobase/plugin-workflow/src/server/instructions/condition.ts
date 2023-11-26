@@ -116,7 +116,7 @@ function logicCalculate(calculation?: Calculation) {
   return calculate(calculation as CalculationItem);
 }
 
-export default {
+export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { engine, calculation, expression, rejectOnFalse } = node.config || {};
     const evaluator = evaluators.get(engine);
@@ -160,7 +160,7 @@ export default {
     await processor.run(branchNode, savedJob);
 
     return null;
-  },
+  }
 
   async resume(node: FlowNodeModel, branchJob: JobModel, processor: Processor) {
     const job = processor.findBranchParentJob(branchJob, node) as JobModel;
@@ -172,5 +172,5 @@ export default {
 
     // pass control to upper scope by ending current scope
     return processor.exit(branchJob.status);
-  },
-} as Instruction;
+  }
+}

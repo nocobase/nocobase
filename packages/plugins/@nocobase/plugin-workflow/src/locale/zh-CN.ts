@@ -130,21 +130,9 @@ export default {
     '节点包含分支，将同时删除其所有分支下的子节点，确定继续？',
   Control: '流程控制',
   'Collection operations': '数据表操作',
-  Manual: '人工处理',
-  'Could be used for manually submitting data, and determine whether to continue or exit. Workflow will generate a todo item for assigned user when it reaches a manual node, and continue processing after user submits the form.':
-    '可用于人工提交数据，并决定是否继续或退出流程。工作流在执行到人工节点时会为被指派的用户生成待办事项，直到用户提交对应表单后继续处理该流程。',
-  'Values preset in this form will override user submitted ones when continue or reject.':
-    '表单中预设的字段值会在用户提交继续或拒绝时覆盖相应字段的值。',
   'Extended types': '扩展类型',
   'Node type': '节点类型',
   Calculation: '运算',
-  'Expression type': '表达式类型',
-  Static: '静态',
-  Dynamic: '动态',
-  'Select dynamic expression': '选择动态表达式',
-  'Select the dynamic expression queried from the upstream node. You need to query it from an expression collection.':
-    '从上游节点中选择查询出来的动态表达式。你需要从动态表达式类型的数据表中查询。',
-  'Variable datasource': '变量数据源',
   'Calculation engine': '运算引擎',
   Basic: '基础',
   'Calculation expression': '运算表达式',
@@ -188,27 +176,6 @@ export default {
   'Select status': '选择状态',
   'Succeed and continue': '通过并继续',
   'Fail and exit': '失败并退出',
-
-  Assignee: '负责人',
-  Assignees: '负责人',
-  'User interface': '操作界面',
-  'Configure user interface': '配置界面',
-  'View user interface': '查看界面',
-  Separately: '分别处理',
-  'Each user has own task': '每个人处理各自的任务',
-  Collaboratively: '协作处理',
-  'Everyone shares one task': '所有人共享同一个任务',
-  Negotiation: '协商机制',
-  'All pass': '全部通过',
-  'Everyone should pass': '每个人通过才通过',
-  'Any pass': '任意通过',
-  'Anyone pass': '任何一人通过即通过',
-  'Field name existed in form': '表单中已有对应标识的字段',
-  'Custom form': '自定义表单',
-  'Data record': '数据记录',
-  'Create record form': '新增数据表单',
-  'Update record form': '更新数据表单',
-  'Filter settings': '筛选设置',
 
   'Create record': '新增数据',
   'Add new record to a collection. You can use variables from upstream nodes to assign values to fields.':
@@ -276,13 +243,6 @@ export default {
   '"Content-Type" only support "application/json", and no need to specify':
     '"Content-Type" 请求头仅支持 "application/json"，无需填写',
   'Ignore failed request and continue workflow': '忽略失败的请求并继续工作流',
-
-  'Workflow todos': '工作流待办',
-  Task: '任务',
-
-  'Dynamic expression': '动态表达式',
-  'An expression for calculation in each rows': '每行数据计算规则不同时使用',
-  Unconfigured: '未配置',
 
   'SQL action': 'SQL 操作',
   'Execute a SQL statement in database': '在数据库中执行一个 SQL 语句',

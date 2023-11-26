@@ -1,3 +1,4 @@
+import { Instruction } from '.';
 import Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel, JobModel } from '../types';
@@ -55,7 +56,7 @@ const Modes = {
   },
 };
 
-export default {
+export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob: JobModel, processor: Processor) {
     const branches = processor.getBranches(node);
 
@@ -87,7 +88,7 @@ export default {
     );
 
     return null;
-  },
+  }
 
   async resume(node: FlowNodeModel, branchJob, processor: Processor) {
     const job = processor.findBranchParentJob(branchJob, node) as JobModel;
@@ -117,5 +118,5 @@ export default {
     }
 
     return job;
-  },
-};
+  }
+}

@@ -11,7 +11,6 @@ import { createLogger, getLoggerFilePath, getLoggerLevel, Logger, LoggerOptions 
 import Processor from './Processor';
 import initActions from './actions';
 import { EXECUTION_STATUS } from './constants';
-import initFields from './fields';
 import initFunctions, { CustomFunction } from './functions';
 import initInstructions, { Instruction } from './instructions';
 import initTriggers, { Trigger } from './triggers';
@@ -105,7 +104,6 @@ export default class WorkflowPlugin extends Plugin {
   async load() {
     const { db, options } = this;
 
-    initFields(this);
     initActions(this);
     initTriggers(this, options.triggers);
     initInstructions(this, options.instructions);
