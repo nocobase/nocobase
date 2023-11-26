@@ -308,7 +308,7 @@ test.describe('add block & delete block', () => {
       .getByRole('button', { name: 'designer-schema-settings' })
       .click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByLabel('block-item-CardItem-users-table')).not.toBeVisible();
     await expect(page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users')).not.toBeVisible();
     await expect(page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-users')).not.toBeVisible();
@@ -328,7 +328,7 @@ test.describe('block title', () => {
     await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     await page.getByLabel('block-item-Input-users-Block title').click();
     await page.getByLabel('block-item-Input-users-Block title').getByRole('textbox').fill('block title');
-    await page.locator('.ant-modal').getByRole('button', { name: 'OK' }).click();
+    await page.locator('.ant-modal').getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByLabel('block-item-CardItem-users-table').locator('.ant-card-head')).toBeVisible();
     await expect(page.getByLabel('block-item-CardItem-users-table').locator('.ant-card-head')).toHaveText(
       'block title',
@@ -501,7 +501,7 @@ test.describe('block template', () => {
       .hover();
     await page.getByRole('menuitem', { name: 'Save as block template' }).click();
     await page.getByLabel('Save as template').getByRole('textbox').fill('Users_Form');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page.getByLabel('block-item-CardItem-users-form').hover();
 
     //保存模板后当前区块为引用区块
@@ -556,6 +556,6 @@ test.describe('block template', () => {
     await page.getByLabel('ui-schema-storage').click();
     await page.getByRole('menuitem', { name: 'layout Block templates' }).click();
     await page.getByLabel('action-Action.Link-Delete-destroy-uiSchemaTemplates-table-Users_Form').click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
   });
 });
