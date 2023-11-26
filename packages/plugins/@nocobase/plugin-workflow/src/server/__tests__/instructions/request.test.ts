@@ -1,5 +1,9 @@
-import { Application, Gateway } from '@nocobase/server';
+import jwt from 'jsonwebtoken';
+
+import { Gateway } from '@nocobase/server';
 import Database from '@nocobase/database';
+import { MockServer } from '@nocobase/test';
+
 import { getApp, sleep } from '..';
 import { RequestConfig } from '../../instructions/request';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
@@ -11,14 +15,20 @@ const URL_400 = `http://localhost:${PORT}/api/400`;
 const URL_TIMEOUT = `http://localhost:${PORT}/api/timeout`;
 
 describe('workflow > instructions > request', () => {
-  let app: Application;
+  let app: MockServer;
   let db: Database;
   let PostRepo;
   let WorkflowModel;
   let workflow;
 
   beforeEach(async () => {
-    app = await getApp({ manual: true });
+    app = await getApp({
+      resourcer: {
+        prefix: '/api',
+      },
+      plugins: ['users', 'auth'],
+      manual: true,
+    });
 
     app.use(async (ctx, next) => {
       if (ctx.path === '/api/400') {
@@ -29,13 +39,14 @@ describe('workflow > instructions > request', () => {
         return ctx.throw(new Error('timeout'));
       }
       if (ctx.path === '/api/data') {
+        await sleep(100);
         ctx.withoutDataWrapping = true;
         ctx.body = {
           meta: { title: ctx.query.title },
           data: { title: ctx.request.body['title'] },
         };
       }
-      next();
+      await next();
     });
 
     Gateway.getInstance().start({
@@ -62,8 +73,8 @@ describe('workflow > instructions > request', () => {
 
   afterEach(() => app.destroy());
 
-  describe('request', () => {
-    it('request', async () => {
+  describe('request static app routes', () => {
+    it('get data', async () => {
       await workflow.createNode({
         type: 'request',
         config: {
@@ -80,6 +91,7 @@ describe('workflow > instructions > request', () => {
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
+      expect(job.result).toEqual({ meta: {}, data: {} });
     });
 
     it('request - timeout', async () => {
@@ -247,6 +259,43 @@ describe('workflow > instructions > request', () => {
       expect(jobs.length).toBe(3);
       expect(jobs.map((item) => item.status)).toEqual(Array(3).fill(JOB_STATUS.RESOLVED));
       expect(jobs[0].result).toBe(2);
+    });
+  });
+
+  describe('request db resource', () => {
+    it('request db resource', async () => {
+      const user = await db.getRepository('users').create({});
+
+      const token = jwt.sign(
+        {
+          userId: typeof user.id,
+        },
+        process.env.APP_KEY,
+        {
+          expiresIn: '1d',
+        },
+      );
+
+      const n1 = await workflow.createNode({
+        type: 'request',
+        config: {
+          url: `http://localhost:${PORT}/api/categories`,
+          method: 'POST',
+          headers: [{ name: 'Authorization', value: `Bearer ${token}` }],
+        } as RequestConfig,
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const category = await db.getRepository('categories').findOne({});
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.RESOLVED);
+      expect(job.result.data).toMatchObject({});
     });
   });
 });
