@@ -174,7 +174,7 @@ test.describe('field setting config ', () => {
     await page.getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-users-users.username').hover();
     await page.getByRole('menuitem', { name: 'Edit field title' }).click();
     await page.getByLabel('block-item-Input-users-Field title').getByRole('textbox').fill('Username1');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(
       page.getByLabel('block-item-CollectionField-users-form-users.username').getByText('Username1'),
     ).toBeVisible();
