@@ -50,7 +50,7 @@ test.describe('page title', () => {
     await page.getByRole('menuitem', { name: 'Edit page title' }).click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('page title2');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page.getByText('page title2').click();
     await expect(page.getByText('page title2')).toBeVisible();
     //菜单栏不调整
@@ -76,12 +76,12 @@ test.describe('page tabs', () => {
     await page.getByLabel('schema-initializer-Page-tabs').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('page tab 1');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page.getByText('page tab 1').click();
     await page.getByLabel('schema-initializer-Page-tabs').click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('page tab 2');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page.getByText('page tab 2').click();
 
     //激活的tab样式符合预期
@@ -95,7 +95,7 @@ test.describe('page tabs', () => {
     await page.getByRole('tab', { name: 'Unnamed' }).getByLabel('designer-schema-settings-Page').hover();
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('textbox').fill('page tab');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     const tabMenuItem1 = await page.getByRole('tab').getByText('page tab', { exact: true });
     await expect(tabMenuItem1).toBeVisible();
@@ -108,7 +108,7 @@ test.describe('page tabs', () => {
       .getByLabel('designer-schema-settings')
       .hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByRole('tab').getByText('page tab', { exact: true })).not.toBeVisible();
     await page.getByRole('tab').getByText('page tab 1').click();
 

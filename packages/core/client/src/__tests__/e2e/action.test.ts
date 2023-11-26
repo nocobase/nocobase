@@ -293,7 +293,7 @@ test.describe('action linkage rule', () => {
     await page.getByText('Add property').click();
     await page.getByTestId('select-linkage-properties').click();
     await page.getByText('Hidden').click();
-    await page.locator('.ant-modal').getByRole('button', { name: 'OK' }).click();
+    await page.locator('.ant-modal').getByRole('button', { name: 'OK', exact: true }).click();
     //配置中，按钮显示半透明
     const actionItem = page.getByLabel('block-item-CardItem-users-table').getByLabel('View');
     const inputErrorBorderColor = await actionItem.evaluate((element) => {
@@ -324,7 +324,7 @@ test.describe('action linkage rule', () => {
     await page.getByText('Add property').click();
     await page.getByTestId('select-linkage-properties').click();
     await page.getByText('Disabled').click();
-    await page.locator('.ant-modal').getByRole('button', { name: 'OK' }).click();
+    await page.locator('.ant-modal').getByRole('button', { name: 'OK', exact: true }).click();
 
     const linkBtn = page.getByLabel('block-item-CardItem-users-table').getByLabel('View');
     const linkBtnCursor = await linkBtn.evaluate((element) => {
