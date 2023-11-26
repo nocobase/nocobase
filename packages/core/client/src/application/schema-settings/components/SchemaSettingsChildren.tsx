@@ -18,7 +18,7 @@ import {
 } from '../../../schema-settings/SchemaSettings';
 import { SchemaSettingItemContext } from '../context';
 
-export interface SchemaSettingChildrenProps {
+export interface SchemaSettingsChildrenProps {
   children: SchemaSettingsItemType[];
 }
 
@@ -36,7 +36,7 @@ const typeComponentMap = {
   modal: SchemaSettingsModalItem,
 };
 
-export const SchemaSettingChildren: FC<SchemaSettingChildrenProps> = (props) => {
+export const SchemaSettingsChildren: FC<SchemaSettingsChildrenProps> = (props) => {
   const { children } = props;
   const { visible } = useSchemaSettings();
   const firstVisible = useRef<boolean>(false);
@@ -53,7 +53,7 @@ export const SchemaSettingChildren: FC<SchemaSettingChildrenProps> = (props) => 
       {children
         .sort((a, b) => (a.sort || 0) - (b.sort || 0))
         .map((item) => (
-          <SchemaSettingChild key={item.name} {...item} />
+          <SchemaSettingsChild key={item.name} {...item} />
         ))}
     </>
   );
@@ -62,7 +62,7 @@ export const SchemaSettingChildren: FC<SchemaSettingChildrenProps> = (props) => 
 const useChildrenDefault = () => undefined;
 const useComponentPropsDefault = () => undefined;
 const useVisibleDefault = () => true;
-export const SchemaSettingChild: FC<SchemaSettingsItemType> = (props) => {
+export const SchemaSettingsChild: FC<SchemaSettingsItemType> = (props) => {
   const {
     useVisible = useVisibleDefault,
     useChildren = useChildrenDefault,
@@ -97,7 +97,7 @@ export const SchemaSettingChild: FC<SchemaSettingsItemType> = (props) => {
     <SchemaSettingItemContext.Provider value={props}>
       <C {...componentProps} {...useComponentPropsRes}>
         {Array.isArray(componentChildren) && componentChildren.length > 0 && (
-          <SchemaSettingChildren>{componentChildren}</SchemaSettingChildren>
+          <SchemaSettingsChildren>{componentChildren}</SchemaSettingsChildren>
         )}
       </C>
     </SchemaSettingItemContext.Provider>

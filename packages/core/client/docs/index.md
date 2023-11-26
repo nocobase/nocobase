@@ -1,1 +1,1 @@
-<Navigate replace to="/apis/application"></Navigate>
+<Navigate replace to="/core/application/application"></Navigate>
