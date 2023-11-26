@@ -150,8 +150,8 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
 export interface SchemaDesignerToolbarProps {
   title?: string;
   draggable?: boolean;
-  initializer?: string | boolean;
-  settings?: string | boolean;
+  initializer?: string | false;
+  settings?: string | false;
 }
 
 export const SchemaDesignerToolbar: FC<SchemaDesignerToolbarProps> = (props) => {
