@@ -281,6 +281,10 @@ export default class WorkflowPlugin extends Plugin {
         );
 
         await workflow.increment(['executed', 'allExecuted'], { transaction });
+        // NOTE: https://sequelize.org/api/v6/class/src/model.js~model#instance-method-increment
+        if (this.db.options.dialect !== 'postgres') {
+          await workflow.reload({ transaction });
+        }
 
         await (<typeof WorkflowModel>workflow.constructor).update(
           {
