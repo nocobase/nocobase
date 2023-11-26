@@ -123,7 +123,6 @@ const WithForm = (props: WithFormProps) => {
             onFieldInit(`*(${fields})`, (field: any, form) => {
               disposes.push(
                 autorun(() => {
-                  console.log(1212);
                   // 当条件改变触发 autorun 时，会同步收集字段状态，并保存到 field.linkageProperty 中
                   collectFieldStateOfLinkageRules({
                     operator: h.operator,
