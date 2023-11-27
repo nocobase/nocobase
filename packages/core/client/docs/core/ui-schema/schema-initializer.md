@@ -348,6 +348,45 @@ myInitializer.remove('a')
 
 ## Hooks
 
+### useSchemaInitializer()
+
+用于获取 `SchemaInitializer` 上下文内容。
+
+- 类型
+
+```tsx | pure
+export type InsertType = (s: ISchema) => void;
+
+const useSchemaInitializer: () => {
+    insert: InsertType;
+    options: SchemaInitializerOptions<any>;
+    visible?: boolean;
+    setVisible?: (v: boolean) => void;
+}
+```
+
+- 参数详解
+  - `insert`：参数是 Schema 对象，用于插入 Schema
+  - `options`：获取 `new SchemaInitializer(options)` 时 options 配置
+  - `visible`：popover 是否显示
+  - `setVisible`：设置 popover 显示状态
+
+- 示例
+
+```tsx | pure
+const schema = {
+  type: 'void',
+  'x-component': 'Hello',
+}
+const Demo = () => {
+    const { insert } = useSchemaInitializer();
+     const handleClick = () => {
+      insert(schema);
+    };
+    return  <SchemaInitializerItem title={'Demo'} onClick={handleClick}></SchemaInitializerItem>;
+}
+```
+
 ### useSchemaInitializerRender()
 
 用于渲染 `SchemaInitializer`。
@@ -389,156 +428,60 @@ const Demo = () => {
 | itemGroup   | SchemaInitializerGroup       | 分组，同 Menu 组件的 `type: 'group'`      |
 | subMenu     | SchemaInitializerMenu         | 子菜单，同 Menu 组件的子菜单              |
 | divider     | SchemaInitializerDivider         | 分割线，同 Menu 组件的  `type: 'divider'` |
-| select      | SchemaInitializerSelect      | 下拉选择                                  |
 | switch      | SchemaInitializerSwitch      | 开关                                      |
 
 
 ### SchemaInitializerItem
-文本项。
+
+文本项，对应 `type` 为 `item`。
 
 ```tsx | pure
-const PageInitializerItem = () => {
-  const { insert } = useSchemaInitializer();
-
-  const handleClick = () => {
-    insert(schema)
-  }
-
-  return <SchemaInitializerItem title={'Page'} onClick={handleClick} />
+export interface SchemaInitializerItemProps {
+  style?: React.CSSProperties;
+  className?: string;
+  name?: string;
+  icon?: React.ReactNode;
+  title?: React.ReactNode;
+  onClick?: (args?: any) => any;
 }
-
-const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
-  title: 'Button Text',
-  items: [
-    {
-      name: 'a',
-      Component: PageInitializerItem,
-    }
-  ],
-});
 ```
+
+核心参数是 `title`、`icon`、`onClick`，其中 `onClick` 用于插入 Schema。
+
+<code src="./demos/schema-initializer-components-item.tsx"></code>
 
 ### SchemaInitializerGroup
 
-分组。
+分组，对应 `type` 为 `group`，其核心参数是 `title`。
 
-```tsx | pure
-const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
-  title: 'Button Text',
-  items: [
-    {
-      name: 'a',
-      title: 'Group Title',
-      type: 'itemGroup',  // 等同于 Component: SchemaInitializerGroup
-      children: [
-        {
-          name: 'a1',
-          Component: ItemA1,
-        },
-        {
-          name: 'a2',
-          Component: ItemA2,
-        }
-      ],
-    }
-  ],
-});
-```
-
-### SchemaInitializerDivider
-
-分割线。
-
-```tsx | pure
-const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
-  title: 'Button Text',
-  items: [
-    {
-      name: 'divider',
-      type: 'divider',  // 等同于 Component: SchemaInitializerDivider
-    }
-  ],
-});
-```
+<code src="./demos/schema-initializer-components-group.tsx"></code>
 
 ### SchemaInitializerMenu
 
-子菜单。
+子菜单，对应 `type` 为 `subMenu`，其核心参数是 `title`。
 
-```tsx | pure
-const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
-  title: 'Button Text',
-  items: [
-    {
-      name: 'a',
-      title: 'Menu Title',
-      type: 'subMenu',  // 等同于 Component: SchemaInitializerMenu
-      children: [
-        {
-          name: 'a1',
-          Component: ItemA1,
-        },
-        {
-          name: 'a2',
-          Component: ItemA2,
-        }
-      ],
-    }
-  ],
-});
-```
+<code src="./demos/schema-initializer-components-menu.tsx"></code>
 
-### SchemaInitializerSelect
+### SchemaInitializerDivider
 
-选择器选项。
+分割线，对应 `type` 为 `divider`。
 
-```tsx | pure
-const OpenModeSelect = () => {
-  const { insert } = useSchemaInitializer();
-  const fieldSchema = useFieldSchema();
-  const field = useField();
-  const openModeValue = fieldSchema?.['x-component-props']?.['openMode'] || 'drawer';
-  const { patch } = useDesignable();
-
-  const handleChange = (value) => {
-    // 修改 Schema 的属性
-    patch({
-      'x-component-props': {
-        openMode: value,
-      }
-    })
-  }
-
-  return <SchemaInitializerSelect
-    title={'Open mode'}
-    options={[
-      { label: 'Drawer', value: 'drawer' },
-      { label: 'Dialog', value: 'modal' },
-    ]}
-    value={openModeValue}
-    onChange={handleChange}
-  />
-}
-
-const myInitializer = new SchemaInitializer({
-  name: 'MyInitializer',
-  title: 'Button Text',
-  items: [
-    {
-      name: 'openMode',
-      Component: OpenModeSelect,
-    }
-  ],
-});
-```
+<code src="./demos/schema-initializer-components-divider.tsx"></code>
 
 ### SchemaInitializerSwitch
 
-Switch 切换按钮。
+Switch 切换按钮，对应 `type` 为 `switch`。
+
+```tsx | pure
+export interface SchemaInitializerSwitchItemProps extends SchemaInitializerItemProps {
+  checked?: boolean;
+  disabled?: boolean;
+}
+```
+
+核心参数是 `checked`、`onClick`，其中 `onClick` 用于插入或者移除 Schema。
+
+<code src="./demos/schema-initializer-components-switch.tsx"></code>
 
 ## 渲染组件
 

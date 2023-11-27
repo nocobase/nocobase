@@ -633,6 +633,12 @@ export function useDesignable() {
             fieldSchema['title'] = val;
           }
           if (k === 'x-component-props') {
+            if (!field.componentProps) {
+              field.componentProps = {};
+            }
+            if (!fieldSchema['x-component-props']) {
+              fieldSchema['x-component-props'] = {};
+            }
             Object.keys(val).forEach((i) => {
               field.componentProps[i] = val[i];
               fieldSchema['x-component-props'][i] = val[i];

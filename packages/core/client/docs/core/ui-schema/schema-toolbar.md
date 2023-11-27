@@ -25,47 +25,113 @@ interface SchemaToolbarProps {
   - `initializer`：`SchemaInitializer` 的默认值，当 schema 里没有 `x-initializer` 时，会使用此值；当为 `false` 时，不会渲染 `SchemaInitializer`
   - `settings`：`SchemaSettings` 的默认值，当 schema 里没有 `x-settings` 时，会使用此值；当为 `false` 时，不会渲染 `SchemaSettings`
 
+在 schema 协议中，`x-toolbar` 是可以缺省的，当缺省时就是使用的默认的 `SchemaToolbar` 组件，默认的情况下，会显示 `settings`、`initializer` 和 `Drag` 组件。
+
 ```tsx
-import { Application, CardItem, Grid, SchemaSettings, SchemaComponent } from '@nocobase/client';
+import { useFieldSchema } from '@formily/react';
+import {
+  Application,
+  CardItem,
+  Grid,
+  Plugin,
+  SchemaComponent,
+  SchemaInitializer,
+  SchemaInitializerItem,
+  SchemaSettings,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+} from '@nocobase/client';
+import React from 'react';
 
-const MyToolbar = () => {
-  return (
-    <SchemaToolbar title="Test"  />
-  );
-}
-
-const helloSettings = new SchemaSettings({
-  name: 'HelloSettings',
+const mySettings = new SchemaSettings({
+  name: 'mySettings',
   items: [
     {
       name: 'remove',
       type: 'remove',
+      componentProps: {
+        removeParentsIfNoChildren: true,
+      },
     },
   ],
 });
 
-const Root = () => {
-  const schema = {
-    type: 'void',
-    'x-component': 'CardItem',
-    'x-settings': 'HelloSettings',
-    'x-toolbar': 'MyToolbar',
-    properties: {
-      hello: {
-        type: 'void',
-        'x-component': 'div',
-        'x-content': 'Hello World',
+const myInitializer = new SchemaInitializer({
+  name: 'MyInitializer',
+  //  按钮标题标题
+  title: 'Button Text',
+  wrap: Grid.wrap,
+  // 调用 initializer.render() 时会渲染 items 列表
+  items: [
+    {
+      name: 'demo1',
+      title: 'Demo1',
+      Component: () => {
+        const itemConfig = useSchemaInitializerItem();
+        // 调用插入功能
+        const { insert } = useSchemaInitializer();
+        const handleClick = () => {
+          insert({
+            type: 'void',
+            'x-settings': 'mySettings',
+            'x-decorator': 'CardItem',
+            'x-component': 'Hello',
+          });
+        };
+        return <SchemaInitializerItem title={itemConfig.title} onClick={handleClick}></SchemaInitializerItem>;
       },
     },
+  ],
+});
+
+const Hello = () => {
+  const schema = useFieldSchema();
+  return <h1>Hello, world! {schema.name}</h1>;
+};
+
+const hello1 = Grid.wrap({
+  type: 'void',
+  'x-settings': 'mySettings',
+  'x-decorator': 'CardItem',
+  'x-component': 'Hello',
+});
+
+const HelloPage = () => {
+  return (
+    <div>
+      <SchemaComponent
+        schema={{
+          name: 'root',
+          type: 'void',
+          'x-component': 'Grid',
+          'x-initializer': 'MyInitializer',
+          properties: {
+            hello1,
+          },
+        }}
+      />
+    </div>
+  );
+};
+
+class PluginHello extends Plugin {
+  async load() {
+    this.app.addComponents({ Grid, CardItem, Hello });
+    this.app.schemaSettingsManager.add(mySettings);
+    this.app.schemaInitializerManager.add(myInitializer);
+    this.router.add('hello', {
+      path: '/',
+      Component: HelloPage,
+    });
   }
-  return <SchemaComponent schema={schema} />;
 }
 
 const app = new Application({
-  schemaSettings: [helloSettings],
-  providers: [Root],
-  components: { CardItem, Grid, MyToolbar },
+  router: {
+    type: 'memory',
+  },
   designable: true,
+  plugins: [PluginHello],
 });
 
 export default app.getRootComponent();
