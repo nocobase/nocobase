@@ -12,7 +12,7 @@ import { Link, NavLink, Navigate } from 'react-router-dom';
 import { CSSVariableProvider } from '../css-variable';
 import { GlobalThemeProvider } from '../global-theme';
 import { PluginManager, PluginType } from './PluginManager';
-import { PluginSettingsManager } from './PluginSettingsManager';
+import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
 
@@ -48,11 +48,12 @@ export interface ApplicationOptions {
   components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
+  pluginSettings?: Record<string, PluginSettingOptions>;
   schemaSettings?: SchemaSettings[];
-  devDynamicImport?: DevDynamicImport;
   schemaInitializers?: SchemaInitializer[];
-  loadRemotePlugins?: boolean;
   designable?: boolean;
+  loadRemotePlugins?: boolean;
+  devDynamicImport?: DevDynamicImport;
 }
 
 export class Application {
@@ -109,7 +110,7 @@ export class Application {
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
     this.ws = new WebSocketClient(options.ws);
-    this.pluginSettingsManager = new PluginSettingsManager(this);
+    this.pluginSettingsManager = new PluginSettingsManager(options.pluginSettings, this);
     this.addRoutes();
     this.name = this.options.name || getSubAppName() || 'main';
   }
