@@ -121,14 +121,22 @@ test.describe('icon', () => {
       },
       expectReadonly: async () => {
         // 只读模式下，选择图标按钮会被禁用
-        await expect(page.getByRole('button', { name: 'account-book' })).toBeDisabled();
+        if (record.icon) {
+          await expect(page.getByRole('button', { name: record.icon })).toBeDisabled();
+        } else {
+          await expect(page.getByRole('button', { name: 'Select icon' })).toBeDisabled();
+        }
       },
       expectEasyReading: async () => {
         // 按钮会消失，只剩下图标
-        await expect(page.getByRole('button', { name: 'account-book' })).not.toBeVisible();
-        await expect(
-          page.getByLabel('block-item-CollectionField-general-form-general.icon-icon').getByLabel('account-book'),
-        ).toBeVisible();
+        if (record.icon) {
+          await expect(page.getByRole('button', { name: record.icon })).not.toBeVisible();
+          await expect(
+            page.getByLabel('block-item-CollectionField-general-form-general.icon-icon').getByLabel(record.icon),
+          ).toBeVisible();
+        } else {
+          await expect(page.getByRole('button', { name: 'Select icon' })).not.toBeVisible();
+        }
       },
     });
   });
