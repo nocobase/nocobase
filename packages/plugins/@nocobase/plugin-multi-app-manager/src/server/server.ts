@@ -65,6 +65,13 @@ const defaultDbCreator = async (app: Application) => {
     await connection.close();
   }
 
+  if (dialect === 'mariadb') {
+    const mariadb = require('mariadb');
+    const connection = await mariadb.createConnection({ host, port, user: username, password });
+    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
+    await connection.end();
+  }
+
   if (dialect === 'postgres') {
     const { Client } = require('pg');
 

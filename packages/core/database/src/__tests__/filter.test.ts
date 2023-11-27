@@ -142,10 +142,14 @@ describe('filter', () => {
       },
     });
 
+    const userCreatedAt = user.get('createdAt');
+    const year = userCreatedAt.getFullYear();
+    const month = userCreatedAt.getMonth() + 1; // 月份从0开始，因此加1
+    const date = userCreatedAt.getDate();
     const count = await PostCollection.repository.count({
       filter: {
         'user.createdAt': {
-          $dateOn: user.get('createdAt'),
+          $dateOn: `${year}-${month}-${date}`,
         },
       },
     });

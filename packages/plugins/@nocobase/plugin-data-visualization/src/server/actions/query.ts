@@ -4,6 +4,7 @@ import ChartsV2Plugin from '../plugin';
 import { formatter } from './formatter';
 import compose from 'koa-compose';
 import { parseFilter, getDateVars } from '@nocobase/utils';
+import { Cache } from '@nocobase/cache';
 
 type MeasureProps = {
   field: string | string[];
@@ -291,8 +292,7 @@ export const parseVariables = async (ctx: Context, next: Next) => {
 
 export const cacheMiddleware = async (ctx: Context, next: Next) => {
   const { uid, cache: cacheConfig, refresh } = ctx.action.params.values as QueryParams;
-  const plugin = ctx.app.getPlugin('data-visualization') as ChartsV2Plugin;
-  const cache = plugin.cache;
+  const cache = ctx.app.cacheManager.getCache('data-visualization') as Cache;
   const useCache = cacheConfig?.enabled && uid;
 
   if (useCache && !refresh) {
@@ -304,7 +304,7 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
   }
   await next();
   if (useCache) {
-    await cache.set(uid, ctx.body, cacheConfig?.ttl || 30);
+    await cache.set(uid, ctx.body, cacheConfig?.ttl * 1000);
   }
 };
 

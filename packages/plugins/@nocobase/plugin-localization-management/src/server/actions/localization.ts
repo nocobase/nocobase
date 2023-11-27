@@ -10,7 +10,7 @@ const getResourcesInstance = async (ctx: Context) => {
 };
 
 export const getResources = async (ctx: Context) => {
-  const resources = await ctx.app.locales.getCacheResources(ctx.get('X-Locale') || 'en-US');
+  const resources = await ctx.app.localeManager.getCacheResources(ctx.get('X-Locale') || 'en-US');
   const client = resources['client'];
   // Remove duplicated keys
   Object.keys(resources).forEach((module) => {

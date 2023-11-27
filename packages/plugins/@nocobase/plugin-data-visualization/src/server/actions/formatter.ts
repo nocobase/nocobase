@@ -10,6 +10,7 @@ export const dateFormatFn = (sequelize: any, dialect: string, field: string, for
         .replace(/ss/g, '%S');
       return sequelize.fn('strftime', format, sequelize.col(field));
     case 'mysql':
+    case 'mariadb':
       format = format
         .replace(/YYYY/g, '%Y')
         .replace(/MM/g, '%m')
@@ -22,7 +23,7 @@ export const dateFormatFn = (sequelize: any, dialect: string, field: string, for
       format = format.replace(/hh/g, 'HH24').replace(/mm/g, 'MI').replace(/ss/g, 'SS');
       return sequelize.fn('to_char', sequelize.col(field), format);
     default:
-      return field;
+      return sequelize.col(field);
   }
 };
 

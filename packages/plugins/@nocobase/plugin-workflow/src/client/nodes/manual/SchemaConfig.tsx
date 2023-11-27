@@ -19,6 +19,7 @@ import {
   SchemaInitializerItemType,
   SchemaSettings,
   VariableScopeProvider,
+  css,
   gridRowColWrap,
   useCollectionManager,
   useCompile,
@@ -415,11 +416,15 @@ export function SchemaConfig({ value, onChange }) {
         properties: {
           drawer: {
             type: 'void',
-            title: '{{t("Configure form")}}',
+            title: `{{t("User interface", { ns: "${NAMESPACE}" })}}`,
             'x-decorator': 'Form',
             'x-component': 'Action.Drawer',
             'x-component-props': {
-              className: 'nb-action-popup',
+              className: css`
+                .ant-drawer-body {
+                  background: var(--nb-box-bg);
+                }
+              `,
             },
             properties: {
               tabs: {
@@ -512,7 +517,7 @@ export function SchemaConfigButton(props) {
   const [visible, setVisible] = useState(false);
   return (
     <>
-      <Button type="primary" onClick={() => setVisible(true)}>
+      <Button type="primary" onClick={() => setVisible(true)} disabled={false}>
         {workflow.executed ? lang('View user interface') : lang('Configure user interface')}
       </Button>
       <ActionContextProvider value={{ visible, setVisible, formValueChanged: false }}>
