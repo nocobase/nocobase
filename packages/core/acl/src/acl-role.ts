@@ -22,11 +22,19 @@ export class ACLRole {
   strategy: string | AvailableStrategyOptions;
   resources = new Map<string, ACLResource>();
   snippets: Set<string> = new Set();
+  _snippetCache = {
+    params: null,
+    result: null,
+  };
 
   constructor(
     public acl: ACL,
     public name: string,
   ) {}
+
+  _serializeSet(set: Set<string>) {
+    return JSON.stringify([...set].sort());
+  }
 
   getResource(name: string): ACLResource | undefined {
     return this.resources.get(name);
@@ -86,6 +94,11 @@ export class ACLRole {
   }
 
   public effectiveSnippets(): { allowed: Array<string>; rejected: Array<string> } {
+    const currentParams = this._serializeSet(this.snippets);
+    if (this._snippetCache.params === currentParams) {
+      return this._snippetCache.result;
+    }
+
     const allowedSnippets = new Set<string>();
     const rejectedSnippets = new Set<string>();
 
@@ -108,10 +121,16 @@ export class ACLRole {
 
     // get difference of allowed and rejected snippets
     const effectiveSnippets = new Set([...allowedSnippets].filter((x) => !rejectedSnippets.has(x)));
-    return {
-      allowed: [...effectiveSnippets],
-      rejected: [...rejectedSnippets],
+
+    this._snippetCache = {
+      params: currentParams,
+      result: {
+        allowed: [...effectiveSnippets],
+        rejected: [...rejectedSnippets],
+      },
     };
+
+    return this._snippetCache.result;
   }
 
   public snippetAllowed(actionPath: string) {
