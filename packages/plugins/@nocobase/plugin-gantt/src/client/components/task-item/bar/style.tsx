@@ -7,7 +7,7 @@ export const barWrapper = css`
     fill: #ddd;
     cursor: ew-resize;
     opacity: 0;
-    visibility: hidden;
+    // visibility: hidden;
   }
   &:hover .barHandle {
     visibility: visible;

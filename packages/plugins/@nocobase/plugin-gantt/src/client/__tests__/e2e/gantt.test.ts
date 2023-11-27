@@ -173,13 +173,14 @@ test.describe('configure params in gantt block', () => {
 
 test.describe('action in gantt block', () => {
   test('drag and adjust start time, end time, and progress', async ({ page, mockPage, mockRecord }) => {
-    await mockPage(oneEmptyGantt).goto();
-    await mockRecord('general', {
+    const mockData = {
       singleLineText: 'within apropos leaker whoever how',
       startDatetime: '2023-04-26T11:02:51.129Z',
       endDatetime: '2023-06-13T22:11:11.999Z',
-      percent: 0,
-    });
+      percent: 50,
+    };
+    await mockPage(oneEmptyGantt).goto();
+    await mockRecord('general', mockData);
     await page.getByLabel('block-item-gantt').hover();
     await page.getByLabel('designer-schema-settings-CardItem-Gantt.Designer-general').hover();
     await page.getByRole('menuitem', { name: 'Time scale' }).click();
@@ -188,27 +189,28 @@ test.describe('action in gantt block', () => {
     await page.mouse.move(300, 0);
     await page.getByRole('button', { name: 'Actions' }).click();
     await expect(await page.locator('.calendarBottomText').first().textContent()).toContain('W');
-    await page.locator('svg.ganttBody').hover();
     await page.locator('.bar ').hover();
-    await page.locator('.handleGroup').hover();
-    console.log('Before hover');
-    const barHandle = await page.locator('rect.barHandle').first();
+    const draggableElement = await page.getByLabel('task-bar').getByRole('button').first();
+    await draggableElement.hover();
+    const { x: initialX, y: initialY } = await draggableElement.boundingBox();
+    // 计算目标位置的坐标
+    const targetX = initialX + 100;
+    const targetY = initialY;
+    await page.mouse.move(initialX, initialY);
     await page.mouse.down();
-    await page.mouse.move(1000, 0);
-    await page.mouse.up();
-    console.log('After hover action');
-
-    // await page.getByRole('button', { name: 'Actions' }).click();
-    // try {
-    //   const [request] = await Promise.all([
-    //     page.waitForRequest((request) => request.url().includes('api/general:update')),
-    //     page.mouse.move(500, 0),
-    //   ]);
-    //   const postData = request.postDataJSON();
-    //   console.log(postData);
-    // } catch {
-    //   console.log('error');
-    // }
+    await page.mouse.move(targetX, targetY);
+    try {
+      const [request] = await Promise.all([
+        page.waitForRequest((request) => request.url().includes('api/general:update')),
+        page.mouse.up(),
+      ]);
+      const postData = request.postDataJSON();
+      //开始时间被调整了，结束时间无改变
+      expect(postData.startDatetime).not.toEqual(mockData.startDatetime);
+      expect(postData.endDatetime).toEqual(mockData.endDatetime);
+    } catch {
+      console.log('error');
+    }
   });
   test('configure button in gannt block', async ({ page, mockPage }) => {
     await mockPage(oneEmptyGantt).goto();
