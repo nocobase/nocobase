@@ -1,16 +1,17 @@
 import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
-import { createForm, Field, Form as FormilyForm, onFieldChange, onFieldInit, onFormInputChange } from '@formily/core';
+import { createForm, Field, Form as FormilyForm, onFieldInit, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { autorun, raw } from '@formily/reactive';
+import { autorun, toJS } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
+import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useProps } from '../../hooks/useProps';
-import { linkageMergeAction } from './utils';
+import { collectFieldStateOfLinkageRules, getTempFieldState } from './utils';
 
 export interface FormProps {
   [key: string]: any;
@@ -105,37 +106,63 @@ const WithForm = (props: WithFormProps) => {
     const disposes = [];
 
     form.addEffects(id, () => {
-      linkageRules.forEach((v, index) => {
+      linkageRules.forEach((v) => {
         v.actions?.forEach((h) => {
           if (h.targetFields?.length) {
             const fields = h.targetFields.join(',');
             onFieldInit(`*(${fields})`, (field: any, form) => {
               field['initProperty'] = field?.['initProperty'] ?? {
-                display: field.display,
-                required: field.required,
-                pattern: field.pattern,
-                value: field.value || field.initialValue,
-              };
-            });
-            onFieldChange(`*(${fields})`, ['value', 'required', 'pattern', 'display'], (field: any) => {
-              field.linkageProperty = {
-                display: field.linkageProperty?.display,
+                display: getTempFieldState(true, field.display),
+                required: getTempFieldState(true, field.required),
+                pattern: getTempFieldState(true, field.pattern),
+                value: getTempFieldState(true, field.value || field.initialValue),
               };
             });
 
             // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `autorun` 代替
             onFieldInit(`*(${fields})`, (field: any, form) => {
-              field.linkageProperty = {};
               disposes.push(
-                autorun(async () => {
-                  await linkageMergeAction({
+                autorun(() => {
+                  // 当条件改变触发 autorun 时，会同步收集字段状态，并保存到 field.linkageProperty 中
+                  collectFieldStateOfLinkageRules({
                     operator: h.operator,
                     value: h.value,
                     field,
                     condition: v.condition,
-                    values: raw(form?.values),
+                    values: toJS(form?.values),
                     variables,
                     localVariables,
+                  });
+
+                  // 当条件改变时，有可能会触发多个 autorun，所以这里需要延迟一下，确保所有的 autorun 都执行完毕后，
+                  // 再从 field.linkageProperty 中取值，因为此时 field.linkageProperty 中的值才是全的。
+                  setTimeout(async () => {
+                    const fieldName = getFieldNameByOperator(h.operator);
+
+                    // 防止重复赋值
+                    if (!field.linkageProperty[fieldName]) {
+                      return;
+                    }
+
+                    let stateList = field.linkageProperty[fieldName];
+
+                    stateList = await Promise.all(stateList);
+                    stateList = stateList.filter((v) => v.condition);
+
+                    const lastState = stateList[stateList.length - 1];
+
+                    if (fieldName === 'value') {
+                      // value 比较特殊，它只有在匹配条件时才需要赋值，当条件不匹配时，维持现在的值；
+                      // stateList 中肯定会有一个初始值，所以当 stateList.length > 1 时，就说明有匹配条件的情况；
+                      if (stateList.length > 1) {
+                        field.value = lastState.value;
+                      }
+                    } else {
+                      field[fieldName] = lastState?.value;
+                    }
+
+                    // 在这里清空 field.linkageProperty，就可以保证：当条件再次改变时，如果该字段没有和任何条件匹配，则需要把对应的值恢复到初始值；
+                    field.linkageProperty[fieldName] = null;
                   });
                 }),
               );
@@ -210,3 +237,23 @@ export const Form: React.FC<FormProps> & {
   },
   { displayName: 'Form' },
 );
+
+function getFieldNameByOperator(operator: ActionType) {
+  switch (operator) {
+    case ActionType.Required:
+    case ActionType.InRequired:
+      return 'required';
+    case ActionType.Visible:
+    case ActionType.None:
+    case ActionType.Hidden:
+      return 'display';
+    case ActionType.Editable:
+    case ActionType.ReadOnly:
+    case ActionType.ReadPretty:
+      return 'pattern';
+    case ActionType.Value:
+      return 'value';
+    default:
+      return null;
+  }
+}
