@@ -1,17 +1,17 @@
-# Designer
+# SchemaToolbar
 
-![Designer](../static/designer.png)
+![SchemaToolbar](../static/designer.png)
 
 ## 组件
 
-### SchemaDesignerToolbar
+### SchemaToolbar
 
-Designer 工具栏部分，其内部会自动根据 Schema 渲染 `SchemaSettings`、`SchemaInitializer` 和 `Drag` 组件。
+SchemaToolbar 工具栏部分，其内部会自动根据 Schema 渲染 `SchemaSettings`、`SchemaInitializer` 和 `Drag` 组件。
 
 - 类型
 
 ```tsx | pure
-interface SchemaDesignerToolbarProps {
+interface SchemaToolbarProps {
   title?: string;
   draggable?: boolean;
   initializer?: string | false;
@@ -30,7 +30,7 @@ import { Application, CardItem, Grid, SchemaSettings, SchemaComponent } from '@n
 
 const MyToolbar = () => {
   return (
-    <SchemaDesignerToolbar title="Test"  />
+    <SchemaToolbar title="Test"  />
   );
 }
 
@@ -71,20 +71,20 @@ const app = new Application({
 export default app.getRootComponent();
 ```
 
-### SchemaDesignerProvider  & useSchemaDesigner()
+### SchemaToolbarProvider  & useSchemaToolbar()
 
-当 `SchemaInitializer` 或者 `SchemaSettings` 的子项里需要使用到 Designer 的上下文，可以使用此组件爱你进行传递，并配合 `useSchemaDesigner()` 获取。
+当 `SchemaInitializer` 或者 `SchemaSettings` 的子项里需要使用到 Designer 的上下文，可以使用此组件爱你进行传递，并配合 `useSchemaToolbar()` 获取。
 
 ```tsx | pure
 const MyToolbar = () => {
-  return (<SchemaDesignerProvider foo={'bar'}>
-      <SchemaDesignerToolbar title="Test"  />
-    </SchemaDesignerProvider>);
+  return (<SchemaToolbarProvider foo={'bar'}>
+      <SchemaToolbar title="Test"  />
+    </SchemaToolbarProvider>);
 }
 
 
 const HelloSettingItem = () => {
-  const { foo } = useSchemaDesigner();
+  const { foo } = useSchemaToolbar();
   return <SchemaSettingsItem title={foo}></SchemaSettingsItem>;
 }
 
