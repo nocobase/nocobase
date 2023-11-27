@@ -3,16 +3,16 @@ import lodash from 'lodash';
 import {
   Association,
   BulkCreateOptions,
-  ModelStatic,
-  Op,
-  Sequelize,
-  FindAndCountOptions as SequelizeAndCountOptions,
   CountOptions as SequelizeCountOptions,
   CreateOptions as SequelizeCreateOptions,
   DestroyOptions as SequelizeDestroyOptions,
+  FindAndCountOptions as SequelizeAndCountOptions,
   FindOptions as SequelizeFindOptions,
-  UpdateOptions as SequelizeUpdateOptions,
+  ModelStatic,
+  Op,
+  Sequelize,
   Transactionable,
+  UpdateOptions as SequelizeUpdateOptions,
   WhereOperators,
 } from 'sequelize';
 import { Collection } from './collection';
@@ -778,6 +778,13 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const params = parser.toSequelizeParams();
     debug('sequelize query params %o', params);
+
+    if (options.where && params.where) {
+      params.where = {
+        [Op.and]: [params.where, options.where],
+      };
+    }
+
     return { where: {}, ...options, ...params };
   }
 
