@@ -45,7 +45,7 @@ test.describe('checkbox', () => {
 });
 
 test.describe('checkbox group', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'checkGroup', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'checkboxGroup', blockType: 'viewing' });
 });
 
 test.describe('china region', () => {

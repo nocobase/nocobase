@@ -95,7 +95,7 @@ test.describe('checkbox', () => {
 });
 
 test.describe('checkbox group', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'checkGroup' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'checkboxGroup' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
