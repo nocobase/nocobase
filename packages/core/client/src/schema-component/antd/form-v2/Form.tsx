@@ -106,7 +106,7 @@ const WithForm = (props: WithFormProps) => {
     const disposes = [];
 
     form.addEffects(id, () => {
-      linkageRules.forEach((v, index) => {
+      linkageRules.forEach((v) => {
         v.actions?.forEach((h) => {
           if (h.targetFields?.length) {
             const fields = h.targetFields.join(',');
