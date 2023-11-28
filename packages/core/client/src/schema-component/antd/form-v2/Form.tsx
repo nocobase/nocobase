@@ -125,7 +125,7 @@ const WithForm = (props: WithFormProps) => {
               };
             });
 
-            // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `autorun` 代替
+            // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `reaction` 代替
             onFieldInit(`*(${fields})`, (field: any, form) => {
               disposes.push(
                 reaction(
@@ -234,7 +234,7 @@ function getSubscriber(
   localVariables: VariableOption[],
 ): (value: string, oldValue: string) => void {
   return () => {
-    // 当条件改变触发 autorun 时，会同步收集字段状态，并保存到 field.linkageProperty 中
+    // 当条件改变触发 reaction 时，会同步收集字段状态，并保存到 field.linkageProperty 中
     collectFieldStateOfLinkageRules({
       operator: action.operator,
       value: action.value,
@@ -245,7 +245,7 @@ function getSubscriber(
       localVariables,
     });
 
-    // 当条件改变时，有可能会触发多个 autorun，所以这里需要延迟一下，确保所有的 autorun 都执行完毕后，
+    // 当条件改变时，有可能会触发多个 reaction，所以这里需要延迟一下，确保所有的 reaction 都执行完毕后，
     // 再从 field.linkageProperty 中取值，因为此时 field.linkageProperty 中的值才是全的。
     setTimeout(async () => {
       const fieldName = getFieldNameByOperator(action.operator);
@@ -366,5 +366,7 @@ function getVariableValue(variableString: string, localVariables: VariableOption
     [variableName]: localVariables.find((item) => item.name === getVariableName(variableString))?.ctx,
   };
 
-  return getValuesByPath(ctx, getPath(variableName));
+  if (isVariable(variableName)) {
+    return getValuesByPath(ctx, getPath(variableName));
+  }
 }
