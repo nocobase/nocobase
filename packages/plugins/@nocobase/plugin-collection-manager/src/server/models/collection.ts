@@ -32,6 +32,10 @@ export class CollectionModel extends MagicAttributeModel {
       lodash.set(collectionOptions, 'duplicator.dataType', 'business');
     }
 
+    if (!this.db.inDialect('postgres') && collectionOptions.schema) {
+      delete collectionOptions.schema;
+    }
+
     if (this.db.hasCollection(name)) {
       collection = this.db.getCollection(name);
 

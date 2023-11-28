@@ -6,7 +6,7 @@ import { AppMigrator, AppMigratorOptions } from './app-migrator';
 import { readLines } from './utils';
 import { Application } from '@nocobase/server';
 import { DataTypes, DumpDataType } from '@nocobase/database';
-import lodash from 'lodash';
+import lodash, { isPlainObject } from 'lodash';
 import { FieldValueWriter } from './field-value-writer';
 import * as Topo from '@hapi/topo';
 import { RestoreCheckError } from './errors/restore-check-error';
@@ -181,7 +181,12 @@ export class Restorer extends AppMigrator {
     const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
     const meta = JSON.parse(metaContent);
 
-    const addSchemaTableName: any = meta.tableName;
+    let addSchemaTableName: any = meta.tableName;
+
+    if (!this.app.db.inDialect('postgres') && isPlainObject(addSchemaTableName)) {
+      addSchemaTableName = addSchemaTableName.tableName;
+    }
+
     const columns = meta['columns'];
 
     if (columns.length == 0) {
