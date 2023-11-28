@@ -52,6 +52,19 @@ export async function getApp({
           },
         },
 
+        prompt: {
+          run(node, input, processor) {
+            return {
+              status: JOB_STATUS.PENDING,
+            };
+          },
+          resume(node, job, processor) {
+            return job.set({
+              status: JOB_STATUS.RESOLVED,
+            });
+          },
+        },
+
         'prompt->error': {
           run(node, input, processor) {
             return {

@@ -30,14 +30,14 @@ import { lang } from '../locale';
 import useStyles from '../style';
 import { VariableOption, VariableOptions } from '../variable';
 
-import aggregate from './aggregate';
 import calculation from './calculation';
 import condition from './condition';
 import create from './create';
-import delay from './delay';
 import destroy from './destroy';
-import parallel from './parallel';
 import query from './query';
+
+import aggregate from './aggregate';
+import delay from './delay';
 import request from './request';
 import sql from './sql';
 import update from './update';
@@ -70,7 +70,6 @@ instructions.register('create', create);
 instructions.register('update', update);
 instructions.register('destroy', destroy);
 
-instructions.register('parallel', parallel);
 instructions.register('delay', delay);
 instructions.register('aggregate', aggregate);
 

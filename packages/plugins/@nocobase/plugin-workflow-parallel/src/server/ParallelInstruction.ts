@@ -1,7 +1,4 @@
-import { Instruction } from '.';
-import Processor from '../Processor';
-import { JOB_STATUS } from '../constants';
-import type { FlowNodeModel, JobModel } from '../types';
+import { Processor, Instruction, JOB_STATUS, FlowNodeModel, JobModel } from '@nocobase/plugin-workflow';
 
 export const PARALLEL_MODE = {
   ALL: 'all',

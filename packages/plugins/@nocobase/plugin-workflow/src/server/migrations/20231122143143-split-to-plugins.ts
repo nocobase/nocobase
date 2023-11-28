@@ -34,6 +34,13 @@ export default class extends Migration {
             enabled: true,
             installed: true,
           },
+          {
+            name: '@nocobase/plugin-workflow-parallel',
+            packageName: '@nocobase/plugin-workflow-parallel',
+            version: '0.16.0-alpha.3',
+            enabled: true,
+            installed: true,
+          },
         ],
         transaction,
       });

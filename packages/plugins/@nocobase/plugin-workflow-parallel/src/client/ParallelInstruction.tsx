@@ -1,14 +1,19 @@
-import { PlusOutlined } from '@ant-design/icons';
-import { css } from '@nocobase/client';
-import { Button, Tooltip } from 'antd';
 import React, { useState } from 'react';
-import { NodeDefaultView } from '.';
-import { Branch } from '../Branch';
-import { useFlowContext } from '../FlowContext';
-import { RadioWithTooltip } from '../components/RadioWithTooltip';
-import { useGetAriaLabelOfAddButton } from '../hooks/useGetAriaLabelOfAddButton';
-import { NAMESPACE, lang } from '../locale';
-import useStyles from '../style';
+import { Button, Tooltip } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+
+import { css } from '@nocobase/client';
+
+import {
+  NodeDefaultView,
+  Branch,
+  useFlowContext,
+  useStyles,
+  useGetAriaLabelOfAddButton,
+  RadioWithTooltip,
+} from '@nocobase/plugin-workflow/client';
+
+import { NAMESPACE, useLang } from '../locale';
 
 export default {
   title: `{{t("Parallel branch", { ns: "${NAMESPACE}" })}}`,
@@ -103,7 +108,7 @@ export default {
             ))}
           </div>
           <Tooltip
-            title={lang('Add branch')}
+            title={useLang('Add branch')}
             className={css`
               visibility: ${workflow.executed ? 'hidden' : 'visible'};
             `}

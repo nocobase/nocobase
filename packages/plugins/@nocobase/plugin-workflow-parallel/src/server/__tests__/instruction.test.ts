@@ -1,7 +1,12 @@
+import path from 'path';
+
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { getApp, sleep } from '..';
-import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
+import { EXECUTION_STATUS, JOB_STATUS, testkit } from '@nocobase/plugin-workflow';
+
+import Plugin from '..';
+
+const { getApp, sleep } = testkit;
 
 describe('workflow > instructions > parallel', () => {
   let app: Application;
@@ -12,7 +17,10 @@ describe('workflow > instructions > parallel', () => {
   let plugin;
 
   beforeEach(async () => {
-    app = await getApp();
+    app = await getApp({
+      plugins: [Plugin],
+      collectionPath: path.join(__dirname, './collections'),
+    });
     plugin = app.pm.get('workflow');
 
     db = app.db;
@@ -357,21 +365,18 @@ describe('workflow > instructions > parallel', () => {
       });
 
       const n2 = await workflow.createNode({
-        title: 'manual',
-        type: 'manual',
+        type: 'prompt',
         upstreamId: n1.id,
         branchIndex: 0,
       });
 
       const n3 = await workflow.createNode({
-        title: 'echo',
         type: 'echo',
         upstreamId: n1.id,
         branchIndex: 1,
       });
 
       const n4 = await workflow.createNode({
-        title: 'echo on end',
         type: 'echo',
         upstreamId: n1.id,
       });
@@ -398,6 +403,7 @@ describe('workflow > instructions > parallel', () => {
       const [e2] = await workflow.getExecutions();
       expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
       const jobs = await e2.getJobs({ order: [['id', 'ASC']] });
+      console.log(jobs);
       expect(jobs.length).toBe(4);
     });
   });

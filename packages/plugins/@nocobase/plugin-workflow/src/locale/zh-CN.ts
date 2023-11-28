@@ -150,16 +150,6 @@ export default {
   'Continue when "Yes"': '“是”则继续',
   'Branch into "Yes" and "No"': '“是”和“否”分别继续',
   'Condition expression': '条件表达式',
-  'Parallel branch': '分支',
-  'Run multiple branch processes in parallel.': '并行运行多个分支流程。',
-  'Add branch': '增加分支',
-  'All succeeded': '全部成功',
-  'Any succeeded': '任意成功',
-  'Any succeeded or failed': '任意成功或失败',
-  'Continue after all branches succeeded': '全部分支都成功后才能继续',
-  'Continue after any branch succeeded': '任意分支成功后就继续',
-  'Continue after any branch succeeded, or exit after any branch failed.':
-    '任意分支成功就继续流程，或者任意分支失败就退出流程。',
   Delay: '延时',
   'Delay a period of time and then continue or exit the process. Can be used to set wait or timeout times in parallel branches.':
     '延时一段时间，然后继续或退出流程。可以用于并行分支中等待其他分支或设置超时时间。',

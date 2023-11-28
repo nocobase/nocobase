@@ -6,6 +6,7 @@ export { triggers, useTrigger, getTriggersOptions } from './triggers';
 export * from './variable';
 export * from './components';
 export * from './utils';
+export * from './hooks/useGetAriaLabelOfAddButton';
 export { default as useStyles } from './style';
 
 import React from 'react';
