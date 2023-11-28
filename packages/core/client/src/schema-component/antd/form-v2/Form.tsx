@@ -361,12 +361,14 @@ function getVariableValuesInExpression({ action, localVariables }) {
 }
 
 function getVariableValue(variableString: string, localVariables: VariableOption[]) {
+  if (!isVariable(variableString)) {
+    return;
+  }
+
   const variableName = getVariableName(variableString);
   const ctx = {
-    [variableName]: localVariables.find((item) => item.name === getVariableName(variableString))?.ctx,
+    [variableName]: localVariables.find((item) => item.name === variableName)?.ctx,
   };
 
-  if (isVariable(variableName)) {
-    return getValuesByPath(ctx, getPath(variableName));
-  }
+  return getValuesByPath(ctx, getPath(variableString));
 }
