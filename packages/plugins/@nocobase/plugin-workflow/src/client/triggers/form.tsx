@@ -4,14 +4,10 @@ import {
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
-  useCollection,
+  useCollectValuesToSubmit,
   useCollectionDataSource,
   useCollectionManager,
   useCompile,
-  useCurrentUserContext,
-  useFilterByTk,
-  useFormActiveFields,
-  useRecord,
 } from '@nocobase/client';
 import { isURL, parse } from '@nocobase/utils/client';
 import { App, message } from 'antd';
@@ -104,92 +100,32 @@ export default {
   useActionTriggerable: true,
 };
 
-function getFormValues({
-  filterByTk,
-  form,
-  getField,
-  actionFields,
-}: {
-  filterByTk;
-  form;
-  getField;
-  actionFields: any[];
-}) {
-  if (filterByTk) {
-    if (actionFields) {
-      const keys = Object.keys(form.values).filter((key) => {
-        const f = getField(key);
-        return !actionFields.includes(key) && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(f?.type);
-      });
-      return omit({ ...form.values }, keys);
-    }
-  }
-
-  return form.values;
-}
-
 export function useTriggerWorkflowsActionProps() {
   const api = useAPIClient();
   const form = useForm();
-  const { field, resource, __parent } = useBlockRequestContext();
-  const { setVisible, fieldSchema } = useActionContext();
+  const { field, __parent } = useBlockRequestContext();
+  const { setVisible } = useActionContext();
   const navigate = useNavigate();
   const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField, getTreeParentField } = useCollection();
   const compile = useCompile();
-  const filterByTk = useFilterByTk();
-  const currentRecord = useRecord();
-  const currentUserContext = useCurrentUserContext();
   const { modal } = App.useApp();
-  const { getActiveFieldsName } = useFormActiveFields() || {};
+  const collectValues = useCollectValuesToSubmit();
 
-  const currentUser = currentUserContext?.data?.data;
   const filterKeys = actionField.componentProps.filterKeys || [];
 
   return {
     async onClick() {
-      const {
-        assignedValues: originalAssignedValues = {},
-        onSuccess,
-        overwriteValues,
-        skipValidator,
-        triggerWorkflows,
-      } = actionSchema?.['x-action-settings'] ?? {};
-      const addChild = fieldSchema?.['x-component-props']?.addChild;
-      const assignedValues = parse(originalAssignedValues)({
-        // @deprecated
-        currentTime: new Date(),
-        // @deprecated
-        currentRecord,
-        // @deprecated
-        currentUser,
-        $user: currentUser,
-        $nRecord: currentRecord,
-        $nForm: form.values,
-        $nDate: {
-          now: new Date(),
-        },
-      });
+      const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
       if (!skipValidator) {
         await form.submit();
       }
-      const values = getFormValues({ filterByTk, form, getField, actionFields: getActiveFieldsName?.('form') || [] });
-      // const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
-      if (addChild) {
-        const treeParentField = getTreeParentField();
-        values[treeParentField?.name ?? 'parent'] = currentRecord;
-        values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord.id;
-      }
+      const values = await collectValues();
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
         const data = await api.resource('workflows').trigger({
-          values: {
-            ...values,
-            ...overwriteValues,
-            ...assignedValues,
-          },
+          values,
           filterKeys: filterKeys,
           // TODO(refactor): should change to inject by plugin
           triggerWorkflows: triggerWorkflows?.length
