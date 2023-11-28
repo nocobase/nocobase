@@ -49,7 +49,6 @@ export default function <T extends Instruction>(plugin, more: { [key: string]: T
     'update',
     'destroy',
 
-    'delay',
     'aggregate',
     'request',
     'sql',

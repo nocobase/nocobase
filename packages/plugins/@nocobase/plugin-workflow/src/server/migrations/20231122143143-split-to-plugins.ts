@@ -41,6 +41,13 @@ export default class extends Migration {
             enabled: true,
             installed: true,
           },
+          {
+            name: '@nocobase/plugin-workflow-delay',
+            packageName: '@nocobase/plugin-workflow-delay',
+            version: '0.16.0-alpha.3',
+            enabled: true,
+            installed: true,
+          },
         ],
         transaction,
       });

@@ -1,16 +1,16 @@
 import React from 'react';
 import { InputNumber, Select } from 'antd';
-import { css } from '@nocobase/client';
+import { css, useCompile } from '@nocobase/client';
+import { JOB_STATUS } from '@nocobase/plugin-workflow/client';
 
-import { JOB_STATUS } from '../constants';
-import { NAMESPACE, lang } from '../locale';
+import { NAMESPACE } from '../locale';
 
 const UnitOptions = [
-  { value: 1_000, label: 'Seconds' },
-  { value: 60_000, label: 'Minutes' },
-  { value: 3600_000, label: 'Hours' },
-  { value: 86400_000, label: 'Days' },
-  { value: 604800_000, label: 'Weeks' },
+  { value: 1_000, label: `{{t('Seconds', { ns: "workflow" })}}` },
+  { value: 60_000, label: `{{t('Minutes', { ns: "workflow" })}}` },
+  { value: 3600_000, label: `{{t('Hours', { ns: "workflow" })}}` },
+  { value: 86400_000, label: `{{t('Days', { ns: "workflow" })}}` },
+  { value: 604800_000, label: `{{t('Weeks', { ns: "workflow" })}}` },
 ];
 
 function getNumberOption(v) {
@@ -20,6 +20,7 @@ function getNumberOption(v) {
 }
 
 function Duration({ value = 60000, onChange }) {
+  const compile = useCompile();
   const option = getNumberOption(value);
   const quantity = Math.round(value / option.value);
 
@@ -44,13 +45,11 @@ function Duration({ value = 60000, onChange }) {
         value={option.value}
         onChange={(unit) => onChange(Math.round(quantity * unit))}
         className="auto-width"
-      >
-        {UnitOptions.map((item) => (
-          <Select.Option key={item.value} value={item.value}>
-            {lang(item.label)}
-          </Select.Option>
-        ))}
-      </Select>
+        options={UnitOptions.map((item) => ({
+          value: item.value,
+          label: compile(item.label),
+        }))}
+      />
     </fieldset>
   );
 }

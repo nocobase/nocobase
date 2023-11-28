@@ -150,15 +150,6 @@ export default {
   'Continue when "Yes"': '“是”则继续',
   'Branch into "Yes" and "No"': '“是”和“否”分别继续',
   'Condition expression': '条件表达式',
-  Delay: '延时',
-  'Delay a period of time and then continue or exit the process. Can be used to set wait or timeout times in parallel branches.':
-    '延时一段时间，然后继续或退出流程。可以用于并行分支中等待其他分支或设置超时时间。',
-  Duration: '时长',
-  'End Status': '到时状态',
-  'Select status': '选择状态',
-  'Succeed and continue': '通过并继续',
-  'Fail and exit': '失败并退出',
-
   'Create record': '新增数据',
   'Add new record to a collection. You can use variables from upstream nodes to assign values to fields.':
     '向一个数据表中添加新的数据。可以使用上游节点里的变量为字段赋值。',

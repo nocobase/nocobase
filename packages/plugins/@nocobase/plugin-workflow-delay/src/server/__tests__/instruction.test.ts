@@ -1,7 +1,12 @@
+import path from 'path';
+
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { getApp, sleep } from '..';
-import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
+import { EXECUTION_STATUS, JOB_STATUS, testkit } from '@nocobase/plugin-workflow';
+
+import Plugin from '..';
+
+const { getApp, sleep } = testkit;
 
 describe('workflow > instructions > delay', () => {
   let app: Application;
@@ -9,12 +14,16 @@ describe('workflow > instructions > delay', () => {
   let PostRepo;
   let WorkflowModel;
   let workflow;
+  let plugin;
 
   beforeEach(async () => {
-    app = await getApp();
+    app = await getApp({
+      plugins: [Plugin],
+      collectionPath: path.join(__dirname, './collections'),
+    });
+    plugin = app.pm.get('workflow');
 
     db = app.db;
-
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
 

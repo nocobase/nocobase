@@ -1,8 +1,10 @@
-import Plugin from '..';
-import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
-import Processor from '../Processor';
-import { Instruction } from '.';
-import type { JobModel } from '../types';
+import WorkflowPlugin, {
+  Processor,
+  Instruction,
+  JOB_STATUS,
+  JobModel,
+  EXECUTION_STATUS,
+} from '@nocobase/plugin-workflow';
 
 type ValueOf<T> = T[keyof T];
 
@@ -14,7 +16,7 @@ interface DelayConfig {
 export default class extends Instruction {
   timers: Map<number, NodeJS.Timeout> = new Map();
 
-  constructor(public plugin: Plugin) {
+  constructor(public plugin: WorkflowPlugin) {
     super(plugin);
 
     plugin.app.on('beforeStart', this.load);
