@@ -276,7 +276,7 @@ function getSubscriber(
       // 在这里清空 field.linkageProperty，就可以保证：当条件再次改变时，如果该字段没有和任何条件匹配，则需要把对应的值恢复到初始值；
       field.linkageProperty[fieldName] = null;
     });
-  }, 1000);
+  }, 500);
 }
 
 function getFieldNameByOperator(operator: ActionType) {
