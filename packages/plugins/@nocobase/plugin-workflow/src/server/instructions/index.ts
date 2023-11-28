@@ -50,7 +50,6 @@ export default function <T extends Instruction>(plugin, more: { [key: string]: T
     'destroy',
 
     'parallel',
-    'loop',
     'delay',
     'aggregate',
     'request',

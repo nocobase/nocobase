@@ -3,19 +3,19 @@ import { ArrowUpOutlined } from '@ant-design/icons';
 
 import { css, cx, useCompile } from '@nocobase/client';
 
-import { NodeDefaultView } from '.';
-import { Branch } from '../Branch';
-import { useFlowContext } from '../FlowContext';
-import { NAMESPACE, lang } from '../locale';
-import useStyles from '../style';
 import {
+  NodeDefaultView,
+  Branch,
+  useFlowContext,
+  useStyles,
   VariableOption,
   WorkflowVariableInput,
   defaultFieldNames,
   nodesOptions,
   scopeOptions,
   triggerOptions,
-} from '../variable';
+} from '@nocobase/plugin-workflow/client';
+import { NAMESPACE, useLang } from '../locale';
 
 function findOption(options: VariableOption[], paths: string[]) {
   let opts = options;
@@ -103,6 +103,9 @@ export default {
   },
   useScopeVariables(node, options) {
     const compile = useCompile();
+    const langLoopTarget = useLang('Loop target');
+    const langLoopIndex = useLang('Loop index');
+    const langLoopLength = useLang('Loop length');
     const { target } = node.config;
     if (!target) {
       return null;
@@ -119,7 +122,7 @@ export default {
     let targetOption: VariableOption = {
       key: 'item',
       [fieldNames.value]: 'item',
-      [fieldNames.label]: lang('Loop target'),
+      [fieldNames.label]: langLoopTarget,
     };
 
     if (typeof target === 'string' && target.startsWith('{{') && target.endsWith('}}')) {
@@ -146,8 +149,8 @@ export default {
 
     return [
       targetOption,
-      { key: 'index', [fieldNames.value]: 'index', [fieldNames.label]: lang('Loop index') },
-      { key: 'length', [fieldNames.value]: 'length', [fieldNames.label]: lang('Loop length') },
+      { key: 'index', [fieldNames.value]: 'index', [fieldNames.label]: langLoopIndex },
+      { key: 'length', [fieldNames.value]: 'length', [fieldNames.label]: langLoopLength },
     ];
   },
 };

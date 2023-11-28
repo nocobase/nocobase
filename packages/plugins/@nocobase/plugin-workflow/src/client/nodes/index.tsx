@@ -36,7 +36,6 @@ import condition from './condition';
 import create from './create';
 import delay from './delay';
 import destroy from './destroy';
-import loop from './loop';
 import parallel from './parallel';
 import query from './query';
 import request from './request';
@@ -72,7 +71,6 @@ instructions.register('update', update);
 instructions.register('destroy', destroy);
 
 instructions.register('parallel', parallel);
-instructions.register('loop', loop);
 instructions.register('delay', delay);
 instructions.register('aggregate', aggregate);
 

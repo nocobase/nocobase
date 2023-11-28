@@ -13,16 +13,6 @@ import ManualInstruction from './ManualInstruction';
 export default class WorkflowManualPlugin extends Plugin {
   workflow: WorkflowPlugin;
 
-  beforeLoad() {
-    this.app.on('afterLoadPlugin', (plugin) => {
-      if (!(plugin instanceof WorkflowPlugin)) {
-        return;
-      }
-      this.workflow = plugin;
-      plugin.instructions.register('manual', new ManualInstruction(plugin));
-    });
-  }
-
   async load() {
     this.app.db.collection(usersJobsCollection);
     this.app.db.extendCollection(usersCollection);
@@ -50,5 +40,9 @@ export default class WorkflowManualPlugin extends Plugin {
         submit,
       },
     });
+
+    const workflowPlugin = this.app.getPlugin(WorkflowPlugin) as WorkflowPlugin;
+    this.workflow = workflowPlugin;
+    workflowPlugin.instructions.register('manual', new ManualInstruction(workflowPlugin));
   }
 }

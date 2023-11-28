@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/plugin-workflow-manual",
-  "displayName": "Manual node for workflow",
-  "displayName.zh-CN": "人工处理节点",
+  "displayName": "Workflow: manual node",
+  "displayName.zh-CN": "工作流：人工处理节点",
   "description": "Could be used for workflows which some of decisions are made by users.",
   "description.zh-CN": "用于人工控制部分决策的流程。",
   "version": "0.16.0-alpha.3",
