@@ -281,7 +281,6 @@ export default VariablesProvider;
 function shouldToRequest(value) {
   let result = false;
 
-  // fix https://nocobase.height.app/T-2646
   // value 有可能是一个响应式对象，使用 untracked 可以避免意外触发 autorun
   untracked(() => {
     // fix https://nocobase.height.app/T-2502
