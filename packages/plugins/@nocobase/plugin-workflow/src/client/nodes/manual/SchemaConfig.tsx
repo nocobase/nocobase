@@ -19,6 +19,7 @@ import {
   SchemaInitializerProvider,
   SchemaSettings,
   VariableScopeProvider,
+  css,
   gridRowColWrap,
   useCollectionManager,
   useCompile,
@@ -411,11 +412,15 @@ export function SchemaConfig({ value, onChange }) {
         properties: {
           drawer: {
             type: 'void',
-            title: '{{t("Configure form")}}',
+            title: `{{t("User interface", { ns: "${NAMESPACE}" })}}`,
             'x-decorator': 'Form',
             'x-component': 'Action.Drawer',
             'x-component-props': {
-              className: 'nb-action-popup',
+              className: css`
+                .ant-drawer-body {
+                  background: var(--nb-box-bg);
+                }
+              `,
             },
             properties: {
               tabs: {
