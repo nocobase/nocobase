@@ -10,7 +10,7 @@ import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
 
 import { CSSVariableProvider } from '../css-variable';
-import { GlobalThemeProvider } from '../global-theme';
+import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
 import { PluginManager, PluginType } from './PluginManager';
 import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
@@ -132,6 +132,7 @@ export class Application {
       components: this.components,
       scope: this.scopes,
     });
+    this.use(AntdAppProvider);
   }
 
   private addReactRouterComponents() {

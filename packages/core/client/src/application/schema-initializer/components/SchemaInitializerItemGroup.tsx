@@ -7,15 +7,15 @@ import { SchemaInitializerChildren } from './SchemaInitializerChildren';
 import { SchemaInitializerDivider } from './SchemaInitializerDivider';
 import { useSchemaInitializerStyles } from './style';
 
-export interface SchemaInitializerGroupProps {
+export interface SchemaInitializerItemGroupProps {
   name: string;
   title: string;
   children?: SchemaInitializerOptions['items'];
   divider?: boolean;
 }
 
-export const SchemaInitializerGroup = () => {
-  const { children, title, divider } = useSchemaInitializerItem<SchemaInitializerGroupProps>();
+export const SchemaInitializerItemGroup = () => {
+  const { children, title, divider } = useSchemaInitializerItem<SchemaInitializerItemGroupProps>();
   const compile = useCompile();
   const { componentCls } = useSchemaInitializerStyles();
   const { token } = theme.useToken();

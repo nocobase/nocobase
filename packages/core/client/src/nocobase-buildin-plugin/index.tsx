@@ -10,7 +10,6 @@ import { Plugin } from '../application/Plugin';
 import { SigninPage, SigninPageExtensionPlugin, SignupPage } from '../auth';
 import { BlockSchemaComponentPlugin } from '../block-provider';
 import { RemoteDocumentTitlePlugin } from '../document-title';
-import { AntdAppProvider } from '../global-theme';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
@@ -228,7 +227,6 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.addRoutes();
 
     this.app.use(CurrentUserProvider);
-    this.app.use(AntdAppProvider);
     this.app.use(CurrentUserSettingsMenuProvider);
 
     this.app.schemaInitializerManager.add(menuItemInitializer);

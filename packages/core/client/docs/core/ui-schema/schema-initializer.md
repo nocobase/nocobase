@@ -425,8 +425,8 @@ const Demo = () => {
 | type        | Component                      | 效果                                      |
 | ----------- | ------------------------------ | ----------------------------------------- |
 | item        | SchemaInitializerItem            | 文本                                      |
-| itemGroup   | SchemaInitializerGroup       | 分组，同 Menu 组件的 `type: 'group'`      |
-| subMenu     | SchemaInitializerMenu         | 子菜单，同 Menu 组件的子菜单              |
+| itemGroup   | SchemaInitializerItemGroup       | 分组，同 Menu 组件的 `type: 'group'`      |
+| subMenu     | SchemaInitializerSubMenu         | 子菜单，同 Menu 组件的子菜单              |
 | divider     | SchemaInitializerDivider         | 分割线，同 Menu 组件的  `type: 'divider'` |
 | switch      | SchemaInitializerSwitch      | 开关                                      |
 
@@ -450,13 +450,13 @@ export interface SchemaInitializerItemProps {
 
 <code src="./demos/schema-initializer-components-item.tsx"></code>
 
-### SchemaInitializerGroup
+### SchemaInitializerItemGroup
 
 分组，对应 `type` 为 `group`，其核心参数是 `title`。
 
 <code src="./demos/schema-initializer-components-group.tsx"></code>
 
-### SchemaInitializerMenu
+### SchemaInitializerSubMenu
 
 子菜单，对应 `type` 为 `subMenu`，其核心参数是 `title`。
 

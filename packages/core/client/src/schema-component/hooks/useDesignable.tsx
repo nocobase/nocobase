@@ -632,6 +632,18 @@ export function useDesignable() {
             field.title = val;
             fieldSchema['title'] = val;
           }
+          if (k === 'x-decorator-props') {
+            if (!field.decoratorProps) {
+              field.decoratorProps = {};
+            }
+            if (!fieldSchema['x-decorator-props']) {
+              fieldSchema['x-decorator-props'] = {};
+            }
+            Object.keys(val).forEach((i) => {
+              field.decoratorProps[i] = val[i];
+              fieldSchema['x-decorator-props'][i] = val[i];
+            });
+          }
           if (k === 'x-component-props') {
             if (!field.componentProps) {
               field.componentProps = {};

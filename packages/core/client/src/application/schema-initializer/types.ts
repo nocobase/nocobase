@@ -1,7 +1,11 @@
 import { ISchema } from '@formily/json-schema';
 import { ButtonProps, PopoverProps } from 'antd';
 import { ComponentType, ReactNode } from 'react';
-import type { SchemaInitializerGroupProps, SchemaInitializerItemProps, SchemaInitializerMenuProps } from './components';
+import type {
+  SchemaInitializerItemGroupProps,
+  SchemaInitializerItemProps,
+  SchemaInitializerSubMenuProps,
+} from './components';
 
 export type InsertType = (s: ISchema) => void;
 
@@ -42,23 +46,23 @@ export type SchemaInitializerItemOnlyType = {
 } & SchemaInitializerItemProps &
   SchemaInitializerItemBaseType;
 
-export type SchemaInitializerGroupType = {
+export type SchemaInitializerItemGroupType = {
   type: 'itemGroup';
 } & SchemaInitializerItemBaseWithChildren &
-  SchemaInitializerGroupProps;
+  SchemaInitializerItemGroupProps;
 
-export type SchemaInitializerMenuType = {
+export type SchemaInitializerSubMenuType = {
   type: 'subMenu';
 } & SchemaInitializerItemBaseWithChildren &
-  SchemaInitializerMenuProps;
+  SchemaInitializerSubMenuProps;
 
 export type SchemaInitializerItemType<T = {}> =
   | SchemaInitializerItemBaseType<T>
   | SchemaInitializerItemBaseWithChildren<T>
   | SchemaInitializerItemDividerType
   | SchemaInitializerItemOnlyType
-  | SchemaInitializerGroupType
-  | SchemaInitializerMenuType;
+  | SchemaInitializerItemGroupType
+  | SchemaInitializerSubMenuType;
 
 // TODO: 类型需要优化
 export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = {}> {
