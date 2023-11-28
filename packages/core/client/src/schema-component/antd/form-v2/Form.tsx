@@ -6,6 +6,7 @@ import { reaction } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { getValuesByPath } from '@nocobase/utils/client';
 import { ConfigProvider, Spin } from 'antd';
+import _ from 'lodash';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
@@ -233,7 +234,7 @@ function getSubscriber(
   variables: VariablesContextType,
   localVariables: VariableOption[],
 ): (value: string, oldValue: string) => void {
-  return () => {
+  return _.throttle(() => {
     // 当条件改变触发 reaction 时，会同步收集字段状态，并保存到 field.linkageProperty 中
     collectFieldStateOfLinkageRules({
       operator: action.operator,
@@ -275,7 +276,7 @@ function getSubscriber(
       // 在这里清空 field.linkageProperty，就可以保证：当条件再次改变时，如果该字段没有和任何条件匹配，则需要把对应的值恢复到初始值；
       field.linkageProperty[fieldName] = null;
     });
-  };
+  }, 1000);
 }
 
 function getFieldNameByOperator(operator: ActionType) {
