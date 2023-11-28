@@ -333,7 +333,7 @@ test.describe('password', () => {
           page.getByLabel('block-item-CollectionField-general-form-general.password-password').getByRole('textbox'),
         ).not.toBeVisible();
         await expect(page.getByLabel('block-item-CollectionField-general-form-general.password-password')).toHaveText(
-          'password:********',
+          'password:',
         );
       },
     });
