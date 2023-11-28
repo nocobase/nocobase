@@ -28,6 +28,7 @@
     "@nocobase/plugin-import": "0.16.0-alpha.4",
     "@nocobase/plugin-localization-management": "0.16.0-alpha.4",
     "@nocobase/plugin-map": "0.16.0-alpha.4",
+    "@nocobase/plugin-calendar": "0.16.0-alpha.4",
     "@nocobase/plugin-math-formula-field": "0.16.0-alpha.4",
     "@nocobase/plugin-mobile-client": "0.16.0-alpha.4",
     "@nocobase/plugin-multi-app-manager": "0.16.0-alpha.4",
