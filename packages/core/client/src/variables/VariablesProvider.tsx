@@ -1,3 +1,4 @@
+import { untracked } from '@formily/reactive';
 import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
@@ -278,11 +279,20 @@ VariablesProvider.displayName = 'VariablesProvider';
 export default VariablesProvider;
 
 function shouldToRequest(value) {
-  // fix https://nocobase.height.app/T-2502
-  // 兼容 `对多` 和 `对一` 子表单子表格字段的情况
-  if (JSON.stringify(value) === '[{}]' || JSON.stringify(value) === '{}') {
-    return true;
-  }
+  let result = false;
 
-  return _.isEmpty(value);
+  // fix https://nocobase.height.app/T-2646
+  // value 有可能是一个响应式对象，使用 untracked 可以避免意外触发 autorun
+  untracked(() => {
+    // fix https://nocobase.height.app/T-2502
+    // 兼容 `对多` 和 `对一` 子表单子表格字段的情况
+    if (JSON.stringify(value) === '[{}]' || JSON.stringify(value) === '{}') {
+      result = true;
+      return;
+    }
+
+    result = _.isEmpty(value);
+  });
+
+  return result;
 }

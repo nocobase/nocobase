@@ -92,12 +92,11 @@ export const conditionAnalyses = async ({
     }
 
     const targetVariableName = targetFieldToVariableString(getTargetField(c));
+    const targetValue = variables.parseVariable(targetVariableName, localVariables);
+
     const parsingResult = isVariable(jsonlogic?.value)
-      ? [
-          variables.parseVariable(jsonlogic?.value, localVariables),
-          variables.parseVariable(targetVariableName, localVariables),
-        ]
-      : [jsonlogic?.value, variables.parseVariable(targetVariableName, localVariables)];
+      ? [variables.parseVariable(jsonlogic?.value, localVariables), targetValue]
+      : [jsonlogic?.value, targetValue];
 
     try {
       const jsonLogic = getJsonLogic();

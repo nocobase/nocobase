@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { createForm, Field, Form as FormilyForm, onFieldInit, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { autorun, toJS } from '@formily/reactive';
+import { autorun, toJS, untracked } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
 import React, { useEffect, useMemo } from 'react';
@@ -123,13 +123,19 @@ const WithForm = (props: WithFormProps) => {
             onFieldInit(`*(${fields})`, (field: any, form) => {
               disposes.push(
                 autorun(() => {
+                  let formValues;
+
+                  untracked(() => {
+                    formValues = toJS(form.values);
+                  });
+
                   // 当条件改变触发 autorun 时，会同步收集字段状态，并保存到 field.linkageProperty 中
                   collectFieldStateOfLinkageRules({
                     operator: h.operator,
                     value: h.value,
                     field,
                     condition: v.condition,
-                    values: toJS(form?.values),
+                    values: formValues,
                     variables,
                     localVariables,
                   });
