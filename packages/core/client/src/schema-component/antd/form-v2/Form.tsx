@@ -118,7 +118,7 @@ const WithForm = (props: WithFormProps) => {
           if (action.targetFields?.length) {
             const fields = action.targetFields.join(',');
             onFieldInit(`*(${fields})`, (field: any, form) => {
-              field['initProperty'] = field?.['initProperty'] ?? {
+              field['initStateOfLinkageRules'] = field?.['initStateOfLinkageRules'] ?? {
                 display: getTempFieldState(true, field.display),
                 required: getTempFieldState(true, field.required),
                 pattern: getTempFieldState(true, field.pattern),
@@ -235,7 +235,7 @@ function getSubscriber(
   localVariables: VariableOption[],
 ): (value: string, oldValue: string) => void {
   return _.throttle(() => {
-    // 当条件改变触发 reaction 时，会同步收集字段状态，并保存到 field.linkageProperty 中
+    // 当条件改变触发 reaction 时，会同步收集字段状态，并保存到 field.stateOfLinkageRules 中
     collectFieldStateOfLinkageRules({
       operator: action.operator,
       value: action.value,
@@ -247,16 +247,16 @@ function getSubscriber(
     });
 
     // 当条件改变时，有可能会触发多个 reaction，所以这里需要延迟一下，确保所有的 reaction 都执行完毕后，
-    // 再从 field.linkageProperty 中取值，因为此时 field.linkageProperty 中的值才是全的。
+    // 再从 field.stateOfLinkageRules 中取值，因为此时 field.stateOfLinkageRules 中的值才是全的。
     setTimeout(async () => {
       const fieldName = getFieldNameByOperator(action.operator);
 
       // 防止重复赋值
-      if (!field.linkageProperty[fieldName]) {
+      if (!field.stateOfLinkageRules[fieldName]) {
         return;
       }
 
-      let stateList = field.linkageProperty[fieldName];
+      let stateList = field.stateOfLinkageRules[fieldName];
 
       stateList = await Promise.all(stateList);
       stateList = stateList.filter((v) => v.condition);
@@ -273,8 +273,8 @@ function getSubscriber(
         field[fieldName] = lastState?.value;
       }
 
-      // 在这里清空 field.linkageProperty，就可以保证：当条件再次改变时，如果该字段没有和任何条件匹配，则需要把对应的值恢复到初始值；
-      field.linkageProperty[fieldName] = null;
+      // 在这里清空 field.stateOfLinkageRules，就可以保证：当条件再次改变时，如果该字段没有和任何条件匹配，则需要把对应的值恢复到初始值；
+      field.stateOfLinkageRules[fieldName] = null;
     });
   }, 500);
 }
