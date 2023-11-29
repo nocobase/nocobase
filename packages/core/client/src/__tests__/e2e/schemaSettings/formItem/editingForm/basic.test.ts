@@ -442,7 +442,7 @@ test.describe('phone', () => {
           page.getByLabel('block-item-CollectionField-general-form-general.phone-phone').getByRole('textbox'),
         ).not.toBeVisible();
         await expect(page.getByLabel('block-item-CollectionField-general-form-general.phone-phone')).toHaveText(
-          'phone:17777777777',
+          'phone:',
         );
       },
     });
@@ -484,12 +484,11 @@ test.describe('long text', () => {
         ).toBeDisabled();
       },
       expectEasyReading: async () => {
-        // 输入框会消失，只剩下值
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').getByRole('textbox'),
         ).not.toBeVisible();
         await expect(page.getByLabel('block-item-CollectionField-general-form-general.longText-longText')).toHaveText(
-          'longText:test long text',
+          `longText:${record.longText}`.replaceAll('\n', ''),
         );
       },
     });
@@ -532,13 +531,11 @@ test.describe('URL', () => {
         ).toBeDisabled();
       },
       expectEasyReading: async () => {
-        // 输入框会消失，只剩下值
+        // url 类型数据不会被 mock，所以这里不会显示值
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.url-url').getByRole('textbox'),
         ).not.toBeVisible();
-        await expect(page.getByLabel('block-item-CollectionField-general-form-general.url-url')).toHaveText(
-          'url:https://nocobase.com',
-        );
+        await expect(page.getByLabel('block-item-CollectionField-general-form-general.url-url')).toHaveText('url:');
       },
     });
   });

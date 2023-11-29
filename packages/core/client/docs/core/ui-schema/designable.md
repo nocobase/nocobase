@@ -746,7 +746,14 @@ const Hello = observer(
             'x-component-props': {a: uid(), },
             'x-decorator-props': {b: uid(), },
           });
-        }}>更新标题</Button>
+        }}>shallowMerge</Button>
+        <Button onClick={() => {
+          dn.deepMerge({
+            title: uid(),
+            'x-component-props': {c: uid() },
+            'x-decorator-props': {d: uid(), },
+          });
+        }}>deepMerge</Button>
       </div>
     );
   },

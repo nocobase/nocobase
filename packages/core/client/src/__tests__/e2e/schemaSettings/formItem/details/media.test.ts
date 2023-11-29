@@ -43,15 +43,15 @@ const openDialogAndShowMenu = async ({
 };
 
 test.describe('markdown', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'markdown', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'markdown', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('rich text', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'richText', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'richText', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('attachment', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'attachment', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'attachment', blockType: 'viewing', mode: 'options' });
 
   test('size', async ({ page, mockPage, mockRecord }) => {
     const record = await gotoPage(mockPage, mockRecord);
