@@ -15,6 +15,7 @@ import {
   MenuItemProps,
   MenuProps,
   Modal,
+  ModalFuncProps,
   Select,
   Space,
   Switch,
@@ -525,7 +526,7 @@ export const SchemaSettingsDivider = function Divider() {
 };
 
 export interface SchemaSettingsRemoveProps {
-  confirm?: any;
+  confirm?: ModalFuncProps;
   removeParentsIfNoChildren?: boolean;
   breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
 }

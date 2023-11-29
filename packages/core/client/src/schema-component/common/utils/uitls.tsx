@@ -38,7 +38,7 @@ export function getInnermostKeyAndValue(obj) {
   return null;
 }
 
-const getTargetField = (obj) => {
+export const getTargetField = (obj) => {
   const keys = getAllKeys(obj);
   const index = findIndex(keys, (key, index, keys) => {
     if (key.includes('$') && index > 0) {
@@ -83,21 +83,20 @@ export const conditionAnalyses = async ({
   const type = Object.keys(rules)[0] || '$and';
   const conditions = rules[type];
 
-  let results = conditions.map(async (c) => {
-    const jsonlogic = getInnermostKeyAndValue(c);
+  let results = conditions.map(async (condition) => {
+    const jsonlogic = getInnermostKeyAndValue(condition);
     const operator = jsonlogic?.key;
 
     if (!operator) {
       return true;
     }
 
-    const targetVariableName = targetFieldToVariableString(getTargetField(c));
+    const targetVariableName = targetFieldToVariableString(getTargetField(condition));
+    const targetValue = variables.parseVariable(targetVariableName, localVariables);
+
     const parsingResult = isVariable(jsonlogic?.value)
-      ? [
-          variables.parseVariable(jsonlogic?.value, localVariables),
-          variables.parseVariable(targetVariableName, localVariables),
-        ]
-      : [jsonlogic?.value, variables.parseVariable(targetVariableName, localVariables)];
+      ? [variables.parseVariable(jsonlogic?.value, localVariables), targetValue]
+      : [jsonlogic?.value, targetValue];
 
     try {
       const jsonLogic = getJsonLogic();
@@ -127,7 +126,7 @@ export const conditionAnalyses = async ({
  * @param targetField
  * @returns
  */
-function targetFieldToVariableString(targetField: string[]) {
+export function targetFieldToVariableString(targetField: string[]) {
   // Action 中的联动规则虽然没有 form 上下文但是在这里也使用的是 `$nForm` 变量，这样实现更简单
   return `{{ $nForm.${targetField.join('.')} }}`;
 }

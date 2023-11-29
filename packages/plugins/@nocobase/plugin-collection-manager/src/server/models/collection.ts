@@ -78,6 +78,18 @@ export class CollectionModel extends MagicAttributeModel {
       fields = fields.filter((field) => options.includeFields.includes(field.name));
     }
 
+    if (this.options.view && fields.find((f) => f.name == 'id')) {
+      // set id field to primary key, other primary key to false
+      fields = fields.map((field) => {
+        if (field.name == 'id') {
+          field.set('primaryKey', true);
+        } else {
+          field.set('primaryKey', false);
+        }
+        return field;
+      });
+    }
+
     // @ts-ignore
     const instances: FieldModel[] = fields;
 

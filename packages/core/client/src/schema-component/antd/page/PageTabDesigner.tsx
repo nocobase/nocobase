@@ -4,7 +4,7 @@ import { Space } from 'antd';
 import React from 'react';
 import { DragHandler, useDesignable } from '../..';
 import { useGetAriaLabelOfDesigner } from '../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
-import { SchemaDesignerProvider, useSchemaSettingsRender } from '../../../application';
+import { SchemaToolbarProvider, useSchemaSettingsRender } from '../../../application';
 
 export const PageDesigner = ({ title }) => {
   const { designable } = useDesignable();
@@ -17,7 +17,7 @@ export const PageDesigner = ({ title }) => {
     return null;
   }
   return (
-    <SchemaDesignerProvider title={title}>
+    <SchemaToolbarProvider title={title}>
       <div className={'general-schema-designer'}>
         <div className={'general-schema-designer-icons'}>
           <Space size={2} align={'center'}>
@@ -25,7 +25,7 @@ export const PageDesigner = ({ title }) => {
           </Space>
         </div>
       </div>
-    </SchemaDesignerProvider>
+    </SchemaToolbarProvider>
   );
 };
 
@@ -41,7 +41,7 @@ export const PageTabDesigner = ({ schema }) => {
     return null;
   }
   return (
-    <SchemaDesignerProvider schema={schema}>
+    <SchemaToolbarProvider schema={schema}>
       <div className={'general-schema-designer'}>
         <div className={'general-schema-designer-icons'}>
           <Space size={3} align={'center'}>
@@ -52,6 +52,6 @@ export const PageTabDesigner = ({ schema }) => {
           </Space>
         </div>
       </div>
-    </SchemaDesignerProvider>
+    </SchemaToolbarProvider>
   );
 };

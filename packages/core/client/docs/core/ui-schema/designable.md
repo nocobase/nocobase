@@ -712,32 +712,80 @@ export default () => {
 
 部分更新。
 
-```tsx | pure
-const { patch } = useDesignable();
+```tsx
+import React from 'react';
+import {
+  SchemaComponentProvider,
+  SchemaComponent,
+  useDesignable,
+} from '@nocobase/client';
+import { observer, Schema, useField, useFieldSchema } from '@formily/react';
+import { FormItem } from '@formily/antd-v5';
+import { Button } from 'antd';
+import { uid } from '@formily/shared';
 
-dn.toJSON();
+const Hello = observer(
+  (props) => {
+    const fieldSchema = useFieldSchema();
+    const field = useField();
+    const { dn } = useDesignable();
+    return (
+      <div>
+        <h1>{field.title}</h1>
+        { JSON.stringify(props) }
+        <br/>
+        { JSON.stringify(field.componentProps) }
+        <br/>
+        { JSON.stringify(field.decoratorProps) }
+        <br/>
+        { JSON.stringify(fieldSchema.toJSON()) }
+        <br/>
+        <Button onClick={() => {
+          dn.shallowMerge({
+            title: uid(),
+            'x-component-props': {a: uid(), },
+            'x-decorator-props': {b: uid(), },
+          });
+        }}>shallowMerge</Button>
+        <Button onClick={() => {
+          dn.deepMerge({
+            title: uid(),
+            'x-component-props': {c: uid() },
+            'x-decorator-props': {d: uid(), },
+          });
+        }}>deepMerge</Button>
+      </div>
+    );
+  },
+  { displayName: 'Hello' },
+);
 
-{
-    type: 'void',
-    'x-component': 'Hello',
-    'x-component': {
-        name: 'jack',
-        age: 18,
-    }
-}
+const Page = observer(
+  (props) => {
+    return <div>{props.children}</div>;
+  },
+  { displayName: 'Page' },
+);
 
-patch({
-   'x-component-props': {
-       age: 20
-   }
-});
-
-{
-    type: 'void',
-    'x-component': 'Hello',
-    'x-component': {
-        name: 'jack',
-        age: 20,
-    }
-}
+export default () => {
+  return (
+    <SchemaComponentProvider components={{ FormItem, Page, Hello }}>
+      <SchemaComponent
+        schema={{
+          type: 'void',
+          name: 'page',
+          'x-component': 'Page',
+          properties: {
+            hello1: {
+              type: 'string',
+              title: 'Title 1',
+              'x-decorator': 'FormItem',
+              'x-component': 'Hello',
+            },
+          },
+        }}
+      />
+    </SchemaComponentProvider>
+  );
+};
 ```

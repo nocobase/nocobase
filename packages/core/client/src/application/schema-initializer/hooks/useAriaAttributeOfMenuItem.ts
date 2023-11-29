@@ -1,7 +1,7 @@
-import { useSchemaInitializerMenuContext } from '../components/SchemaInitializerMenu';
+import { useSchemaInitializerSubMenuContext } from '../components/SchemaInitializerSubMenu';
 
 export const useAriaAttributeOfMenuItem = () => {
-  const { isInMenu } = useSchemaInitializerMenuContext();
+  const { isInMenu } = useSchemaInitializerSubMenuContext();
   let attribute = {};
 
   // 在 Menu 中，每一项的 role 已经被标记为 menuitem 了，不需要再次标记；

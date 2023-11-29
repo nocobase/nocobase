@@ -9,7 +9,7 @@ import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowConte
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettingsDropdown } from './SchemaSettings';
 import { useGetAriaLabelOfDesigner } from './hooks/useGetAriaLabelOfDesigner';
-import { SchemaDesignerProvider, useSchemaInitializerRender, useSchemaSettingsRender } from '../application';
+import { SchemaToolbarProvider, useSchemaInitializerRender, useSchemaSettingsRender } from '../application';
 
 const titleCss = css`
   pointer-events: none;
@@ -97,7 +97,7 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
   }
 
   return (
-    <SchemaDesignerProvider {...contextValue}>
+    <SchemaToolbarProvider {...contextValue}>
       <div className={classNames('general-schema-designer', overrideAntdCSS)}>
         {title && (
           <div className={classNames('general-schema-designer-title', titleCss)}>
@@ -143,18 +143,18 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
           </Space>
         </div>
       </div>
-    </SchemaDesignerProvider>
+    </SchemaToolbarProvider>
   );
 };
 
-export interface SchemaDesignerToolbarProps {
+export interface SchemaToolbarProps {
   title?: string;
   draggable?: boolean;
   initializer?: string | false;
   settings?: string | false;
 }
 
-export const SchemaDesignerToolbar: FC<SchemaDesignerToolbarProps> = (props) => {
+export const SchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   const { title, initializer, settings, draggable = true } = props;
   const { designable } = useDesignable();
   const fieldSchema = useFieldSchema();
@@ -197,7 +197,7 @@ export const SchemaDesignerToolbar: FC<SchemaDesignerToolbarProps> = (props) => 
   }, [draggable, getAriaLabel]);
 
   const initializerElement = useMemo(() => {
-    if (initializer !== false) return null;
+    if (initializer === false) return null;
     if (gridContext?.InitializerComponent || gridContext?.renderSchemaInitializer) {
       return gridContext?.InitializerComponent ? (
         <gridContext.InitializerComponent {...initializerProps} />

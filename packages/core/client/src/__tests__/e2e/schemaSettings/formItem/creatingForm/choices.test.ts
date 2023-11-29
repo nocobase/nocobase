@@ -38,7 +38,7 @@ const openDialogAndShowMenu = async ({
 };
 
 test.describe('checkbox', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'checkbox' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'checkbox', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
@@ -95,7 +95,7 @@ test.describe('checkbox', () => {
 });
 
 test.describe('checkbox group', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'checkGroup' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'checkboxGroup', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
@@ -157,7 +157,7 @@ test.describe('checkbox group', () => {
 });
 
 test.describe('china region', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'chinaRegion' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'chinaRegion', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
@@ -218,7 +218,7 @@ test.describe('china region', () => {
 });
 
 test.describe('multiple select', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'multipleSelect' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'multipleSelect', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
@@ -279,7 +279,7 @@ test.describe('multiple select', () => {
 });
 
 test.describe('radio group', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'radioGroup' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'radioGroup', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
@@ -336,7 +336,7 @@ test.describe('radio group', () => {
 });
 
 test.describe('single select', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'singleSelect' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'singleSelect', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({

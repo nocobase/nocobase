@@ -117,11 +117,13 @@ export const commonTesting = ({
       if (['creating', 'editing'].includes(blockType)) {
         await expect(page.getByRole('menuitem', { name: 'Edit description' })).toBeVisible();
         await expect(page.getByRole('menuitem', { name: 'Required' })).toBeVisible();
+        await expect(page.getByRole('menuitem', { name: 'Pattern' })).toBeVisible();
       }
       if (blockType === 'viewing') {
         await expect(page.getByRole('menuitem', { name: 'Edit tooltip' })).toBeVisible();
+        await expect(page.getByRole('menuitem', { name: 'Pattern' })).not.toBeVisible();
       }
-      if (blockType === 'creating' && !fieldName.startsWith('oneTo')) {
+      if (blockType === 'creating' && !fieldName.startsWith('oneTo') && !['attachment'].includes(fieldType)) {
         await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
       }
       if (['editing', 'viewing'].includes(blockType)) {
