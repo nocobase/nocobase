@@ -41,7 +41,7 @@ const openDialogAndShowMenu = async ({
 };
 
 test.describe('checkbox', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'checkbox', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'checkbox', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -79,7 +79,7 @@ test.describe('checkbox', () => {
 });
 
 test.describe('checkbox group', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'checkboxGroup', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'checkboxGroup', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -123,7 +123,7 @@ test.describe('checkbox group', () => {
 });
 
 test.describe('china region', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'chinaRegion', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'chinaRegion', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -165,7 +165,7 @@ test.describe('china region', () => {
 });
 
 test.describe('multiple select', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'multipleSelect', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'multipleSelect', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -205,7 +205,7 @@ test.describe('multiple select', () => {
 });
 
 test.describe('radio group', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'radioGroup', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'radioGroup', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -247,7 +247,7 @@ test.describe('radio group', () => {
 });
 
 test.describe('single select', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'singleSelect', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'singleSelect', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;

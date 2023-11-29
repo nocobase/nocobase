@@ -41,25 +41,25 @@ const openDialogAndShowMenu = async ({
 };
 
 test.describe('checkbox', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'checkbox', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'checkbox', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('checkbox group', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'checkboxGroup', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'checkboxGroup', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('china region', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'chinaRegion', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'chinaRegion', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('multiple select', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'multipleSelect', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'multipleSelect', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('radio group', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'radioGroup', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'radioGroup', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('single select', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'singleSelect', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'singleSelect', blockType: 'viewing', mode: 'options' });
 });

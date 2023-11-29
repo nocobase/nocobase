@@ -45,6 +45,7 @@ test.describe('many to many', () => {
     fieldType: 'relation',
     mode: 'options',
     blockType: 'editing',
+    mode: 'options',
   });
 
   test('pattern', async ({ page, mockPage, mockRecords }) => {
