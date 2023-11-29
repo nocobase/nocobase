@@ -180,17 +180,6 @@ export default {
   'Delete records of a collection. Could use variables in workflow context as filter. All records match the filter will be deleted.':
     '删除一个数据表中的数据。可以使用上游节点里的变量作为过滤条件。所有满足条件的数据都将被删除。',
 
-  Aggregate: '聚合查询',
-  'Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.':
-    '对一个数据表里的多条数据或者一条数据里的关系数据进行统计、求和、求最大值、最小值、平均值。',
-  'Aggregator function': '聚合函数',
-  'Target type': '目标类型',
-  'Data of collection': '数据表数据',
-  'Data of associated collection': '关联数据表数据',
-  'Field to aggregate': '聚合字段',
-  Distinct: '去重',
-  'Query result': '查询结果',
-
   'Executed workflow cannot be modified': '已经执行过的工作流不能被修改',
   'Can not delete': '无法删除',
   'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.':
@@ -216,8 +205,4 @@ export default {
   '"Content-Type" only support "application/json", and no need to specify':
     '"Content-Type" 请求头仅支持 "application/json"，无需填写',
   'Ignore failed request and continue workflow': '忽略失败的请求并继续工作流',
-
-  'SQL action': 'SQL 操作',
-  'Execute a SQL statement in database': '在数据库中执行一个 SQL 语句',
-  'Usage of SQL query result is not supported yet.': 'SQL 执行的结果暂不支持使用。',
 };

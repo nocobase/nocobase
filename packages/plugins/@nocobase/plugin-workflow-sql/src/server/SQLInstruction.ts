@@ -1,6 +1,4 @@
-import { Processor, JOB_STATUS } from '..';
-import type { FlowNodeModel } from '../types';
-import { Instruction } from '.';
+import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
 
 export default class extends Instruction {
   async run(node: FlowNodeModel, input, processor: Processor) {

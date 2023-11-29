@@ -37,7 +37,6 @@ import destroy from './destroy';
 import query from './query';
 
 import request from './request';
-import sql from './sql';
 import update from './update';
 
 export interface Instruction {
@@ -69,7 +68,6 @@ instructions.register('update', update);
 instructions.register('destroy', destroy);
 
 instructions.register('request', request);
-instructions.register('sql', sql);
 
 function useUpdateAction() {
   const form = useForm();

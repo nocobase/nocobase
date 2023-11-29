@@ -1,7 +1,12 @@
-import { Application } from '@nocobase/server';
+import path from 'path';
+
 import Database from '@nocobase/database';
-import { getApp, sleep } from '..';
-import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
+import { Application } from '@nocobase/server';
+import { testkit, EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+
+import Plugin from '..';
+
+const { getApp, sleep } = testkit;
 
 describe('workflow > instructions > sql', () => {
   let app: Application;
@@ -13,7 +18,10 @@ describe('workflow > instructions > sql', () => {
   let workflow;
 
   beforeEach(async () => {
-    app = await getApp();
+    app = await getApp({
+      plugins: [Plugin],
+      collectionPath: path.join(__dirname, './collections'),
+    });
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
@@ -22,7 +30,6 @@ describe('workflow > instructions > sql', () => {
     ReplyRepo = db.getCollection('replies').repository;
 
     workflow = await WorkflowModel.create({
-      title: 'test workflow',
       enabled: true,
       type: 'collection',
       config: {
@@ -32,7 +39,7 @@ describe('workflow > instructions > sql', () => {
     });
   });
 
-  afterEach(async () => await app.destroy());
+  afterEach(() => app.destroy());
 
   describe('invalid', () => {
     it('no sql', async () => {
@@ -94,7 +101,9 @@ describe('workflow > instructions > sql', () => {
       const n1 = await workflow.createNode({
         type: 'sql',
         config: {
-          sql: `update ${PostCollection.quotedTableName()} set ${queryInterface.quoteIdentifier('read')}={{$context.data.id}} where ${queryInterface.quoteIdentifier('id')}={{$context.data.id}}`,
+          sql: `update ${PostCollection.quotedTableName()} set ${queryInterface.quoteIdentifier(
+            'read',
+          )}={{$context.data.id}} where ${queryInterface.quoteIdentifier('id')}={{$context.data.id}}`,
         },
       });
 
@@ -105,8 +114,8 @@ describe('workflow > instructions > sql', () => {
           params: {
             filter: {
               id: '{{ $context.data.id }}',
-            }
-          }
+            },
+          },
         },
         upstreamId: n1.id,
       });
@@ -129,7 +138,9 @@ describe('workflow > instructions > sql', () => {
       const n1 = await workflow.createNode({
         type: 'sql',
         config: {
-          sql: `delete from ${PostCollection.quotedTableName()} where ${queryInterface.quoteIdentifier('id')}={{$context.data.id}};`,
+          sql: `delete from ${PostCollection.quotedTableName()} where ${queryInterface.quoteIdentifier(
+            'id',
+          )}={{$context.data.id}};`,
         },
       });
 
@@ -140,8 +151,8 @@ describe('workflow > instructions > sql', () => {
           params: {
             filter: {
               id: '{{ $context.data.id }}',
-            }
-          }
+            },
+          },
         },
         upstreamId: n1.id,
       });

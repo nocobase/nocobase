@@ -1,7 +1,8 @@
 import { css, defaultFieldNames } from '@nocobase/client';
 
+import { WorkflowVariableRawTextArea } from '@nocobase/plugin-workflow/client';
+
 import { NAMESPACE } from '../locale';
-import { WorkflowVariableRawTextArea } from '../variable';
 
 export default {
   title: `{{t("SQL action", { ns: "${NAMESPACE}" })}}`,

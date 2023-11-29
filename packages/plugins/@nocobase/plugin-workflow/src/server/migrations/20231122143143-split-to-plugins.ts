@@ -55,6 +55,13 @@ export default class extends Migration {
             enabled: true,
             installed: true,
           },
+          {
+            name: '@nocobase/plugin-workflow-sql',
+            packageName: '@nocobase/plugin-workflow-sql',
+            version: '0.16.0-alpha.3',
+            enabled: true,
+            installed: true,
+          },
         ],
         transaction,
       });
