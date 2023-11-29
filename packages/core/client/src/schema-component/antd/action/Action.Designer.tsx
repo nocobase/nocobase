@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
 import { usePlugin } from '../../../application/hooks';
-import { useSchemaDesigner } from '../../../application/schema-designer';
+import { useSchemaToolbar } from '../../../application/schema-toolbar';
 import { SchemaSettings, SchemaSettingOptions } from '../../../application/schema-settings';
 import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
@@ -671,7 +671,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         name: 'editButton',
         Component: ButtonEditor,
         useComponentProps() {
-          const { buttonEditorProps } = useSchemaDesigner();
+          const { buttonEditorProps } = useSchemaToolbar();
           return buttonEditorProps;
         },
       },
@@ -692,12 +692,12 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         useVisible() {
           const fieldSchema = useFieldSchema();
           const isAction = useLinkageAction();
-          const { linkageAction } = useSchemaDesigner();
+          const { linkageAction } = useSchemaToolbar();
           return linkageAction || isAction;
         },
         useComponentProps() {
           const { name } = useCollection();
-          const { linkageRulesProps } = useSchemaDesigner();
+          const { linkageRulesProps } = useSchemaToolbar();
           return {
             ...linkageRulesProps,
             collectionName: name,
@@ -798,7 +798,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         sort: 100,
         Component: RemoveButton as any,
         useComponentProps() {
-          const { removeButtonProps } = useSchemaDesigner();
+          const { removeButtonProps } = useSchemaToolbar();
           return removeButtonProps;
         },
         useVisible() {

@@ -20,6 +20,11 @@ const postgres = {
 
   json: ['json', 'array'],
   jsonb: ['json', 'array', 'jsonb'],
+
+  point: 'point',
+  path: 'lineString',
+  polygon: 'polygon',
+  circle: 'circle',
 };
 
 const mysql = {

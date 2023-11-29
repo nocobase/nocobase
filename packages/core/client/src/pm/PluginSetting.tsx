@@ -22,7 +22,7 @@ function getMenuItems(list: PluginSettingsPageType[]) {
   });
 }
 
-export const SettingsCenterComponent = () => {
+export const AdminSettingsLayout = () => {
   const { styles, theme } = useStyles();
   const app = useApp();
   const navigate = useNavigate();

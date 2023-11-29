@@ -91,8 +91,8 @@ export default defineConfig({
                   link: '/core/ui-schema/schema-settings-manager',
                 },
                 {
-                  title: 'Designer',
-                  link: '/core/ui-schema/designer',
+                  title: 'SchemaToolbar',
+                  link: '/core/ui-schema/schema-toolbar',
                 },
               ],
             },

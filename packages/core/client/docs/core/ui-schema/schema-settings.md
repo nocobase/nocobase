@@ -202,6 +202,8 @@ const Demo = () => {
 }
 ```
 
+<code src="./demos/schema-settings-render.tsx"></code>
+
 ### useSchemaSettings()
 
 获取 schemaSetting 上下文数据。
@@ -259,7 +261,7 @@ const { name } = useSchemaSettingsItem();
 | type        | Component                      | 效果                                      |
 | ----------- | ------------------------------ | ----------------------------------------- |
 | item        | SchemaSettingsItem            | 文本                                      |
-| itemGroup   | SchemaSettingsItemGroup       | 分组，同 Menu 组件的 `type: 'group'`      |
+| itemGroup   | SchemaSettingsItemGroup       | 分组，同 Menu 组件的 `type: 'itemGroup'`      |
 | subMenu     | SchemaSettingsSubMenu         | 子菜单，同 Menu 组件的子菜单              |
 | divider     | SchemaSettingsDivider         | 分割线，同 Menu 组件的  `type: 'divider'` |
 | remove      | SchemaSettingsRemove          | 删除，用于删除一个区块                    |
@@ -272,213 +274,115 @@ const { name } = useSchemaSettingsItem();
 
 ### SchemaSettingsItem
 
-文本。
+文本，对应的 `type` 为 `item`。
 
 ```tsx | pure
-const MarkdownEdit = () => {
-  const field = useField();
-  return <SchemaSettingsItem
-    title="Edit markdown"
-    onClick={() => {
-      field.editable = true;
-    }}
-  />;
+interface SchemaSettingsItemProps extends Omit<MenuItemProps, 'title'> {
+  title: string;
 }
-
-const mySchemaSettings = new SchemaSettings({
-  name: 'MySchemaSettings',
-  items: [
-    {
-      name: 'a',
-      Component: MarkdownEdit,
-    },
-  ],
-});
 ```
+
+核心参数为 `title` 和 `onClick`，可以在 `onClick` 中修改 schema。
+
+<code src="./demos/schema-settings-components-item.tsx"></code>
 
 ### SchemaSettingsItemGroup
 
-分组。
+分组，对应的 `type` 为 `itemGroup`。
 
-```tsx | pure
-const mySchemaSettings = new SchemaSettings({
-  name: 'MySchemaSettings',
-  items: [
-    {
-      name: 'a',
-      type: 'itemGroup',
-      componentProps: {
-        title: 'item a'
-      },
-      children: [
-          {
-              name: 'a1',
-              title: 'item a1',
-          }
-      ],
-    },
-  ],
-});
-```
+核心参数是 `title`。
+
+<code src="./demos/schema-settings-components-group.tsx"></code>
 
 ### SchemaSettingsSubMenu
 
-子菜单。
+子菜单，对应的 `type` 为 `subMenu`。
 
-```tsx | pure
-const mySchemaSettings = new SchemaSettings({
-  name: 'MySchemaSettings',
-  items: [
-    {
-      name: 'a',
-      type: 'subMenu',
-      componentProps: {
-        title: 'item a'
-      },
-      children: [
-          {
-              name: 'a1',
-              title: 'item a1',
-          }
-      ],
-    },
-  ],
-});
-```
+核心参数是 `title`。
+
+<code src="./demos/schema-settings-components-sub-menu.tsx"></code>
 
 ### SchemaSettingsDivider
 
-分割线。
+分割线，对应的 `type` 为 `divider`。
 
-```tsx | pure
-const mySchemaSettings = new SchemaSettings({
-  name: 'MySchemaSettings',
-  items: [
-    {
-      name: 'divider',
-      type: 'divider',
-    },
-  ],
-});
-```
+<code src="./demos/schema-settings-components-divider.tsx"></code>
 
 ### SchemaSettingsRemove
 
-删除。
+删除，对应的 `type` 为 `remove`。
 
 ```tsx | pure
-const mySchemaSettings = new SchemaSettings({
-  name: 'MySchemaSettings',
-  items: [
-    {
-      name: 'remove',
-      type: 'remove',
-      componentProps: {
-        removeParentsIfNoChildren: true
-        breakRemoveOn: {
-          'x-component': 'Grid',
-        }
-      },
-    },
-  ],
-});
+interface SchemaSettingsRemoveProps {
+  confirm?: ModalFuncProps;
+  removeParentsIfNoChildren?: boolean;
+  breakRemoveOn?: ISchema | ((s: ISchema) => boolean);
+}
 ```
+
+- `confirm`：删除前的确认弹窗
+- `removeParentsIfNoChildren`：如果删除后没有子节点了，是否删除父节点
+- `breakRemoveOn`：如果删除的节点满足条件，是否中断删除
+
+<code src="./demos/schema-settings-components-remove.tsx"></code>
 
 ### SchemaSettingsSelectItem
 
-```tsx | pure
-const PatternMode = () => {
-  const fieldSchema = useFieldSchema();
-  const patternMode = fieldSchema['x-pattern'];
-  const { patch } = useDesignable();
+选择器，对应的 `type` 为 `select`。
 
-  return <SchemaSettingsSelectItem
-    key="pattern"
-    title={'Pattern'}
-    options={[
-      { label: 'Editable', value: 'editable' },
-      { label: 'Readonly', value: 'readonly' },
-      { label: 'Easy-reading', value: 'read-pretty' },
-    ]}
-    value={patternMode}
-    onChange={(v) => {
-      patch({
-        'x-pattern': v,
-      })
-    }}
-  />
-}
-```
+<code src="./demos/schema-settings-components-select.tsx"></code>
 
 ### SchemaSettingsCascaderItem
 
-级联选择。
+级联选择，对应的 `type` 为 `cascader`。
 
 ### SchemaSettingsSwitchItem
 
-开关。
+开关，对应的 `type` 为 `switch`。
 
-```tsx | pure
-const AllowMultiple = () => {
-  const fieldSchema = useFieldSchema();
-  const { patch } = useDesignable();
-  return <SchemaSettingsSwitchItem
-    title={t('Allow multiple')}
-    checked={
-      fieldSchema['x-component-props']?.multiple === undefined ? true : fieldSchema['x-component-props'].multiple
-    }
-    onChange={(value) => {
-      patch({
-        'x-component-props': {
-          multiple: value,
-        },
-      })
-    }}
-  />
-}
-```
-
-### SchemaSettingsPopupItem
-
-弹出层。
-
-### SchemaSettingsActionModalItem
-
-操作弹窗。
+<code src="./demos/schema-settings-components-switch.tsx"></code>
 
 ### SchemaSettingsModalItem
 
-弹窗。
+弹窗，对应的 `type` 为 `modal`。
 
 ```tsx | pure
-const EditTooltip = () => {
-  const fieldSchema = useFieldSchema();
-  const { patch } = useDesignable();
-
-  return <SchemaSettingsModalItem
-    key="edit-tooltip"
-    title={t('Edit tooltip')}
-    schema={
-      {
-        type: 'object',
-        title: t('Edit tooltip'),
-        properties: {
-          tooltip: {
-            default: fieldSchema?.['x-decorator-props']?.tooltip,
-            'x-decorator': 'FormItem',
-            'x-component': 'Input.TextArea',
-            'x-component-props': {},
-          },
-        },
-      } as ISchema
-    }
-    onSubmit={({ tooltip }) => {
-      patch({
-        'x-decorator-props': {
-          tooltip,
-        },
-      })
-    }}
-  />
+export interface SchemaSettingsModalItemProps {
+  title: string;
+  onSubmit: (values: any) => void;
+  initialValues?: any;
+  schema?: ISchema | (() => ISchema);
+  modalTip?: string;
+  components?: any;
+  hidden?: boolean;
+  scope?: any;
+  effects?: any;
+  width?: string | number;
+  children?: ReactNode;
+  asyncGetInitialValues?: () => Promise<any>;
+  eventKey?: string;
+  hide?: boolean;
 }
 ```
+
+我们可以通过 `schema` 参数来定义弹窗的表单，然后在 `onSubmit` 中获取表单的值，然后修改当前 schema 节点。
+
+<code src="./demos/schema-settings-components-modal.tsx"></code>
+
+### SchemaSettingsActionModalItem
+
+操作弹窗，对应的 `type` 为 `actionModal`。
+
+其和 `modal` 的区别是，`SchemaSettingsModalItem` 弹窗会丢失上下文，而 `SchemaSettingsActionModalItem` 会保留上下文，简单场景下可以使用 `SchemaSettingsModalItem`，复杂场景下可以使用 `SchemaSettingsActionModalItem`。
+
+```tsx | pure
+export interface SchemaSettingsActionModalItemProps extends SchemaSettingsModalItemProps, Omit<SchemaSettingsItemProps, 'onSubmit' | 'onClick'> {
+  uid?: string;
+  initialSchema?: ISchema;
+  schema?: ISchema;
+  beforeOpen?: () => void;
+  maskClosable?: boolean;
+}
+```
+
+<code src="./demos/schema-settings-components-action-modal.tsx"></code>

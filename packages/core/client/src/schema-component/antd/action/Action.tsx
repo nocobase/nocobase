@@ -75,7 +75,7 @@ export const Action: ComposedAction = observer(
     );
 
     useEffect(() => {
-      field.linkageProperty = {};
+      field.stateOfLinkageRules = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {

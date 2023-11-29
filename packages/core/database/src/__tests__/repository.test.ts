@@ -119,6 +119,7 @@ describe('repository.find', () => {
     const tags = await Tag.repository.create({
       values: [{ name: 't1' }, { name: 't2' }],
     });
+
     await User.repository.createMany({
       records: [
         {
@@ -186,6 +187,39 @@ describe('repository.find', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should find with filter', async () => {
+    const users = await User.repository.find({
+      filter: {
+        name: 'user1',
+      },
+    });
+
+    expect(users.length).toBe(1);
+  });
+
+  it('should find with where', async () => {
+    const users = await User.repository.find({
+      where: {
+        name: 'user1',
+      },
+    });
+
+    expect(users.length).toBe(1);
+  });
+
+  it('should find with filter and where', async () => {
+    const users = await User.repository.find({
+      filter: {
+        name: 'user1',
+      },
+      where: {
+        name: 'user2',
+      },
+    });
+
+    expect(users.length).toBe(0);
   });
 
   it('should appends with belongs to association', async () => {
