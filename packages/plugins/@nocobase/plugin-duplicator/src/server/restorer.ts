@@ -78,6 +78,7 @@ export class Restorer extends AppMigrator {
     await this.checkMeta();
     await this.importCollections(options);
     await this.importDb();
+    await this.upgradeApp();
     await this.clearWorkDir();
   }
 
@@ -330,5 +331,9 @@ export class Restorer extends AppMigrator {
         }
       }
     }
+  }
+
+  async upgradeApp() {
+    await this.app.runCommand('upgrade');
   }
 }
