@@ -36,7 +36,6 @@ import create from './create';
 import destroy from './destroy';
 import query from './query';
 
-import aggregate from './aggregate';
 import request from './request';
 import sql from './sql';
 import update from './update';
@@ -68,8 +67,6 @@ instructions.register('query', query);
 instructions.register('create', create);
 instructions.register('update', update);
 instructions.register('destroy', destroy);
-
-instructions.register('aggregate', aggregate);
 
 instructions.register('request', request);
 instructions.register('sql', sql);

@@ -1,6 +1,12 @@
-import { Application } from '@nocobase/server';
+import path from 'path';
+
 import Database from '@nocobase/database';
-import { getApp, sleep } from '..';
+import { Application } from '@nocobase/server';
+import { testkit } from '@nocobase/plugin-workflow';
+
+import Plugin from '..';
+
+const { getApp, sleep } = testkit;
 
 describe('workflow > instructions > aggregate', () => {
   let app: Application;
@@ -12,16 +18,19 @@ describe('workflow > instructions > aggregate', () => {
   let workflow;
 
   beforeEach(async () => {
-    app = await getApp();
+    app = await getApp({
+      plugins: [Plugin],
+      collectionPath: path.join(__dirname, './collections'),
+    });
 
     db = app.db;
+    WorkflowModel = db.getCollection('workflows').model;
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
     CommentRepo = db.getCollection('comments').repository;
     TagRepo = db.getCollection('tags').repository;
 
     workflow = await WorkflowModel.create({
-      title: 'test workflow',
       enabled: true,
       type: 'collection',
       config: {

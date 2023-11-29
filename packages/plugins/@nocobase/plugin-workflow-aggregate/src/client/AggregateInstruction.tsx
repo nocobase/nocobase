@@ -5,17 +5,24 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   SchemaComponentContext,
   SchemaInitializerItemOptions,
+  css,
   useCollectionDataSource,
+  useCollectionFilterOptions,
   useCollectionManager,
   useCompile,
 } from '@nocobase/client';
 
-import { FieldsSelect } from '../components/FieldsSelect';
-import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
-import { ValueBlock } from '../components/ValueBlock';
-import { NAMESPACE, lang } from '../locale';
-import { collection, filter } from '../schemas/collection';
-import { BaseTypeSets, defaultFieldNames, nodesOptions, triggerOptions } from '../variable';
+import {
+  FieldsSelect,
+  FilterDynamicComponent,
+  ValueBlock,
+  BaseTypeSets,
+  defaultFieldNames,
+  nodesOptions,
+  triggerOptions,
+} from '@nocobase/plugin-workflow/client';
+
+import { NAMESPACE, useLang } from '../locale';
 
 function matchToManyField(field): boolean {
   // const fieldPrefix = `${field.name}.`;
@@ -206,14 +213,12 @@ export default {
               'x-component': 'Grid.Col',
               properties: {
                 collection: {
-                  ...collection,
+                  type: 'string',
+                  required: true,
+                  'x-decorator': 'FormItem',
+                  'x-component': 'CollectionSelect',
                   title: `{{t("Data of collection", { ns: "${NAMESPACE}" })}}`,
-                  'x-component-props': {
-                    ...collection['x-component-props'],
-                    className: null,
-                  },
                   'x-reactions': [
-                    ...collection['x-reactions'],
                     {
                       dependencies: ['associated'],
                       fulfill: {
@@ -320,7 +325,24 @@ export default {
           ],
         },
         filter: {
-          ...filter,
+          type: 'object',
+          title: '{{t("Filter")}}',
+          'x-decorator': 'FormItem',
+          'x-component': 'Filter',
+          'x-component-props': {
+            useProps() {
+              const { values } = useForm();
+              const options = useCollectionFilterOptions(values?.collection);
+              return {
+                options,
+                className: css`
+                  position: relative;
+                  width: 100%;
+                `,
+              };
+            },
+            dynamicComponent: 'FilterDynamicComponent',
+          },
           'x-reactions': [
             {
               dependencies: ['collection'],
@@ -359,6 +381,7 @@ export default {
     };
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
+    const resultTitle = useLang('Query result');
     if (!node.config.collection) {
       return null;
     }
@@ -368,7 +391,7 @@ export default {
       title: node.title ?? `#${node.id}`,
       component: ValueBlock.Initializer,
       node,
-      resultTitle: lang('Query result'),
+      resultTitle,
     };
   },
 };

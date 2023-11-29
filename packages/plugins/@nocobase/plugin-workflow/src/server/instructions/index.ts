@@ -41,18 +41,7 @@ type InstructionConstructor = { new (plugin: Plugin): Instruction };
 export default function <T extends Instruction>(plugin, more: { [key: string]: T | InstructionConstructor } = {}) {
   const { instructions } = plugin;
 
-  const natives = [
-    'calculation',
-    'condition',
-    'query',
-    'create',
-    'update',
-    'destroy',
-
-    'aggregate',
-    'request',
-    'sql',
-  ].reduce(
+  const natives = ['calculation', 'condition', 'query', 'create', 'update', 'destroy', 'request', 'sql'].reduce(
     (result, key) =>
       Object.assign(result, {
         [key]: requireModule(path.isAbsolute(key) ? key : path.join(__dirname, key)),
