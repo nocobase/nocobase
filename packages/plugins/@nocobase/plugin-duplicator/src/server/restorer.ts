@@ -238,7 +238,7 @@ export class Restorer extends AppMigrator {
       await db.sequelize.getQueryInterface().createTable(addSchemaTableName, rawAttributes);
 
       if (meta.inherits) {
-        for (const inherit of meta.inherits) {
+        for (const inherit of lodash.uniq(meta.inherits)) {
           const tableNameQuoted = db.sequelize
             .getQueryInterface()
             .quoteIdentifiers(`${addSchemaTableName.schema}.${addSchemaTableName.tableName}`);

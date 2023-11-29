@@ -452,7 +452,7 @@ export class Dumper extends AppMigrator {
     };
 
     if (collection.options.inherits) {
-      meta['inherits'] = collection.options.inherits;
+      meta['inherits'] = lodash.uniq(collection.options.inherits);
     }
 
     // write meta file
