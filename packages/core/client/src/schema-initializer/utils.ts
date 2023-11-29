@@ -1391,6 +1391,58 @@ export const createTableBlockSchema = (options) => {
   return schema;
 };
 
+export  const createTreeBlockSchema = (options) =>{
+  const {
+    actionInitializers = 'TreeActionInitializers',
+    collection,
+    association,
+    resource,
+    ...others
+  } = options;
+  const resourceName = resource || association || collection;
+  const schema: ISchema = {
+    type: 'void',
+    'x-acl-action': `${resourceName}:list`,
+    'x-decorator': 'TreeBlockProvider',
+    'x-decorator-props': {
+      resource: resourceName,
+      collection,
+      association,
+      readPretty: true,
+      action: 'list',
+      runWhenParamsChanged: true,
+      ...others,
+    },
+     // 保存当前筛选区块所能过滤的数据区块
+     'x-filter-targets': [],
+     // 用于存储用户设置的每个字段的运算符，目前仅筛选表单区块支持自定义
+     'x-filter-operators': {},
+    'x-designer': 'Tree.Designer',
+    'x-component': 'CardItem',
+     properties: {
+      actionBar: {
+        type: 'void',
+        'x-initializer': actionInitializers,
+        'x-component': 'ActionBar',
+        'x-component-props': {
+          style: {
+            marginBottom: 'var(--nb-spacing)',
+          },
+        },
+        properties: {},
+      },
+      tree: {
+        type: 'array',
+        'x-component': 'Tree',
+        'x-component-props': {
+          useProps: '{{ useTreeBlockProps }}',
+        }
+      },
+    },
+  };
+  return schema;
+}
+
 export const createCollapseBlockSchema = (options) => {
   const { collection, blockType } = options;
   const schema: ISchema = {

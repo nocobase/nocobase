@@ -15,7 +15,7 @@ export const FilterBlockInitializer = (props) => {
     <SchemaInitializer.Item
       icon={<TableOutlined />}
       {...others}
-      onClick={async ({ item }) => {
+      onClick={async ({ item }) => {     
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
           templateWrap ? insert(templateWrap(s, { item })) : insert(s);

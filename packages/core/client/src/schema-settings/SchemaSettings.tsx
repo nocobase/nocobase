@@ -64,7 +64,7 @@ import {
   useRecord,
   useSortFields,
 } from '..';
-import { BlockRequestContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
+import { BlockRequestContext, useFormBlockContext, useFormBlockType, useTableBlockContext, useTreeBlockContext } from '../block-provider';
 import {
   FormActiveFieldsProvider,
   findFilterTargets,
@@ -245,7 +245,7 @@ SchemaSettings.Template = function Template(props) {
       <SchemaSettings.Item
         title="Convert reference to duplicate"
         onClick={async () => {
-          const schema = await copyTemplateSchema(template);
+          const schema = await copyTemplateSchema(rest);
           const removed = tdn.removeWithoutEmit();
           tdn.insertAfterEnd(schema, {
             async onSuccess() {
@@ -616,7 +616,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
 }) {
   const { type, emptyDescription } = props;
   const fieldSchema = useFieldSchema();
-  const { dn } = useDesignable();
+  const { dn } = useSchemaSettings();
   const { t } = useTranslation();
   const collection = useCollection();
   const { inProvider } = useFilterBlock();
@@ -2046,3 +2046,122 @@ function isDisabled(params: IsDisabledParams) {
 
   return false;
 }
+// 自动刷新
+SchemaSettings.AutoRefresh = function () {
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  const { dn } = useSchemaSettings();
+  const { t } = useTranslation();
+  const autoRefreshSchema = {
+    type: 'object',
+    title: t('Intervals'),
+    properties: {
+      sleepTime: {
+        type: 'number',
+        default: field.decoratorProps.sleepTime || 0,
+        description: t('Unit: s, automatic refresh is turned off when equal to 0'),
+        'x-decorator': 'FormItem',
+        'x-component': 'InputNumber',
+        'x-component-props': {},
+        'x-validator': (value) => {
+          if (value == 0) return;
+          else if (value < 3) return t('The value cannot be less than 3');
+        },
+      },
+    },
+  } as ISchema;
+
+  const onAutoRefreshSubmit = ({ sleepTime }) => {
+    const params = field.decoratorProps || {};
+    params.sleepTime = sleepTime;
+    field.decoratorProps = params;
+    fieldSchema['x-decorator-props'] = params;
+    dn.emit('patch', {
+      schema: {
+        ['x-uid']: fieldSchema['x-uid'],
+        'x-decorator-props': fieldSchema['x-decorator-props'],
+      },
+    })
+      .then(() => {
+        location.reload();
+      })
+      .catch((e) => {
+        console.log(e);
+      });
+  };
+  return <SchemaSettings.ModalItem title={t('AutoRefresh')} schema={autoRefreshSchema} onSubmit={onAutoRefreshSubmit} />;
+};
+// 自定义节点展示
+SchemaSettings.CustomRenderNode = function CustomRenderNode() {
+  const { currentFields } = useCollection();
+  const { dn } = useSchemaSettings();
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+  const scope = currentFields
+    .map((o) => ({
+      ...o,
+      label: o?.uiSchema?.title,
+      children: [],
+      value: o.name,
+    }))
+    .filter((o: any) => !o?.foreignKey);
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Custom Render Node')}
+      schema={{
+        type: 'object',
+        properties: {
+          name: {
+            title: t('Custom Field Name'),
+            required: true,
+            default: field?.decoratorProps?.titleRender,
+            'x-decorator': 'FormItem',
+            'x-component': 'Variable.RawTextArea',
+            'x-component-props': {
+              scope,
+            },
+          },
+        },
+      }}
+      onSubmit={({ name }) => {
+        const params = field.decoratorProps || {};
+        params.titleRender = name;
+        field.decoratorProps = params;
+        fieldSchema['x-decorator-props'] = params;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': fieldSchema['x-decorator-props'],
+          },
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};
+SchemaSettings.AutoExpandParent = function AutoExpandParent() {
+  const fieldSchema = useFieldSchema();
+  const { dn } = useSchemaSettings();
+  const field = useField<Field>();
+  const { t } = useTranslation();
+  return (
+    <SchemaSettings.SwitchItem
+      title={t('Expand node')}
+      checked={fieldSchema['x-decorator-props'].expandFlag as boolean}
+      onChange={(checked) => {
+        const params = field.decoratorProps || {};
+        params.expandFlag = checked;
+        field.decoratorProps = params;
+        fieldSchema['x-decorator-props'] = params;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': fieldSchema['x-decorator-props'],
+          },
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};

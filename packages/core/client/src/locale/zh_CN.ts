@@ -881,4 +881,12 @@ export default {
   'Please confirm the SQL statement first': '请先确认 SQL 语句',
   'Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects':
   '自动删除依赖于该表的对象,以及依赖这些对象的对象',
+  'Intervals':'间隔时间',
+  'The value cannot be less than 3':'数值不能小于3',
+  'Tree':'树',
+  'Unit: s, automatic refresh is turned off when equal to 0':'单位：s，等于0时自动刷新关闭',
+  'AutoRefresh':'自动刷新',
+  'Custom Render Node':'自定义节点展示',
+  'Custom Field Name':'自定义字段名称',
+  'Expand node':'展开节点'
 };

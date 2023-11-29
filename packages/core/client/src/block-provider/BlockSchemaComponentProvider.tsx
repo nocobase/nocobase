@@ -13,7 +13,7 @@ import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider'
 import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
-
+import { TreeBlockProvider, useTreeBlockProps } from './TreeBlockProvider';
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`
 export const BlockSchemaComponentProvider: React.FC = (props) => {
   return (
@@ -30,6 +30,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         DetailsBlockProvider,
         KanbanBlockProvider,
         RecordLink,
+        TreeBlockProvider
       }}
       scope={{
         ...bp,
@@ -45,6 +46,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useTableSelectorProps,
         useKanbanBlockProps,
         useGanttBlockProps,
+        useTreeBlockProps,
       }}
     >
       {props.children}
@@ -71,6 +73,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       DetailsBlockProvider,
       KanbanBlockProvider,
       RecordLink,
+      TreeBlockProvider
     });
   }
 
@@ -89,6 +92,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useTableSelectorProps,
       useKanbanBlockProps,
       useGanttBlockProps,
+      useTreeBlockProps
     });
   }
 }

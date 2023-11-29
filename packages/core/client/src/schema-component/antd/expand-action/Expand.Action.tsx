@@ -3,7 +3,7 @@ import { useFieldSchema } from '@formily/react';
 import { Button } from 'antd';
 import React from 'react';
 import { useCompile } from '../../hooks';
-import { useTableBlockContext, useTableSelectorContext } from '../../../block-provider';
+import { useTableBlockContext, useTableSelectorContext, useTreeBlockContext } from '../../../block-provider';
 import { Icon } from '../../../icon';
 
 const actionDesignerCss = css`
@@ -50,13 +50,22 @@ export const ExpandAction = (props) => {
   const schema = useFieldSchema();
   const ctxSelector = useTableSelectorContext();
   const ctxBlock = useTableBlockContext();
+  const ctxTree = useTreeBlockContext();
   const isTableSelector = schema.parent?.parent?.['x-decorator'] === 'TableSelectorProvider';
-  const ctx = isTableSelector ? ctxSelector : ctxBlock;
+  const isTreeSelector =  schema.parent?.parent?.['x-decorator'] ==='TreeBlockProvider'
+  let ctx:any = {}
+  if(isTreeSelector){
+    ctx = ctxTree
+  }else if(isTableSelector){
+    ctx=ctxSelector
+  }else {
+    ctx =ctxBlock
+  }
   const { titleExpand, titleCollapse, iconExpand, iconCollapse } = schema['x-component-props'] || {};
   const compile = useCompile();
   return (
     <div className={actionDesignerCss}>
-      {ctx?.params['tree'] && (
+     {ctx?.params?.['tree'] && (
         <Button
           onClick={() => {
             ctx?.setExpandFlag();
