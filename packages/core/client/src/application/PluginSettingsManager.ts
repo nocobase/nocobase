@@ -45,8 +45,14 @@ export class PluginSettingsManager {
   protected settings: Record<string, PluginSettingOptions> = {};
   protected aclSnippets: string[] = [];
 
-  constructor(protected app: Application) {
+  constructor(
+    _pluginSettings: Record<string, PluginSettingOptions>,
+    protected app: Application,
+  ) {
     this.app = app;
+    Object.entries(_pluginSettings || {}).forEach(([name, pluginSettingOptions]) => {
+      this.add(name, pluginSettingOptions);
+    });
   }
 
   setAclSnippets(aclSnippets: string[]) {

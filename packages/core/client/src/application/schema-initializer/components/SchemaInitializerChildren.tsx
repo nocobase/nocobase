@@ -18,9 +18,9 @@ export const SchemaInitializerChildren: FC<{ children: SchemaInitializerItemType
 };
 
 const typeComponentMap: Record<SchemaInitializerItemType['type'], string> = {
-  itemGroup: 'SchemaInitializerGroup',
+  itemGroup: 'SchemaInitializerItemGroup',
   divider: 'SchemaInitializerDivider',
-  subMenu: 'SchemaInitializerMenu',
+  subMenu: 'SchemaInitializerSubMenu',
   item: 'SchemaInitializerItemInternal',
 };
 const useChildrenDefault = () => undefined;

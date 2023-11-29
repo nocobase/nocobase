@@ -16,7 +16,7 @@ describe('Application', () => {
   });
 
   const router: any = { type: 'memory', initialEntries: ['/'] };
-  const initialProvidersLength = 5;
+  const initialProvidersLength = 6;
   it('basic', () => {
     const app = new Application({ router });
     expect(app.i18n).toBeDefined();

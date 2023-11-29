@@ -28,9 +28,10 @@ export interface ApplicationOptions {
   - providers：上下文
   - components：全局组件
   - scopes：全局 scopes
-  - router：配置路由，具体请参考：
-  - schemaSettings：Schema 设置工具，具体参考：
-  - schemaInitializers：Schema 添加工具，具体参考：
+  - router：配置路由，具体请参考：[RouterManager](/core/application/router-manager)
+  - pluginSettings: [PluginSettingsManager](/core/application/plugin-settings-manager)
+  - schemaSettings：Schema 设置工具，具体参考：[SchemaSettingsManager](/core/ui-schema/schema-initializer-manager)
+  - schemaInitializers：Schema 添加工具，具体参考：[SchemaInitializerManager](/core/ui-schema/schema-initializer-manager)
   - loadRemotePlugins：用于控制是否加载远程插件，默认为 `false`，即不加载远程插件（方便单测和 DEMO 环境）。
 
 - 示例
@@ -101,7 +102,7 @@ class Application {
 
 ### app.schemaSettingsManager
 
-详细介绍，请参考：[SchemaSettingsManager]([/core/ui-schema/schema-initializer-manager](http://localhost:8000/core/ui-schema/schema-settings-manager))
+详细介绍，请参考：[SchemaSettingsManager](/core/ui-schema/schema-initializer-manager)
 
 ### app.schemaInitializerManager
 

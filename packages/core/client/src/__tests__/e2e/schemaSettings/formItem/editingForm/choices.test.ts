@@ -79,7 +79,7 @@ test.describe('checkbox', () => {
 });
 
 test.describe('checkbox group', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'checkGroup', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'checkboxGroup', blockType: 'editing' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;

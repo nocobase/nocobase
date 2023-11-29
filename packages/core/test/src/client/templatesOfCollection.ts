@@ -407,6 +407,70 @@ export const generalWithRelation: CollectionSetting[] = [
   },
 ];
 
+/**
+ * 创建一个名为 general 的 collection，其包含所有 advanced 类型的字段
+ */
+export const generalWithAdvanced: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'formula',
+        interface: 'formula',
+      },
+      {
+        name: 'sequence',
+        interface: 'sequence',
+      },
+      {
+        name: 'JSON',
+        interface: 'json',
+      },
+      {
+        name: 'collection',
+        interface: 'collection',
+      },
+    ],
+  },
+];
+
+/**
+ * 创建一个名为 general 的 collection，其包含所有 systemInfo 类型的字段
+ */
+export const generalWithSystemInfo: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'createdAt',
+        interface: 'createdAt',
+      },
+      {
+        name: 'updatedAt',
+        interface: 'updatedAt',
+      },
+      {
+        name: 'createdBy',
+        interface: 'createdBy',
+      },
+      {
+        name: 'updatedBy',
+        interface: 'updatedBy',
+      },
+      {
+        name: 'id',
+        interface: 'id',
+      },
+      {
+        name: 'tableoid',
+        interface: 'tableoid',
+      },
+    ],
+  },
+];
+
 export const generalWithSingleLineText: CollectionSetting[] = [
   {
     name: 'general',
