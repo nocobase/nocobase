@@ -40,7 +40,7 @@ export const collectFieldStateOfLinkageRules = ({
   variables,
   localVariables,
 }: Props) => {
-  const requiredResult = field?.stateOfLinkageRules?.required || [field?.initStateOfLinkageRules?.required || false];
+  const requiredResult = field?.stateOfLinkageRules?.required || [field?.initStateOfLinkageRules?.required];
   const displayResult = field?.stateOfLinkageRules?.display || [field?.initStateOfLinkageRules?.display];
   const patternResult = field?.stateOfLinkageRules?.pattern || [field?.initStateOfLinkageRules?.pattern];
   const valueResult = field?.stateOfLinkageRules?.value || [field?.initStateOfLinkageRules?.value];

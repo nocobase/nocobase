@@ -13,6 +13,7 @@ import { Collection, useCollection, useCollectionManager } from '../../../collec
 import { useRecord } from '../../../record-provider';
 import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled } from '../../../schema-settings';
+import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
@@ -23,6 +24,7 @@ import { isSubMode } from '../association-field/util';
 import { BlockItem } from '../block-item';
 import { removeNullCondition } from '../filter';
 import { DynamicComponentProps } from '../filter/DynamicComponent';
+import { getTempFieldState } from '../form-v2/utils';
 import { HTMLEncode } from '../input/shared';
 import { useColorFields } from '../table-v2/Table.Column.Designer';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
@@ -128,12 +130,6 @@ FormItem.Designer = function Designer() {
   const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface);
   const isTableField = fieldSchema['x-component'] === 'TableField';
   const isFileField = isFileCollection(targetCollection as any);
-  const initialValue = {
-    title: field.title === originalTitle ? undefined : field.title,
-  };
-  if (!field.readPretty) {
-    initialValue['required'] = field.required;
-  }
   const options = targetFields
     .filter((field) => {
       return isTitleField(field);
@@ -607,6 +603,7 @@ FormItem.Designer = function Designer() {
                 schema['x-disabled'] = true;
                 field.readPretty = false;
                 field.disabled = true;
+                _.set(field, 'initStateOfLinkageRules.pattern', getTempFieldState(true, ActionType.ReadOnly));
                 break;
               }
               case 'read-pretty': {
@@ -615,6 +612,7 @@ FormItem.Designer = function Designer() {
                 schema['x-read-pretty'] = true;
                 schema['x-disabled'] = false;
                 field.readPretty = true;
+                _.set(field, 'initStateOfLinkageRules.pattern', getTempFieldState(true, ActionType.ReadPretty));
                 break;
               }
               default: {
@@ -624,6 +622,7 @@ FormItem.Designer = function Designer() {
                 schema['x-disabled'] = false;
                 field.readPretty = false;
                 field.disabled = false;
+                _.set(field, 'initStateOfLinkageRules.pattern', getTempFieldState(true, ActionType.Editable));
                 break;
               }
             }

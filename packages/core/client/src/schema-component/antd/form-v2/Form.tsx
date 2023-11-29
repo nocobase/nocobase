@@ -117,17 +117,17 @@ const WithForm = (props: WithFormProps) => {
         rule.actions?.forEach((action) => {
           if (action.targetFields?.length) {
             const fields = action.targetFields.join(',');
-            onFieldInit(`*(${fields})`, (field: any, form) => {
-              field['initStateOfLinkageRules'] = field?.['initStateOfLinkageRules'] ?? {
-                display: getTempFieldState(true, field.display),
-                required: getTempFieldState(true, field.required),
-                pattern: getTempFieldState(true, field.pattern),
-                value: getTempFieldState(true, field.value || field.initialValue),
-              };
-            });
 
             // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `reaction` 代替
             onFieldInit(`*(${fields})`, (field: any, form) => {
+              field['initStateOfLinkageRules'] = {
+                display: field.initStateOfLinkageRules?.display || getTempFieldState(true, field.display),
+                required: field.initStateOfLinkageRules?.required || getTempFieldState(true, field.required || false),
+                pattern: field.initStateOfLinkageRules?.pattern || getTempFieldState(true, field.pattern),
+                value:
+                  field.initStateOfLinkageRules?.value || getTempFieldState(true, field.value || field.initialValue),
+              };
+
               disposes.push(
                 reaction(
                   // 这里共依赖 3 部分，当这 3 部分中的任意一部分发生变更后，需要触发联动规则：
