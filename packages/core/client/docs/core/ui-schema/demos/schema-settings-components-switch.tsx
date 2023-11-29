@@ -12,7 +12,7 @@ const FormItemRequired = () => {
   const filed = useField();
   return (
     <SchemaSettingsSwitchItem
-      title={'Required'}
+      title={'Required - 组件方式'}
       checked={!!filed.componentProps?.required}
       onChange={(v) => {
         patch({
@@ -31,6 +31,25 @@ const mySettings = new SchemaSettings({
     {
       name: 'required',
       Component: FormItemRequired,
+    },
+    {
+      name: 'required2',
+      type: 'switch',
+      useComponentProps() {
+        const { patch } = useDesignable();
+        const filed = useField();
+        return {
+          title: 'Required - type 方式',
+          checked: !!filed.componentProps?.required,
+          onChange(v) {
+            patch({
+              'x-component-props': {
+                required: v,
+              },
+            });
+          },
+        };
+      },
     },
   ],
 });

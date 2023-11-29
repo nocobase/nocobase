@@ -83,9 +83,88 @@ const mySchemaSettings = new SchemaSettings({
 });
 ```
 
-##
+## options.items 配置详解
 
-实例方法
+```tsx | pure
+interface SchemaSettingsItemCommon<T = {}> {
+  name: string;
+  sort?: number;
+  type?: string;
+  Component: string | ComponentType<T>;
+  useVisible?: () => boolean;
+  children?: SchemaSettingsItemType[];
+  useChildren?: () => SchemaSettingsItemType[];
+  checkChildrenLength?: boolean;
+  componentProps?: Omit<T, 'children'>;
+  useComponentProps?: () => Omit<T, 'children'>;
+}
+```
+
+### 两种定义方式：`Component` 和 `type`
+
+
+- 通过 `Component` 定义
+
+```tsx | pure
+
+const Demo = () => {
+  // 最终渲染 `SchemaSettingsItem`
+  return <SchemaSettingsItem title='Demo' />
+}
+
+const mySettings = new SchemaSettings({
+  name: 'mySettings',
+  items: [
+    {
+      name: 'a',
+      Component: Demo, // 通过 Component 定义
+    }
+  ],
+});
+```
+
+- 通过 `type` 定义
+
+NocoBase 内置了一些常用的 `type`，例如 `type: 'item'`，相当于 `Component: SchemaSettingsItem`。
+
+更多内置类型，请参考：[内置组件和类型](/core/ui-schema/schema-settings#%E5%86%85%E7%BD%AE%E7%BB%84%E4%BB%B6%E5%92%8C%E7%B1%BB%E5%9E%8B)
+
+```tsx | pure
+const mySettings = new SchemaSettings({
+  name: 'mySettings',
+  items: [
+    {
+      name: 'a',
+      type: 'item',
+      componentProps: {
+        title: 'Demo',
+      },
+    }
+  ],
+});
+```
+
+<code src="./demos/schema-settings-options-item-define.tsx"></code>
+
+### `children` 和动态方式 `useChildren`
+
+对于某些组件而言是有子列表项的，例如 `type: 'itemGroup'`，那么我们使用 children 属性，同时考虑到某些场景下 children 是动态的，需要从 Hooks 里面获取，那么就可以通过 `useChildren` 来定义。
+
+<code src="./demos/schema-settings-options-item-children.tsx"></code>
+
+### 动态显示隐藏 `useVisible`
+
+<code src="./demos/schema-settings-options-item-visible.tsx"></code>
+
+### 组件属性 `componentProps` 和动态属性 `useComponentProps`
+
+对于一些通用组件，我们可以通过 `componentProps` 来定义组件属性，同时考虑到某些场景下组件属性是动态的，需要从 Hooks 里面获取，那么就可以通过 `useComponentProps` 来定义。
+
+当然也可以不使用这两个属性，直接封装成一个组件，然后通过 `Component` 来定义。
+
+<code src="./demos/schema-settings-options-item-props.tsx"></code>
+
+## 实例方法
 
 ```tsx | pure
 const mySchemaSettings = new SchemaSettings({
@@ -256,7 +335,7 @@ function useSchemaSettingsItem(): SchemaSettingsItemType;
 const { name } = useSchemaSettingsItem();
 ```
 
-## 列表项组件
+## 内置组件和类型
 
 | type        | Component                      | 效果                                      |
 | ----------- | ------------------------------ | ----------------------------------------- |

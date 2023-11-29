@@ -3,7 +3,7 @@
 ## new SchemaInitializer(options)
 
 ```tsx | pure
-export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = {}> {
+interface SchemaInitializerOptions<P1 = ButtonProps, P2 = {}> {
   Component?: ComponentType<P1>;
   componentProps?: P1;
   style?: React.CSSProperties;
@@ -175,6 +175,125 @@ const myInitializer = new SchemaInitializer({
 
 <code src="./demos/schema-initializer-items.tsx"></code>
 
+## options.items 配置详解
+
+### 类型
+
+```tsx | pure
+interface SchemaInitializerComponentCommonProps {
+  title?: string;
+  schema?: ISchema;
+  style?: React.CSSProperties;
+  className?: string;
+}
+
+interface SchemaInitializerItemBaseType<T = {}> extends SchemaInitializerComponentCommonProps {
+  name: string;
+  sort?: number;
+  type?: string;
+  Component?: string | ComponentType<T>;
+  componentProps?: Omit<T, 'children'>;
+  useComponentProps?: () => Omit<T, 'children'>;
+  useVisible?: () => boolean;
+  children?: SchemaInitializerItemType[];
+  useChildren?: () => SchemaInitializerItemType[];
+  [index: string]: any;
+}
+```
+
+### 两种定义方式：`Component` 和 `type`
+
+
+- 通过 `Component` 定义
+
+```tsx | pure
+
+const Demo = () => {
+  // 最终渲染 `SchemaInitializerItem`
+  return <SchemaInitializerItem title='Demo' />
+}
+
+const myInitializer = new SchemaInitializer({
+  name: 'MyInitializer',
+  items: [
+    {
+      name: 'a',
+      Component: Demo, // 通过 Component 定义
+    }
+  ],
+});
+```
+
+- 通过 `type` 定义
+
+NocoBase 内置了一些常用的 `type`，例如 `type: 'item'`，相当于 `Component: SchemaInitializerItem`。
+
+更多内置类型，请参考：[内置组件和类型](/core/ui-schema/schema-initializer#%E5%86%85%E7%BD%AE%E7%BB%84%E4%BB%B6%E5%92%8C%E7%B1%BB%E5%9E%8B)
+
+```tsx | pure
+const myInitializer = new SchemaInitializer({
+  name: 'MyInitializer',
+  items: [
+    {
+      name: 'a',
+      type: 'item',
+      title: 'Demo'
+    }
+  ],
+});
+```
+
+<code src="./demos/schema-initializer-options-item-define.tsx"></code>
+
+### `children` 和动态方式 `useChildren`
+
+对于某些组件而言是有子列表项的，例如 `type: 'itemGroup'`，那么我们使用 children 属性，同时考虑到某些场景下 children 是动态的，需要从 Hooks 里面获取，那么就可以通过 `useChildren` 来定义。
+
+<code src="./demos/schema-initializer-options-item-children.tsx"></code>
+
+### 动态显示隐藏 `useVisible`
+
+<code src="./demos/schema-initializer-options-item-visible.tsx"></code>
+
+### 组件属性 `componentProps` 和动态属性 `useComponentProps`
+
+对于一些通用组件，我们可以通过 `componentProps` 来定义组件属性，同时考虑到某些场景下组件属性是动态的，需要从 Hooks 里面获取，那么就可以通过 `useComponentProps` 来定义。
+
+当然也可以不使用这两个属性，直接封装成一个组件，然后通过 `Component` 来定义。
+
+<code src="./demos/schema-initializer-options-item-props.tsx"></code>
+
+### 公共属性和组件属性
+
+```tsx | pure
+{
+  name: 'demo',
+  title: 'Demo',
+  foo: 'bar',
+  Component: Demo,
+  componentProps: {
+    zzz: 'xxx',
+  },
+}
+```
+
+从上面的示例中我么看到，从配置项中获取组件组件所需的数据有两个方式：
+
+- 组件属性：通过 `componentProps` 来定义，例如 `zzz: 'xxx'`
+- 公共属性：将属性直接定义在配置项上，例如 `foo: 'bar'`、`name`、`title`
+
+在获取上
+
+- `componentProps` 定义的数据会被传递给组件的 `props`
+- 直接定义在配置项上的数据会则需要通过 [useSchemaInitializerItem()](/core/ui-schema/schema-initializer#useschemainitializeritem) 获取
+
+```tsx | pure
+const Demo = (props) => {
+  console.log(props); // { zzz: 'xxx' }
+  const { foo } = useSchemaInitializerItem(); // { foo: 'bar' }
+}
+```
+
 ## 实例方法
 
 ```tsx | pure
@@ -260,7 +379,6 @@ myInitializer.add('a.a2', {
     title: 'item a2',
 })
 ```
-
 
 ```tsx
 import { SchemaInitializer, Application, useSchemaInitializerRender } from '@nocobase/client';
@@ -402,7 +520,7 @@ function useSchemaInitializerRender(name: string, options?: SchemaInitializerOpt
 
 - 参数详解
 
-返回的 `render` 方法可以接收一个参数，用于覆盖 `SchemaInitializer` 的配置。
+返回的 `render` 方法可以接收一个参数，用于覆盖 `new SchemaInitializer(options)` 的 `options` 配置。
 
 - 示例
 
@@ -419,8 +537,50 @@ const Demo = () => {
 
 <code src="./demos/schema-initializer-render.tsx"></code>
 
+### useSchemaInitializerItem()
 
-## 列表项组件
+用于获取配置项内容的，配置项是指的 `SchemaInitializer` 中的 `items` 中的一项。
+
+- 类型
+
+```tsx | pure
+const useSchemaInitializerItem: <T = any>() => T
+```
+
+- 示例
+
+```tsx | pure
+const myInitializer = new SchemaInitializer({
+  name: 'MyInitializer',
+  title: 'Button Text',
+  items: [
+    {
+      name: 'a',
+      title: 'Item A',
+      foo: 'bar',
+      Component: Demo,
+    },
+  ],
+});
+
+/**
+ * 通过 useSchemaInitializerItem() 获取到的是
+ *  {
+ *    name: 'a',
+ *    title: 'Item A',
+ *    foo: 'bar',
+ *    Component: Demo,
+ * }
+ */
+const Demo = () => {
+  const { title, foo } = useSchemaInitializerItem();
+  return <div>{ title } - { foo }</div>
+}
+```
+
+<code src="./demos/schema-initializer-hooks-item.tsx"></code>
+
+## 内置组件和类型
 
 | type        | Component                      | 效果                                      |
 | ----------- | ------------------------------ | ----------------------------------------- |
@@ -431,50 +591,51 @@ const Demo = () => {
 | switch      | SchemaInitializerSwitch      | 开关                                      |
 | actionModal      | SchemaInitializerActionModal      | 弹窗|
 
+以下每个示例都提供了 2 种[定义方式](/core/ui-schema/schema-initializer#两种定义方式component-和-type)，一种是通过 `Component` 定义，另一种是通过 `type` 定义。
 
-### SchemaInitializerItem
+### `type: 'item'` & `SchemaInitializerItem`
 
-文本项，对应 `type` 为 `item`。
+文本项。
 
 ```tsx | pure
-export interface SchemaInitializerItemProps {
+interface SchemaInitializerItemProps {
   style?: React.CSSProperties;
   className?: string;
   name?: string;
   icon?: React.ReactNode;
   title?: React.ReactNode;
+  items?: SchemaInitializerItemType[];
   onClick?: (args?: any) => any;
 }
 ```
 
-核心参数是 `title`、`icon`、`onClick`，其中 `onClick` 用于插入 Schema。
+核心参数是 `title`、`icon`、`onClick`、`items`，其中 `onClick` 用于插入 Schema，`items` 用于渲染子列表项。
 
 <code src="./demos/schema-initializer-components-item.tsx"></code>
 
-### SchemaInitializerItemGroup
+### `type: 'itemGroup'` & SchemaInitializerItemGroup
 
-分组，对应 `type` 为 `group`，其核心参数是 `title`。
+分组。
+
+```tsx | pure
+interface SchemaInitializerItemGroupProps {
+  name: string;
+  title: string;
+  children?: SchemaInitializerOptions['items'];
+  divider?: boolean;
+}
+```
+
+核心参数是 `title`、`children`，其中 `children` 用于渲染子列表项，`divider` 用于渲染分割线。
 
 <code src="./demos/schema-initializer-components-group.tsx"></code>
 
-### SchemaInitializerSubMenu
+### `type: 'switch'` & SchemaInitializerSwitch
 
-子菜单，对应 `type` 为 `subMenu`，其核心参数是 `title`。
-
-<code src="./demos/schema-initializer-components-menu.tsx"></code>
-
-### SchemaInitializerDivider
-
-分割线，对应 `type` 为 `divider`。
-
-<code src="./demos/schema-initializer-components-divider.tsx"></code>
-
-### SchemaInitializerSwitch
-
-Switch 切换按钮，对应 `type` 为 `switch`。
+Switch 切换按钮。
 
 ```tsx | pure
-export interface SchemaInitializerSwitchItemProps extends SchemaInitializerItemProps {
+interface SchemaInitializerSwitchItemProps extends SchemaInitializerItemProps {
   checked?: boolean;
   disabled?: boolean;
 }
@@ -483,6 +644,18 @@ export interface SchemaInitializerSwitchItemProps extends SchemaInitializerItemP
 核心参数是 `checked`、`onClick`，其中 `onClick` 用于插入或者移除 Schema。
 
 <code src="./demos/schema-initializer-components-switch.tsx"></code>
+
+### `type: 'subMenu'` &  SchemaInitializerSubMenu
+
+子菜单。
+
+<code src="./demos/schema-initializer-components-menu.tsx"></code>
+
+### `type: 'divider'` & SchemaInitializerDivider
+
+分割线。
+
+<code src="./demos/schema-initializer-components-divider.tsx"></code>
 
 ## 渲染组件
 

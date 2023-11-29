@@ -5,74 +5,79 @@ import type {
   SchemaInitializerActionModalProps,
   SchemaInitializerItemGroupProps,
   SchemaInitializerItemProps,
+  SchemaInitializerSelectItemProps,
   SchemaInitializerSubMenuProps,
+  SchemaInitializerSwitchItemProps,
 } from './components';
 
 export type InsertType = (s: ISchema) => void;
 
-export interface SchemaInitializerComponentCommonProps {
-  title?: string;
-  schema?: ISchema;
-  style?: React.CSSProperties;
-  className?: string;
-}
-export const schemaInitializerComponentCommonProps: (keyof SchemaInitializerComponentCommonProps)[] = [
-  'schema',
-  'title',
-  'style',
-  'className',
-];
-
-export interface SchemaInitializerItemBaseType<T = {}> extends SchemaInitializerComponentCommonProps {
+type SchemaInitializerItemBuiltInType<T = {}> = T & {
   name: string;
   sort?: number;
-  Component?: string | ComponentType<T>;
-  componentProps?: T;
+  componentProps?: Omit<T, 'children'>;
+  useComponentProps?: () => Omit<T, 'children'>;
   useVisible?: () => boolean;
-  [index: string]: any;
-}
+};
 
-export interface SchemaInitializerItemBaseWithChildren<T = {}> extends SchemaInitializerItemBaseType<T> {
+export interface SchemaInitializerItemComponentType<T = {}> {
+  name: string;
+  Component: ComponentType<T> | string;
+  sort?: number;
+  componentProps?: Omit<T, 'children'>;
+  useComponentProps?: () => Omit<T, 'children'>;
+  useVisible?: () => boolean;
   children?: SchemaInitializerItemType[];
   checkChildrenLength?: boolean;
   useChildren?: () => SchemaInitializerItemType[];
 }
 
-export interface SchemaInitializerItemDividerType extends SchemaInitializerItemBaseType {
+export interface SchemaInitializerItemDividerType extends SchemaInitializerItemBuiltInType {
   type: 'divider';
 }
 
-export type SchemaInitializerItemOnlyType = {
+export type SchemaInitializerItemItemType = {
   type: 'item';
-} & SchemaInitializerItemProps &
-  SchemaInitializerItemBaseType;
+} & SchemaInitializerItemBuiltInType<SchemaInitializerItemProps>;
+
+export type SchemaInitializerItemSwitchType = {
+  type: 'switch';
+} & SchemaInitializerItemBuiltInType<SchemaInitializerSwitchItemProps>;
+
+export type SchemaInitializerItemSelectType = {
+  type: 'select';
+} & SchemaInitializerItemBuiltInType<SchemaInitializerSelectItemProps>;
 
 export type SchemaInitializerItemActionModalType = {
   type: 'actionModal';
-} & SchemaInitializerActionModalProps &
-  SchemaInitializerItemBaseType;
+} & SchemaInitializerItemBuiltInType<SchemaInitializerActionModalProps>;
 
 export type SchemaInitializerItemGroupType = {
   type: 'itemGroup';
-} & SchemaInitializerItemBaseWithChildren &
-  SchemaInitializerItemGroupProps;
+  children?: SchemaInitializerItemType[];
+  checkChildrenLength?: boolean;
+  useChildren?: () => SchemaInitializerItemType[];
+} & SchemaInitializerItemBuiltInType<SchemaInitializerItemGroupProps>;
 
 export type SchemaInitializerSubMenuType = {
   type: 'subMenu';
-} & SchemaInitializerItemBaseWithChildren &
-  SchemaInitializerSubMenuProps;
+  children?: SchemaInitializerItemType[];
+  checkChildrenLength?: boolean;
+  useChildren?: () => SchemaInitializerItemType[];
+} & SchemaInitializerItemBuiltInType<SchemaInitializerSubMenuProps>;
 
-export type SchemaInitializerItemType<T = {}> =
-  | SchemaInitializerItemBaseType<T>
-  | SchemaInitializerItemBaseWithChildren<T>
+export type SchemaInitializerItemType<T = any> =
   | SchemaInitializerItemDividerType
-  | SchemaInitializerItemOnlyType
+  | SchemaInitializerItemItemType
+  | SchemaInitializerItemSwitchType
+  | SchemaInitializerItemSelectType
   | SchemaInitializerItemGroupType
   | SchemaInitializerSubMenuType
-  | SchemaInitializerItemActionModalType;
+  | SchemaInitializerItemActionModalType
+  | SchemaInitializerItemComponentType<T>;
 
-// TODO: 类型需要优化
 export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = {}> {
+  name: string;
   Component?: ComponentType<P1>;
   componentProps?: P1;
   style?: React.CSSProperties;

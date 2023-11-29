@@ -10,10 +10,10 @@ import { SchemaInitializerOptions } from '../types';
 import { useSchemaInitializerStyles } from './style';
 
 export interface SchemaInitializerSubMenuProps {
-  title: string;
   name: string;
-  onClick: (args: any) => void;
-  icon: string | ReactNode;
+  title?: string;
+  onClick?: (args: any) => void;
+  icon?: string | ReactNode;
   children?: SchemaInitializerOptions['items'];
 }
 
@@ -29,7 +29,7 @@ export const useSchemaInitializerSubMenuContext = () => {
   return React.useContext(SchemaInitializerSubMenuContext);
 };
 
-export const SchemaInitializerSubMenu: FC<MenuProps> = (props) => {
+export const SchemaInitializerMenu: FC<MenuProps> = (props) => {
   const { componentCls, hashId } = useSchemaInitializerStyles();
   const { items, ...others } = props;
   const { token } = theme.useToken();
@@ -62,9 +62,8 @@ export const SchemaInitializerSubMenu: FC<MenuProps> = (props) => {
   );
 };
 
-export const SchemaInitializerSubMenuInternal = (props) => {
-  const { children, title, name = uid(), icon, ...others } = useSchemaInitializerItem<SchemaInitializerSubMenuProps>();
-  const { children: _unUse, ...otherProps } = props;
+export const SchemaInitializerSubMenu: FC<SchemaInitializerSubMenuProps> = (props) => {
+  const { children, title, name = uid(), icon, ...others } = props;
   const compile = useCompile();
   const childrenItems = useSchemaInitializerMenuItems(children, name);
   const items = useMemo(() => {
@@ -78,5 +77,10 @@ export const SchemaInitializerSubMenuInternal = (props) => {
       },
     ];
   }, [childrenItems, compile, icon, name, others, title]);
-  return <SchemaInitializerSubMenu {...otherProps} items={items}></SchemaInitializerSubMenu>;
+  return <SchemaInitializerMenu items={items}></SchemaInitializerMenu>;
+};
+
+export const SchemaInitializerSubMenuInternal = () => {
+  const itemConfig = useSchemaInitializerItem<SchemaInitializerSubMenuProps>();
+  return <SchemaInitializerMenu {...itemConfig}></SchemaInitializerMenu>;
 };

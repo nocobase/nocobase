@@ -8,7 +8,6 @@ import { SchemaInitializerDivider } from './SchemaInitializerDivider';
 import { useSchemaInitializerStyles } from './style';
 
 export interface SchemaInitializerItemGroupProps {
-  name: string;
   title: string;
   children?: SchemaInitializerOptions['items'];
   divider?: boolean;
