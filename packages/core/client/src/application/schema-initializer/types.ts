@@ -2,6 +2,7 @@ import { ISchema } from '@formily/json-schema';
 import { ButtonProps, PopoverProps } from 'antd';
 import { ComponentType, ReactNode } from 'react';
 import type {
+  SchemaInitializerActionModalProps,
   SchemaInitializerItemGroupProps,
   SchemaInitializerItemProps,
   SchemaInitializerSubMenuProps,
@@ -46,6 +47,11 @@ export type SchemaInitializerItemOnlyType = {
 } & SchemaInitializerItemProps &
   SchemaInitializerItemBaseType;
 
+export type SchemaInitializerItemActionModalType = {
+  type: 'actionModal';
+} & SchemaInitializerActionModalProps &
+  SchemaInitializerItemBaseType;
+
 export type SchemaInitializerItemGroupType = {
   type: 'itemGroup';
 } & SchemaInitializerItemBaseWithChildren &
@@ -62,7 +68,8 @@ export type SchemaInitializerItemType<T = {}> =
   | SchemaInitializerItemDividerType
   | SchemaInitializerItemOnlyType
   | SchemaInitializerItemGroupType
-  | SchemaInitializerSubMenuType;
+  | SchemaInitializerSubMenuType
+  | SchemaInitializerItemActionModalType;
 
 // TODO: 类型需要优化
 export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = {}> {

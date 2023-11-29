@@ -29,7 +29,7 @@ export const useSchemaInitializerSubMenuContext = () => {
   return React.useContext(SchemaInitializerSubMenuContext);
 };
 
-export const SchemaInitializerInternalSubMenu: FC<MenuProps> = (props) => {
+export const SchemaInitializerSubMenu: FC<MenuProps> = (props) => {
   const { componentCls, hashId } = useSchemaInitializerStyles();
   const { items, ...others } = props;
   const { token } = theme.useToken();
@@ -62,7 +62,7 @@ export const SchemaInitializerInternalSubMenu: FC<MenuProps> = (props) => {
   );
 };
 
-export const SchemaInitializerSubMenu = (props) => {
+export const SchemaInitializerSubMenuInternal = (props) => {
   const { children, title, name = uid(), icon, ...others } = useSchemaInitializerItem<SchemaInitializerSubMenuProps>();
   const { children: _unUse, ...otherProps } = props;
   const compile = useCompile();
@@ -78,5 +78,5 @@ export const SchemaInitializerSubMenu = (props) => {
       },
     ];
   }, [childrenItems, compile, icon, name, others, title]);
-  return <SchemaInitializerInternalSubMenu items={items} {...otherProps}></SchemaInitializerInternalSubMenu>;
+  return <SchemaInitializerSubMenu {...otherProps} items={items}></SchemaInitializerSubMenu>;
 };

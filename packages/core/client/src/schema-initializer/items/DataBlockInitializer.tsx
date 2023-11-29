@@ -3,7 +3,7 @@ import { Divider, Empty, Input, MenuProps, Spin } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  SchemaInitializerInternalSubMenu,
+  SchemaInitializerSubMenu,
   SchemaInitializerItem,
   useSchemaInitializer,
   useSchemaInitializerMenuItems,
@@ -282,7 +282,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
 
   if (menuChildren.length > 0) {
     return (
-      <SchemaInitializerInternalSubMenu
+      <SchemaInitializerSubMenu
         onOpenChange={(keys) => {
           setIsOpenSubMenu(keys.length > 0);
         }}

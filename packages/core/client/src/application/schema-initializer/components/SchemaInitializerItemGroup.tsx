@@ -1,5 +1,5 @@
 import { theme } from 'antd';
-import React from 'react';
+import React, { FC } from 'react';
 import { useCompile } from '../../../schema-component';
 import { useSchemaInitializerItem } from '../context';
 import { SchemaInitializerOptions } from '../types';
@@ -14,8 +14,7 @@ export interface SchemaInitializerItemGroupProps {
   divider?: boolean;
 }
 
-export const SchemaInitializerItemGroup = () => {
-  const { children, title, divider } = useSchemaInitializerItem<SchemaInitializerItemGroupProps>();
+export const SchemaInitializerItemGroup: FC<SchemaInitializerItemGroupProps> = ({ children, title, divider }) => {
   const compile = useCompile();
   const { componentCls } = useSchemaInitializerStyles();
   const { token } = theme.useToken();
@@ -26,4 +25,9 @@ export const SchemaInitializerItemGroup = () => {
       <SchemaInitializerChildren>{children}</SchemaInitializerChildren>
     </div>
   );
+};
+
+export const SchemaInitializerItemGroupInternal = () => {
+  const itemConfig = useSchemaInitializerItem<SchemaInitializerItemGroupProps>();
+  return <SchemaInitializerItemGroup {...itemConfig} />;
 };

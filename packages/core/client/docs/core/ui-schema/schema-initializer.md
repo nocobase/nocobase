@@ -424,11 +424,12 @@ const Demo = () => {
 
 | type        | Component                      | 效果                                      |
 | ----------- | ------------------------------ | ----------------------------------------- |
-| item        | SchemaInitializerItem            | 文本                                      |
-| itemGroup   | SchemaInitializerItemGroup       | 分组，同 Menu 组件的 `type: 'group'`      |
-| subMenu     | SchemaInitializerSubMenu         | 子菜单，同 Menu 组件的子菜单              |
-| divider     | SchemaInitializerDivider         | 分割线，同 Menu 组件的  `type: 'divider'` |
+| item        | SchemaInitializerItem            | 文本|
+| itemGroup   | SchemaInitializerItemGroup       | 分组，同 antd `Menu` 组件的 `type: 'group'`      |
+| subMenu     | SchemaInitializerSubMenu         | 子菜单，同 antd `Menu` 组件的子菜单              |
+| divider     | SchemaInitializerDivider         | 分割线，同 antd `Menu` 组件的  `type: 'divider'` |
 | switch      | SchemaInitializerSwitch      | 开关                                      |
+| actionModal      | SchemaInitializerActionModal      | 弹窗|
 
 
 ### SchemaInitializerItem

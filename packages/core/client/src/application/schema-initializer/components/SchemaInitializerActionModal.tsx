@@ -1,6 +1,7 @@
 import { useForm } from '@formily/react';
 import React, { FC, useCallback, useMemo } from 'react';
 import { useActionContext, SchemaComponent } from '../../../schema-component';
+import { useSchemaInitializerItem } from '../context';
 
 export interface SchemaInitializerActionModalProps {
   title: string;
@@ -105,4 +106,9 @@ export const SchemaInitializerActionModal: FC<SchemaInitializerActionModalProps>
   }, [buttonText, component, schema, title, useCancelAction, useSubmitAction]);
 
   return <SchemaComponent schema={defaultSchema as any} />;
+};
+
+export const SchemaInitializerActionModalInternal = () => {
+  const itemConfig = useSchemaInitializerItem<SchemaInitializerActionModalProps>();
+  return <SchemaInitializerActionModal {...itemConfig} />;
 };

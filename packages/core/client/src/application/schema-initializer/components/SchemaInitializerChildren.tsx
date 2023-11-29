@@ -3,7 +3,6 @@ import React, { FC, useMemo } from 'react';
 import { SchemaInitializerItemType } from '../types';
 import { SchemaInitializerItemContext } from '../context';
 import { useFindComponent } from '../../../schema-component';
-
 export const SchemaInitializerChildren: FC<{ children: SchemaInitializerItemType[] }> = (props) => {
   const { children } = props;
   return (
@@ -17,12 +16,14 @@ export const SchemaInitializerChildren: FC<{ children: SchemaInitializerItemType
   );
 };
 
-const typeComponentMap: Record<SchemaInitializerItemType['type'], string> = {
-  itemGroup: 'SchemaInitializerItemGroup',
+const typeComponentMap: Record<SchemaInitializerItemType['type'], any> = {
+  itemGroup: 'SchemaInitializerItemGroupInternal',
   divider: 'SchemaInitializerDivider',
-  subMenu: 'SchemaInitializerSubMenu',
-  item: 'SchemaInitializerItemInternal',
+  subMenu: 'SchemaInitializerSubMenuInternal',
+  item: 'SchemaInitializerItemGroupInternal',
+  actionModal: 'SchemaInitializerActionModalInternal',
 };
+
 const useChildrenDefault = () => undefined;
 const useVisibleDefault = () => true;
 export const SchemaInitializerChild: FC<SchemaInitializerItemType> = (props) => {
