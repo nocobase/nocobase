@@ -129,7 +129,7 @@ export function useCollectValuesToSubmit() {
 
       if (process.env.NODE_ENV !== 'production') {
         if (!collectionField) {
-          throw new Error(`useCreateActionProps: field "${key}" not found in collection "${name}"`);
+          throw new Error(`field "${key}" not found in collection "${name}"`);
         }
       }
 
