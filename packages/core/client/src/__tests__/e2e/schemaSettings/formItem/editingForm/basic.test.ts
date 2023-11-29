@@ -484,12 +484,11 @@ test.describe('long text', () => {
         ).toBeDisabled();
       },
       expectEasyReading: async () => {
-        // 输入框会消失，只剩下值
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').getByRole('textbox'),
         ).not.toBeVisible();
         await expect(page.getByLabel('block-item-CollectionField-general-form-general.longText-longText')).toHaveText(
-          `longText:${record.longText}`,
+          `longText:${record.longText}`.replaceAll('\n', ''),
         );
       },
     });
