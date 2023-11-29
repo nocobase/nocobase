@@ -1,14 +1,11 @@
 import { get } from 'lodash';
-
-import { Trigger } from '.';
-import Plugin from '..';
-import { WorkflowModel } from '../types';
-import { Model, modelAssociationByKey } from '@nocobase/database';
 import { BelongsTo, HasOne } from 'sequelize';
-import { toJSON } from '../utils';
+import { Model, modelAssociationByKey } from '@nocobase/database';
 
-export default class FormTrigger extends Trigger {
-  constructor(plugin: Plugin) {
+import WorkflowPlugin, { Trigger, WorkflowModel, toJSON } from '@nocobase/plugin-workflow';
+
+export default class extends Trigger {
+  constructor(plugin: WorkflowPlugin) {
     super(plugin);
 
     plugin.app.resourcer.use(this.middleware);

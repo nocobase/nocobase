@@ -1,108 +1,20 @@
+import { useNavigate } from 'react-router-dom';
+import { App, message } from 'antd';
 import { useField, useFieldSchema, useForm } from '@formily/react';
+
 import {
-  SchemaInitializerItemOptions,
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
   useCollection,
-  useCollectionDataSource,
-  useCollectionManager,
   useCompile,
   useCurrentUserContext,
   useFilterByTk,
   useFormActiveFields,
   useRecord,
 } from '@nocobase/client';
-import { isURL, parse } from '@nocobase/utils/client';
-import { App, message } from 'antd';
-import omit from 'lodash/omit';
-import { useNavigate } from 'react-router-dom';
-import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
-import { NAMESPACE, lang } from '../locale';
-import { appends, collection } from '../schemas/collection';
-import { getCollectionFieldOptions } from '../variable';
-
-export default {
-  title: `{{t("Form event", { ns: "${NAMESPACE}" })}}`,
-  type: 'form',
-  description: `{{t("Event triggers when submitted a workflow bound form action.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
-    collection: {
-      ...collection,
-      title: `{{t("Form data model", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Use a collection to match form data.", { ns: "${NAMESPACE}" })}}`,
-      ['x-reactions']: [
-        ...collection['x-reactions'],
-        {
-          target: 'appends',
-          effects: ['onFieldValueChange'],
-          fulfill: {
-            state: {
-              value: [],
-            },
-          },
-        },
-      ],
-    },
-    appends: {
-      ...appends,
-      title: `{{t("Associations to use", { ns: "${NAMESPACE}" })}}`,
-    },
-  },
-  scope: {
-    useCollectionDataSource,
-  },
-  components: {},
-  useVariables(config, options) {
-    const compile = useCompile();
-    const { getCollectionFields } = useCollectionManager();
-    const rootFields = [
-      {
-        collectionName: config.collection,
-        name: 'data',
-        type: 'hasOne',
-        target: config.collection,
-        uiSchema: {
-          title: lang('Trigger data'),
-        },
-      },
-      {
-        collectionName: 'users',
-        name: 'user',
-        type: 'hasOne',
-        target: 'users',
-        uiSchema: {
-          title: lang('User submitted form'),
-        },
-      },
-    ];
-    const result = getCollectionFieldOptions({
-      // depth,
-      appends: ['data', 'user', ...(config.appends?.map((item) => `data.${item}`) || [])],
-      ...options,
-      fields: rootFields,
-      compile,
-      getCollectionFields,
-    });
-    return result;
-  },
-  useInitializers(config): SchemaInitializerItemOptions | null {
-    if (!config.collection) {
-      return null;
-    }
-
-    return {
-      type: 'item',
-      key: 'triggerData',
-      title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
-      component: CollectionBlockInitializer,
-      collection: config.collection,
-      dataSource: '{{$context.data}}',
-    };
-  },
-  initializers: {},
-  useActionTriggerable: true,
-};
+import { parse, isURL } from '@nocobase/utils/client';
+import { omit } from 'lodash';
 
 function getFormValues({
   filterByTk,

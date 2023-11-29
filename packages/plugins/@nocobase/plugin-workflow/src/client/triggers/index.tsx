@@ -22,7 +22,6 @@ import { NAMESPACE, lang } from '../locale';
 import useStyles from '../style';
 import { VariableOptions } from '../variable';
 import collection from './collection';
-import formTrigger from './form';
 import schedule from './schedule/';
 import { cloneDeep } from 'lodash';
 
@@ -69,7 +68,6 @@ export interface Trigger {
 
 export const triggers = new Registry<Trigger>();
 
-triggers.register(formTrigger.type, formTrigger);
 triggers.register(collection.type, collection);
 triggers.register(schedule.type, schedule);
 

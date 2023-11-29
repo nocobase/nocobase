@@ -1,9 +1,14 @@
+import path from 'path';
+
 import Database from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
-import { getApp, sleep } from '..';
-import { EXECUTION_STATUS } from '../../constants';
+import { testkit, EXECUTION_STATUS } from '@nocobase/plugin-workflow';
 
-describe('workflow > triggers > form', () => {
+import Plugin from '..';
+
+const { getApp, sleep } = testkit;
+
+describe('workflow > instructions > sql', () => {
   let app: MockServer;
   let db: Database;
   let agent;
@@ -16,7 +21,8 @@ describe('workflow > triggers > form', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: ['users', 'auth'],
+      plugins: ['users', 'auth', Plugin],
+      collectionPath: path.join(__dirname, './collections'),
     });
     await app.getPlugin('auth').install();
     agent = app.agent();

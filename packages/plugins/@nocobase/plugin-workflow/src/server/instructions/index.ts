@@ -24,15 +24,11 @@ export abstract class Instruction {
 
   abstract run(node: FlowNodeModel, input: any, processor: Processor): InstructionResult;
 
-  resume(node: FlowNodeModel, input: any, processor: Processor): InstructionResult {
-    return null;
-  }
+  resume?(node: FlowNodeModel, input: any, processor: Processor): InstructionResult;
 
-  getScope(node: FlowNodeModel, data: any, processor: Processor): any {}
+  getScope?(node: FlowNodeModel, data: any, processor: Processor): any;
 
-  duplicateConfig(node: FlowNodeModel, options: Transactionable): object | Promise<object> {
-    return node.config;
-  }
+  duplicateConfig?(node: FlowNodeModel, options: Transactionable): object | Promise<object>;
 }
 
 type InstructionConstructor = { new (plugin: Plugin): Instruction };

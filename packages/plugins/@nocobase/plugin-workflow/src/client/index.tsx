@@ -18,9 +18,9 @@ import { WorkflowPage } from './WorkflowPage';
 import { WorkflowPane } from './WorkflowPane';
 import { triggers, getTriggersOptions } from './triggers';
 import { instructions } from './nodes';
-import { useTriggerWorkflowsActionProps } from './triggers/form';
-import { NAMESPACE } from './locale';
+import { useTriggerWorkflowsActionProps } from './hooks/useTriggerWorkflowActionProps';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './constant';
+import { NAMESPACE } from './locale';
 
 export default class extends Plugin {
   triggers = triggers;
