@@ -82,5 +82,5 @@ export const SchemaInitializerSubMenu: FC<SchemaInitializerSubMenuProps> = (prop
 
 export const SchemaInitializerSubMenuInternal = () => {
   const itemConfig = useSchemaInitializerItem<SchemaInitializerSubMenuProps>();
-  return <SchemaInitializerMenu {...itemConfig}></SchemaInitializerMenu>;
+  return <SchemaInitializerSubMenu {...itemConfig}></SchemaInitializerSubMenu>;
 };

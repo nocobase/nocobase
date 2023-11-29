@@ -18,6 +18,7 @@ type SchemaInitializerItemBuiltInType<T = {}> = T & {
   componentProps?: Omit<T, 'children'>;
   useComponentProps?: () => Omit<T, 'children'>;
   useVisible?: () => boolean;
+  [index: string]: any;
 };
 
 export interface SchemaInitializerItemComponentType<T = {}> {
@@ -30,6 +31,7 @@ export interface SchemaInitializerItemComponentType<T = {}> {
   children?: SchemaInitializerItemType[];
   checkChildrenLength?: boolean;
   useChildren?: () => SchemaInitializerItemType[];
+  [index: string]: any;
 }
 
 export interface SchemaInitializerItemDividerType extends SchemaInitializerItemBuiltInType {

@@ -107,7 +107,7 @@ export default {
           },
         },
         children: searchedChildren,
-      };
+      } as any;
     },
     initializers: {
       // AddCustomFormField
