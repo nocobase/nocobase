@@ -84,8 +84,8 @@ export const linkageAction = async ({
   variables: VariablesContextType;
   localVariables: VariableOption[];
 }) => {
-  const disableResult = field?.linkageProperty?.disabled || [false];
-  const displayResult = field?.linkageProperty?.display || ['visible'];
+  const disableResult = field?.stateOfLinkageRules?.disabled || [false];
+  const displayResult = field?.stateOfLinkageRules?.display || ['visible'];
 
   switch (operator) {
     case ActionType.Visible:
@@ -94,8 +94,8 @@ export const linkageAction = async ({
         field.data = field.data || {};
         field.data.hidden = false;
       }
-      field.linkageProperty = {
-        ...field.linkageProperty,
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
         display: displayResult,
       };
       field.display = last(displayResult);
@@ -113,8 +113,8 @@ export const linkageAction = async ({
       if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         disableResult.push(true);
       }
-      field.linkageProperty = {
-        ...field.linkageProperty,
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
         disabled: disableResult,
       };
       field.disabled = last(disableResult);
@@ -124,8 +124,8 @@ export const linkageAction = async ({
       if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         disableResult.push(false);
       }
-      field.linkageProperty = {
-        ...field.linkageProperty,
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
         disabled: disableResult,
       };
       field.disabled = last(disableResult);

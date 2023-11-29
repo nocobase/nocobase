@@ -40,24 +40,24 @@ export const collectFieldStateOfLinkageRules = ({
   variables,
   localVariables,
 }: Props) => {
-  const requiredResult = field?.linkageProperty?.required || [field?.initProperty?.required || false];
-  const displayResult = field?.linkageProperty?.display || [field?.initProperty?.display];
-  const patternResult = field?.linkageProperty?.pattern || [field?.initProperty?.pattern];
-  const valueResult = field?.linkageProperty?.value || [field?.initProperty?.value];
+  const requiredResult = field?.stateOfLinkageRules?.required || [field?.initStateOfLinkageRules?.required];
+  const displayResult = field?.stateOfLinkageRules?.display || [field?.initStateOfLinkageRules?.display];
+  const patternResult = field?.stateOfLinkageRules?.pattern || [field?.initStateOfLinkageRules?.pattern];
+  const valueResult = field?.stateOfLinkageRules?.value || [field?.initStateOfLinkageRules?.value];
   const { evaluate } = evaluators.get('formula.js');
 
   switch (operator) {
     case ActionType.Required:
       requiredResult.push(getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), true));
-      field.linkageProperty = {
-        ...field.linkageProperty,
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
         required: requiredResult,
       };
       break;
     case ActionType.InRequired:
       requiredResult.push(getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), false));
-      field.linkageProperty = {
-        ...field.linkageProperty,
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
         required: requiredResult,
       };
       break;
@@ -67,8 +67,8 @@ export const collectFieldStateOfLinkageRules = ({
       displayResult.push(
         getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), operator),
       );
-      field.linkageProperty = {
-        ...field.linkageProperty,
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
         display: displayResult,
       };
       break;
@@ -78,8 +78,8 @@ export const collectFieldStateOfLinkageRules = ({
       patternResult.push(
         getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), operator),
       );
-      field.linkageProperty = {
-        ...field.linkageProperty,
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
         pattern: patternResult,
       };
       break;
@@ -117,8 +117,8 @@ export const collectFieldStateOfLinkageRules = ({
             getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), getValue()),
           );
         }
-        field.linkageProperty = {
-          ...field.linkageProperty,
+        field.stateOfLinkageRules = {
+          ...field.stateOfLinkageRules,
           value: valueResult,
         };
       }
