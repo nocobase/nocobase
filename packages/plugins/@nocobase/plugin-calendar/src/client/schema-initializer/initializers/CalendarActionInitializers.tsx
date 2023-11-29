@@ -1,4 +1,4 @@
-import { useCollection } from '../../';
+import { useCollection } from '@nocobase/client';
 
 // 日历的操作配置
 export const CalendarActionInitializers = {

@@ -1,12 +1,20 @@
 import { useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { FixedBlockDesignerItem, removeNullCondition, useDesignable } from '../..';
-import { useCalendarBlockContext, useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { RecordProvider, useRecord } from '../../../record-provider';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
-import { useSchemaTemplate } from '../../../schema-templates';
+import { useCalendarBlockContext } from '../schema-initializer/CalendarBlockProvider';
+import {
+  useFormBlockContext,
+  useCollection,
+  useCollectionManager,
+  useDesignable,
+  useSchemaTemplate,
+  useRecord,
+  RecordProvider,
+  GeneralSchemaDesigner,
+  SchemaSettings,
+  FixedBlockDesignerItem,
+  removeNullCondition,
+} from '@nocobase/client';
 
 export const CalendarDesigner = () => {
   const field = useField();

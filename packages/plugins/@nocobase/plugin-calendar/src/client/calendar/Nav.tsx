@@ -3,8 +3,8 @@ import { observer } from '@formily/react';
 import { Button } from 'antd';
 import React, { useContext } from 'react';
 import { Navigate } from 'react-big-calendar/dist/react-big-calendar.esm';
-import { useDesignable } from '../../hooks';
 import { CalendarToolbarContext } from './context';
+import { useDesignable } from '@nocobase/client';
 
 export const Nav = observer(
   () => {

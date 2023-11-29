@@ -1,6 +1,5 @@
 export * from './BlockProvider';
 export * from './BlockSchemaComponentProvider';
-export * from './CalendarBlockProvider';
 export * from './FilterFormBlockProvider';
 export * from './FormBlockProvider';
 export * from './KanbanBlockProvider';

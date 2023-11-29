@@ -1,9 +1,9 @@
 import { observer } from '@formily/react';
 import { Button } from 'antd';
 import React, { useContext, useMemo } from 'react';
-import { useDesignable } from '../../hooks';
 import { CalendarToolbarContext } from './context';
 import { getLunarDay } from './utils';
+import { useDesignable } from '@nocobase/client';
 
 export const Title = observer(
   () => {

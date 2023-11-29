@@ -1,14 +1,17 @@
 import { FormOutlined } from '@ant-design/icons';
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
+import {
+  DataBlockInitializer,
+  FormDialog,
+  SchemaComponent,
+  SchemaComponentOptions,
+  useCollectionManager,
+  useGlobalTheme,
+} from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-
-import { useCollectionManager } from '../../collection-manager';
-import { useGlobalTheme } from '../../global-theme';
-import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { createCalendarBlockSchema } from '../utils';
-import { DataBlockInitializer } from './DataBlockInitializer';
 
 export const CalendarBlockInitializer = (props) => {
   const { insert } = props;

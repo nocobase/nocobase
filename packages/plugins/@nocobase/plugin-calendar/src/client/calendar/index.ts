@@ -1,4 +1,4 @@
-import { ActionBar } from '../action';
+import { ActionBar } from '@nocobase/client';
 import { Calendar } from './Calendar';
 import { CalendarDesigner } from './Calendar.Designer';
 import DeleteEvent from './DeleteEvent';

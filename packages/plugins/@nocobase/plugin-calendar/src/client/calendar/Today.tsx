@@ -3,8 +3,8 @@ import { Button } from 'antd';
 import React, { useContext } from 'react';
 import { Navigate } from 'react-big-calendar/dist/react-big-calendar.esm';
 import { useTranslation } from 'react-i18next';
-import { useDesignable } from '../../hooks';
 import { CalendarToolbarContext } from './context';
+import { useDesignable } from '@nocobase/client';
 
 export const Today = observer(
   (props) => {

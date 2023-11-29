@@ -1,8 +1,8 @@
 import { observer } from '@formily/react';
 import { Select } from 'antd';
 import React, { useContext } from 'react';
-import { useDesignable } from '../../hooks';
 import { CalendarToolbarContext } from './context';
+import { useDesignable } from '@nocobase/client';
 
 export const ViewSelect = observer(
   (props) => {

@@ -1,11 +1,8 @@
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
+import { useBlockRequestContext, useRecord, useParsedFilter, FixedBlockWrapper, BlockProvider } from '@nocobase/client';
 import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { useRecord } from '../record-provider';
-import { FixedBlockWrapper } from '../schema-component';
-import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { useParsedFilter } from './hooks';
 
 export const CalendarBlockContext = createContext<any>({});
 
@@ -25,9 +22,6 @@ const InternalCalendarBlockProvider = (props) => {
     }
   }, [JSON.stringify(filter)]);
 
-  // if (service.loading) {
-  //   return <Spin />;
-  // }
   return (
     <FixedBlockWrapper>
       <CalendarBlockContext.Provider

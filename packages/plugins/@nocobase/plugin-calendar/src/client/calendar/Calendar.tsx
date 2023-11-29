@@ -9,16 +9,13 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Calendar as BigCalendar, View, dayjsLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
 import { useTranslation } from 'react-i18next';
-import { RecordProvider } from '../../../';
-import { i18n } from '../../../i18n';
-import { useProps } from '../../hooks/useProps';
-import { ActionContextProvider } from '../action';
 import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
 import GlobalStyle from './global.style';
 import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
+import { ActionContextProvider, RecordProvider, useProps, i18n } from '@nocobase/client';
 
 const Weeks = ['month', 'week', 'day'] as View[];
 const localizer = dayjsLocalizer(dayjs);

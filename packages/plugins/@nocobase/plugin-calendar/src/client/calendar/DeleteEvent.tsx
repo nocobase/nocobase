@@ -4,11 +4,9 @@ import dayjs from 'dayjs';
 import React, { useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { useBlockRequestContext, useFilterByTk } from '../../../block-provider';
-import { useRecord } from '../../../record-provider';
-import { useActionContext } from '../action';
 import { DeleteEventContext } from './Calendar';
 import { formatDate } from './utils';
+import { useActionContext, useRecord, useFilterByTk, useBlockRequestContext } from '@nocobase/client';
 const { Text } = Typography;
 
 export const DeleteEvent = observer(

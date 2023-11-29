@@ -1,4 +1,4 @@
-import { genStyleHook } from './../__builtins__';
+import { genStyleHook } from 'packages/core/client/src/schema-component/antd/__builtins__';
 
 export default genStyleHook('nb-calendar', (token) => {
   const { componentCls } = token;

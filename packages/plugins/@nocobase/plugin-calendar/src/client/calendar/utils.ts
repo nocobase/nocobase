@@ -1,7 +1,7 @@
+import { i18n } from '@nocobase/client';
 import dayjs from 'dayjs';
 import { get } from 'lodash';
 import solarLunar from 'solarlunar-es';
-import { i18n } from '../../../i18n';
 
 export const toEvents = (data: any[], fieldNames: any) => {
   return data?.map((item) => {

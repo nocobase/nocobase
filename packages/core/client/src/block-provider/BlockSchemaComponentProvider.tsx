@@ -2,7 +2,6 @@ import React from 'react';
 import { Plugin } from '../application/Plugin';
 import { SchemaComponentOptions } from '../schema-component';
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
-import { CalendarBlockProvider, useCalendarBlockProps } from './CalendarBlockProvider';
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';
 import { FilterFormBlockProvider } from './FilterFormBlockProvider';
 import { FormBlockProvider, useFormBlockProps } from './FormBlockProvider';
@@ -20,7 +19,6 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
     <SchemaComponentOptions
       components={{
         GanttBlockProvider,
-        CalendarBlockProvider,
         TableFieldProvider,
         TableBlockProvider,
         TableSelectorProvider,
@@ -36,7 +34,6 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useSourceIdFromRecord,
         useSourceIdFromParentRecord,
         useParamsFromRecord,
-        useCalendarBlockProps,
         useFormBlockProps,
         useFormFieldProps,
         useDetailsBlockProps,
@@ -61,7 +58,6 @@ export class BlockSchemaComponentPlugin extends Plugin {
   addComponents() {
     this.app.addComponents({
       GanttBlockProvider,
-      CalendarBlockProvider,
       TableFieldProvider,
       TableBlockProvider,
       TableSelectorProvider,
@@ -80,7 +76,6 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useSourceIdFromRecord,
       useSourceIdFromParentRecord,
       useParamsFromRecord,
-      useCalendarBlockProps,
       useFormBlockProps,
       useFormFieldProps,
       useDetailsBlockProps,

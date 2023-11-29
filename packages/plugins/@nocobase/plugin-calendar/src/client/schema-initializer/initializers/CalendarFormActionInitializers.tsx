@@ -1,4 +1,4 @@
-import { useCollection } from '../..';
+import { useCollection } from '@nocobase/client';
 
 // 表单的操作配置
 export const CalendarFormActionInitializers = {

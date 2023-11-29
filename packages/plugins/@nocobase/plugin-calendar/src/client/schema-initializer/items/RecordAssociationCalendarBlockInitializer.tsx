@@ -4,12 +4,17 @@ import { SchemaOptionsContext } from '@formily/react';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useCollectionManager } from '../../collection-manager';
-import { useGlobalTheme } from '../../global-theme';
-import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
-import { useSchemaTemplateManager } from '../../schema-templates';
-import { SchemaInitializer } from '../SchemaInitializer';
-import { createCalendarBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import {
+  useSchemaTemplateManager,
+  useCollectionManager,
+  useGlobalTheme,
+  SchemaInitializer,
+  FormDialog,
+  SchemaComponentOptions,
+  SchemaComponent,
+  useRecordCollectionDataSourceItems,
+} from '@nocobase/client';
+import { createCalendarBlockSchema } from '../utils';
 
 export const RecordAssociationCalendarBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;

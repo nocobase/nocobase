@@ -4,7 +4,6 @@ export * from './association-field';
 export * from './association-select';
 export * from './auto-complete';
 export * from './block-item';
-export * from './calendar';
 export * from './card-item';
 export * from './cascader';
 export * from './checkbox';
