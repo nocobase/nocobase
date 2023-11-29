@@ -448,6 +448,9 @@ describe('dumper', () => {
 
     const meta = await restorer.parseBackupFile();
     expect(meta.dumpableCollectionsGroupByDataTypes.meta).toBeTruthy();
+
+    expect(meta.DB_UNDERSCORED).toBeDefined();
+    expect(meta.DB_TABLE_PREFIX).toBeDefined();
   });
 
   describe('get file status', function () {

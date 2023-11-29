@@ -89,8 +89,22 @@ export class Restorer extends AppMigrator {
 
   async checkMeta() {
     const meta = await this.getImportMeta();
+
     if (meta['dialectOnly'] && !this.app.db.inDialect(meta['dialect'])) {
       throw new RestoreCheckError(`this backup file can only be imported in database ${meta['dialect']}`);
+    }
+
+    const checkEnv = (envName: string) => {
+      const valueInPackage = meta[envName] || '';
+      const valueInEnv = process.env[envName] || '';
+
+      if (valueInPackage && valueInEnv !== valueInPackage) {
+        throw new RestoreCheckError(`for use this backup file, please set ${envName}=${valueInPackage}`);
+      }
+    };
+
+    for (const envName of ['DB_UNDERSCORED', 'DB_SCHEMA', 'COLLECTION_MANAGER_SCHEMA', 'DB_TABLE_PREFIX']) {
+      checkEnv(envName);
     }
   }
 

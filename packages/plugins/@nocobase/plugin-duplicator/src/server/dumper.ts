@@ -12,6 +12,7 @@ import util from 'util';
 import { AppMigrator } from './app-migrator';
 import { FieldValueWriter } from './field-value-writer';
 import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
+import * as process from 'process';
 
 const finished = util.promisify(stream.finished);
 
@@ -343,6 +344,10 @@ export class Dumper extends AppMigrator {
     const metaObj = {
       version: await this.app.version.get(),
       dialect: this.app.db.sequelize.getDialect(),
+      DB_UNDERSCORED: process.env.DB_UNDERSCORED,
+      DB_TABLE_PREFIX: process.env.DB_TABLE_PREFIX,
+      DB_SCHEMA: process.env.DB_SCHEMA,
+      COLLECTION_MANAGER_SCHEMA: process.env.COLLECTION_MANAGER_SCHEMA,
       ...additionalMeta,
     };
 
