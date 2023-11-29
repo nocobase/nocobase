@@ -16,7 +16,7 @@ const ReadPretty = (props) => {
     return (
       <div>
         <EllipsisWithTooltip ellipsis={true}>
-          {value?.map((item) => (Array.isArray(item) ? `(${item.join(',')})` : item)).join(',')}
+          {value?.map?.((item) => (Array.isArray(item) ? `(${item.join(',')})` : item)).join(',')}
         </EllipsisWithTooltip>
       </div>
     );

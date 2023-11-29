@@ -14,14 +14,14 @@ export default {
 
       const db = ctx.app.db as Database;
 
-      const collection = await db.getRepository('collections').findOne({
+      const collectionModel = await db.getRepository('collections').findOne({
         filter: {
           name: filterByTk,
         },
         transaction,
       });
 
-      const existFields = await collection.getFields({
+      const existFields = await collectionModel.getFields({
         transaction,
       });
 
@@ -65,9 +65,18 @@ export default {
         });
       }
 
-      await collection.loadFields({
+      await collectionModel.loadFields({
         transaction,
       });
+
+      const collection = db.getCollection(filterByTk);
+      await collection.sync({
+        force: false,
+        alter: {
+          drop: false,
+        },
+        transaction,
+      } as any);
 
       await transaction.commit();
     } catch (e) {
