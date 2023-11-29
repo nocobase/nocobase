@@ -10,7 +10,7 @@ import { submit } from './actions';
 
 import ManualInstruction from './ManualInstruction';
 
-export default class WorkflowManualPlugin extends Plugin {
+export default class extends Plugin {
   workflow: WorkflowPlugin;
 
   async load() {

@@ -3,7 +3,7 @@ import WorkflowPlugin from '@nocobase/plugin-workflow';
 
 import ParallelInstruction from './ParallelInstruction';
 
-export default class WorkflowParallelPlugin extends Plugin {
+export default class extends Plugin {
   workflow: WorkflowPlugin;
 
   async load() {

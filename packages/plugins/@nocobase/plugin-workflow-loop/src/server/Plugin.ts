@@ -3,7 +3,7 @@ import WorkflowPlugin from '@nocobase/plugin-workflow';
 
 import LoopInstruction from './LoopInstruction';
 
-export default class WorkflowDynamicCalculationPlugin extends Plugin {
+export default class extends Plugin {
   workflow: WorkflowPlugin;
 
   async load() {

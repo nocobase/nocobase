@@ -22,7 +22,7 @@ import { useTriggerWorkflowsActionProps } from './triggers/form';
 import { NAMESPACE } from './locale';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './constant';
 
-export class WorkflowPlugin extends Plugin {
+export default class extends Plugin {
   triggers = triggers;
   getTriggersOptions = getTriggersOptions;
   instructions = instructions;
@@ -63,5 +63,3 @@ export class WorkflowPlugin extends Plugin {
     });
   }
 }
-
-export default WorkflowPlugin;

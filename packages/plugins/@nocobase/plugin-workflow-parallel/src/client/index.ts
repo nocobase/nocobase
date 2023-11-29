@@ -3,7 +3,7 @@ import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 
 import ParallelInstruction from './ParallelInstruction';
 
-export class WorkflowParallelPlugin extends Plugin {
+export default class extends Plugin {
   async afterAdd() {
     // await this.app.pm.add()
   }
@@ -16,5 +16,3 @@ export class WorkflowParallelPlugin extends Plugin {
     workflow.instructions.register(ParallelInstruction.type, ParallelInstruction);
   }
 }
-
-export default WorkflowParallelPlugin;

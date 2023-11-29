@@ -5,7 +5,7 @@ import { Provider } from './Provider';
 import DynamicCalculation from './DynamicCalculation';
 import { DynamicExpression } from './DynamicExpression';
 
-export class DynamicCalculationPlugin extends Plugin {
+export default class extends Plugin {
   async afterAdd() {
     // await this.app.pm.add()
   }
@@ -25,5 +25,3 @@ export class DynamicCalculationPlugin extends Plugin {
     });
   }
 }
-
-export default DynamicCalculationPlugin;

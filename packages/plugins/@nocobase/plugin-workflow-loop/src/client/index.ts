@@ -3,7 +3,7 @@ import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 
 import LoopInstruction from './LoopInstruction';
 
-export class WorkflowLoopPlugin extends Plugin {
+export default class extends Plugin {
   async afterAdd() {
     // await this.app.pm.add()
   }
@@ -16,5 +16,3 @@ export class WorkflowLoopPlugin extends Plugin {
     workflow.instructions.register(LoopInstruction.type, LoopInstruction);
   }
 }
-
-export default WorkflowLoopPlugin;

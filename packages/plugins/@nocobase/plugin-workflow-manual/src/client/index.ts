@@ -7,7 +7,7 @@ import { WorkflowTodo } from './WorkflowTodo';
 import { WorkflowTodoBlockInitializer } from './WorkflowTodoBlockInitializer';
 import { NAMESPACE } from '../locale';
 
-export class ManualPlugin extends Plugin {
+export default class extends Plugin {
   async afterAdd() {
     // await this.app.pm.add()
   }
@@ -38,5 +38,3 @@ export class ManualPlugin extends Plugin {
     });
   }
 }
-
-export default ManualPlugin;

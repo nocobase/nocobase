@@ -3,7 +3,7 @@ import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 
 import DelayInstruction from './DelayInstruction';
 
-export class WorkflowDelayPlugin extends Plugin {
+export default class extends Plugin {
   async afterAdd() {
     // await this.app.pm.add()
   }
@@ -16,5 +16,3 @@ export class WorkflowDelayPlugin extends Plugin {
     workflow.instructions.register(DelayInstruction.type, DelayInstruction);
   }
 }
-
-export default WorkflowDelayPlugin;

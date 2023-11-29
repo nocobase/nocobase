@@ -4,7 +4,7 @@ import WorkflowPlugin from '@nocobase/plugin-workflow';
 import { ExpressionField } from './expression-field';
 import { DynamicCalculation } from './DynamicCalculation';
 
-export default class WorkflowDynamicCalculationPlugin extends Plugin {
+export default class extends Plugin {
   workflow: WorkflowPlugin;
 
   async load() {
