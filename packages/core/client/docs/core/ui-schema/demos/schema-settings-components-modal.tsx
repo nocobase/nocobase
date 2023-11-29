@@ -1,14 +1,20 @@
 /**
  * defaultShowCode: true
  */
+import { ISchema } from '@formily/react';
+import {
+  Application,
+  FormItem,
+  Input,
+  SchemaSettings,
+  SchemaSettingsModalItem,
+  useSchemaSettings,
+} from '@nocobase/client';
 import React from 'react';
-import { Application, FormItem, Input, SchemaSettings, SchemaSettingsModalItem, useDesignable } from '@nocobase/client';
 import { appOptions } from './schema-settings-common';
-import { ISchema, useField } from '@formily/react';
 
 export const SchemaSettingsBlockTitleItem = function BlockTitleItem() {
-  const filed = useField();
-  const { patch } = useDesignable();
+  const { dn } = useSchemaSettings();
 
   return (
     <SchemaSettingsModalItem
@@ -21,15 +27,16 @@ export const SchemaSettingsBlockTitleItem = function BlockTitleItem() {
             title: {
               title: 'Block title',
               type: 'string',
-              default: filed.decoratorProps?.title,
+              default: dn.getSchemaAttribute('x-decorator-props.title'),
               'x-decorator': 'FormItem',
               'x-component': 'Input',
+              'x-compile-omitted': ['default'],
             },
           },
         } as ISchema
       }
       onSubmit={({ title }) => {
-        patch({
+        dn.shallowMerge({
           'x-decorator-props': {
             title,
           },

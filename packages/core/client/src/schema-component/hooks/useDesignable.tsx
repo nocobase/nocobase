@@ -324,6 +324,10 @@ export class Designable {
     this.emit('patch', { schema });
   }
 
+  getSchemaAttribute(key: string | string[], defaultValue?: any) {
+    return get(this.current, key, defaultValue);
+  }
+
   shallowMerge(schema: ISchema) {
     const replaceKeys = {
       title: 'title',
@@ -361,11 +365,7 @@ export class Designable {
 
   updateModel(key: any, value: any) {
     const update = (field) => {
-      if (Array.isArray(key)) {
-        field[key[0]][key[1]] = value;
-      } else {
-        field[key] = value;
-      }
+      set(field, key, value);
     };
     if (this.model) {
       update(this.model);
