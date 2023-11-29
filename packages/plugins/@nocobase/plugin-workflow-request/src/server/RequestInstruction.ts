@@ -1,9 +1,6 @@
 import axios, { AxiosRequestConfig } from 'axios';
 
-import { Instruction } from './index';
-import { JOB_STATUS } from '../constants';
-import Processor from '../Processor';
-import type { FlowNodeModel } from '../types';
+import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
 
 export interface Header {
   name: string;

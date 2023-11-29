@@ -1,6 +1,5 @@
 import path from 'path';
 
-import { requireModule } from '@nocobase/utils';
 import { Transactionable } from '@nocobase/database';
 
 import Plugin from '..';
@@ -38,15 +37,20 @@ export abstract class Instruction {
 
 type InstructionConstructor = { new (plugin: Plugin): Instruction };
 
-export default function <T extends Instruction>(plugin, more: { [key: string]: T | InstructionConstructor } = {}) {
+export default async function <T extends Instruction>(
+  plugin,
+  more: { [key: string]: T | InstructionConstructor } = {},
+) {
   const { instructions } = plugin;
 
-  const natives = ['calculation', 'condition', 'query', 'create', 'update', 'destroy', 'request'].reduce(
-    (result, key) =>
-      Object.assign(result, {
-        [key]: requireModule(path.isAbsolute(key) ? key : path.join(__dirname, key)),
-      }),
-    {},
+  const natives = await ['calculation', 'condition', 'query', 'create', 'update', 'destroy'].reduce(
+    (promise, key) =>
+      promise.then(async (result) =>
+        Object.assign(result, {
+          [key]: (await import(path.isAbsolute(key) ? key : path.join(__dirname, key))).default,
+        }),
+      ),
+    Promise.resolve({}),
   );
 
   for (const [name, instruction] of Object.entries({ ...more, ...natives })) {

@@ -62,6 +62,13 @@ export default class extends Migration {
             enabled: true,
             installed: true,
           },
+          {
+            name: '@nocobase/plugin-workflow-request',
+            packageName: '@nocobase/plugin-workflow-request',
+            version: '0.16.0-alpha.3',
+            enabled: true,
+            installed: true,
+          },
         ],
         transaction,
       });

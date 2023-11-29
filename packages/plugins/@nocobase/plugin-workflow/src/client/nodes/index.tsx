@@ -35,8 +35,6 @@ import condition from './condition';
 import create from './create';
 import destroy from './destroy';
 import query from './query';
-
-import request from './request';
 import update from './update';
 
 export interface Instruction {
@@ -66,8 +64,6 @@ instructions.register('query', query);
 instructions.register('create', create);
 instructions.register('update', update);
 instructions.register('destroy', destroy);
-
-instructions.register('request', request);
 
 function useUpdateAction() {
   const form = useForm();
