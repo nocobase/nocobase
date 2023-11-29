@@ -18,7 +18,7 @@ import { getVariableName } from '../../../variables/utils/getVariableName';
 import { isVariable, REGEX_OF_VARIABLE } from '../../../variables/utils/isVariable';
 import { getInnermostKeyAndValue, getTargetField } from '../../common/utils/uitls';
 import { useProps } from '../../hooks/useProps';
-import { collectFieldStateOfLinkageRules } from './utils';
+import { collectFieldStateOfLinkageRules, getTempFieldState } from './utils';
 
 export interface FormProps {
   [key: string]: any;
@@ -117,6 +117,14 @@ const WithForm = (props: WithFormProps) => {
         rule.actions?.forEach((action) => {
           if (action.targetFields?.length) {
             const fields = action.targetFields.join(',');
+            onFieldInit(`*(${fields})`, (field: any, form) => {
+              field['initProperty'] = field?.['initProperty'] ?? {
+                display: getTempFieldState(true, field.display),
+                required: getTempFieldState(true, field.required),
+                pattern: getTempFieldState(true, field.pattern),
+                value: getTempFieldState(true, field.value || field.initialValue),
+              };
+            });
 
             // 之前使用的 `onFieldReact` 有问题，没有办法被取消监听，所以这里用 `onFieldInit` 和 `reaction` 代替
             onFieldInit(`*(${fields})`, (field: any, form) => {
