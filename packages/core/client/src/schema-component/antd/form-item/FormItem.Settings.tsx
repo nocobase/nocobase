@@ -17,15 +17,17 @@ import {
   SchemaSettingsSortingRule,
   isPatternDisabled,
 } from '../../../schema-settings';
+import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { isSubMode } from '../association-field/util';
-import { DynamicComponentProps } from '../filter/DynamicComponent';
-import { useColorFields } from '../table-v2/Table.Column.Designer';
 import { removeNullCondition } from '../filter';
+import { DynamicComponentProps } from '../filter/DynamicComponent';
+import { getTempFieldState } from '../form-v2/utils';
+import { useColorFields } from '../table-v2/Table.Column.Designer';
 
 export const formItemSettings = new SchemaSettings({
   name: 'FormItemSettings',
@@ -664,6 +666,7 @@ export const formItemSettings = new SchemaSettings({
                 schema['x-disabled'] = true;
                 field.readPretty = false;
                 field.disabled = true;
+                _.set(field, 'initStateOfLinkageRules.pattern', getTempFieldState(true, ActionType.ReadOnly));
                 break;
               }
               case 'read-pretty': {
@@ -672,6 +675,7 @@ export const formItemSettings = new SchemaSettings({
                 schema['x-read-pretty'] = true;
                 schema['x-disabled'] = false;
                 field.readPretty = true;
+                _.set(field, 'initStateOfLinkageRules.pattern', getTempFieldState(true, ActionType.ReadPretty));
                 break;
               }
               default: {
@@ -681,6 +685,7 @@ export const formItemSettings = new SchemaSettings({
                 schema['x-disabled'] = false;
                 field.readPretty = false;
                 field.disabled = false;
+                _.set(field, 'initStateOfLinkageRules.pattern', getTempFieldState(true, ActionType.Editable));
                 break;
               }
             }

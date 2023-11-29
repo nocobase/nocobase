@@ -32,7 +32,7 @@ interface ScheduleMode {
   on?(this: ScheduleTrigger, workflow: WorkflowModel): void;
   off?(this: ScheduleTrigger, workflow: WorkflowModel): void;
   shouldCache(this: ScheduleTrigger, workflow: WorkflowModel, now: Date): Promise<boolean> | boolean;
-  trigger(this: ScheduleTrigger, workflow: WorkflowModel, now: Date): any;
+  trigger(this: ScheduleTrigger, workflow: WorkflowModel, now: Date): Promise<number> | number;
 }
 
 const ScheduleModes = new Map<number, ScheduleMode>();
@@ -80,29 +80,31 @@ ScheduleModes.set(SCHEDULE_MODE.CONSTANT, {
     // NOTE: align to second start
     const startTime = parseDateWithoutMs(startsOn);
     if (!startTime || startTime > timestamp) {
-      return;
+      return 0;
     }
 
     if (repeat) {
       if (typeof repeat === 'number') {
         if (Math.round(timestamp - startTime) % repeat) {
-          return;
+          return 0;
         }
       }
 
       if (endsOn) {
         const endTime = parseDateWithoutMs(endsOn);
         if (!endTime || endTime < timestamp) {
-          return;
+          return 0;
         }
       }
     } else {
       if (startTime !== timestamp) {
-        return;
+        return 0;
       }
     }
 
-    return this.plugin.trigger(workflow, { date: now });
+    this.plugin.trigger(workflow, { date: now });
+
+    return 1;
   },
 });
 
@@ -233,14 +235,14 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
     // when repeat is number, means repeat after startsOn
     // (now - startsOn) % repeat <= cacheCycle
     if (repeat) {
-      const tsFn = DialectTimestampFnMap[db.options.dialect!];
+      const tsFn = DialectTimestampFnMap[db.options.dialect];
       if (typeof repeat === 'number' && repeat > this.cacheCycle && tsFn) {
-        conditions.push(
-          where(
-            fn('MOD', literal(`${Math.round(timestamp / 1000)} - ${tsFn(startsOn.field)}`), Math.round(repeat / 1000)),
-            { [Op.lt]: Math.round(this.cacheCycle / 1000) },
-          ),
+        const modExp = fn(
+          'MOD',
+          literal(`${Math.round(timestamp / 1000)} - ${tsFn(startsOn.field)}`),
+          Math.round(repeat / 1000),
         );
+        conditions.push(where(modExp, { [Op.lt]: Math.round(this.cacheCycle / 1000) }));
         // conditions.push(literal(`mod(${timestamp} - ${tsFn(startsOn.field)} * 1000, ${repeat}) < ${this.cacheCycle}`));
       }
 
@@ -283,7 +285,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
 
     const startTimestamp = getOnTimestampWithOffset(startsOn, now);
     if (!startTimestamp) {
-      return false;
+      return 0;
     }
 
     const conditions: any[] = [
@@ -302,26 +304,26 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
         },
       });
 
-      const tsFn = DialectTimestampFnMap[this.plugin.app.db.options.dialect!];
+      const tsFn = DialectTimestampFnMap[this.plugin.app.db.options.dialect];
       if (typeof repeat === 'number' && tsFn) {
-        conditions.push(
-          where(
-            fn('MOD', literal(`${Math.round(timestamp / 1000)} - ${tsFn(startsOn.field)}`), Math.round(repeat / 1000)),
-            { [Op.eq]: 0 },
-          ),
+        const modExp = fn(
+          'MOD',
+          literal(`${Math.round(timestamp / 1000)} - ${tsFn(startsOn.field)}`),
+          Math.round(repeat / 1000),
         );
+        conditions.push(where(modExp, { [Op.eq]: 0 }));
         // conditions.push(literal(`MOD(CAST(${timestamp} AS BIGINT) - CAST((FLOOR(${tsFn(startsOn.field)}) AS BIGINT) * 1000), ${repeat}) = 0`));
       }
 
       if (endsOn) {
         const endTimestamp = getOnTimestampWithOffset(endsOn, now);
         if (!endTimestamp) {
-          return false;
+          return 0;
         }
 
         if (typeof endsOn === 'string') {
           if (endTimestamp <= timestamp) {
-            return false;
+            return 0;
           }
         } else {
           conditions.push({
@@ -342,10 +344,15 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
 
     const repo = this.plugin.app.db.getRepository(collection);
     const instances = await repo.find({
-      filter: {
-        $and: conditions,
+      where: {
+        [Op.and]: conditions,
       },
       appends,
+      ...(workflow.config.limit
+        ? {
+            limit: Math.max(workflow.config.limit - workflow.allExecuted, 0),
+          }
+        : {}),
     });
 
     instances.forEach((item) => {
@@ -354,6 +361,8 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
         data: item.toJSON(),
       });
     });
+
+    return instances.length;
   },
 });
 
@@ -424,7 +433,7 @@ export default class ScheduleTrigger extends Trigger {
   }
 
   init() {
-    if (this.plugin.app.getPlugin('multi-app-share-collection').enabled && this.plugin.app.name !== 'main') {
+    if (this.plugin.app.getPlugin('multi-app-share-collection')?.enabled && this.plugin.app.name !== 'main') {
       return;
     }
 
@@ -465,7 +474,6 @@ export default class ScheduleTrigger extends Trigger {
   async onTick(now) {
     // NOTE: trigger workflows in sequence when sqlite due to only one transaction
     const isSqlite = this.plugin.app.db.options.dialect === 'sqlite';
-
     return Array.from(this.cache.values()).reduce(
       (prev, workflow) => {
         if (!this.shouldTrigger(workflow, now)) {
@@ -482,19 +490,9 @@ export default class ScheduleTrigger extends Trigger {
   }
 
   async reload() {
-    const WorkflowModel = this.plugin.app.db.getCollection('workflows').model;
-    const workflows = await WorkflowModel.findAll({
-      where: { enabled: true, type: 'schedule' },
-      include: [
-        {
-          association: 'executions',
-          attributes: ['id', 'createdAt'],
-          separate: true,
-          limit: 1,
-          order: [['createdAt', 'DESC']],
-        },
-      ],
-      group: ['id'],
+    const WorkflowRepo = this.plugin.app.db.getRepository('workflows');
+    const workflows = await WorkflowRepo.find({
+      filter: { enabled: true, type: 'schedule' },
     });
 
     // NOTE: clear cached jobs in last cycle
