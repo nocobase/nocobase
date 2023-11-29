@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   SchemaSettings,
   ActionDesigner,
-  useSchemaDesigner,
+  useSchemaToolbar,
   useDesignable,
   SchemaSettingOpenModeSchemaItems,
   useCollection,
@@ -320,7 +320,7 @@ const duplicateActionSettings = new SchemaSettings({
           name: 'editButton',
           Component: ActionDesigner.ButtonEditor,
           useComponentProps() {
-            const { buttonEditorProps } = useSchemaDesigner();
+            const { buttonEditorProps } = useSchemaToolbar();
             return buttonEditorProps;
           },
         },
@@ -329,7 +329,7 @@ const duplicateActionSettings = new SchemaSettings({
           Component: SchemaSettingsLinkageRules,
           useComponentProps() {
             const { name } = useCollection();
-            const { linkageRulesProps } = useSchemaDesigner();
+            const { linkageRulesProps } = useSchemaToolbar();
             return {
               ...linkageRulesProps,
               collectionName: name,
@@ -370,7 +370,7 @@ const duplicateActionSettings = new SchemaSettings({
           sort: 100,
           Component: ActionDesigner.RemoveButton as any,
           useComponentProps() {
-            const { removeButtonProps } = useSchemaDesigner();
+            const { removeButtonProps } = useSchemaToolbar();
             return removeButtonProps;
           },
         },
