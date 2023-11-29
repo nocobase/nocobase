@@ -213,7 +213,9 @@ export default class Processor {
     const { instructions } = this.options.plugin;
     const instruction = instructions.get(node.type);
     if (typeof instruction.resume !== 'function') {
-      return Promise.reject(new Error('`resume` should be implemented'));
+      return Promise.reject(
+        new Error(`"resume" method should be implemented for [${node.type}] instruction of node (#${node.id})`),
+      );
     }
 
     return this.exec(instruction.resume.bind(instruction), node, job);

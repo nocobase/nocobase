@@ -9,9 +9,7 @@ import { useCompile } from '../../../../schema-component';
 import { useCollectionManager } from '../../../hooks';
 import dayjs from 'dayjs';
 import { FieldOptions } from '@nocobase/database';
-import { ResourceActionContext, useResourceContext } from '../../../ResourceActionProvider';
-import { useRecord } from '../../../../record-provider';
-import { last } from 'lodash';
+import { ResourceActionContext } from '../../../ResourceActionProvider';
 
 const inferInterface = (field: string, value: any) => {
   if (field.toLowerCase().includes('id')) {
@@ -24,7 +22,7 @@ const inferInterface = (field: string, value: any) => {
     return 'number';
   }
   if (typeof value === 'boolean') {
-    return 'boolean';
+    return 'checkbox';
   }
   if (dayjs(value).isValid()) {
     return 'datetime';
