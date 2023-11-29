@@ -202,6 +202,8 @@ const Demo = () => {
 }
 ```
 
+<code src="./demos/schema-settings-render.tsx"></code>
+
 ### useSchemaSettings()
 
 获取 schemaSetting 上下文数据。
