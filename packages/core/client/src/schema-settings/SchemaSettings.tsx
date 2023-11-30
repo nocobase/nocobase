@@ -245,7 +245,7 @@ SchemaSettings.Template = function Template(props) {
       <SchemaSettings.Item
         title="Convert reference to duplicate"
         onClick={async () => {
-          const schema = await copyTemplateSchema(rest);
+          const schema = await copyTemplateSchema(template);
           const removed = tdn.removeWithoutEmit();
           tdn.insertAfterEnd(schema, {
             async onSuccess() {
@@ -2147,7 +2147,7 @@ SchemaSettings.AutoExpandParent = function AutoExpandParent() {
   const { t } = useTranslation();
   return (
     <SchemaSettings.SwitchItem
-      title={t('Expand node')}
+      title={t('Default Expand Node')}
       checked={fieldSchema['x-decorator-props'].expandFlag as boolean}
       onChange={(checked) => {
         const params = field.decoratorProps || {};

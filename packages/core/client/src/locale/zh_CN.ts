@@ -888,5 +888,5 @@ export default {
   'AutoRefresh':'自动刷新',
   'Custom Render Node':'自定义节点展示',
   'Custom Field Name':'自定义字段名称',
-  'Expand node':'展开节点'
+  'Default Expand Node':'默认展开节点'
 };

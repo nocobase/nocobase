@@ -1,7 +1,7 @@
-import { ArrayField, createForm } from '@formily/core';
+import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { FixedBlockWrapper, removeNullCondition } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { findFilterTargets } from './hooks';
 import { mergeFilter } from './SharedFilterProvider';
@@ -37,7 +37,6 @@ const InternalTreeBlockProvider = (props) => {
 export const TreeBlockProvider = (props) => {
   const params = { ...props.params };
   params.tree = true
-  // const form = useMemo(() => createForm(), []);
   return (
     <BlockProvider {...props} params={params} runWhenParamsChanged>
       <InternalTreeBlockProvider {...props} params={params} />

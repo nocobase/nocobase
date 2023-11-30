@@ -32,11 +32,11 @@ function findIds(arr) {
 }
 export const Tree: any = observer((props: any) => {
   const { useProps, ...rest } = props;
-  const others = { ...rest, ...useProps?.() } as any;
+  const others = { ...rest, ...useProps?.() };
   const schema = useFieldSchema();
   const [expandedKeys, setExpandedKeys] = useState([]);
-  const { titleRender: titleRenderText, expandFlag, sleepTime } = schema?.parent['x-decorator-props'];
-  const { service } = useTreeBlockContext();
+  const { expandFlag, sleepTime, titleRender: titleRenderText } = schema?.parent['x-decorator-props'] || {};
+  const { service, expandFlag: expandFlagCtx } = useTreeBlockContext();
   const titleRender = (nodeData) => {
     const valueOject = {};
     let outputStr = '';
@@ -71,11 +71,16 @@ export const Tree: any = observer((props: any) => {
       timer && clearInterval(timer);
     };
   }, []);
+
+  useEffect(() => {
+    const ids = findIds(field?.data?.treeData)
+    setExpandedKeys(!expandFlagCtx ? [] : ids);
+  }, [expandFlagCtx, field?.data?.treeData]);
+
   useEffect(() => {
     const ids = findIds(field?.data?.treeData)
     setExpandedKeys(!expandFlag ? [] : ids);
   }, [expandFlag, field?.data?.treeData]);
-
   const _props: any = {};
 
   // 是折叠的

@@ -12,9 +12,8 @@ import {
   useTreeBlockProps
 } from '@nocobase/client';
 import { notification } from 'antd';
-import { range } from 'lodash';
 import React from 'react';
-import { mockAPIClient } from '../../../../test';
+import { mockAPIClient } from '../../../../testUtils';
 import collections from './collections';
 
 const { apiClient, mockRequest } = mockAPIClient();
@@ -134,35 +133,6 @@ const schema: ISchema = {
           'x-component': 'Tree',
           'x-component-props': {
             useProps: '{{ useTreeBlockProps }}',
-            // options: [
-            //   {
-            //     title: 'parent 1',
-            //     key: '0-0',
-            //     children: [
-            //       {
-            //         title: 'parent 1-0',
-            //         key: '0-0-0',
-            //         disabled: true,
-            //         children: [
-            //           {
-            //             title: 'leaf',
-            //             key: '0-0-0-0',
-            //             disableCheckbox: true,
-            //           },
-            //           {
-            //             title: 'leaf',
-            //             key: '0-0-0-1',
-            //           },
-            //         ],
-            //       },
-            //       {
-            //         title: 'parent 1-1',
-            //         key: '0-0-1',
-            //         children: [{ title: <span style={{ color: '#1677ff' }}>sss</span>, key: '0-0-1-0' }],
-            //       },
-            //     ],
-            //   },
-            // ]
           },
 
         },
