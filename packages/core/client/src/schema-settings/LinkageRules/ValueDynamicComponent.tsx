@@ -73,7 +73,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
   const modeMap = {
     // 常量
     constant: (
-      <div style={constantStyle}>
+      <div role="button" aria-label="dynamic-component-linkage-rules" style={constantStyle}>
         {React.createElement(DynamicComponent, {
           value: fieldValue?.value || fieldValue,
           schema,
@@ -84,7 +84,7 @@ export const ValueDynamicComponent = (props: ValueDynamicComponentProps) => {
 
     // 表达式
     express: (
-      <div style={expressStyle}>
+      <div role="button" aria-label="dynamic-component-linkage-rules" style={expressStyle}>
         <Variable.TextArea
           value={fieldValue?.value}
           onChange={handleChangeOfExpress}
