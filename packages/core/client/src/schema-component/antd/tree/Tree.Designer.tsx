@@ -20,7 +20,7 @@ export const TreeDesigner = () => {
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
       <SchemaSettings.AutoRefresh service={service} />
-      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
+      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.TREE} emptyDescription={t('No blocks to connect')} />
       <FixedBlockDesignerItem />
       <SchemaSettings.CustomRenderNode dataSource={dataSource} collectionName={name} fieldSchema={fieldSchema} />
        <SchemaSettings.AutoExpandParent />
