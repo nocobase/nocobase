@@ -1,4 +1,4 @@
-import { CollectionSetting, PageConfig } from '@nocobase/test/client';
+import { CollectionSetting, PageConfig, general } from '@nocobase/test/client';
 
 /**
  * 1. 创建一个名为 general 的 collection，其包含 时间、Percent 类型的字段
@@ -350,5 +350,225 @@ export const oneEmptyGantt: PageConfig = {
     'x-uid': 'vpk8sp3eap1',
     'x-async': true,
     'x-index': 1,
+  },
+};
+
+/**
+ * 页面中有一个空的 Table 区块，并且有这些按钮：Add new / Delete / Refresh / Add record / Filter / view / edit / delete / duplicate
+ */
+export const oneEmptyTableBlockWithDuplicateActions: PageConfig = {
+  collections: general,
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    'x-index': 1,
+    properties: {
+      '1lqiou007g2': {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'BlockInitializers',
+        'x-index': 1,
+        properties: {
+          '1m4gz110aaw': {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            properties: {
+              '695oy51236d': {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                properties: {
+                  twtgsvrdmn1: {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-decorator': 'TableBlockProvider',
+                    'x-acl-action': 'general:list',
+                    'x-decorator-props': {
+                      collection: 'general',
+                      resource: 'general',
+                      action: 'list',
+                      params: {
+                        pageSize: 20,
+                      },
+                      rowKey: 'id',
+                      showIndex: true,
+                      dragSort: false,
+                      disableTemplate: false,
+                    },
+                    'x-designer': 'TableBlockDesigner',
+                    'x-component': 'CardItem',
+                    'x-filter-targets': [],
+                    properties: {
+                      actions: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-initializer': 'TableActionInitializers',
+                        'x-component': 'ActionBar',
+                        'x-component-props': {
+                          style: {
+                            marginBottom: 'var(--nb-spacing)',
+                          },
+                        },
+                        properties: {},
+                        'x-uid': 'znrsshrlsna',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                      '1xnl1d9j48o': {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'array',
+                        'x-initializer': 'TableColumnInitializers',
+                        'x-component': 'TableV2',
+                        'x-component-props': {
+                          rowKey: 'id',
+                          rowSelection: {
+                            type: 'checkbox',
+                          },
+                          useProps: '{{ useTableBlockProps }}',
+                        },
+                        properties: {
+                          actions: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            title: '{{ t("Actions") }}',
+                            'x-action-column': 'actions',
+                            'x-decorator': 'TableV2.Column.ActionBar',
+                            'x-component': 'TableV2.Column',
+                            'x-designer': 'TableV2.ActionColumnDesigner',
+                            'x-initializer': 'TableActionColumnInitializers',
+                            properties: {
+                              actions: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-decorator': 'DndContext',
+                                'x-component': 'Space',
+                                'x-component-props': {
+                                  split: '|',
+                                },
+                                properties: {
+                                  '659x6w2yydk': {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-action': 'duplicate',
+                                    'x-acl-action': 'create',
+                                    title: '{{ t("Duplicate") }}',
+                                    'x-designer': 'Action.Designer',
+                                    'x-component': 'Action.Link',
+                                    'x-decorator': 'ACLActionProvider',
+                                    'x-component-props': {
+                                      openMode: 'drawer',
+                                      component: 'DuplicateAction',
+                                    },
+                                    'x-designer-props': {
+                                      linkageAction: true,
+                                    },
+                                    properties: {
+                                      drawer: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'void',
+                                        title: '{{ t("Duplicate") }}',
+                                        'x-component': 'Action.Container',
+                                        'x-component-props': {
+                                          className: 'nb-action-popup',
+                                        },
+                                        properties: {
+                                          tabs: {
+                                            _isJSONSchemaObject: true,
+                                            version: '2.0',
+                                            type: 'void',
+                                            'x-component': 'Tabs',
+                                            'x-component-props': {},
+                                            'x-initializer': 'TabPaneInitializers',
+                                            properties: {
+                                              tab1: {
+                                                _isJSONSchemaObject: true,
+                                                version: '2.0',
+                                                type: 'void',
+                                                title: '{{t("Duplicate")}}',
+                                                'x-component': 'Tabs.TabPane',
+                                                'x-designer': 'Tabs.Designer',
+                                                'x-component-props': {},
+                                                properties: {
+                                                  grid: {
+                                                    _isJSONSchemaObject: true,
+                                                    version: '2.0',
+                                                    type: 'void',
+                                                    'x-component': 'Grid',
+                                                    'x-initializer': 'CreateFormBlockInitializers',
+                                                    'x-uid': 'vtcnkzcaeec',
+                                                    'x-async': false,
+                                                    'x-index': 1,
+                                                  },
+                                                },
+                                                'x-uid': 'kbq4w0dmexr',
+                                                'x-async': false,
+                                                'x-index': 1,
+                                              },
+                                            },
+                                            'x-uid': '1v4k1kjpbi5',
+                                            'x-async': false,
+                                            'x-index': 1,
+                                          },
+                                        },
+                                        'x-uid': 'ok9iw50ycdh',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'sjg3udjdnc1',
+                                    'x-async': false,
+                                    'x-index': 4,
+                                  },
+                                },
+                                'x-uid': 'ijgo5usyzbp',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': '5tnwpodzirq',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                        },
+                        'x-uid': 'k8t01z9qna3',
+                        'x-async': false,
+                        'x-index': 2,
+                      },
+                    },
+                    'x-uid': 'c29q4s49svw',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': '9pe6fpnq33f',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'j6g551r7tbp',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'mbw5vw7y3ea',
+        'x-async': false,
+      },
+    },
+    'x-uid': '4mbt7m7in1l',
+    'x-async': true,
   },
 };
