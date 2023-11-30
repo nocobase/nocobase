@@ -19,7 +19,7 @@ export default class extends Instruction {
   constructor(public plugin: WorkflowPlugin) {
     super(plugin);
 
-    plugin.app.on('beforeStart', this.load);
+    plugin.app.on('afterStart', this.load);
     plugin.app.on('beforeStop', this.unload);
   }
 
