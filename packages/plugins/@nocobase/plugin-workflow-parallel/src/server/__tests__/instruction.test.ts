@@ -2,7 +2,7 @@ import path from 'path';
 
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { EXECUTION_STATUS, JOB_STATUS, testkit } from '@nocobase/plugin-workflow';
+import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS, testkit } from '@nocobase/plugin-workflow';
 
 import Plugin from '..';
 
@@ -446,6 +446,119 @@ describe('workflow > instructions > parallel', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toBe(5);
+    });
+  });
+
+  describe('mixed', () => {
+    it('condition branches contains parallel', async () => {
+      const n1 = await workflow.createNode({
+        type: 'condition',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'parallel',
+        branchIndex: BRANCH_INDEX.ON_TRUE,
+        upstreamId: n1.id,
+      });
+
+      const n3 = await workflow.createNode({
+        type: 'prompt',
+        upstreamId: n2.id,
+        branchIndex: 0,
+      });
+
+      const n4 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n2.id,
+        branchIndex: 1,
+      });
+
+      const n5 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+
+      await n1.setDownstream(n5);
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
+
+      const pendingJobs = await execution.getJobs();
+      expect(pendingJobs.length).toBe(4);
+
+      const pending = pendingJobs.find((item) => item.nodeId === n3.id);
+      pending.set({
+        status: JOB_STATUS.RESOLVED,
+        result: 123,
+      });
+      pending.execution = execution;
+      await plugin.resume(pending);
+
+      await sleep(500);
+
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      expect(jobs.length).toEqual(5);
+    });
+
+    it('parallel branches contains condition', async () => {
+      const n1 = await workflow.createNode({
+        type: 'parallel',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'prompt',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      const n3 = await workflow.createNode({
+        type: 'condition',
+        upstreamId: n1.id,
+        branchIndex: 1,
+      });
+
+      const n4 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n3.id,
+        branchIndex: BRANCH_INDEX.ON_TRUE,
+      });
+
+      const n5 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+
+      await n1.setDownstream(n5);
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);
+
+      const pendingJobs = await e1.getJobs();
+      expect(pendingJobs.length).toBe(4);
+
+      const pending = pendingJobs.find((item) => item.nodeId === n2.id);
+      pending.set({
+        status: JOB_STATUS.RESOLVED,
+        result: 123,
+      });
+      pending.execution = e1;
+      await plugin.resume(pending);
+
+      await sleep(500);
+
+      const [e2] = await workflow.getExecutions();
+      expect(e2.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      const jobs = await e2.getJobs({ order: [['id', 'ASC']] });
+      expect(jobs.length).toEqual(5);
     });
   });
 });
