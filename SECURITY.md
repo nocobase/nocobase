@@ -7,4 +7,4 @@ When reporting a suspected security problem, please bear this in mind:
 *   Make sure to provide as many details as possible about the vulnerability.
 *   Please do not disclose publicly any security issues until we fix them and publish security releases.
 
-Contact us at hello@nocobase.com. As soon as we receive the security report, we'll work promptly to confirm the issue and then to provide a security fix. You will receive a response from us within 7 working days.
+Contact us at hello+security@nocobase.com. As soon as we receive the security report, we'll work promptly to confirm the issue and then to provide a security fix. You will receive a response from us within 7 working days.
