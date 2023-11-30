@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-workflow-sql",
+  "name": "@nocobase/plugin-workflow-request",
   "displayName": "Workflow: HTTP request node",
   "displayName.zh-CN": "工作流：HTTP 请求节点",
   "description": "Send HTTP requests to any HTTP service for data interaction in workflow.",
