@@ -147,42 +147,56 @@ describe('workflow > instructions > condition', () => {
     });
 
     it('branch false and branch false to continue', async () => {
-      const n1 = await workflow.createNode({
-        type: 'condition',
-        config: {
-          engine: 'basic',
-          calculation: {
-            calculator: 'equal',
-            operands: [0, 1],
+      await db.sequelize.transaction(async (transaction) => {
+        const n1 = await workflow.createNode(
+          {
+            type: 'condition',
+            config: {
+              engine: 'basic',
+              calculation: {
+                calculator: 'equal',
+                operands: [0, 1],
+              },
+            },
           },
-        },
-      });
+          { transaction },
+        );
 
-      const n2 = await workflow.createNode({
-        type: 'condition',
-        config: {
-          engine: 'basic',
-          calculation: {
-            calculator: 'equal',
-            operands: [0, 1],
+        const n2 = await workflow.createNode(
+          {
+            type: 'condition',
+            config: {
+              engine: 'basic',
+              calculation: {
+                calculator: 'equal',
+                operands: [0, 1],
+              },
+            },
+            upstreamId: n1.id,
+            branchIndex: BRANCH_INDEX.ON_FALSE,
           },
-        },
-        upstreamId: n1.id,
-        branchIndex: BRANCH_INDEX.ON_FALSE,
-      });
+          { transaction },
+        );
 
-      const n3 = await workflow.createNode({
-        type: 'echo',
-        upstreamId: n2.id,
-        branchIndex: BRANCH_INDEX.ON_TRUE,
-      });
+        const n3 = await workflow.createNode(
+          {
+            type: 'echo',
+            upstreamId: n2.id,
+            branchIndex: BRANCH_INDEX.ON_TRUE,
+          },
+          { transaction },
+        );
 
-      const n4 = await workflow.createNode({
-        type: 'echo',
-        upstreamId: n1.id,
-      });
+        const n4 = await workflow.createNode(
+          {
+            type: 'echo',
+            upstreamId: n1.id,
+          },
+          { transaction },
+        );
 
-      await n1.setDownstream(n4);
+        await n1.setDownstream(n4, { transaction });
+      });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
