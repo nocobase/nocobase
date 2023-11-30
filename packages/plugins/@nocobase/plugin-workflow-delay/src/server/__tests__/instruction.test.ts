@@ -154,13 +154,18 @@ describe('workflow > instructions > delay', () => {
       const [j1] = await e1.getJobs();
       expect(j1.status).toBe(JOB_STATUS.PENDING);
 
-      await app.stop();
+      await app.destroy();
       await sleep(500);
 
-      await app.start();
+      app = await getApp({
+        plugins: [Plugin],
+        collectionPath: path.join(__dirname, './collections'),
+      });
       await sleep(2000);
 
-      const [e2] = await workflow.getExecutions();
+      WorkflowModel = app.db.getCollection('workflows').model;
+      const w2 = await WorkflowModel.findByPk(workflow.id);
+      const [e2] = await w2.getExecutions();
       expect(e2.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const [j2] = await e2.getJobs();
       expect(j2.status).toBe(JOB_STATUS.RESOLVED);
@@ -176,13 +181,18 @@ describe('workflow > instructions > delay', () => {
       const [j1] = await e1.getJobs();
       expect(j1.status).toBe(JOB_STATUS.PENDING);
 
-      await app.stop();
+      await app.destroy();
       await sleep(2000);
 
-      await app.start();
-      await sleep(500);
+      app = await getApp({
+        plugins: [Plugin],
+        collectionPath: path.join(__dirname, './collections'),
+      });
+      await sleep(1000);
 
-      const [e2] = await workflow.getExecutions();
+      WorkflowModel = app.db.getCollection('workflows').model;
+      const w2 = await WorkflowModel.findByPk(workflow.id);
+      const [e2] = await w2.getExecutions();
       expect(e2.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const [j2] = await e2.getJobs();
       expect(j2.status).toBe(JOB_STATUS.RESOLVED);
