@@ -9,6 +9,7 @@ export const polygon: IField = {
   order: 4,
   title: generateNTemplate('Polygon'),
   description: generateNTemplate('Polygon'),
+  availableTypes: ['polygon'],
   sortable: true,
   default: {
     type: 'polygon',
