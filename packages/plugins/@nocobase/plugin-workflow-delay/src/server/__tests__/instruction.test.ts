@@ -176,7 +176,7 @@ describe('workflow > instructions > delay', () => {
       const [j1] = await e1.getJobs();
       expect(j1.status).toBe(JOB_STATUS.PENDING);
 
-      await app.stop();
+      await app.destroy();
       await sleep(2000);
 
       await app.start();
