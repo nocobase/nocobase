@@ -257,9 +257,9 @@ export class QueryRecordNode {
   collectionDropDown: Locator;
   allowMultipleDataBoxesForResults: Locator;
   addSortFieldsButton: Locator;
-  pageEditBox: Locator;
-  pageVariableButton: Locator;
-  daysPerPpageEditBox: Locator;
+  pageNumberEditBox: Locator;
+  pageNumberVariableButton: Locator;
+  pageSizeEditBox: Locator;
   exitProcessOptionsBoxWithEmptyResult: Locator;
   submitButton: Locator;
   cancelButton: Locator;
@@ -274,9 +274,9 @@ export class QueryRecordNode {
     this.collectionDropDown = page.getByTestId('select-collection');
     this.allowMultipleDataBoxesForResults = page.getByLabel('Allow multiple records as');
     this.addSortFieldsButton = page.getByRole('button', { name: 'plus Add sort field' });
-    this.pageEditBox = page.getByLabel('variable-constant');
-    this.pageVariableButton = page.getByLabel('variable-button');
-    this.daysPerPpageEditBox = page.getByRole('spinbutton');
+    this.pageNumberEditBox = page.getByLabel('variable-constant');
+    this.pageNumberVariableButton = page.getByLabel('variable-button');
+    this.pageSizeEditBox = page.getByLabel('block-item-InputNumber-workflows-Page size').getByRole('spinbutton');
     this.exitProcessOptionsBoxWithEmptyResult = page.getByLabel('Exit when query result is null');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
@@ -382,5 +382,69 @@ export class ManualNode {
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = page.getByLabel(`add-button-manual-${nodeName}`, { exact: true });
+  }
+}
+
+export class ConditionYesNode {
+  readonly page: Page;
+  node: Locator;
+  nodeTitle: Locator;
+  nodeConfigure: Locator;
+  basicRadio: Locator;
+  mathRadio: Locator;
+  formulaRadio: Locator;
+  submitButton: Locator;
+  cancelButton: Locator;
+  addNodeButton: Locator;
+  constructor(page: Page, nodeName: string) {
+    this.page = page;
+    this.node = page.getByLabel(`Condition-${nodeName}`, { exact: true });
+    this.nodeTitle = page.getByLabel(`Condition-${nodeName}`, { exact: true }).getByLabel('textarea');
+    this.nodeConfigure = page
+      .getByLabel(`Condition-${nodeName}`, { exact: true })
+      .getByRole('button', { name: 'Configure' });
+    // await page.getByLabel('variable-constant').first().click();
+    // await page.getByLabel('variable-button').first().click();
+    // await page.getByLabel('select-operator-calc').first().click();
+    // await page.getByRole('option', { name: '=' }).click();
+    // await page.getByLabel('variable-constant').nth(1).click();
+    // await page.getByLabel('variable-button').nth(1).click();
+    this.basicRadio = page.getByLabel('Basic');
+    this.mathRadio = page.getByLabel('Math.js');
+    this.formulaRadio = page.getByLabel('Formula.js');
+    this.submitButton = page.getByLabel('action-Action-Submit-workflows');
+    this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
+    this.addNodeButton = page.getByLabel(`add-button-condition-${nodeName}`, { exact: true });
+  }
+}
+
+export class ConditionBranchNode {
+  readonly page: Page;
+  node: Locator;
+  nodeTitle: Locator;
+  nodeConfigure: Locator;
+  basicRadio: Locator;
+  mathRadio: Locator;
+  formulaRadio: Locator;
+  submitButton: Locator;
+  cancelButton: Locator;
+  addNoBranchNode: Locator;
+  addYesBranchNode: Locator;
+  addNodeButton: Locator;
+  constructor(page: Page, nodeName: string) {
+    this.page = page;
+    this.node = page.getByLabel(`Condition-${nodeName}`, { exact: true });
+    this.nodeTitle = page.getByLabel(`Condition-${nodeName}`, { exact: true }).getByLabel('textarea');
+    this.nodeConfigure = page
+      .getByLabel(`Condition-${nodeName}`, { exact: true })
+      .getByRole('button', { name: 'Configure' });
+    this.submitButton = page.getByLabel('action-Action-Submit-workflows');
+    this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
+    this.addNodeButton = page.getByLabel(`add-button-condition-${nodeName}`, { exact: true });
+    this.basicRadio = page.getByLabel('Basic');
+    this.mathRadio = page.getByLabel('Math.js');
+    this.formulaRadio = page.getByLabel('Formula.js');
+    this.addNoBranchNode = page.getByLabel(`add-button-condition-${nodeName}-0`);
+    this.addYesBranchNode = page.getByLabel(`add-button-condition-${nodeName}-1`);
   }
 }
