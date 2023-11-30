@@ -5,6 +5,12 @@ import { Op } from '@nocobase/database';
 
 export default class FixModuleMigration extends Migration {
   async up() {
+    const result = await this.app.version.satisfies('<=0.16.0-alpha.7');
+
+    if (!result) {
+      return;
+    }
+
     const resources = await this.app.localeManager.getCacheResources('zh-CN');
     const menus = await getTextsFromMenu(this.context.db);
     const collections = await getTextsFromDB(this.context.db);
