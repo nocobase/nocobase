@@ -98,7 +98,6 @@ export async function getApp({
     },
   ]);
   const app = mockServer({ ...options, plugins });
-  await app.cleanDb();
 
   await app.load();
 
