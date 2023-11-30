@@ -570,7 +570,7 @@ export class PluginManager {
       if (model) {
         opts['name'] = model.name;
       }
-      if (!opts['name']) {
+      if (!opts['packageName']) {
         opts['packageName'] = urlOrName;
       }
       await this.add(opts['name'] || urlOrName, opts, true);
