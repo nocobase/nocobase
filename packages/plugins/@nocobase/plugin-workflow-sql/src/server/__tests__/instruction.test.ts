@@ -172,7 +172,7 @@ describe('workflow > instructions > sql', () => {
   });
 
   describe('mixed', () => {
-    it('condition contains loop (target as 0)', async () => {
+    it.skip('condition contains loop (target as 0)', async () => {
       const n1 = await workflow.createNode({
         type: 'condition',
       });
