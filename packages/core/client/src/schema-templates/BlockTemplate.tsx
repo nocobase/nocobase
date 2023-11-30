@@ -23,7 +23,7 @@ export const BlockTemplate = observer(
     const onSuccess = (data) => {
       fieldSchema['x-linkage-rules'] = data?.data?.['x-linkage-rules'] || [];
       fieldSchema.setProperties(data?.data?.properties);
-      onTemplateSuccess();
+      onTemplateSuccess?.();
     };
     return template ? (
       <BlockTemplateContext.Provider value={{ dn, field, fieldSchema, template }}>

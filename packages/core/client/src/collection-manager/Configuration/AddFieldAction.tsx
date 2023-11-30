@@ -216,7 +216,7 @@ export const AddFieldAction = (props) => {
         let children = [];
         if (include?.length) {
           include.forEach((k) => {
-            const field = v.children.find((h) => [k, k.interface].includes(h.value));
+            const field = v?.children?.find((h) => [k, k.interface].includes(h.value));
             field &&
               children.push({
                 ...field,
@@ -224,13 +224,13 @@ export const AddFieldAction = (props) => {
               });
           });
         } else if (exclude?.length) {
-          children = v.children.filter((v) => {
+          children = v?.children?.filter((v) => {
             return !exclude.includes(v.value);
           });
         } else {
-          children = v.children;
+          children = v?.children;
         }
-        children.length &&
+        children?.length &&
           optionArr.push({
             ...v,
             children,
@@ -270,7 +270,7 @@ export const AddFieldAction = (props) => {
           label: compile(option.label),
           title: compile(option.label),
           key: option.label,
-          children: option.children
+          children: option?.children
             .filter((child) => !['o2o', 'subTable', 'linkTo'].includes(child.name))
             .map((child) => {
               return {
@@ -284,7 +284,7 @@ export const AddFieldAction = (props) => {
             }),
         };
       })
-      .filter((v) => v.children?.length);
+      .filter((v) => v?.children?.length);
   }, [getFieldOptions]);
   const menu = useMemo<MenuProps>(() => {
     return {
