@@ -242,7 +242,7 @@ export const AddFieldAction = (props) => {
   const items = useMemo<MenuProps['items']>(() => {
     return getFieldOptions()
       .map((option) => {
-        if (option.children.length === 0) {
+        if (option?.children?.length === 0) {
           return null;
         }
         if (record.template === 'view') {
@@ -284,7 +284,7 @@ export const AddFieldAction = (props) => {
             }),
         };
       })
-      .filter((v) => v.children.length);
+      .filter((v) => v.children?.length);
   }, [getFieldOptions]);
   const menu = useMemo<MenuProps>(() => {
     return {
