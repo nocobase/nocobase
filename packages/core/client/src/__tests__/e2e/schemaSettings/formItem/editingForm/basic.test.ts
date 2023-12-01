@@ -66,7 +66,7 @@ test.describe('color', () => {
 });
 
 test.describe('email', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'email', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'email', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -103,7 +103,7 @@ test.describe('email', () => {
 });
 
 test.describe('icon', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'icon', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'icon', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -143,7 +143,7 @@ test.describe('icon', () => {
 });
 
 test.describe('single line text', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'singleLineText', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'singleLineText', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -195,7 +195,7 @@ test.describe('single line text', () => {
 });
 
 test.describe('integer', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'integer', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'integer', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -241,7 +241,7 @@ test.describe('integer', () => {
 });
 
 test.describe('number', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'number', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'number', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     // TODO: number 类型的字段，当输入了小数，然后把 Pattern 切换成 Easy-reading 模式，小数不应该被去掉；
@@ -299,7 +299,7 @@ test.describe('number', () => {
 });
 
 test.describe('password', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'password', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'password', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -350,7 +350,7 @@ test.describe('password', () => {
 });
 
 test.describe('percent', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'percent', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'percent', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     // TODO: percent 类型的字段，当输入了小数，然后把 Pattern 切换成 Easy-reading 模式，小数点不应该被去掉；
@@ -408,7 +408,7 @@ test.describe('percent', () => {
 });
 
 test.describe('phone', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'phone', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'phone', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -450,7 +450,7 @@ test.describe('phone', () => {
 });
 
 test.describe('long text', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'longText', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'longText', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -505,7 +505,7 @@ test.describe('long text', () => {
 });
 
 test.describe('URL', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'url', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'url', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
