@@ -2,7 +2,8 @@
   "name": "{{{name}}}",
   "private": true,
   "workspaces": [
-    "packages/*/*"
+    "packages/*/*",
+    "packages/*/*/*"
   ],
   "engines": {
     "node": ">=18"

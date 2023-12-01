@@ -4,9 +4,7 @@ test.describe('Form', () => {
   test('add fields', async ({ page, mockPage }) => {
     await mockPage(oneEmptyForm).goto();
 
-    const formItemInitializer = page.getByLabel('schema-initializer-Grid-FormItemInitializers-general');
-
-    await formItemInitializer.hover();
+    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'ID' }).click();
     await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).toBeChecked();
 
@@ -22,7 +20,7 @@ test.describe('Form', () => {
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.manyToOne.nickname')).toBeVisible();
 
     // delete fields
-    await formItemInitializer.hover();
+    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'ID' }).click();
     await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).not.toBeChecked();
 
@@ -39,7 +37,7 @@ test.describe('Form', () => {
     ).not.toBeVisible();
 
     // add text
-    await formItemInitializer.hover();
+    await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Text' }).click();
     await expect(page.getByLabel('block-item-Markdown.Void-general-form')).toBeVisible();
   });

@@ -1,7 +1,7 @@
 import { ButtonProps } from 'antd';
 import { Application } from '../Application';
 import { SchemaInitializer } from './SchemaInitializer';
-import { SchemaInitializerItemType } from './types';
+import { SchemaInitializerItemTypeWithoutName } from './types';
 
 interface ActionType {
   type: 'add' | 'remove';
@@ -34,7 +34,7 @@ export class SchemaInitializerManager {
     });
   }
 
-  addItem(schemaInitializerName: string, itemName: string, data: Omit<SchemaInitializerItemType, 'name'>) {
+  addItem(schemaInitializerName: string, itemName: string, data: SchemaInitializerItemTypeWithoutName) {
     const schemaInitializer = this.get(schemaInitializerName);
     if (!schemaInitializer) {
       if (!this.actionList[schemaInitializerName]) {
