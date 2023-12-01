@@ -206,6 +206,9 @@ export const AddFieldAction = (props) => {
             if (v.value === 'id') {
               return typeof record['autoGenId'] === 'boolean' ? record['autoGenId'] : true;
             } else if (v.value === 'tableoid') {
+              if (include?.length) {
+                return include.includes(v.value);
+              }
               return database?.dialect === 'postgres';
             } else {
               return typeof record[v.value] === 'boolean' ? record[v.value] : true;
