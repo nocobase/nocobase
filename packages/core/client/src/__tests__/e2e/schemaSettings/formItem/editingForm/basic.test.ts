@@ -66,7 +66,7 @@ test.describe('color', () => {
 });
 
 test.describe('email', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'email', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'email', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -103,7 +103,7 @@ test.describe('email', () => {
 });
 
 test.describe('icon', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'icon', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'icon', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -121,21 +121,29 @@ test.describe('icon', () => {
       },
       expectReadonly: async () => {
         // 只读模式下，选择图标按钮会被禁用
-        await expect(page.getByRole('button', { name: 'account-book' })).toBeDisabled();
+        if (record.icon) {
+          await expect(page.getByRole('button', { name: record.icon })).toBeDisabled();
+        } else {
+          await expect(page.getByRole('button', { name: 'Select icon' })).toBeDisabled();
+        }
       },
       expectEasyReading: async () => {
         // 按钮会消失，只剩下图标
-        await expect(page.getByRole('button', { name: 'account-book' })).not.toBeVisible();
-        await expect(
-          page.getByLabel('block-item-CollectionField-general-form-general.icon-icon').getByLabel('account-book'),
-        ).toBeVisible();
+        if (record.icon) {
+          await expect(page.getByRole('button', { name: record.icon })).not.toBeVisible();
+          await expect(
+            page.getByLabel('block-item-CollectionField-general-form-general.icon-icon').getByLabel(record.icon),
+          ).toBeVisible();
+        } else {
+          await expect(page.getByRole('button', { name: 'Select icon' })).not.toBeVisible();
+        }
       },
     });
   });
 });
 
 test.describe('single line text', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'singleLineText', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'singleLineText', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -187,7 +195,7 @@ test.describe('single line text', () => {
 });
 
 test.describe('integer', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'integer', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'integer', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -233,7 +241,7 @@ test.describe('integer', () => {
 });
 
 test.describe('number', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'number', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'number', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     // TODO: number 类型的字段，当输入了小数，然后把 Pattern 切换成 Easy-reading 模式，小数不应该被去掉；
@@ -291,7 +299,7 @@ test.describe('number', () => {
 });
 
 test.describe('password', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'password', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'password', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -325,7 +333,7 @@ test.describe('password', () => {
           page.getByLabel('block-item-CollectionField-general-form-general.password-password').getByRole('textbox'),
         ).not.toBeVisible();
         await expect(page.getByLabel('block-item-CollectionField-general-form-general.password-password')).toHaveText(
-          'password:********',
+          'password:',
         );
       },
     });
@@ -342,7 +350,7 @@ test.describe('password', () => {
 });
 
 test.describe('percent', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'percent', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'percent', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     // TODO: percent 类型的字段，当输入了小数，然后把 Pattern 切换成 Easy-reading 模式，小数点不应该被去掉；
@@ -400,7 +408,7 @@ test.describe('percent', () => {
 });
 
 test.describe('phone', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'phone', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'phone', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -434,7 +442,7 @@ test.describe('phone', () => {
           page.getByLabel('block-item-CollectionField-general-form-general.phone-phone').getByRole('textbox'),
         ).not.toBeVisible();
         await expect(page.getByLabel('block-item-CollectionField-general-form-general.phone-phone')).toHaveText(
-          'phone:17777777777',
+          'phone:',
         );
       },
     });
@@ -442,7 +450,7 @@ test.describe('phone', () => {
 });
 
 test.describe('long text', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'longText', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'longText', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -476,12 +484,11 @@ test.describe('long text', () => {
         ).toBeDisabled();
       },
       expectEasyReading: async () => {
-        // 输入框会消失，只剩下值
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').getByRole('textbox'),
         ).not.toBeVisible();
         await expect(page.getByLabel('block-item-CollectionField-general-form-general.longText-longText')).toHaveText(
-          'longText:test long text',
+          `longText:${record.longText}`.replaceAll('\n', ''),
         );
       },
     });
@@ -498,7 +505,7 @@ test.describe('long text', () => {
 });
 
 test.describe('URL', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'url', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'url', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -524,13 +531,11 @@ test.describe('URL', () => {
         ).toBeDisabled();
       },
       expectEasyReading: async () => {
-        // 输入框会消失，只剩下值
+        // url 类型数据不会被 mock，所以这里不会显示值
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.url-url').getByRole('textbox'),
         ).not.toBeVisible();
-        await expect(page.getByLabel('block-item-CollectionField-general-form-general.url-url')).toHaveText(
-          'url:https://nocobase.com',
-        );
+        await expect(page.getByLabel('block-item-CollectionField-general-form-general.url-url')).toHaveText('url:');
       },
     });
   });

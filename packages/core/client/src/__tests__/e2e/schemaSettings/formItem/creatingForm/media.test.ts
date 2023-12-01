@@ -38,7 +38,7 @@ const openDialogAndShowMenu = async ({
 };
 
 test.describe('markdown', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'markdown' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'markdown', mode: 'options' });
 
   test('set default value', async ({ page, mockPage, mockRecord }) => {
     await testDefaultValue({
@@ -100,7 +100,7 @@ test.describe('markdown', () => {
 });
 
 test.describe('rich text', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'richText' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'richText', mode: 'options' });
 
   test('set default value', async ({ page, mockPage, mockRecord }) => {
     await testDefaultValue({
@@ -162,7 +162,7 @@ test.describe('rich text', () => {
 });
 
 test.describe('attachment', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'attachment' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'attachment', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     await testPattern({

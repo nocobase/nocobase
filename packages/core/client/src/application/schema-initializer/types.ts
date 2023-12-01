@@ -1,67 +1,92 @@
 import { ISchema } from '@formily/json-schema';
 import { ButtonProps, PopoverProps } from 'antd';
 import { ComponentType, ReactNode } from 'react';
-import type { SchemaInitializerGroupProps, SchemaInitializerItemProps, SchemaInitializerMenuProps } from './components';
+import type {
+  SchemaInitializerActionModalProps,
+  SchemaInitializerItemGroupProps,
+  SchemaInitializerItemProps,
+  SchemaInitializerSelectItemProps,
+  SchemaInitializerSubMenuProps,
+  SchemaInitializerSwitchItemProps,
+} from './components';
 
 export type InsertType = (s: ISchema) => void;
 
-export interface SchemaInitializerComponentCommonProps {
-  title?: string;
-  schema?: ISchema;
-  style?: React.CSSProperties;
-  className?: string;
-}
-export const schemaInitializerComponentCommonProps: (keyof SchemaInitializerComponentCommonProps)[] = [
-  'schema',
-  'title',
-  'style',
-  'className',
-];
-
-export interface SchemaInitializerItemBaseType<T = {}> extends SchemaInitializerComponentCommonProps {
+type SchemaInitializerItemBuiltInType<T = {}> = T & {
   name: string;
   sort?: number;
-  Component?: string | ComponentType<T>;
-  componentProps?: T;
+  componentProps?: Omit<T, 'children'>;
+  useComponentProps?: () => Omit<T, 'children'>;
   useVisible?: () => boolean;
   [index: string]: any;
-}
+};
 
-export interface SchemaInitializerItemBaseWithChildren<T = {}> extends SchemaInitializerItemBaseType<T> {
+export interface SchemaInitializerItemComponentType<T = {}> {
+  name: string;
+  Component: ComponentType<T> | string;
+  sort?: number;
+  componentProps?: Omit<T, 'children'>;
+  useComponentProps?: () => Omit<T, 'children'>;
+  useVisible?: () => boolean;
   children?: SchemaInitializerItemType[];
   checkChildrenLength?: boolean;
   useChildren?: () => SchemaInitializerItemType[];
+  [index: string]: any;
 }
 
-export interface SchemaInitializerItemDividerType extends SchemaInitializerItemBaseType {
+export interface SchemaInitializerItemDividerType extends SchemaInitializerItemBuiltInType {
   type: 'divider';
 }
 
-export type SchemaInitializerItemOnlyType = {
+export type SchemaInitializerItemItemType = {
   type: 'item';
-} & SchemaInitializerItemProps &
-  SchemaInitializerItemBaseType;
+} & SchemaInitializerItemBuiltInType<SchemaInitializerItemProps>;
 
-export type SchemaInitializerGroupType = {
+export type SchemaInitializerItemSwitchType = {
+  type: 'switch';
+} & SchemaInitializerItemBuiltInType<SchemaInitializerSwitchItemProps>;
+
+export type SchemaInitializerItemSelectType = {
+  type: 'select';
+} & SchemaInitializerItemBuiltInType<SchemaInitializerSelectItemProps>;
+
+export type SchemaInitializerItemActionModalType = {
+  type: 'actionModal';
+} & SchemaInitializerItemBuiltInType<SchemaInitializerActionModalProps>;
+
+export type SchemaInitializerItemGroupType = {
   type: 'itemGroup';
-} & SchemaInitializerItemBaseWithChildren &
-  SchemaInitializerGroupProps;
+  children?: SchemaInitializerItemType[];
+  checkChildrenLength?: boolean;
+  useChildren?: () => SchemaInitializerItemType[];
+} & SchemaInitializerItemBuiltInType<SchemaInitializerItemGroupProps>;
 
-export type SchemaInitializerMenuType = {
+export type SchemaInitializerSubMenuType = {
   type: 'subMenu';
-} & SchemaInitializerItemBaseWithChildren &
-  SchemaInitializerMenuProps;
+  children?: SchemaInitializerItemType[];
+  checkChildrenLength?: boolean;
+  useChildren?: () => SchemaInitializerItemType[];
+} & SchemaInitializerItemBuiltInType<SchemaInitializerSubMenuProps>;
 
-export type SchemaInitializerItemType<T = {}> =
-  | SchemaInitializerItemBaseType<T>
-  | SchemaInitializerItemBaseWithChildren<T>
+export type SchemaInitializerAllBuiltItemType =
   | SchemaInitializerItemDividerType
-  | SchemaInitializerItemOnlyType
-  | SchemaInitializerGroupType
-  | SchemaInitializerMenuType;
+  | SchemaInitializerItemItemType
+  | SchemaInitializerItemSwitchType
+  | SchemaInitializerItemSelectType
+  | SchemaInitializerItemGroupType
+  | SchemaInitializerSubMenuType
+  | SchemaInitializerItemActionModalType;
 
-// TODO: 类型需要优化
+export type SchemaInitializerItemType<T = any> =
+  | SchemaInitializerAllBuiltItemType
+  | SchemaInitializerItemComponentType<T>;
+
+export type SchemaInitializerItemTypeWithoutName<T = any> =
+  | Omit<SchemaInitializerAllBuiltItemType, 'name'>
+  | Omit<SchemaInitializerItemComponentType<T>, 'name'>;
+
 export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = {}> {
+  name: string;
   Component?: ComponentType<P1>;
   componentProps?: P1;
   style?: React.CSSProperties;

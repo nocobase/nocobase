@@ -9,7 +9,8 @@ import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowConte
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettingsDropdown } from './SchemaSettings';
 import { useGetAriaLabelOfDesigner } from './hooks/useGetAriaLabelOfDesigner';
-import { SchemaDesignerProvider, useSchemaInitializerRender, useSchemaSettingsRender } from '../application';
+import { SchemaToolbarProvider, useSchemaInitializerRender, useSchemaSettingsRender } from '../application';
+import { useStyles } from './styles';
 
 const titleCss = css`
   pointer-events: none;
@@ -97,7 +98,7 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
   }
 
   return (
-    <SchemaDesignerProvider {...contextValue}>
+    <SchemaToolbarProvider {...contextValue}>
       <div className={classNames('general-schema-designer', overrideAntdCSS)}>
         {title && (
           <div className={classNames('general-schema-designer-title', titleCss)}>
@@ -143,19 +144,21 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
           </Space>
         </div>
       </div>
-    </SchemaDesignerProvider>
+    </SchemaToolbarProvider>
   );
 };
 
-export interface SchemaDesignerToolbarProps {
+export interface SchemaToolbarProps {
   title?: string;
   draggable?: boolean;
   initializer?: string | false;
   settings?: string | false;
+  showBorder?: boolean;
+  showBackground?: boolean;
 }
 
-export const SchemaDesignerToolbar: FC<SchemaDesignerToolbarProps> = (props) => {
-  const { title, initializer, settings, draggable = true } = props;
+export const SchemaToolbar: FC<SchemaToolbarProps> = (props) => {
+  const { title, initializer, settings, showBackground, showBorder = true, draggable = true } = props;
   const { designable } = useDesignable();
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
@@ -197,7 +200,7 @@ export const SchemaDesignerToolbar: FC<SchemaDesignerToolbarProps> = (props) => 
   }, [draggable, getAriaLabel]);
 
   const initializerElement = useMemo(() => {
-    if (initializer !== false) return null;
+    if (initializer === false) return null;
     if (gridContext?.InitializerComponent || gridContext?.renderSchemaInitializer) {
       return gridContext?.InitializerComponent ? (
         <gridContext.InitializerComponent {...initializerProps} />
@@ -212,26 +215,31 @@ export const SchemaDesignerToolbar: FC<SchemaDesignerToolbarProps> = (props) => 
   const settingsElement = useMemo(() => {
     return settings !== false && schemaSettingsExists ? schemaSettingsRender() : null;
   }, [schemaSettingsExists, schemaSettingsRender, settings]);
-
+  const { styles } = useStyles();
   if (!designable) {
     return null;
   }
 
   return (
-    <div className={classNames('general-schema-designer', overrideAntdCSS)}>
-      {title && (
-        <div className={classNames('general-schema-designer-title', titleCss)}>
-          <Space size={2}>
-            <span className={'title-tag'}>{compile(title)}</span>
+    <div className={styles.toolbar}>
+      <div
+        className={styles.toolbarContent}
+        style={{ border: showBorder ? 'auto' : 0, background: showBackground ? 'auto' : 0 }}
+      >
+        {title && (
+          <div className={styles.toolbarTitle}>
+            <Space size={2}>
+              <span className={styles.toolbarTitleTag}>{compile(title)}</span>
+            </Space>
+          </div>
+        )}
+        <div className={styles.toolbarIcons}>
+          <Space size={3} align={'center'}>
+            {dragElement}
+            {initializerElement}
+            {settingsElement}
           </Space>
         </div>
-      )}
-      <div className={'general-schema-designer-icons'}>
-        <Space size={3} align={'center'}>
-          {dragElement}
-          {initializerElement}
-          {settingsElement}
-        </Space>
       </div>
     </div>
   );

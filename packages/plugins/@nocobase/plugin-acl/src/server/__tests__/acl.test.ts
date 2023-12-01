@@ -114,12 +114,7 @@ describe('acl', () => {
 
     userPlugin = app.getPlugin('users') as UsersPlugin;
 
-    const testAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: u1.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    const testAgent = app.agent().login(u1);
 
     // @ts-ignore
     const response1 = await testAgent.resource('repairs').list({

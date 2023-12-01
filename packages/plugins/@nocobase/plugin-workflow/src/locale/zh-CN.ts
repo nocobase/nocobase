@@ -60,7 +60,7 @@ export default {
   'Please select the associated fields that need to be accessed in subsequent nodes. With more than two levels of to-many associations may cause performance issue, please use with caution.':
     '请选中需要在后续节点中被访问的关系字段。超过两层的对多关联可能会导致性能问题，请谨慎使用。',
   'Schedule event': '定时任务',
-  'Scheduled job base on time conditions.': '基于时间条件的计划任务',
+  'Event will be scheduled and triggered base on time conditions.': '基于时间条件进行定时触发的事件。',
   'Trigger mode': '触发模式',
   'Based on certain date': '自定义时间',
   'Based on date field of collection': '根据数据表时间字段',

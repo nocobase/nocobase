@@ -307,10 +307,7 @@ export const BlockProvider = (props: {
   const resource = useResource(props);
   const { appends, updateAssociationValues } = useAssociationNames();
   const params = useMemo(() => {
-    if (!props.params) {
-      return props.params;
-    }
-    if (!props.params['appends']) {
+    if (!props.params?.['appends']) {
       return { ...props.params, appends };
     }
     return { ...props.params };

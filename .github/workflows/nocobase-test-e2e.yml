@@ -76,4 +76,4 @@ jobs:
           DB_UNDERSCORED: ${{ matrix.underscored }}
           DB_SCHEMA: ${{ matrix.schema }}
           COLLECTION_MANAGER_SCHEMA: ${{ matrix.collection_schema }}
-    timeout-minutes: 40
+    timeout-minutes: 60

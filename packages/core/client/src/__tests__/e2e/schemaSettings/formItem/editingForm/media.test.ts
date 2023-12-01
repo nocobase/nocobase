@@ -41,7 +41,7 @@ const openDialogAndShowMenu = async ({
 };
 
 test.describe('markdown', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'markdown', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'markdown', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -84,7 +84,7 @@ test.describe('markdown', () => {
 });
 
 test.describe('rich text', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'richText', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'richText', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
@@ -127,7 +127,7 @@ test.describe('rich text', () => {
 });
 
 test.describe('attachment', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'attachment', blockType: 'editing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'attachment', blockType: 'editing', mode: 'options' });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
