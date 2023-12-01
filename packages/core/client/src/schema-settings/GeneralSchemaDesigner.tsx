@@ -153,6 +153,9 @@ export interface SchemaToolbarProps {
   draggable?: boolean;
   initializer?: string | false;
   settings?: string | false;
+  /**
+   * @default true
+   */
   showBorder?: boolean;
   showBackground?: boolean;
 }

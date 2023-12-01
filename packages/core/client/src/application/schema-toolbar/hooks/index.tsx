@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { ISchema } from '@formily/json-schema';
 import { useComponent, useDesignable } from '../../../schema-component';
-import { SchemaToolbar } from '../../../schema-settings';
+import { SchemaToolbar, SchemaToolbarProps } from '../../../schema-settings';
 
 export const useSchemaToolbarRender = (fieldSchema: ISchema) => {
   const { designable } = useDesignable();
@@ -17,7 +17,7 @@ export const useSchemaToolbarRender = (fieldSchema: ISchema) => {
 
   const C = useComponent(toolbar);
   return {
-    render(props?: any) {
+    render(props?: SchemaToolbarProps) {
       if (!designable || !C) {
         return null;
       }
