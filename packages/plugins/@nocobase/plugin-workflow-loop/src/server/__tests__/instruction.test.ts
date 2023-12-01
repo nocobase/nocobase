@@ -2,7 +2,7 @@ import path from 'path';
 
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow/testkit';
 
 import Plugin from '..';
@@ -398,6 +398,82 @@ describe('workflow > instructions > loop', () => {
       expect(e1.status).toEqual(EXECUTION_STATUS.FAILED);
       const e1jobs = await e1.getJobs();
       expect(e1jobs.length).toBe(7);
+    });
+
+    it('condition contains loop (target as 0)', async () => {
+      const n1 = await workflow.createNode({
+        type: 'condition',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'loop',
+        branchIndex: BRANCH_INDEX.ON_TRUE,
+        upstreamId: n1.id,
+        config: {
+          target: 0,
+        },
+      });
+
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        branchIndex: 0,
+        upstreamId: n2.id,
+      });
+
+      const n4 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+
+      await n1.setDownstream(n4);
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      const jobs = await e1.getJobs({ order: [['id', 'ASC']] });
+      expect(jobs.length).toBe(3);
+      expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
+    });
+
+    it('condition contains loop (target as 2)', async () => {
+      const n1 = await workflow.createNode({
+        type: 'condition',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'loop',
+        branchIndex: BRANCH_INDEX.ON_TRUE,
+        upstreamId: n1.id,
+        config: {
+          target: 2,
+        },
+      });
+
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        branchIndex: 0,
+        upstreamId: n2.id,
+      });
+
+      const n4 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+
+      await n1.setDownstream(n4);
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      const jobs = await e1.getJobs({ order: [['id', 'ASC']] });
+      expect(jobs.length).toBe(5);
+      expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
     });
   });
 });

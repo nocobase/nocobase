@@ -1,5 +1,6 @@
 import path from 'path';
 
+import { requireModule } from '@nocobase/utils';
 import { Transactionable } from '@nocobase/database';
 
 import Plugin from '..';
@@ -31,28 +32,23 @@ export abstract class Instruction {
   duplicateConfig?(node: FlowNodeModel, options: Transactionable): object | Promise<object>;
 }
 
-type InstructionConstructor = { new (plugin: Plugin): Instruction };
+type InstructionConstructor<T> = { new (p: Plugin): T };
 
-export default async function <T extends Instruction>(
-  plugin,
-  more: { [key: string]: T | InstructionConstructor } = {},
-) {
+export default function <T extends Instruction>(plugin, more: { [key: string]: T | InstructionConstructor<T> } = {}) {
   const { instructions } = plugin;
 
-  const natives = await ['calculation', 'condition', 'query', 'create', 'update', 'destroy'].reduce(
-    (promise, key) =>
-      promise.then(async (result) =>
-        Object.assign(result, {
-          [key]: (await import(path.isAbsolute(key) ? key : path.join(__dirname, key))).default,
-        }),
-      ),
-    Promise.resolve({}),
+  const natives = ['calculation', 'condition', 'query', 'create', 'update', 'destroy'].reduce(
+    (result, key) =>
+      Object.assign(result, {
+        [key]: requireModule(path.isAbsolute(key) ? key : path.join(__dirname, key)),
+      }),
+    {},
   );
 
   for (const [name, instruction] of Object.entries({ ...more, ...natives })) {
     instructions.register(
       name,
-      typeof instruction === 'function' ? new (instruction as InstructionConstructor)(plugin) : instruction,
+      typeof instruction === 'function' ? new (instruction as InstructionConstructor<T>)(plugin) : instruction,
     );
   }
 }

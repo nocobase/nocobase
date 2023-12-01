@@ -105,9 +105,9 @@ export default class WorkflowPlugin extends Plugin {
     const { db, options } = this;
 
     initActions(this);
+    initTriggers(this, options.triggers);
+    initInstructions(this, options.instructions);
     initFunctions(this, options.functions);
-    await initTriggers(this, options.triggers);
-    await initInstructions(this, options.instructions);
 
     this.loggerCache = new LRUCache({
       max: 20,
