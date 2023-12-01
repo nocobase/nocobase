@@ -3,7 +3,7 @@ import {
   SchemaSettings,
   useCompile,
   ActionDesigner,
-  useSchemaDesigner,
+  useSchemaToolbar,
   useDesignable,
   SchemaInitializerOpenModeSchemaItems,
   SchemaSettingsSelectItem,
@@ -13,7 +13,7 @@ import {
 } from '@nocobase/client';
 import { ModalProps } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useField, useFieldSchema } from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import { useBulkEditTranslation } from './locale';
 
 const MenuGroup = (props) => {
@@ -89,7 +89,7 @@ const bulkEditactionSettings = new SchemaSettings({
           name: 'editButton',
           Component: ActionDesigner.ButtonEditor,
           useComponentProps() {
-            const { buttonEditorProps } = useSchemaDesigner();
+            const { buttonEditorProps } = useSchemaToolbar();
             return buttonEditorProps;
           },
         },
@@ -122,7 +122,7 @@ const bulkEditactionSettings = new SchemaSettings({
           sort: 100,
           Component: RemoveButton as any,
           useComponentProps() {
-            const { removeButtonProps } = useSchemaDesigner();
+            const { removeButtonProps } = useSchemaToolbar();
             return removeButtonProps;
           },
         },
