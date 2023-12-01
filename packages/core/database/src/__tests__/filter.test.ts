@@ -143,13 +143,23 @@ describe('filter', () => {
     });
 
     const userCreatedAt = user.get('createdAt');
-    const year = userCreatedAt.getFullYear();
-    const month = userCreatedAt.getMonth() + 1; // 月份从0开始，因此加1
-    const date = userCreatedAt.getDate();
+
+    function formatDate(date) {
+      const year = date.getFullYear();
+      let month = date.getMonth() + 1;
+      let day = date.getDate();
+
+      // 确保月份和日期始终是两位数
+      month = month < 10 ? '0' + month : month;
+      day = day < 10 ? '0' + day : day;
+
+      return `${year}-${month}-${day}`;
+    }
+
     const count = await PostCollection.repository.count({
       filter: {
         'user.createdAt': {
-          $dateOn: `${year}-${month}-${date}`,
+          $dateOn: formatDate(userCreatedAt),
         },
       },
     });
