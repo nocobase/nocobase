@@ -120,7 +120,7 @@ export class LocalizationManagementPlugin extends Plugin {
       if (resourceName === 'app' && actionName === 'getLang') {
         const custom = await this.resources.getResources(ctx.get('X-Locale') || 'en-US');
         const appLang = ctx.body;
-        const resources = {};
+        const resources = { ...appLang.resources };
         Object.keys(custom).forEach((key) => {
           const module = key.replace('resources.', '');
           const resource = appLang.resources[module];
