@@ -117,8 +117,6 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
         plugin: this,
       },
     });
-
-    initAuthenticators(this);
   }
 
   getInstallingData(options: any = {}) {
