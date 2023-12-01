@@ -42,12 +42,6 @@ export const BlockInitializers = {
           component: 'GridCardBlockInitializer',
         },
         {
-          key: 'calendar',
-          type: 'item',
-          title: '{{t("Calendar")}}',
-          component: 'CalendarBlockInitializer',
-        },
-        {
           key: 'kanban',
           type: 'item',
           title: '{{t("Kanban")}}',
