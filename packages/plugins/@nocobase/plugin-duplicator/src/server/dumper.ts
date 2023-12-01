@@ -460,6 +460,29 @@ export class Dumper extends AppMigrator {
       meta['inherits'] = lodash.uniq(collection.options.inherits);
     }
 
+    // @ts-ignore
+    const autoIncrAttr = collection.model.autoIncrementAttribute;
+
+    if (
+      autoIncrAttr &&
+      collection.model.rawAttributes[autoIncrAttr] &&
+      collection.model.rawAttributes[autoIncrAttr].autoIncrement
+    ) {
+      const queryInterface = app.db.queryInterface;
+      const autoIncrInfo = await queryInterface.getAutoIncrementInfo({
+        tableInfo: {
+          name: collection.model.tableName,
+          schema: collection.collectionSchema(),
+        },
+        fieldName: autoIncrAttr,
+      });
+
+      meta['autoIncrement'] = {
+        ...autoIncrInfo,
+        fieldName: autoIncrAttr,
+      };
+    }
+
     // write meta file
     await fsPromises.writeFile(path.resolve(collectionDataDir, 'meta'), JSON.stringify(meta), 'utf8');
   }

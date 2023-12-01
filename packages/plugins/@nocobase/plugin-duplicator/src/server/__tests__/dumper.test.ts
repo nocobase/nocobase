@@ -30,6 +30,79 @@ describe('dumper', () => {
     });
   });
 
+  describe('id seq', () => {
+    beforeEach(async () => {
+      await db.getRepository('collections').create({
+        values: {
+          name: 'tests',
+          fields: [
+            {
+              type: 'string',
+              name: 'name',
+            },
+          ],
+        },
+        context: {},
+      });
+
+      const Test = db.getCollection('tests');
+
+      for (let i = 0; i < 10; i++) {
+        await Test.repository.create({
+          values: {
+            name: `test${i}`,
+          },
+        });
+      }
+
+      const dumper = new Dumper(app);
+
+      const result = await dumper.dump({
+        dataTypes: new Set(['meta', 'config', 'business']),
+      });
+
+      const restorer = new Restorer(app, {
+        backUpFilePath: result.filePath,
+      });
+
+      await restorer.restore({
+        dataTypes: new Set(['meta', 'config', 'business']),
+      });
+    });
+
+    it('should reset id seq after restore collection', async () => {
+      if (!app.db.inDialect('postgres')) {
+        return;
+      }
+
+      const testCollection = db.getCollection('tests');
+
+      const sequenceNameResult = await app.db.sequelize.query(
+        `SELECT column_default
+           FROM information_schema.columns
+           WHERE table_name = '${testCollection.model.tableName}'
+             and table_schema = '${testCollection.collectionSchema()}'
+             and "column_name" = 'id';`,
+      );
+
+      const columnDefault = sequenceNameResult[0][0]['column_default'];
+
+      const regex = new RegExp(/nextval\('(.*)'::regclass\)/);
+      const match = regex.exec(columnDefault);
+
+      const sequenceName = match[1];
+
+      const sequenceCurrentValResult = await app.db.sequelize.query(
+        `select last_value
+           from ${sequenceName}`,
+      );
+      const sequenceCurrentVal = parseInt(sequenceCurrentValResult[0][0]['last_value']);
+      console.log(sequenceCurrentVal);
+
+      expect(sequenceCurrentVal).toBe(await app.db.getCollection('tests').repository.count());
+    });
+  });
+
   it('should restore parent collection', async () => {
     if (!db.inDialect('postgres')) {
       return;
@@ -136,6 +209,7 @@ describe('dumper', () => {
       filter: { type: 'update' },
       appends: ['changes'],
     });
+
     const changes = log.get('changes');
     expect(typeof changes[0].before).toBe('string');
   });
@@ -291,7 +365,7 @@ describe('dumper', () => {
 
     await db.sequelize.query(viewSQL);
 
-    db.getRepository('collections').create({
+    await db.getRepository('collections').create({
       values: {
         name: viewName,
         view: true,
@@ -436,6 +510,45 @@ describe('dumper', () => {
     expect(tableInfo.point).toBeDefined();
   });
 
+  it('should dump collection meta', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tests',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('tests').create({
+      values: [
+        {
+          name: 'test1',
+        },
+        {
+          name: 'test2',
+        },
+      ],
+    });
+
+    const dumper = new Dumper(app);
+    await dumper.dumpCollection({
+      name: 'tests',
+    });
+
+    const collectionDir = path.resolve(dumper.workDir, 'collections', 'tests');
+    const metaFile = path.resolve(collectionDir, 'meta');
+    const meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
+
+    expect(meta.name).toBe('tests');
+    const autoIncrement = meta.autoIncrement;
+    expect(autoIncrement).toBeDefined();
+  });
+
   it('should save dump meta to dump file', async () => {
     const dumper = new Dumper(app);
     const result = await dumper.dump({
@@ -473,7 +586,7 @@ describe('dumper', () => {
     });
 
     it('should throw error when file not exists', async () => {
-      expect(Dumper.getFileStatus('not_exists_file')).rejects.toThrowError();
+      await expect(Dumper.getFileStatus('not_exists_file')).rejects.toThrowError();
     });
   });
 

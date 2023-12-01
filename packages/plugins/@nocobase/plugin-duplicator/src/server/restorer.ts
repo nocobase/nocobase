@@ -318,6 +318,16 @@ export class Restorer extends AppMigrator {
 
     app.logger.info(`${collectionName} imported with ${rowsWithMeta.length} rows`);
 
+    if (meta.autoIncrement) {
+      const queryInterface = app.db.queryInterface;
+      await queryInterface.setAutoIncrementVal({
+        tableInfo: addSchemaTableName,
+        columnName: meta.autoIncrement.fieldName,
+        seqName: meta.autoIncrement.seqName,
+        currentVal: meta.autoIncrement.currentVal,
+      });
+    }
+
     this.importedCollections.push(collectionName);
   }
 
