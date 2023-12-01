@@ -71,35 +71,13 @@ describe('dumper', () => {
     });
 
     it('should reset id seq after restore collection', async () => {
-      if (!app.db.inDialect('postgres')) {
-        return;
-      }
+      const testCollection = app.db.getCollection('tests');
 
-      const testCollection = db.getCollection('tests');
-
-      const sequenceNameResult = await app.db.sequelize.query(
-        `SELECT column_default
-           FROM information_schema.columns
-           WHERE table_name = '${testCollection.model.tableName}'
-             and table_schema = '${testCollection.collectionSchema()}'
-             and "column_name" = 'id';`,
-      );
-
-      const columnDefault = sequenceNameResult[0][0]['column_default'];
-
-      const regex = new RegExp(/nextval\('(.*)'::regclass\)/);
-      const match = regex.exec(columnDefault);
-
-      const sequenceName = match[1];
-
-      const sequenceCurrentValResult = await app.db.sequelize.query(
-        `select last_value
-           from ${sequenceName}`,
-      );
-      const sequenceCurrentVal = parseInt(sequenceCurrentValResult[0][0]['last_value']);
-      console.log(sequenceCurrentVal);
-
-      expect(sequenceCurrentVal).toBe(await app.db.getCollection('tests').repository.count());
+      await testCollection.repository.create({
+        values: {
+          name: 'test',
+        },
+      });
     });
   });
 

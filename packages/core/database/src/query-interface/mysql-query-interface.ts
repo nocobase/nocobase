@@ -1,7 +1,7 @@
-import { Transactionable } from 'sequelize';
+import { Transaction, Transactionable } from 'sequelize';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
-import QueryInterface from './query-interface';
+import QueryInterface, { TableInfo } from './query-interface';
 
 export default class MysqlQueryInterface extends QueryInterface {
   constructor(db) {
@@ -85,5 +85,39 @@ export default class MysqlQueryInterface extends QueryInterface {
     const results = await this.db.sequelize.query(sql, { type: 'SELECT' });
 
     return results[0]['Create Table'];
+  }
+
+  async getAutoIncrementInfo(options: { tableInfo: TableInfo; fieldName?: string }): Promise<{
+    seqName?: string;
+    currentVal: number;
+  }> {
+    const { tableInfo } = options;
+    const tableName = tableInfo.name;
+
+    const sql = `SELECT AUTO_INCREMENT as currentVal
+                 FROM information_schema.tables
+                 WHERE table_schema = DATABASE()
+                   AND table_name = '${tableName}';`;
+
+    const results = await this.db.sequelize.query(sql, { type: 'SELECT' });
+
+    return {
+      currentVal: results[0]['currentVal'] as number,
+    };
+  }
+
+  async setAutoIncrementVal(options: {
+    tableInfo: TableInfo;
+    columnName: string;
+    seqName?: string;
+    currentVal: number;
+    transaction?: Transaction;
+  }): Promise<void> {
+    const { tableInfo, columnName, seqName, currentVal, transaction } = options;
+
+    const tableName = tableInfo.name;
+
+    const sql = `ALTER TABLE ${tableName} AUTO_INCREMENT = ${currentVal};`;
+    await this.db.sequelize.query(sql, { transaction });
   }
 }

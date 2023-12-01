@@ -61,7 +61,7 @@ export default abstract class QueryInterface {
     tableInfo: TableInfo;
     columnName: string;
     seqName?: string;
-    currentVal?: number;
+    currentVal: number;
     transaction?: Transaction;
   }): Promise<void>;
 }
