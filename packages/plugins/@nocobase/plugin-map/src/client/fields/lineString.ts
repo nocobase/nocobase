@@ -9,6 +9,7 @@ export const lineString: IField = {
   order: 2,
   title: generateNTemplate('Line'),
   description: generateNTemplate('Line'),
+  availableTypes: ['lineString'],
   sortable: true,
   default: {
     type: 'lineString',
