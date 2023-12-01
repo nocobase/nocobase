@@ -2,6 +2,7 @@ import { Switch } from 'antd';
 import React, { FC } from 'react';
 import { SchemaInitializerItemProps, SchemaInitializerItem } from './SchemaInitializerItem';
 import { useCompile } from '../../../schema-component';
+import { useSchemaInitializerItem } from '../context';
 
 export interface SchemaInitializerSwitchItemProps extends SchemaInitializerItemProps {
   checked?: boolean;
@@ -18,4 +19,9 @@ export const SchemaInitializerSwitch: FC<SchemaInitializerSwitchItemProps> = (pr
       </div>
     </SchemaInitializerItem>
   );
+};
+
+export const SchemaInitializerSwitchInternal = () => {
+  const itemConfig = useSchemaInitializerItem<SchemaInitializerSwitchItemProps>();
+  return <SchemaInitializerSwitch {...itemConfig} />;
 };
