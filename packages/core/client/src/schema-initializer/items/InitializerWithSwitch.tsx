@@ -13,7 +13,6 @@ export const InitializerWithSwitch = (props) => {
     passInRemove ?? item.remove,
   );
   const { insert } = useSchemaInitializer();
-
   return (
     <SchemaInitializerSwitch
       checked={exists}

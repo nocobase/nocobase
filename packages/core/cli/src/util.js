@@ -2,7 +2,7 @@ const net = require('net');
 const chalk = require('chalk');
 const execa = require('execa');
 const fg = require('fast-glob');
-const { dirname, join, resolve } = require('path');
+const { dirname, join, resolve, sep } = require('path');
 const { readFile, writeFile } = require('fs').promises;
 const { existsSync, mkdirSync, cpSync, writeFileSync } = require('fs');
 
@@ -54,8 +54,8 @@ exports.nodeCheck = () => {
   }
 };
 
-exports.run = (command, argv, options = {}) => {
-  return execa(command, argv, {
+exports.run = (command, args, options = {}) => {
+  return execa(command, args, {
     shell: true,
     stdio: 'inherit',
     ...options,
@@ -189,7 +189,10 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
   packages.forEach((packageFile) => {
     const packageJsonName = require(packageFile).name;
     const packageDir = dirname(packageFile);
-    const relativePath = packageDir.slice(cwdLength + 1).replace(/\\/, '/');
+    const relativePath = packageDir
+      .slice(cwdLength + 1)
+      .split(sep)
+      .join('/');
     paths[packageJsonName] = [`${relativePath}/src`];
     paths[`${packageJsonName}/client`] = [`${relativePath}/src/client`];
   });

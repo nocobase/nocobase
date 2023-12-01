@@ -25,7 +25,7 @@ export const SchemaInitializerItemContext = createContext<
     | 'sort'
     | 'componentProps'
   >
->({});
+>({} as any);
 SchemaInitializerItemContext.displayName = 'SchemaInitializerItemContext';
 
 export const useSchemaInitializerItem = <T = any>(): T => {
