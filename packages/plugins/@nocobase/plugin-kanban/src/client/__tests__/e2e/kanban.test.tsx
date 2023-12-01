@@ -172,23 +172,9 @@ test('configure action in kanban block', async ({ page, mockPage, mockCollection
   await page.getByRole('menuitem', { name: 'Created at' }).getByRole('switch').click();
 
   //拖拽看板
-
   const sourceElement = await page.getByLabel('block-item-Kanban.Card-general-kanban');
   await sourceElement.click();
   await page.getByLabel('drawer-Action.Container-general-View record-mask').click();
   const targetElement = await page.getByTestId('column-option2');
   await sourceElement.dragTo(targetElement);
-  //看板字段调整
-
-  //   await expect(page.getByTestId('column-option2').getByTestId('card-1')).toBeVisible();
-
-  //   try {
-  //     const [request] = await Promise.all([page.waitForRequest((request) => request.url().includes('api/general:move'))]);
-  //     const postData = request.postDataJSON();
-  //     //move请求参数符合预期
-  //     expect(postData.sourceId).toBe(1);
-  //     expect(postData.sortField).toBe('singleSelect_sort');
-  //   } catch {
-  //     console.log('error');
-  //   }
 });
