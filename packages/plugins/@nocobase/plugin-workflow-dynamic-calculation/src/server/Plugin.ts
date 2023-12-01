@@ -12,7 +12,7 @@ export default class extends Plugin {
       expression: ExpressionField,
     });
 
-    const workflowPlugin = this.app.getPlugin(WorkflowPlugin) as WorkflowPlugin;
+    const workflowPlugin = this.app.getPlugin('workflow') as WorkflowPlugin;
     this.workflow = workflowPlugin;
     workflowPlugin.instructions.register('dynamic-calculation', new DynamicCalculation(workflowPlugin));
   }

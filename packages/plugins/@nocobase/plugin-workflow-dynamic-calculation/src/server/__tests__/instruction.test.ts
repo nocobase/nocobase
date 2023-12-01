@@ -2,8 +2,7 @@ import path from 'path';
 
 import { MockServer } from '@nocobase/test';
 import { MockDatabase } from '@nocobase/database';
-
-import { testkit } from '@nocobase/plugin-workflow';
+import { getApp, sleep } from '@nocobase/plugin-workflow/testkit';
 
 import Plugin from '..';
 
@@ -14,7 +13,6 @@ describe('workflow > instructions > calculation', () => {
   let CategoryRepo;
   let WorkflowModel;
   let workflow;
-  const { getApp, sleep } = testkit;
 
   beforeEach(async () => {
     app = await getApp({

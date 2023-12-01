@@ -2,11 +2,9 @@ import path from 'path';
 
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { testkit } from '@nocobase/plugin-workflow';
+import { getApp, sleep } from '@nocobase/plugin-workflow/testkit';
 
 import Plugin from '..';
-
-const { getApp, sleep } = testkit;
 
 describe('workflow > instructions > aggregate', () => {
   let app: Application;

@@ -3,7 +3,8 @@ import path from 'path';
 import Database from '@nocobase/database';
 import UserPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
-import { EXECUTION_STATUS, JOB_STATUS, testkit } from '@nocobase/plugin-workflow';
+import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import { getApp, sleep } from '@nocobase/plugin-workflow/testkit';
 
 import Plugin from '..';
 
@@ -20,7 +21,6 @@ describe('workflow > instructions > manual', () => {
   let UserModel;
   let users;
   let UserJobModel;
-  const { getApp, sleep } = testkit;
 
   beforeEach(async () => {
     app = await getApp({

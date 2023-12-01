@@ -6,12 +6,11 @@ import { Gateway } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 
-import { testkit, EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import { getApp, sleep } from '@nocobase/plugin-workflow/testkit';
 
 import Plugin from '..';
 import { RequestConfig } from '../RequestInstruction';
-
-const { getApp, sleep } = testkit;
 
 const PORT = 12345;
 

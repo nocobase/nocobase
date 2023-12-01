@@ -2,11 +2,10 @@ import path from 'path';
 
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { testkit, EXECUTION_STATUS, JOB_STATUS, BRANCH_INDEX } from '@nocobase/plugin-workflow';
+import { EXECUTION_STATUS, JOB_STATUS, BRANCH_INDEX } from '@nocobase/plugin-workflow';
+import { getApp, sleep } from '@nocobase/plugin-workflow/testkit';
 
 import Plugin from '..';
-
-const { getApp, sleep } = testkit;
 
 describe('workflow > instructions > sql', () => {
   let app: Application;
