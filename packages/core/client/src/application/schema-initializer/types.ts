@@ -68,15 +68,22 @@ export type SchemaInitializerSubMenuType = {
   useChildren?: () => SchemaInitializerItemType[];
 } & SchemaInitializerItemBuiltInType<SchemaInitializerSubMenuProps>;
 
-export type SchemaInitializerItemType<T = any> =
+export type SchemaInitializerAllBuiltItemType =
   | SchemaInitializerItemDividerType
   | SchemaInitializerItemItemType
   | SchemaInitializerItemSwitchType
   | SchemaInitializerItemSelectType
   | SchemaInitializerItemGroupType
   | SchemaInitializerSubMenuType
-  | SchemaInitializerItemActionModalType
+  | SchemaInitializerItemActionModalType;
+
+export type SchemaInitializerItemType<T = any> =
+  | SchemaInitializerAllBuiltItemType
   | SchemaInitializerItemComponentType<T>;
+
+export type SchemaInitializerItemTypeWithoutName<T = any> =
+  | Omit<SchemaInitializerAllBuiltItemType, 'name'>
+  | Omit<SchemaInitializerItemComponentType<T>, 'name'>;
 
 export interface SchemaInitializerOptions<P1 = ButtonProps, P2 = {}> {
   name: string;

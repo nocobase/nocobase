@@ -10791,6 +10791,21 @@ dumi-theme-nocobase@^0.2.14:
     dayjs "^1.11.7"
     rc-drawer "^6.1.2"
 
+dumi-theme-nocobase@^0.2.17:
+  version "0.2.17"
+  resolved "https://registry.yarnpkg.com/dumi-theme-nocobase/-/dumi-theme-nocobase-0.2.17.tgz#4f8be141b7a3b877b2f1311dfa66a4fb050d33ec"
+  integrity sha512-RKFCJXO7j25sv/9jzvDFM8fHPpVTFsvIrdB6uRj+neU2pW/EMZDpWycxz4TlgT84IYK1PetnyrMFXFQJw7YdsA==
+  dependencies:
+    "@ant-design/icons" "^5.1.3"
+    "@babel/runtime" "^7.22.3"
+    "@ctrl/tinycolor" "^3.6.0"
+    "@emotion/react" "^11.11.0"
+    antd "^5.5.1"
+    antd-token-previewer "^2.0.0-alpha.6"
+    classnames "^2.3.2"
+    dayjs "^1.11.7"
+    rc-drawer "^6.1.2"
+
 dumi@^2.2.0:
   version "2.2.1"
   resolved "https://registry.npmmirror.com/dumi/-/dumi-2.2.1.tgz#3d31dc27a5c089c55287ae1975e8332e346bb4f3"

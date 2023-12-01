@@ -41,41 +41,41 @@ test.describe('color', () => {
 });
 
 test.describe('email', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'email', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'email', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('icon', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'icon', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'icon', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('single line text', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'singleLineText', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'singleLineText', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('integer', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'integer', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'integer', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('number', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'number', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'number', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('password', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'password', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'password', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('percent', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'percent', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'percent', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('phone', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'phone', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'phone', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('long text', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'longText', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'longText', blockType: 'viewing', mode: 'options' });
 });
 
 test.describe('URL', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'url', blockType: 'viewing' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'url', blockType: 'viewing', mode: 'options' });
 });

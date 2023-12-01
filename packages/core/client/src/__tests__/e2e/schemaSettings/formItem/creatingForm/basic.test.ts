@@ -66,7 +66,7 @@ test.describe('color', () => {
 });
 
 test.describe('email', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'email' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'email', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
@@ -126,7 +126,7 @@ test.describe('email', () => {
 });
 
 test.describe('icon', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'icon' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'icon', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
@@ -177,7 +177,7 @@ test.describe('icon', () => {
 });
 
 test.describe('single line text', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'singleLineText' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'singleLineText', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
@@ -256,7 +256,7 @@ test.describe('single line text', () => {
 });
 
 test.describe('integer', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'integer' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'integer', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
@@ -330,7 +330,7 @@ test.describe('integer', () => {
 });
 
 test.describe('number', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'number' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'number', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
@@ -406,7 +406,7 @@ test.describe('number', () => {
 });
 
 test.describe('password', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'password' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'password', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
@@ -477,7 +477,7 @@ test.describe('password', () => {
 });
 
 test.describe('percent', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'percent' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'percent', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
@@ -554,7 +554,7 @@ test.describe('percent', () => {
 });
 
 test.describe('phone', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'phone' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'phone', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
@@ -616,7 +616,7 @@ test.describe('phone', () => {
 });
 
 test.describe('long text', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'longText' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'longText', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
@@ -689,7 +689,7 @@ test.describe('long text', () => {
 });
 
 test.describe('URL', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'url' });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'url', mode: 'options' });
 
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({

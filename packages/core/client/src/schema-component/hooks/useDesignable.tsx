@@ -314,7 +314,7 @@ export class Designable {
       } else if (mergeKeys[key]) {
         Object.keys(schema[key]).forEach((key2) => {
           set(this.current, [key, key2], schema[key][key2]);
-          this.updateModel([replaceKeys[key], key2], schema[key][key2]);
+          this.updateModel([mergeKeys[key], key2], schema[key][key2]);
         });
       } else {
         this.current[key] = schema[key];
