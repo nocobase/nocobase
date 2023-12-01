@@ -2,7 +2,7 @@ import React, { useCallback, useState, useEffect } from 'react';
 import {
   SchemaSettings,
   ActionDesigner,
-  useSchemaDesigner,
+  useSchemaToolbar,
   useDesignable,
   useCompile,
   DefaultValueProvider,
@@ -189,7 +189,7 @@ const bulkUpdateActionSettings = new SchemaSettings({
           name: 'editButton',
           Component: ActionDesigner.ButtonEditor,
           useComponentProps() {
-            const { buttonEditorProps } = useSchemaDesigner();
+            const { buttonEditorProps } = useSchemaToolbar();
             return buttonEditorProps;
           },
         },
@@ -225,7 +225,7 @@ const bulkUpdateActionSettings = new SchemaSettings({
           sort: 100,
           Component: ActionDesigner.RemoveButton as any,
           useComponentProps() {
-            const { removeButtonProps } = useSchemaDesigner();
+            const { removeButtonProps } = useSchemaToolbar();
             return removeButtonProps;
           },
         },
