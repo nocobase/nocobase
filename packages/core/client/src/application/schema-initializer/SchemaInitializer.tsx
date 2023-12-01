@@ -8,14 +8,14 @@ export class SchemaInitializer<P1 = ButtonProps, P2 = {}> {
     return this.options.items;
   }
 
-  constructor(options: SchemaInitializerOptions<P1, P2> & { name: string }) {
+  constructor(options: SchemaInitializerOptions<P1, P2>) {
     this.options = Object.assign({ items: [] }, options);
     this.name = options.name;
   }
 
   add(name: string, item: Omit<SchemaInitializerItemType, 'name'>) {
     const arr = name.split('.');
-    const data = { ...item, name: arr[arr.length - 1] };
+    const data: any = { ...item, name: arr[arr.length - 1] };
     if (arr.length === 1) {
       const index = this.items.findIndex((item: any) => item.name === name);
       if (index === -1) {
@@ -27,7 +27,7 @@ export class SchemaInitializer<P1 = ButtonProps, P2 = {}> {
     }
 
     const parentName = arr.slice(0, -1).join('.');
-    const parentItem = this.get(parentName);
+    const parentItem: any = this.get(parentName);
     if (parentItem) {
       if (!parentItem.children) {
         parentItem.children = [];
@@ -71,7 +71,7 @@ export class SchemaInitializer<P1 = ButtonProps, P2 = {}> {
       }
       return;
     }
-    const parent = this.get(arr.slice(0, -1).join('.'));
+    const parent: any = this.get(arr.slice(0, -1).join('.'));
     if (parent && parent.children) {
       const name = arr[arr.length - 1];
       const index = parent.children.findIndex((item) => item.name === name);

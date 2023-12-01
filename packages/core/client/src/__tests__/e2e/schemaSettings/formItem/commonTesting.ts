@@ -123,7 +123,7 @@ export const commonTesting = ({
         await expect(page.getByRole('menuitem', { name: 'Edit tooltip' })).toBeVisible();
         await expect(page.getByRole('menuitem', { name: 'Pattern' })).not.toBeVisible();
       }
-      if (blockType === 'creating' && !fieldName.startsWith('oneTo') && !['attachment'].includes(fieldType)) {
+      if (blockType === 'creating' && !fieldName.startsWith('oneTo') && !['attachment'].includes(fieldName)) {
         await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
       }
       if (['editing', 'viewing'].includes(blockType)) {
