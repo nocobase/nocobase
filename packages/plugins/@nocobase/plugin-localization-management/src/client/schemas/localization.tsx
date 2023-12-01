@@ -38,8 +38,8 @@ const collection = {
             label: '{{t("Menu")}}',
           },
           {
-            value: 'Collection',
-            label: '{{t("Collection")}}',
+            value: 'Collections & Fields',
+            label: '{{t("Collections & Fields", {ns:"localization-management"})}}',
           },
         ],
       },

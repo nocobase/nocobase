@@ -10,6 +10,6 @@ export const EXTEND_MODULES = [
   },
   {
     value: NAMESPACE_COLLECTIONS,
-    label: 'Collection',
+    label: 'Collections & Fields',
   },
 ];
