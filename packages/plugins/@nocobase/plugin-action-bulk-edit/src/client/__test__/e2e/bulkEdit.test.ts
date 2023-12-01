@@ -1,30 +1,51 @@
-import { expect, test, oneEmptyTableBlockWithCustomizeActions } from '@nocobase/test/client';
+import {
+  expect,
+  test,
+  oneEmptyTableBlockWithCustomizeActions,
+  oneEmptyTableBlockWithActions,
+} from '@nocobase/test/client';
 import { generalWithDatetimeFields, oneEmptyGantt } from './utils';
 
 test.describe('places where bulk edit action can be created', () => {
   test('bulk edit in table block', async ({ page, mockPage }) => {
-    await mockPage(oneEmptyTableBlockWithCustomizeActions).goto();
+    await mockPage(oneEmptyTableBlockWithActions).goto();
     await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Customize right' }).click();
     await page.getByRole('menuitem', { name: 'Bulk edit' }).click();
-    await expect(page.getByLabel('action-Action-Bulk update-customize:bulkEdit-general-table')).toBeVisible();
+    await page.mouse.move(300, 0);
+    await expect(await page.getByLabel('Bulk edit')).toBeVisible();
   });
   test('bulk edit in gantt block', async ({ page, mockPage, mockRecords }) => {
     const nocoPage = await mockPage(oneEmptyGantt).waitForInit();
     await mockRecords('general', 3);
     await nocoPage.goto();
-    await page.getByRole('button', { name: 'Actions' }).hover();
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-general').hover();
+    await page.getByLabel('schema-initializer-ActionBar-GanttActionInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Customize right' }).click();
     await page.getByRole('menuitem', { name: 'Bulk edit' }).click();
-    await expect(page.getByLabel('action-Action-Bulk update-customize:bulkEdit-general-table')).toBeVisible();
+    await expect(await page.getByLabel('Bulk edit')).toBeVisible();
   });
 });
 
-test('Data will be updated && bulk edit configure', async ({ page, mockPage, mockRecords }) => {
+test('data will be updated && bulk edit configure', async ({ page, mockPage, mockRecords }) => {
   const nocoPage = await mockPage(oneEmptyTableBlockWithCustomizeActions).waitForInit();
   const data = await mockRecords('general', 3);
   await nocoPage.goto();
+  //   // open dialog
+  //   await page.getByLabel('action-Action-Bulk edit-customize:bulkEdit-general-table').click();
+  //   await page.getByLabel('schema-initializer-Tabs-TabPaneInitializersForBulkEditFormBlock-general').click();
+  //   await page.getByRole('textbox').click();
+  //   await page.getByRole('textbox').fill('test1');
+  //   await page.getByLabel('action-Action-Submit-general-table').click();
+
+  //   await expect(page.getByText('test1')).toBeVisible();
+
+  //   // add blocks
+  //   await page.getByLabel('schema-initializer-Grid-CreateFormBulkEditBlockInitializers-general').hover();
+  //   await page.getByText('Form').click();
+  //   await page.getByRole('menuitem', { name: 'Markdown' }).click();
+
+  //   await expect(page.getByLabel('block-item-CardItem-general-form')).toBeVisible();
+  //   await expect(page.getByLabel('block-item-Markdown.Void-general-markdown')).toBeVisible();
 
   //   await page.getByLabel('action-Action-Bulk update-customize:bulkUpdate-general-table').hover();
   //   await page.getByLabel('designer-schema-settings-Action-Action.Designer-general').hover();
