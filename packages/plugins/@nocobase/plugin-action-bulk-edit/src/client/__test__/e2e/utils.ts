@@ -1,4 +1,4 @@
-import { CollectionSetting, PageConfig, general } from '@nocobase/test/client';
+import { CollectionSetting, PageConfig } from '@nocobase/test/client';
 
 /**
  * 1. 创建一个名为 general 的 collection，其包含 时间、Percent 类型的字段
@@ -18,15 +18,6 @@ export const generalWithDatetimeFields: CollectionSetting[] = [
         },
       },
       {
-        name: 'singleLineText2',
-        interface: 'input',
-        uiSchema: {
-          type: 'string',
-          'x-component': 'Input',
-          title: 'Single line text2',
-        },
-      },
-      {
         name: 'startDatetime',
         interface: 'datetime',
         uiSchema: {
@@ -37,32 +28,12 @@ export const generalWithDatetimeFields: CollectionSetting[] = [
         },
       },
       {
-        name: 'startDatetime2',
-        interface: 'datetime',
-        uiSchema: {
-          type: 'string',
-          'x-component': 'DatePicker',
-          title: 'Start date time2',
-          required: true,
-        },
-      },
-      {
         name: 'endDatetime',
         interface: 'datetime',
         uiSchema: {
           type: 'string',
           'x-component': 'DatePicker',
           title: 'End date time',
-          required: true,
-        },
-      },
-      {
-        name: 'endDatetime2',
-        interface: 'datetime',
-        uiSchema: {
-          type: 'string',
-          'x-component': 'DatePicker',
-          title: 'End date time2',
           required: true,
         },
       },
@@ -107,20 +78,6 @@ export const generalWithDatetimeFields: CollectionSetting[] = [
           },
           'x-component': 'Percent',
           title: 'Percent',
-        },
-      },
-      {
-        name: 'percent2',
-        type: 'float',
-        interface: 'percent',
-        uiSchema: {
-          'x-component-props': {
-            step: '0.01',
-            stringMode: true,
-            addonAfter: '%',
-          },
-          'x-component': 'Percent',
-          title: 'Percent2',
         },
       },
     ],
@@ -354,10 +311,10 @@ export const oneEmptyGantt: PageConfig = {
 };
 
 /**
- * 页面中有一个空的 Table 区块，并且有这些按钮：Add new / Delete / Refresh / Add record / Filter / view / edit / delete / duplicate
+ * 一个空的 Table 区块，并且有这些按钮：Bulk edit
  */
-export const oneEmptyTableBlockWithDuplicateActions: PageConfig = {
-  collections: general,
+export const oneEmptyTableBlockWithCustomizeActions: PageConfig = {
+  collections: generalWithDatetimeFields,
   pageSchema: {
     _isJSONSchemaObject: true,
     version: '2.0',
@@ -418,7 +375,87 @@ export const oneEmptyTableBlockWithDuplicateActions: PageConfig = {
                             marginBottom: 'var(--nb-spacing)',
                           },
                         },
-                        properties: {},
+                        properties: {
+                          yt5ua92rqvb: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            title: '{{t("Bulk edit")}}',
+                            'x-designer': 'Action.Designer',
+                            'x-component': 'Action',
+                            'x-action': 'customize:bulkEdit',
+                            'x-action-settings': {
+                              updateMode: 'selected',
+                            },
+                            'x-component-props': {
+                              openMode: 'drawer',
+                              icon: 'EditOutlined',
+                            },
+                            'x-align': 'right',
+                            'x-decorator': 'ACLActionProvider',
+                            'x-acl-action': 'update',
+                            'x-acl-action-props': {
+                              skipScopeCheck: true,
+                            },
+                            properties: {
+                              drawer: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                title: '{{t("Bulk edit")}}',
+                                'x-component': 'Action.Container',
+                                'x-component-props': {
+                                  className: 'nb-action-popup',
+                                },
+                                properties: {
+                                  tabs: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Tabs',
+                                    'x-component-props': {},
+                                    'x-initializer': 'TabPaneInitializersForBulkEditFormBlock',
+                                    properties: {
+                                      tab1: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'void',
+                                        title: '{{t("Bulk edit")}}',
+                                        'x-component': 'Tabs.TabPane',
+                                        'x-designer': 'Tabs.Designer',
+                                        'x-component-props': {},
+                                        properties: {
+                                          grid: {
+                                            _isJSONSchemaObject: true,
+                                            version: '2.0',
+                                            type: 'void',
+                                            'x-component': 'Grid',
+                                            'x-initializer': 'CreateFormBulkEditBlockInitializers',
+                                            'x-uid': '3gjmo60w4de',
+                                            'x-async': false,
+                                            'x-index': 1,
+                                          },
+                                        },
+                                        'x-uid': '2q284n9l6w2',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 's07s8zva7id',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': '0n86l5rtgpb',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': 'k8sk9wa8sv6',
+                            'x-async': false,
+                            'x-index': 6,
+                          },
+                        },
                         'x-uid': 'znrsshrlsna',
                         'x-async': false,
                         'x-index': 1,
@@ -456,83 +493,6 @@ export const oneEmptyTableBlockWithDuplicateActions: PageConfig = {
                                 'x-component': 'Space',
                                 'x-component-props': {
                                   split: '|',
-                                },
-                                properties: {
-                                  '659x6w2yydk': {
-                                    _isJSONSchemaObject: true,
-                                    version: '2.0',
-                                    type: 'void',
-                                    'x-action': 'duplicate',
-                                    'x-acl-action': 'create',
-                                    title: '{{ t("Duplicate") }}',
-                                    'x-designer': 'Action.Designer',
-                                    'x-component': 'Action.Link',
-                                    'x-decorator': 'ACLActionProvider',
-                                    'x-component-props': {
-                                      openMode: 'drawer',
-                                      component: 'DuplicateAction',
-                                    },
-                                    'x-designer-props': {
-                                      linkageAction: true,
-                                    },
-                                    properties: {
-                                      drawer: {
-                                        _isJSONSchemaObject: true,
-                                        version: '2.0',
-                                        type: 'void',
-                                        title: '{{ t("Duplicate") }}',
-                                        'x-component': 'Action.Container',
-                                        'x-component-props': {
-                                          className: 'nb-action-popup',
-                                        },
-                                        properties: {
-                                          tabs: {
-                                            _isJSONSchemaObject: true,
-                                            version: '2.0',
-                                            type: 'void',
-                                            'x-component': 'Tabs',
-                                            'x-component-props': {},
-                                            'x-initializer': 'TabPaneInitializers',
-                                            properties: {
-                                              tab1: {
-                                                _isJSONSchemaObject: true,
-                                                version: '2.0',
-                                                type: 'void',
-                                                title: '{{t("Duplicate")}}',
-                                                'x-component': 'Tabs.TabPane',
-                                                'x-designer': 'Tabs.Designer',
-                                                'x-component-props': {},
-                                                properties: {
-                                                  grid: {
-                                                    _isJSONSchemaObject: true,
-                                                    version: '2.0',
-                                                    type: 'void',
-                                                    'x-component': 'Grid',
-                                                    'x-initializer': 'CreateFormBlockInitializers',
-                                                    'x-uid': 'vtcnkzcaeec',
-                                                    'x-async': false,
-                                                    'x-index': 1,
-                                                  },
-                                                },
-                                                'x-uid': 'kbq4w0dmexr',
-                                                'x-async': false,
-                                                'x-index': 1,
-                                              },
-                                            },
-                                            'x-uid': '1v4k1kjpbi5',
-                                            'x-async': false,
-                                            'x-index': 1,
-                                          },
-                                        },
-                                        'x-uid': 'ok9iw50ycdh',
-                                        'x-async': false,
-                                        'x-index': 1,
-                                      },
-                                    },
-                                    'x-uid': 'sjg3udjdnc1',
-                                    'x-async': false,
-                                    'x-index': 4,
-                                  },
                                 },
                                 'x-uid': 'ijgo5usyzbp',
                                 'x-async': false,
