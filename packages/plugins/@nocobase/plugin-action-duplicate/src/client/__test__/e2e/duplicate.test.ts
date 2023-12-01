@@ -38,7 +38,7 @@ test('direct duplicate', async ({ page, mockPage, mockCollections, mockRecords }
   await page.getByRole('menuitem', { name: 'Duplicate mode' }).click();
   await page.getByLabel('Direct duplicate').check();
   await page.getByRole('button', { name: 'singleLineText (Duplicate)' }).click();
-  await page.getByRole('button', { name: 'OK' }).click();
+  await page.getByRole('button', { name: 'OK', exact: true }).click();
 
   try {
     const [request] = await Promise.all([
@@ -53,9 +53,9 @@ test('direct duplicate', async ({ page, mockPage, mockCollections, mockRecords }
   }
 });
 
-test('Copy into the form and continue to fill in', async ({ page, mockPage, mockCollections, mockRecords }) => {
+test('copy into the form and continue to fill in', async ({ page, mockPage, mockRecord }) => {
   const nocoPage = await mockPage(oneEmptyTableBlockWithDuplicateActions).waitForInit();
-  const data = await mockRecords('general', 3);
+  const data = await mockRecord('general');
   await nocoPage.goto();
   await expect(await page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0')).toBeVisible();
   await page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0').hover();
@@ -85,25 +85,41 @@ test('Copy into the form and continue to fill in', async ({ page, mockPage, mock
   await page.getByRole('menuitem', { name: 'Duplicate mode' }).click();
   await page.getByLabel('action-Action.Link-Sync from form fields-general').click();
   //表单中的字段自动选中,hasOne 和 hasMany 的关系字段只能是复制,belongsTo 和 belongsToMany 是引用
-  await expect(page.getByRole('button', { name: 'singleLineText (Duplicate)' })).toBeVisible();
+  //select关系字段组件只适用于引用关系
+  const defaultCheckedNodesText = await page.evaluate(() => {
+    const defaultCheckedNodes = Array.from(document.querySelectorAll('.ant-tree-treenode-checkbox-checked'));
+    return defaultCheckedNodes.map((node) => node.textContent.trim());
+  });
+  const expectedArray = [
+    'manyToMany (Reference)',
+    'singleLineText (Duplicate)',
+    'oneToOneBelongsTo (Reference)',
+    'manyToOne (Reference)',
+  ];
+  //选中的字段符合预期
+  expect(expectedArray).toEqual(expect.arrayContaining(defaultCheckedNodesText));
+  await page.getByRole('button', { name: 'OK' }).click();
 
+  await page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0').click();
   await expect(
-    page.getByRole('button', { name: 'singleLineText (Duplicate)' }).locator('.ant-tree-checkbox-checked'),
-  ).toBeChecked();
-  await expect(page.getByRole('button', { name: 'oneToOneBelongsTo (Reference)' })).toBeChecked();
-  await expect(page.getByRole('button', { name: 'oneToOneHasOne (Duplicate)' })).not.toBeChecked();
-  await expect(page.getByRole('button', { name: 'oneToMany (Duplicate)' })).not.toBeChecked();
-  await expect(page.getByRole('button', { name: 'manyToOne (Reference)' })).toBeChecked();
-  await expect(page.getByRole('button', { name: 'manyToMany (Reference)' })).toBeChecked();
-  //字段组件从 select 调整为 sub-form 后,关系就从引用变成了复制
-
+    await page
+      .getByLabel('block-item-CollectionField-general-form-general.singleLineText')
+      .getByRole('textbox')
+      .inputValue(),
+  ).toBe(data['singleLineText']);
   try {
     const [request] = await Promise.all([
       page.waitForRequest((request) => request.url().includes('api/general:create')),
+      page.getByLabel('action-Action-Submit-submit-general-form').click(),
     ]);
     const postData = request.postDataJSON();
-    //直接复制,复制的数据符合预期
-    expect(postData.singleLineText).toEqual(data[0].singleLineText);
+    const manyToMany = postData.manyToMany.map((v) => v.id);
+    const expectManyToMany = data.manyToMany.map((v) => v.id);
+    //提交的数据符合预期
+    expect(postData.singleLineText).toEqual(data.singleLineText);
+    expect(postData.manyToOne['id']).toBe(data.manyToOne['id']);
+    expect(postData.oneToOneBelongsTo['id']).toBe(data.oneToOneBelongsTo['id']);
+    expect(manyToMany).toEqual(expect.arrayContaining(expectManyToMany));
   } catch {
     console.log('error');
   }
