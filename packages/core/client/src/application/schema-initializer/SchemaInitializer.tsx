@@ -1,5 +1,5 @@
 import { ButtonProps } from 'antd';
-import { SchemaInitializerItemType, SchemaInitializerOptions } from './types';
+import { SchemaInitializerItemType, SchemaInitializerItemTypeWithoutName, SchemaInitializerOptions } from './types';
 
 export class SchemaInitializer<P1 = ButtonProps, P2 = {}> {
   options: SchemaInitializerOptions<P1, P2>;
@@ -13,7 +13,7 @@ export class SchemaInitializer<P1 = ButtonProps, P2 = {}> {
     this.name = options.name;
   }
 
-  add(name: string, item: Omit<SchemaInitializerItemType, 'name'>) {
+  add(name: string, item: SchemaInitializerItemTypeWithoutName) {
     const arr = name.split('.');
     const data: any = { ...item, name: arr[arr.length - 1] };
     if (arr.length === 1) {

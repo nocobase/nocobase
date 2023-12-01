@@ -36,7 +36,7 @@ export const SchemaSettingsBlockTitleItem = function BlockTitleItem() {
         } as ISchema
       }
       onSubmit={({ title }) => {
-        dn.shallowMerge({
+        dn.deepMerge({
           'x-decorator-props': {
             title,
           },

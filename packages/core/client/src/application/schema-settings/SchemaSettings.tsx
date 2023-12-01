@@ -1,4 +1,4 @@
-import { SchemaSettingOptions, SchemaSettingsItemType, SchemaSettingItemComponentType } from './types';
+import { SchemaSettingOptions, SchemaSettingsItemType, SchemaSettingsItemTypeWithoutName } from './types';
 
 export class SchemaSettings<T = {}> {
   options: SchemaSettingOptions<T>;
@@ -13,7 +13,7 @@ export class SchemaSettings<T = {}> {
     this.name = options.name;
   }
 
-  add(name: string, item: Omit<SchemaSettingsItemType, 'name'> | Omit<SchemaSettingItemComponentType, 'name'>) {
+  add(name: string, item: SchemaSettingsItemTypeWithoutName) {
     const arr = name.split('.');
     const data: any = { ...item, name: arr[arr.length - 1] };
     if (arr.length === 1) {

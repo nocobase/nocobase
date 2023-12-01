@@ -77,8 +77,7 @@ export interface SchemaSettingItemComponentType<T = {}> extends SchemaSettingsIt
   Component: string | ComponentType<T>;
 }
 
-export type SchemaSettingsItemType =
-  | SchemaSettingItemComponentType
+export type SchemaSettingItemAllBuiltType =
   | SchemaSettingItemDividerProps
   | SchemaSettingItemRemoveType
   | SchemaSettingItemActionModalType
@@ -88,5 +87,9 @@ export type SchemaSettingsItemType =
   | SchemaSettingItemModalType
   | SchemaSettingItemItemType
   | SchemaSettingItemSelectType
-  | SchemaSettingItemGroupType
-  | SchemaSettingItemSubMenuType;
+  | SchemaSettingItemGroupType;
+
+export type SchemaSettingsItemType = SchemaSettingItemComponentType | SchemaSettingItemAllBuiltType;
+export type SchemaSettingsItemTypeWithoutName =
+  | Omit<SchemaSettingItemComponentType, 'name'>
+  | Omit<SchemaSettingItemAllBuiltType, 'name'>;
