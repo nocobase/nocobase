@@ -5,8 +5,9 @@ import { Icon } from '../../../icon';
 import { useCompile } from '../../../schema-component';
 import { useSchemaInitializerItem } from '../context';
 import { useAriaAttributeOfMenuItem, useSchemaInitializerMenuItems } from '../hooks';
-import { SchemaInitializerInternalSubMenu } from './SchemaInitializerSubMenu';
+import { SchemaInitializerMenu } from './SchemaInitializerSubMenu';
 import { useSchemaInitializerStyles } from './style';
+import { MenuProps } from 'antd';
 
 export interface SchemaInitializerItemProps {
   style?: React.CSSProperties;
@@ -29,7 +30,7 @@ export const SchemaInitializerItem = React.forwardRef<any, SchemaInitializerItem
 
   if (items && items.length > 0) {
     return (
-      <SchemaInitializerInternalSubMenu
+      <SchemaInitializerMenu
         items={[
           {
             key: name,
@@ -44,7 +45,7 @@ export const SchemaInitializerItem = React.forwardRef<any, SchemaInitializerItem
             children: childrenItems,
           },
         ]}
-      ></SchemaInitializerInternalSubMenu>
+      ></SchemaInitializerMenu>
     );
   }
 

@@ -6,7 +6,7 @@ import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCurrentAppInfo } from '../../appInfo';
 import { RecordProvider, useRecord } from '../../record-provider';
-import { Action, useAttach, useCompile } from '../../schema-component';
+import { Action, useAttach, useCompile, SchemaComponent } from '../../schema-component';
 import { Input } from '../../schema-component/antd/input';
 import {
   isDeleteButtonDisabled,
@@ -61,9 +61,9 @@ const CurrentFields = (props) => {
   const { t } = useTranslation();
   const { setState } = useResourceActionContext();
   const { resource, targetKey } = props.collectionResource || {};
-  const { [targetKey]: filterByTk, titleField } = useRecord();
+  const { [targetKey]: filterByTk, titleField, template } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
-  const { refreshCM, isTitleField } = useCollectionManager();
+  const { refreshCM, isTitleField, getTemplate } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -269,17 +269,18 @@ const InheritFields = (props) => {
 export const CollectionFields = () => {
   const compile = useCompile();
   const field = useField<Field>();
-  const { name } = useRecord();
+  const { name, template } = useRecord();
   const {
     data: { database },
   } = useCurrentAppInfo();
-  const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields } = useCollectionManager();
+  const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields, getTemplate } =
+    useCollectionManager();
   const form = useMemo(() => createForm(), []);
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
   const { t } = useTranslation();
   const collectionResource = useResourceContext();
   const { refreshAsync } = useContext(ResourceActionContext);
-
+  const targetTemplate = getTemplate(template);
   const inherits = getInheritCollections(name);
 
   const columns: TableColumnProps<any>[] = [
@@ -428,6 +429,14 @@ export const CollectionFields = () => {
             <Action {...deleteProps} />
             <SyncFieldsAction {...syncProps} />
             <SyncSQLFieldsAction refreshCMList={refreshAsync} />
+            <SchemaComponent
+              schema={{
+                type: 'object',
+                properties: {
+                  ...targetTemplate.configureActions,
+                },
+              }}
+            />
             <AddCollectionField {...addProps} />
           </Space>
           <Table

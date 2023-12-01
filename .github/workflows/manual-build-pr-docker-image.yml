@@ -40,7 +40,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: Dockerfile.acr
+          file: Dockerfile
           build-args: |
             VERDACCIO_URL=http://localhost:4873/
             COMMIT_HASH=${GITHUB_SHA}

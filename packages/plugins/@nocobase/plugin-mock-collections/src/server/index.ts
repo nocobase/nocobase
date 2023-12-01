@@ -195,9 +195,9 @@ export class PluginMockCollectionsServer extends Plugin {
               if (collection.options.template === 'file') {
                 return mockAttachment();
               }
-              const values = {};
+              const v = {};
               if (collection.options.sortable) {
-                values['sort'] = i + 1;
+                v['sort'] = i + 1;
               }
               for (const field of collection.fields.values()) {
                 if (!field.options.interface) {
@@ -208,19 +208,28 @@ export class PluginMockCollectionsServer extends Plugin {
                 }
                 const fn = fieldInterfaces[field.options.interface];
                 if (fn?.mock) {
-                  values[field.name] = await fn.mock(field.options, { mockCollectionData, maxDepth, depth });
+                  v[field.name] = await fn.mock(field.options, { mockCollectionData, maxDepth, depth });
                 }
               }
-              return values;
+              return v;
             }),
           );
           return count == 1 ? items[0] : items;
         };
         const repository = ctx.db.getRepository(resourceName);
-        const data = await mockCollectionData(resourceName, count);
+        let size = count;
+        if (Array.isArray(values)) {
+          size = values.length;
+        }
+        const data = await mockCollectionData(resourceName, size);
         // ctx.body = data;
         ctx.body = await repository.create({
-          values: (Array.isArray(data) ? data : [data]).map((item) => ({ ...item, ...values })),
+          values: (Array.isArray(data) ? data : [data]).map((item, index) => {
+            if (Array.isArray(values)) {
+              return { ...item, ...values[index] };
+            }
+            return { ...item, ...values };
+          }),
         });
         await next();
       },

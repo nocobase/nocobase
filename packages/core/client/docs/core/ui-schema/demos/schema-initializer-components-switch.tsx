@@ -33,7 +33,7 @@ const AddNewButton = () => {
   return (
     <SchemaInitializerSwitch
       checked={exists}
-      title={'Add new'}
+      title={'Add new - Component方式'}
       onClick={() => {
         // 如果已插入，则移除
         if (exists) {
@@ -54,6 +54,27 @@ const myInitializer = new SchemaInitializer({
     {
       name: 'Add New',
       Component: AddNewButton,
+    },
+    {
+      name: 'Add New2',
+      type: 'switch',
+      useComponentProps() {
+        const { exists, remove } = useCurrentSchema(schema[actionKey], actionKey);
+
+        const { insert } = useSchemaInitializer();
+        return {
+          checked: exists,
+          title: 'Add new - type 方式',
+          onClick() {
+            // 如果已插入，则移除
+            if (exists) {
+              return remove();
+            }
+            // 新插入子节点
+            insert(schema);
+          },
+        };
+      },
     },
   ],
 });
