@@ -471,7 +471,7 @@ export class Dumper extends AppMigrator {
       const queryInterface = app.db.queryInterface;
       const autoIncrInfo = await queryInterface.getAutoIncrementInfo({
         tableInfo: {
-          name: collection.model.tableName,
+          tableName: collection.model.tableName,
           schema: collection.collectionSchema(),
         },
         fieldName: autoIncrAttr,

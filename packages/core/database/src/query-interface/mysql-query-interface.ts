@@ -77,10 +77,10 @@ export default class MysqlQueryInterface extends QueryInterface {
     return sql;
   }
 
-  async showTableDefinition(tableInfo: { name: string; schema?: string }): Promise<any> {
-    const { name } = tableInfo;
+  async showTableDefinition(tableInfo: TableInfo): Promise<any> {
+    const { tableName } = tableInfo;
 
-    const sql = `SHOW CREATE TABLE ${name}`;
+    const sql = `SHOW CREATE TABLE ${tableName}`;
 
     const results = await this.db.sequelize.query(sql, { type: 'SELECT' });
 
@@ -92,12 +92,11 @@ export default class MysqlQueryInterface extends QueryInterface {
     currentVal: number;
   }> {
     const { tableInfo } = options;
-    const tableName = tableInfo.name;
 
     const sql = `SELECT AUTO_INCREMENT as currentVal
                  FROM information_schema.tables
                  WHERE table_schema = DATABASE()
-                   AND table_name = '${tableName}';`;
+                   AND table_name = '${tableInfo.tableName}';`;
 
     const results = await this.db.sequelize.query(sql, { type: 'SELECT' });
 
@@ -115,9 +114,7 @@ export default class MysqlQueryInterface extends QueryInterface {
   }): Promise<void> {
     const { tableInfo, columnName, seqName, currentVal, transaction } = options;
 
-    const tableName = tableInfo.name;
-
-    const sql = `ALTER TABLE ${tableName} AUTO_INCREMENT = ${currentVal};`;
+    const sql = `ALTER TABLE ${tableInfo.tableName} AUTO_INCREMENT = ${currentVal};`;
     await this.db.sequelize.query(sql, { transaction });
   }
 }

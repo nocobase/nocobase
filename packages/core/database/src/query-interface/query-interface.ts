@@ -3,7 +3,7 @@ import { Collection } from '../collection';
 import Database from '../database';
 
 export type TableInfo = {
-  name: string;
+  tableName: string;
   schema?: string;
 };
 

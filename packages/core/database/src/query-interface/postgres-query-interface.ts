@@ -23,7 +23,7 @@ export default class PostgresQueryInterface extends QueryInterface {
 
     await this.db.sequelize.query(
       `alter table ${this.db.utils.quoteTable({
-        tableName: tableInfo.name,
+        tableName: tableInfo.tableName,
         schema: tableInfo.schema,
       })}
             alter column "${columnName}" set default nextval('${seqName}')`,
@@ -49,7 +49,7 @@ export default class PostgresQueryInterface extends QueryInterface {
     const sequenceNameResult = await this.db.sequelize.query(
       `SELECT column_default
            FROM information_schema.columns
-           WHERE table_name = '${tableInfo.name}'
+           WHERE table_name = '${tableInfo.tableName}'
              and table_schema = '${tableInfo.schema || 'public'}'
              and "column_name" = '${fieldName}';`,
     );
@@ -179,7 +179,7 @@ export default class PostgresQueryInterface extends QueryInterface {
     }
   }
 
-  async showTableDefinition(tableInfo: { name: string; schema?: string }) {
+  async showTableDefinition(tableInfo: TableInfo) {
     const showFunc = `
 CREATE OR REPLACE FUNCTION show_create_table(p_schema text, p_table_name text)
 RETURNS text AS
@@ -200,7 +200,7 @@ $BODY$
     await this.db.sequelize.query(showFunc, { type: 'RAW' });
 
     const res = await this.db.sequelize.query(
-      `SELECT show_create_table('${tableInfo.schema}', '${tableInfo.name || 'public'}')`,
+      `SELECT show_create_table('${tableInfo.schema || 'public'}', '${tableInfo.tableName}')`,
       {
         type: 'SELECT',
       },
