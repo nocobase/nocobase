@@ -1,9 +1,10 @@
-import { Plugin, SchemaInitializerContext, SchemaInitializerProvider } from '@nocobase/client';
+import { Plugin, SchemaInitializerContext, SchemaInitializerProvider, registerTemplate } from '@nocobase/client';
 import { CalendarBlockProvider, useCalendarBlockProps } from './schema-initializer/CalendarBlockProvider';
 import React, { useContext, useEffect } from 'react';
 import { CalendarActionInitializers, CalendarFormActionInitializers } from './schema-initializer/initializers';
 import { CalendarBlockInitializer, RecordAssociationCalendarBlockInitializer } from './schema-initializer/items';
 import { generateNTemplate } from '../locale';
+import { calendar } from './collection-templates/calendar';
 
 const CalendarProvider = React.memo((props) => {
   const items = useContext<any>(SchemaInitializerContext);
@@ -38,6 +39,7 @@ export class CalendarPlugin extends Plugin {
 
     this.app.addScopes({ useCalendarBlockProps });
     this.app.use(CalendarProvider);
+    registerTemplate('calendar', calendar);
   }
 }
 

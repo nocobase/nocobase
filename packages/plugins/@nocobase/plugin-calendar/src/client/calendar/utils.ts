@@ -1,13 +1,13 @@
-import { i18n } from '@nocobase/client';
 import dayjs from 'dayjs';
 import { get } from 'lodash';
 import solarLunar from 'solarlunar-es';
+import { i18nt } from '../../locale';
 
 export const toEvents = (data: any[], fieldNames: any) => {
   return data?.map((item) => {
     return {
       id: get(item, fieldNames.id || 'id'),
-      title: get(item, fieldNames.title) || i18n.t('Untitle'),
+      title: get(item, fieldNames.title) || i18nt('Untitle'),
       start: new Date(get(item, fieldNames.start)),
       end: new Date(get(item, fieldNames.end || fieldNames.start)),
     };

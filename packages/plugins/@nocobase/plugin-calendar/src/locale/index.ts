@@ -3,8 +3,8 @@ import { useTranslation as useT } from 'react-i18next';
 
 export const NAMESPACE = 'calendar';
 
-export function lang(key: string) {
-  return i18n.t(key, { ns: NAMESPACE });
+export function i18nt(key: string, options: any = {}) {
+  return i18n.t(key, { ns: NAMESPACE, ...options });
 }
 
 export function generateNTemplate(key: string) {

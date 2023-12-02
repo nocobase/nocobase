@@ -1,9 +1,9 @@
-import { getConfigurableProperties } from './properties';
-import { ICollectionTemplate } from './types';
+import { ICollectionTemplate, getConfigurableProperties } from '@nocobase/client';
+import { generateNTemplate } from '../../locale';
 
 export const calendar: ICollectionTemplate = {
   name: 'calendar',
-  title: '{{t("Calendar collection")}}',
+  title: generateNTemplate('Calendar collection'),
   order: 2,
   color: 'orange',
   default: {
