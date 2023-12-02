@@ -1,8 +1,6 @@
-import path from 'path';
-
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { getApp, sleep } from '@nocobase/plugin-workflow/testkit';
+import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin from '..';
 
@@ -18,7 +16,6 @@ describe('workflow > instructions > aggregate', () => {
   beforeEach(async () => {
     app = await getApp({
       plugins: [Plugin],
-      collectionPath: path.join(__dirname, './collections'),
     });
 
     db = app.db;

@@ -1,9 +1,7 @@
-import path from 'path';
-
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
-import { getApp, sleep } from '@nocobase/plugin-workflow/testkit';
+import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin from '..';
 
@@ -18,7 +16,6 @@ describe('workflow > instructions > loop', () => {
   beforeEach(async () => {
     app = await getApp({
       plugins: [Plugin],
-      collectionPath: path.join(__dirname, './collections'),
     });
     plugin = app.pm.get('workflow');
 

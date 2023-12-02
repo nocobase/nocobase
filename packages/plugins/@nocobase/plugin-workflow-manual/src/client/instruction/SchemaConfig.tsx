@@ -208,7 +208,7 @@ function AssignedFieldValues() {
       initialValues: lodash.cloneDeep(initialValues),
       values: lodash.cloneDeep(initialValues),
     });
-  }, []);
+  }, [fieldSchema]);
   const upLevelActiveFields = useFormActiveFields();
 
   const title = t('Assign field values');
@@ -459,7 +459,7 @@ export function SchemaConfig({ value, onChange }) {
           },
         },
       }),
-    [],
+    [value],
   );
 
   const refresh = useCallback(

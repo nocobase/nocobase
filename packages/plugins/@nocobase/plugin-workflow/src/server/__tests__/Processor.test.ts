@@ -1,10 +1,10 @@
 import Database from '@nocobase/database';
-import { Application } from '@nocobase/server';
-import { getApp, sleep } from '.';
+import { MockServer } from '@nocobase/test';
+import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '../constants';
 
 describe('workflow > Processor', () => {
-  let app: Application;
+  let app: MockServer;
   let db: Database;
   let PostRepo;
   let WorkflowModel;

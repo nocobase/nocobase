@@ -390,7 +390,7 @@ function ManualActionStatusProvider({ value, children }) {
       button.disabled = true;
       button.visible = userJob.status === value && userJob.result._ === buttonSchema.name;
     }
-  }, [userJob, value, button]);
+  }, [userJob, value, button, buttonSchema.name]);
 
   return <ManualActionStatusContext.Provider value={value}>{children}</ManualActionStatusContext.Provider>;
 }
@@ -451,7 +451,7 @@ function FlowContextProvider(props) {
         });
         return;
       });
-  }, [id]);
+  }, [api, id]);
 
   const upstreams = useAvailableUpstreams(flowContext?.nodes.find((item) => item.id === node.id));
   const nodeComponents = upstreams.reduce(

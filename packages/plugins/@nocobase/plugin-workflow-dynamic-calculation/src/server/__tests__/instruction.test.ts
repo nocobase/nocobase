@@ -2,7 +2,7 @@ import path from 'path';
 
 import { MockServer } from '@nocobase/test';
 import { MockDatabase } from '@nocobase/database';
-import { getApp, sleep } from '@nocobase/plugin-workflow/testkit';
+import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin from '..';
 
@@ -17,7 +17,7 @@ describe('workflow > instructions > calculation', () => {
   beforeEach(async () => {
     app = await getApp({
       plugins: [Plugin],
-      collectionPath: path.join(__dirname, 'collections'),
+      collectionsPath: path.join(__dirname, 'collections'),
     });
 
     db = app.db;
@@ -41,9 +41,9 @@ describe('workflow > instructions > calculation', () => {
   describe('dynamic expression', () => {
     it('dynamic expression field in current table', async () => {
       const n1 = await workflow.createNode({
-        type: 'calculation',
+        type: 'dynamic-calculation',
         config: {
-          dynamic: '{{$context.data.category}}',
+          expression: '{{$context.data.category}}',
           scope: '{{$context.data}}',
         },
       });
@@ -79,9 +79,9 @@ describe('workflow > instructions > calculation', () => {
       });
 
       const n2 = await workflow.createNode({
-        type: 'calculation',
+        type: 'dynamic-calculation',
         config: {
-          dynamic: `{{$jobsMapByNodeKey.${n1.key}}}`,
+          expression: `{{$jobsMapByNodeKey.${n1.key}}}`,
           scope: '{{$context.data}}',
         },
         upstreamId: n1.id,

@@ -1,5 +1,3 @@
-import path from 'path';
-
 import jwt from 'jsonwebtoken';
 
 import { Gateway } from '@nocobase/server';
@@ -7,16 +5,17 @@ import Database from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 
 import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
-import { getApp, sleep } from '@nocobase/plugin-workflow/testkit';
+import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin from '..';
 import { RequestConfig } from '../RequestInstruction';
 
+const HOST = 'localhost';
 const PORT = 12345;
 
-const URL_DATA = `http://localhost:${PORT}/api/data`;
-const URL_400 = `http://localhost:${PORT}/api/400`;
-const URL_TIMEOUT = `http://localhost:${PORT}/api/timeout`;
+const URL_DATA = `http://${HOST}:${PORT}/api/data`;
+const URL_400 = `http://${HOST}:${PORT}/api/400`;
+const URL_TIMEOUT = `http://${HOST}:${PORT}/api/timeout`;
 
 describe('workflow > instructions > request', () => {
   let app: MockServer;
@@ -30,11 +29,10 @@ describe('workflow > instructions > request', () => {
   beforeEach(async () => {
     app = await getApp({
       plugins: ['users', 'auth', Plugin],
-      collectionPath: path.join(__dirname, './collections'),
       resourcer: {
         prefix: '/api',
       },
-      manual: true,
+      autoStart: false,
     });
 
     app.use(async (ctx, next) => {
@@ -59,7 +57,7 @@ describe('workflow > instructions > request', () => {
 
     Gateway.getInstance().start({
       port: PORT,
-      host: 'localhost',
+      host: HOST,
     });
 
     await app.start();

@@ -36,6 +36,7 @@
     "@nocobase/plugin-collection-manager": "0.x",
     "@nocobase/plugin-error-handler": "0.x",
     "@nocobase/plugin-users": "0.x",
+    "@nocobase/plugin-workflow-test": "0.x",
     "@nocobase/resourcer": "0.x",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",

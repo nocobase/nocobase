@@ -27,10 +27,10 @@ function useFlowContextData(dataSource) {
         {},
       ),
     }),
-    [execution],
+    [execution?.context, execution?.jobs, nodesKeyMap],
   );
 
-  const result = useMemo(() => parse(dataSource)(data), [execution]);
+  const result = useMemo(() => parse(dataSource)(data), [data, dataSource]);
   return result;
 }
 

@@ -1,10 +1,8 @@
-import path from 'path';
-
 import Database from '@nocobase/database';
 import UserPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
-import { getApp, sleep } from '@nocobase/plugin-workflow/testkit';
+import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin from '..';
 
@@ -25,7 +23,6 @@ describe('workflow > instructions > manual', () => {
   beforeEach(async () => {
     app = await getApp({
       plugins: ['users', 'auth', Plugin],
-      collectionPath: path.join(__dirname, 'collections'),
     });
     await app.getPlugin('auth').install();
     agent = app.agent();

@@ -1,12 +1,8 @@
-import { CollectionOptions } from '@nocobase/database';
+import { extendCollection } from '@nocobase/database';
 
-export default {
+export default extendCollection({
   name: 'categories',
   fields: [
-    {
-      type: 'string',
-      name: 'title',
-    },
     {
       type: 'string',
       name: 'engine',
@@ -19,9 +15,5 @@ export default {
       type: 'text',
       name: 'expression',
     },
-    {
-      type: 'hasMany',
-      name: 'posts',
-    },
   ],
-} as CollectionOptions;
+});

@@ -9,6 +9,7 @@
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@ant-design/icons": "5.x",
+    "@nocobase/plugin-workflow-test": ">=0.16.0-alpha.3",
     "react": "18.x",
     "react-i18next": "^11.15.1"
   },
