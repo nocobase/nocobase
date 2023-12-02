@@ -17,7 +17,6 @@
     "@formily/core": "2.x",
     "lodash": "^4.17.21",
     "react": "^18.2.0",
-    "react-i18next": "^11.15.1",
     "dayjs": "^1.11.8",
     "antd-style": "3.4.5",
     "cron-parser": "4.4.0",

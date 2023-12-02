@@ -9562,12 +9562,6 @@ cron-parser@4.4.0:
   dependencies:
     luxon "^1.28.0"
 
-cron-parser@^4.6.0:
-  version "4.8.1"
-  resolved "https://registry.npmmirror.com/cron-parser/-/cron-parser-4.8.1.tgz#47062ea63d21d78c10ddedb08ea4c5b6fc2750fb"
-  dependencies:
-    luxon "^3.2.1"
-
 cron@^2.3.1:
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/cron/-/cron-2.3.1.tgz#71caa566ffef60ada9183b8677df4afa9a214ad7"
