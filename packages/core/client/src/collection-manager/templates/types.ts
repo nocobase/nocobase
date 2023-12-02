@@ -18,6 +18,8 @@ export interface ICollectionTemplate {
   divider?: boolean;
   /** 模板描述 */
   description?: string;
+  /**配置字段中的操作按钮 */
+  configureActions?: Record<string, ISchema>;
 }
 
 interface AvailableFieldInterfacesInclude {

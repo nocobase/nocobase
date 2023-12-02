@@ -38,27 +38,6 @@ describe('actions', () => {
     await app.destroy();
   });
 
-  // it('should login user with password', async () => {
-  //   const { INIT_ROOT_EMAIL, INIT_ROOT_PASSWORD } = process.env;
-
-  //   let response = await agent.resource('users').check();
-  //   expect(response.body.data.id).toBeUndefined();
-
-  //   response = await agent.post('/users:signin').send({
-  //     email: INIT_ROOT_EMAIL,
-  //     password: INIT_ROOT_PASSWORD,
-  //   });
-
-  //   expect(response.statusCode).toEqual(200);
-
-  //   const data = response.body.data;
-  //   const token = data.token;
-  //   expect(token).toBeDefined();
-
-  //   response = await agent.get('/users:check').set({ Authorization: 'Bearer ' + token });
-  //   expect(response.body.data.id).toBeDefined();
-  // });
-
   it('update profile', async () => {
     const res1 = await agent.resource('users').updateProfile({
       filterByTk: adminUser.id,

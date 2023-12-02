@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-custom-request",
-  "version": "0.16.0-alpha.4",
+  "version": "0.16.0-alpha.5",
   "main": "dist/server/index.js",
   "displayName": "Custom request",
   "displayName.zh-CN": "自定义请求",

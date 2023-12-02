@@ -52,7 +52,10 @@ export const CollectionSelect = connect(
         popupMatchSelectWidth={false}
         {...others}
         showSearch
-        filterOption={(input, option) => (option?.label ?? '').includes(input)}
+        filterOption={(input, option) =>
+          (option?.label.toLowerCase() ?? '').includes(input.toLocaleLowerCase()) ||
+          (option?.value.toString().toLowerCase() ?? '').includes(input.toLocaleLowerCase())
+        }
         options={options}
       />
     );

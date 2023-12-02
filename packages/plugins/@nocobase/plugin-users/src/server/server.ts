@@ -1,29 +1,19 @@
 import { Collection, Op } from '@nocobase/database';
-import { HandlerType } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
-import { Registry, parse } from '@nocobase/utils';
+import { parse } from '@nocobase/utils';
 import { resolve } from 'path';
 
 import { namespace } from './';
 import * as actions from './actions/users';
-import initAuthenticators from './authenticators';
-import { JwtOptions, JwtService } from './jwt-service';
 import { enUS, zhCN } from './locale';
-import { parseToken } from './middlewares';
 
 export interface UserPluginConfig {
   name?: string;
-  jwt: JwtOptions;
 }
 
 export default class UsersPlugin extends Plugin<UserPluginConfig> {
-  public jwtService: JwtService;
-
-  public authenticators: Registry<HandlerType> = new Registry();
-
   constructor(app, options) {
     super(app, options);
-    this.jwtService = new JwtService(options?.jwt || {});
   }
 
   async beforeLoad() {
@@ -94,8 +84,6 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       this.app.resourcer.registerActionHandler(`users:${key}`, action);
     }
 
-    // this.app.resourcer.use(parseToken, { tag: 'parseToken' });
-
     this.app.acl.addFixedParams('users', 'destroy', () => {
       return {
         filter: {
@@ -112,13 +100,9 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       };
     });
 
-    const publicActions = ['check', 'signin', 'signup', 'lostpassword', 'resetpassword', 'getUserByResetToken'];
-    const loggedInActions = ['signout', 'updateProfile', 'changePassword'];
+    const loggedInActions = ['updateProfile'];
 
-    publicActions.forEach((action) => this.app.acl.allow('users', action));
     loggedInActions.forEach((action) => this.app.acl.allow('users', action, 'loggedIn'));
-
-    this.app.on('beforeStart', () => this.initVerification());
   }
 
   async load() {
@@ -133,8 +117,6 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
         plugin: this,
       },
     });
-
-    initAuthenticators(this);
   }
 
   getInstallingData(options: any = {}) {
@@ -160,7 +142,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       return;
     }
 
-    const user = await User.repository.create({
+    await User.repository.create({
       values: {
         email: rootEmail,
         password: rootPassword,
@@ -173,85 +155,5 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     if (repo) {
       await repo.db2cm('users');
     }
-  }
-
-  // TODO(module): should move to preset or dynamic configuration panel
-  async initVerification() {
-    const verificationPlugin = this.app.getPlugin('verification') as any;
-    if (!verificationPlugin) {
-      return;
-    }
-    const systemSettingsRepo = this.db.getRepository('systemSettings');
-    const settings = await systemSettingsRepo.findOne();
-    if (!settings.smsAuthEnabled) {
-      return;
-    }
-
-    verificationPlugin.interceptors.register('users:signin', {
-      manual: true,
-      getReceiver(ctx) {
-        return ctx.action.params.values.phone;
-      },
-      expiresIn: 120,
-      validate: async (ctx, phone) => {
-        if (!phone) {
-          throw new Error(ctx.t('Not a valid cellphone number, please re-enter'));
-        }
-        const User = this.db.getCollection('users');
-        const exists = await User.model.count({
-          where: {
-            phone,
-          },
-        });
-        if (!exists) {
-          throw new Error(ctx.t('The phone number is not registered, please register first', { ns: namespace }));
-        }
-
-        return true;
-      },
-    });
-
-    verificationPlugin.interceptors.register('users:signup', {
-      getReceiver(ctx) {
-        return ctx.action.params.values.phone;
-      },
-      expiresIn: 120,
-      validate: async (ctx, phone) => {
-        if (!phone) {
-          throw new Error(ctx.t('Not a valid cellphone number, please re-enter', { ns: namespace }));
-        }
-        const User = this.db.getCollection('users');
-        const exists = await User.model.count({
-          where: {
-            phone,
-          },
-        });
-        if (exists) {
-          throw new Error(ctx.t('The phone number has been registered, please login directly', { ns: namespace }));
-        }
-
-        return true;
-      },
-    });
-
-    this.authenticators.register('sms', (ctx, next) =>
-      verificationPlugin.intercept(ctx, async () => {
-        const { values } = ctx.action.params;
-
-        const User = ctx.db.getCollection('users');
-        const user = await User.model.findOne({
-          where: {
-            phone: values.phone,
-          },
-        });
-        if (!user) {
-          return ctx.throw(404, ctx.t('The phone number is incorrect, please re-enter', { ns: namespace }));
-        }
-
-        ctx.state.currentUser = user;
-
-        return next();
-      }),
-    );
   }
 }
