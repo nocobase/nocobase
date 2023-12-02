@@ -3,10 +3,10 @@ import { Modal, Radio, Space, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useTranslation } from 'react-i18next';
 import { DeleteEventContext } from './Calendar';
 import { formatDate } from './utils';
 import { useActionContext, useRecord, useFilterByTk, useBlockRequestContext } from '@nocobase/client';
+import { useTranslation } from '../../locale';
 const { Text } = Typography;
 
 export const DeleteEvent = observer(

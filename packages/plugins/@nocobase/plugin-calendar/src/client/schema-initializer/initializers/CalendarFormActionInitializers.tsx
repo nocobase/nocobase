@@ -1,8 +1,9 @@
 import { useCollection } from '@nocobase/client';
+import { generateNTemplate } from '../../../locale';
 
 // 表单的操作配置
 export const CalendarFormActionInitializers = {
-  title: '{{t("Configure actions")}}',
+  title: generateNTemplate('Configure actions'),
   icon: 'SettingOutlined',
   style: {
     marginLeft: 8,
@@ -10,11 +11,11 @@ export const CalendarFormActionInitializers = {
   items: [
     {
       type: 'itemGroup',
-      title: '{{t("Enable actions")}}',
+      title: generateNTemplate('Enable actions'),
       children: [
         {
           type: 'item',
-          title: '{{t("Edit")}}',
+          title: generateNTemplate('Edit'),
           component: 'UpdateActionInitializer',
           schema: {
             'x-component': 'Action',
@@ -30,7 +31,7 @@ export const CalendarFormActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{t("Delete")}}',
+          title: generateNTemplate('Delete'),
           component: 'DestroyActionInitializer',
           schema: {
             'x-component': 'Action',
@@ -43,7 +44,7 @@ export const CalendarFormActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{t("Delete Event")}}',
+          title: generateNTemplate('Delete Event'),
           component: 'DeleteEventActionInitializer',
           schema: {
             'x-component': 'Action',
@@ -56,7 +57,7 @@ export const CalendarFormActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{t("Print")}}',
+          title: generateNTemplate('Print'),
           component: 'PrintActionInitializer',
           schema: {
             'x-component': 'Action',
@@ -70,15 +71,15 @@ export const CalendarFormActionInitializers = {
     },
     {
       type: 'subMenu',
-      title: '{{t("Customize")}}',
+      title: generateNTemplate('Customize'),
       children: [
         {
           type: 'item',
-          title: '{{t("Popup")}}',
+          title: generateNTemplate('Popup'),
           component: 'CustomizeActionInitializer',
           schema: {
             type: 'void',
-            title: '{{ t("Popup") }}',
+            title: generateNTemplate('Popup'),
             'x-action': 'customize:popup',
             'x-designer': 'Action.Designer',
             'x-component': 'Action',
@@ -88,7 +89,7 @@ export const CalendarFormActionInitializers = {
             properties: {
               drawer: {
                 type: 'void',
-                title: '{{ t("Popup") }}',
+                title: generateNTemplate('Popup'),
                 'x-component': 'Action.Container',
                 'x-component-props': {
                   className: 'nb-action-popup',
@@ -102,7 +103,7 @@ export const CalendarFormActionInitializers = {
                     properties: {
                       tab1: {
                         type: 'void',
-                        title: '{{t("Details")}}',
+                        title: generateNTemplate('Details'),
                         'x-component': 'Tabs.TabPane',
                         'x-designer': 'Tabs.Designer',
                         'x-component-props': {},
@@ -124,10 +125,10 @@ export const CalendarFormActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{t("Update record")}}',
+          title: generateNTemplate('Update record'),
           component: 'CustomizeActionInitializer',
           schema: {
-            title: '{{ t("Update record") }}',
+            title: generateNTemplate('Update record'),
             'x-component': 'Action',
             'x-designer': 'Action.Designer',
             'x-acl-action': 'update',
@@ -137,7 +138,7 @@ export const CalendarFormActionInitializers = {
               onSuccess: {
                 manualClose: true,
                 redirecting: false,
-                successMessage: '{{t("Updated successfully")}}',
+                successMessage: generateNTemplate('Updated successfully'),
               },
             },
             'x-component-props': {
@@ -151,7 +152,7 @@ export const CalendarFormActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{t("Custom request")}}',
+          title: generateNTemplate('Custom request'),
           component: 'CustomRequestInitializer',
           visible: function useVisible() {
             const collection = useCollection();

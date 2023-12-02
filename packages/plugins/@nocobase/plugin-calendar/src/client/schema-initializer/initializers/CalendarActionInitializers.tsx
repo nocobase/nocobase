@@ -1,21 +1,22 @@
 import { useCollection } from '@nocobase/client';
+import { generateNTemplate } from '../../../locale';
 
 // 日历的操作配置
 export const CalendarActionInitializers = {
-  title: '{{t("Configure actions")}}',
+  title: generateNTemplate('Configure actions'),
   icon: 'SettingOutlined',
   style: { marginLeft: 8 },
   items: [
     {
       type: 'itemGroup',
-      title: '{{t("Enable actions")}}',
+      title: generateNTemplate('Enable actions'),
       children: [
         {
           type: 'item',
-          title: '{{t("Today")}}',
+          title: generateNTemplate('Today'),
           component: 'ActionInitializer',
           schema: {
-            title: '{{t("Today")}}',
+            title: generateNTemplate('Today'),
             'x-component': 'CalendarV2.Today',
             'x-action': `calendar:today`,
             'x-align': 'left',
@@ -23,10 +24,10 @@ export const CalendarActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{t("Turn pages")}}',
+          title: generateNTemplate('Turn pages'),
           component: 'ActionInitializer',
           schema: {
-            title: '{{t("Turn pages")}}',
+            title: generateNTemplate('Turn pages'),
             'x-component': 'CalendarV2.Nav',
             'x-action': `calendar:nav`,
             'x-align': 'left',
@@ -34,10 +35,10 @@ export const CalendarActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{t("Title")}}',
+          title: generateNTemplate('Title'),
           component: 'ActionInitializer',
           schema: {
-            title: '{{t("Title")}}',
+            title: generateNTemplate('Title'),
             'x-component': 'CalendarV2.Title',
             'x-action': `calendar:title`,
             'x-align': 'left',
@@ -45,10 +46,10 @@ export const CalendarActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{t("Select view")}}',
+          title: generateNTemplate('Select view'),
           component: 'ActionInitializer',
           schema: {
-            title: '{{t("Select view")}}',
+            title: generateNTemplate('Select view'),
             'x-component': 'CalendarV2.ViewSelect',
             'x-action': `calendar:viewSelect`,
             'x-align': 'right',
@@ -57,7 +58,7 @@ export const CalendarActionInitializers = {
         },
         {
           type: 'item',
-          title: "{{t('Filter')}}",
+          title: generateNTemplate('Filter'),
           component: 'FilterActionInitializer',
           schema: {
             'x-align': 'right',
@@ -65,7 +66,7 @@ export const CalendarActionInitializers = {
         },
         {
           type: 'item',
-          title: '{{ t("Add new") }}',
+          title: generateNTemplate('Add new'),
           component: 'CreateActionInitializer',
           schema: {
             'x-align': 'right',

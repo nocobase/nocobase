@@ -1,6 +1,5 @@
 import { useField, useFieldSchema } from '@formily/react';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { useCalendarBlockContext } from '../schema-initializer/CalendarBlockProvider';
 import {
   useFormBlockContext,
@@ -15,6 +14,7 @@ import {
   FixedBlockDesignerItem,
   removeNullCondition,
 } from '@nocobase/client';
+import { useTranslation } from '../../locale';
 
 export const CalendarDesigner = () => {
   const field = useField();

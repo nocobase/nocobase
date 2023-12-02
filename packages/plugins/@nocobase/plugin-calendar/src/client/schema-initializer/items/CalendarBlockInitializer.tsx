@@ -10,8 +10,8 @@ import {
   useGlobalTheme,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
-import { useTranslation } from 'react-i18next';
 import { createCalendarBlockSchema } from '../utils';
+import { useTranslation } from '../../../locale';
 
 export const CalendarBlockInitializer = (props) => {
   const { insert } = props;

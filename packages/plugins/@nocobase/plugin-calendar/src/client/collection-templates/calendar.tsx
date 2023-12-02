@@ -18,24 +18,24 @@ export const calendar: ICollectionTemplate = {
         type: 'string',
         uiSchema: {
           type: 'string',
-          title: '{{t("Repeats")}}',
+          title: generateNTemplate('Repeats'),
           'x-component': 'CronSet',
           'x-component-props': 'allowClear',
           enum: [
             {
-              label: '{{t("Daily")}}',
+              label: generateNTemplate('Daily'),
               value: '0 0 0 * * ?',
             },
             {
-              label: '{{t("Weekly")}}',
+              label: generateNTemplate('Weekly'),
               value: 'every_week',
             },
             {
-              label: '{{t("Monthly")}}',
+              label: generateNTemplate('Monthly'),
               value: 'every_month',
             },
             {
-              label: '{{t("Yearly")}}',
+              label: generateNTemplate('Yearly'),
               value: 'every_year',
             },
           ],

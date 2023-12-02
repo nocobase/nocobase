@@ -2,8 +2,6 @@ import { TableOutlined } from '@ant-design/icons';
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
 import React, { useContext } from 'react';
-import { useTranslation } from 'react-i18next';
-
 import {
   useSchemaTemplateManager,
   useCollectionManager,
@@ -15,6 +13,7 @@ import {
   useRecordCollectionDataSourceItems,
 } from '@nocobase/client';
 import { createCalendarBlockSchema } from '../utils';
+import { useTranslation } from '../../../locale';
 
 export const RecordAssociationCalendarBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;

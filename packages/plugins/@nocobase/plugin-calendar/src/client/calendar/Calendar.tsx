@@ -8,7 +8,6 @@ import get from 'lodash/get';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Calendar as BigCalendar, View, dayjsLocalizer } from 'react-big-calendar';
 import * as dates from 'react-big-calendar/lib/utils/dates';
-import { useTranslation } from 'react-i18next';
 import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
 import GlobalStyle from './global.style';
@@ -16,7 +15,7 @@ import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
 import { ActionContextProvider, RecordProvider, useProps, i18n } from '@nocobase/client';
-import { i18nt } from '../../locale';
+import { i18nt, useTranslation } from '../../locale';
 
 const Weeks = ['month', 'week', 'day'] as View[];
 const localizer = dayjsLocalizer(dayjs);

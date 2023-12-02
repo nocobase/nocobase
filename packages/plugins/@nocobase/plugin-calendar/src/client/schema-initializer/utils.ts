@@ -1,5 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { generateNTemplate } from '../../locale';
 
 export const createCalendarBlockSchema = (options) => {
   const { collection, resource, fieldNames, ...others } = options;
@@ -51,7 +52,7 @@ export const createCalendarBlockSchema = (options) => {
                 'x-component-props': {
                   className: 'nb-action-popup',
                 },
-                title: '{{ t("View record") }}',
+                title: generateNTemplate('View record'),
                 properties: {
                   tabs: {
                     type: 'void',
@@ -64,7 +65,7 @@ export const createCalendarBlockSchema = (options) => {
                     properties: {
                       tab1: {
                         type: 'void',
-                        title: '{{t("Details")}}',
+                        title: generateNTemplate('Details'),
                         'x-component': 'Tabs.TabPane',
                         'x-designer': 'Tabs.Designer',
                         'x-component-props': {},
