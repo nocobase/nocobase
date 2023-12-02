@@ -88,7 +88,7 @@ export default class SqliteQueryInterface extends QueryInterface {
     return sql;
   }
 
-  showTableDefinition(tableInfo: { name: string; schema?: string }): Promise<any> {
+  showTableDefinition(tableInfo: TableInfo): Promise<any> {
     return Promise.resolve(undefined);
   }
 
@@ -98,7 +98,7 @@ export default class SqliteQueryInterface extends QueryInterface {
   }> {
     const { tableInfo } = options;
 
-    const tableName = tableInfo.name;
+    const tableName = tableInfo.tableName;
 
     const sql = `SELECT seq
                  FROM sqlite_sequence
@@ -128,7 +128,7 @@ export default class SqliteQueryInterface extends QueryInterface {
   }): Promise<void> {
     const { tableInfo, columnName, seqName, currentVal, transaction } = options;
 
-    const tableName = tableInfo.name;
+    const tableName = tableInfo.tableName;
 
     const sql = `UPDATE sqlite_sequence
                  SET seq = ${currentVal}
