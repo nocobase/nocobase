@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow-parallel",
-  "displayName": "Workflow: parallel node",
+  "displayName": "Workflow: Parallel node",
   "displayName.zh-CN": "工作流：并行分支节点",
   "description": "Could be used for parallel execution of branch processes in the workflow.",
   "description.zh-CN": "用于在工作流中需要并行执行的分支流程。",

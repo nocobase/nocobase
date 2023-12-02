@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow-form-trigger",
-  "displayName": "Workflow: form trigger",
+  "displayName": "Workflow: Form trigger",
   "displayName.zh-CN": "工作流：表单触发器",
   "description": "Bind form buttons to trigger workflow events when submitting.",
   "description.zh-CN": "可对表单按钮绑定，在提交时触发对应的工作流事件。",
