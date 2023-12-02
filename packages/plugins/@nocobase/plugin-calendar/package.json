@@ -9,7 +9,21 @@
   "main": "./dist/server/index.js",
   "types": "./dist/server/index.d.ts",
   "devDependencies": {
-    "swagger-ui-dist": "^5.3.1"
+    "react-big-calendar": "^1.8.1",
+    "@ant-design/icons": "5.x",
+    "@formily/antd-v5": "1.x",
+    "@formily/react": "2.x",
+    "@formily/shared": "2.x",
+    "@formily/core": "2.x",
+    "lodash": "^4.17.21",
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1",
+    "dayjs": "^1.11.8",
+    "antd-style": "3.4.5",
+    "cron-parser": "4.4.0",
+    "react-js-cron": "^3.1.0",
+    "solarlunar-es": "^1.0.9",
+    "antd": "5.x"
   },
   "peerDependencies": {
     "@nocobase/client": "0.x",

@@ -34,7 +34,6 @@
     "antd-style": "3.4.5",
     "axios": "^0.26.1",
     "classnames": "^2.3.1",
-    "cron-parser": "^4.6.0",
     "cronstrue": "^2.11.0",
     "file-saver": "^2.0.5",
     "flat": "^5.0.2",
@@ -46,7 +45,6 @@
     "mathjs": "^10.6.0",
     "mermaid": "9.4.3",
     "react-beautiful-dnd": "^13.1.0",
-    "react-big-calendar": "^1.8.1",
     "react-drag-listview": "^0.1.9",
     "react-error-boundary": "^4.0.10",
     "react-helmet": "^6.1.0",
@@ -59,7 +57,6 @@
     "react-router-dom": "^6.11.2",
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.10.0",
-    "solarlunar-es": "^1.0.9",
     "use-deep-compare-effect": "^1.8.1"
   },
   "peerDependencies": {
