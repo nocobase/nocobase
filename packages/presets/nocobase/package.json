@@ -45,7 +45,7 @@
     "@nocobase/plugin-users": "0.16.0-alpha.5",
     "@nocobase/plugin-verification": "0.16.0-alpha.5",
     "@nocobase/plugin-workflow": "0.16.0-alpha.5",
-    "@nocobase/plugin-workflow-aggragate": "0.16.0-alpha.5",
+    "@nocobase/plugin-workflow-aggregate": "0.16.0-alpha.5",
     "@nocobase/plugin-workflow-delay": "0.16.0-alpha.5",
     "@nocobase/plugin-workflow-dynamic-calculation": "0.16.0-alpha.5",
     "@nocobase/plugin-workflow-form-trigger": "0.16.0-alpha.5",
