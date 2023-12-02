@@ -174,6 +174,13 @@ export class Restorer extends AppMigrator {
     if (!this.decompressed) await decompress(backupFilePath, this.workDir);
   }
 
+  async readCollectionMeta(collectionName: string) {
+    const dir = this.workDir;
+    const collectionMetaPath = path.resolve(dir, 'collections', collectionName, 'meta');
+    const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
+    return JSON.parse(metaContent);
+  }
+
   async importCollection(options: {
     name: string;
     insert?: boolean;
@@ -254,10 +261,10 @@ export class Restorer extends AppMigrator {
 
       if (meta.inherits) {
         for (const inherit of lodash.uniq(meta.inherits)) {
-          const tableNameQuoted = db.sequelize
-            .getQueryInterface()
-            .quoteIdentifiers(`${addSchemaTableName.schema}.${addSchemaTableName.tableName}`);
-          const sql = `ALTER TABLE ${tableNameQuoted} INHERIT "${inherit}";`;
+          const parentMeta = await this.readCollectionMeta(inherit as string);
+          const sql = `ALTER TABLE ${app.db.utils.quoteTable(addSchemaTableName)} INHERIT ${app.db.utils.quoteTable(
+            parentMeta.tableName,
+          )};`;
           await db.sequelize.query(sql);
         }
       }
