@@ -50,5 +50,6 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 export * from './variable';
+export { genStyleHook } from './__builtins__';
 
 import './index.less';
