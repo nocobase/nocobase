@@ -22,8 +22,11 @@ export default class PostgresQueryInterface extends QueryInterface {
     }
 
     await this.db.sequelize.query(
-      `alter table ${this.db.utils.quoteTable(tableInfo)}
-            alter column id set default nextval('${seqName}')`,
+      `alter table ${this.db.utils.quoteTable({
+        tableName: tableInfo.name,
+        schema: tableInfo.schema,
+      })}
+            alter column "${columnName}" set default nextval('${seqName}')`,
       {
         transaction,
       },

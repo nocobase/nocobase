@@ -322,7 +322,7 @@ export class Restorer extends AppMigrator {
       const queryInterface = app.db.queryInterface;
       await queryInterface.setAutoIncrementVal({
         tableInfo: {
-          name: meta.tableName,
+          name: isPlainObject(meta.tableName) ? meta.tableName.tableName : meta.tableName,
           schema: meta.schema,
         },
         columnName: meta.autoIncrement.fieldName,
