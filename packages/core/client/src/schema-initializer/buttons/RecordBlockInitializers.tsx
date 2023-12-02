@@ -97,6 +97,7 @@ const useRelationFields = () => {
               field,
               component: 'RecordAssociationFormBlockInitializer',
             },
+            // TODO: This one should be append in the calendar plugin
             {
               key: `${field.name}_calendar`,
               type: 'item',
