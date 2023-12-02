@@ -1,11 +1,10 @@
 import { lodash } from '@nocobase/utils';
-import { FlowNodeModel, JOB_STATUS } from '@nocobase/plugin-workflow';
 
 export default {
   echo: {
-    run({ config = {} }: FlowNodeModel, { result }, processor) {
+    run({ config = {} }: any, { result }, processor) {
       return {
-        status: JOB_STATUS.RESOLVED,
+        status: 1,
         result: config.path == null ? result : lodash.get(result, config.path),
       };
     },
@@ -20,7 +19,7 @@ export default {
   pending: {
     run(node, input, processor) {
       return {
-        status: JOB_STATUS.PENDING,
+        status: 0,
       };
     },
   },
@@ -28,12 +27,12 @@ export default {
   prompt: {
     run(node, input, processor) {
       return {
-        status: JOB_STATUS.PENDING,
+        status: 0,
       };
     },
     resume(node, job, processor) {
       return job.set({
-        status: JOB_STATUS.RESOLVED,
+        status: 1,
       });
     },
   },
@@ -41,7 +40,7 @@ export default {
   'prompt->error': {
     run(node, input, processor) {
       return {
-        status: JOB_STATUS.PENDING,
+        status: 0,
       };
     },
     resume(node, input, processor) {

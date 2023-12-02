@@ -10,7 +10,6 @@
   },
   "peerDependencies": {
     "@nocobase/database": "0.x",
-    "@nocobase/plugin-workflow": ">=0.16.0-alpha.3",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
   },

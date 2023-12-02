@@ -1,7 +1,6 @@
 import path from 'path';
 
 import { Plugin, ApplicationOptions } from '@nocobase/server';
-import WorkflowPlugin, { Instruction } from '@nocobase/plugin-workflow';
 import { MockServer, mockServer } from '@nocobase/test';
 
 import instructions from './instructions';
@@ -66,10 +65,10 @@ export default class extends Plugin {
       directory: path.resolve(__dirname, 'collections'),
     });
 
-    const workflow = this.app.getPlugin<WorkflowPlugin>('workflow');
+    const workflow = this.app.getPlugin<any>('workflow');
 
     for (const [key, instruction] of Object.entries(instructions)) {
-      workflow.instructions.register(key, <Instruction>instruction);
+      workflow.instructions.register(key, instruction);
     }
 
     for (const [key, func] of Object.entries(functions)) {
