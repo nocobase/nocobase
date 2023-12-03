@@ -479,7 +479,7 @@ export const omitSomeFields = (collectionSettings: CollectionSetting[]): any[] =
   return collectionSettings.map((collection) => {
     return {
       ..._.omit(collection, ['key']),
-      fields: collection.fields.map((field) => _.omit(field, ['key', 'collectionName'])),
+      fields: collection.fields?.map((field) => _.omit(field, ['key', 'collectionName'])),
     };
   });
 };

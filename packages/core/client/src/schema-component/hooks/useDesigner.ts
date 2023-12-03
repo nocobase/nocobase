@@ -13,7 +13,7 @@ export const useDesigner = () => {
     if (fieldSchema['x-designer'] || fieldSchema['x-toolbar'])
       return fieldSchema['x-designer'] || fieldSchema['x-toolbar'];
 
-    if (fieldSchema['x-initializer'] || fieldSchema['x-settings']) {
+    if (fieldSchema['x-settings']) {
       return SchemaToolbar;
     }
     return Def;
