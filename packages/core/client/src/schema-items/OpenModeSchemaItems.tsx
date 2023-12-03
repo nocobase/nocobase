@@ -2,9 +2,9 @@ import { useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDesignable } from '../schema-component';
 import { SchemaInitializerItem, SchemaInitializerSelect } from '../application';
-import { SchemaSettingsItem, SchemaSettingsSelectItem } from '../schema-settings';
+import { useDesignable } from '../schema-component';
+import { SchemaSettingsSelectItem } from '../schema-settings';
 
 interface Options {
   openMode?: boolean;
@@ -119,37 +119,31 @@ export const SchemaSettingOpenModeSchemaItems: React.FC<Options> = (options) => 
         />
       ) : null}
       {openSize && ['modal', 'drawer'].includes(openModeValue) ? (
-        <SchemaSettingsItem title="Popup size">
-          <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
-            {t('Popup size')}
-            <Select
-              bordered={false}
-              options={[
-                { label: t('Small'), value: 'small' },
-                { label: t('Middle'), value: 'middle' },
-                { label: t('Large'), value: 'large' },
-              ]}
-              value={
-                fieldSchema?.['x-component-props']?.['openSize'] ??
-                (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle')
-              }
-              onChange={(value) => {
-                field.componentProps.openSize = value;
-                const schema = {
-                  'x-uid': fieldSchema['x-uid'],
-                };
-                schema['x-component-props'] = fieldSchema['x-component-props'] || {};
-                schema['x-component-props'].openSize = value;
-                fieldSchema['x-component-props'].openSize = value;
-                dn.emit('patch', {
-                  schema: schema,
-                });
-                dn.refresh();
-              }}
-              style={{ textAlign: 'right', minWidth: 100 }}
-            />
-          </div>
-        </SchemaSettingsItem>
+        <SchemaSettingsSelectItem
+          title={t('Popup size')}
+          options={[
+            { label: t('Small'), value: 'small' },
+            { label: t('Middle'), value: 'middle' },
+            { label: t('Large'), value: 'large' },
+          ]}
+          value={
+            fieldSchema?.['x-component-props']?.['openSize'] ??
+            (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle')
+          }
+          onChange={(value) => {
+            field.componentProps.openSize = value;
+            const schema = {
+              'x-uid': fieldSchema['x-uid'],
+            };
+            schema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            schema['x-component-props'].openSize = value;
+            fieldSchema['x-component-props'].openSize = value;
+            dn.emit('patch', {
+              schema: schema,
+            });
+            dn.refresh();
+          }}
+        />
       ) : null}
     </>
   );

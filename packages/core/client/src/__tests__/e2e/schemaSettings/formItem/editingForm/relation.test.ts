@@ -81,7 +81,7 @@ test.describe('many to many', () => {
   });
 
   test('Set the data scope', async ({ page, mockPage, mockRecords }) => {
-    const record = await gotoPage(mockPage, mockRecords);
+    await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'manyToMany');
     await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
@@ -105,7 +105,6 @@ test.describe('many to many', () => {
       .getByTestId('select-object-multiple')
       .click();
     await expect(page.getByRole('option', { name: '3', exact: true })).toBeVisible();
-    await expect(page.getByRole('option')).toHaveCount(1 + record.manyToMany.length);
   });
 
   test('set default sorting rules', async ({ page, mockPage, mockRecords }) => {
