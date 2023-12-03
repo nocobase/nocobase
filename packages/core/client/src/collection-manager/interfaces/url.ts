@@ -15,6 +15,7 @@ export const url: IField = {
       'x-component': 'Input.URL',
     },
   },
+  availableTypes: ['string'],
   schemaInitialize(schema: ISchema, { block }) {},
   properties: {
     ...defaultProps,
