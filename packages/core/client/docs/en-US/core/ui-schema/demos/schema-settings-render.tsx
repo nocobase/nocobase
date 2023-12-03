@@ -15,7 +15,7 @@ import {
   useSchemaSettings,
   useSchemaSettingsRender,
 } from '@nocobase/client';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 class PluginHello extends Plugin {
   async load() {
@@ -84,15 +84,20 @@ const Demo = () => {
   const field = useField();
   const api = useAPIClient();
   const { refresh } = useSchemaComponentContext();
+  const dn = useMemo(
+    () =>
+      createDesignable({
+        current: fieldSchema.parent,
+        model: field.parent,
+        api,
+        refresh,
+      }),
+    [],
+  );
   const { render, exists } = useSchemaSettingsRender(fieldSchema['x-settings'], {
-    fieldSchema: fieldSchema.parent,
-    field: field.parent,
-    dn: createDesignable({
-      current: fieldSchema.parent,
-      model: field.parent,
-      api,
-      refresh,
-    }),
+    fieldSchema: dn.current,
+    field: dn.model,
+    dn,
   });
   return (
     <div>
