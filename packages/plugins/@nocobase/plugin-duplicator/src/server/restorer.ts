@@ -238,9 +238,11 @@ export class Restorer extends AppMigrator {
         };
       }
 
+      const DataTypeClass = DataTypes[db.options.dialect as string][attr.type] || DataTypes[attr.type];
+
       const obj = {
         ...attr,
-        type: new DataTypes[attr.type](),
+        type: new DataTypeClass(),
       };
 
       if (attr.defaultValue && ['JSON', 'JSONB', 'JSONTYPE'].includes(attr.type)) {
