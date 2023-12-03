@@ -11,104 +11,35 @@ export default class extends Migration {
     const PluginModel = db.getModel('applicationPlugins');
     const NodeRepo = db.getRepository('flow_nodes');
     await db.sequelize.transaction(async (transaction) => {
-      await PluginModel.upsert(
-        {
-          name: '@nocobase/plugin-workflow-dynamic-calculation',
-          packageName: '@nocobase/plugin-workflow-dynamic-calculation',
-          version: '0.16.0-alpha.5',
-          enabled: true,
-          installed: true,
-          builtin: true,
-        },
-        { transaction },
-      );
-      await PluginModel.upsert(
-        {
-          name: '@nocobase/plugin-workflow-manual',
-          packageName: '@nocobase/plugin-workflow-manual',
-          version: '0.16.0-alpha.5',
-          enabled: true,
-          installed: true,
-          builtin: true,
-        },
-        { transaction },
-      );
-      await PluginModel.upsert(
-        {
-          name: '@nocobase/plugin-workflow-loop',
-          packageName: '@nocobase/plugin-workflow-loop',
-          version: '0.16.0-alpha.5',
-          enabled: true,
-          installed: true,
-          builtin: true,
-        },
-        { transaction },
-      );
-      await PluginModel.upsert(
-        {
-          name: '@nocobase/plugin-workflow-parallel',
-          packageName: '@nocobase/plugin-workflow-parallel',
-          version: '0.16.0-alpha.5',
-          enabled: true,
-          installed: true,
-          builtin: true,
-        },
-        { transaction },
-      );
-      await PluginModel.upsert(
-        {
-          name: '@nocobase/plugin-workflow-delay',
-          packageName: '@nocobase/plugin-workflow-delay',
-          version: '0.16.0-alpha.5',
-          enabled: true,
-          installed: true,
-          builtin: true,
-        },
-        { transaction },
-      );
-      await PluginModel.upsert(
-        {
-          name: '@nocobase/plugin-workflow-aggregate',
-          packageName: '@nocobase/plugin-workflow-aggregate',
-          version: '0.16.0-alpha.5',
-          enabled: true,
-          installed: true,
-          builtin: true,
-        },
-        { transaction },
-      );
-      await PluginModel.upsert(
-        {
-          name: '@nocobase/plugin-workflow-sql',
-          packageName: '@nocobase/plugin-workflow-sql',
-          version: '0.16.0-alpha.5',
-          enabled: true,
-          installed: true,
-          builtin: true,
-        },
-        { transaction },
-      );
-      await PluginModel.upsert(
-        {
-          name: '@nocobase/plugin-workflow-request',
-          packageName: '@nocobase/plugin-workflow-request',
-          version: '0.16.0-alpha.5',
-          enabled: true,
-          installed: true,
-          builtin: true,
-        },
-        { transaction },
-      );
-      await PluginModel.upsert(
-        {
-          name: '@nocobase/plugin-workflow-form-trigger',
-          packageName: '@nocobase/plugin-workflow-form-trigger',
-          version: '0.16.0-alpha.5',
-          enabled: true,
-          installed: true,
-          builtin: true,
-        },
-        { transaction },
+      await [
+        '@nocobase/plugin-workflow-aggregate',
+        '@nocobase/plugin-workflow-delay',
+        '@nocobase/plugin-workflow-dynamic-calculation',
+        '@nocobase/plugin-workflow-loop',
+        '@nocobase/plugin-workflow-manual',
+        '@nocobase/plugin-workflow-parallel',
+        '@nocobase/plugin-workflow-request',
+        '@nocobase/plugin-workflow-sql',
+        '@nocobase/plugin-workflow-form-trigger',
+      ].reduce(
+        (promise, packageName) =>
+          promise.then(async () => {
+            const existed = await PluginModel.findOne({ where: { packageName }, transaction });
+            if (!existed) {
+              await PluginModel.create(
+                {
+                  name: packageName,
+                  packageName,
+                  version: '0.16.0-alpha.5',
+                  enabled: true,
+                  installed: true,
+                  builtin: true,
+                },
+                { transaction },
+              );
+            }
+          }),
+        Promise.resolve(),
       );
 
       const nodes = await NodeRepo.find({
