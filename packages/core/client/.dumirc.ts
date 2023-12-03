@@ -9,6 +9,12 @@ export default defineConfig({
   alias: {
     ...umiConfig.alias,
   },
+  ssr: {
+
+  },
+  exportStatic: {
+    ignorePreRenderError: true
+  },
   resolve: {
     atomDirs: [
       { type: 'api', dir: 'src' },
