@@ -58,7 +58,7 @@ export const commonTesting = ({
   }) => Promise<void>;
   fieldName: string;
   blockType?: 'creating' | 'viewing' | 'editing';
-  fieldType?: string;
+  fieldType?: 'relation' | 'system';
   /**
    * options 模式下，只会测试选项是否正确显示；
    * details 模式下，会测试每个选项的功能是否正常；
@@ -114,7 +114,7 @@ export const commonTesting = ({
       await expect(page.getByRole('menuitem', { name: 'Edit field title' })).toBeVisible();
       await expect(page.getByRole('menuitem', { name: 'Display title' })).toBeVisible();
       await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
-      if (['creating', 'editing'].includes(blockType)) {
+      if (['creating', 'editing'].includes(blockType) && fieldType !== 'system') {
         await expect(page.getByRole('menuitem', { name: 'Edit description' })).toBeVisible();
         await expect(page.getByRole('menuitem', { name: 'Required' })).toBeVisible();
         await expect(page.getByRole('menuitem', { name: 'Pattern' })).toBeVisible();
@@ -123,7 +123,12 @@ export const commonTesting = ({
         await expect(page.getByRole('menuitem', { name: 'Edit tooltip' })).toBeVisible();
         await expect(page.getByRole('menuitem', { name: 'Pattern' })).not.toBeVisible();
       }
-      if (blockType === 'creating' && !fieldName.startsWith('oneTo') && !['attachment'].includes(fieldName)) {
+      if (
+        blockType === 'creating' &&
+        !fieldName.startsWith('oneTo') &&
+        !['attachment'].includes(fieldName) &&
+        !['system'].includes(fieldType)
+      ) {
         await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
       }
       if (['editing', 'viewing'].includes(blockType)) {
