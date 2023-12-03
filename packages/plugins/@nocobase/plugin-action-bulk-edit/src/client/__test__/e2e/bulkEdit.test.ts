@@ -23,7 +23,7 @@ test.describe('places where bulk edit action can be created', () => {
 
 test('data will be updated && bulk edit configure', async ({ page, mockPage, mockRecords }) => {
   const nocoPage = await mockPage(oneEmptyTableBlockWithCustomizeActions).waitForInit();
-  const data = await mockRecords('general', 3);
+  await mockRecords('general', 3);
   await nocoPage.goto();
   await page.getByLabel('Bulk edit').hover();
   await page.getByLabel('designer-schema-settings-Action-Action.Designer-general').hover();
