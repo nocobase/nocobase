@@ -173,7 +173,18 @@ const _test = base.extend<{
   mockCollections: <T = any>(collectionSettings: CollectionSetting[]) => Promise<T>;
   mockCollection: <T = any>(collectionSetting: CollectionSetting) => Promise<T>;
   mockRecord: <T = any>(collectionName: string, data?: any) => Promise<T>;
-  mockRecords: <T = any>(collectionName: string, count?: number, data?: any) => Promise<T[]>;
+  mockRecords: {
+    /**
+     * @param collectionName - 数据表名称
+     * @param count - 生成的数据条数
+     */
+    <T = any>(collectionName: string, count?: number): Promise<T[]>;
+    /**
+     * @param collectionName - 数据表名称
+     * @param data - 指定生成的数据
+     */
+    <T = any>(collectionName: string, data?: any[]): Promise<T[]>;
+  };
   createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
 }>({
   mockPage: async ({ page }, use) => {
@@ -242,7 +253,11 @@ const _test = base.extend<{
     }
   },
   mockRecords: async ({ page }, use) => {
-    const mockRecords = async (collectionName: string, count = 3, data?: any) => {
+    const mockRecords = async (collectionName: string, count: any = 3, data?: any) => {
+      if (_.isArray(count)) {
+        data = count;
+        count = data.length;
+      }
       return createRandomData(collectionName, count, data);
     };
 

@@ -8,6 +8,7 @@ export const circle: IField = {
   group: 'map',
   order: 3,
   title: generateNTemplate('Circle'),
+  availableTypes: ['circle'],
   description: generateNTemplate('Circle'),
   sortable: true,
   default: {
