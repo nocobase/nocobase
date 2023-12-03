@@ -5,8 +5,8 @@ import { CollectionSetting, PageConfig, generalWithM2oSingleSelect } from '@noco
  */
 export const generalWithDatetimeFields: CollectionSetting[] = [
   {
-    name: 'general001',
-    title: 'General001',
+    name: 'general',
+    title: 'General',
     fields: [
       {
         name: 'singleLineText',
@@ -127,6 +127,231 @@ export const generalWithDatetimeFields: CollectionSetting[] = [
   },
 ];
 
+export const oneEmptyGantt: PageConfig = {
+  collections: generalWithDatetimeFields,
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      jebhzap4dzi: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'BlockInitializers',
+        properties: {
+          gl57m4hyewf: {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            properties: {
+              jm7n5dybw6t: {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                properties: {
+                  nsq0rdemz4i: {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-acl-action': 'general:list',
+                    'x-decorator': 'GanttBlockProvider',
+                    'x-decorator-props': {
+                      collection: 'general',
+                      resource: 'general',
+                      action: 'list',
+                      fieldNames: {
+                        id: 'id',
+                        start: 'startDatetime',
+                        range: 'day',
+                        title: 'singleLineText',
+                        end: 'endDatetime',
+                      },
+                      params: {
+                        paginate: false,
+                      },
+                    },
+                    'x-designer': 'Gantt.Designer',
+                    'x-component': 'CardItem',
+                    properties: {
+                      zf07g7relim: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-component': 'Gantt',
+                        'x-component-props': {
+                          useProps: '{{ useGanttBlockProps }}',
+                        },
+                        properties: {
+                          toolBar: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-component': 'ActionBar',
+                            'x-component-props': {
+                              style: {
+                                marginBottom: 24,
+                              },
+                            },
+                            'x-initializer': 'GanttActionInitializers',
+                            'x-uid': 'guwovmwt4c0',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                          table: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'array',
+                            'x-decorator': 'div',
+                            'x-decorator-props': {
+                              style: {
+                                float: 'left',
+                                maxWidth: '35%',
+                              },
+                            },
+                            'x-initializer': 'TableColumnInitializers',
+                            'x-component': 'TableV2',
+                            'x-component-props': {
+                              rowKey: 'id',
+                              rowSelection: {
+                                type: 'checkbox',
+                              },
+                              useProps: '{{ useTableBlockProps }}',
+                              pagination: false,
+                            },
+                            properties: {
+                              actions: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                title: '{{ t("Actions") }}',
+                                'x-action-column': 'actions',
+                                'x-decorator': 'TableV2.Column.ActionBar',
+                                'x-component': 'TableV2.Column',
+                                'x-designer': 'TableV2.ActionColumnDesigner',
+                                'x-initializer': 'TableActionColumnInitializers',
+                                properties: {
+                                  actions: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-decorator': 'DndContext',
+                                    'x-component': 'Space',
+                                    'x-component-props': {
+                                      split: '|',
+                                    },
+                                    'x-uid': '9in7s3pymsd',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': 'rgpbsjwvq2h',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': 'g7qwompxaeo',
+                            'x-async': false,
+                            'x-index': 2,
+                          },
+                          detail: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-component': 'Gantt.Event',
+                            properties: {
+                              drawer: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-component': 'Action.Drawer',
+                                'x-component-props': {
+                                  className: 'nb-action-popup',
+                                },
+                                title: '{{ t("View record") }}',
+                                properties: {
+                                  tabs: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Tabs',
+                                    'x-component-props': {},
+                                    'x-initializer': 'TabPaneInitializers',
+                                    properties: {
+                                      tab1: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'void',
+                                        title: '{{t("Details")}}',
+                                        'x-component': 'Tabs.TabPane',
+                                        'x-designer': 'Tabs.Designer',
+                                        'x-component-props': {},
+                                        properties: {
+                                          grid: {
+                                            _isJSONSchemaObject: true,
+                                            version: '2.0',
+                                            type: 'void',
+                                            'x-component': 'Grid',
+                                            'x-initializer': 'RecordBlockInitializers',
+                                            'x-uid': 'gxtfjqzxbfu',
+                                            'x-async': false,
+                                            'x-index': 1,
+                                          },
+                                        },
+                                        'x-uid': 'zxwwx4358p1',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': '1p0tnmzpsim',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': 'hcue8v3fwti',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': 'fg7cjxu4hxp',
+                            'x-async': false,
+                            'x-index': 3,
+                          },
+                        },
+                        'x-uid': 'rf47sf7k16z',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                    },
+                    'x-uid': 'tritqukkd86',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': '3am2ctuhyka',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p8pesbc7fiv',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'ddm9fhkvrbw',
+        'x-async': false,
+        'x-index': 1,
+      },
+    },
+    'x-uid': 'vpk8sp3eap1',
+    'x-async': true,
+    'x-index': 1,
+  },
+};
 /**
  * 一个空的 Table 区块，并且有这些按钮：Bulk edit
  */
