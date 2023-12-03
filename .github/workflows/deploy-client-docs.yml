@@ -23,8 +23,10 @@ jobs:
       with:
         node-version: "18"
     - run: yarn install
-    - name: Build
-      run: yarn doc build core/client
+    - name: Build zh-CN
+      run: yarn doc build core/client --lang=zh-CN
+    - name: Build en-US
+      run: yarn doc build core/client --lang=en-US
     - name: Set tags
       id: set-tags
       run: |
