@@ -11,7 +11,6 @@ export class PrintPlugin extends Plugin {
       Component: 'PrintActionInitializer',
       schema: {
         'x-component': 'Action',
-        'x-designer': 'Action.Designer',
         'x-settings': 'ActionSettings:print',
         'x-action': 'print',
       },

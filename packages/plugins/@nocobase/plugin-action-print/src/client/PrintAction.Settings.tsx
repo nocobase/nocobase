@@ -1,7 +1,7 @@
 import {
   SchemaSettings,
   ActionDesigner,
-  useSchemaDesigner,
+  useSchemaToolbar,
   SchemaSettingsLinkageRules,
   useLinkageAction,
   useCollection,
@@ -20,7 +20,7 @@ const printActionSettings = new SchemaSettings({
           name: 'editButton',
           Component: ActionDesigner.ButtonEditor,
           useComponentProps() {
-            const { buttonEditorProps } = useSchemaDesigner();
+            const { buttonEditorProps } = useSchemaToolbar();
             return buttonEditorProps;
           },
         },
@@ -29,7 +29,7 @@ const printActionSettings = new SchemaSettings({
           Component: SchemaSettingsLinkageRules,
           useComponentProps() {
             const { name } = useCollection();
-            const { linkageRulesProps } = useSchemaDesigner();
+            const { linkageRulesProps } = useSchemaToolbar();
             return {
               ...linkageRulesProps,
               collectionName: name,
@@ -42,7 +42,7 @@ const printActionSettings = new SchemaSettings({
           sort: 100,
           Component: ActionDesigner.RemoveButton as any,
           useComponentProps() {
-            const { removeButtonProps } = useSchemaDesigner();
+            const { removeButtonProps } = useSchemaToolbar();
             return removeButtonProps;
           },
         },
