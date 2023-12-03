@@ -9,6 +9,7 @@ import {
   generalWithRelation,
   generalWithSingleLineText,
   generalWithSystemInfo,
+  tree,
 } from './templatesOfCollection';
 
 /**
@@ -385,6 +386,167 @@ export const oneEmptyForm: PageConfig = {
       },
     },
     'x-uid': 'xfb86y93hgb',
+    'x-async': true,
+    'x-index': 1,
+  },
+};
+
+export const oneEmptyFormWithActions: PageConfig = {
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      ez0su1adh2c: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'BlockInitializers',
+        properties: {
+          ybhtsluv6ay: {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            properties: {
+              '7ws6g9ntc1b': {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                properties: {
+                  esriba53npl: {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-acl-action-props': {
+                      skipScopeCheck: true,
+                    },
+                    'x-acl-action': 'users:create',
+                    'x-decorator': 'FormBlockProvider',
+                    'x-decorator-props': {
+                      resource: 'users',
+                      collection: 'users',
+                    },
+                    'x-designer': 'FormV2.Designer',
+                    'x-component': 'CardItem',
+                    'x-component-props': {},
+                    properties: {
+                      '9rkr85aaztt': {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-component': 'FormV2',
+                        'x-component-props': {
+                          useProps: '{{ useFormBlockProps }}',
+                        },
+                        properties: {
+                          grid: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-component': 'Grid',
+                            'x-initializer': 'FormItemInitializers',
+                            'x-uid': '9gcg27ewld4',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                          actions: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-initializer': 'FormActionInitializers',
+                            'x-component': 'ActionBar',
+                            'x-component-props': {
+                              layout: 'one-column',
+                              style: {
+                                marginTop: 24,
+                              },
+                            },
+                            properties: {
+                              '5848quxaqyb': {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                title: '{{ t("Submit") }}',
+                                'x-action': 'submit',
+                                'x-component': 'Action',
+                                'x-designer': 'Action.Designer',
+                                'x-component-props': {
+                                  type: 'primary',
+                                  htmlType: 'submit',
+                                  useProps: '{{ useCreateActionProps }}',
+                                },
+                                'x-action-settings': {
+                                  triggerWorkflows: [],
+                                },
+                                type: 'void',
+                                'x-uid': 'xs6macgoc43',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                              apkddw9opl0: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                title: '{{ t("Save record") }}',
+                                'x-action': 'customize:save',
+                                'x-component': 'Action',
+                                'x-designer': 'Action.Designer',
+                                'x-designer-props': {
+                                  modalTip:
+                                    '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
+                                },
+                                'x-action-settings': {
+                                  assignedValues: {},
+                                  skipValidator: false,
+                                  onSuccess: {
+                                    manualClose: true,
+                                    redirecting: false,
+                                    successMessage: '{{t("Submitted successfully")}}',
+                                  },
+                                  triggerWorkflows: [],
+                                },
+                                'x-component-props': {
+                                  useProps: '{{ useCreateActionProps }}',
+                                },
+                                type: 'void',
+                                'x-uid': 'gxqoverfkcj',
+                                'x-async': false,
+                                'x-index': 2,
+                              },
+                            },
+                            'x-uid': '7n06kbyncmo',
+                            'x-async': false,
+                            'x-index': 2,
+                          },
+                        },
+                        'x-uid': 'q09k01a88kl',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                    },
+                    'x-uid': '3jb89stlx3v',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': '2u3agauz0ky',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'j0he57fqijs',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'p0pzl3r2kzf',
+        'x-async': false,
+        'x-index': 1,
+      },
+    },
+    'x-uid': 'chl9fxt1mv3',
     'x-async': true,
     'x-index': 1,
   },
@@ -12850,6 +13012,145 @@ export const oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields: PageConfi
       },
     },
     'x-uid': 'irfv9kmmhce',
+    'x-async': true,
+    'x-index': 1,
+  },
+};
+
+export const oneEmptyTableWithTreeCollection: PageConfig = {
+  collections: tree,
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      euelf5zhr9q: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'BlockInitializers',
+        properties: {
+          tt9ipsm1wb7: {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            properties: {
+              '84prsw2twys': {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                properties: {
+                  xfm61n5c4ml: {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-decorator': 'TableBlockProvider',
+                    'x-acl-action': 'treeCollection:list',
+                    'x-decorator-props': {
+                      collection: 'treeCollection',
+                      resource: 'treeCollection',
+                      action: 'list',
+                      params: {
+                        pageSize: 20,
+                      },
+                      rowKey: 'id',
+                      showIndex: true,
+                      dragSort: false,
+                      disableTemplate: false,
+                    },
+                    'x-designer': 'TableBlockDesigner',
+                    'x-component': 'CardItem',
+                    'x-filter-targets': [],
+                    properties: {
+                      actions: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-initializer': 'TableActionInitializers',
+                        'x-component': 'ActionBar',
+                        'x-component-props': {
+                          style: {
+                            marginBottom: 'var(--nb-spacing)',
+                          },
+                        },
+                        'x-uid': '51cyu58oper',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                      hls18lynxej: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'array',
+                        'x-initializer': 'TableColumnInitializers',
+                        'x-component': 'TableV2',
+                        'x-component-props': {
+                          rowKey: 'id',
+                          rowSelection: {
+                            type: 'checkbox',
+                          },
+                          useProps: '{{ useTableBlockProps }}',
+                        },
+                        properties: {
+                          actions: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            title: '{{ t("Actions") }}',
+                            'x-action-column': 'actions',
+                            'x-decorator': 'TableV2.Column.ActionBar',
+                            'x-component': 'TableV2.Column',
+                            'x-designer': 'TableV2.ActionColumnDesigner',
+                            'x-initializer': 'TableActionColumnInitializers',
+                            properties: {
+                              actions: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-decorator': 'DndContext',
+                                'x-component': 'Space',
+                                'x-component-props': {
+                                  split: '|',
+                                },
+                                'x-uid': 'x3ufj34c99v',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': '31z3om9s348',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                        },
+                        'x-uid': '31b0ad3jrsg',
+                        'x-async': false,
+                        'x-index': 2,
+                      },
+                    },
+                    'x-uid': 'upbqi2o8uo3',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': 'm9m6k7itwn0',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'p2d0ixke75z',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'br9wq0lyowp',
+        'x-async': false,
+        'x-index': 1,
+      },
+    },
+    'x-uid': '8aqo0tkuoya',
     'x-async': true,
     'x-index': 1,
   },

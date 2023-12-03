@@ -602,3 +602,11 @@ export const generalWithM2oSingleSelect: CollectionSetting[] = [
     ],
   },
 ];
+
+export const tree: CollectionSetting[] = [
+  {
+    name: 'treeCollection',
+    title: 'Tree collection',
+    template: 'tree',
+  },
+];

@@ -1974,7 +1974,6 @@ interface SelectWithTitleProps {
 export function SelectWithTitle({ title, defaultValue, onChange, options }: SelectWithTitleProps) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef<any>(null);
-  const { name } = useSchemaSettingsItem();
   return (
     <div
       style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}
