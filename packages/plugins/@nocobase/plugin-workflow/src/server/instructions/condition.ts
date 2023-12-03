@@ -149,7 +149,9 @@ export default {
       upstreamId: (prevJob && prevJob.id) || null,
     };
 
-    const branchNode = processor.nodes.find((item) => item.upstream === node && Boolean(item.branchIndex) === result);
+    const branchNode = processor.nodes.find(
+      (item) => item.upstreamId === node.id && item.branchIndex != null && Boolean(item.branchIndex) === result,
+    );
 
     if (!branchNode) {
       return job;
