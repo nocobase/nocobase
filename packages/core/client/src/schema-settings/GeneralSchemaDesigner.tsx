@@ -149,10 +149,13 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
 };
 
 export interface SchemaToolbarProps {
-  title?: string;
+  title?: string | string[];
   draggable?: boolean;
   initializer?: string | false;
   settings?: string | false;
+  /**
+   * @default true
+   */
   showBorder?: boolean;
   showBackground?: boolean;
 }
@@ -164,6 +167,11 @@ export const SchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   const compile = useCompile();
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
 
+  const titleArr = useMemo(() => {
+    if (!title) return undefined;
+    if (typeof title === 'string') return [compile(title)];
+    if (Array.isArray(title)) return title.map((item) => compile(item));
+  }, [compile, title]);
   const { render: schemaSettingsRender, exists: schemaSettingsExists } = useSchemaSettingsRender(
     fieldSchema['x-settings'] || settings,
     fieldSchema['x-settings-props'],
@@ -226,10 +234,14 @@ export const SchemaToolbar: FC<SchemaToolbarProps> = (props) => {
         className={styles.toolbarContent}
         style={{ border: showBorder ? 'auto' : 0, background: showBackground ? 'auto' : 0 }}
       >
-        {title && (
+        {titleArr && (
           <div className={styles.toolbarTitle}>
             <Space size={2}>
-              <span className={styles.toolbarTitleTag}>{compile(title)}</span>
+              {titleArr.map((item) => (
+                <span key={item} className={styles.toolbarTitleTag}>
+                  {item}
+                </span>
+              ))}
             </Space>
           </div>
         )}

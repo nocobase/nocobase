@@ -602,3 +602,51 @@ export const generalWithM2oSingleSelect: CollectionSetting[] = [
     ],
   },
 ];
+
+export const tree: CollectionSetting[] = [
+  {
+    name: 'treeCollection',
+    title: 'Tree collection',
+    template: 'tree',
+  },
+];
+
+export const generalWithMultiLevelRelationshipFields: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'm2oField0',
+        interface: 'm2o',
+        target: 'm2oField1',
+      },
+      {
+        name: 'singleLineText',
+        interface: 'input',
+      },
+    ],
+  },
+  {
+    name: 'm2oField1',
+    title: 'M2o field 1',
+    fields: [
+      {
+        name: 'm2oField1',
+        interface: 'm2o',
+        target: 'm2oField2',
+      },
+    ],
+  },
+  {
+    name: 'm2oField2',
+    title: 'M2o field 2',
+    fields: [
+      {
+        name: 'm2oField2',
+        interface: 'm2o',
+        target: 'm2oField3',
+      },
+    ],
+  },
+];
