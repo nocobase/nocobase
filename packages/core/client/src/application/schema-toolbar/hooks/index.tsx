@@ -10,7 +10,7 @@ export const useSchemaToolbarRender = (fieldSchema: ISchema) => {
       return fieldSchema['x-toolbar'];
     }
 
-    if (fieldSchema['x-initializer'] || fieldSchema['x-settings']) {
+    if (fieldSchema['x-settings']) {
       return SchemaToolbar;
     }
   }, [fieldSchema]);
