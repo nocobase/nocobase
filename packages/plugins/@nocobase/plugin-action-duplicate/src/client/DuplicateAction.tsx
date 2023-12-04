@@ -1,7 +1,7 @@
 import { css, cx } from '@emotion/css';
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { App, Button } from 'antd';
-import React, { createContext, useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActionContextProvider,
@@ -14,15 +14,50 @@ import {
   useCollectionManager,
   useDesignable,
   useRecord,
-} from '../../';
-import { fetchTemplateData } from '../../schema-component/antd/form-v2/Templates';
-import { actionDesignerCss } from './CreateRecordAction';
+  fetchTemplateData,
+  FormBlockContext,
+  useFormBlockContext,
+} from '@nocobase/client';
 
-const DuplicatefieldsContext = createContext(null);
-
-export const useDuplicatefieldsContext = () => {
-  return useContext(DuplicatefieldsContext);
-};
+export const actionDesignerCss = css`
+  position: relative;
+  &:hover {
+    .general-schema-designer {
+      display: block;
+    }
+  }
+  .general-schema-designer {
+    position: absolute;
+    z-index: 999;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: none;
+    background: var(--colorBgSettingsHover);
+    border: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    > .general-schema-designer-icons {
+      position: absolute;
+      right: 2px;
+      top: 2px;
+      line-height: 16px;
+      pointer-events: all;
+      .ant-space-item {
+        background-color: var(--colorSettings);
+        color: #fff;
+        line-height: 16px;
+        width: 16px;
+        padding-left: 1px;
+        align-self: stretch;
+      }
+    }
+  }
+`;
 
 export const DuplicateAction = observer(
   (props: any) => {
@@ -44,6 +79,7 @@ export const DuplicateAction = observer(
     const { getCollectionFields } = useCollectionManager();
     const { t } = useTranslation();
     const collectionFields = getCollectionFields(__collection || name);
+    const formctx = useFormBlockContext();
     const template = {
       key: 'duplicate',
       dataId: id,
@@ -103,11 +139,14 @@ export const DuplicateAction = observer(
           `]: isLinkBtn,
         })}
       >
-        <DuplicatefieldsContext.Provider
+        <FormBlockContext.Provider
           value={{
-            display: false,
-            enabled: true,
-            defaultTemplate: template,
+            ...formctx,
+            duplicateData: {
+              display: false,
+              enabled: true,
+              defaultTemplate: template,
+            },
           }}
         >
           <div>
@@ -147,7 +186,7 @@ export const DuplicateAction = observer(
               </RecordProvider>
             </CollectionProvider>
           </div>
-        </DuplicatefieldsContext.Provider>
+        </FormBlockContext.Provider>
       </div>
     );
   },

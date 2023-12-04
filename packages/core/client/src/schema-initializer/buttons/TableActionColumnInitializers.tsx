@@ -168,21 +168,6 @@ export const tableActionColumnInitializers = new SchemaInitializer({
             return collection.tree && treeTable !== false;
           },
         },
-        {
-          type: 'item',
-          title: '{{t("Duplicate")}}',
-          name: 'duplicate',
-          Component: 'DuplicateActionInitializer',
-          schema: {
-            'x-component': 'Action.Link',
-            'x-action': 'duplicate',
-            'x-decorator': 'ACLActionProvider',
-          },
-          useVisible() {
-            const collection = useCollection();
-            return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
-          },
-        },
       ],
     },
     {

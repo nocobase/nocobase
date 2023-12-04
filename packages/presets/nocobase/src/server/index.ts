@@ -31,6 +31,7 @@ export class PresetNocoBase extends Plugin {
     'action-bulk-edit',
     'gantt',
     'kanban',
+    'action-duplicate',
   ];
 
   localPlugins = [
