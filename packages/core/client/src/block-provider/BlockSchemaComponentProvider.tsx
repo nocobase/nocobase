@@ -7,7 +7,6 @@ import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvid
 import { FilterFormBlockProvider } from './FilterFormBlockProvider';
 import { FormBlockProvider, useFormBlockProps } from './FormBlockProvider';
 import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
-import { GanttBlockProvider, useGanttBlockProps } from './GanttBlockProvider';
 import * as bp from './hooks';
 import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
@@ -18,7 +17,6 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
   return (
     <SchemaComponentOptions
       components={{
-        GanttBlockProvider,
         CalendarBlockProvider,
         TableFieldProvider,
         TableBlockProvider,
@@ -41,7 +39,6 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useTableFieldProps,
         useTableBlockProps,
         useTableSelectorProps,
-        useGanttBlockProps,
       }}
     >
       {props.children}
@@ -57,7 +54,6 @@ export class BlockSchemaComponentPlugin extends Plugin {
 
   addComponents() {
     this.app.addComponents({
-      GanttBlockProvider,
       CalendarBlockProvider,
       TableFieldProvider,
       TableBlockProvider,
@@ -83,7 +79,6 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useTableFieldProps,
       useTableBlockProps,
       useTableSelectorProps,
-      useGanttBlockProps,
     });
   }
 }

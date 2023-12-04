@@ -10,7 +10,6 @@ export * from './DetailsActionInitializers';
 export * from './FilterFormActionInitializers';
 export * from './FormActionInitializers';
 export * from './FormItemInitializers';
-export * from './GanttActionInitializers';
 export * from './GridCardActionInitializers';
 export * from './ListActionInitializers';
 export * from './ReadPrettyFormActionInitializers';

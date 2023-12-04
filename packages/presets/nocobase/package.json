@@ -46,6 +46,7 @@
     "@nocobase/plugin-verification": "0.17.0-alpha.1",
     "@nocobase/plugin-workflow": "0.17.0-alpha.1",
     "@nocobase/plugin-kanban": "0.17.0-alpha.1",
+    "@nocobase/plugin-gantt": "0.17.0-alpha.1",
     "@nocobase/server": "0.17.0-alpha.1",
     "cronstrue": "^2.11.0"
   },
