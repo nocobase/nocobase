@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { SchemaInitializerItemOptions, Variable, useCollectionManager } from '@nocobase/client';
+import { SchemaInitializerItemType, Variable, useCollectionManager } from '@nocobase/client';
 import {
   BaseTypeSets,
   ValueBlock,
@@ -85,11 +85,12 @@ export default {
       [fieldNames.label]: title,
     };
   },
-  useInitializers(node): SchemaInitializerItemOptions {
+  useInitializers(node): SchemaInitializerItemType {
     return {
+      name: `#${node.id}`,
       type: 'item',
       title: node.title ?? `#${node.id}`,
-      component: ValueBlock.Initializer,
+      Component: ValueBlock.Initializer,
       node,
       resultTitle: useLang('Calculation result'),
     };

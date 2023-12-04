@@ -144,7 +144,7 @@ export default {
 
     return forms.length
       ? {
-          name: 'forms',
+          name: `#${node.id}`,
           key: 'forms',
           type: 'subMenu',
           title: node.title,

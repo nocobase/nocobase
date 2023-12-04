@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   SchemaComponentContext,
   SchemaInitializerItemType,
+  css,
   useCollectionDataSource,
   useCollectionFilterOptions,
   useCollectionManager,
@@ -386,7 +387,7 @@ export default {
     }
 
     return {
-      name: node.title ?? `#${node.id}`,
+      name: `#${node.id}`,
       type: 'item',
       title: node.title ?? `#${node.id}`,
       Component: ValueBlock.Initializer,
