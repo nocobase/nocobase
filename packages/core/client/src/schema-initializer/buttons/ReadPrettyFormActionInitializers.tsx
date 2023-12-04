@@ -42,14 +42,6 @@ export const readPrettyFormActionInitializers = new SchemaInitializer({
           },
           useVisible: useVisibleCollection,
         },
-        {
-          title: '{{t("Print")}}',
-          name: 'print',
-          Component: 'PrintActionInitializer',
-          schema: {
-            'x-component': 'Action',
-          },
-        },
       ],
     },
     {
@@ -110,31 +102,6 @@ export const readPrettyFormActionInitializers = new SchemaInitializer({
               },
             },
           },
-        },
-        {
-          name: 'updateRecord',
-          title: '{{t("Update record")}}',
-          Component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{ t("Update record") }}',
-            'x-component': 'Action',
-            'x-designer': 'Action.Designer',
-            'x-action': 'customize:update',
-            'x-decorator': 'ACLActionProvider',
-            'x-acl-action': 'update',
-            'x-action-settings': {
-              assignedValues: {},
-              onSuccess: {
-                manualClose: true,
-                redirecting: false,
-                successMessage: '{{t("Updated successfully")}}',
-              },
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeUpdateActionProps }}',
-            },
-          },
-          visible: useVisibleCollection,
         },
         {
           name: 'customRequest',

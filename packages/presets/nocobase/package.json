@@ -50,6 +50,7 @@
     "@nocobase/plugin-action-bulk-update": "0.17.0-alpha.1",
     "@nocobase/plugin-action-bulk-edit": "0.17.0-alpha.1",
     "@nocobase/plugin-action-duplicate": "0.17.0-alpha.1",
+    "@nocobase/plugin-action-print": "0.17.0-alpha.1",
     "@nocobase/server": "0.17.0-alpha.1",
     "cronstrue": "^2.11.0"
   },

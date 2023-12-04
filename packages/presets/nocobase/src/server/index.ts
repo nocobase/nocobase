@@ -32,6 +32,7 @@ export class PresetNocoBase extends Plugin {
     'gantt',
     'kanban',
     'action-duplicate',
+    'action-print',
   ];
 
   localPlugins = [
