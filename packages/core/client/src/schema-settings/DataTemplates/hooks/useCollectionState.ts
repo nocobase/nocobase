@@ -54,6 +54,7 @@ export const useCollectionState = (currentCollectionName: string) => {
         };
         const option = {
           ...node,
+          role: 'button',
           title: React.createElement(TreeNode, node),
           key: prefix ? `${prefix}.${field.name}` : field.name,
           isLeaf: true,
@@ -103,6 +104,7 @@ export const useCollectionState = (currentCollectionName: string) => {
         };
         const value = prefix ? `${prefix}.${field.name}` : field.name;
         return {
+          role: 'button',
           title: React.createElement(TreeNode, option),
           key: value,
           isLeaf: false,
@@ -121,6 +123,7 @@ export const useCollectionState = (currentCollectionName: string) => {
     return data.map((v) => {
       return {
         ...v,
+        role: 'button',
         title: React.createElement(TreeNode, { ...v, type: v.type }),
         children: v.children ? parseTreeData(v.children) : null,
       };

@@ -1,11 +1,13 @@
 import { useCollection } from '../..';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 
 const useVisibleCollection = () => {
   const collection = useCollection();
   return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
 };
 // 表单的操作配置
-export const ReadPrettyFormActionInitializers = {
+export const readPrettyFormActionInitializers = new SchemaInitializer({
+  name: 'ReadPrettyFormActionInitializers',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   style: {
@@ -14,12 +16,13 @@ export const ReadPrettyFormActionInitializers = {
   items: [
     {
       type: 'itemGroup',
+      name: 'enableActions',
       title: '{{t("Enable actions")}}',
       children: [
         {
-          type: 'item',
           title: '{{t("Edit")}}',
-          component: 'UpdateActionInitializer',
+          name: 'edit',
+          Component: 'UpdateActionInitializer',
           schema: {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
@@ -27,22 +30,22 @@ export const ReadPrettyFormActionInitializers = {
               type: 'primary',
             },
           },
-          visible: useVisibleCollection,
+          useVisible: useVisibleCollection,
         },
         {
-          type: 'item',
           title: '{{t("Delete")}}',
-          component: 'DestroyActionInitializer',
+          name: 'delete',
+          Component: 'DestroyActionInitializer',
           schema: {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
           },
-          visible: useVisibleCollection,
+          useVisible: useVisibleCollection,
         },
         {
-          type: 'item',
           title: '{{t("Duplicate")}}',
-          component: 'DuplicateActionInitializer',
+          name: 'duplicate',
+          Component: 'DuplicateActionInitializer',
           schema: {
             'x-component': 'Action',
             'x-action': 'duplicate',
@@ -51,30 +54,31 @@ export const ReadPrettyFormActionInitializers = {
               type: 'primary',
             },
           },
-          visible: useVisibleCollection,
+          useVisible: useVisibleCollection,
         },
         {
-          type: 'item',
           title: '{{t("Print")}}',
-          component: 'PrintActionInitializer',
+          name: 'print',
+          Component: 'PrintActionInitializer',
           schema: {
             'x-component': 'Action',
           },
         },
       ],
     },
-
     {
+      name: 'divider',
       type: 'divider',
     },
     {
       type: 'subMenu',
+      name: 'customize',
       title: '{{t("Customize")}}',
       children: [
         {
-          type: 'item',
+          name: 'popup',
           title: '{{t("Popup")}}',
-          component: 'CustomizeActionInitializer',
+          Component: 'CustomizeActionInitializer',
           schema: {
             type: 'void',
             title: '{{ t("Popup") }}',
@@ -122,9 +126,9 @@ export const ReadPrettyFormActionInitializers = {
           },
         },
         {
-          type: 'item',
+          name: 'updateRecord',
           title: '{{t("Update record")}}',
-          component: 'CustomizeActionInitializer',
+          Component: 'CustomizeActionInitializer',
           schema: {
             title: '{{ t("Update record") }}',
             'x-component': 'Action',
@@ -147,12 +151,12 @@ export const ReadPrettyFormActionInitializers = {
           visible: useVisibleCollection,
         },
         {
-          type: 'item',
+          name: 'customRequest',
           title: '{{t("Custom request")}}',
-          component: 'CustomRequestInitializer',
-          visible: useVisibleCollection,
+          Component: 'CustomRequestInitializer',
+          useVisible: useVisibleCollection,
         },
       ],
     },
   ],
-};
+});

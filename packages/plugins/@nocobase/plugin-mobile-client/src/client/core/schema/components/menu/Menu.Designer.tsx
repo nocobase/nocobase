@@ -1,6 +1,6 @@
 import { MenuOutlined } from '@ant-design/icons';
 import { useField, useFieldSchema } from '@formily/react';
-import { SchemaSettings, useDesignable } from '@nocobase/client';
+import { SchemaSettingsDropdown, SchemaSettingsRemove, useDesignable } from '@nocobase/client';
 import { Button } from 'antd';
 import React from 'react';
 import { useTranslation } from '../../../../locale';
@@ -16,7 +16,7 @@ export const MenuDesigner: React.FC = (props) => {
     fieldSchema,
   };
   return (
-    <SchemaSettings
+    <SchemaSettingsDropdown
       title={
         <Button
           style={{
@@ -31,7 +31,7 @@ export const MenuDesigner: React.FC = (props) => {
       }
       {...schemaSettingsProps}
     >
-      <SchemaSettings.Remove
+      <SchemaSettingsRemove
         key="remove"
         removeParentsIfNoChildren
         confirm={{
@@ -41,6 +41,6 @@ export const MenuDesigner: React.FC = (props) => {
           'x-component': 'Grid',
         }}
       />
-    </SchemaSettings>
+    </SchemaSettingsDropdown>
   );
 };

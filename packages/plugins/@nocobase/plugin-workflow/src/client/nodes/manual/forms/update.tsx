@@ -1,15 +1,21 @@
 import { useFieldSchema } from '@formily/react';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
   GeneralSchemaDesigner,
-  SchemaSettings,
+  SchemaSettingsActionModalItem,
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsDivider,
+  SchemaSettingsLinkageRules,
+  SchemaSettingsRemove,
   useCollection,
   useCollectionFilterOptions,
   useDesignable,
+  useMenuSearch,
 } from '@nocobase/client';
 
+import _ from 'lodash';
 import { FilterDynamicComponent } from '../../../components/FilterDynamicComponent';
 import { NAMESPACE } from '../../../locale';
 import { FormBlockInitializer } from '../FormBlockInitializer';
@@ -24,8 +30,8 @@ function UpdateFormDesigner() {
 
   return (
     <GeneralSchemaDesigner title={title || name}>
-      <SchemaSettings.BlockTitleItem />
-      <SchemaSettings.ActionModalItem
+      <SchemaSettingsBlockTitleItem />
+      <SchemaSettingsActionModalItem
         title={t('Filter settings', { ns: NAMESPACE })}
         schema={{
           name: 'filter',
@@ -55,9 +61,9 @@ function UpdateFormDesigner() {
           dn.refresh();
         }}
       />
-      <SchemaSettings.LinkageRules collectionName={name} />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsLinkageRules collectionName={name} />
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',
@@ -71,37 +77,37 @@ export default {
   title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
   config: {
     useInitializer({ collections }) {
+      const childItems = useMemo(
+        () =>
+          collections.map((item) => ({
+            name: _.camelCase(`updateRecordForm-child-${item.name}`),
+            type: 'item',
+            title: item.title,
+            label: item.label,
+            schema: {
+              collection: item.name,
+              title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
+              formType: 'update',
+              'x-designer': 'UpdateFormDesigner',
+            },
+            Component: FormBlockInitializer,
+          })),
+        [collections],
+      );
+      const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
+      const searchedChildren = useMenuSearch(childItems, isOpenSubMenu, true);
       return {
+        name: 'updateRecordForm',
         key: 'updateRecordForm',
         type: 'subMenu',
         title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
-        children: [
-          {
-            key: 'updateRecordForm-child',
-            type: 'itemGroup',
-            style: {
-              maxHeight: '48vh',
-              overflowY: 'auto',
-            },
-            loadChildren: ({ searchValue }) => {
-              return collections
-                .filter((item) => !item.hidden && item.title.toLowerCase().includes(searchValue.toLowerCase()))
-                .map((item) => ({
-                  key: `updateRecordForm-child-${item.name}`,
-                  type: 'item',
-                  title: item.title,
-                  schema: {
-                    collection: item.name,
-                    title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
-                    formType: 'update',
-                    'x-designer': 'UpdateFormDesigner',
-                  },
-                  component: FormBlockInitializer,
-                }));
-            },
+        componentProps: {
+          onOpenChange(keys) {
+            setIsOpenSubMenu(keys.length > 0);
           },
-        ],
-      };
+        },
+        children: searchedChildren,
+      } as any;
     },
     initializers: {
       // AddCustomFormField

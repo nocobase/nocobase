@@ -1,7 +1,8 @@
 import React from 'react';
 import { BlockInitializer } from './BlockInitializer';
+import { useSchemaInitializerItem } from '../../application';
 
-export const CustomizeBulkEditActionInitializer = (props) => {
+export const CustomizeBulkEditActionInitializer = () => {
   const schema = {
     type: 'void',
     title: '{{t("Bulk edit")}}',
@@ -51,5 +52,6 @@ export const CustomizeBulkEditActionInitializer = (props) => {
       },
     },
   };
-  return <BlockInitializer {...props} schema={schema} />;
+  const itemConfig = useSchemaInitializerItem();
+  return <BlockInitializer {...itemConfig} schema={schema} item={itemConfig} />;
 };

@@ -3,32 +3,32 @@ import { FormOutlined } from '@ant-design/icons';
 import { useBlockAssociationContext, useBlockRequestContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { SchemaInitializer } from '../SchemaInitializer';
 import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const RecordReadPrettyFormBlockInitializer = (props) => {
+export const RecordReadPrettyFormBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
   const {
     onCreateBlockSchema,
     componentType,
     createBlockSchema,
-    insert,
     icon = true,
     targetCollection,
     ...others
-  } = props;
+  } = itemConfig;
+  const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const currentCollection = useCollection();
   const collection = targetCollection || currentCollection;
   const association = useBlockAssociationContext();
   const { block } = useBlockRequestContext();
   const actionInitializers =
-    block !== 'TableField' ? props.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
+    block !== 'TableField' ? itemConfig.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
 
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
       icon={icon && <FormOutlined />}
       {...others}
-      key={'123'}
       onClick={async ({ item }) => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);

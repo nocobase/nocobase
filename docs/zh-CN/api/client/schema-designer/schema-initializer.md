@@ -17,11 +17,3 @@
   },
 }
 ```
-
-SchemaInitializer 的核心包括 `<SchemaInitializer.Button />` 和 `<SchemaInitializer.Item />` 两个组件。`<SchemaInitializer.Button />` 用于创建 Schema 的下拉菜单按钮，下拉菜单的菜单项为 `<SchemaInitializer.Item/>`。
-
-### `<SchemaInitializerProvider />`
-
-### `<SchemaInitializer.Button />`
-
-### `<SchemaInitializer.Item/>`

@@ -1,12 +1,12 @@
 import React from 'react';
 import { useCollection } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettingsRemove } from '../../../schema-settings';
 
 export const TableDesigner = () => {
   const { name, title } = useCollection();
   return (
     <GeneralSchemaDesigner title={title || name}>
-      <SchemaSettings.Remove
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',

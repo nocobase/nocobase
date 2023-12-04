@@ -23,6 +23,7 @@ export * from './block-provider';
 export * from './board';
 export * from './china-region';
 export * from './collection-manager';
+export * from './css-variable';
 export * from './document-title';
 export * from './filter-provider';
 export * from './formula';

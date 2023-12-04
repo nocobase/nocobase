@@ -9,17 +9,19 @@ import { useGlobalTheme } from '../../global-theme';
 import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { createGanttBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
+import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const GanttBlockInitializer = (props) => {
-  const { insert } = props;
+export const GanttBlockInitializer = () => {
+  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const { getCollectionFields } = useCollectionManager();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
+  const itemConfig = useSchemaInitializerItem();
 
   return (
     <DataBlockInitializer
-      {...props}
+      {...itemConfig}
       componentType={'Gantt'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {

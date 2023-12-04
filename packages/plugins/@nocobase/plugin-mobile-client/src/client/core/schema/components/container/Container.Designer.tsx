@@ -1,7 +1,7 @@
 import { MenuOutlined } from '@ant-design/icons';
-import { Schema, useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { SchemaSettings, useDesignable } from '@nocobase/client';
+import { SchemaSettingsDropdown, SchemaSettingsSwitchItem, useDesignable } from '@nocobase/client';
 import { Button } from 'antd';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -27,7 +27,7 @@ export const ContainerDesigner = () => {
     fieldSchema,
   };
   return (
-    <SchemaSettings
+    <SchemaSettingsDropdown
       title={
         <Button
           style={{
@@ -43,7 +43,7 @@ export const ContainerDesigner = () => {
       }
       {...schemaSettingsProps}
     >
-      <SchemaSettings.SwitchItem
+      <SchemaSettingsSwitchItem
         checked={tabBarEnabled}
         title={t('Enable TabBar')}
         onChange={async (v) => {
@@ -83,6 +83,6 @@ export const ContainerDesigner = () => {
           }
         }}
       />
-    </SchemaSettings>
+    </SchemaSettingsDropdown>
   );
 };

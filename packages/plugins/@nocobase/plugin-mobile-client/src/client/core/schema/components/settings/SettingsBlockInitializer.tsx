@@ -1,11 +1,12 @@
 import React from 'react';
 import { SettingOutlined } from '@ant-design/icons';
-import { SchemaInitializer } from '@nocobase/client';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
 
-export const MSettingsBlockInitializer = (props) => {
-  const { insert } = props;
+export const MSettingsBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { insert } = useSchemaInitializer();
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
       icon={<SettingOutlined />}
       onClick={async () => {
         insert({
@@ -15,6 +16,7 @@ export const MSettingsBlockInitializer = (props) => {
           'x-component-props': {},
         });
       }}
+      {...itemConfig}
     />
   );
 };

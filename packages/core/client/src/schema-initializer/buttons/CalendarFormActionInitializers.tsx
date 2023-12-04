@@ -1,7 +1,9 @@
 import { useCollection } from '../..';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 
 // 表单的操作配置
-export const CalendarFormActionInitializers = {
+export const calendarFormActionInitializers = new SchemaInitializer({
+  name: 'CalendarFormActionInitializers',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   style: {
@@ -10,12 +12,13 @@ export const CalendarFormActionInitializers = {
   items: [
     {
       type: 'itemGroup',
+      name: 'enableActions',
       title: '{{t("Enable actions")}}',
       children: [
         {
-          type: 'item',
+          name: 'edit',
           title: '{{t("Edit")}}',
-          component: 'UpdateActionInitializer',
+          Component: 'UpdateActionInitializer',
           schema: {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
@@ -23,59 +26,60 @@ export const CalendarFormActionInitializers = {
               type: 'primary',
             },
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
-          type: 'item',
+          name: 'delete',
           title: '{{t("Delete")}}',
-          component: 'DestroyActionInitializer',
+          Component: 'DestroyActionInitializer',
           schema: {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
-          type: 'item',
+          name: 'deleteEvent',
           title: '{{t("Delete Event")}}',
-          component: 'DeleteEventActionInitializer',
+          Component: 'DeleteEventActionInitializer',
           schema: {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
-          type: 'item',
+          name: 'print',
           title: '{{t("Print")}}',
-          component: 'PrintActionInitializer',
+          Component: 'PrintActionInitializer',
           schema: {
             'x-component': 'Action',
           },
         },
       ],
     },
-
     {
+      name: 'divider',
       type: 'divider',
     },
     {
       type: 'subMenu',
+      name: 'customize',
       title: '{{t("Customize")}}',
       children: [
         {
-          type: 'item',
+          name: 'popup',
           title: '{{t("Popup")}}',
-          component: 'CustomizeActionInitializer',
+          Component: 'CustomizeActionInitializer',
           schema: {
             type: 'void',
             title: '{{ t("Popup") }}',
@@ -123,9 +127,9 @@ export const CalendarFormActionInitializers = {
           },
         },
         {
-          type: 'item',
+          name: 'updateRecord',
           title: '{{t("Update record")}}',
-          component: 'CustomizeActionInitializer',
+          Component: 'CustomizeActionInitializer',
           schema: {
             title: '{{ t("Update record") }}',
             'x-component': 'Action',
@@ -144,16 +148,16 @@ export const CalendarFormActionInitializers = {
               useProps: '{{ useCustomizeUpdateActionProps }}',
             },
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
-          type: 'item',
+          name: 'customRequest',
           title: '{{t("Custom request")}}',
-          component: 'CustomRequestInitializer',
-          visible: function useVisible() {
+          Component: 'CustomRequestInitializer',
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
@@ -161,4 +165,4 @@ export const CalendarFormActionInitializers = {
       ],
     },
   ],
-};
+});

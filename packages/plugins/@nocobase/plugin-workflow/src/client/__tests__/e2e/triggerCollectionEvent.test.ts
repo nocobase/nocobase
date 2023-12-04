@@ -51,8 +51,8 @@ test.describe('trigger collection events', () => {
     //配置录入数据区块
     await newPage.goto();
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
-    await page.getByLabel('dataBlocks-table', { exact: true }).hover();
-    await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: 'table Table' }).hover();
+    await page.getByRole('menuitem', { name: collectionDisplayName }).click();
 
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
@@ -60,20 +60,20 @@ test.describe('trigger collection events', () => {
     await page.getByText('Configure columns').hover();
     await page.getByText(fieldDisplayName).click();
     await page.getByText('Configure actions').hover();
-    await page.getByLabel('Enable actions-Add new').click();
-    await expect(page.getByLabel('Enable actions-Add new').getByRole('switch')).toBeEnabled();
+    await page.getByRole('menuitem', { name: 'Add new' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
 
     await page.getByLabel(`action-Action-Add new-create-tt_amt_org${appendText}-table`).click();
     await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-tt_amt_org${appendText}`).hover();
-    await page.getByLabel('Data blocks-Form').click();
+    await page.getByRole('menuitem', { name: 'form Form' }).click();
 
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
 
     await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-tt_amt_org${appendText}`).hover();
-    await page.getByLabel('Enable actions-Submit').click();
+    await page.getByRole('menuitem', { name: 'Submit' }).click();
     await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-tt_amt_org${appendText}`).hover();
-    await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+    await page.getByRole('menuitem', { name: fieldDisplayName }).click();
 
     await page.mouse.move(300, 0);
 
@@ -93,7 +93,7 @@ test.describe('trigger collection events', () => {
     await page.getByRole('textbox').fill(workFlowName);
     await page.getByRole('button', { name: 'Submit' }).click();
     await page.getByLabel(`action-Action.Link-Delete-workflows-${workFlowName}`).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByText(workFlowName)).toBeHidden();
   });
 });

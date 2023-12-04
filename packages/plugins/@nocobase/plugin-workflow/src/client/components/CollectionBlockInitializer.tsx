@@ -2,18 +2,21 @@ import React from 'react';
 
 import {
   CollectionProvider,
-  SchemaInitializer,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItem,
+  SchemaInitializerItemType,
   useCollectionManager,
   useRecordCollectionDataSourceItems,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
   useSchemaTemplateManager,
 } from '@nocobase/client';
 import { traverseSchema } from '../nodes/manual/utils';
 
-function InnerCollectionBlockInitializer({ insert, collection, dataSource, ...props }) {
+function InnerCollectionBlockInitializer({ collection, dataSource, ...props }) {
+  const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { getCollection } = useCollectionManager();
-  const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemOptions[];
+  const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemType[];
   const resolvedCollection = getCollection(collection);
 
   async function onConfirm({ item }) {
@@ -59,13 +62,14 @@ function InnerCollectionBlockInitializer({ insert, collection, dataSource, ...pr
     insert(result);
   }
 
-  return <SchemaInitializer.Item {...props} onClick={onConfirm} items={items} />;
+  return <SchemaInitializerItem {...props} onClick={onConfirm} items={items} />;
 }
 
-export function CollectionBlockInitializer(props) {
+export function CollectionBlockInitializer() {
+  const itemConfig = useSchemaInitializerItem();
   return (
-    <CollectionProvider collection={props.collection}>
-      <InnerCollectionBlockInitializer {...props} />
+    <CollectionProvider collection={itemConfig.collection}>
+      <InnerCollectionBlockInitializer {...itemConfig} />
     </CollectionProvider>
   );
 }

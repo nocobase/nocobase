@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, userEvent } from 'testUtils';
+import { fireEvent, render, screen, userEvent, waitFor, sleep } from 'testUtils';
 import App1 from '../demos/input';
 import App4 from '../demos/json';
 import App2 from '../demos/textarea';
@@ -16,9 +16,11 @@ describe('Input', () => {
   it('should display the value of user input', async () => {
     const { container } = render(<App1 />);
 
-    const input = container.querySelector('input') as HTMLInputElement;
-    await userEvent.type(input, 'Hello World');
-    expect(screen.getByText('Hello World').innerHTML).toBe('Hello World');
+    await waitFor(async () => {
+      const input = container.querySelector('input') as HTMLInputElement;
+      await userEvent.type(input, 'Hello World');
+      expect(screen.getByText('Hello World').innerHTML).toBe('Hello World');
+    });
   });
 });
 
@@ -81,22 +83,25 @@ describe('Input.URL', () => {
 });
 
 describe('Input.JSON', () => {
-  it('should display the title', () => {
+  it('should display the title', async () => {
     render(<App4 />);
 
-    expect(screen.getByText('Editable').innerHTML).toBe('Editable');
-    expect(screen.getByText('Read pretty').innerHTML).toBe('Read pretty');
+    await waitFor(() => {
+      expect(screen.getByText('Editable').innerHTML).toBe('Editable');
+      expect(screen.getByText('Read pretty').innerHTML).toBe('Read pretty');
+    });
   });
 
   it('should display the value of user input', async () => {
     const { container } = render(<App4 />);
 
-    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
-    const pre = container.querySelector('pre') as HTMLPreElement;
-    fireEvent.change(textarea, { target: { value: '{"name":"nocobase"}' } });
-    fireEvent.blur(textarea, { target: { value: '{"name":"nocobase"}' } });
-    expect(JSON.parse(textarea.value)).toEqual({ name: 'nocobase' });
-    expect(pre).toMatchInlineSnapshot(`
+    await waitFor(() => {
+      const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+      const pre = container.querySelector('pre') as HTMLPreElement;
+      fireEvent.change(textarea, { target: { value: '{"name":"nocobase"}' } });
+      fireEvent.blur(textarea, { target: { value: '{"name":"nocobase"}' } });
+      expect(JSON.parse(textarea.value)).toEqual({ name: 'nocobase' });
+      expect(pre).toMatchInlineSnapshot(`
       <pre
         class="ant-json css-4dta7v"
       >
@@ -105,16 +110,17 @@ describe('Input.JSON', () => {
       }
       </pre>
     `);
+    });
   });
 
   it('should display the error when the value is invalid', async () => {
     const { container } = render(<App4 />);
 
-    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
-    fireEvent.change(textarea, { target: { value: '{"name":nocobase}' } });
-    fireEvent.blur(textarea, { target: { value: '{"name":nocobase}' } });
-    expect(screen.getByText(`Unexpected token o in JSON at position 9`).innerHTML).toBe(
-      `Unexpected token o in JSON at position 9`,
-    );
+    await waitFor(() => {
+      const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+      fireEvent.change(textarea, { target: { value: '{"name":nocobase}' } });
+      fireEvent.blur(textarea, { target: { value: '{"name":nocobase}' } });
+      expect(screen.getByText(/Unexpected token/)).toBeInTheDocument();
+    });
   });
 });

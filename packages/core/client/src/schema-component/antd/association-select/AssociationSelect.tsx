@@ -9,7 +9,16 @@ import { useTranslation } from 'react-i18next';
 import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager, useSortFields } from '../../../collection-manager';
 import { GeneralSchemaItems } from '../../../schema-items';
-import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled } from '../../../schema-settings';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDataScope,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  SchemaSettingsSwitchItem,
+  isPatternDisabled,
+} from '../../../schema-settings';
 import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
@@ -160,7 +169,7 @@ AssociationSelect.Designer = function Designer() {
     <GeneralSchemaDesigner>
       <GeneralSchemaItems />
       {form && !form?.readPretty && validateSchema && (
-        <SchemaSettings.ModalItem
+        <SchemaSettingsModalItem
           title={t('Set validation rules')}
           components={{ ArrayCollapse, FormLayout }}
           schema={
@@ -282,7 +291,7 @@ AssociationSelect.Designer = function Designer() {
         />
       )}
       {isAllowToSetDefaultValue() && (
-        <SchemaSettings.ModalItem
+        <SchemaSettingsModalItem
           title={t('Set default value')}
           components={{ ArrayCollapse, FormLayout }}
           width={800}
@@ -327,7 +336,7 @@ AssociationSelect.Designer = function Designer() {
         />
       )}
       {form && !isSubFormAssociationField && fieldComponentOptions && (
-        <SchemaSettings.SelectItem
+        <SchemaSettingsSelectItem
           title={t('Field component')}
           options={fieldComponentOptions}
           value={fieldSchema['x-component']}
@@ -376,7 +385,7 @@ AssociationSelect.Designer = function Designer() {
         />
       )}
       {IsShowMultipleSwitch() ? (
-        <SchemaSettings.SwitchItem
+        <SchemaSettingsSwitchItem
           key="multiple"
           title={t('Allow multiple')}
           checked={
@@ -400,7 +409,7 @@ AssociationSelect.Designer = function Designer() {
           }}
         />
       ) : null}
-      <SchemaSettings.DataScope
+      <SchemaSettingsDataScope
         collectionName={collectionField?.target}
         defaultFilter={field.componentProps?.service?.params?.filter || {}}
         form={form}
@@ -416,7 +425,7 @@ AssociationSelect.Designer = function Designer() {
           });
         }}
       />
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Set default sorting rules')}
         components={{ ArrayItems }}
         schema={
@@ -506,7 +515,7 @@ AssociationSelect.Designer = function Designer() {
         }}
       />
       {form && !form?.readPretty && !isPatternDisabled(fieldSchema) && (
-        <SchemaSettings.SelectItem
+        <SchemaSettingsSelectItem
           key="pattern"
           title={t('Pattern')}
           options={[
@@ -558,7 +567,7 @@ AssociationSelect.Designer = function Designer() {
         />
       )}
       {collectionField?.target && ['CollectionField', 'AssociationSelect'].includes(fieldSchema['x-component']) && (
-        <SchemaSettings.SelectItem
+        <SchemaSettingsSelectItem
           key="title-field"
           title={t('Title field')}
           options={options}
@@ -583,8 +592,8 @@ AssociationSelect.Designer = function Designer() {
           }}
         />
       )}
-      {collectionField && <SchemaSettings.Divider />}
-      <SchemaSettings.Remove
+      {collectionField && <SchemaSettingsDivider />}
+      <SchemaSettingsRemove
         key="remove"
         removeParentsIfNoChildren
         confirm={{
@@ -657,7 +666,7 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
     <GeneralSchemaDesigner>
       <GeneralSchemaItems required={false} />
       {form && !form?.readPretty && validateSchema && (
-        <SchemaSettings.ModalItem
+        <SchemaSettingsModalItem
           title={t('Set validation rules')}
           components={{ ArrayCollapse, FormLayout }}
           schema={
@@ -779,7 +788,7 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
         />
       )}
       {form && !form?.readPretty && collectionField?.uiSchema?.type && (
-        <SchemaSettings.ModalItem
+        <SchemaSettingsModalItem
           title={t('Set default value')}
           components={{ ArrayCollapse, FormLayout }}
           schema={
@@ -813,7 +822,7 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
           }}
         />
       )}
-      <SchemaSettings.DataScope
+      <SchemaSettingsDataScope
         collectionName={collectionField?.target}
         defaultFilter={field.componentProps?.service?.params?.filter || {}}
         form={form}
@@ -829,7 +838,7 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
           });
         }}
       />
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Set default sorting rules')}
         components={{ ArrayItems }}
         schema={
@@ -919,7 +928,7 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
         }}
       />
       {collectionField?.target && ['CollectionField', 'AssociationSelect'].includes(fieldSchema['x-component']) && (
-        <SchemaSettings.SelectItem
+        <SchemaSettingsSelectItem
           key="title-field"
           title={t('Title field')}
           options={options}
@@ -944,8 +953,8 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
           }}
         />
       )}
-      {collectionField && <SchemaSettings.Divider />}
-      <SchemaSettings.Remove
+      {collectionField && <SchemaSettingsDivider />}
+      <SchemaSettingsRemove
         key="remove"
         removeParentsIfNoChildren
         confirm={{
