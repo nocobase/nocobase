@@ -30,6 +30,12 @@ export default defineConfig({
   alias: {
     ...umiConfig.alias,
   },
+  ssr: {
+
+  },
+  exportStatic: {
+    ignorePreRenderError: true
+  },
   cacheDirectoryPath: `node_modules/.docs-${lang}-cache`,
   outputPath: `./docs/dist/${lang}`,
   resolve: {

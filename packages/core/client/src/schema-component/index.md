@@ -129,4 +129,7 @@ insertAdjacent('afterEnd', schema);
 
 ## Examples
 
-<code src="./demos/demo1.tsx"></code>
+<code src="./demos/demo1.tsx">拖拽</code>
+<code src="./demos/demo2.tsx">可以切换 designable 状态</code>
+<code src="./demos/demo3.tsx">不可以切换 designable 状态</code>
+<code src="./demos/demo4.tsx">不可以切换 designable 状态</code>

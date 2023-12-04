@@ -1,6 +1,6 @@
 import {
-  itemsMerge,
   SchemaInitializer,
+  SchemaInitializerChildren,
   useAssociatedTableColumnInitializerFields,
   useCompile,
   useInheritsTableColumnInitializerFields,
@@ -10,79 +10,80 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 // 表格列配置
-export const AuditLogsTableColumnInitializers = (props: any) => {
-  const { items = [] } = props;
-  const { t } = useTranslation();
-  const associatedFields = useAssociatedTableColumnInitializerFields();
+const ParentCollectionFields = () => {
   const inheritFields = useInheritsTableColumnInitializerFields();
+  const { t } = useTranslation();
   const compile = useCompile();
-  const fieldItems: any[] = [
+  if (!inheritFields?.length) return null;
+  const res = [];
+  inheritFields.forEach((inherit) => {
+    Object.values(inherit)[0].length &&
+      res.push({
+        type: 'itemGroup',
+        divider: true,
+        title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
+        children: Object.values(inherit)[0].filter((v: any) => !v?.field?.isForeignKey),
+      });
+  });
+  return <SchemaInitializerChildren>{res}</SchemaInitializerChildren>;
+};
+
+const AssociatedFields = () => {
+  const associatedFields = useAssociatedTableColumnInitializerFields();
+  const { t } = useTranslation();
+
+  if (!associatedFields?.length) return null;
+  const schema: any = [
     {
       type: 'itemGroup',
-      title: t('Display fields'),
-      children: useTableColumnInitializerFields(),
+      divider: true,
+      title: t('Display association fields'),
+      children: associatedFields,
     },
   ];
-  if (inheritFields?.length > 0) {
-    inheritFields.forEach((inherit) => {
-      Object.values(inherit)[0].length &&
-        fieldItems.push(
-          {
-            type: 'divider',
-          },
-          {
-            type: 'itemGroup',
-            title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
-            children: Object.values(inherit)[0],
-          },
-        );
-    });
-  }
-  if (associatedFields?.length > 0) {
-    fieldItems.push(
-      {
-        type: 'divider',
-      },
-      {
-        type: 'itemGroup',
-        title: t('Display association fields'),
-        children: associatedFields,
-      },
-    );
-  }
-  fieldItems.push(
-    {
-      type: 'divider',
-    },
-    {
-      type: 'item',
-      title: t('Action column'),
-      component: 'AuditLogsTableActionColumnInitializer',
-    },
-  );
-  return (
-    <SchemaInitializer.Button
-      insertPosition={'beforeEnd'}
-      icon={'SettingOutlined'}
-      wrap={(s) => {
-        if (s['x-action-column']) {
-          return s;
-        }
-        return {
-          type: 'void',
-          'x-decorator': 'TableV2.Column.Decorator',
-          'x-designer': 'TableV2.Column.Designer',
-          'x-component': 'TableV2.Column',
-          properties: {
-            [s.name]: {
-              ...s,
-            },
-          },
-        };
-      }}
-      items={itemsMerge(fieldItems)}
-    >
-      {t('Configure columns')}
-    </SchemaInitializer.Button>
-  );
+  return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
+
+export const auditLogsTableColumnInitializers = new SchemaInitializer({
+  name: 'AuditLogsTableColumnInitializers',
+  insertPosition: 'beforeEnd',
+  icon: 'SettingOutlined',
+  title: '{{t("Configure columns")}}',
+  wrap(s) {
+    if (s['x-action-column']) {
+      return s;
+    }
+    return {
+      type: 'void',
+      'x-decorator': 'TableV2.Column.Decorator',
+      'x-designer': 'TableV2.Column.Designer',
+      'x-component': 'TableV2.Column',
+      properties: {
+        [s.name]: {
+          ...s,
+        },
+      },
+    };
+  },
+  items: [
+    {
+      name: 'displayFields',
+      type: 'itemGroup',
+      title: '{{t("Display fields")}}',
+      useChildren: useTableColumnInitializerFields,
+    },
+    {
+      name: 'parentCollectionFields',
+      Component: ParentCollectionFields,
+    },
+    {
+      name: 'associationFields',
+      Component: AssociatedFields,
+    },
+    {
+      name: 'actionColumn',
+      title: '{{t("Action column")}}',
+      Component: 'AuditLogsTableActionColumnInitializer',
+    },
+  ],
+});

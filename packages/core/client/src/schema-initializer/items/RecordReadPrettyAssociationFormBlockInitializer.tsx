@@ -3,21 +3,23 @@ import { FormOutlined } from '@ant-design/icons';
 
 import { useBlockRequestContext } from '../../block-provider';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { SchemaInitializer } from '../SchemaInitializer';
 import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
-  const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+export const RecordReadPrettyAssociationFormBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
+  const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
 
-  const field = item.field;
+  const field = itemConfig.field;
   const collection = field.target;
   const resource = `${field.collectionName}.${field.name}`;
   const { block } = useBlockRequestContext();
   const actionInitializers = block !== 'TableField' ? 'ReadPrettyFormActionInitializers' : null;
 
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
       icon={<FormOutlined />}
       {...others}
       onClick={async ({ item }) => {
@@ -55,7 +57,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
           );
         }
       }}
-      items={useRecordCollectionDataSourceItems('ReadPrettyFormItem', item, collection, resource)}
+      items={useRecordCollectionDataSourceItems('ReadPrettyFormItem', itemConfig, collection, resource)}
     />
   );
 };

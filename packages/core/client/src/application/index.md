@@ -52,9 +52,6 @@ app.addComponents({
   Hello,
   World
 });
-
-// 添加单个组件
-app.addComponent(Hello, 'Hello');
 ```
 
 在插件中添加组件。

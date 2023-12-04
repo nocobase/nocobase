@@ -1,12 +1,14 @@
 import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
 import {
-  SchemaInitializer,
   useBlockAssociationContext,
   useCollection,
   useSchemaTemplateManager,
   useRecordCollectionDataSourceItems,
   useBlockRequestContext,
+  useSchemaInitializer,
+  SchemaInitializerItem,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -56,29 +58,30 @@ export const createSnapshotBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 
-export const SnapshotBlockInitializersDetailItem = (props) => {
+export const SnapshotBlockInitializersDetailItem = () => {
+  const itemConfig = useSchemaInitializerItem();
   const {
     onCreateBlockSchema,
     componentType,
     createBlockSchema,
-    insert,
     icon = true,
     targetCollection,
     ...others
-  } = props;
+  } = itemConfig;
+  const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const collection = targetCollection || useCollection();
   const association = useBlockAssociationContext();
   const { block } = useBlockRequestContext();
   const actionInitializers =
-    block !== 'TableField' ? props.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
+    block !== 'TableField' ? itemConfig.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
 
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
       icon={icon && <FormOutlined />}
       {...others}
       key={'snapshotDetail'}

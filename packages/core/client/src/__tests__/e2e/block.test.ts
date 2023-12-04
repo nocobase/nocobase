@@ -295,23 +295,23 @@ const tablePageSchema = {
 test.describe('add block & delete block', () => {
   test('add block,then delete block', async ({ page, mockPage }) => {
     await mockPage().goto();
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').click();
-    await page.getByLabel('dataBlocks-table', { exact: true }).click();
-    await page.getByLabel('dataBlocks-table-Users').click();
+    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+    await page.getByRole('menuitem', { name: 'table Table' }).click();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
     await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
     await expect(page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users')).toBeVisible();
-    await expect(await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-users')).toBeVisible();
+    await expect(page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-users')).toBeVisible();
     //删除区块
     await page.getByLabel('block-item-CardItem-users-table').hover();
     await page
       .getByLabel('block-item-CardItem-users-table')
       .getByRole('button', { name: 'designer-schema-settings' })
       .click();
-    await page.getByLabel('Delete').click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByLabel('block-item-CardItem-users-table')).not.toBeVisible();
     await expect(page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users')).not.toBeVisible();
-    await expect(await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-users')).not.toBeVisible();
+    await expect(page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-users')).not.toBeVisible();
   });
 });
 
@@ -320,17 +320,17 @@ test.describe('block title', () => {
     await mockPage({
       pageSchema: tablePageSchema,
     }).goto();
-    await page.getByLabel('block-item-CardItem-users-table').click();
+    await page.getByLabel('block-item-CardItem-users-table').hover();
     await page
       .getByLabel('block-item-CardItem-users-table')
       .getByRole('button', { name: 'designer-schema-settings' })
       .hover();
-    await page.getByLabel('Edit block title').click();
+    await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     await page.getByLabel('block-item-Input-users-Block title').click();
     await page.getByLabel('block-item-Input-users-Block title').getByRole('textbox').fill('block title');
-    await page.locator('.ant-modal').getByRole('button', { name: 'OK' }).click();
+    await page.locator('.ant-modal').getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByLabel('block-item-CardItem-users-table').locator('.ant-card-head')).toBeVisible();
-    await expect(await page.getByLabel('block-item-CardItem-users-table').locator('.ant-card-head').innerText()).toBe(
+    await expect(page.getByLabel('block-item-CardItem-users-table').locator('.ant-card-head')).toHaveText(
       'block title',
     );
 
@@ -338,15 +338,15 @@ test.describe('block title', () => {
     await page
       .getByLabel('block-item-CardItem-users-table')
       .getByRole('button', { name: 'designer-schema-settings' })
-      .click();
-    await page.getByText('Edit block title').click();
+      .hover();
+    await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const inputValue = await page.getByRole('textbox').inputValue();
-    await expect(inputValue).toBe('block title');
+    expect(inputValue).toBe('block title');
   });
 });
 
-test.describe('blcok template', () => {
-  test('save block template', async ({ page, mockPage }) => {
+test.describe('block template', () => {
+  test('save block template & using block template', async ({ page, mockPage }) => {
     await mockPage({
       name: 'block template source',
       pageSchema: {
@@ -494,61 +494,61 @@ test.describe('blcok template', () => {
         'x-index': 1,
       },
     }).goto();
-    await page.getByLabel('block-item-CardItem-users-form').click();
+    await page.getByLabel('block-item-CardItem-users-form').hover();
     await page
       .getByLabel('block-item-CardItem-users-form')
       .getByLabel('designer-schema-settings-CardItem-FormV2.Designer-users')
-      .click();
-    await page.getByLabel('Save as block template').click();
+      .hover();
+    await page.getByRole('menuitem', { name: 'Save as block template' }).click();
     await page.getByLabel('Save as template').getByRole('textbox').fill('Users_Form');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page.getByLabel('block-item-CardItem-users-form').hover();
-    await page.waitForTimeout(1000);
+
     //保存模板后当前区块为引用区块
     const titleTag = await page.getByLabel('block-item-CardItem-users-form').locator('.title-tag').nth(1).innerText();
-    await expect(titleTag).toContain('Reference template');
-  });
-  test('using block template ', async ({ page, mockPage }) => {
+    expect(titleTag).toContain('Reference template');
+
+    // using block template
     await mockPage({
       name: 'block template',
       pageSchema: tablePageSchema,
     }).goto();
-    await page.getByLabel('schema-initializer-Grid-BlockInitializers').click();
+    await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     //使用复制模板
-    await page.getByLabel('dataBlocks-form', { exact: true }).click();
-    await page.getByLabel('dataBlocks-form-FormItem_table_subMenu').click();
-    await page.getByRole('menuitem', { name: 'Duplicate template right' }).click();
-    await page.getByText('Users_Form (Fields only)').first().click();
+    await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
+    await page.getByRole('menuitem', { name: 'Users' }).hover();
+    await page.getByRole('menuitem', { name: 'Duplicate template' }).hover();
+    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).click();
     await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
 
     //在新建操作中使用引用模板
     await page.getByLabel('action-Action-Add new-create-users-table').click();
     await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-users').click();
-    await page.getByRole('menuitem', { name: 'form Form right' }).click();
-    await page.getByRole('menuitem', { name: 'Reference template right' }).click();
-    await page.getByRole('button', { name: 'Users_Form (Fields only)' }).first().click();
+    await page.getByRole('menuitem', { name: 'form Form' }).hover();
+    await page.getByRole('menuitem', { name: 'Reference template' }).hover();
+    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).click();
     await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-users').hover();
     await expect(page.locator('.ant-drawer').getByLabel('block-item-CardItem-users-form')).toBeVisible();
     await page.locator('.ant-drawer-mask').click();
 
     //在编辑操作中使用引用模板
-    await page.getByLabel('block-item-CardItem-users-table').getByLabel('Edit').click();
+    await page.getByLabel('action-Action.Link-Edit-update-users-table-0').click();
     await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-users').click();
-    await page.getByRole('menuitem', { name: 'form Form right' }).click();
-    await page.getByRole('menuitem', { name: 'Reference template right' }).click();
-    await page.getByRole('button', { name: 'Users_Form (Fields only)' }).first().click();
+    await page.getByRole('menuitem', { name: 'form Form' }).hover();
+    await page.getByRole('menuitem', { name: 'Reference template' }).hover();
+    await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).click();
     await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-users').hover();
 
     //修改引用模板
     await page.locator('.ant-drawer').getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
-    await page.getByLabel('Display collection fields-Phone').click();
+    await page.getByRole('menuitem', { name: 'Phone' }).click();
     await page.locator('.ant-drawer-mask').click();
     //复制模板不同步，引用模板同步
     await expect(
       page.getByLabel('block-item-CardItem-users-form').getByLabel('block-item-CollectionField-users-form-users.phone'),
     ).not.toBeVisible();
     await page.getByLabel('block-item-CardItem-users-table').getByLabel('action-Action-Add').click();
-    await expect(await page.getByLabel('block-item-CollectionField-users-form-users.phone')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.phone')).toBeVisible();
     await page.locator('.ant-drawer-mask').click();
 
     //删除模板
@@ -556,6 +556,6 @@ test.describe('blcok template', () => {
     await page.getByLabel('ui-schema-storage').click();
     await page.getByRole('menuitem', { name: 'layout Block templates' }).click();
     await page.getByLabel('action-Action.Link-Delete-destroy-uiSchemaTemplates-table-Users_Form').click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
   });
 });

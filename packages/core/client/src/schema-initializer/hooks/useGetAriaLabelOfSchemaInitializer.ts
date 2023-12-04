@@ -12,6 +12,7 @@ export const useGetAriaLabelOfSchemaInitializer = () => {
   const { name } = useCollection();
   const getAriaLabel = useCallback(
     (postfix?: string) => {
+      if (!fieldSchema) return '';
       const initializer = fieldSchema['x-initializer'] ? `-${fieldSchema['x-initializer']}` : '';
       const collectionName = name ? `-${name}` : '';
       postfix = postfix ? `-${postfix}` : '';

@@ -1,7 +1,7 @@
 import { MenuOutlined } from '@ant-design/icons';
 import { useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { SchemaSettings, useDesignable } from '@nocobase/client';
+import { SchemaSettingsDropdown, SchemaSettingsSwitchItem, useDesignable } from '@nocobase/client';
 import { Button } from 'antd';
 import React from 'react';
 import { generateNTemplate, useTranslation } from '../../../../locale';
@@ -26,7 +26,7 @@ export const PageDesigner = (props) => {
   };
 
   return (
-    <SchemaSettings
+    <SchemaSettingsDropdown
       title={
         <Button
           style={{
@@ -42,7 +42,7 @@ export const PageDesigner = (props) => {
       }
       {...schemaSettingsProps}
     >
-      <SchemaSettings.SwitchItem
+      <SchemaSettingsSwitchItem
         checked={isHeaderEnabled}
         title={t('Enable Header')}
         onChange={async (v) => {
@@ -63,7 +63,7 @@ export const PageDesigner = (props) => {
           });
         }}
       />
-      <SchemaSettings.SwitchItem
+      <SchemaSettingsSwitchItem
         checked={isTabsEnabled}
         title={t('Enable Tabs')}
         onChange={async (v) => {
@@ -102,6 +102,6 @@ export const PageDesigner = (props) => {
           });
         }}
       />
-    </SchemaSettings>
+    </SchemaSettingsDropdown>
   );
 };

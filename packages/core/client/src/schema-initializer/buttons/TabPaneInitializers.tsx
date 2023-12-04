@@ -1,22 +1,25 @@
 import { useForm } from '@formily/react';
 import React, { useMemo } from 'react';
 import { SchemaComponent, useActionContext, useDesignable, useRecordIndex } from '../..';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { useGetAriaLabelOfSchemaInitializer } from '../hooks/useGetAriaLabelOfSchemaInitializer';
 
 export const TabPaneInitializers = (props?: any) => {
   const { designable, insertBeforeEnd } = useDesignable();
+  const { isCreate, isBulkEdit, options } = props;
+  const { gridInitializer } = options;
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
 
   const useSubmitAction = () => {
     const form = useForm();
     const ctx = useActionContext();
     const index = useRecordIndex();
-    let initializer = props.gridInitializer;
+    let initializer = gridInitializer;
     if (!initializer) {
       initializer = 'RecordBlockInitializers';
-      if (props.isCreate || index === null) {
+      if (isCreate || index === null) {
         initializer = 'CreateFormBlockInitializers';
-      } else if (props.isBulkEdit) {
+      } else if (isBulkEdit) {
         initializer = 'CreateFormBulkEditBlockInitializers';
       }
     }
@@ -134,3 +137,21 @@ export const TabPaneInitializersForCreateFormBlock = (props) => {
 export const TabPaneInitializersForBulkEditFormBlock = (props) => {
   return <TabPaneInitializers {...props} isBulkEdit />;
 };
+
+export const tabPaneInitializers = new SchemaInitializer({
+  name: 'TabPaneInitializers',
+  Component: TabPaneInitializers,
+  popover: false,
+});
+
+export const tabPaneInitializersForRecordBlock = new SchemaInitializer({
+  name: 'TabPaneInitializersForCreateFormBlock',
+  Component: TabPaneInitializersForCreateFormBlock,
+  popover: false,
+});
+
+export const tabPaneInitializersForBulkEditFormBlock = new SchemaInitializer({
+  name: 'TabPaneInitializersForBulkEditFormBlock',
+  Component: TabPaneInitializersForBulkEditFormBlock,
+  popover: false,
+});

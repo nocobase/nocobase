@@ -2,6 +2,7 @@ import { ISchema } from '@formily/react';
 import {
   APIClientProvider,
   Action,
+  Application,
   BlockSchemaComponentProvider,
   CollectionField,
   CollectionManagerProvider,
@@ -95,7 +96,7 @@ const schema: ISchema = {
   },
 };
 
-export default () => {
+const Root = () => {
   return (
     <APIClientProvider apiClient={apiClient}>
       <CurrentUserProvider>
@@ -112,3 +113,9 @@ export default () => {
     </APIClientProvider>
   );
 };
+
+const app = new Application({
+  providers: [Root],
+});
+
+export default app.getRootComponent();

@@ -2,7 +2,7 @@
  * title: Menu
  */
 import { ISchema } from '@formily/react';
-import { Menu, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { Application, Menu, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import { Layout } from 'antd';
 import React, { useRef } from 'react';
 
@@ -100,7 +100,7 @@ const schema: ISchema = {
   },
 };
 
-export default () => {
+const Root = () => {
   const sideMenuRef = useRef();
   return (
     <SchemaComponentProvider components={{ Menu }}>
@@ -116,3 +116,9 @@ export default () => {
     </SchemaComponentProvider>
   );
 };
+
+const app = new Application({
+  providers: [Root],
+});
+
+export default app.getRootComponent();

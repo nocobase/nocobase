@@ -19,5 +19,5 @@ export * from './SyncSQLFieldsAction';
 export * from './DeleteCollectionAction';
 
 registerValidateFormats({
-  uid: /^[A-Za-z0-9][A-Za-z0-9_-]*$/,
+  uid: /^[a-zA-Z][a-zA-Z0-9_]*$/,
 });
