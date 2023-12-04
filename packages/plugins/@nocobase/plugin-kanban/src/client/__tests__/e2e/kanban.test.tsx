@@ -52,7 +52,7 @@ test('configure fields in kanban block', async ({ page, mockPage, mockRecord, mo
   ).not.toBeVisible();
   await expect(await page.getByLabel('block-item-CollectionField-general-kanban-general.id')).not.toBeVisible();
 
-  //关系字段,断言请求的appends是否符合预期
+  //添加关系字段,断言请求的appends是否符合预期
   try {
     const [request] = await Promise.all([
       page.waitForRequest((request) => request.url().includes('api/general:list')),
@@ -107,7 +107,7 @@ test('configure params in kanban block', async ({ page, mockPage, mockRecords, m
     return window.innerHeight;
   });
   const expectedHeight = windowHeight - 147;
-
+  await page.waitForTimeout(1000);
   // 断言高度为预期值
   expect(kanbanBoardHeight).toBe(expectedHeight);
   //设置数据范围
@@ -139,7 +139,6 @@ test('configure action in kanban block', async ({ page, mockPage, mockCollection
   await mockPage().goto();
   await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
   await expect(page.getByRole('menuitem', { name: 'form Kanban right' })).toBeVisible();
-  await page.getByRole('menuitem', { name: 'form Kanban right' }).click();
   await page.getByRole('menuitem', { name: 'form Kanban right' }).hover();
   await page.getByRole('menuitem', { name: 'General' }).click();
   await page.getByLabel('block-item-Select-Grouping field').getByLabel('Search').click();
@@ -170,11 +169,21 @@ test('configure action in kanban block', async ({ page, mockPage, mockCollection
   await page.getByLabel('designer-schema-initializer-Kanban.Card-Kanban.Card.Designer-general').hover();
   await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Created at' }).getByRole('switch').click();
+  await page.getByRole('menuitem', { name: 'Single Select' }).getByRole('switch').click();
 
   //拖拽看板
   const sourceElement = await page.getByLabel('block-item-Kanban.Card-general-kanban');
   await sourceElement.click();
   await page.getByLabel('drawer-Action.Container-general-View record-mask').click();
+  const { x, y } = await sourceElement.boundingBox();
   const targetElement = await page.getByTestId('column-option2');
-  await sourceElement.dragTo(targetElement);
+  await sourceElement.hover();
+  await page.mouse.down();
+  await page.mouse.move(100, 0);
+  await sourceElement.dragTo(targetElement, {
+    force: true,
+    sourcePosition: { x, y },
+    targetPosition: { x: x + 100, y },
+  });
+  await page.mouse.up();
 });
