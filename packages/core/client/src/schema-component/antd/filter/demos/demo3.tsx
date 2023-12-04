@@ -1,6 +1,7 @@
 import { ISchema, useForm } from '@formily/react';
 import {
   AntdSchemaComponentProvider,
+  Application,
   Filter,
   Input,
   SchemaComponent,
@@ -162,7 +163,7 @@ const schema: ISchema = {
   },
 };
 
-export default () => {
+const Root = () => {
   return (
     <SchemaComponentProvider>
       <AntdSchemaComponentProvider>
@@ -171,3 +172,9 @@ export default () => {
     </SchemaComponentProvider>
   );
 };
+
+const app = new Application({
+  providers: [Root],
+});
+
+export default app.getRootComponent();

@@ -1,7 +1,7 @@
 import { ActionInitializer } from '@nocobase/client';
 import React from 'react';
 
-export const AuditLogsViewActionInitializer = (props) => {
+export const AuditLogsViewActionInitializer = () => {
   const schema = {
     type: 'void',
     title: '{{ t("View") }}',
@@ -337,5 +337,5 @@ export const AuditLogsViewActionInitializer = (props) => {
       },
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+  return <ActionInitializer schema={schema} />;
 };

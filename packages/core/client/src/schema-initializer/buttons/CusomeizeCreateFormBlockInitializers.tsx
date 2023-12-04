@@ -1,43 +1,36 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { SchemaInitializer } from '../..';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../utils';
 
-export const CusomeizeCreateFormBlockInitializers = (props: any) => {
-  const { t } = useTranslation();
-  const { insertPosition, component } = props;
-  return (
-    <SchemaInitializer.Button
-      wrap={gridRowColWrap}
-      title={component ? null : t('Add block')}
-      icon={'PlusOutlined'}
-      insertPosition={insertPosition}
-      component={component}
-      items={[
+export const cusomeizeCreateFormBlockInitializers = new SchemaInitializer({
+  name: 'CusomeizeCreateFormBlockInitializers',
+  wrap: gridRowColWrap,
+  title: '{{t("Add block")}}',
+  icon: 'PlusOutlined',
+  items: [
+    {
+      type: 'itemGroup',
+      title: '{{t("Data blocks")}}',
+      name: 'dataBlocks',
+      children: [
         {
-          type: 'itemGroup',
-          title: '{{t("Data blocks")}}',
-          children: [
-            {
-              type: 'item',
-              title: '{{t("Form")}}',
-              component: 'FormBlockInitializer',
-              isCusomeizeCreate: true,
-            },
-          ],
+          name: 'form',
+          title: '{{t("Form")}}',
+          Component: 'FormBlockInitializer',
+          isCusomeizeCreate: true,
         },
+      ],
+    },
+    {
+      type: 'itemGroup',
+      title: '{{t("Other blocks")}}',
+      name: 'otherBlocks',
+      children: [
         {
-          type: 'itemGroup',
-          title: '{{t("Other blocks")}}',
-          children: [
-            {
-              type: 'item',
-              title: '{{t("Markdown")}}',
-              component: 'MarkdownBlockInitializer',
-            },
-          ],
+          name: 'markdown',
+          title: '{{t("Markdown")}}',
+          Component: 'MarkdownBlockInitializer',
         },
-      ]}
-    />
-  );
-};
+      ],
+    },
+  ],
+});

@@ -1,11 +1,10 @@
 import React from 'react';
-import { merge } from '@formily/shared';
-import { SchemaInitializer } from '../../../schema-initializer';
 import { useFieldSchema, Schema } from '@formily/react';
 import { useDesignable } from '../../hooks';
+import { SchemaInitializerSwitch, useSchemaInitializerItem } from '../../../application';
 
-export const KanbanCardDesignerTitleSwitch = (props) => {
-  const { item } = props;
+export const KanbanCardDesignerTitleSwitch = () => {
+  const itemConfig = useSchemaInitializerItem();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
 
@@ -22,5 +21,5 @@ export const KanbanCardDesignerTitleSwitch = (props) => {
     dn.refresh();
   };
 
-  return <SchemaInitializer.SwitchItem checked={!disabled} title={item.title} onClick={handleSwitch} />;
+  return <SchemaInitializerSwitch checked={!disabled} title={itemConfig.title} onClick={handleSwitch} />;
 };

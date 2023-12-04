@@ -10,7 +10,6 @@ Most of the extensions for the NocoBase client are provided as Providers.
 - SystemSettingsProvider
 - PluginManagerProvider
 - SchemaComponentProvider
-- SchemaInitializerProvider
 - BlockSchemaComponentProvider
 - AntdSchemaComponentProvider
 - DocumentTitleProvider

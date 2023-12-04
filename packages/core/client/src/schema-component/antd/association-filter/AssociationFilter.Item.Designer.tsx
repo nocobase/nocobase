@@ -4,7 +4,15 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDataScope,
+  SchemaSettingsDefaultSortingRules,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  SchemaSettingsSwitchItem,
+} from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 
 export const AssociationFilterItemDesigner = (props) => {
@@ -49,7 +57,7 @@ export const AssociationFilterItemDesigner = (props) => {
 
   return (
     <GeneralSchemaDesigner {...props} disableInitializer={true}>
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Custom title')}
         schema={
           {
@@ -80,7 +88,7 @@ export const AssociationFilterItemDesigner = (props) => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.SwitchItem
+      <SchemaSettingsSwitchItem
         title={t('Default collapse')}
         checked={field.componentProps.defaultCollapse}
         onChange={(v) => {
@@ -95,7 +103,7 @@ export const AssociationFilterItemDesigner = (props) => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.DataScope
+      <SchemaSettingsDataScope
         collectionName={collectionField?.target}
         defaultFilter={fieldSchema?.['x-component-props']?.params?.filter || {}}
         form={form}
@@ -113,15 +121,15 @@ export const AssociationFilterItemDesigner = (props) => {
           });
         }}
       />
-      <SchemaSettings.DefaultSortingRules name={collectionField?.target} />
-      <SchemaSettings.SelectItem
+      <SchemaSettingsDefaultSortingRules name={collectionField?.target} />
+      <SchemaSettingsSelectItem
         key="title-field"
         title={t('Title field')}
         options={options}
         value={fieldSchema['x-component-props']?.fieldNames?.label}
         onChange={onTitleFieldChange}
       />
-      <SchemaSettings.Remove
+      <SchemaSettingsRemove
         breakRemoveOn={{
           'x-component': 'Grid',
         }}

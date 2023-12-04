@@ -6,6 +6,7 @@ const config = {
     version: '2.0',
     type: 'void',
     'x-component': 'Page',
+    'x-index': 1,
     properties: {
       x9ersztdq7x: {
         _isJSONSchemaObject: true,
@@ -13,28 +14,31 @@ const config = {
         type: 'void',
         'x-component': 'Grid',
         'x-initializer': 'BlockInitializers',
+        'x-index': 1,
         properties: {
           ppgwx2drpng: {
             _isJSONSchemaObject: true,
             version: '2.0',
             type: 'void',
             'x-component': 'Grid.Row',
+            'x-index': 1,
             properties: {
               c25gfj884oe: {
                 _isJSONSchemaObject: true,
                 version: '2.0',
                 type: 'void',
                 'x-component': 'Grid.Col',
+                'x-index': 1,
                 properties: {
                   urmc26btvb5: {
                     _isJSONSchemaObject: true,
                     version: '2.0',
                     type: 'void',
                     'x-decorator': 'TableBlockProvider',
-                    'x-acl-action': 't_ylz5vtxncxq:list',
+                    'x-acl-action': 'test2174:list',
                     'x-decorator-props': {
-                      collection: 't_ylz5vtxncxq',
-                      resource: 't_ylz5vtxncxq',
+                      collection: 'test2174',
+                      resource: 'test2174',
                       action: 'list',
                       params: {
                         pageSize: 20,
@@ -47,6 +51,7 @@ const config = {
                     'x-designer': 'TableBlockDesigner',
                     'x-component': 'CardItem',
                     'x-filter-targets': [],
+                    'x-index': 1,
                     properties: {
                       actions: {
                         _isJSONSchemaObject: true,
@@ -59,9 +64,9 @@ const config = {
                             marginBottom: 'var(--nb-spacing)',
                           },
                         },
-                        'x-uid': 'ixeu99rujou',
-                        'x-async': false,
                         'x-index': 1,
+                        'x-uid': '7wfu81uqxox',
+                        'x-async': false,
                       },
                       yxgybgmfhkp: {
                         _isJSONSchemaObject: true,
@@ -76,6 +81,7 @@ const config = {
                           },
                           useProps: '{{ useTableBlockProps }}',
                         },
+                        'x-index': 2,
                         properties: {
                           actions: {
                             _isJSONSchemaObject: true,
@@ -87,6 +93,7 @@ const config = {
                             'x-component': 'TableV2.Column',
                             'x-designer': 'TableV2.ActionColumnDesigner',
                             'x-initializer': 'TableActionColumnInitializers',
+                            'x-index': 1,
                             properties: {
                               actions: {
                                 _isJSONSchemaObject: true,
@@ -97,22 +104,26 @@ const config = {
                                 'x-component-props': {
                                   split: '|',
                                 },
+                                'x-index': 1,
                                 properties: {
                                   r51kgwrhpgd: {
+                                    'x-uid': 'udzm8hggmmb',
                                     _isJSONSchemaObject: true,
                                     version: '2.0',
                                     type: 'void',
-                                    title: '{{ t("View") }}',
+                                    title: 'View details',
                                     'x-action': 'view',
                                     'x-designer': 'Action.Designer',
                                     'x-component': 'Action.Link',
                                     'x-component-props': {
                                       openMode: 'drawer',
+                                      danger: false,
                                     },
                                     'x-decorator': 'ACLActionProvider',
                                     'x-designer-props': {
                                       linkageAction: true,
                                     },
+                                    'x-index': 1,
                                     properties: {
                                       drawer: {
                                         _isJSONSchemaObject: true,
@@ -123,6 +134,7 @@ const config = {
                                         'x-component-props': {
                                           className: 'nb-action-popup',
                                         },
+                                        'x-index': 1,
                                         properties: {
                                           tabs: {
                                             _isJSONSchemaObject: true,
@@ -131,6 +143,7 @@ const config = {
                                             'x-component': 'Tabs',
                                             'x-component-props': {},
                                             'x-initializer': 'TabPaneInitializers',
+                                            'x-index': 1,
                                             properties: {
                                               tab1: {
                                                 _isJSONSchemaObject: true,
@@ -140,6 +153,7 @@ const config = {
                                                 'x-component': 'Tabs.TabPane',
                                                 'x-designer': 'Tabs.Designer',
                                                 'x-component-props': {},
+                                                'x-index': 1,
                                                 properties: {
                                                   grid: {
                                                     _isJSONSchemaObject: true,
@@ -147,18 +161,21 @@ const config = {
                                                     type: 'void',
                                                     'x-component': 'Grid',
                                                     'x-initializer': 'RecordBlockInitializers',
+                                                    'x-index': 1,
                                                     properties: {
                                                       g8w7wq09bgo: {
                                                         _isJSONSchemaObject: true,
                                                         version: '2.0',
                                                         type: 'void',
                                                         'x-component': 'Grid.Row',
+                                                        'x-index': 1,
                                                         properties: {
                                                           '42t1ais26x8': {
                                                             _isJSONSchemaObject: true,
                                                             version: '2.0',
                                                             type: 'void',
                                                             'x-component': 'Grid.Col',
+                                                            'x-index': 1,
                                                             properties: {
                                                               zmq6hmh2i3a: {
                                                                 _isJSONSchemaObject: true,
@@ -167,19 +184,20 @@ const config = {
                                                                 'x-acl-action-props': {
                                                                   skipScopeCheck: true,
                                                                 },
-                                                                'x-acl-action': 't_ylz5vtxncxq.f_q32e4ieq49n:create',
+                                                                'x-acl-action': 'test2174.f_q32e4ieq49n:create',
                                                                 'x-decorator': 'FormBlockProvider',
                                                                 'x-decorator-props': {
                                                                   useSourceId: '{{ useSourceIdFromParentRecord }}',
                                                                   useParams: '{{ useParamsFromRecord }}',
                                                                   action: null,
-                                                                  resource: 't_ylz5vtxncxq.f_q32e4ieq49n',
-                                                                  collection: 't_ylz5vtxncxq',
-                                                                  association: 't_ylz5vtxncxq.f_q32e4ieq49n',
+                                                                  resource: 'test2174.f_q32e4ieq49n',
+                                                                  collection: 'test2174',
+                                                                  association: 'test2174.f_q32e4ieq49n',
                                                                 },
                                                                 'x-designer': 'FormV2.Designer',
                                                                 'x-component': 'CardItem',
                                                                 'x-component-props': {},
+                                                                'x-index': 1,
                                                                 properties: {
                                                                   qii0gw1cb8e: {
                                                                     _isJSONSchemaObject: true,
@@ -189,6 +207,7 @@ const config = {
                                                                     'x-component-props': {
                                                                       useProps: '{{ useFormBlockProps }}',
                                                                     },
+                                                                    'x-index': 1,
                                                                     properties: {
                                                                       grid: {
                                                                         _isJSONSchemaObject: true,
@@ -196,20 +215,23 @@ const config = {
                                                                         type: 'void',
                                                                         'x-component': 'Grid',
                                                                         'x-initializer': 'FormItemInitializers',
+                                                                        'x-index': 1,
                                                                         properties: {
                                                                           s3hhb0ohnv1: {
                                                                             _isJSONSchemaObject: true,
                                                                             version: '2.0',
                                                                             type: 'void',
                                                                             'x-component': 'Grid.Row',
+                                                                            'x-index': 1,
                                                                             properties: {
                                                                               t2qtgv250s0: {
                                                                                 _isJSONSchemaObject: true,
                                                                                 version: '2.0',
                                                                                 type: 'void',
                                                                                 'x-component': 'Grid.Col',
+                                                                                'x-index': 1,
                                                                                 properties: {
-                                                                                  f_nr8xi7ezw5t: {
+                                                                                  singleSelect: {
                                                                                     _isJSONSchemaObject: true,
                                                                                     version: '2.0',
                                                                                     type: 'string',
@@ -217,30 +239,27 @@ const config = {
                                                                                     'x-component': 'CollectionField',
                                                                                     'x-decorator': 'FormItem',
                                                                                     'x-collection-field':
-                                                                                      't_ylz5vtxncxq.f_nr8xi7ezw5t',
+                                                                                      'test2174.singleSelect',
                                                                                     'x-component-props': {
                                                                                       style: {
                                                                                         width: '100%',
                                                                                       },
                                                                                     },
-                                                                                    'x-uid': 'gr6ye0ejgkj',
-                                                                                    'x-async': false,
                                                                                     'x-index': 1,
+                                                                                    'x-uid': '75ls3qlq3kw',
+                                                                                    'x-async': false,
                                                                                   },
                                                                                 },
-                                                                                'x-uid': 'jz51fg61juf',
+                                                                                'x-uid': 'ndb8zhrxgq0',
                                                                                 'x-async': false,
-                                                                                'x-index': 1,
                                                                               },
                                                                             },
-                                                                            'x-uid': 'dw9potxn5az',
+                                                                            'x-uid': '14q94mijyx4',
                                                                             'x-async': false,
-                                                                            'x-index': 2,
                                                                           },
                                                                         },
-                                                                        'x-uid': 'vyprewc6op9',
+                                                                        'x-uid': '6vfyrsrkw29',
                                                                         'x-async': false,
-                                                                        'x-index': 1,
                                                                       },
                                                                       actions: {
                                                                         _isJSONSchemaObject: true,
@@ -254,6 +273,7 @@ const config = {
                                                                             marginTop: 24,
                                                                           },
                                                                         },
+                                                                        'x-index': 2,
                                                                         properties: {
                                                                           afuxokt3osc: {
                                                                             _isJSONSchemaObject: true,
@@ -271,69 +291,56 @@ const config = {
                                                                               triggerWorkflows: [],
                                                                             },
                                                                             type: 'void',
-                                                                            'x-uid': '5fz8e6oboog',
-                                                                            'x-async': false,
                                                                             'x-index': 1,
+                                                                            'x-uid': '6idd8u0fs5v',
+                                                                            'x-async': false,
                                                                           },
                                                                         },
-                                                                        'x-uid': 'up7fy4jbynz',
+                                                                        'x-uid': '8xm66k2wcbq',
                                                                         'x-async': false,
-                                                                        'x-index': 2,
                                                                       },
                                                                     },
-                                                                    'x-uid': 'rts053txv5d',
+                                                                    'x-uid': 'ia7qdocnj0k',
                                                                     'x-async': false,
-                                                                    'x-index': 1,
                                                                   },
                                                                 },
-                                                                'x-uid': '84cihdbgsy4',
+                                                                'x-uid': 'ai78ycshc04',
                                                                 'x-async': false,
-                                                                'x-index': 1,
                                                               },
                                                             },
-                                                            'x-uid': 'e58k99p8v7t',
+                                                            'x-uid': 'gipnqnxa7c7',
                                                             'x-async': false,
-                                                            'x-index': 1,
                                                           },
                                                         },
-                                                        'x-uid': 'glf52r13dz6',
+                                                        'x-uid': '4fztm3s6pqr',
                                                         'x-async': false,
-                                                        'x-index': 1,
                                                       },
                                                     },
-                                                    'x-uid': '14rfeq12sgv',
+                                                    'x-uid': 'yiwh3chdjzg',
                                                     'x-async': false,
-                                                    'x-index': 1,
                                                   },
                                                 },
-                                                'x-uid': '6j7qo163w0u',
+                                                'x-uid': 'mar9ww8zdd6',
                                                 'x-async': false,
-                                                'x-index': 1,
                                               },
                                             },
-                                            'x-uid': 'nzslc0b3a5a',
+                                            'x-uid': '29brl1obftp',
                                             'x-async': false,
-                                            'x-index': 1,
                                           },
                                         },
-                                        'x-uid': 'umv8rca71ox',
+                                        'x-uid': 'r4qbds05tcz',
                                         'x-async': false,
-                                        'x-index': 1,
                                       },
                                     },
-                                    'x-uid': 'dormxy03out',
                                     'x-async': false,
-                                    'x-index': 1,
                                   },
                                 },
-                                'x-uid': 's5hys18b8r1',
+                                'x-uid': 'hp7glbaipmc',
                                 'x-async': false,
-                                'x-index': 1,
                               },
                             },
-                            'x-uid': 'e5641icd1oh',
+                            'x-uid': 'k9u1fta4jdq',
                             'x-async': false,
-                            'x-index': 1,
                           },
                           x6soi4xw3yn: {
                             _isJSONSchemaObject: true,
@@ -342,12 +349,12 @@ const config = {
                             'x-decorator': 'TableV2.Column.Decorator',
                             'x-designer': 'TableV2.Column.Designer',
                             'x-component': 'TableV2.Column',
+                            'x-index': 2,
                             properties: {
-                              f_nr8xi7ezw5t: {
-                                'x-uid': 'if1clbvakzu',
+                              singleSelect: {
                                 _isJSONSchemaObject: true,
                                 version: '2.0',
-                                'x-collection-field': 't_ylz5vtxncxq.f_nr8xi7ezw5t',
+                                'x-collection-field': 'test2174.singleSelect',
                                 'x-component': 'CollectionField',
                                 'x-component-props': {
                                   style: {
@@ -363,13 +370,13 @@ const config = {
                                   },
                                 },
                                 default: 'np55dbbny0e',
-                                'x-async': false,
                                 'x-index': 1,
+                                'x-uid': 'ots1wvv436n',
+                                'x-async': false,
                               },
                             },
-                            'x-uid': '46jf982acnq',
+                            'x-uid': 'yx4mdriq3jp',
                             'x-async': false,
-                            'x-index': 2,
                           },
                           aoj0myt8kgn: {
                             _isJSONSchemaObject: true,
@@ -378,18 +385,18 @@ const config = {
                             'x-decorator': 'TableV2.Column.Decorator',
                             'x-designer': 'TableV2.Column.Designer',
                             'x-component': 'TableV2.Column',
+                            'x-index': 3,
                             properties: {
                               f_q32e4ieq49n: {
-                                'x-uid': 'nmevvkp1dyq',
                                 _isJSONSchemaObject: true,
                                 version: '2.0',
-                                'x-collection-field': 't_ylz5vtxncxq.f_q32e4ieq49n',
+                                'x-collection-field': 'test2174.f_q32e4ieq49n',
                                 'x-component': 'CollectionField',
                                 'x-component-props': {
                                   ellipsis: true,
                                   size: 'small',
                                   fieldNames: {
-                                    label: 'f_nr8xi7ezw5t',
+                                    label: 'singleSelect',
                                     value: 'id',
                                   },
                                 },
@@ -400,6 +407,7 @@ const config = {
                                     display: 'none',
                                   },
                                 },
+                                'x-index': 1,
                                 properties: {
                                   ony7hpl5247: {
                                     _isJSONSchemaObject: true,
@@ -419,6 +427,7 @@ const config = {
                                         'x-component': 'Tabs',
                                         'x-component-props': {},
                                         'x-initializer': 'TabPaneInitializers',
+                                        'x-index': 1,
                                         properties: {
                                           tab1: {
                                             _isJSONSchemaObject: true,
@@ -428,6 +437,7 @@ const config = {
                                             'x-component': 'Tabs.TabPane',
                                             'x-designer': 'Tabs.Designer',
                                             'x-component-props': {},
+                                            'x-index': 1,
                                             properties: {
                                               grid: {
                                                 _isJSONSchemaObject: true,
@@ -435,78 +445,83 @@ const config = {
                                                 type: 'void',
                                                 'x-component': 'Grid',
                                                 'x-initializer': 'RecordBlockInitializers',
-                                                'x-uid': 'z8chebednow',
-                                                'x-async': false,
                                                 'x-index': 1,
+                                                'x-uid': 'roog7uz0d2o',
+                                                'x-async': false,
                                               },
                                             },
-                                            'x-uid': 'bemxws6nlsp',
+                                            'x-uid': 'x05lq9x1n0n',
                                             'x-async': false,
-                                            'x-index': 1,
                                           },
                                         },
-                                        'x-uid': 'kkiviyd3hax',
+                                        'x-uid': 'hrymp5hthg3',
                                         'x-async': false,
-                                        'x-index': 1,
                                       },
                                     },
-                                    'x-uid': 'g2ynjolpxxr',
+                                    'x-uid': 'ujkf9096qwq',
                                     'x-async': false,
                                   },
                                 },
+                                'x-uid': '02kpdjz33yd',
                                 'x-async': false,
-                                'x-index': 1,
                               },
                             },
-                            'x-uid': 'mxhts7v66xt',
+                            'x-uid': 'e366r5cz2cv',
                             'x-async': false,
-                            'x-index': 3,
                           },
                         },
-                        'x-uid': 'jvbe1vvv2x5',
+                        'x-uid': 'wkdjjugn3l8',
                         'x-async': false,
-                        'x-index': 2,
                       },
                     },
-                    'x-uid': 'q8igo0fwc04',
+                    'x-uid': 'n3f07077krt',
                     'x-async': false,
-                    'x-index': 1,
                   },
                 },
-                'x-uid': 'bxeh7r9vao9',
+                'x-uid': 'i920mrykzkp',
                 'x-async': false,
-                'x-index': 1,
               },
             },
-            'x-uid': '2kiklqcijua',
+            'x-uid': '8a5n45kb55h',
             'x-async': false,
-            'x-index': 1,
           },
         },
-        'x-uid': 'pyrahf1c66i',
+        'x-uid': 'wcobb00rn5y',
         'x-async': false,
-        'x-index': 1,
       },
     },
-    'x-uid': 'u9vjrr5ehhq',
+    'x-uid': 'pfr9jap0zsf',
     'x-async': true,
-    'x-index': 1,
   },
   collections: [
     {
-      name: 't_ylz5vtxncxq',
+      name: 'test2174',
       title: 'Test',
       fields: [
         {
           name: 'f_lkqy3eh4ag7',
           interface: 'integer',
+          isForeignKey: true,
+          uiSchema: {
+            type: 'number',
+            title: 'f_lkqy3eh4ag7',
+            'x-component': 'InputNumber',
+            'x-read-pretty': true,
+          },
         },
         {
           name: 'f_rathx54cqpy',
           interface: 'integer',
+          isForeignKey: true,
+          uiSchema: {
+            type: 'number',
+            title: 'f_rathx54cqpy',
+            'x-component': 'InputNumber',
+            'x-read-pretty': true,
+          },
         },
         {
-          name: 'f_nr8xi7ezw5t',
+          name: 'singleSelect',
           interface: 'select',
           uiSchema: {
             enum: [
@@ -543,7 +558,9 @@ const config = {
             },
             title: 'One to many',
           },
-          target: 't_ylz5vtxncxq',
+          target: 'test2174',
+          targetKey: 'id',
+          sourceKey: 'id',
         },
       ],
     },
@@ -551,18 +568,16 @@ const config = {
 };
 
 // fix https://nocobase.height.app/T-2174
-test.skip('BUG: should show default value option', async ({ page, mockPage, mockRecord }) => {
+test('BUG: should show default value option', async ({ page, mockPage, mockRecord }) => {
   const nocoPage = await mockPage(config).waitForInit();
-  await mockRecord('t_ylz5vtxncxq');
+  await mockRecord('test2174');
   await nocoPage.goto();
 
-  await page.getByLabel('action-Action.Link-View-view-t_ylz5vtxncxq-table-0').click();
+  await page.getByLabel('action-Action.Link-View details-view-test2174-table-0').click();
+  await page.getByLabel('block-item-CollectionField-test2174-form-test2174.singleSelect-Single select').hover();
   await page
-    .getByLabel('block-item-CollectionField-t_ylz5vtxncxq-form-t_ylz5vtxncxq.f_nr8xi7ezw5t-Single select')
-    .hover();
-  await page
-    .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-t_ylz5vtxncxq-t_ylz5vtxncxq.f_nr8xi7ezw5t')
+    .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-test2174-test2174.singleSelect')
     .hover();
 
-  await expect(page.getByLabel('Set default value')).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
 });

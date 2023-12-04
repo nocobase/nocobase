@@ -1,6 +1,8 @@
 import { useCollection } from '../../';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 
-export const KanbanActionInitializers = {
+export const kanbanActionInitializers = new SchemaInitializer({
+  name: 'KanbanActionInitializers',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -10,19 +12,20 @@ export const KanbanActionInitializers = {
     {
       type: 'itemGroup',
       title: "{{t('Enable actions')}}",
+      name: 'enableActions',
       children: [
         {
-          type: 'item',
+          name: 'filter',
           title: "{{t('Filter')}}",
-          component: 'FilterActionInitializer',
+          Component: 'FilterActionInitializer',
           schema: {
             'x-align': 'left',
           },
         },
         {
-          type: 'item',
+          name: 'addNew',
           title: "{{t('Add new')}}",
-          component: 'CreateActionInitializer',
+          Component: 'CreateActionInitializer',
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
@@ -30,7 +33,7 @@ export const KanbanActionInitializers = {
               skipScopeCheck: true,
             },
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection as any).template !== 'view' || collection?.writableView;
           },
@@ -38,4 +41,4 @@ export const KanbanActionInitializers = {
       ],
     },
   ],
-};
+});

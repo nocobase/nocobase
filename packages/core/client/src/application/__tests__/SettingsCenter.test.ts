@@ -131,7 +131,7 @@ describe('PluginSettingsManager', () => {
   it('router', () => {
     app.pluginSettingsManager.add('test1', test1);
     app.pluginSettingsManager.add('test1.test2', test2);
-    expect(app.router.getRoutes()[0]).toMatchInlineSnapshot(`
+    expect(app.router.getRoutesTree()[0]).toMatchInlineSnapshot(`
       {
         "children": undefined,
         "element": <AppNotFound />,

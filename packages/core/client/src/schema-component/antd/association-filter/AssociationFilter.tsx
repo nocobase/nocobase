@@ -3,23 +3,24 @@ import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
 import React from 'react';
 import { useCollection } from '../../../collection-manager';
-import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks';
 import { useToken } from '../__builtins__';
 import { AssociationFilterBlockDesigner } from './AssociationFilter.BlockDesigner';
-import { AssociationFilterFilterBlockInitializer } from './AssociationFilter.FilterBlockInitializer';
-import { AssociationFilterInitializer } from './AssociationFilter.Initializer';
 import { AssociationFilterItem } from './AssociationFilter.Item';
 import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer';
 import { AssociationFilterProvider } from './AssociationFilterProvider';
+import { useSchemaInitializerRender } from '../../../application';
+import { Plugin } from '../../../application/Plugin';
+import { associationFilterFilterBlockInitializer } from './AssociationFilter.FilterBlockInitializer';
+import { associationFilterInitializer } from './AssociationFilter.Initializer';
 
 export const AssociationFilter = (props) => {
   const { token } = useToken();
   const Designer = useDesigner();
   const filedSchema = useFieldSchema();
 
-  const { render } = useSchemaInitializer(filedSchema['x-initializer']);
+  const { render } = useSchemaInitializerRender(filedSchema['x-initializer'], filedSchema['x-initializer-props']);
 
   return (
     <DndContext>
@@ -85,8 +86,6 @@ export const AssociationFilter = (props) => {
 };
 
 AssociationFilter.Provider = AssociationFilterProvider;
-AssociationFilter.Initializer = AssociationFilterInitializer;
-AssociationFilter.FilterBlockInitializer = AssociationFilterFilterBlockInitializer;
 AssociationFilter.Item = AssociationFilterItem as typeof AssociationFilterItem & {
   Designer: typeof AssociationFilterItemDesigner;
 };
@@ -98,3 +97,10 @@ AssociationFilter.useAssociationField = () => {
   const { getField } = useCollection();
   return React.useMemo(() => getField(fieldSchema.name as any), [fieldSchema.name]);
 };
+
+export class AssociationFilterPlugin extends Plugin {
+  async load() {
+    this.app.schemaInitializerManager.add(associationFilterFilterBlockInitializer);
+    this.app.schemaInitializerManager.add(associationFilterInitializer);
+  }
+}

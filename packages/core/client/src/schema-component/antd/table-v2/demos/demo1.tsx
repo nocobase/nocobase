@@ -2,6 +2,7 @@ import { ISchema, useForm } from '@formily/react';
 import {
   APIClientProvider,
   AntdSchemaComponentProvider,
+  Application,
   BlockSchemaComponentProvider,
   CollectionManagerProvider,
   SchemaComponent,
@@ -206,7 +207,7 @@ const schema: ISchema = {
   },
 };
 
-export default () => {
+const Root = () => {
   return (
     <APIClientProvider apiClient={apiClient}>
       <SchemaComponentProvider>
@@ -221,3 +222,9 @@ export default () => {
     </APIClientProvider>
   );
 };
+
+const app = new Application({
+  providers: [Root],
+});
+
+export default app.getRootComponent();

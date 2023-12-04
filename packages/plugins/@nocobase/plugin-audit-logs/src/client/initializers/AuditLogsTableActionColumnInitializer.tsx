@@ -1,7 +1,7 @@
-import { InitializerWithSwitch } from '@nocobase/client';
+import { InitializerWithSwitch, useSchemaInitializerItem } from '@nocobase/client';
 import React from 'react';
 
-export const AuditLogsTableActionColumnInitializer = (props) => {
+export const AuditLogsTableActionColumnInitializer = () => {
   const schema = {
     type: 'void',
     title: '{{ t("Actions") }}',
@@ -22,5 +22,6 @@ export const AuditLogsTableActionColumnInitializer = (props) => {
       },
     },
   };
-  return <InitializerWithSwitch {...props} schema={schema} type={'x-action-column'} />;
+  const itemConfig = useSchemaInitializerItem();
+  return <InitializerWithSwitch {...itemConfig} schema={schema} item={itemConfig} type={'x-action-column'} />;
 };

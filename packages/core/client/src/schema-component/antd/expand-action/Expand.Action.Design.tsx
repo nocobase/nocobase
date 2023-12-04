@@ -2,7 +2,12 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+} from '../../../schema-settings';
 
 export const ExpandActionDesign = (props) => {
   const { t } = useTranslation();
@@ -13,7 +18,7 @@ export const ExpandActionDesign = (props) => {
 
   return (
     <GeneralSchemaDesigner {...props} disableInitializer>
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Edit button')}
         schema={
           {
@@ -87,8 +92,8 @@ export const ExpandActionDesign = (props) => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={(s) => {
           return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');

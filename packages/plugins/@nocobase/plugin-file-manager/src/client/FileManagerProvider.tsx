@@ -1,17 +1,8 @@
-import {
-  CollectionManagerProvider,
-  PluginManagerContext,
-  registerField,
-  registerTemplate,
-  SchemaComponentOptions,
-  SchemaInitializerContext,
-  SchemaInitializerProvider,
-  useCollection,
-} from '@nocobase/client';
+import { CollectionManagerProvider, registerField, registerTemplate, SchemaComponentOptions } from '@nocobase/client';
 import { forEach } from '@nocobase/utils/client';
-import React, { FC, useContext } from 'react';
+import React, { FC } from 'react';
 import * as hooks from './hooks';
-import * as initializers from './initializers';
+import { UploadActionInitializer } from './initializers';
 import { attachment } from './interfaces/attachment';
 import * as templates from './templates';
 
@@ -23,44 +14,11 @@ forEach(templates, (template, key: string) => {
 registerField(attachment.group, 'attachment', attachment);
 
 export const FileManagerProvider: FC = (props) => {
-  const initializes = useContext<any>(SchemaInitializerContext);
-  const hasUploadAction = initializes.TableActionInitializers.items[0].children.some(
-    (initialize) => initialize.component === 'UploadActionInitializer',
-  );
-  !hasUploadAction &&
-    initializes.TableActionInitializers.items[0].children.push({
-      type: 'item',
-      title: "{{t('Upload')}}",
-      component: 'UploadActionInitializer',
-      schema: {
-        'x-align': 'right',
-        'x-decorator': 'ACLActionProvider',
-        'x-acl-action-props': {
-          skipScopeCheck: true,
-        },
-      },
-      visible: () => {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const collection = useCollection();
-        return collection.template === 'file';
-      },
-    });
-
-  const ctx = useContext(PluginManagerContext);
-
   return (
-    <PluginManagerContext.Provider
-      value={{
-        components: {
-          ...ctx?.components,
-        },
-      }}
-    >
-      <CollectionManagerProvider interfaces={{ attachment }}>
-        <SchemaComponentOptions scope={hooks}>
-          <SchemaInitializerProvider components={initializers}>{props.children}</SchemaInitializerProvider>
-        </SchemaComponentOptions>
-      </CollectionManagerProvider>
-    </PluginManagerContext.Provider>
+    <CollectionManagerProvider interfaces={{ attachment }}>
+      <SchemaComponentOptions scope={hooks} components={{ UploadActionInitializer }}>
+        {props.children}
+      </SchemaComponentOptions>
+    </CollectionManagerProvider>
   );
 };

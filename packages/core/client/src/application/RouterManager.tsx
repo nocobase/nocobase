@@ -37,15 +37,7 @@ export class RouterManager {
     this.options = options || {};
   }
 
-  setType(type: RouterOptions['type']) {
-    this.options.type = type;
-  }
-
-  setBasename(basename: string) {
-    this.options.basename = basename;
-  }
-
-  getRoutes(): RouteObject[] {
+  getRoutesTree(): RouteObject[] {
     type RouteTypeWithChildren = RouteType & { children?: RouteTypeWithChildren };
     const routes: Record<string, RouteTypeWithChildren> = {};
 
@@ -94,6 +86,18 @@ export class RouterManager {
     return buildRoutesTree(routes);
   }
 
+  getRoutes() {
+    return this.routes;
+  }
+
+  setType(type: RouterOptions['type']) {
+    this.options.type = type;
+  }
+
+  setBasename(basename: string) {
+    this.options.basename = basename;
+  }
+
   getRouterComponent() {
     const { type = 'browser', ...opts } = this.options || {};
     const Routers = {
@@ -105,7 +109,7 @@ export class RouterManager {
     const ReactRouter = Routers[type];
 
     const RenderRoutes = () => {
-      const routes = this.getRoutes();
+      const routes = this.getRoutesTree();
       const element = useRoutes(routes);
       return element;
     };
@@ -127,6 +131,14 @@ export class RouterManager {
 
   add(name: string, route: RouteType) {
     this.routes[name] = route;
+  }
+
+  get(name: string) {
+    return this.routes[name];
+  }
+
+  has(name: string) {
+    return !!this.get(name);
   }
 
   remove(name: string) {
