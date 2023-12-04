@@ -1,9 +1,9 @@
 import { expect, test } from '@nocobase/test/client';
-import { testingLazyLoadingOfAssociationFieldsForTheCurrentRecord } from './templatesOfPage';
+import { testingLazyLoadingOfAssociationFieldsForTheCurrentForm } from './templatesOfPage';
 
 test.describe('default value: lazy load value of variables', () => {
   test('current form', async ({ page, mockPage, mockRecord }) => {
-    const nocoPage = await mockPage(testingLazyLoadingOfAssociationFieldsForTheCurrentRecord).waitForInit();
+    const nocoPage = await mockPage(testingLazyLoadingOfAssociationFieldsForTheCurrentForm).waitForInit();
     await mockRecord('general');
     await nocoPage.goto();
 

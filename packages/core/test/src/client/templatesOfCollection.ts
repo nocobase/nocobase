@@ -649,4 +649,15 @@ export const generalWithMultiLevelRelationshipFields: CollectionSetting[] = [
       },
     ],
   },
+  {
+    name: 'm2oField3',
+    title: 'M2o field 3',
+    fields: [
+      {
+        name: 'm2oField3',
+        interface: 'm2o',
+        target: 'users',
+      },
+    ],
+  },
 ];

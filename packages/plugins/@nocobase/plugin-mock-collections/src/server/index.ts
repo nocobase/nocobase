@@ -188,7 +188,7 @@ export class PluginMockCollectionsServer extends Plugin {
       mock: async (ctx, next) => {
         const { resourceName } = ctx.action;
         const { values, count = 10 } = ctx.action.params;
-        const mockCollectionData = async (collectionName, count = 1, depth = 0, maxDepth = 2) => {
+        const mockCollectionData = async (collectionName, count = 1, depth = 0, maxDepth = 4) => {
           const collection = ctx.db.getCollection(collectionName) as Collection;
           const items = await Promise.all(
             _.range(count).map(async (i) => {
