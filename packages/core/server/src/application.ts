@@ -25,6 +25,7 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import { createErrorHandler, ErrorHandler } from './errors/handler';
 
 const packageJson = require('../package.json');
 
@@ -228,6 +229,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get version() {
     return this._version;
+  }
+
+  protected _errorHandler: ErrorHandler;
+  get errorHandler() {
+    return this._errorHandler;
   }
 
   get log() {
@@ -728,6 +734,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     this._locales = new Locale(createAppProxy(this));
+    this._errorHandler = createErrorHandler(this);
 
     registerMiddlewares(this, options);
 

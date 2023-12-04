@@ -39,6 +39,8 @@ export function createResourcer(options: ApplicationOptions) {
 }
 
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
+  app.use(app.errorHandler.middleware(), { before: 'cors', tag: 'errorHandler' });
+
   app.use(
     cors({
       exposeHeaders: ['content-disposition'],
