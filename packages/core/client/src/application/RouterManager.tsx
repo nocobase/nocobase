@@ -31,7 +31,7 @@ export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
 export type RenderComponentType = (Component: ComponentTypeAndString, props?: any) => React.ReactNode;
 
 export class RouterManager {
-  public routes: Record<string, RouteType> = {};
+  protected routes: Record<string, RouteType> = {};
 
   constructor(protected options: RouterOptions) {
     this.options = options || {};
