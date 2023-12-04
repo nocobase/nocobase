@@ -1,4 +1,4 @@
-import { GeneralSchemaDesigner, SchemaSettings } from '@nocobase/client';
+import { GeneralSchemaDesigner, SchemaSettingsRemove } from '@nocobase/client';
 import React from 'react';
 import { useChartsTranslation } from '../locale';
 
@@ -8,7 +8,7 @@ export const ChartFilterBlockDesigner: React.FC = () => {
     <GeneralSchemaDesigner disableInitializer title={t('Filter')}>
       {/* <SchemaSettings.BlockTitleItem /> */}
       {/* <SchemaSettings.Divider /> */}
-      <SchemaSettings.Remove
+      <SchemaSettingsRemove
         breakRemoveOn={{
           'x-component': 'ChartV2Block',
         }}

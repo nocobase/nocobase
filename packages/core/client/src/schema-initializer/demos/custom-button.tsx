@@ -41,7 +41,7 @@ const Root = () => {
       <Divider />
       <div>
         <div>不使用 Popover</div>
-        {render({ noPopover: true, componentProps: { onClick: () => alert('test') } })}
+        {render({ popover: false, componentProps: { onClick: () => alert('test') } })}
       </div>
     </div>
   );

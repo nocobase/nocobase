@@ -104,7 +104,7 @@ InitializerComponent.displayName = 'InitializerComponent';
 
 export function useSchemaInitializerRender<P1 = ButtonProps, P2 = {}>(
   name: string,
-  options?: SchemaInitializerOptions<P1, P2>,
+  options?: Omit<SchemaInitializerOptions<P1, P2>, 'name'>,
 ) {
   const app = useApp();
   const initializer = useMemo(
@@ -128,7 +128,7 @@ export function useSchemaInitializerRender<P1 = ButtonProps, P2 = {}>(
     }
     return {
       exists: true,
-      render: (props?: SchemaInitializerOptions<P1, P2>) =>
+      render: (props?: Omit<SchemaInitializerOptions<P1, P2>, 'name'>) =>
         React.createElement(InitializerComponent, { ...initializer.options, ...options, ...props }),
     };
   }, [initializer, name, options]);

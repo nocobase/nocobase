@@ -2,12 +2,16 @@ import React, { useContext } from 'react';
 import {
   EditDescription,
   GeneralSchemaDesigner,
-  SchemaSettings,
+  SchemaSettingsItem,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
   VariablesContext,
   useCollection,
   useCollectionManager,
   useCompile,
   useDesignable,
+  SchemaSettingsSelectItem,
 } from '@nocobase/client';
 import { useChartsTranslation } from '../locale';
 import { Schema, useField, useFieldSchema } from '@formily/react';
@@ -28,7 +32,7 @@ const EditTitle = () => {
   const { setField } = useContext(ChartFilterContext);
 
   return (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       key="edit-field-title"
       title={t('Edit field title')}
       schema={{
@@ -124,7 +128,7 @@ const EditOperator = () => {
   };
 
   return (
-    <SchemaSettings.SelectItem
+    <SchemaSettingsSelectItem
       key="operator"
       title={t('Operator')}
       value={operator?.value || operatorList[0]?.value}
@@ -155,7 +159,7 @@ const EditProps = () => {
   const fieldSchema = useFieldSchema();
   const propsSchema = getPropsSchemaByComponent(fieldSchema['x-component']);
   return (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       key="edit-field-props"
       title={t('Edit field properties')}
       schema={{
@@ -188,7 +192,7 @@ const EditDefaultValue = () => {
   const { getTranslatedTitle } = useChartFilter();
   const title = getTranslatedTitle(fieldSchema.title);
   return (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       key="set field default value"
       title={t('Set default value')}
       components={{
@@ -253,7 +257,7 @@ const EditTitleField = () => {
     }));
 
   return options.length > 0 && fieldSchema['x-component'] === 'CollectionField' ? (
-    <SchemaSettings.SelectItem
+    <SchemaSettingsSelectItem
       key="title-field"
       title={t('Title field')}
       options={options}
@@ -294,12 +298,12 @@ export const ChartFilterItemDesigner: React.FC = () => {
     <GeneralSchemaDesigner disableInitializer>
       {!isCustom && (
         <>
-          <SchemaSettings.Item title={fieldName}>
+          <SchemaSettingsItem title={fieldName}>
             <Text type="secondary">
               {t('Original field')}: {originalTitle}
             </Text>
-          </SchemaSettings.Item>
-          <SchemaSettings.Divider />
+          </SchemaSettingsItem>
+          <SchemaSettingsDivider />
         </>
       )}
       <EditTitle />
@@ -308,8 +312,8 @@ export const ChartFilterItemDesigner: React.FC = () => {
       {!isCustom && <EditOperator />}
       <EditTitleField />
       <EditDefaultValue />
-      {collectionField ? <SchemaSettings.Divider /> : null}
-      <SchemaSettings.Remove
+      {collectionField ? <SchemaSettingsDivider /> : null}
+      <SchemaSettingsRemove
         key="remove"
         confirm={{
           title: t('Delete field'),

@@ -1,15 +1,15 @@
 import { useTranslation } from 'react-i18next';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useDesignable } from '../..';
-import { SchemaSetting } from '../../../application/schema-settings';
-import { useSchemaDesigner } from '../../../application/schema-designer';
+import { SchemaSettings } from '../../../application/schema-settings';
+import { useSchemaToolbar } from '../../../application/schema-toolbar';
 
 function useNotDisableHeader() {
   const fieldSchema = useFieldSchema();
   return !fieldSchema['x-component-props']?.disablePageHeader;
 }
 
-export const pageSettings = new SchemaSetting({
+export const pageSettings = new SchemaSettings({
   name: 'PageSettings',
   items: [
     {
@@ -81,7 +81,7 @@ export const pageSettings = new SchemaSetting({
         const { t } = useTranslation();
         const field = useField();
         const fieldSchema = useFieldSchema();
-        const { title } = useSchemaDesigner();
+        const { title } = useSchemaToolbar();
         return {
           hide: true,
           title: t('Edit page title'),

@@ -1,10 +1,12 @@
 import { Field } from '@formily/core';
 import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
+import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollection, useCollectionManager } from '../collection-manager';
 import { useDesignable } from '../schema-component';
-import { SchemaSettings } from '../schema-settings';
+import { getTempFieldState } from '../schema-component/antd/form-v2/utils';
+import { SchemaSettingsModalItem, SchemaSettingsSwitchItem } from '../schema-settings';
 
 export const GeneralSchemaItems: React.FC<{
   required?: boolean;
@@ -21,7 +23,7 @@ export const GeneralSchemaItems: React.FC<{
     return (
       <>
         {collectionField && (
-          <SchemaSettings.ModalItem
+          <SchemaSettingsModalItem
             key="edit-field-title"
             title={t('Edit field title')}
             schema={
@@ -55,7 +57,7 @@ export const GeneralSchemaItems: React.FC<{
             }}
           />
         )}
-        <SchemaSettings.SwitchItem
+        <SchemaSettingsSwitchItem
           checked={fieldSchema['x-decorator-props']?.['showTitle'] ?? true}
           title={t('Display title')}
           onChange={(checked) => {
@@ -73,9 +75,9 @@ export const GeneralSchemaItems: React.FC<{
             });
             dn.refresh();
           }}
-        ></SchemaSettings.SwitchItem>
+        ></SchemaSettingsSwitchItem>
         {!field.readPretty && (
-          <SchemaSettings.ModalItem
+          <SchemaSettingsModalItem
             key="edit-description"
             title={t('Edit description')}
             schema={
@@ -107,7 +109,7 @@ export const GeneralSchemaItems: React.FC<{
           />
         )}
         {field.readPretty && (
-          <SchemaSettings.ModalItem
+          <SchemaSettingsModalItem
             key="edit-tooltip"
             title={t('Edit tooltip')}
             schema={
@@ -140,7 +142,7 @@ export const GeneralSchemaItems: React.FC<{
         )}
         {/* TODO: FormField 好像被弃用了，应该删除掉 */}
         {!field.readPretty && fieldSchema['x-component'] !== 'FormField' && required && (
-          <SchemaSettings.SwitchItem
+          <SchemaSettingsSwitchItem
             key="required"
             title={t('Required')}
             checked={fieldSchema.required as boolean}
@@ -149,6 +151,7 @@ export const GeneralSchemaItems: React.FC<{
                 ['x-uid']: fieldSchema['x-uid'],
               };
               field.required = required;
+              _.set(field, 'initStateOfLinkageRules.required', getTempFieldState(true, required));
               fieldSchema['required'] = required;
               schema['required'] = required;
               dn.emit('patch', {

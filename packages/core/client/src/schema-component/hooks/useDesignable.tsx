@@ -1,3 +1,4 @@
+import { GeneralField, Query } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { message } from 'antd';
@@ -11,10 +12,11 @@ import { SchemaComponentContext } from '../context';
 
 interface CreateDesignableProps {
   current: Schema;
+  model?: GeneralField;
+  query?: Query;
   api?: APIClient;
   refresh?: () => void;
   onSuccess?: any;
-  i18n?: any;
   t?: any;
 }
 
@@ -104,6 +106,14 @@ export class Designable {
   constructor(options: CreateDesignableProps) {
     this.options = options;
     this.current = options.current;
+  }
+
+  get model() {
+    return this.options.model;
+  }
+
+  get query() {
+    return this.options.query;
   }
 
   loadAPIClientEvents() {
@@ -267,6 +277,102 @@ export class Designable {
   refresh() {
     const { refresh } = this.options;
     return refresh?.();
+  }
+
+  deepMerge(schema: ISchema) {
+    const replaceKeys = {
+      title: 'title',
+      description: 'description',
+      default: 'initialValue',
+      readOnly: 'readOnly',
+      writeOnly: 'editable',
+      enum: 'dataSource',
+      'x-pattern': 'pattern',
+      'x-display': 'display',
+      'x-validator': 'validator',
+      'x-decorator': 'decorator',
+      'x-component': 'component',
+      'x-reactions': 'reactions',
+      'x-content': 'content',
+      'x-visible': 'visible',
+      'x-hidden': 'hidden',
+      'x-disabled': 'disabled',
+      'x-editable': 'editable',
+      'x-read-only': 'readOnly',
+    };
+
+    const mergeKeys = {
+      'x-decorator-props': 'decoratorProps',
+      'x-component-props': 'componentProps',
+      'x-data': 'data',
+    };
+
+    Object.keys(schema).forEach((key) => {
+      if (replaceKeys[key]) {
+        this.current[key] = schema[key];
+        this.updateModel(replaceKeys[key], schema[key]);
+      } else if (mergeKeys[key]) {
+        Object.keys(schema[key]).forEach((key2) => {
+          set(this.current, [key, key2], schema[key][key2]);
+          this.updateModel([mergeKeys[key], key2], schema[key][key2]);
+        });
+      } else {
+        this.current[key] = schema[key];
+      }
+    });
+
+    this.emit('patch', { schema });
+  }
+
+  getSchemaAttribute(key: string | string[], defaultValue?: any) {
+    return get(this.current, key, defaultValue);
+  }
+
+  shallowMerge(schema: ISchema) {
+    const replaceKeys = {
+      title: 'title',
+      description: 'description',
+      default: 'initialValue',
+      readOnly: 'readOnly',
+      writeOnly: 'editable',
+      enum: 'dataSource',
+      'x-pattern': 'pattern',
+      'x-display': 'display',
+      'x-validator': 'validator',
+      'x-decorator': 'decorator',
+      'x-component': 'component',
+      'x-reactions': 'reactions',
+      'x-content': 'content',
+      'x-visible': 'visible',
+      'x-hidden': 'hidden',
+      'x-disabled': 'disabled',
+      'x-editable': 'editable',
+      'x-read-only': 'readOnly',
+      'x-decorator-props': 'decoratorProps',
+      'x-component-props': 'componentProps',
+      'x-data': 'data',
+    };
+
+    Object.keys(schema).forEach((key) => {
+      this.current[key] = schema[key];
+      if (replaceKeys[key]) {
+        this.updateModel(replaceKeys[key], schema[key]);
+      }
+    });
+
+    this.emit('patch', { schema });
+  }
+
+  updateModel(key: any, value: any) {
+    const update = (field) => {
+      set(field, key, value);
+    };
+    if (this.model) {
+      update(this.model);
+    }
+    if (this.query) {
+      this.query.take(update);
+    }
   }
 
   insertAdjacent(position: Position, schema: ISchema, options: InsertAdjacentOptions = {}) {
@@ -605,7 +711,7 @@ export function useDesignable() {
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
   const { t } = useTranslation();
-  const dn = createDesignable({ t, api, refresh, current: fieldSchema });
+  const dn = createDesignable({ t, api, refresh, current: fieldSchema, model: field });
   dn.loadAPIClientEvents();
   return {
     dn,
@@ -633,7 +739,25 @@ export function useDesignable() {
             field.title = val;
             fieldSchema['title'] = val;
           }
+          if (k === 'x-decorator-props') {
+            if (!field.decoratorProps) {
+              field.decoratorProps = {};
+            }
+            if (!fieldSchema['x-decorator-props']) {
+              fieldSchema['x-decorator-props'] = {};
+            }
+            Object.keys(val).forEach((i) => {
+              field.decoratorProps[i] = val[i];
+              fieldSchema['x-decorator-props'][i] = val[i];
+            });
+          }
           if (k === 'x-component-props') {
+            if (!field.componentProps) {
+              field.componentProps = {};
+            }
+            if (!fieldSchema['x-component-props']) {
+              fieldSchema['x-component-props'] = {};
+            }
             Object.keys(val).forEach((i) => {
               field.componentProps[i] = val[i];
               fieldSchema['x-component-props'][i] = val[i];
@@ -648,6 +772,12 @@ export function useDesignable() {
       }
       update(key);
       refresh();
+    },
+    shallowMerge(schema: ISchema) {
+      dn.shallowMerge(schema);
+    },
+    deepMerge(schema: ISchema) {
+      dn.deepMerge(schema);
     },
     remove(schema?: any, options?: RemoveOptions) {
       dn.remove(schema, options);

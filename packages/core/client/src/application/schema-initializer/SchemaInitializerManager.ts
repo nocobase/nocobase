@@ -1,7 +1,7 @@
 import { ButtonProps } from 'antd';
 import { Application } from '../Application';
 import { SchemaInitializer } from './SchemaInitializer';
-import { SchemaInitializerItemType } from './types';
+import { SchemaInitializerItemTypeWithoutName } from './types';
 
 interface ActionType {
   type: 'add' | 'remove';
@@ -10,7 +10,7 @@ interface ActionType {
 }
 
 export class SchemaInitializerManager {
-  public schemaInitializers: Record<string, SchemaInitializer<any, any>> = {};
+  protected schemaInitializers: Record<string, SchemaInitializer<any, any>> = {};
   protected actionList: Record<string, ActionType[]> = {};
 
   constructor(
@@ -19,20 +19,22 @@ export class SchemaInitializerManager {
   ) {
     this.app = app;
 
-    _schemaInitializers.forEach((item) => this.add(item));
+    this.add(..._schemaInitializers);
   }
 
-  add<P1 = any, P2 = any>(schemaInitializer: SchemaInitializer<P1, P2>) {
-    this.schemaInitializers[schemaInitializer.name] = schemaInitializer;
-    if (Array.isArray(this.actionList[schemaInitializer.name])) {
-      this.actionList[schemaInitializer.name].forEach((item) => {
-        schemaInitializer[item.type](item.itemName, item.data);
-      });
-      this.actionList[schemaInitializer.name] = undefined;
-    }
+  add<P1 = any, P2 = any>(...schemaInitializerList: SchemaInitializer<P1, P2>[]) {
+    schemaInitializerList.forEach((schemaInitializer) => {
+      this.schemaInitializers[schemaInitializer.name] = schemaInitializer;
+      if (Array.isArray(this.actionList[schemaInitializer.name])) {
+        this.actionList[schemaInitializer.name].forEach((item) => {
+          schemaInitializer[item.type](item.itemName, item.data);
+        });
+        this.actionList[schemaInitializer.name] = undefined;
+      }
+    });
   }
 
-  addItem(schemaInitializerName: string, itemName: string, data: Omit<SchemaInitializerItemType, 'name'>) {
+  addItem(schemaInitializerName: string, itemName: string, data: SchemaInitializerItemTypeWithoutName) {
     const schemaInitializer = this.get(schemaInitializerName);
     if (!schemaInitializer) {
       if (!this.actionList[schemaInitializerName]) {

@@ -5,12 +5,11 @@ import { Button, Modal, Result, Spin } from 'antd';
 import React, { FC } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
-import { Application } from '../application';
+import { Application, useApp } from '../application';
 import { Plugin } from '../application/Plugin';
 import { SigninPage, SigninPageExtensionPlugin, SignupPage } from '../auth';
 import { BlockSchemaComponentPlugin } from '../block-provider';
 import { RemoteDocumentTitlePlugin } from '../document-title';
-import { AntdAppProvider } from '../global-theme';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
@@ -33,26 +32,28 @@ const AppSpin = () => {
   );
 };
 
-const AppError: FC<{ app: Application }> = observer(({ app }) => (
-  <div>
-    <Result
-      className={css`
-        top: 50%;
-        position: absolute;
-        width: 100%;
-        transform: translate(0, -50%);
-      `}
-      status="error"
-      title={app.i18n.t('Failed to load plugin')}
-      subTitle={app.i18n.t(app.error?.message)}
-      extra={[
-        <Button type="primary" key="try" onClick={() => window.location.reload()}>
-          {app.i18n.t('Try again')}
-        </Button>,
-      ]}
-    />
-  </div>
-));
+const AppError: FC<{ error: Error; app: Application }> = observer(({ app, error }) => {
+  return (
+    <div>
+      <Result
+        className={css`
+          top: 50%;
+          position: absolute;
+          width: 100%;
+          transform: translate(0, -50%);
+        `}
+        status="error"
+        title={app.i18n.t('Failed to load plugin')}
+        subTitle={app.i18n.t(error?.message)}
+        extra={[
+          <Button type="primary" key="try" onClick={() => window.location.reload()}>
+            {app.i18n.t('Try again')}
+          </Button>,
+        ]}
+      />
+    </div>
+  );
+});
 
 const getProps = (app: Application) => {
   if (app.ws.serverDown) {
@@ -226,7 +227,6 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.addRoutes();
 
     this.app.use(CurrentUserProvider);
-    this.app.use(AntdAppProvider);
     this.app.use(CurrentUserSettingsMenuProvider);
 
     this.app.schemaInitializerManager.add(menuItemInitializer);

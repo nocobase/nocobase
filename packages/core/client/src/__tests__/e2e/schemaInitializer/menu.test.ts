@@ -9,7 +9,7 @@ test.describe('Menu', () => {
     await page.getByRole('menuitem', { name: 'Group' }).click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('page group');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByLabel('page group', { exact: true })).toBeVisible();
 
     // add page
@@ -17,7 +17,7 @@ test.describe('Menu', () => {
     await page.getByRole('menuitem', { name: 'Page', exact: true }).click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('page item');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByLabel('page item', { exact: true })).toBeVisible();
 
     // add link
@@ -27,7 +27,7 @@ test.describe('Menu', () => {
     await page.getByLabel('block-item-Input-Menu item title').getByRole('textbox').fill('page link');
     await page.getByLabel('block-item-Input-Link').getByRole('textbox').click();
     await page.getByLabel('block-item-Input-Link').getByRole('textbox').fill('baidu.com');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByText('page link', { exact: true })).toBeVisible();
 
     // delete pages
@@ -44,7 +44,7 @@ test.describe('Menu', () => {
     await page.getByRole('menuitem', { name: 'Group', exact: true }).click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('page group side');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByText('page group side', { exact: true })).toBeVisible();
 
     // add page in side
@@ -52,7 +52,7 @@ test.describe('Menu', () => {
     await page.getByRole('menuitem', { name: 'Page', exact: true }).click();
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('page item side');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByText('page item side', { exact: true })).toBeVisible();
 
     // add link in side
@@ -62,7 +62,7 @@ test.describe('Menu', () => {
     await page.getByLabel('block-item-Input-Menu item title').getByRole('textbox').fill('link item side');
     await page.getByLabel('block-item-Input-Link').getByRole('textbox').click();
     await page.getByLabel('block-item-Input-Link').getByRole('textbox').fill('/');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByText('link item side', { exact: true })).toBeVisible();
   });
 });

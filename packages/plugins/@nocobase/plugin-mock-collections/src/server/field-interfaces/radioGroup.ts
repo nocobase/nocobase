@@ -9,9 +9,9 @@ export const radioGroup = {
       type: 'string',
       'x-component': 'Radio.Group',
       enum: options?.uiSchema?.enum || [
-        { value: 'option1', label: 'Option1' },
-        { value: 'option2', label: 'Option2' },
-        { value: 'option3', label: 'Option3' },
+        { value: 'option1', label: 'Option1', color: 'red' },
+        { value: 'option2', label: 'Option2', color: 'green' },
+        { value: 'option3', label: 'Option3', color: 'blue' },
       ],
     },
   }),

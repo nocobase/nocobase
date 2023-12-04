@@ -3,7 +3,14 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDivider,
+  SchemaSettingsItemGroup,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSwitchItem,
+} from '../../../schema-settings';
 import { useCompile } from '../../hooks';
 
 export const useFilterableFields = (collectionName: string) => {
@@ -32,11 +39,11 @@ export const FilterActionDesigner = (props) => {
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
   return (
     <GeneralSchemaDesigner {...props} disableInitializer>
-      <SchemaSettings.ItemGroup title={t('Filterable fields')}>
+      <SchemaSettingsItemGroup title={t('Filterable fields')}>
         {fields.map((field) => {
           const checked = !nonfilterable.includes(field.name);
           return (
-            <SchemaSettings.SwitchItem
+            <SchemaSettingsSwitchItem
               key={field.name}
               checked={checked}
               title={compile(field?.uiSchema?.title)}
@@ -63,9 +70,9 @@ export const FilterActionDesigner = (props) => {
             />
           );
         })}
-      </SchemaSettings.ItemGroup>
-      <SchemaSettings.Divider />
-      <SchemaSettings.ModalItem
+      </SchemaSettingsItemGroup>
+      <SchemaSettingsDivider />
+      <SchemaSettingsModalItem
         title={t('Edit button')}
         schema={
           {
@@ -107,8 +114,8 @@ export const FilterActionDesigner = (props) => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={(s) => {
           return s['x-component'] === 'Space' || s['x-component'] === 'ActionBar';

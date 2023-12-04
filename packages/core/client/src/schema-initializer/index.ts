@@ -1,6 +1,6 @@
 import * as initializerComponents from './components';
 import * as items from './items';
-
+export { useCurrentSchema } from './utils';
 export * from './buttons';
 export * from './items';
 export {
@@ -16,7 +16,6 @@ export {
   useInheritsTableColumnInitializerFields,
   useRecordCollectionDataSourceItems,
   useTableColumnInitializerFields,
-  useCurrentSchema,
 } from './utils';
 
 import { Plugin } from '../application/Plugin';

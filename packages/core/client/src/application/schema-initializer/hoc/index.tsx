@@ -22,7 +22,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
       designable: propsDesignable,
       popoverProps,
       children,
-      noPopover,
+      popover = true,
       style,
       componentProps,
     } = props;
@@ -67,7 +67,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
           options: props,
         }}
       >
-        {noPopover ? (
+        {popover === false ? (
           React.createElement(C, cProps)
         ) : (
           <Popover

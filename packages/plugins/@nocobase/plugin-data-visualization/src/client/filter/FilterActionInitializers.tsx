@@ -1,5 +1,12 @@
 import { useForm } from '@formily/react';
-import { Action, ActionInitializer, GeneralSchemaDesigner, SchemaInitializer, SchemaSettings } from '@nocobase/client';
+import {
+  Action,
+  ActionInitializer,
+  GeneralSchemaDesigner,
+  SchemaInitializer,
+  SchemaSettingsDivider,
+  SchemaSettingsRemove,
+} from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useChartFilter } from '../hooks/filter';
 import { ChartFilterContext } from './FilterProvider';
@@ -45,7 +52,7 @@ export const ChartFilterCollapseDesigner: React.FC = (props: any) => {
   const { t } = useChartsTranslation();
   return (
     <GeneralSchemaDesigner {...props} disableInitializer>
-      <SchemaSettings.Remove
+      <SchemaSettingsRemove
         breakRemoveOn={(s) => {
           return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
         }}
@@ -63,8 +70,8 @@ export const ChartFilterActionDesigner: React.FC = (props: any) => {
   return (
     <GeneralSchemaDesigner {...restProps} disableInitializer>
       <Action.Designer.ButtonEditor {...buttonEditorProps} />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         breakRemoveOn={(s) => {
           return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
         }}

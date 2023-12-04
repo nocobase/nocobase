@@ -11,7 +11,6 @@ import {
   useCollectionManager,
   useDesignable,
   useGlobalTheme,
-  useSchemaInitializer,
   useSchemaInitializerItem,
 } from '@nocobase/client';
 import React, { useCallback, useContext, useMemo } from 'react';

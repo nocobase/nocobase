@@ -4,8 +4,16 @@ import { SchemaSettingOptions } from '../types';
 import React from 'react';
 import { SchemaSettingsWrapper } from '../components';
 import { SchemaSettingsProps } from '../../../schema-settings';
+import { Schema } from '@formily/json-schema';
+import { GeneralField } from '@formily/core';
+import { Designable } from '../../../schema-component';
 
-type UseSchemaSettingsRenderOptions<T = {}> = SchemaSettingOptions<T> & Omit<SchemaSettingsProps, 'title' | 'children'>;
+type UseSchemaSettingsRenderOptions<T = {}> = Omit<SchemaSettingOptions<T>, 'name' | 'items'> &
+  Omit<SchemaSettingsProps, 'title' | 'children'> & {
+    fieldSchema?: Schema;
+    field?: GeneralField;
+    dn?: Designable;
+  };
 
 export function useSchemaSettingsRender<T = {}>(name: string, options?: UseSchemaSettingsRenderOptions<T>) {
   const app = useApp();
@@ -18,7 +26,7 @@ export function useSchemaSettingsRender<T = {}>(name: string, options?: UseSchem
   }
 
   if (!schemaSetting) {
-    console.error(`[nocobase]: SchemaSetting "${name}" not found`);
+    console.error(`[nocobase]: SchemaSettings "${name}" not found`);
     return {
       exists: false,
       render: () => null,

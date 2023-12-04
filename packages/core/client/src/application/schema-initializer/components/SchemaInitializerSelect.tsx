@@ -1,6 +1,7 @@
 import { Select, SelectProps } from 'antd';
 import React, { FC, useCallback, useMemo, useState } from 'react';
 import { SchemaInitializerItemProps, SchemaInitializerItem } from './SchemaInitializerItem';
+import { useSchemaInitializerItem } from '../context';
 
 export interface SchemaInitializerSelectItemProps extends SchemaInitializerItemProps {
   options?: SelectProps['options'];
@@ -49,4 +50,9 @@ export const SchemaInitializerSelect: FC<SchemaInitializerSelectItemProps> = (pr
       </div>
     </SchemaInitializerItem>
   );
+};
+
+export const SchemaInitializerSelectInternal = () => {
+  const itemConfig = useSchemaInitializerItem<SchemaInitializerSelectItemProps>();
+  return <SchemaInitializerSelect {...itemConfig} />;
 };

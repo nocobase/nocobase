@@ -54,7 +54,7 @@ export const chartInitializers = new SchemaInitializer({
     {
       name: 'chart',
       title: lang('Chart'),
-      component: ChartInitializer,
+      Component: ChartInitializer,
     },
     {
       name: 'otherBlocks',
@@ -63,9 +63,8 @@ export const chartInitializers = new SchemaInitializer({
       children: [
         {
           name: 'filter',
-          type: 'item',
           title: lang('Filter'),
-          component: FilterBlockInitializer,
+          Component: FilterBlockInitializer,
         },
       ],
     },

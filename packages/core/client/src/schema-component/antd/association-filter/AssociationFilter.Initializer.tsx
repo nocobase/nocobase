@@ -47,7 +47,6 @@ export const associationFilterInitializer = new SchemaInitializer({
     },
     {
       name: 'delete',
-      type: 'item',
       title: '{{t("Delete")}}',
       Component: 'AssociationFilterDesignerDelete',
     },

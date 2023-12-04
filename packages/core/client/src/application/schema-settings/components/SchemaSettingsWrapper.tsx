@@ -1,7 +1,7 @@
 import { FC, useMemo } from 'react';
-import { SchemaSettings } from '../../../schema-settings';
+import { SchemaSettingsDropdown } from '../../../schema-settings';
 import { SchemaSettingOptions } from '../types';
-import { SchemaSettingChildren } from './SchemaSettingsChildren';
+import { SchemaSettingsChildren } from './SchemaSettingsChildren';
 import { SchemaSettingsIcon } from './SchemaSettingsIcon';
 import React from 'react';
 import { useDesignable } from '../../../schema-component';
@@ -23,14 +23,14 @@ export const SchemaSettingsWrapper: FC<SchemaSettingOptions<any>> = (props) => {
   Component.displayName = `${Component.displayName || Component.name}(${name})`;
 
   return (
-    <SchemaSettings
+    <SchemaSettingsDropdown
       title={React.createElement(Component, cProps)}
       dn={dn}
       field={field}
       fieldSchema={fieldSchema}
       {...others}
     >
-      <SchemaSettingChildren>{items}</SchemaSettingChildren>
-    </SchemaSettings>
+      <SchemaSettingsChildren>{items}</SchemaSettingsChildren>
+    </SchemaSettingsDropdown>
   );
 };

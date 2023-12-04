@@ -2,10 +2,10 @@ import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { ISchema } from '@formily/json-schema';
 import { useDesignable } from '../../hooks';
-import { useSchemaDesigner } from '../../../application/schema-designer';
-import { SchemaSetting } from '../../../application/schema-settings/SchemaSetting';
+import { useSchemaToolbar } from '../../../application/schema-toolbar';
+import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 
-export const pageTabSettings = new SchemaSetting({
+export const pageTabSettings = new SchemaSettings({
   name: 'PageTabSettings',
   items: [
     {
@@ -13,7 +13,7 @@ export const pageTabSettings = new SchemaSetting({
       type: 'modal',
       useComponentProps() {
         const { t } = useTranslation();
-        const { schema } = useSchemaDesigner<{ schema: ISchema }>();
+        const { schema } = useSchemaToolbar<{ schema: ISchema }>();
         const { dn } = useDesignable();
         return {
           title: t('Edit'),
@@ -63,7 +63,7 @@ export const pageTabSettings = new SchemaSetting({
         const { modal } = App.useApp();
         const { dn } = useDesignable();
         const { t } = useTranslation();
-        const { schema } = useSchemaDesigner();
+        const { schema } = useSchemaToolbar();
         return {
           title: 'Delete',
           eventKey: 'remove',

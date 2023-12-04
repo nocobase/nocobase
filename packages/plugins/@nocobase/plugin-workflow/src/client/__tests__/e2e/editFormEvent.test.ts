@@ -37,7 +37,7 @@ test.describe('workflow manage', () => {
     await page.getByRole('textbox').fill(workFlowName);
     await page.getByRole('button', { name: 'Submit' }).click();
     await page.getByLabel(`action-Action.Link-Delete-workflows-${workFlowName}`).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByText(workFlowName)).toBeHidden();
   });
 });

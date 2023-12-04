@@ -290,6 +290,187 @@ export const generalWithBasic: CollectionSetting[] = [
   },
 ];
 
+/**
+ * 创建一个名为 general 的 collection，其包含所有 choices 类型的字段
+ */
+export const generalWithChoices: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'checkbox',
+        interface: 'checkbox',
+      },
+      {
+        name: 'checkboxGroup',
+        interface: 'checkboxGroup',
+      },
+      {
+        name: 'chinaRegion',
+        interface: 'chinaRegion',
+      },
+      {
+        name: 'multipleSelect',
+        interface: 'multipleSelect',
+      },
+      {
+        name: 'radioGroup',
+        interface: 'radioGroup',
+      },
+      {
+        name: 'singleSelect',
+        interface: 'select',
+      },
+    ],
+  },
+];
+
+/**
+ * 创建一个名为 general 的 collection，其包含所有 media 类型的字段
+ */
+export const generalWithMedia: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'markdown',
+        interface: 'markdown',
+      },
+      {
+        name: 'richText',
+        interface: 'richText',
+      },
+      {
+        name: 'attachment',
+        interface: 'attachment',
+      },
+    ],
+  },
+];
+
+/**
+ * 创建一个名为 general 的 collection，其包含所有 datetime 类型的字段
+ */
+export const generalWithDatetime: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'datetime',
+        interface: 'datetime',
+      },
+      {
+        name: 'time',
+        interface: 'time',
+      },
+    ],
+  },
+];
+
+/**
+ * 创建一个名为 general 的 collection，其包含所有 relation 类型的字段
+ */
+export const generalWithRelation: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'oneToOneBelongsTo',
+        interface: 'obo',
+        target: 'users',
+      },
+      {
+        name: 'oneToOneHasOne',
+        interface: 'oho',
+        target: 'users',
+      },
+      {
+        name: 'oneToMany',
+        interface: 'o2m',
+        target: 'users',
+      },
+      {
+        name: 'manyToOne',
+        interface: 'm2o',
+        target: 'users',
+      },
+      {
+        name: 'manyToMany',
+        interface: 'm2m',
+        target: 'users',
+      },
+    ],
+  },
+];
+
+/**
+ * 创建一个名为 general 的 collection，其包含所有 advanced 类型的字段
+ */
+export const generalWithAdvanced: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'formula',
+        interface: 'formula',
+      },
+      {
+        name: 'sequence',
+        interface: 'sequence',
+      },
+      {
+        name: 'JSON',
+        interface: 'json',
+      },
+      {
+        name: 'collection',
+        interface: 'collection',
+      },
+    ],
+  },
+];
+
+/**
+ * 创建一个名为 general 的 collection，其包含所有 systemInfo 类型的字段
+ */
+export const generalWithSystemInfo: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'createdAt',
+        interface: 'createdAt',
+      },
+      {
+        name: 'updatedAt',
+        interface: 'updatedAt',
+      },
+      {
+        name: 'createdBy',
+        interface: 'createdBy',
+      },
+      {
+        name: 'updatedBy',
+        interface: 'updatedBy',
+      },
+      {
+        name: 'id',
+        interface: 'id',
+      },
+      {
+        name: 'tableoid',
+        interface: 'tableoid',
+      },
+    ],
+  },
+];
+
 export const generalWithSingleLineText: CollectionSetting[] = [
   {
     name: 'general',
@@ -417,6 +598,54 @@ export const generalWithM2oSingleSelect: CollectionSetting[] = [
         name: 'toGeneral',
         interface: 'm2o',
         target: 'general',
+      },
+    ],
+  },
+];
+
+export const tree: CollectionSetting[] = [
+  {
+    name: 'treeCollection',
+    title: 'Tree collection',
+    template: 'tree',
+  },
+];
+
+export const generalWithMultiLevelRelationshipFields: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'm2oField0',
+        interface: 'm2o',
+        target: 'm2oField1',
+      },
+      {
+        name: 'singleLineText',
+        interface: 'input',
+      },
+    ],
+  },
+  {
+    name: 'm2oField1',
+    title: 'M2o field 1',
+    fields: [
+      {
+        name: 'm2oField1',
+        interface: 'm2o',
+        target: 'm2oField2',
+      },
+    ],
+  },
+  {
+    name: 'm2oField2',
+    title: 'M2o field 2',
+    fields: [
+      {
+        name: 'm2oField2',
+        interface: 'm2o',
+        target: 'm2oField3',
       },
     ],
   },
