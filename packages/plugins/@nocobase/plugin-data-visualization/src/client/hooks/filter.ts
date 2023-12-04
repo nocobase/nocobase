@@ -440,7 +440,7 @@ export const useFieldComponents = () => {
     { label: t('Select'), value: 'Select' },
     { label: t('Radio group'), value: 'Radio.Group' },
     { label: t('Checkbox group'), value: 'Checkbox.Group' },
-    { label: t('China region'), value: 'chinaRegion' },
+    // { label: t('China region'), value: 'chinaRegion' },
   ];
   return {
     options,
