@@ -85,7 +85,6 @@ describe('create with exception', () => {
         },
       });
 
-    console.log(response.body);
     expect(response.statusCode).toEqual(400);
 
     expect(response.body).toEqual({
