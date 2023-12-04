@@ -1,5 +1,5 @@
 import { Collection, Model } from '@nocobase/database';
-import Trigger from './Trigger';
+import Trigger from '.';
 import { toJSON } from '../utils';
 import type { WorkflowModel } from '../types';
 

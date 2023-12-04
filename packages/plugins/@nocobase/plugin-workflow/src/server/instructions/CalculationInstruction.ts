@@ -1,7 +1,7 @@
 import { Evaluator, evaluators } from '@nocobase/evaluators';
 import { parse } from '@nocobase/utils';
 import { Instruction } from '.';
-import { Processor } from '..';
+import type Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel } from '../types';
 

@@ -1,9 +1,10 @@
 import { Instruction } from '.';
+import type Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel } from '../types';
 
 export class DestroyInstruction extends Instruction {
-  async run(node: FlowNodeModel, input, processor) {
+  async run(node: FlowNodeModel, input, processor: Processor) {
     const { collection, params = {} } = node.config;
 
     const repo = (<typeof FlowNodeModel>node.constructor).database.getRepository(collection);

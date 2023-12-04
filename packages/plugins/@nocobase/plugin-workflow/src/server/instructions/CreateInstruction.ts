@@ -1,10 +1,11 @@
 import { JOB_STATUS } from '../constants';
 import { toJSON } from '../utils';
+import type Processor from '../Processor';
 import type { FlowNodeModel } from '../types';
 import { Instruction } from '.';
 
 export class CreateInstruction extends Instruction {
-  async run(node: FlowNodeModel, input, processor) {
+  async run(node: FlowNodeModel, input, processor: Processor) {
     const { collection, params: { appends = [], ...params } = {} } = node.config;
 
     const { repository, model } = (<typeof FlowNodeModel>node.constructor).database.getCollection(collection);

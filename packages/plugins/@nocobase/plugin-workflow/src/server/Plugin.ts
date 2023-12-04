@@ -12,16 +12,16 @@ import Processor from './Processor';
 import initActions from './actions';
 import { EXECUTION_STATUS } from './constants';
 import initFunctions, { CustomFunction } from './functions';
-import {
-  Instruction,
-  CalculationInstruction,
-  ConditionInstruction,
-  CreateInstruction,
-  DestroyInstruction,
-  QueryInstruction,
-  UpdateInstruction,
-} from './instructions';
-import { Trigger, CollectionTrigger, ScheduleTrigger } from './triggers';
+import type Trigger from './triggers';
+import CollectionTrigger from './triggers/CollectionTrigger';
+import ScheduleTrigger from './triggers/ScheduleTrigger';
+import type Instruction from './instructions';
+import CalculationInstruction from './instructions/CalculationInstruction';
+import ConditionInstruction from './instructions/ConditionInstruction';
+import CreateInstruction from './instructions/CreateInstruction';
+import DestroyInstruction from './instructions/DestroyInstruction';
+import QueryInstruction from './instructions/QueryInstruction';
+import UpdateInstruction from './instructions/UpdateInstruction';
 
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 
@@ -51,7 +51,7 @@ export default class WorkflowPlugin extends Plugin {
 
     const logger = createLogger({
       transports: [
-        'console',
+        ...(process.env.NODE_ENV !== 'production' ? ['console'] : []),
         new winston.transports.File({
           filename: getLoggerFilePath('workflows', date, `${workflowId}.log`),
           level: getLoggerLevel(),

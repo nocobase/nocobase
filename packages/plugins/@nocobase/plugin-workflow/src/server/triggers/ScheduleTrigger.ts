@@ -1,7 +1,7 @@
 import { fn, literal, Op, where } from '@nocobase/database';
 import parser from 'cron-parser';
-import Plugin from '..';
-import Trigger from './Trigger';
+import type Plugin from '../Plugin';
+import Trigger from '.';
 import type { WorkflowModel } from '../types';
 
 export type ScheduleOnField =

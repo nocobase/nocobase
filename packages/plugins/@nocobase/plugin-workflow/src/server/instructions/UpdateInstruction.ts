@@ -1,4 +1,4 @@
-import Processor from '../Processor';
+import type Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel } from '../types';
 import { Instruction } from '.';

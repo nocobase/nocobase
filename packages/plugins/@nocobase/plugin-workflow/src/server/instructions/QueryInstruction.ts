@@ -1,6 +1,6 @@
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE, utils } from '@nocobase/actions';
 
-import Processor from '../Processor';
+import type Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel } from '../types';
 import { toJSON } from '../utils';
