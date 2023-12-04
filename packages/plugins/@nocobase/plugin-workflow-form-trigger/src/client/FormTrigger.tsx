@@ -24,7 +24,7 @@ export default {
       },
       title: `{{t("Form data model", { ns: "${NAMESPACE}" })}}`,
       description: `{{t("Use a collection to match form data.", { ns: "${NAMESPACE}" })}}`,
-      ['x-reactions']: [
+      'x-reactions': [
         {
           target: 'appends',
           effects: ['onFieldValueChange'],

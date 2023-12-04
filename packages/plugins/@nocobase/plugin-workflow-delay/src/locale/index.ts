@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-export const NAMESPACE = '@nocobase/plugin-workflow-delay';
+export const NAMESPACE = 'workflow-delay';
 
 export function useLang(key: string, options = {}) {
   const { t } = usePluginTranslation(options);

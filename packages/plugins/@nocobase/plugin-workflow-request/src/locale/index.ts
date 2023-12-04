@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-export const NAMESPACE = '@nocobase/plugin-workflow-request';
+export const NAMESPACE = 'workflow-request';
 
 export function useLang(key: string, options = {}) {
   const { t } = usePluginTranslation(options);
