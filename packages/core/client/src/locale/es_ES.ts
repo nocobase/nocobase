@@ -712,7 +712,6 @@ export default {
     "Changed to": "Cambiado a",
     "Clear": "Borrar",
     "Add attach": "Añadir adjuntar",
-    "Please select the records to be updated": "Seleccione los registros que desea actualizar",
     "Selector": "Selector",
     "Inner": "Interior",
     "Search and select collection": "Buscar y seleccionar colección",

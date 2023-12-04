@@ -27,6 +27,8 @@ export class PresetNocoBase extends Plugin {
     'auth',
     'sms-auth',
     'custom-request',
+    'action-bulk-update',
+    'action-bulk-edit',
     'gantt',
     'kanban',
   ];

@@ -1,10 +1,15 @@
 import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
-import { useBlockAssociationContext } from '../../block-provider';
-import { useCollection } from '../../collection-manager';
-import { useSchemaTemplateManager } from '../../schema-templates';
-import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import {
+  useBlockAssociationContext,
+  useCollection,
+  useSchemaTemplateManager,
+  createFormBlockSchema,
+  useRecordCollectionDataSourceItems,
+  SchemaInitializerItem,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+} from '@nocobase/client';
 
 export const CreateFormBulkEditBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();

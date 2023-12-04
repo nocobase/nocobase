@@ -500,33 +500,6 @@ function DuplicationMode() {
   );
 }
 
-function UpdateMode() {
-  const { dn } = useDesignable();
-  const { t } = useTranslation();
-  const fieldSchema = useFieldSchema();
-
-  return (
-    <SchemaSettingsSelectItem
-      title={t('Data will be updated')}
-      options={[
-        { label: t('Selected'), value: 'selected' },
-        { label: t('All'), value: 'all' },
-      ]}
-      value={fieldSchema?.['x-action-settings']?.['updateMode']}
-      onChange={(value) => {
-        fieldSchema['x-action-settings']['updateMode'] = value;
-        dn.emit('patch', {
-          schema: {
-            'x-uid': fieldSchema['x-uid'],
-            'x-action-settings': fieldSchema['x-action-settings'],
-          },
-        });
-        dn.refresh();
-      }}
-    />
-  );
-}
-
 function AssignedFieldValues() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
@@ -985,17 +958,6 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         },
       },
       {
-        name: 'updateMode',
-        Component: UpdateMode,
-        useVisible() {
-          const fieldSchema = useFieldSchema();
-          const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(
-            fieldSchema['x-action'],
-          );
-          return isUpdateModePopupAction;
-        },
-      },
-      {
         name: 'assignFieldValues',
         Component: AssignedFieldValues,
         useVisible() {
@@ -1017,14 +979,6 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         useVisible() {
           const fieldSchema = useFieldSchema();
           return isValid(fieldSchema?.['x-action-settings']?.skipValidator);
-        },
-      },
-      {
-        name: 'afterSuccess',
-        Component: AfterSuccess,
-        useVisible() {
-          const fieldSchema = useFieldSchema();
-          return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
         },
       },
       {

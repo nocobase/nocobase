@@ -1,7 +1,6 @@
-import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
-import { gridRowColWrap } from '../utils';
+import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
 
-export const createFormBulkEditBlockInitializers = new SchemaInitializer({
+export const CreateFormBulkEditBlockInitializers = new SchemaInitializer({
   name: 'CreateFormBulkEditBlockInitializers',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',

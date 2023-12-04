@@ -16,17 +16,16 @@ export {
   useInheritsTableColumnInitializerFields,
   useRecordCollectionDataSourceItems,
   useTableColumnInitializerFields,
+  useRemoveGridFormItem,
   useAssociatedFormItemInitializerFields,
   useFormItemInitializerFields,
 } from './utils';
 
 import { Plugin } from '../application/Plugin';
 import {
-  bulkEditFormItemInitializers,
   calendarActionInitializers,
   calendarFormActionInitializers,
   createFormBlockInitializers,
-  createFormBulkEditBlockInitializers,
   cusomeizeCreateFormBlockInitializers,
   customFormItemInitializers,
   filterFormActionInitializers,
@@ -72,11 +71,9 @@ export class SchemaInitializerPlugin extends Plugin {
     this.app.schemaInitializerManager.add(detailsActionInitializers);
     this.app.schemaInitializerManager.add(readPrettyFormItemInitializers);
     this.app.schemaInitializerManager.add(readPrettyFormActionInitializers);
-    this.app.schemaInitializerManager.add(bulkEditFormItemInitializers);
     this.app.schemaInitializerManager.add(calendarActionInitializers);
     this.app.schemaInitializerManager.add(calendarFormActionInitializers);
     this.app.schemaInitializerManager.add(createFormBlockInitializers);
-    this.app.schemaInitializerManager.add(createFormBulkEditBlockInitializers);
     this.app.schemaInitializerManager.add(cusomeizeCreateFormBlockInitializers);
     this.app.schemaInitializerManager.add(customFormItemInitializers);
     this.app.schemaInitializerManager.add(filterFormActionInitializers);
