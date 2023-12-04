@@ -4,24 +4,9 @@ export const useStyles = createStyles(() => {
   return {
     toolbar: {
       position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 0,
-      top: 0,
-      zIndex: 1,
-
-      '&:hover > div': {
-        display: 'block !important',
-      },
-    },
-    toolbarContent: {
-      position: 'absolute',
       zIndex: 999,
-      top: 0,
-      bottom: 0,
-      left: 0,
-      right: 0,
       display: 'none',
+      inset: 0,
       border: '2px solid var(--colorBorderSettingsHover)',
       background: 'var(--colorBgSettingsHover)',
       pointerEvents: 'none',

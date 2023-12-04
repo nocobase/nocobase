@@ -3,7 +3,7 @@ import { css } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import classNames from 'classnames';
-import React, { FC, useMemo } from 'react';
+import React, { FC, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
 import { gridRowColWrap } from '../schema-initializer/utils';
@@ -224,34 +224,64 @@ export const SchemaToolbar: FC<SchemaToolbarProps> = (props) => {
     return settings !== false && schemaSettingsExists ? schemaSettingsRender() : null;
   }, [schemaSettingsExists, schemaSettingsRender, settings]);
   const { styles } = useStyles();
+
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const toolbarElement = toolbarRef.current;
+
+    function show() {
+      if (toolbarElement) {
+        toolbarElement.style.display = 'block';
+      }
+    }
+
+    function hide() {
+      if (toolbarElement) {
+        toolbarElement.style.display = 'none';
+      }
+    }
+
+    if (toolbarElement) {
+      toolbarElement.parentElement.addEventListener('mouseenter', show);
+      toolbarElement.parentElement.addEventListener('mouseleave', hide);
+    }
+
+    return () => {
+      if (toolbarElement) {
+        toolbarElement.parentElement.removeEventListener('mouseenter', show);
+        toolbarElement.parentElement.removeEventListener('mouseleave', hide);
+      }
+    };
+  }, []);
+
   if (!designable) {
     return null;
   }
 
   return (
-    <div className={styles.toolbar}>
-      <div
-        className={styles.toolbarContent}
-        style={{ border: showBorder ? 'auto' : 0, background: showBackground ? 'auto' : 0 }}
-      >
-        {titleArr && (
-          <div className={styles.toolbarTitle}>
-            <Space size={2}>
-              {titleArr.map((item) => (
-                <span key={item} className={styles.toolbarTitleTag}>
-                  {item}
-                </span>
-              ))}
-            </Space>
-          </div>
-        )}
-        <div className={styles.toolbarIcons}>
-          <Space size={3} align={'center'}>
-            {dragElement}
-            {initializerElement}
-            {settingsElement}
+    <div
+      ref={toolbarRef}
+      className={styles.toolbar}
+      style={{ border: showBorder ? 'auto' : 0, background: showBackground ? 'auto' : 0 }}
+    >
+      {titleArr && (
+        <div className={styles.toolbarTitle}>
+          <Space size={2}>
+            {titleArr.map((item) => (
+              <span key={item} className={styles.toolbarTitleTag}>
+                {item}
+              </span>
+            ))}
           </Space>
         </div>
+      )}
+      <div className={styles.toolbarIcons}>
+        <Space size={3} align={'center'}>
+          {dragElement}
+          {initializerElement}
+          {settingsElement}
+        </Space>
       </div>
     </div>
   );
