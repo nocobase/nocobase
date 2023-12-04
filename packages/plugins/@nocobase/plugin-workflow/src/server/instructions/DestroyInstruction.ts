@@ -2,7 +2,7 @@ import { Instruction } from '.';
 import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel } from '../types';
 
-export default class extends Instruction {
+export class DestroyInstruction extends Instruction {
   async run(node: FlowNodeModel, input, processor) {
     const { collection, params = {} } = node.config;
 
@@ -22,3 +22,5 @@ export default class extends Instruction {
     };
   }
 }
+
+export default DestroyInstruction;

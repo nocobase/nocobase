@@ -3,7 +3,7 @@ import { toJSON } from '../utils';
 import type { FlowNodeModel } from '../types';
 import { Instruction } from '.';
 
-export default class extends Instruction {
+export class CreateInstruction extends Instruction {
   async run(node: FlowNodeModel, input, processor) {
     const { collection, params: { appends = [], ...params } = {} } = node.config;
 
@@ -38,3 +38,5 @@ export default class extends Instruction {
     };
   }
 }
+
+export default CreateInstruction;

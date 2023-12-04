@@ -6,7 +6,7 @@ import type { FlowNodeModel } from '../types';
 import { toJSON } from '../utils';
 import { Instruction } from '.';
 
-export default class extends Instruction {
+export class QueryInstruction extends Instruction {
   async run(node: FlowNodeModel, input, processor: Processor) {
     const { collection, multiple, params = {}, failOnEmpty = false } = node.config;
 
@@ -52,3 +52,5 @@ export default class extends Instruction {
     };
   }
 }
+
+export default QueryInstruction;

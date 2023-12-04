@@ -12,14 +12,23 @@ import Processor from './Processor';
 import initActions from './actions';
 import { EXECUTION_STATUS } from './constants';
 import initFunctions, { CustomFunction } from './functions';
-import initInstructions, { Instruction } from './instructions';
-import initTriggers, { Trigger } from './triggers';
+import {
+  Instruction,
+  CalculationInstruction,
+  ConditionInstruction,
+  CreateInstruction,
+  DestroyInstruction,
+  QueryInstruction,
+  UpdateInstruction,
+} from './instructions';
+import { Trigger, CollectionTrigger, ScheduleTrigger } from './triggers';
 
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 
 type Pending = [ExecutionModel, JobModel?];
 
 type ID = number | string;
+
 export default class WorkflowPlugin extends Plugin {
   instructions: Registry<Instruction> = new Registry();
   triggers: Registry<Trigger> = new Registry();
@@ -101,12 +110,38 @@ export default class WorkflowPlugin extends Plugin {
     }
   };
 
+  initTriggers<T extends Trigger>(more: { [key: string]: T | { new (p: Plugin): T } } = {}) {
+    const { triggers } = this;
+
+    triggers.register('collection', new CollectionTrigger(this));
+    triggers.register('schedule', new ScheduleTrigger(this));
+
+    for (const [name, trigger] of Object.entries(more)) {
+      triggers.register(name, typeof trigger === 'function' ? new trigger(this) : trigger);
+    }
+  }
+
+  initInstructions<T extends Instruction>(more: { [key: string]: T | { new (p: Plugin): T } } = {}) {
+    const { instructions } = this;
+
+    instructions.register('calculation', new CalculationInstruction(this));
+    instructions.register('condition', new ConditionInstruction(this));
+    instructions.register('create', new CreateInstruction(this));
+    instructions.register('destroy', new DestroyInstruction(this));
+    instructions.register('query', new QueryInstruction(this));
+    instructions.register('update', new UpdateInstruction(this));
+
+    for (const [name, instruction] of Object.entries({ ...more })) {
+      instructions.register(name, typeof instruction === 'function' ? new instruction(this) : instruction);
+    }
+  }
+
   async load() {
     const { db, options } = this;
 
     initActions(this);
-    initTriggers(this, options.triggers);
-    initInstructions(this, options.instructions);
+    this.initTriggers(options.triggers);
+    this.initInstructions(options.instructions);
     initFunctions(this, options.functions);
 
     this.loggerCache = new LRUCache({

@@ -116,7 +116,7 @@ function logicCalculate(calculation?: Calculation) {
   return calculate(calculation as CalculationItem);
 }
 
-export default class extends Instruction {
+export class ConditionInstruction extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { engine, calculation, expression, rejectOnFalse } = node.config || {};
     const evaluator = evaluators.get(engine);
@@ -176,3 +176,5 @@ export default class extends Instruction {
     return processor.exit(branchJob.status);
   }
 }
+
+export default ConditionInstruction;

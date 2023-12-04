@@ -5,13 +5,13 @@ import { Processor } from '..';
 import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel } from '../types';
 
-interface CalculationConfig {
+export interface CalculationConfig {
   dynamic?: boolean | string;
   engine?: string;
   expression?: string;
 }
 
-export default class extends Instruction {
+export class CalculationInstruction extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { dynamic = false } = <CalculationConfig>node.config || {};
     let { engine = 'math.js', expression = '' } = node.config;
@@ -39,3 +39,5 @@ export default class extends Instruction {
     }
   }
 }
+
+export default CalculationInstruction;
