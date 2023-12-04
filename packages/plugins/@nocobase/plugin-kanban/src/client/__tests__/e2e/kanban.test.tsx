@@ -178,12 +178,9 @@ test('configure action in kanban block', async ({ page, mockPage, mockCollection
   const { x, y } = await sourceElement.boundingBox();
   const targetElement = await page.getByTestId('column-option2');
   await sourceElement.hover();
-  await page.mouse.down();
-  await page.mouse.move(100, 0);
   await sourceElement.dragTo(targetElement, {
     force: true,
     sourcePosition: { x, y },
     targetPosition: { x: x + 100, y },
   });
-  await page.mouse.up();
 });
