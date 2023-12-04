@@ -5,9 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { EllipsisWithTooltip, useCompile } from '../../../';
 import { useAPIClient } from '../../../api-client';
 import { useCollectionManager } from '../../hooks/useCollectionManager';
-function isObject(value) {
-  return Object.prototype.toString.call(value) === '[object Object]';
-}
 
 const mapFields = ['lineString', 'point', 'circle', 'polygon'];
 export const PreviewTable = (props) => {
@@ -73,7 +70,7 @@ export const PreviewTable = (props) => {
                   'x-component': schema && fieldSource ? 'CollectionField' : 'Input',
                   'x-read-pretty': true,
                   'x-collection-field': fieldSource?.join('.'),
-                  default: isObject(content) ? JSON.stringify(content) : content,
+                  default: item.interface === 'json' ? JSON.stringify(content) : content,
                 },
               },
             };

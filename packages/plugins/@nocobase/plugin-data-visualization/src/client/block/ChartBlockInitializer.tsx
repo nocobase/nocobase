@@ -1,71 +1,79 @@
 import { LineChartOutlined } from '@ant-design/icons';
-import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { SchemaInitializer, useACLRoleContext, useCollectionDataSourceItems } from '@nocobase/client';
-import React, { useContext } from 'react';
+import {
+  SchemaInitializerItem,
+  SchemaInitializer,
+  useACLRoleContext,
+  useSchemaInitializerMenuItems,
+  useCollectionDataSourceItemsV2,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+  useMenuSearch,
+} from '@nocobase/client';
+import React, { useContext, useState } from 'react';
 import { ChartConfigContext } from '../configure/ChartConfigure';
-import { useChartsTranslation } from '../locale';
+import { Menu } from 'antd';
 
-const itemWrap = SchemaInitializer.itemWrap;
-const ConfigureButton = itemWrap((props) => {
+const ConfigureButton = () => {
+  const itemConfig = useSchemaInitializerItem();
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
   return (
-    <SchemaInitializer.Item
-      {...props}
+    <SchemaInitializerItem
+      {...itemConfig}
+      applyMenuStyle={false}
       onClick={() => {
-        setCurrent({ schema: {}, field: null, collection: props.item?.name, service: null, data: undefined });
+        setCurrent({ schema: {}, field: null, collection: itemConfig?.name, service: null, data: undefined });
         setVisible(true);
       }}
     />
   );
-});
+};
 
-export const ChartInitializers = () => {
-  const { t } = useChartsTranslation();
-  const collections = useCollectionDataSourceItems('Chart');
+const ItemsComponent = () => {
+  const collections = useCollectionDataSourceItemsV2('Chart');
   const { allowAll, parseAction } = useACLRoleContext();
+  const items: any = collections
+    .filter((item) => {
+      if (allowAll) {
+        return true;
+      }
+      const params = parseAction(`${item.name}:list`);
+      return params;
+    })
+    .map((item) => ({
+      ...item,
+      Component: ConfigureButton,
+    }));
 
-  if (collections[0].loadChildren) {
-    const originalLoadChildren = collections[0].loadChildren;
-    collections[0].loadChildren = ({ searchValue }) => {
-      const children = originalLoadChildren({ searchValue });
-      const result = children
-        .filter((item) => {
-          if (allowAll) {
-            return true;
-          }
-          const params = parseAction(`${item.name}:list`);
-          return params;
-        })
-        .map((item) => ({
-          ...item,
-          component: ConfigureButton,
-        }));
-
-      return result;
-    };
-  }
-
+  const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
+  const searchedChildren = useMenuSearch(items, isOpenSubMenu, true);
+  const menuItems = useSchemaInitializerMenuItems(searchedChildren);
   return (
-    <SchemaInitializer.Button
-      icon={'PlusOutlined'}
-      items={collections as any}
-      dropdown={{
-        placement: 'bottomLeft',
+    <Menu
+      items={menuItems}
+      onOpenChange={(keys) => {
+        setIsOpenSubMenu(keys.length > 0);
       }}
-    >
-      {t('Add chart')}
-    </SchemaInitializer.Button>
+    />
   );
 };
 
-export const ChartV2BlockInitializer: React.FC<{
-  insert: (s: ISchema) => void;
-}> = (props) => {
-  const { insert } = props;
+export const chartInitializers = new SchemaInitializer({
+  name: 'ChartInitializers',
+  icon: 'PlusOutlined',
+  popoverProps: {
+    placement: 'bottomLeft',
+  },
+  title: '{{t("Add chart")}}',
+  ItemsComponent: ItemsComponent,
+});
+
+export const ChartV2BlockInitializer: React.FC = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { insert } = useSchemaInitializer();
   return (
-    <SchemaInitializer.Item
-      {...props}
+    <SchemaInitializerItem
+      {...itemConfig}
       icon={<LineChartOutlined />}
       onClick={() => {
         insert({

@@ -23,6 +23,8 @@ const Tree = connect(
   }),
 );
 
+Tree.displayName = 'Tree';
+
 export const compatibleDataId = (data, config?) => {
   return data?.map((v) => {
     const { dataId, ...others } = v;

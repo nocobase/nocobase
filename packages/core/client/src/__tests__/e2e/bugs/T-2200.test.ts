@@ -359,7 +359,7 @@ test('BUG: should be possible to change the value of the association field norma
   await expect(page.getByLabel('Root')).toBeVisible();
 
   await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').hover();
-  await page.getByLabel('Display collection fields-Nickname').click();
+  await page.getByRole('menuitem', { name: 'Nickname' }).click();
 
   await page.mouse.move(200, 0);
 

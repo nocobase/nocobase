@@ -1,7 +1,15 @@
 import { useFieldSchema } from '@formily/react';
 import { ArrayItems } from '@formily/antd-v5';
-import { Action, SchemaSettings, useCollection, useCurrentRoles, useRequest } from '@nocobase/client';
-import React, { useEffect } from 'react';
+import {
+  Action,
+  SchemaSettings,
+  SchemaSettingsActionModalItem,
+  actionSettingsItems,
+  useCollection,
+  useCurrentRoles,
+  useRequest,
+} from '@nocobase/client';
+import React from 'react';
 import { CustomRequestACLSchema, CustomRequestConfigurationFieldsSchema } from '../schemas';
 import { useCustomRequestVariableOptions, useGetCustomRequest } from '../hooks';
 import { App } from 'antd';
@@ -19,7 +27,7 @@ function CustomRequestSettingsItem() {
 
   return (
     <>
-      <SchemaSettings.ActionModalItem
+      <SchemaSettingsActionModalItem
         title={t('Request settings')}
         components={{
           ArrayItems,
@@ -70,7 +78,7 @@ function CustomRequestACL() {
 
   return (
     <>
-      <SchemaSettings.ActionModalItem
+      <SchemaSettingsActionModalItem
         title={t('Access Control')}
         schema={CustomRequestACLSchema}
         scope={{ currentRoles }}
@@ -95,12 +103,33 @@ function CustomRequestACL() {
   );
 }
 
+export const customRequestActionSettings = new SchemaSettings({
+  name: 'CustomRequestActionSettings',
+  items: [
+    {
+      ...actionSettingsItems[0],
+      children: [
+        ...actionSettingsItems[0].children,
+        {
+          name: 'request settings',
+          Component: CustomRequestSettingsItem,
+        },
+        {
+          name: 'accessControl',
+          Component: CustomRequestACL,
+        },
+      ],
+    },
+  ],
+});
+
 export const CustomRequestActionDesigner: React.FC = () => {
   const customRequestsResource = useCustomRequestsResource();
   const fieldSchema = useFieldSchema();
   return (
     <Action.Designer
       linkageAction
+      schemaSettings="CustomRequestActionSettings"
       buttonEditorProps={{
         isLink: fieldSchema['x-action'] === 'customize:table:request',
       }}
@@ -114,9 +143,6 @@ export const CustomRequestActionDesigner: React.FC = () => {
           });
         },
       }}
-    >
-      <CustomRequestSettingsItem />
-      <CustomRequestACL />
-    </Action.Designer>
+    ></Action.Designer>
   );
 };

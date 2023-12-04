@@ -4,18 +4,16 @@ import { Tabs as AntdTabs, TabPaneProps, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { Icon } from '../../../icon';
-import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
-import { useDesignable } from '../../hooks';
 import { useDesigner } from '../../hooks/useDesigner';
 import { useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
+import { useSchemaInitializerRender } from '../../../application';
 
 export const Tabs: any = observer(
   (props: TabsProps) => {
     const fieldSchema = useFieldSchema();
-    const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
-    const { designable } = useDesignable();
+    const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
     const contextProps = useTabsContext();
     const { PaneRoot = React.Fragment as React.FC<any> } = contextProps;
 

@@ -1,12 +1,14 @@
 import { merge } from '@formily/shared';
 import React from 'react';
-import { SchemaInitializer } from '..';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 // Block
 export const BlockInitializer = (props) => {
-  const { item, schema, insert } = props;
+  const { item, schema, ...others } = props;
+  const { insert } = useSchemaInitializer();
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
+      {...others}
       onClick={() => {
         const s = merge(schema || {}, item.schema || {});
         item?.schemaInitialize?.(s);
@@ -14,4 +16,10 @@ export const BlockInitializer = (props) => {
       }}
     />
   );
+};
+
+export const BlockItemInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { schema, ...others } = itemConfig;
+  return <BlockInitializer {...others} item={itemConfig} />;
 };

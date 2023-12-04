@@ -21,7 +21,7 @@ export const useRegisterInterface = () => {
           return;
         }
       }
-      registerField(field.group, field.title, field);
+      registerField(field.group, field.name as string, field);
     });
   }, [data]);
 };

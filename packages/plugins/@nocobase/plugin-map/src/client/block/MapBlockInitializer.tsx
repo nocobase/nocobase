@@ -8,21 +8,22 @@ import {
   SchemaComponentOptions,
   useCollectionManager,
   useGlobalTheme,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useMapTranslation } from '../locale';
 import { createMapBlockSchema, findNestedOption } from './utils';
 
-export const MapBlockInitializer = (props) => {
-  const { insert } = props;
+export const MapBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { insert } = useSchemaInitializer();
   const options = useContext(SchemaOptionsContext);
   const { getCollectionFieldsOptions } = useCollectionManager();
   const { t } = useMapTranslation();
   const { theme } = useGlobalTheme();
-
   return (
     <DataBlockInitializer
-      {...props}
       componentType={'Map'}
       icon={<TableOutlined />}
       onCreateBlockSchema={async ({ item }) => {
@@ -89,6 +90,7 @@ export const MapBlockInitializer = (props) => {
         );
       }}
       title={t('Map block')}
+      {...itemConfig}
     />
   );
 };

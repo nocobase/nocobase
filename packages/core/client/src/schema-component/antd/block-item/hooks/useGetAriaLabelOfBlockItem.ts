@@ -1,4 +1,5 @@
 import { useFieldSchema } from '@formily/react';
+import _ from 'lodash';
 import { useCallback } from 'react';
 import { useBlockContext } from '../../../../block-provider/BlockProvider';
 import { useCollection } from '../../../../collection-manager';
@@ -11,7 +12,9 @@ import { useCompile } from '../../../hooks';
 export const useGetAriaLabelOfBlockItem = (name?: string) => {
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
-  const component = fieldSchema['x-component'];
+  const component = _.isString(fieldSchema['x-component'])
+    ? fieldSchema['x-component']
+    : fieldSchema['x-component']?.displayName;
   const collectionField = compile(fieldSchema['x-collection-field']);
   let { name: blockName } = useBlockContext() || {};
   // eslint-disable-next-line prefer-const

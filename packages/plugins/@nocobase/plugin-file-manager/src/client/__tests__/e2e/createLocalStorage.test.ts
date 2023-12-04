@@ -33,7 +33,7 @@ test.describe('file manager', () => {
 
     // 4、后置处理：删除新建的文件管理器
     await page.getByLabel(`action-Action.Link-Delete-storages-${storageName}`).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByText(storageName)).toBeHidden();
   });
 });
