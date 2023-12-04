@@ -78,6 +78,12 @@ export const BlockInitializers = {
           title: '{{t("Collapse")}}',
           component: 'FilterCollapseBlockInitializer',
         },
+        {
+          key: 'filterTree',
+          type: 'item',
+          title: '{{t("Tree")}}',
+          component: 'FilterTreeBlockInitializer',
+        },
       ],
     },
     {

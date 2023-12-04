@@ -39,3 +39,4 @@ playwright
 ncc-cache/
 yarn--**
 v8-compile-cache-**
+.history/**
