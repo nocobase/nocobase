@@ -14,7 +14,7 @@ import { RemoteDocumentTitlePlugin } from '../document-title';
 import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
-import { AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
+import { AdminLayoutPlugin, AuthLayout, PopupSchemaComponent, RouteSchemaComponent } from '../route-switch';
 import { AntdSchemaComponentPlugin, MenuItemInitializers, SchemaComponentPlugin } from '../schema-component';
 import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { SchemaInitializerPlugin } from '../schema-initializer';
@@ -242,6 +242,10 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.router.add('admin', {
       path: '/admin',
       Component: 'AdminLayout',
+    });
+    this.router.add('admin.popup', {
+      path: '/admin/:pageId/popups/:popupId/records/*',
+      Component: PopupSchemaComponent,
     });
     this.router.add('admin.page', {
       path: '/admin/:name',
