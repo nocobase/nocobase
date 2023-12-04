@@ -1,5 +1,5 @@
 import { Page, oneEmptyTableWithTreeCollection, test } from '@nocobase/test/client';
-import { expectOptions } from './expectOptions';
+import { expectOptions } from '../expectOptions';
 
 test.describe('add child', () => {
   const showMenu = async (page: Page) => {

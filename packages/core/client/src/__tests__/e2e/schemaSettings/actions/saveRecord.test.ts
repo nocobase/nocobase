@@ -1,5 +1,5 @@
 import { oneEmptyFormWithActions, test } from '@nocobase/test/client';
-import { expectOptions } from './expectOptions';
+import { expectOptions } from '../expectOptions';
 
 test.describe('save record', () => {
   test('supported options', async ({ page, mockPage }) => {

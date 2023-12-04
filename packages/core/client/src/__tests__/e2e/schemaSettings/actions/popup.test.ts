@@ -1,5 +1,5 @@
 import { Page, oneEmptyTableBlockWithActions, test } from '@nocobase/test/client';
-import { expectOptions } from './expectOptions';
+import { expectOptions } from '../expectOptions';
 
 const addSomeCustomActions = async (page: Page) => {
   // 先删除掉之前的 actions

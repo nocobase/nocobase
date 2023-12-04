@@ -1,5 +1,5 @@
 import { Page, expect, oneEmptyTableBlockWithActions, test } from '@nocobase/test/client';
-import { expectOptions } from './expectOptions';
+import { expectOptions } from '../expectOptions';
 
 test.describe('add new', () => {
   const showMenu = async (page: Page) => {
