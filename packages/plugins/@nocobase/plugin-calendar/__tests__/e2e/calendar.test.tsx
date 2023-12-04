@@ -1,8 +1,8 @@
 import dayjs from 'dayjs';
 import React from 'react';
 import { render, screen } from 'testUtils';
-import App1 from '../demos/demo1';
-import App2 from '../demos/demo2';
+import App1 from '../../src/client/calendar/demos/demo1';
+import App2 from '../../src/client/calendar/demos/demo2';
 
 describe('Calendar', () => {
   it('basic', () => {
