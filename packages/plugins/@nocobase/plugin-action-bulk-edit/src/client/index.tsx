@@ -38,10 +38,8 @@ export class BulkEditPlugin extends Plugin {
 
     const tableActionInitializers = this.app.schemaInitializerManager.get('TableActionInitializers');
     tableActionInitializers?.add('customize.bulkEdit', initializerData);
-    const ganttActionInitializers = this.app.schemaInitializerManager.get('GanttActionInitializers');
-    ganttActionInitializers?.add('customize.bulkEdit', initializerData);
-    const mapActionInitializers = this.app.schemaInitializerManager.get('MapActionInitializers');
-    mapActionInitializers?.add('customize.bulkEdit', initializerData);
+    this.app.schemaInitializerManager.addItem('GanttActionInitializers', 'customize.bulkEdit', initializerData);
+    this.app.schemaInitializerManager.addItem('MapActionInitializers', 'customize.bulkEdit', initializerData);
   }
 }
 
