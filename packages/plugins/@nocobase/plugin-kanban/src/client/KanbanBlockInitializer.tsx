@@ -25,6 +25,7 @@ export const KanbanBlockInitializer = () => {
   const api = useAPIClient();
   const { theme } = useGlobalTheme();
   const itemConfig = useSchemaInitializerItem();
+  const itemConfig = useSchemaInitializerItem();
 
   return (
     <DataBlockInitializer
