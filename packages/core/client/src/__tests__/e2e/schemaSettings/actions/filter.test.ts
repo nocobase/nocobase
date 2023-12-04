@@ -13,7 +13,7 @@ test.describe('filter', () => {
     await expectOptions({
       page,
       showMenu: () => showMenu(page),
-      enableOptions: [
+      supportedOptions: [
         'Edit button',
         'Delete',
         'Many to one',

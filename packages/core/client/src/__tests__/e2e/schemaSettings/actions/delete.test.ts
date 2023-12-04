@@ -15,7 +15,7 @@ test.describe('delete', () => {
     await expectOptions({
       page,
       showMenu: () => showMenu(page),
-      enableOptions: ['Edit button', 'Linkage rules', 'Delete'],
+      supportedOptions: ['Edit button', 'Linkage rules', 'Delete'],
     });
   });
 

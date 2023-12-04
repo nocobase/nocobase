@@ -11,7 +11,7 @@ test.describe('refresh', () => {
         await page.getByRole('button', { name: 'Refresh' }).hover();
         await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).hover();
       },
-      enableOptions: ['Edit button', 'Delete'],
+      supportedOptions: ['Edit button', 'Delete'],
     });
   });
 });

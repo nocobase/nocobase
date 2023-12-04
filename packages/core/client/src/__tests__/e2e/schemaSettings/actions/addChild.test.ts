@@ -32,7 +32,7 @@ test.describe('add child', () => {
     await expectOptions({
       page,
       showMenu: () => showMenu(page),
-      enableOptions: ['Edit button', 'Linkage rules', 'Open mode', 'Popup size', 'Delete'],
+      supportedOptions: ['Edit button', 'Linkage rules', 'Open mode', 'Popup size', 'Delete'],
     });
   });
 });

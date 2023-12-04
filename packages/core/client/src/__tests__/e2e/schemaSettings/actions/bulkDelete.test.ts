@@ -11,7 +11,7 @@ test.describe('bulk delete', () => {
         await page.getByRole('button', { name: 'Delete' }).hover();
         await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).hover();
       },
-      enableOptions: ['Edit button', 'Delete'],
+      supportedOptions: ['Edit button', 'Delete'],
     });
   });
 });

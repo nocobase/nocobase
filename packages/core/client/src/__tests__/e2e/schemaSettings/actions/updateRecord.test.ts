@@ -32,7 +32,13 @@ test.describe('update record', () => {
     await expectOptions({
       page,
       showMenu: () => showMenu(page),
-      enableOptions: ['Edit button', 'Linkage rules', 'Assign field values', 'After successful submission', 'Delete'],
+      supportedOptions: [
+        'Edit button',
+        'Linkage rules',
+        'Assign field values',
+        'After successful submission',
+        'Delete',
+      ],
     });
   });
 });

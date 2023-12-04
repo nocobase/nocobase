@@ -11,7 +11,7 @@ test.describe('submit', () => {
         await page.getByRole('button', { name: 'Submit' }).hover();
         await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
       },
-      enableOptions: ['Edit button', 'Linkage rules', 'Bind workflows', 'Delete'],
+      supportedOptions: ['Edit button', 'Linkage rules', 'Bind workflows', 'Delete'],
     });
   });
 });

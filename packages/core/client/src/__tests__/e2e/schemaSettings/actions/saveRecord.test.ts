@@ -11,7 +11,7 @@ test.describe('save record', () => {
         await page.getByRole('button', { name: 'Save record' }).hover();
         await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
       },
-      enableOptions: [
+      supportedOptions: [
         'Edit button',
         'Linkage rules',
         'Assign field values',

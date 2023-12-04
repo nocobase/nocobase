@@ -13,7 +13,7 @@ test.describe('add record', () => {
     await expectOptions({
       page,
       showMenu: () => showMenu(page),
-      enableOptions: ['Edit button', 'Open mode', 'Popup size', 'Delete'],
+      supportedOptions: ['Edit button', 'Open mode', 'Popup size', 'Delete'],
     });
   });
 });

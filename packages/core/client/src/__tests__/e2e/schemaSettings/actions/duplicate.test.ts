@@ -15,7 +15,7 @@ test.describe('duplicate', () => {
     await expectOptions({
       page,
       showMenu: () => showMenu(page),
-      enableOptions: ['Edit button', 'Linkage rules', 'Duplicate mode', 'Open mode', 'Popup size', 'Delete'],
+      supportedOptions: ['Edit button', 'Linkage rules', 'Duplicate mode', 'Open mode', 'Popup size', 'Delete'],
     });
   });
 });
