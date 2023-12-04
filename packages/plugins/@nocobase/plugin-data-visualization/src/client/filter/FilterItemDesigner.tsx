@@ -213,19 +213,15 @@ const EditDefaultValue = () => {
         },
       }}
       onSubmit={({ default: { value } }) => {
-        field.componentProps.defaultValue = value;
-        fieldSchema['x-component-props'].defaultValue = value;
+        field.setInitialValue(value);
+        fieldSchema.default = value;
         dn.emit('patch', {
           schema: {
             'x-uid': fieldSchema['x-uid'],
-            'x-component-props': {
-              ...fieldSchema['x-component-props'],
-              defaultValue: value,
-            },
+            default: value,
           },
         });
         dn.refresh();
-        field.setValue(null);
         setDefaultValue(field, variables);
       }}
     />

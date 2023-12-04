@@ -160,15 +160,18 @@ export const transformValue = (value: any, props: any) => {
 };
 
 export const setDefaultValue = async (field: any, variables: any) => {
-  const defaultValue = field.componentProps.defaultValue;
+  const defaultValue = field.initialValue;
   const isVariable =
     typeof defaultValue === 'string' && defaultValue?.startsWith('{{$') && defaultValue?.endsWith('}}');
   if (!isVariable || !variables) {
+    field.setValue(defaultValue);
     field.setInitialValue(defaultValue);
   } else {
     field.loading = true;
     const value = await variables.parseVariable(defaultValue);
-    field.setInitialValue(transformValue(value, field.componentProps));
+    const transformedValue = transformValue(value, field.componentProps);
+    field.setValue(transformedValue);
+    field.setInitialValue(transformedValue);
     field.loading = false;
   }
 };
