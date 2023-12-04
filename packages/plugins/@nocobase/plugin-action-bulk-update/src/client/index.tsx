@@ -48,10 +48,8 @@ export class BulkUpdatePlugin extends Plugin {
 
     const tableActionInitializers = this.app.schemaInitializerManager.get('TableActionInitializers');
     tableActionInitializers?.add('customize.bulkUpdate', initializerData);
-    const ganttActionInitializers = this.app.schemaInitializerManager.get('GanttActionInitializers');
-    ganttActionInitializers?.add('customize.bulkUpdate', initializerData);
-    const mapActionInitializers = this.app.schemaInitializerManager.get('MapActionInitializers');
-    mapActionInitializers?.add('customize.bulkUpdate', initializerData);
+    this.app.schemaInitializerManager.addItem('GanttActionInitializers', 'customize.bulkUpdate', initializerData);
+    this.app.schemaInitializerManager.addItem('MapActionInitializers', 'customize.bulkUpdate', initializerData);
   }
 }
 
