@@ -2,10 +2,12 @@ import React from 'react';
 
 import {
   CollectionProvider,
-  SchemaInitializer,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItem,
+  SchemaInitializerItemType,
   createFormBlockSchema,
   useRecordCollectionDataSourceItems,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
   useSchemaTemplateManager,
 } from '@nocobase/client';
 
@@ -13,9 +15,10 @@ import { JOB_STATUS, traverseSchema } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../../locale';
 
-function InternalFormBlockInitializer({ insert, schema, ...others }) {
+function InternalFormBlockInitializer({ schema, ...others }) {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemOptions[];
+  const { insert } = useSchemaInitializer();
+  const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemType[];
   async function onConfirm({ item }) {
     const template = item.template ? await getTemplateSchemaByMode(item) : null;
     const result = createFormBlockSchema({
@@ -56,13 +59,14 @@ function InternalFormBlockInitializer({ insert, schema, ...others }) {
     insert(result);
   }
 
-  return <SchemaInitializer.Item {...others} onClick={onConfirm} items={items} />;
+  return <SchemaInitializerItem {...others} onClick={onConfirm} items={items} />;
 }
 
-export function FormBlockInitializer(props) {
+export function FormBlockInitializer() {
+  const itemConfig = useSchemaInitializerItem();
   return (
-    <CollectionProvider collection={props.schema?.collection}>
-      <InternalFormBlockInitializer {...props} />
+    <CollectionProvider collection={itemConfig.schema?.collection}>
+      <InternalFormBlockInitializer {...itemConfig} />
     </CollectionProvider>
   );
 }

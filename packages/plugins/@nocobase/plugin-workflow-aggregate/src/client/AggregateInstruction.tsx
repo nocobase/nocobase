@@ -4,8 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 import {
   SchemaComponentContext,
-  SchemaInitializerItemOptions,
-  css,
+  SchemaInitializerItemType,
   useCollectionDataSource,
   useCollectionFilterOptions,
   useCollectionManager,
@@ -380,16 +379,17 @@ export default {
       [fieldNames.label]: title,
     };
   },
-  useInitializers(node): SchemaInitializerItemOptions | null {
+  useInitializers(node): SchemaInitializerItemType | null {
     const resultTitle = useLang('Query result');
     if (!node.config.collection) {
       return null;
     }
 
     return {
+      name: node.title ?? `#${node.id}`,
       type: 'item',
       title: node.title ?? `#${node.id}`,
-      component: ValueBlock.Initializer,
+      Component: ValueBlock.Initializer,
       node,
       resultTitle,
     };

@@ -1,39 +1,36 @@
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
+
 // 表格操作配置
-export const SubTableActionInitializers = {
+export const subTableActionInitializers = new SchemaInitializer({
+  name: 'SubTableActionInitializers',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
     marginLeft: 8,
   },
-  // size: 'small',
   items: [
     {
       type: 'itemGroup',
       title: "{{t('Enable actions')}}",
+      name: 'enableActions',
       children: [
         {
-          type: 'item',
+          name: 'addNew',
           title: "{{t('Add new')}}",
-          component: 'CreateActionInitializer',
+          Component: 'CreateActionInitializer',
           schema: {
             'x-align': 'right',
-            // 'x-component-props': {
-            //   size: 'small',
-            // },
           },
         },
         {
-          type: 'item',
+          name: 'delete',
           title: "{{t('Delete')}}",
-          component: 'BulkDestroyActionInitializer',
+          Component: 'BulkDestroyActionInitializer',
           schema: {
             'x-align': 'right',
-            // 'x-component-props': {
-            //   size: 'small',
-            // },
           },
         },
       ],
     },
   ],
-};
+});

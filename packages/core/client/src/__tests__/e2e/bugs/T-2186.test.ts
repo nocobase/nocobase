@@ -165,7 +165,7 @@ test('BUG(Filter): the input box displayed should correspond to the field type',
   await mockPage(config).goto();
 
   await page.getByLabel('action-Filter.Action-Filter-filter-users-table').click();
-  await page.getByTestId('filter-select-field').getByLabel('Search').click();
+  await page.getByTestId('select-filter-field').getByLabel('Search').click();
   await page.getByRole('menuitemcheckbox', { name: 'ID' }).click();
 
   // 应该显示数字输入框

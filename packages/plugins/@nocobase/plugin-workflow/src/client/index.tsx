@@ -1,6 +1,6 @@
-export * from './constants';
 export * from './Branch';
 export * from './FlowContext';
+export * from './constants';
 export * from './nodes';
 export { triggers, useTrigger, getTriggersOptions } from './triggers';
 export * from './variable';
@@ -8,6 +8,8 @@ export * from './components';
 export * from './utils';
 export * from './hooks/useGetAriaLabelOfAddButton';
 export { default as useStyles } from './style';
+export * from './variable';
+export { getCollectionFieldOptions, useWorkflowVariableOptions } from './variable';
 
 import React from 'react';
 
@@ -31,6 +33,7 @@ export default class extends Plugin {
     this.addRoutes();
     this.addScopes();
     this.addComponents();
+
     this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'PartitionOutlined',
       title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,

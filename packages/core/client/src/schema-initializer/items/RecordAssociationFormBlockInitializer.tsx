@@ -2,17 +2,19 @@ import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
 
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { SchemaInitializer } from '../SchemaInitializer';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const RecordAssociationFormBlockInitializer = (props) => {
-  const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+export const RecordAssociationFormBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
+  const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const field = item.field;
+  const field = itemConfig.field;
   const collection = field.target;
   const resource = `${field.collectionName}.${field.name}`;
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
       icon={<FormOutlined />}
       {...others}
       onClick={async ({ item }) => {
@@ -55,7 +57,7 @@ export const RecordAssociationFormBlockInitializer = (props) => {
           );
         }
       }}
-      items={useRecordCollectionDataSourceItems('FormItem', item, collection, resource)}
+      items={useRecordCollectionDataSourceItems('FormItem', itemConfig, collection, resource)}
     />
   );
 };

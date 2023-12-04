@@ -112,6 +112,7 @@ export const runNocoBase = async (
     force?: boolean;
     signal?: AbortSignal;
   },
+  clearDatabase = false,
 ) => {
   // 用于存放 playwright 自动生成的相关的文件
   if (!fs.existsSync('playwright')) {
@@ -155,9 +156,11 @@ export const runNocoBase = async (
     return { awaitForNocoBase };
   }
 
-  // 加上 -f 会清空数据库
-  console.log('yarn nocobase install -f');
-  await runCommand('yarn', ['nocobase', 'install', '-f'], options);
+  if (clearDatabase) {
+    // 加上 -f 会清空数据库
+    console.log('yarn nocobase install -f');
+    await runCommand('yarn', ['nocobase', 'install', '-f'], options);
+  }
 
   if (await checkPort(PORT)) {
     console.log('Server is running, skip starting server.');

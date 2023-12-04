@@ -1,4 +1,4 @@
-import { SchemaInitializerItemOptions, defaultFieldNames } from '@nocobase/client';
+import { SchemaInitializerItemType, defaultFieldNames } from '@nocobase/client';
 import { Evaluator, evaluators, getOptions } from '@nocobase/evaluators/client';
 
 import { RadioWithTooltip } from '../components/RadioWithTooltip';
@@ -77,11 +77,12 @@ export default {
       [fieldNames.label]: title,
     };
   },
-  useInitializers(node): SchemaInitializerItemOptions {
+  useInitializers(node): SchemaInitializerItemType {
     return {
+      name: node.title ?? `#${node.id}`,
       type: 'item',
       title: node.title ?? `#${node.id}`,
-      component: ValueBlock.Initializer,
+      Component: ValueBlock.Initializer,
       node,
       resultTitle: lang('Calculation result'),
     };

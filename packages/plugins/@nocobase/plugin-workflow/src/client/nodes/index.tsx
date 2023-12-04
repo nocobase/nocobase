@@ -1,16 +1,16 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
-import { cloneDeep } from 'lodash';
 import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
 import { App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
+import { cloneDeep } from 'lodash';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
   ActionContextProvider,
   FormProvider,
   SchemaComponent,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItemType,
   css,
   cx,
   useAPIClient,
@@ -50,7 +50,7 @@ export interface Instruction {
   component?(props): JSX.Element;
   useVariables?(node, options?): VariableOption;
   useScopeVariables?(node, options?): VariableOptions;
-  useInitializers?(node): SchemaInitializerItemOptions | null;
+  useInitializers?(node): SchemaInitializerItemType | null;
   initializers?: { [key: string]: any };
   isAvailable?(ctx: object): boolean;
 }
@@ -341,8 +341,6 @@ export function NodeDefaultView(props) {
           <span className="workflow-node-id">{data.id}</span>
         </div>
         <Input.TextArea
-          role="button"
-          aria-label="textarea"
           disabled={workflow.executed}
           value={editingTitle}
           onChange={(ev) => setEditingTitle(ev.target.value)}

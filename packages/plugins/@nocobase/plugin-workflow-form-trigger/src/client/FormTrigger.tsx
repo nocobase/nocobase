@@ -1,11 +1,6 @@
 import { useForm } from '@formily/react';
 
-import {
-  SchemaInitializerItemOptions,
-  useCollectionDataSource,
-  useCollectionManager,
-  useCompile,
-} from '@nocobase/client';
+import { SchemaInitializerItemType, useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
 import { CollectionBlockInitializer, getCollectionFieldOptions } from '@nocobase/plugin-workflow/client';
 import { NAMESPACE, useLang } from '../locale';
 
@@ -101,12 +96,13 @@ export default {
     });
     return result;
   },
-  useInitializers(config): SchemaInitializerItemOptions | null {
+  useInitializers(config): SchemaInitializerItemType | null {
     if (!config.collection) {
       return null;
     }
 
     return {
+      name: 'triggerData',
       type: 'item',
       key: 'triggerData',
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,

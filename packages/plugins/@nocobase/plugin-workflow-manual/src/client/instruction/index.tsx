@@ -1,4 +1,4 @@
-import { SchemaInitializerItemOptions, useCollectionManager, useCompile } from '@nocobase/client';
+import { SchemaInitializerItemType, useCollectionManager, useCompile } from '@nocobase/client';
 
 import {
   defaultFieldNames,
@@ -117,7 +117,7 @@ export default {
         }
       : null;
   },
-  useInitializers(node): SchemaInitializerItemOptions | null {
+  useInitializers(node): SchemaInitializerItemType | null {
     const { getCollection } = useCollectionManager();
     const formKeys = Object.keys(node.config.forms ?? {});
     if (!formKeys.length || node.config.mode) {
@@ -131,18 +131,20 @@ export default {
 
         return fields.length
           ? ({
+              name: form.title ?? formKey,
               type: 'item',
               title: form.title ?? formKey,
-              component: CollectionBlockInitializer,
+              Component: CollectionBlockInitializer,
               collection: form.collection,
               dataSource: `{{$jobsMapByNodeKey.${node.key}.${formKey}}}`,
-            } as SchemaInitializerItemOptions)
+            } as SchemaInitializerItemType)
           : null;
       })
       .filter(Boolean);
 
     return forms.length
       ? {
+          name: 'forms',
           key: 'forms',
           type: 'subMenu',
           title: node.title,

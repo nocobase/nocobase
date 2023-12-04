@@ -1,39 +1,35 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { SchemaInitializer } from '../..';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../utils';
 
-export const RecordFormBlockInitializers = (props: any) => {
-  const { t } = useTranslation();
-  return (
-    <SchemaInitializer.Button
-      wrap={gridRowColWrap}
-      title={t('Add block')}
-      icon={'PlusOutlined'}
-      items={[
+export const recordFormBlockInitializers = new SchemaInitializer({
+  name: 'RecordFormBlockInitializers',
+  title: '{{ t("Add block") }}',
+  icon: 'PlusOutlined',
+  wrap: gridRowColWrap,
+  items: [
+    {
+      type: 'itemGroup',
+      title: '{{ t("Data blocks") }}',
+      name: 'dataBlocks',
+      children: [
         {
-          type: 'itemGroup',
-          title: '{{ t("Data blocks") }}',
-          children: [
-            {
-              type: 'item',
-              title: '{{ t("Form") }}',
-              component: 'RecordFormBlockInitializer',
-            },
-          ],
+          name: 'form',
+          title: '{{ t("Form") }}',
+          Component: 'RecordFormBlockInitializer',
         },
+      ],
+    },
+    {
+      type: 'itemGroup',
+      title: '{{t("Other blocks")}}',
+      name: 'otherBlocks',
+      children: [
         {
-          type: 'itemGroup',
-          title: '{{t("Other blocks")}}',
-          children: [
-            {
-              type: 'item',
-              title: '{{t("Markdown")}}',
-              component: 'MarkdownBlockInitializer',
-            },
-          ],
+          name: 'markdown',
+          title: '{{t("Markdown")}}',
+          Component: 'MarkdownBlockInitializer',
         },
-      ]}
-    />
-  );
-};
+      ],
+    },
+  ],
+});

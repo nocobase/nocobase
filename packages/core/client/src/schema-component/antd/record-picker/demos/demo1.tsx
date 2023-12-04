@@ -6,6 +6,7 @@ import {
   APIClientProvider,
   Action,
   ActionBar,
+  Application,
   BlockItem,
   CollectionField,
   CollectionManagerProvider,
@@ -161,7 +162,7 @@ const schema: ISchema = {
   },
 };
 
-export default () => {
+const Root = () => {
   const components = {
     TableSelectorProvider,
     TableV2,
@@ -186,3 +187,9 @@ export default () => {
     </APIClientProvider>
   );
 };
+
+const app = new Application({
+  providers: [Root],
+});
+
+export default app.getRootComponent();

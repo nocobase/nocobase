@@ -5,7 +5,7 @@ import {
   ActionContextProvider,
   FormProvider,
   SchemaComponent,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItemType,
   css,
   cx,
   useAPIClient,
@@ -15,6 +15,7 @@ import {
 } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 import { Button, Input, Tag, message } from 'antd';
+import { cloneDeep } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
@@ -23,7 +24,6 @@ import useStyles from '../style';
 import { VariableOptions } from '../variable';
 import collection from './collection';
 import schedule from './schedule/';
-import { cloneDeep } from 'lodash';
 
 function useUpdateConfigAction() {
   const form = useForm();
@@ -61,7 +61,7 @@ export interface Trigger {
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  useInitializers?(config): SchemaInitializerItemOptions | null;
+  useInitializers?(config): SchemaInitializerItemType | null;
   initializers?: any;
   useActionTriggerable?: boolean | (() => boolean);
 }
@@ -231,8 +231,6 @@ export const TriggerConfig = () => {
       </div>
       <div>
         <Input.TextArea
-          role="button"
-          aria-label="textarea"
           value={editingTitle}
           onChange={(ev) => setEditingTitle(ev.target.value)}
           onBlur={(ev) => onChangeTitle(ev.target.value)}

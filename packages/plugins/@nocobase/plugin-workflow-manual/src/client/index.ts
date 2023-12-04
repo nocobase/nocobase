@@ -1,4 +1,4 @@
-import { BlockInitializers, Plugin } from '@nocobase/client';
+import { Plugin } from '@nocobase/client';
 import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 
 import Manual from './instruction';
@@ -6,6 +6,8 @@ import Manual from './instruction';
 import { WorkflowTodo } from './WorkflowTodo';
 import { WorkflowTodoBlockInitializer } from './WorkflowTodoBlockInitializer';
 import { NAMESPACE } from '../locale';
+import { addActionButton, addBlockButton } from './instruction/SchemaConfig';
+import { addCustomFormField } from './instruction/forms/custom';
 
 export default class extends Plugin {
   async afterAdd() {
@@ -18,17 +20,16 @@ export default class extends Plugin {
     const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
     workflow.instructions.register(Manual.type, Manual);
 
-    // TODO(optimize): change to register way
-    const initializerGroup = BlockInitializers.items.find((group) => group.key === 'media');
-    if (!initializerGroup.children.find((item) => item.key === 'workflowTodos')) {
-      initializerGroup.children.push({
-        key: 'workflowTodos',
-        type: 'item',
-        title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
-        component: 'WorkflowTodoBlockInitializer',
-        icon: 'CheckSquareOutlined',
-      } as any);
-    }
+    this.app.schemaInitializerManager.add(addBlockButton);
+    this.app.schemaInitializerManager.add(addActionButton);
+    this.app.schemaInitializerManager.add(addCustomFormField);
+
+    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    blockInitializers.add('otherBlocks.workflowTodos', {
+      title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
+      Component: 'WorkflowTodoBlockInitializer',
+      icon: 'CheckSquareOutlined',
+    });
   }
 
   addComponents() {

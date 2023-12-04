@@ -1,5 +1,8 @@
+import { SchemaInitializer } from '@nocobase/client';
+
 // 操作记录表格操作配置
-export const AuditLogsTableActionInitializers = {
+export const auditLogsTableActionInitializers = new SchemaInitializer({
+  name: 'AuditLogsTableActionInitializers',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -9,41 +12,25 @@ export const AuditLogsTableActionInitializers = {
     {
       type: 'itemGroup',
       title: "{{t('Enable actions')}}",
+      name: 'enableActions',
       children: [
         {
-          type: 'item',
+          name: 'filter',
           title: "{{t('Filter')}}",
-          component: 'FilterActionInitializer',
+          Component: 'FilterActionInitializer',
           schema: {
             'x-align': 'left',
           },
         },
         {
-          type: 'item',
+          name: 'refresh',
           title: "{{t('Refresh')}}",
-          component: 'RefreshActionInitializer',
+          Component: 'RefreshActionInitializer',
           schema: {
             'x-align': 'right',
           },
         },
       ],
     },
-    // {
-    //   type: 'divider',
-    // },
-    // {
-    //   type: 'item',
-    //   title: "{{t('Association fields filter')}}",
-    //   component: 'ActionBarAssociationFilterAction',
-    //   schema: {
-    //     'x-align': 'left',
-    //   },
-    //   find: (schema: Schema) => {
-    //     const resultSchema = Object.entries(schema.parent.properties).find(
-    //       ([, value]) => value['x-component'] === 'AssociationFilter',
-    //     )?.[1];
-    //     return resultSchema;
-    //   },
-    // },
   ],
-};
+});
