@@ -137,7 +137,9 @@ export const useKanbanBlockProps = () => {
   const ctx = useKanbanBlockContext();
   useEffect(() => {
     if (!ctx?.service?.loading) {
-      field.value = toColumns(ctx.groupField, ctx?.service?.data?.data);
+      setTimeout(() => {
+        field.value = toColumns(ctx.groupField, ctx?.service?.data?.data);
+      });
     }
     // field.loading = ctx?.service?.loading;
   }, [ctx?.service?.loading]);
