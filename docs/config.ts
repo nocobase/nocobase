@@ -246,7 +246,7 @@ const sidebar = {
     {
       title: '@nocobase/acl',
       type: 'subMenu',
-      children: ['/api/acl/acl', '/api/acl/acl-role', '/api/acl/acl-resource'],
+      children: ['/api/acl', '/api/acl/acl-role', '/api/acl/acl-resource'],
     },
     {
       title: '@nocobase/client',
