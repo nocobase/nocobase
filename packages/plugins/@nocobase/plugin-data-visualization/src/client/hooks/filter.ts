@@ -138,7 +138,7 @@ export const useChartFilter = () => {
         ...child.schema,
         title,
         'x-component-props': {
-          'filter-operator': defaultOperator?.value,
+          'filter-operator': defaultOperator,
         },
       };
       if (defaultOperator?.noValue) {
