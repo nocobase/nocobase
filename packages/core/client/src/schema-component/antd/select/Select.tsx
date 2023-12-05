@@ -96,6 +96,12 @@ const ObjectSelect = (props: Props) => {
 
 const filterOption = (input, option) => (option?.label ?? '').toLowerCase().includes((input || '').toLowerCase());
 
+const replacePlaceholders = (inputStr, values) => {
+  return inputStr.replace(/{{(.*?)}}/g, function (match, placeholder) {
+    return values?.hasOwnProperty.call(placeholder) ? values[placeholder] : match;
+  });
+};
+
 const InternalSelect = connect(
   (props: Props) => {
     const { objectValue, loading, value, rawOptions, defaultValue, ...others } = props;
@@ -103,6 +109,26 @@ const InternalSelect = connect(
     if (mode && !['multiple', 'tags'].includes(mode)) {
       mode = undefined;
     }
+    const _label = others.fieldNames.label;
+
+    const _options = others?.options?.map((op) => {
+      const valueOject = {};
+      let outputStr = '';
+
+      if (_label.includes('{{')) {
+        const regex = /{{(.*?)}}/g;
+
+        let match;
+        while ((match = regex.exec(_label))) {
+          valueOject[match[1]] = op[match[1]] || '';
+        }
+        outputStr = replacePlaceholders(_label, valueOject);
+      } else {
+        outputStr = op[_label];
+      }
+      op[_label ? _label : op.label] = outputStr;
+      return op;
+    });
     if (objectValue) {
       return (
         <ObjectSelect
@@ -155,6 +181,7 @@ const InternalSelect = connect(
         onChange={(changed) => {
           props.onChange?.(changed === undefined ? null : changed);
         }}
+        options={_options}
         mode={mode}
       />
     );

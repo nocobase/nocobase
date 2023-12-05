@@ -724,11 +724,11 @@ export interface SchemaSettingsSelectItemProps
   value?: SelectWithTitleProps['defaultValue'];
 }
 export const SchemaSettingsSelectItem: FC<SchemaSettingsSelectItemProps> = (props) => {
-  const { title, options, value, onChange, ...others } = props;
+  const { title, options, value, onChange, onClick, ...others } = props;
 
   return (
     <SchemaSettingsItem title={title} {...others}>
-      <SelectWithTitle {...{ title, defaultValue: value, onChange, options }} />
+      <SelectWithTitle {...{ title, defaultValue: value, onChange, options, onClick }} />
     </SchemaSettingsItem>
   );
 };
@@ -1970,8 +1970,9 @@ interface SelectWithTitleProps {
   defaultValue?: any;
   options?: any;
   onChange?: (...args: any[]) => void;
+  onClick?: (...args: any[]) => void;
 }
-export function SelectWithTitle({ title, defaultValue, onChange, options }: SelectWithTitleProps) {
+export function SelectWithTitle({ title, defaultValue, onChange, options, onClick }: SelectWithTitleProps) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef<any>(null);
   return (
@@ -1994,6 +1995,7 @@ export function SelectWithTitle({ title, defaultValue, onChange, options }: Sele
         bordered={false}
         defaultValue={defaultValue}
         onChange={onChange}
+        onSelect={onClick}
         options={options}
         style={{ textAlign: 'right', minWidth: 100 }}
         onMouseEnter={() => {

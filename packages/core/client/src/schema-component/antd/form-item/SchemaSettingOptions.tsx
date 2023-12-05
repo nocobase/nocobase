@@ -1,4 +1,4 @@
-import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
+import { ArrayCollapse, FormLayout, FormItem } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -16,6 +16,10 @@ import {
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useOperatorList } from '../filter/useOperators';
 import { isFileCollection } from './FormItem';
+import { FormDialog } from '..';
+import { SchemaComponent } from '../../..';
+import { Variable } from '@nocobase/client';
+import { useIsAssociationField, useOptions, CUSTOM } from './FormItem.Settings';
 
 export const findFilterOperators = (schema: Schema) => {
   while (schema) {
@@ -563,47 +567,107 @@ export const EditOperator = () => {
 };
 
 export const EditTitleField = () => {
-  const { getCollectionFields, getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const targetFields = collectionField?.target
-    ? getCollectionFields(collectionField?.target)
-    : getCollectionFields(collectionField?.targetCollection) ?? [];
-  const options = targetFields
-    .filter((field) => !field?.target && field.type !== 'boolean')
-    .map((field) => ({
-      value: field?.name,
-      label: compile(field?.uiSchema?.title) || field?.name,
-    }));
+  const isAssociationField = useIsAssociationField();
+  let options = useOptions();
+  if (!isAssociationField) {
+    options = options.concat([
+      {
+        label: t('Name'),
+        value: 'label',
+      },
+      {
+        label: t('Value'),
+        value: 'value',
+      },
+    ]);
+  }
+  const value = field?.componentProps?.fieldNames?.label || 'label';
 
-  return options.length > 0 && fieldSchema['x-component'] === 'CollectionField' ? (
+  const handlLabel = (valueLabel: string) => {
+    if (valueLabel === CUSTOM && !value.includes('{{')) {
+      return `{{${value}}}`;
+    }
+    return value;
+  };
+  const openModal = async (label: string) => {
+    let formValue = label;
+    const schema = {
+      ['x-uid']: fieldSchema['x-uid'],
+    };
+
+    if (label == CUSTOM) {
+      formValue = await FormDialog({ title: t('Custom title field') }, () => {
+        return (
+          <FormLayout layout={'vertical'}>
+            <SchemaComponent
+              components={{ Variable, FormItem }}
+              schema={{
+                type: 'object',
+                properties: {
+                  name: {
+                    title: t('Custom field name'),
+                    required: true,
+                    default: handlLabel(label),
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Variable.RawTextArea',
+                    'x-component-props': {
+                      scope: options.map((o) => {
+                        return {
+                          ...o,
+                          label: o.value,
+                        };
+                      }),
+                    },
+                  },
+                },
+              }}
+            />
+          </FormLayout>
+        );
+      })
+        .open()
+        .then((values) => {
+          return values.name;
+        });
+    }
+    const fieldNames = {
+      ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
+      ...field.componentProps.fieldNames,
+      label: formValue,
+    };
+    fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+    fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+    schema['x-component-props'] = fieldSchema['x-component-props'];
+    field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
+    dn.emit('patch', {
+      schema,
+    });
+    dn.refresh();
+  };
+  return options.length > 0 ? (
     <SchemaSettingsSelectItem
       key="title-field"
       title={t('Title field')}
-      options={options}
-      value={field?.componentProps?.fieldNames?.label}
-      onChange={(label) => {
-        const schema = {
-          ['x-uid']: fieldSchema['x-uid'],
-        };
-        const fieldNames = {
-          ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
-          ...field.componentProps.fieldNames,
-          label,
-        };
-        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        fieldSchema['x-component-props']['fieldNames'] = fieldNames;
-        schema['x-component-props'] = fieldSchema['x-component-props'];
-        field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
-        dn.emit('patch', {
-          schema,
-        });
-        dn.refresh();
+      options={[
+        ...options,
+        {
+          label: t('Customize'),
+          value: CUSTOM,
+        },
+      ]}
+      value={value !== CUSTOM && options.some((o) => o.value === value) ? value : CUSTOM}
+      onChange={openModal}
+      onClick={(label) => {
+        if (label === CUSTOM && options.every((op) => op.value !== value)) {
+          openModal(label);
+        }
       }}
     />
   ) : null;
