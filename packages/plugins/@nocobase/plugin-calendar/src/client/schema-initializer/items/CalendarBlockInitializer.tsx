@@ -8,21 +8,24 @@ import {
   SchemaComponentOptions,
   useCollectionManager,
   useGlobalTheme,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { createCalendarBlockSchema } from '../utils';
 import { useTranslation } from '../../../locale';
 
-export const CalendarBlockInitializer = (props) => {
-  const { insert } = props;
+export const CalendarBlockInitializer = () => {
+  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const { getCollectionField, getCollectionFieldsOptions } = useCollectionManager();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
+  const itemConfig = useSchemaInitializerItem();
 
   return (
     <DataBlockInitializer
-      {...props}
+      {...itemConfig}
       componentType={'Calendar'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {

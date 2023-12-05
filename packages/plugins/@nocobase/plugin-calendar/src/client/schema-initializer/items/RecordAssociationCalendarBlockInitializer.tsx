@@ -11,23 +11,28 @@ import {
   SchemaComponentOptions,
   SchemaComponent,
   useRecordCollectionDataSourceItems,
+  useSchemaInitializerItem,
+  useSchemaInitializer,
+  SchemaInitializerItem,
 } from '@nocobase/client';
 import { createCalendarBlockSchema } from '../utils';
 import { useTranslation } from '../../../locale';
 
-export const RecordAssociationCalendarBlockInitializer = (props) => {
-  const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+export const RecordAssociationCalendarBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
+  const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { getCollection } = useCollectionManager();
-  const field = item.field;
+  const field = itemConfig.field;
   const collection = getCollection(field.target);
   const resource = `${field.collectionName}.${field.name}`;
   const { theme } = useGlobalTheme();
 
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
       icon={<TableOutlined />}
       {...others}
       onClick={async ({ item }) => {
@@ -104,7 +109,7 @@ export const RecordAssociationCalendarBlockInitializer = (props) => {
           );
         }
       }}
-      items={useRecordCollectionDataSourceItems('Calendar', item, field.target, resource)}
+      items={useRecordCollectionDataSourceItems('Calendar', itemConfig, field.target, resource)}
     />
   );
 };
