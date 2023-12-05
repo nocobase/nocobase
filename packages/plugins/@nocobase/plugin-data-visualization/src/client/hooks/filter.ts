@@ -96,6 +96,7 @@ export const useChartFilter = () => {
         schema['x-component-props'].useOriginalFilter = true;
       }
       const resultItem: SchemaInitializerItemType = {
+        key: `${name}.${field.name}`,
         name: field.name,
         type: 'item',
         title: field?.uiSchema?.title || field.name,
@@ -150,6 +151,7 @@ export const useChartFilter = () => {
         };
       }
       const resultItem: SchemaInitializerItemType = {
+        key: `${name}.${child.name}`,
         name: child.name,
         type: 'item',
         title: child.title || child.name,
@@ -185,6 +187,7 @@ export const useChartFilter = () => {
       if (children?.length && !['chinaRegion', 'createdBy', 'updatedBy'].includes(field.interface)) {
         const items = children.map((child: any) => children2item(child, title, `${name}.${field.name}`));
         return {
+          key: `${name}.${field.name}`,
           name: field.name,
           type: 'subMenu',
           title: field?.uiSchema?.title || field.name,
@@ -200,6 +203,7 @@ export const useChartFilter = () => {
           field2option(targetField, depth + 1, '', `${name}.${field.name}`),
         );
         return {
+          key: `${name}.${field.name}`,
           name: field.name,
           type: 'subMenu',
           title: field?.uiSchema?.title || field.name,

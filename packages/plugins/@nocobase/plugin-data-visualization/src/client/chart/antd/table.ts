@@ -15,6 +15,7 @@ export class Table extends AntdChart {
           key: item,
         }))
       : [];
+    const rowKey = columns[0]?.dataIndex;
     const dataSource = data.map((item: any) => {
       Object.keys(item).map((key: string) => {
         const props = fieldProps[key];
@@ -46,6 +47,7 @@ export class Table extends AntdChart {
       scroll: {
         x: 'max-content',
       },
+      rowKey,
       ...general,
       ...advanced,
     };
