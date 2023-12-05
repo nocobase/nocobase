@@ -46,7 +46,9 @@ export const SchemaInitializerMenu: FC<MenuProps> = (props) => {
         rootClassName={css`
           box-shadow: none !important;
           border-inline-end: 0 !important;
-          max-height: 50vh !important;
+          .ant-menu-sub {
+            max-height: 50vh !important;
+          }
           .ant-menu-root {
             margin: 0 -${token.margin}px;
             .ant-menu-submenu-title {
