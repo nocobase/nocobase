@@ -20,6 +20,7 @@ import {
   defaultFieldNames,
   nodesOptions,
   triggerOptions,
+  Instruction,
 } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE, useLang } from '../locale';
@@ -143,12 +144,12 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
 // { key: '{{$context.data.id}}', collection: "collection.association", field }
 // select data based
 
-export default {
-  title: `{{t("Aggregate", { ns: "${NAMESPACE}" })}}`,
-  type: 'aggregate',
-  group: 'collection',
-  description: `{{t("Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Instruction {
+  title = `{{t("Aggregate", { ns: "${NAMESPACE}" })}}`;
+  type = 'aggregate';
+  group = 'collection';
+  description = `{{t("Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.", { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     aggregator: {
       type: 'string',
       title: `{{t("Aggregator function", { ns: "${NAMESPACE}" })}}`,
@@ -356,18 +357,17 @@ export default {
         },
       },
     },
-  },
-  view: {},
-  scope: {
+  };
+  scope = {
     useCollectionDataSource,
-  },
-  components: {
+  };
+  components = {
     SchemaComponentContext,
     FilterDynamicComponent,
     FieldsSelect,
     ValueBlock,
     AssociatedConfig,
-  },
+  };
   useVariables({ key, title }, { types, fieldNames = defaultFieldNames }) {
     if (
       types &&
@@ -379,8 +379,9 @@ export default {
       [fieldNames.value]: key,
       [fieldNames.label]: title,
     };
-  },
+  }
   useInitializers(node): SchemaInitializerItemType | null {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const resultTitle = useLang('Query result');
     if (!node.config.collection) {
       return null;
@@ -394,5 +395,5 @@ export default {
       node,
       resultTitle,
     };
-  },
-};
+  }
+}

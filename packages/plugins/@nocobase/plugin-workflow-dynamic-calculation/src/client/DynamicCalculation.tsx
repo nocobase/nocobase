@@ -3,6 +3,7 @@ import React from 'react';
 import { SchemaInitializerItemType, Variable, useCollectionManager } from '@nocobase/client';
 import {
   BaseTypeSets,
+  Instruction,
   ValueBlock,
   WorkflowVariableInput,
   defaultFieldNames,
@@ -32,12 +33,12 @@ function DynamicExpression({ value, onChange }) {
   return <Variable.Input value={value} onChange={onChange} scope={scope} />;
 }
 
-export default {
-  title: `{{t("Dynamic Calculation", { ns: "${NAMESPACE}" })}}`,
-  type: 'dynamic-calculation',
-  group: 'control',
-  description: `{{t("Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Instruction {
+  title = `{{t("Dynamic Calculation", { ns: "${NAMESPACE}" })}}`;
+  type = 'dynamic-calculation';
+  group = 'control';
+  description = `{{t("Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.", { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     expression: {
       type: 'string',
       title: `{{t("Calculation expression", { ns: "${NAMESPACE}" })}}`,
@@ -65,14 +66,12 @@ export default {
         },
       },
     },
-  },
-  view: {},
-  scope: {},
-  components: {
+  };
+  components = {
     DynamicExpression,
     WorkflowVariableInput,
     ValueBlock,
-  },
+  };
   useVariables({ key, title }, { types, fieldNames = defaultFieldNames }) {
     if (
       types &&
@@ -84,7 +83,7 @@ export default {
       [fieldNames.value]: key,
       [fieldNames.label]: title,
     };
-  },
+  }
   useInitializers(node): SchemaInitializerItemType {
     return {
       name: `#${node.id}`,
@@ -92,7 +91,8 @@ export default {
       title: node.title ?? `#${node.id}`,
       Component: ValueBlock.Initializer,
       node,
+      // eslint-disable-next-line react-hooks/rules-of-hooks
       resultTitle: useLang('Calculation result'),
     };
-  },
-};
+  }
+}

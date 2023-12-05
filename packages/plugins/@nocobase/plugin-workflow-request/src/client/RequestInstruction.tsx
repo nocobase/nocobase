@@ -2,16 +2,16 @@ import { ArrayItems } from '@formily/antd-v5';
 
 import { defaultFieldNames } from '@nocobase/client';
 
-import { WorkflowVariableInput, WorkflowVariableJSON } from '@nocobase/plugin-workflow/client';
+import { Instruction, WorkflowVariableInput, WorkflowVariableJSON } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../locale';
 
-export default {
-  title: `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`,
-  type: 'request',
-  group: 'extended',
-  description: `{{t("Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Instruction {
+  title = `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`;
+  type = 'request';
+  group = 'extended';
+  description = `{{t("Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.", { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     method: {
       type: 'string',
       required: true,
@@ -168,18 +168,16 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
     },
-  },
-  view: {},
-  scope: {},
-  components: {
+  };
+  components = {
     ArrayItems,
     WorkflowVariableInput,
     WorkflowVariableJSON,
-  },
+  };
   useVariables({ key, title }, { types, fieldNames = defaultFieldNames }) {
     return {
       [fieldNames.value]: key,
       [fieldNames.label]: title,
     };
-  },
-};
+  }
+}

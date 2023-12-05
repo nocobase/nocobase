@@ -6,13 +6,14 @@ import { ValueBlock } from '../components/ValueBlock';
 import { renderEngineReference } from '../components/renderEngineReference';
 import { NAMESPACE, lang } from '../locale';
 import { BaseTypeSets, WorkflowVariableTextArea } from '../variable';
+import { Instruction } from '.';
 
-export default {
-  title: `{{t("Calculation", { ns: "${NAMESPACE}" })}}`,
-  type: 'calculation',
-  group: 'control',
-  description: `{{t("Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Instruction {
+  title = `{{t("Calculation", { ns: "${NAMESPACE}" })}}`;
+  type = 'calculation';
+  group = 'control';
+  description = `{{t("Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression.", { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     engine: {
       type: 'string',
       title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
@@ -55,16 +56,15 @@ export default {
       ],
       required: true,
     },
-  },
-  view: {},
-  scope: {
+  };
+  scope = {
     renderEngineReference,
-  },
-  components: {
+  };
+  components = {
     WorkflowVariableTextArea,
     RadioWithTooltip,
     ValueBlock,
-  },
+  };
   useVariables({ key, title }, { types, fieldNames = defaultFieldNames }) {
     if (
       types &&
@@ -76,7 +76,7 @@ export default {
       [fieldNames.value]: key,
       [fieldNames.label]: title,
     };
-  },
+  }
   useInitializers(node): SchemaInitializerItemType {
     return {
       name: node.title ?? `#${node.id}`,
@@ -86,5 +86,5 @@ export default {
       node,
       resultTitle: lang('Calculation result'),
     };
-  },
-};
+  }
+}

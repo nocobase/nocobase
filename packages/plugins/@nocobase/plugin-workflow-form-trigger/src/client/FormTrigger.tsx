@@ -1,14 +1,14 @@
 import { useForm } from '@formily/react';
 
 import { SchemaInitializerItemType, useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
-import { CollectionBlockInitializer, getCollectionFieldOptions } from '@nocobase/plugin-workflow/client';
+import { Trigger, CollectionBlockInitializer, getCollectionFieldOptions } from '@nocobase/plugin-workflow/client';
 import { NAMESPACE, useLang } from '../locale';
 
-export default {
-  title: `{{t("Form event", { ns: "${NAMESPACE}" })}}`,
-  type: 'form',
-  description: `{{t("Event triggers when submitted a workflow bound form action.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Trigger {
+  title = `{{t("Form event", { ns: "${NAMESPACE}" })}}`;
+  type = 'form';
+  description = `{{t("Event triggers when submitted a workflow bound form action.", { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     collection: {
       type: 'string',
       required: true,
@@ -56,15 +56,19 @@ export default {
         },
       ],
     },
-  },
-  scope: {
+  };
+  scope = {
     useCollectionDataSource,
-  },
-  components: {},
+  };
+  useActionTriggerable = true;
   useVariables(config, options) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { getCollectionFields } = useCollectionManager();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const langTriggerData = useLang('Trigger data');
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const langUserSubmittedForm = useLang('User submitted form');
     const rootFields = [
       {
@@ -95,7 +99,7 @@ export default {
       getCollectionFields,
     });
     return result;
-  },
+  }
   useInitializers(config): SchemaInitializerItemType | null {
     if (!config.collection) {
       return null;
@@ -110,7 +114,5 @@ export default {
       collection: config.collection,
       dataSource: '{{$context.data}}',
     };
-  },
-  initializers: {},
-  useActionTriggerable: true,
-};
+  }
+}

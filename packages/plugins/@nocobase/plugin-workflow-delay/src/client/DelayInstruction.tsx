@@ -1,7 +1,7 @@
 import React from 'react';
 import { InputNumber, Select } from 'antd';
 import { css, useCompile } from '@nocobase/client';
-import { JOB_STATUS } from '@nocobase/plugin-workflow/client';
+import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../locale';
 
@@ -54,12 +54,12 @@ function Duration({ value = 60000, onChange }) {
   );
 }
 
-export default {
-  title: `{{t("Delay", { ns: "${NAMESPACE}" })}}`,
-  type: 'delay',
-  group: 'control',
-  description: `{{t("Delay a period of time and then continue or exit the process. Can be used to set wait or timeout times in parallel branches.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Instruction {
+  title = `{{t("Delay", { ns: "${NAMESPACE}" })}}`;
+  type = 'delay';
+  group = 'control';
+  description = `{{t("Delay a period of time and then continue or exit the process. Can be used to set wait or timeout times in parallel branches.", { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     duration: {
       type: 'number',
       title: `{{t("Duration", { ns: "${NAMESPACE}" })}}`,
@@ -80,10 +80,8 @@ export default {
       required: true,
       default: JOB_STATUS.RESOLVED,
     },
-  },
-  view: {},
-  scope: {},
-  components: {
+  };
+  components = {
     Duration,
-  },
-};
+  };
+}

@@ -18,7 +18,8 @@ export default class extends Plugin {
   async load() {
     // this.app.addProvider(Provider);
     const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
-    workflow.instructions.register(Manual.type, Manual);
+    const manualInstruction = new Manual();
+    workflow.instructions.register(manualInstruction.type, manualInstruction);
 
     this.app.schemaInitializerManager.add(addBlockButton);
     this.app.schemaInitializerManager.add(addActionButton);

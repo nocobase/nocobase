@@ -115,10 +115,6 @@ export default {
   'Rejected from a manual node.': '被人工节点拒绝继续。',
   'General failed but should do another try.': '执行失败，需重试。',
 
-  'Continue the process': '继续流程',
-  'Terminate the process': '终止流程',
-  'Save temporarily': '暂存',
-
   Operations: '操作',
   'This node contains branches, deleting will also be preformed to them, are you sure?':
     '节点包含分支，将同时删除其所有分支下的子节点，确定继续？',

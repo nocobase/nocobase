@@ -11,16 +11,17 @@ import {
   useStyles,
   useGetAriaLabelOfAddButton,
   RadioWithTooltip,
+  Instruction,
 } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE, useLang } from '../locale';
 
-export default {
-  title: `{{t("Parallel branch", { ns: "${NAMESPACE}" })}}`,
-  type: 'parallel',
-  group: 'control',
-  description: `{{t("Run multiple branch processes in parallel.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Instruction {
+  title = `{{t("Parallel branch", { ns: "${NAMESPACE}" })}}`;
+  type = 'parallel';
+  group = 'control';
+  description = `{{t("Run multiple branch processes in parallel.", { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     mode: {
       type: 'string',
       title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
@@ -47,14 +48,18 @@ export default {
       },
       default: 'all',
     },
-  },
-  view: {},
-  component: function Component({ data }) {
+  };
+  components = {
+    RadioWithTooltip,
+  };
+  Component({ data }) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { styles } = useStyles();
     const {
       id,
       config: { mode },
     } = data;
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { workflow, nodes } = useFlowContext();
     const branches = nodes
       .reduce((result, node) => {
@@ -64,8 +69,12 @@ export default {
         return result;
       }, [])
       .sort((a, b) => a.branchIndex - b.branchIndex);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const [branchCount, setBranchCount] = useState(Math.max(2, branches.length));
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const langAddBranch = useLang('Add branch');
 
     const tempBranches = Array(Math.max(0, branchCount - branches.length)).fill(null);
     const lastBranchHead = branches[branches.length - 1];
@@ -108,7 +117,7 @@ export default {
             ))}
           </div>
           <Tooltip
-            title={useLang('Add branch')}
+            title={langAddBranch}
             className={css`
               visibility: ${workflow.executed ? 'hidden' : 'visible'};
             `}
@@ -134,8 +143,5 @@ export default {
         </div>
       </NodeDefaultView>
     );
-  },
-  components: {
-    RadioWithTooltip,
-  },
-};
+  }
+}

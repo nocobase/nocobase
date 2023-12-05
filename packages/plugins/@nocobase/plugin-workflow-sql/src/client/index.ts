@@ -13,6 +13,7 @@ export default class extends Plugin {
   // You can get and modify the app instance here
   async load() {
     const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
-    workflow.instructions.register(SQLInstruction.type, SQLInstruction);
+    const sqlInstruction = new SQLInstruction();
+    workflow.instructions.register(sqlInstruction.type, sqlInstruction);
   }
 }

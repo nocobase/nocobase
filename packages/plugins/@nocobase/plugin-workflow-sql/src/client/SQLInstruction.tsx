@@ -1,15 +1,15 @@
 import { css, defaultFieldNames } from '@nocobase/client';
 
-import { WorkflowVariableRawTextArea } from '@nocobase/plugin-workflow/client';
+import { Instruction, WorkflowVariableRawTextArea } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../locale';
 
-export default {
-  title: `{{t("SQL action", { ns: "${NAMESPACE}" })}}`,
-  type: 'sql',
-  group: 'collection',
-  description: `{{t("Execute a SQL statement in database.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Instruction {
+  title = `{{t("SQL action", { ns: "${NAMESPACE}" })}}`;
+  type = 'sql';
+  group = 'collection';
+  description = `{{t("Execute a SQL statement in database.", { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     sql: {
       type: 'string',
       required: true,
@@ -25,15 +25,14 @@ export default {
         `,
       },
     },
-  },
-  scope: {},
-  components: {
+  };
+  components = {
     WorkflowVariableRawTextArea,
-  },
+  };
   useVariables({ key, title }, { types, fieldNames = defaultFieldNames }) {
     return {
       [fieldNames.value]: key,
       [fieldNames.label]: title,
     };
-  },
-};
+  }
+}

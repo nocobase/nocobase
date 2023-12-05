@@ -4,6 +4,7 @@ import {
   defaultFieldNames,
   getCollectionFieldOptions,
   CollectionBlockInitializer,
+  Instruction,
 } from '@nocobase/plugin-workflow/client';
 
 import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
@@ -19,12 +20,12 @@ const MULTIPLE_ASSIGNED_MODE = {
   ANY_PERCENTAGE: Symbol('any percentage'),
 };
 
-export default {
-  title: `{{t("Manual", { ns: "${NAMESPACE}" })}}`,
-  type: 'manual',
-  group: 'manual',
-  description: `{{t("Could be used for manually submitting data, and determine whether to continue or exit. Workflow will generate a todo item for assigned user when it reaches a manual node, and continue processing after user submits the form.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Instruction {
+  title = `{{t("Manual", { ns: "${NAMESPACE}" })}}`;
+  type = 'manual';
+  group = 'manual';
+  description = `{{t("Could be used for manually submitting data, and determine whether to continue or exit. Workflow will generate a todo item for assigned user when it reaches a manual node, and continue processing after user submits the form.", { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     assignees: {
       type: 'array',
       title: `{{t("Assignees", { ns: "${NAMESPACE}" })}}`,
@@ -68,17 +69,17 @@ export default {
       type: 'object',
       default: {},
     },
-  },
-  view: {},
-  scope: {},
-  components: {
+  };
+  components = {
     SchemaConfigButton,
     SchemaConfig,
     ModeConfig,
     AssigneesSelect,
-  },
+  };
   useVariables({ key, title, config }, { types, fieldNames = defaultFieldNames }) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { getCollectionFields } = useCollectionManager();
     const formKeys = Object.keys(config.forms ?? {});
     if (!formKeys.length) {
@@ -116,8 +117,9 @@ export default {
           [fieldNames.children]: options,
         }
       : null;
-  },
+  }
   useInitializers(node): SchemaInitializerItemType | null {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { getCollection } = useCollectionManager();
     const formKeys = Object.keys(node.config.forms ?? {});
     if (!formKeys.length || node.config.mode) {
@@ -151,6 +153,5 @@ export default {
           children: forms,
         }
       : null;
-  },
-  initializers: {},
-};
+  }
+}

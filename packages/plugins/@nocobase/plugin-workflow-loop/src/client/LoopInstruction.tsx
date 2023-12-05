@@ -14,6 +14,7 @@ import {
   nodesOptions,
   scopeOptions,
   triggerOptions,
+  Instruction,
 } from '@nocobase/plugin-workflow/client';
 import { NAMESPACE, useLang } from '../locale';
 
@@ -37,12 +38,12 @@ function findOption(options: VariableOption[], paths: string[]) {
   return option;
 }
 
-export default {
-  title: `{{t("Loop", { ns: "${NAMESPACE}" })}}`,
-  type: 'loop',
-  group: 'control',
-  description: `{{t("By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Instruction {
+  title = `{{t("Loop", { ns: "${NAMESPACE}" })}}`;
+  type = 'loop';
+  group = 'control';
+  description = `{{t("By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.", { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     target: {
       type: 'string',
       title: `{{t("Loop target", { ns: "${NAMESPACE}" })}}`,
@@ -66,10 +67,14 @@ export default {
       },
       required: true,
     },
-  },
-  view: {},
-  component: function Component({ data }) {
+  };
+  components = {
+    WorkflowVariableInput,
+  };
+  Component({ data }) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { nodes } = useFlowContext();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { styles } = useStyles();
     const entry = nodes.find((node) => node.upstreamId === data.id && node.branchIndex != null);
 
@@ -96,15 +101,15 @@ export default {
         </div>
       </NodeDefaultView>
     );
-  },
-  scope: {},
-  components: {
-    WorkflowVariableInput,
-  },
+  }
   useScopeVariables(node, options) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const langLoopTarget = useLang('Loop target');
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const langLoopIndex = useLang('Loop index');
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const langLoopLength = useLang('Loop length');
     const { target } = node.config;
     if (!target) {
@@ -152,5 +157,5 @@ export default {
       { key: 'index', [fieldNames.value]: 'index', [fieldNames.label]: langLoopIndex },
       { key: 'length', [fieldNames.value]: 'length', [fieldNames.label]: langLoopLength },
     ];
-  },
-};
+  }
+}
