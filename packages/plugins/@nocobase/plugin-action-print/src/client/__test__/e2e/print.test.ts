@@ -12,7 +12,7 @@ test.describe('where print action can be created', () => {
     await page.getByRole('menuitem', { name: 'Print' }).click();
     await expect(page.getByLabel('action-Action-Print-print-general-form')).toBeVisible();
   });
-  test('print action can be set in calender block view action detail blokc', async ({ page, mockPage, mockRecord }) => {
+  test('print action can be set in calender block view action detail block', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneCalenderWithViewAction).waitForInit();
     await mockRecord('general', { singleLineText: 'test' });
     await nocoPage.goto();
