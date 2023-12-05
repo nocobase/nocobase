@@ -35,6 +35,7 @@ test.describe('SchemaSettings: creating form block', () => {
     await page.getByRole('button', { name: 'Add new' }).click();
     await runExpect();
   });
+
   test('Linkage rules', async ({ page, mockPage }) => {
     await mockPage(oneTableBlockWithActionsAndFormBlocks).goto();
     await page.getByRole('button', { name: 'Add new' }).click();
@@ -64,6 +65,7 @@ test.describe('SchemaSettings: creating form block', () => {
     await clickOption(page, 'Linkage rules');
     await runExpect();
   });
+
   test('Form data templates', async ({ page, mockPage }) => {
     await mockPage(oneTableBlockWithActionsAndFormBlocks).goto();
     await page.getByRole('button', { name: 'Add new' }).click();
@@ -107,6 +109,7 @@ test.describe('SchemaSettings: creating form block', () => {
       page.getByRole('button', { name: 'singleLineText (Duplicate)' }).locator('.ant-tree-checkbox'),
     ).toHaveClass(/ant-tree-checkbox-checked/);
   });
+
   test('Convert reference to duplicate & Save as block template', async ({ page, mockPage }) => {
     await mockPage(oneTableBlockWithActionsAndFormBlocks).goto();
     await page.getByRole('button', { name: 'Add new' }).click();
@@ -142,6 +145,7 @@ test.describe('SchemaSettings: creating form block', () => {
     await expect(page.getByRole('menuitem', { name: 'Save as block template' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Convert reference to duplicate' })).not.toBeVisible();
   });
+
   test('Delete', async ({ page, mockPage }) => {
     await mockPage(oneTableBlockWithActionsAndFormBlocks).goto();
 
@@ -194,6 +198,7 @@ test.describe('SchemaSettings: editing list block', () => {
     await page.getByText('Edit', { exact: true }).click();
     await runExpect();
   });
+
   test('Linkage rules', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithActionsAndFormBlocks).waitForInit();
     await mockRecord('general');
@@ -225,6 +230,7 @@ test.describe('SchemaSettings: editing list block', () => {
     await clickOption(page, 'Linkage rules');
     await runExpect();
   });
+
   test('Convert reference to duplicate & Save as block template', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithActionsAndFormBlocks).waitForInit();
     await mockRecord('general');
@@ -262,6 +268,7 @@ test.describe('SchemaSettings: editing list block', () => {
     await expect(page.getByRole('menuitem', { name: 'Save as block template' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Convert reference to duplicate' })).not.toBeVisible();
   });
+
   test('Delete', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithActionsAndFormBlocks).waitForInit();
     await mockRecord('general');
