@@ -1,13 +1,26 @@
-import { SchemaComponent, Variable } from '@nocobase/client';
+import {
+  SchemaComponent,
+  Variable,
+  VariableInput,
+  VariableScopeProvider,
+  getShouldChange,
+  useDateVariable,
+  useUserVariable,
+} from '@nocobase/client';
 import React, { useEffect, useMemo } from 'react';
-import { useUserVariable } from '../hooks/useUserVariable';
-import { useDateVariable } from '../hooks/useDateVariable';
 import { useMemoizedFn } from 'ahooks';
 
 export const ChartFilterVariableInput: React.FC<any> = (props) => {
   const { value, onChange, fieldSchema } = props;
-  const userVariable = useUserVariable({ schema: fieldSchema });
-  const dateVariable = useDateVariable({ schema: fieldSchema });
+  const userVariable = useUserVariable({
+    collectionField: { uiSchema: fieldSchema },
+    uiSchema: fieldSchema,
+  });
+  const dateVariable = useDateVariable({
+    operator: fieldSchema['x-component-props']?.['filter-operator'],
+    schema: fieldSchema,
+    noDisabled: true,
+  });
   const options = useMemo(() => [userVariable, dateVariable].filter(Boolean), [dateVariable, userVariable]);
   const schema = {
     ...fieldSchema,
@@ -15,30 +28,29 @@ export const ChartFilterVariableInput: React.FC<any> = (props) => {
     'x-decorator': '',
     title: '',
     name: 'value',
-    'x-component-props': {
-      ...(fieldSchema['x-component-props'] || {}),
-      defaultValue: '',
-    },
+    default: '',
   };
   const componentProps = fieldSchema['x-component-props'] || {};
   const handleChange = useMemoizedFn(onChange);
   useEffect(() => {
-    if (componentProps.defaultValue) {
-      handleChange({ value: componentProps.defaultValue });
+    if (fieldSchema.default) {
+      handleChange({ value: fieldSchema.default });
     }
-  }, [componentProps.defaultValue, handleChange]);
+  }, [fieldSchema.default, handleChange]);
 
   return (
-    <Variable.Input
-      {...componentProps}
-      fieldNames={{}}
-      value={value?.value}
-      scope={options}
-      onChange={(v: any) => {
-        onChange({ value: v });
-      }}
-    >
-      <SchemaComponent schema={schema} />
-    </Variable.Input>
+    <VariableScopeProvider scope={options}>
+      <VariableInput
+        {...componentProps}
+        renderSchemaComponent={() => <SchemaComponent schema={schema} />}
+        fieldNames={{}}
+        value={value?.value}
+        scope={options}
+        onChange={(v: any) => {
+          onChange({ value: v });
+        }}
+        shouldChange={getShouldChange({} as any)}
+      />
+    </VariableScopeProvider>
   );
 };
