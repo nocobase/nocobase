@@ -104,6 +104,16 @@ export default defineConfig({
             },
           ],
         },
+        {
+          title: 'Block',
+          type: 'group',
+          children: [
+            {
+              title: 'DataBlockProvider',
+              link: '/core/block',
+            },
+          ]
+        }
       ],
       // '/ui-schema': [
       //   {

@@ -1,10 +1,11 @@
 import { merge } from '@formily/shared';
 import { useRequest as useReq, useSetState } from 'ahooks';
-import { Options } from 'ahooks/es/useRequest/src/types';
+import { Options, Result } from 'ahooks/es/useRequest/src/types';
 import { AxiosRequestConfig } from 'axios';
 import cloneDeep from 'lodash/cloneDeep';
 import { assign } from './assign';
 import { useAPIClient } from './useAPIClient';
+import { SetState } from 'ahooks/lib/useSetState';
 
 type FunctionService = (...args: any[]) => Promise<any>;
 
@@ -17,10 +18,15 @@ export type ResourceActionOptions<P = any> = {
   params?: P;
 };
 
+export interface UseRequestResult<P> extends Result<P, any> {
+  state: any;
+  setState: SetState<{}>;
+}
+
 export function useRequest<P>(
   service: AxiosRequestConfig<P> | ResourceActionOptions<P> | FunctionService,
   options: Options<any, any> & { uid?: string } = {},
-) {
+): UseRequestResult<P> {
   // 缓存用途
   const [state, setState] = useSetState({});
   const api = useAPIClient();
