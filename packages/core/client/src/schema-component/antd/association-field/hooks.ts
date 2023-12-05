@@ -48,7 +48,7 @@ export function useAssociationFieldContext<F extends GeneralField>() {
 }
 
 export default function useServiceOptions(props) {
-  const { action = 'list', service } = props;
+  const { action = 'list', service, useOriginalFilter } = props;
   const fieldSchema = useFieldSchema();
   const field = useField();
   const { getField } = useCollection();
@@ -119,7 +119,7 @@ export default function useServiceOptions(props) {
     return mergeFilter(
       [
         mergeFilter([
-          isOToAny && !isInFilterFormBlock(fieldSchema) && collectionField?.foreignKey
+          isOToAny && !isInFilterFormBlock(fieldSchema) && collectionField?.foreignKey && !useOriginalFilter
             ? {
                 [collectionField.foreignKey]: {
                   $is: null,
@@ -132,7 +132,8 @@ export default function useServiceOptions(props) {
         sourceValue !== undefined &&
         sourceValue !== null &&
         !isInFilterFormBlock(fieldSchema) &&
-        collectionField?.foreignKey
+        collectionField?.foreignKey &&
+        !useOriginalFilter
           ? {
               [collectionField.foreignKey]: {
                 $eq: sourceValue,
@@ -149,7 +150,14 @@ export default function useServiceOptions(props) {
       ],
       '$or',
     );
-  }, [collectionField?.interface, collectionField?.foreignKey, fieldSchema, fieldServiceFilter, sourceValue]);
+  }, [
+    collectionField?.interface,
+    collectionField?.foreignKey,
+    fieldSchema,
+    fieldServiceFilter,
+    sourceValue,
+    useOriginalFilter,
+  ]);
 
   return useMemo(() => {
     return {
