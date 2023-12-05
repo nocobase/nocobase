@@ -1,20 +1,22 @@
-import { useCollection } from '@nocobase/client';
+import { SchemaInitializer, useCollection } from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
 
 // 日历的操作配置
-export const CalendarActionInitializers = {
+export const CalendarActionInitializers = new SchemaInitializer({
   title: generateNTemplate('Configure actions'),
   icon: 'SettingOutlined',
+  name: 'configureActions',
   style: { marginLeft: 8 },
   items: [
     {
       type: 'itemGroup',
+      name: 'enableActions',
       title: generateNTemplate('Enable actions'),
       children: [
         {
-          type: 'item',
+          name: 'today',
           title: generateNTemplate('Today'),
-          component: 'ActionInitializer',
+          Component: 'ActionInitializer',
           schema: {
             title: generateNTemplate('Today'),
             'x-component': 'CalendarV2.Today',
@@ -23,9 +25,9 @@ export const CalendarActionInitializers = {
           },
         },
         {
-          type: 'item',
+          name: 'turnPages',
           title: generateNTemplate('Turn pages'),
-          component: 'ActionInitializer',
+          Component: 'ActionInitializer',
           schema: {
             title: generateNTemplate('Turn pages'),
             'x-component': 'CalendarV2.Nav',
@@ -34,9 +36,9 @@ export const CalendarActionInitializers = {
           },
         },
         {
-          type: 'item',
+          name: 'title',
           title: generateNTemplate('Title'),
-          component: 'ActionInitializer',
+          Component: 'ActionInitializer',
           schema: {
             title: generateNTemplate('Title'),
             'x-component': 'CalendarV2.Title',
@@ -45,9 +47,9 @@ export const CalendarActionInitializers = {
           },
         },
         {
-          type: 'item',
+          name: 'selectView',
           title: generateNTemplate('Select view'),
-          component: 'ActionInitializer',
+          Component: 'ActionInitializer',
           schema: {
             title: generateNTemplate('Select view'),
             'x-component': 'CalendarV2.ViewSelect',
@@ -57,17 +59,17 @@ export const CalendarActionInitializers = {
           },
         },
         {
-          type: 'item',
+          name: 'filter',
           title: generateNTemplate('Filter'),
-          component: 'FilterActionInitializer',
+          Component: 'FilterActionInitializer',
           schema: {
             'x-align': 'right',
           },
         },
         {
-          type: 'item',
+          name: 'addNew',
           title: generateNTemplate('Add new'),
-          component: 'CreateActionInitializer',
+          Component: 'CreateActionInitializer',
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
@@ -75,7 +77,7 @@ export const CalendarActionInitializers = {
               skipScopeCheck: true,
             },
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
@@ -83,4 +85,4 @@ export const CalendarActionInitializers = {
       ],
     },
   ],
-};
+});

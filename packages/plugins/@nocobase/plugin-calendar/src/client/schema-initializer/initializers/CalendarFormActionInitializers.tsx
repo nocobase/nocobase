@@ -1,9 +1,10 @@
-import { useCollection } from '@nocobase/client';
+import { SchemaInitializer, useCollection } from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
 
 // 表单的操作配置
-export const CalendarFormActionInitializers = {
+export const CalendarFormActionInitializers = new SchemaInitializer({
   title: generateNTemplate('Configure actions'),
+  name: 'CalendarFormActionInitializers',
   icon: 'SettingOutlined',
   style: {
     marginLeft: 8,
@@ -11,12 +12,13 @@ export const CalendarFormActionInitializers = {
   items: [
     {
       type: 'itemGroup',
+      name: 'enableActions',
       title: generateNTemplate('Enable actions'),
       children: [
         {
-          type: 'item',
+          name: 'edit',
           title: generateNTemplate('Edit'),
-          component: 'UpdateActionInitializer',
+          Component: 'UpdateActionInitializer',
           schema: {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
@@ -24,15 +26,15 @@ export const CalendarFormActionInitializers = {
               type: 'primary',
             },
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
-          type: 'item',
+          name: 'delete',
           title: generateNTemplate('Delete'),
-          component: 'DestroyActionInitializer',
+          Component: 'DestroyActionInitializer',
           schema: {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
@@ -43,40 +45,41 @@ export const CalendarFormActionInitializers = {
           },
         },
         {
-          type: 'item',
+          name: 'deleteEvent',
           title: generateNTemplate('Delete Event'),
-          component: 'DeleteEventActionInitializer',
+          Component: 'DeleteEventActionInitializer',
           schema: {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
-          type: 'item',
+          name: 'print',
           title: generateNTemplate('Print'),
-          component: 'PrintActionInitializer',
+          Component: 'PrintActionInitializer',
           schema: {
             'x-component': 'Action',
           },
         },
       ],
     },
-
     {
+      name: 'divider',
       type: 'divider',
     },
     {
       type: 'subMenu',
+      name: 'customize',
       title: generateNTemplate('Customize'),
       children: [
         {
-          type: 'item',
+          name: 'popup',
           title: generateNTemplate('Popup'),
-          component: 'CustomizeActionInitializer',
+          Component: 'CustomizeActionInitializer',
           schema: {
             type: 'void',
             title: generateNTemplate('Popup'),
@@ -124,9 +127,9 @@ export const CalendarFormActionInitializers = {
           },
         },
         {
-          type: 'item',
+          name: 'updateRecord',
           title: generateNTemplate('Update record'),
-          component: 'CustomizeActionInitializer',
+          Component: 'CustomizeActionInitializer',
           schema: {
             title: generateNTemplate('Update record'),
             'x-component': 'Action',
@@ -145,16 +148,16 @@ export const CalendarFormActionInitializers = {
               useProps: '{{ useCustomizeUpdateActionProps }}',
             },
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
-          type: 'item',
+          name: 'customRequest',
           title: generateNTemplate('Custom request'),
-          component: 'CustomRequestInitializer',
-          visible: function useVisible() {
+          Component: 'CustomRequestInitializer',
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
@@ -162,4 +165,4 @@ export const CalendarFormActionInitializers = {
       ],
     },
   ],
-};
+});

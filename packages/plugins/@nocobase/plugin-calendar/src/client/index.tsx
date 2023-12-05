@@ -1,4 +1,4 @@
-import { Plugin, SchemaInitializerContext, SchemaInitializerProvider, registerTemplate } from '@nocobase/client';
+import { Plugin, SchemaInitializerContext, registerTemplate } from '@nocobase/client';
 import { CalendarBlockProvider, useCalendarBlockProps } from './schema-initializer/CalendarBlockProvider';
 import React, { useContext, useEffect } from 'react';
 import { CalendarActionInitializers, CalendarFormActionInitializers } from './schema-initializer/initializers';
@@ -21,11 +21,7 @@ const CalendarProvider = React.memo((props) => {
     }
   }, []);
 
-  return (
-    <SchemaInitializerProvider initializers={{ CalendarActionInitializers, CalendarFormActionInitializers }}>
-      {props.children}
-    </SchemaInitializerProvider>
-  );
+  return <>{props.children}</>;
 });
 CalendarProvider.displayName = 'CalendarProvider';
 
@@ -39,6 +35,8 @@ export class CalendarPlugin extends Plugin {
 
     this.app.addScopes({ useCalendarBlockProps });
     this.app.use(CalendarProvider);
+    this.app.schemaInitializerManager.add(CalendarActionInitializers);
+    this.app.schemaInitializerManager.add(CalendarFormActionInitializers);
     registerTemplate('calendar', calendar);
   }
 }

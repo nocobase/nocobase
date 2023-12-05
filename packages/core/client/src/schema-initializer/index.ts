@@ -21,8 +21,6 @@ export {
 import { Plugin } from '../application/Plugin';
 import {
   bulkEditFormItemInitializers,
-  calendarActionInitializers,
-  calendarFormActionInitializers,
   createFormBlockInitializers,
   createFormBulkEditBlockInitializers,
   cusomeizeCreateFormBlockInitializers,
@@ -73,8 +71,6 @@ export class SchemaInitializerPlugin extends Plugin {
     this.app.schemaInitializerManager.add(readPrettyFormItemInitializers);
     this.app.schemaInitializerManager.add(readPrettyFormActionInitializers);
     this.app.schemaInitializerManager.add(bulkEditFormItemInitializers);
-    this.app.schemaInitializerManager.add(calendarActionInitializers);
-    this.app.schemaInitializerManager.add(calendarFormActionInitializers);
     this.app.schemaInitializerManager.add(createFormBlockInitializers);
     this.app.schemaInitializerManager.add(createFormBulkEditBlockInitializers);
     this.app.schemaInitializerManager.add(cusomeizeCreateFormBlockInitializers);
