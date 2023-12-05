@@ -9,6 +9,7 @@ import { useMemoizedFn } from 'ahooks';
 import { parse } from '@nocobase/utils';
 import lodash from 'lodash';
 import { getValuesByPath } from '../utils';
+import deepmerge from 'deepmerge';
 
 export const useCustomFieldInterface = () => {
   const { getInterface } = useCollectionManager();
@@ -283,20 +284,20 @@ export const useChartFilter = () => {
   const appendFilter = (chart: { collection: string; query: any }, filterValues: any) => {
     const { collection, query } = chart;
     let newQuery = { ...query };
-    if (newQuery.filter) {
-      let filter = newQuery.filter;
-      const parsed = parse(filter);
-      const { parameters } = parsed;
-      if (filterValues['custom'] && parameters?.find((param: { key: string }) => filterValues['custom'][param.key])) {
-        filter = parsed(filterValues['custom']);
-      }
-      newQuery = {
-        ...newQuery,
-        filter: {
-          $and: [filter, filterValues[collection]],
-        },
-      };
+    const originFilter = { ...(newQuery.filter || {}) };
+    let filter = {};
+    const parsed = parse(originFilter);
+    const { parameters } = parsed;
+    if (filterValues['custom'] && parameters?.find((param: { key: string }) => filterValues['custom'][param.key])) {
+      filter = parsed(filterValues['custom']);
     }
+    filter = deepmerge(originFilter, filter);
+    newQuery = {
+      ...newQuery,
+      filter: {
+        $and: [filter, filterValues[collection]],
+      },
+    };
     return newQuery;
   };
 
