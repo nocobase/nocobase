@@ -282,8 +282,8 @@ test.describe('action linkage rule', () => {
       .hover();
     await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users').hover();
     await page.getByRole('menuitem', { name: 'View' }).click();
-    await page.getByLabel('block-item-CardItem-users-table').getByLabel('View').hover();
-    await page.getByLabel('View').getByLabel('designer-schema-settings').hover();
+    await page.getByLabel('action-Action.Link-View-view-users-table-0').hover();
+    await page.getByLabel('action-Action.Link-View-view-users-table-0').getByLabel('designer-schema-settings').hover();
     await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
     await page.getByRole('button', { name: 'plus Add linkage rule', exact: true }).click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -295,7 +295,7 @@ test.describe('action linkage rule', () => {
     await page.getByText('Hidden').click();
     await page.locator('.ant-modal').getByRole('button', { name: 'OK', exact: true }).click();
     //配置中，按钮显示半透明
-    const actionItem = page.getByLabel('block-item-CardItem-users-table').getByLabel('View');
+    const actionItem = page.getByLabel('block-item-CardItem-users-table').getByLabel('View').first();
     const inputErrorBorderColor = await actionItem.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.opacity;
@@ -303,7 +303,7 @@ test.describe('action linkage rule', () => {
     expect(inputErrorBorderColor).toBe('0.1');
     //使用中，按钮隐藏
     await page.getByRole('button', { name: 'highlight' }).click();
-    await expect(page.getByLabel('block-item-CardItem-users-table').getByLabel('View')).not.toBeVisible();
+    await expect(await page.getByLabel('action-Action.Link-View-view-users-table-0')).not.toBeVisible();
   });
   test('action linkage to disabled', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
@@ -313,8 +313,8 @@ test.describe('action linkage rule', () => {
       .hover();
     await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users').hover();
     await page.getByRole('menuitem', { name: 'View' }).click();
-    await page.getByLabel('block-item-CardItem-users-table').getByLabel('View').hover();
-    await page.getByLabel('View').getByLabel('designer-schema-settings').hover();
+    await page.getByLabel('action-Action.Link-View-view-users-table-0').hover();
+    await page.getByLabel('action-Action.Link-View-view-users-table-0').getByLabel('designer-schema-settings').hover();
     await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
     await page.getByRole('button', { name: 'plus Add linkage rule', exact: true }).click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -326,7 +326,7 @@ test.describe('action linkage rule', () => {
     await page.getByText('Disabled').click();
     await page.locator('.ant-modal').getByRole('button', { name: 'OK', exact: true }).click();
 
-    const linkBtn = page.getByLabel('block-item-CardItem-users-table').getByLabel('View');
+    const linkBtn = await page.getByLabel('action-Action.Link-View-view-users-table-0');
     const linkBtnCursor = await linkBtn.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.cursor;

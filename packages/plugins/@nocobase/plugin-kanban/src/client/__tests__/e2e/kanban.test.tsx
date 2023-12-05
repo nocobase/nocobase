@@ -83,7 +83,7 @@ test('configure fields in kanban block', async ({ page, mockPage, mockRecord, mo
 //看板的区块参数配置
 test('configure params in kanban block', async ({ page, mockPage, mockRecords, mockCollections }) => {
   await mockCollections(generalWithSingleSelect);
-  await mockRecords('general', 4);
+  await mockRecords('general', 100);
   await mockPage().goto();
   await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
   await expect(page.getByRole('menuitem', { name: 'form Kanban right' })).toBeVisible();
