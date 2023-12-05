@@ -13155,3 +13155,69 @@ export const oneEmptyTableWithTreeCollection: PageConfig = {
     'x-index': 1,
   },
 };
+
+export const oneEmptyMarkdown: PageConfig = {
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      r012bjo390e: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'BlockInitializers',
+        properties: {
+          eocwxdkmped: {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            properties: {
+              neyr2va5ugv: {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                properties: {
+                  wlxm2dr507u: {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-designer': 'Markdown.Void.Designer',
+                    'x-decorator': 'CardItem',
+                    'x-decorator-props': {
+                      name: 'markdown',
+                    },
+                    'x-component': 'Markdown.Void',
+                    'x-editable': false,
+                    'x-component-props': {
+                      content: 'This is a demo text, **supports Markdown syntax**.',
+                    },
+                    'x-uid': 'xqed6ep1ui1',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': 'fq0chc8fsg8',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'be71fm1px7o',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'elcgo0eecw2',
+        'x-async': false,
+        'x-index': 1,
+      },
+    },
+    'x-uid': 'tqyjlhd7eyj',
+    'x-async': true,
+    'x-index': 1,
+  },
+};
