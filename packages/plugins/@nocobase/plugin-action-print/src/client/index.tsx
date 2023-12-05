@@ -16,10 +16,12 @@ export class PrintPlugin extends Plugin {
       },
     };
 
-    const calendarFormActionInitializers = this.app.schemaInitializerManager.get('CalendarFormActionInitializers');
-    calendarFormActionInitializers?.add('enableActions.print', initializerData);
-    const ReadPrettyFormActionInitializers = this.app.schemaInitializerManager.get('ReadPrettyFormActionInitializers');
-    ReadPrettyFormActionInitializers?.add('enableActions.print', initializerData);
+    this.app.schemaInitializerManager.addItem(
+      'ReadPrettyFormActionInitializers',
+      'enableActions.print',
+      initializerData,
+    );
+    this.app.schemaInitializerManager.addItem('CalendarFormActionInitializers', 'enableActions.print', initializerData);
   }
 }
 
