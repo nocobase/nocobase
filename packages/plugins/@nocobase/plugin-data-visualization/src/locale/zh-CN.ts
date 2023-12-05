@@ -73,4 +73,16 @@ export default {
   isPercent: '显示为百分比',
   isGroup: '分组',
   smooth: '平滑曲线',
+  Collapse: '折叠',
+  Expand: '展开',
+  'Current filter': '当前筛选',
+  'Add custom field': '添加自定义字段',
+  'To filter with custom fields, use "Current filter" variables in the chart configuration.':
+    '要通过自定义字段筛选，需要在图表配置中使用“当前筛选”变量。',
+  Input: '输入框',
+  'Date range': '日期范围',
+  'Time range': '时间范围',
+  'Edit field properties': '编辑字段属性',
+  'Select a source field to use metadata of the field': '选择来源字段可以复用字段的元数据配置',
+  'Original field': '原始字段',
 };

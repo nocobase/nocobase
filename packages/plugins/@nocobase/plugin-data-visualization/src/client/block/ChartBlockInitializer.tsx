@@ -1,38 +1,26 @@
-import { LineChartOutlined } from '@ant-design/icons';
+import { LineChartOutlined, BarChartOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import {
-  SchemaInitializerItem,
+  DataBlockInitializer,
   SchemaInitializer,
+  SchemaInitializerItem,
   useACLRoleContext,
-  useSchemaInitializerMenuItems,
   useCollectionDataSourceItemsV2,
   useSchemaInitializer,
   useSchemaInitializerItem,
-  useMenuSearch,
 } from '@nocobase/client';
-import React, { useContext, useState } from 'react';
-import { ChartConfigContext } from '../configure/ChartConfigure';
-import { Menu } from 'antd';
+import React, { useContext } from 'react';
+import { ChartConfigContext } from '../configure';
+import { lang } from '../locale';
+import { FilterBlockInitializer } from '../filter';
 
-const ConfigureButton = () => {
-  const itemConfig = useSchemaInitializerItem();
+const ChartInitializer = () => {
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
-  return (
-    <SchemaInitializerItem
-      {...itemConfig}
-      applyMenuStyle={false}
-      onClick={() => {
-        setCurrent({ schema: {}, field: null, collection: itemConfig?.name, service: null, data: undefined });
-        setVisible(true);
-      }}
-    />
-  );
-};
-
-const ItemsComponent = () => {
   const collections = useCollectionDataSourceItemsV2('Chart');
   const { allowAll, parseAction } = useACLRoleContext();
-  const items: any = collections
+  const itemConfig = useSchemaInitializerItem();
+
+  const items = collections
     .filter((item) => {
       if (allowAll) {
         return true;
@@ -42,17 +30,17 @@ const ItemsComponent = () => {
     })
     .map((item) => ({
       ...item,
-      Component: ConfigureButton,
     }));
 
-  const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
-  const searchedChildren = useMenuSearch(items, isOpenSubMenu, true);
-  const menuItems = useSchemaInitializerMenuItems(searchedChildren);
   return (
-    <Menu
-      items={menuItems}
-      onOpenChange={(keys) => {
-        setIsOpenSubMenu(keys.length > 0);
+    <DataBlockInitializer
+      {...itemConfig}
+      items={items}
+      icon={<BarChartOutlined />}
+      componentType={'Chart'}
+      onCreateBlockSchema={async ({ item }) => {
+        setCurrent({ schema: {}, field: null, collection: item.name, service: null, data: undefined });
+        setVisible(true);
       }}
     />
   );
@@ -61,11 +49,26 @@ const ItemsComponent = () => {
 export const chartInitializers = new SchemaInitializer({
   name: 'ChartInitializers',
   icon: 'PlusOutlined',
-  popoverProps: {
-    placement: 'bottomLeft',
-  },
-  title: '{{t("Add chart")}}',
-  ItemsComponent: ItemsComponent,
+  title: '{{t("Add block")}}',
+  items: [
+    {
+      name: 'chart',
+      title: lang('Chart'),
+      Component: ChartInitializer,
+    },
+    {
+      name: 'otherBlocks',
+      type: 'itemGroup',
+      title: lang('Other blocks'),
+      children: [
+        {
+          name: 'filter',
+          title: lang('Filter'),
+          Component: FilterBlockInitializer,
+        },
+      ],
+    },
+  ],
 });
 
 export const ChartV2BlockInitializer: React.FC = () => {
