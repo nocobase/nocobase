@@ -352,7 +352,74 @@ function SkipValidation() {
     />
   );
 }
-
+function AfterSuccess() {
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+  const fieldSchema = useFieldSchema();
+  return (
+    <SchemaSettingsModalItem
+      title={t('After successful submission')}
+      initialValues={fieldSchema?.['x-action-settings']?.['onSuccess']}
+      schema={
+        {
+          type: 'object',
+          title: t('After successful submission'),
+          properties: {
+            successMessage: {
+              title: t('Popup message'),
+              'x-decorator': 'FormItem',
+              'x-component': 'Input.TextArea',
+              'x-component-props': {},
+            },
+            manualClose: {
+              title: t('Popup close method'),
+              enum: [
+                { label: t('Automatic close'), value: false },
+                { label: t('Manually close'), value: true },
+              ],
+              'x-decorator': 'FormItem',
+              'x-component': 'Radio.Group',
+              'x-component-props': {},
+            },
+            redirecting: {
+              title: t('Then'),
+              enum: [
+                { label: t('Stay on current page'), value: false },
+                { label: t('Redirect to'), value: true },
+              ],
+              'x-decorator': 'FormItem',
+              'x-component': 'Radio.Group',
+              'x-component-props': {},
+              'x-reactions': {
+                target: 'redirectTo',
+                fulfill: {
+                  state: {
+                    visible: '{{!!$self.value}}',
+                  },
+                },
+              },
+            },
+            redirectTo: {
+              title: t('Link'),
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
+              'x-component-props': {},
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={(onSuccess) => {
+        fieldSchema['x-action-settings']['onSuccess'] = onSuccess;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-action-settings': fieldSchema['x-action-settings'],
+          },
+        });
+      }}
+    />
+  );
+}
 function RemoveButton(
   props: {
     onConfirmOk?: ModalProps['onOk'];
@@ -650,6 +717,14 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         useVisible() {
           const fieldSchema = useFieldSchema();
           return isValid(fieldSchema?.['x-action-settings']?.skipValidator);
+        },
+      },
+      {
+        name: 'afterSuccess',
+        Component: AfterSuccess,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
         },
       },
       {
