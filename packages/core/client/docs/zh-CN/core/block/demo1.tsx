@@ -5,8 +5,8 @@ import {
   SchemaComponent,
   useBlockRequestV2,
   useBlockDataV2,
-  withSchemaDecoratorProps,
   useDesignable,
+  withSchemaComponentProps,
 } from '@nocobase/client';
 import { createApp } from './createApp';
 import { Switch, Table, TableProps } from 'antd';
@@ -15,7 +15,7 @@ interface DemoTableRecordType {
   name: string;
 }
 type DemoTableProps = TableProps<DemoTableRecordType>;
-const DemoTable: FC<DemoTableProps> = withSchemaDecoratorProps((props) => {
+const DemoTable: FC<DemoTableProps> = withSchemaComponentProps((props) => {
   const { dn } = useDesignable();
   return (
     <>
@@ -87,7 +87,7 @@ const schema = {
   name: 'hello',
   'x-decorator': 'DataBlockProviderV2',
   'x-component': 'DemoTable',
-  'x-use-decorator-props': 'useDemoTableProps',
+  'x-use-component-props': 'useDemoTableProps',
   'x-decorator-props': {
     action: action,
     params: {

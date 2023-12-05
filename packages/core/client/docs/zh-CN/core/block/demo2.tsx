@@ -4,7 +4,7 @@ import {
   RecordProviderV2,
   SchemaComponent,
   useBlockRequestV2,
-  withSchemaDecoratorProps,
+  withSchemaComponentProps,
 } from '@nocobase/client';
 import { createApp } from './createApp';
 import { Button, Form, Input, InputNumber, Select } from 'antd';
@@ -16,7 +16,7 @@ interface DemoFormFieldType {
   age: number;
 }
 type DemoFormProps = FormProps<DemoFormFieldType>;
-const DemoForm: FC<DemoFormProps> = withSchemaDecoratorProps((props) => {
+const DemoForm: FC<DemoFormProps> = withSchemaComponentProps((props) => {
   return (
     <Form
       name="basic"
@@ -70,7 +70,7 @@ const schema = {
   name: 'hello',
   'x-decorator': 'DataBlockProviderV2',
   'x-component': 'DemoForm',
-  'x-use-decorator-props': 'useDemoFormProps',
+  'x-use-component-props': 'useDemoFormProps',
   'x-decorator-props': {
     resource: collection,
     collection: collection,
