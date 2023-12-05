@@ -20,4 +20,15 @@ export default {
   'Are you sure you want to delete it?': 'Are you sure you want to delete it?',
   'Sign in button name, which will be displayed on the sign in page':
     'Sign in button name, which will be displayed on the sign in page',
+  Expand: 'Expand',
+  'Current filter': 'Current filter',
+  'Add custom field': 'Add custom field',
+  'To filter with custom fields, use "Current filter" variables in the chart configuration.':
+    'To filter with custom fields, use "Current filter" variables in the chart configuration.',
+  Input: 'Input',
+  'Date range': 'Date range',
+  'Time range': 'Time range',
+  'Edit field properties': 'Edit field properties',
+  'Select a source field to use metadata of the field': 'Select a source field to use metadata of the field',
+  'Original field': 'Original field',
 };

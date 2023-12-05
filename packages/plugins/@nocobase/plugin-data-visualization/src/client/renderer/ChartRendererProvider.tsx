@@ -1,8 +1,11 @@
-import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { MaybeCollectionProvider, useAPIClient, useRequest } from '@nocobase/client';
-import React, { createContext } from 'react';
-import { parseField } from '../utils';
+import React, { createContext, useContext } from 'react';
+import { parseField, removeUnparsableFilter } from '../utils';
+import { ChartDataContext } from '../block/ChartDataProvider';
+import { ConfigProvider } from 'antd';
+import { useChartFilter } from '../hooks';
+import { ChartFilterContext } from '../filter/FilterProvider';
 
 export type MeasureProps = {
   field: string | string[];
@@ -58,12 +61,23 @@ export const ChartRendererContext = createContext<
 
 export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
   const { query, config, collection, transform } = props;
+  const { addChart } = useContext(ChartDataContext);
+  const { ready, form, enabled } = useContext(ChartFilterContext);
+  const { getFilter, hasFilter, appendFilter } = useChartFilter();
   const schema = useFieldSchema();
   const api = useAPIClient();
   const service = useRequest(
-    (collection, query) =>
+    (collection, query, manual) =>
       new Promise((resolve, reject) => {
+        // Check if the chart is configured
         if (!(collection && query?.measures?.length)) return resolve(undefined);
+        // If the filter block is enabled, the filter form is required to be rendered
+        if (enabled && !form) return resolve(undefined);
+        const filterValues = getFilter();
+        const queryWithFilter =
+          !manual && hasFilter({ collection, query }, filterValues)
+            ? appendFilter({ collection, query }, filterValues)
+            : query;
         api
           .request({
             url: 'charts:query',
@@ -71,7 +85,8 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
             data: {
               uid: schema?.['x-uid'],
               collection,
-              ...query,
+              ...queryWithFilter,
+              filter: removeUnparsableFilter(queryWithFilter.filter),
               dimensions: (query?.dimensions || []).map((item: DimensionProps) => {
                 const dimension = { ...item };
                 if (item.format && !item.alias) {
@@ -92,27 +107,27 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
           })
           .then((res) => {
             resolve(res?.data?.data);
+            if (!manual && schema?.['x-uid']) {
+              addChart(schema?.['x-uid'], { collection, service, query });
+            }
           })
           .catch(reject);
       }),
     {
       defaultParams: [collection, query],
+      // Wait until CharrFilterProvider is rendered and check the status of the filter form
+      // since the filter parameters should be applied if the filter block is enabled
+      ready: ready && (!enabled || !!form),
     },
   );
 
   return (
     <MaybeCollectionProvider collection={collection}>
-      <div
-        className={css`
-          .ant-card {
-            box-shadow: none;
-          }
-        `}
-      >
+      <ConfigProvider card={{ style: { boxShadow: 'none' } }}>
         <ChartRendererContext.Provider value={{ collection, config, transform, service, query }}>
           {props.children}
         </ChartRendererContext.Provider>
-      </div>
+      </ConfigProvider>
     </MaybeCollectionProvider>
   );
 };
