@@ -5,7 +5,7 @@ import { Op } from '@nocobase/database';
 
 export default class FixModuleMigration extends Migration {
   async up() {
-    const result = await this.app.version.satisfies('<=v0.17.0-alpha.4');
+    const result = await this.app.version.satisfies('<=0.17.0-alpha.4');
 
     if (!result) {
       return;
