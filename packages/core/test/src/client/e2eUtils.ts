@@ -128,7 +128,7 @@ interface CreatePageOptions {
 const PORT = process.env.APP_PORT || 20000;
 const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
 
-class NocoPage {
+export class NocoPage {
   private url: string;
   private uid: string;
   private collectionsName: string[];
