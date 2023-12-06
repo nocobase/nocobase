@@ -275,7 +275,7 @@ export const tableActionColumnInitializers = new SchemaInitializer({
           },
         },
         {
-          name: 'custom-request',
+          name: 'customRequest',
           title: '{{t("Custom request")}}',
           Component: 'CustomRequestInitializer',
           schema: {
