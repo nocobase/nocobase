@@ -1,0 +1,22 @@
+{
+  "Verification": "Verification",
+  "Verification providers": "Verification providers",
+  "Provider type": "Provider type",
+  "Aliyun SMS": "Aliyun SMS",
+  "Access Key ID": "Access Key ID",
+  "Access Key Secret": "Access Key Secret",
+  "Endpoint": "Endpoint",
+  "Sign": "Sign",
+  "Template code": "Template code",
+  "Secret Id": "Secret Id",
+  "Secret Key": "Secret Key",
+  "Region": "Region",
+  "Sign name": "Sign name",
+  "Sms sdk app id": "Sms sdk app id",
+  "Template Id": "Template Id",
+  "Verification send failed, please try later or contact to administrator": "Verification send failed, please try later or contact to administrator",
+  "Not a valid cellphone number, please re-enter": "Not a valid cellphone number, please re-enter",
+  "Please don't retry in {{time}} seconds": "Please don't retry in {{time}} seconds",
+  "You are trying so frequently, please slow down": "You are trying so frequently, please slow down",
+  "Verification code is invalid": "Verification code is invalid"
+}
