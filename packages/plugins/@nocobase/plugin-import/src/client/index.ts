@@ -3,16 +3,41 @@
 
 export * from './ImportActionInitializer';
 export * from './ImportDesigner';
-export * from './ImportInitializerProvider';
 export * from './ImportPluginProvider';
 export * from './useImportAction';
 
-import { Plugin } from '@nocobase/client';
+import { Plugin, useCollection } from '@nocobase/client';
 import { ImportPluginProvider } from './ImportPluginProvider';
 
 export class ImportPlugin extends Plugin {
   async load() {
     this.app.use(ImportPluginProvider);
+
+    const initializerData = {
+      title: "{{t('Import')}}",
+      Component: 'ImportActionInitializer',
+      schema: {
+        'x-align': 'right',
+        'x-decorator': 'ACLActionProvider',
+        'x-acl-action': 'importXlsx',
+        'x-acl-action-props': {
+          skipScopeCheck: true,
+        },
+      },
+      useVisible() {
+        const collection = useCollection();
+        return (
+          (collection.template !== 'view' || collection?.writableView) &&
+          collection.template !== 'file' &&
+          collection.template !== 'sql'
+        );
+      },
+    };
+
+    const tableActionInitializers = this.app.schemaInitializerManager.get('TableActionInitializers');
+    tableActionInitializers?.add('enableActions.import', initializerData);
+    const ganttActionInitializers = this.app.schemaInitializerManager.get('GanttActionInitializers');
+    ganttActionInitializers?.add('enableActions.import', initializerData);
   }
 }
 

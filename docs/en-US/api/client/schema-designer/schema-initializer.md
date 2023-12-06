@@ -17,11 +17,3 @@ Used for the initialization of various schemas. Newly added schema can be insert
   },
 }
 ```
-
-The core of SchemaInitializer includes `<SchemaInitializer.Button />` and `<SchemaInitializer.Item />` the two components. `<SchemaInitializer.Button />` is used to create the dropdown menu button of schema, and the options of the dropdown menu is `<SchemaInitializer.Item/>`.
-
-### `<SchemaInitializerProvider />`
-
-### `<SchemaInitializer.Button />`
-
-### `<SchemaInitializer.Item/>`

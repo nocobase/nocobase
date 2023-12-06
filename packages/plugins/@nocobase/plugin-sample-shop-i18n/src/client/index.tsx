@@ -1,4 +1,4 @@
-import { i18n, Plugin, PluginManagerContext } from '@nocobase/client';
+import { i18n, Plugin } from '@nocobase/client';
 import { Select } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,25 +36,8 @@ function OrderStatusSelect() {
   );
 }
 
-const ShopI18nProvider = React.memo((props) => {
-  const ctx = useContext(PluginManagerContext);
-
-  return (
-    <PluginManagerContext.Provider
-      value={{
-        components: {
-          ...ctx?.components,
-        },
-      }}
-    >
-      {props.children}
-    </PluginManagerContext.Provider>
-  );
-});
-
 class ShopI18nPlugin extends Plugin {
   async load() {
-    this.app.addProvider(ShopI18nProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Shop", { ns: "${NAMESPACE}" })}}`,
       icon: 'ShopOutlined',

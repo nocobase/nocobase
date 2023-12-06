@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-shop-events",
-  "version": "0.16.0-alpha.5",
+  "version": "0.17.0-alpha.1",
   "main": "./dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "0.x",

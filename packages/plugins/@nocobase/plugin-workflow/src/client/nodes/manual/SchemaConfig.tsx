@@ -15,9 +15,12 @@ import {
   SchemaComponent,
   SchemaComponentContext,
   SchemaInitializer,
-  SchemaInitializerItemOptions,
-  SchemaInitializerProvider,
-  SchemaSettings,
+  SchemaInitializerItem,
+  SchemaInitializerItemType,
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsDivider,
+  SchemaSettingsItem,
+  SchemaSettingsRemove,
   VariableScopeProvider,
   css,
   gridRowColWrap,
@@ -25,6 +28,8 @@ import {
   useCompile,
   useFormActiveFields,
   useFormBlockContext,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
   useSchemaOptionsContext,
 } from '@nocobase/client';
 import { Registry, lodash } from '@nocobase/utils/client';
@@ -58,7 +63,7 @@ export type FormType = {
 export type ManualFormType = {
   title: string;
   config: {
-    useInitializer: ({ collections }?: { collections: any[] }) => SchemaInitializerItemOptions;
+    useInitializer: ({ collections }?: { collections: any[] }) => SchemaInitializerItemType;
     initializers?: {
       [key: string]: React.FC;
     };
@@ -83,7 +88,7 @@ manualFormTypes.register('customForm', customRecordForm);
 manualFormTypes.register('createForm', createRecordForm);
 manualFormTypes.register('updateForm', updateRecordForm);
 
-function useTriggerInitializers(): SchemaInitializerItemOptions | null {
+function useTriggerInitializers(): SchemaInitializerItemType | null {
   const { workflow } = useFlowContext();
   const trigger = useTrigger();
   return trigger.useInitializers ? trigger.useInitializers(workflow.config) : null;
@@ -100,9 +105,9 @@ function SimpleDesigner() {
   const compile = useCompile();
   return (
     <GeneralSchemaDesigner title={compile(title)}>
-      <SchemaSettings.BlockTitleItem />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsBlockTitleItem />
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',
@@ -112,64 +117,68 @@ function SimpleDesigner() {
   );
 }
 
-function AddBlockButton(props: any) {
-  const { collections } = useCollectionManager();
-  const current = useNodeContext();
-  const nodes = useAvailableUpstreams(current);
-  const triggerInitializers = [useTriggerInitializers()].filter(Boolean);
-  const nodeBlockInitializers = nodes
-    .map((node) => {
-      const instruction = instructions.get(node.type);
-      return instruction?.useInitializers?.(node);
-    })
-    .filter(Boolean);
-  const dataBlockInitializers = [
-    ...triggerInitializers,
-    ...(nodeBlockInitializers.length
-      ? [
-          {
-            key: 'nodes',
-            type: 'subMenu',
-            title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-            children: nodeBlockInitializers,
-          },
-        ]
-      : []),
-  ].filter(Boolean);
-
-  const items = [
-    ...(dataBlockInitializers.length
-      ? [
-          {
-            type: 'itemGroup',
-            title: '{{t("Data blocks")}}',
-            children: dataBlockInitializers,
-          },
-        ]
-      : []),
+export const addBlockButton = new SchemaInitializer({
+  name: 'AddBlockButton',
+  wrap: gridRowColWrap,
+  title: '{{t("Add block")}}',
+  items: [
     {
       type: 'itemGroup',
-      title: '{{t("Form")}}',
-      children: Array.from(manualFormTypes.getValues()).map((item: ManualFormType) => {
-        const { useInitializer: getInitializer } = item.config;
-        return getInitializer({ collections });
-      }),
+      name: 'dataBlocks',
+      title: '{{t("Data blocks")}}',
+      checkChildrenLength: true,
+      useChildren() {
+        const current = useNodeContext();
+        const nodes = useAvailableUpstreams(current);
+        const triggerInitializers = [useTriggerInitializers()].filter(Boolean);
+        const nodeBlockInitializers = nodes
+          .map((node) => {
+            const instruction = instructions.get(node.type);
+            return instruction?.useInitializers?.(node);
+          })
+          .filter(Boolean);
+        const dataBlockInitializers: any = [
+          ...triggerInitializers,
+          ...(nodeBlockInitializers.length
+            ? [
+                {
+                  name: 'nodes',
+                  type: 'subMenu',
+                  title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
+                  children: nodeBlockInitializers,
+                },
+              ]
+            : []),
+        ].filter(Boolean);
+        return dataBlockInitializers;
+      },
     },
     {
       type: 'itemGroup',
+      name: 'form',
+      title: '{{t("Form")}}',
+      useChildren() {
+        const { collections } = useCollectionManager();
+        return Array.from(manualFormTypes.getValues()).map((item: ManualFormType) => {
+          const { useInitializer: getInitializer } = item.config;
+          return getInitializer({ collections });
+        });
+      },
+    },
+    {
+      type: 'itemGroup',
+      name: 'otherBlocks',
       title: '{{t("Other blocks")}}',
       children: [
         {
-          type: 'item',
+          name: 'markdown',
           title: '{{t("Markdown")}}',
-          component: 'MarkdownBlockInitializer',
+          Component: 'MarkdownBlockInitializer',
         },
       ],
     },
-  ] as SchemaInitializerItemOptions[];
-
-  return <SchemaInitializer.Button {...props} wrap={gridRowColWrap} items={items} title="{{t('Add block')}}" />;
-}
+  ],
+});
 
 function AssignedFieldValues() {
   const ctx = useContext(SchemaComponentContext);
@@ -228,9 +237,9 @@ function AssignedFieldValues() {
 
   return (
     <>
-      <SchemaSettings.Item title={title} onClick={() => setOpen(true)}>
+      <SchemaSettingsItem title={title} onClick={() => setOpen(true)}>
         {title}
-      </SchemaSettings.Item>
+      </SchemaSettingsItem>
       <Modal
         width={'50%'}
         title={title}
@@ -283,8 +292,8 @@ function ManualActionDesigner(props) {
     <GeneralSchemaDesigner {...props} disableInitializer>
       <Action.Designer.ButtonEditor />
       <AssignedFieldValues />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'ActionBar',
@@ -294,14 +303,17 @@ function ManualActionDesigner(props) {
   );
 }
 
-function ContinueInitializer({ action, actionProps, insert, ...props }) {
+function ContinueInitializer() {
+  const itemConfig = useSchemaInitializerItem();
+  const { action, actionProps, ...others } = itemConfig;
+  const { insert } = useSchemaInitializer();
   return (
-    <SchemaInitializer.Item
-      {...props}
+    <SchemaInitializerItem
+      {...others}
       onClick={() => {
         insert({
           type: 'void',
-          title: props.title,
+          title: others.title,
           'x-decorator': 'ManualActionStatusProvider',
           'x-decorator-props': {
             value: action,
@@ -319,13 +331,16 @@ function ContinueInitializer({ action, actionProps, insert, ...props }) {
   );
 }
 
-function ActionInitializer({ action, actionProps, ...props }) {
+function ActionInitializer() {
+  const itemConfig = useSchemaInitializerItem();
+  const { action, actionProps, ...others } = itemConfig;
   return (
     <InitializerWithSwitch
-      {...props}
+      {...others}
+      item={itemConfig}
       schema={{
         type: 'void',
-        title: props.title,
+        title: others.title,
         'x-decorator': 'ManualActionStatusProvider',
         'x-decorator-props': {
           value: action,
@@ -343,43 +358,36 @@ function ActionInitializer({ action, actionProps, ...props }) {
   );
 }
 
-function AddActionButton(props) {
-  return (
-    <SchemaInitializer.Button
-      {...props}
-      items={[
-        {
-          key: JOB_STATUS.RESOLVED,
-          type: 'item',
-          title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
-          component: ContinueInitializer,
-          action: JOB_STATUS.RESOLVED,
-          actionProps: {
-            type: 'primary',
-          },
-        },
-        {
-          key: JOB_STATUS.REJECTED,
-          type: 'item',
-          title: `{{t("Terminate the process", { ns: "${NAMESPACE}" })}}`,
-          component: ActionInitializer,
-          action: JOB_STATUS.REJECTED,
-          actionProps: {
-            danger: true,
-          },
-        },
-        {
-          key: JOB_STATUS.PENDING,
-          type: 'item',
-          title: `{{t("Save temporarily", { ns: "${NAMESPACE}" })}}`,
-          component: ActionInitializer,
-          action: JOB_STATUS.PENDING,
-        },
-      ]}
-      title="{{t('Configure actions')}}"
-    />
-  );
-}
+export const addActionButton = new SchemaInitializer({
+  name: 'AddActionButton',
+  title: '{{t("Configure actions")}}',
+  items: [
+    {
+      name: 'jobStatusResolved',
+      title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
+      Component: ContinueInitializer,
+      action: JOB_STATUS.RESOLVED,
+      actionProps: {
+        type: 'primary',
+      },
+    },
+    {
+      name: 'jobStatusRejected',
+      title: `{{t("Terminate the process", { ns: "${NAMESPACE}" })}}`,
+      Component: ActionInitializer,
+      action: JOB_STATUS.REJECTED,
+      actionProps: {
+        danger: true,
+      },
+    },
+    {
+      name: 'jobStatusPending',
+      title: `{{t("Save temporarily", { ns: "${NAMESPACE}" })}}`,
+      Component: ActionInitializer,
+      action: JOB_STATUS.PENDING,
+    },
+  ],
+});
 
 // NOTE: fake useAction for ui configuration
 function useSubmit() {
@@ -392,7 +400,6 @@ function useSubmit() {
 
 export function SchemaConfig({ value, onChange }) {
   const ctx = useContext(SchemaComponentContext);
-  const trigger = useTrigger();
   const node = useNodeContext();
   const nodes = useAvailableUpstreams(node);
   const form = useForm();
@@ -478,46 +485,32 @@ export function SchemaConfig({ value, onChange }) {
         refresh,
       }}
     >
-      <SchemaInitializerProvider
-        initializers={{
-          AddBlockButton,
-          AddActionButton,
-          ...trigger.initializers,
-          ...nodeInitializers,
+      <SchemaComponent
+        schema={schema}
+        components={{
+          ...nodeComponents,
           // @ts-ignore
           ...Array.from(manualFormTypes.getValues()).reduce(
-            (result, item: ManualFormType) => Object.assign(result, item.config.initializers),
+            (result, item: ManualFormType) => Object.assign(result, item.config.components),
             {},
           ),
+          FormBlockProvider,
+          DetailsBlockProvider,
+          // NOTE: fake provider component
+          ManualActionStatusProvider(props) {
+            return props.children;
+          },
+          ActionBarProvider(props) {
+            return props.children;
+          },
+          SimpleDesigner,
+          ManualActionDesigner,
         }}
-      >
-        <SchemaComponent
-          schema={schema}
-          components={{
-            ...nodeComponents,
-            // @ts-ignore
-            ...Array.from(manualFormTypes.getValues()).reduce(
-              (result, item: ManualFormType) => Object.assign(result, item.config.components),
-              {},
-            ),
-            FormBlockProvider,
-            DetailsBlockProvider,
-            // NOTE: fake provider component
-            ManualActionStatusProvider(props) {
-              return props.children;
-            },
-            ActionBarProvider(props) {
-              return props.children;
-            },
-            SimpleDesigner,
-            ManualActionDesigner,
-          }}
-          scope={{
-            useSubmit,
-            useDetailsBlockProps: useFormBlockContext,
-          }}
-        />
-      </SchemaInitializerProvider>
+        scope={{
+          useSubmit,
+          useDetailsBlockProps: useFormBlockContext,
+        }}
+      />
     </SchemaComponentContext.Provider>
   );
 }

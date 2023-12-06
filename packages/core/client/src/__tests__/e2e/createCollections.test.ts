@@ -248,10 +248,10 @@ test.describe('createCollections', () => {
     await mockPage(pageConfig).goto();
 
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
-    await page.getByLabel('dataBlocks-table', { exact: true }).hover();
+    await page.getByRole('menuitem', { name: 'table Table' }).hover();
 
-    await expect(page.getByLabel('dataBlocks-table-collection1')).toBeVisible();
-    await expect(page.getByLabel('dataBlocks-table-collection2')).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'collection1' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'collection2' })).toBeVisible();
   });
 
   test('no page, just create collections', async ({ page, createCollections }) => {

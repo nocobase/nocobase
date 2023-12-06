@@ -12,10 +12,14 @@ import {
   RecordProvider,
   SchemaComponent,
   SchemaInitializer,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItem,
+  SchemaInitializerItemType,
+  SchemaInitializerItems,
   gridRowColWrap,
   useCollectionManager,
   useRecord,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
 } from '@nocobase/client';
 import { merge, uid } from '@nocobase/utils/client';
 import lodash from 'lodash';
@@ -62,10 +66,12 @@ function CustomFormBlockProvider(props) {
   ) : null;
 }
 
-function CustomFormBlockInitializer({ insert, ...props }) {
+function CustomFormBlockInitializer() {
+  const { insert } = useSchemaInitializer();
+  const itemConfig = useSchemaInitializerItem();
   return (
-    <SchemaInitializer.Item
-      {...props}
+    <SchemaInitializerItem
+      {...itemConfig}
       onClick={() => {
         insert({
           type: 'void',
@@ -175,19 +181,19 @@ function getOptions(interfaces) {
     }));
 }
 
-function useCommonInterfaceInitializers(): SchemaInitializerItemOptions[] {
+function useCommonInterfaceInitializers(): SchemaInitializerItemType[] {
   const { interfaces } = useCollectionManager();
   const options = getOptions(interfaces);
 
   return options.map((group) => ({
-    key: group.title,
+    name: group.title,
     type: 'itemGroup',
     title: group.title,
     children: group.children.map((item) => ({
-      key: item.name,
+      name: item.name,
       type: 'item',
       title: item.title,
-      component: CustomFormFieldInitializer,
+      Component: CustomFormFieldInitializer,
       fieldInterface: item.name,
     })),
   }));
@@ -195,12 +201,11 @@ function useCommonInterfaceInitializers(): SchemaInitializerItemOptions[] {
 
 const AddCustomFormFieldButtonContext = React.createContext<any>({});
 
-function AddCustomFormField(props) {
-  const { insertPosition = 'beforeEnd', component } = props;
-  const items = useCommonInterfaceInitializers();
-  const collection = useContext(CollectionContext);
+const CustomItemsComponent = (props) => {
   const [interfaceOptions, setInterface] = useState<any>(null);
   const [insert, setCallback] = useState<any>();
+  const items = useCommonInterfaceInitializers();
+  const collection = useContext(CollectionContext);
   const { setCollectionFields } = useContext(FormBlockContext);
 
   return (
@@ -220,13 +225,7 @@ function AddCustomFormField(props) {
         setCallback,
       }}
     >
-      <SchemaInitializer.Button
-        wrap={gridRowColWrap}
-        insertPosition={insertPosition}
-        items={items}
-        component={component}
-        title="{{t('Configure fields')}}"
-      />
+      <SchemaInitializerItems {...props} items={items} />
       <ActionContextProvider value={{ visible: Boolean(interfaceOptions) }}>
         {interfaceOptions ? (
           <SchemaComponent
@@ -317,22 +316,33 @@ function AddCustomFormField(props) {
       </ActionContextProvider>
     </AddCustomFormFieldButtonContext.Provider>
   );
-}
+};
 
-function CustomFormFieldInitializer(props) {
-  const { item, insert } = props;
+export const addCustomFormField = new SchemaInitializer({
+  name: 'AddCustomFormField',
+  wrap: gridRowColWrap,
+  insertPosition: 'beforeEnd',
+  title: "{{t('Configure fields')}}",
+  ItemsComponent: CustomItemsComponent,
+});
+
+function CustomFormFieldInitializer() {
+  const itemConfig = useSchemaInitializerItem();
+  const { insert, setVisible } = useSchemaInitializer();
   const { onAddField, setCallback } = useContext(AddCustomFormFieldButtonContext);
   const { getInterface } = useCollectionManager();
 
-  const interfaceOptions = getInterface(item.fieldInterface);
+  const interfaceOptions = getInterface(itemConfig.fieldInterface);
 
   return (
-    <SchemaInitializer.Item
-      key={item.fieldInterface}
+    <SchemaInitializerItem
+      key={itemConfig.fieldInterface}
       onClick={() => {
         setCallback(() => insert);
         onAddField(interfaceOptions);
+        setVisible(false);
       }}
+      {...itemConfig}
     />
   );
 }
@@ -342,15 +352,13 @@ export default {
   config: {
     useInitializer() {
       return {
-        key: 'customForm',
+        name: 'customForm',
         type: 'item',
         title: `{{t("Custom form", { ns: "${NAMESPACE}" })}}`,
-        component: CustomFormBlockInitializer,
+        Component: CustomFormBlockInitializer,
       };
     },
-    initializers: {
-      AddCustomFormField,
-    },
+    initializers: {},
     components: {
       CustomFormBlockProvider,
     },

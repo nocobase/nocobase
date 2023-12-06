@@ -3,13 +3,15 @@ import React from 'react';
 import { useCollectionManager } from '../../collection-manager';
 import { createDetailsBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
+import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const DetailsBlockInitializer = (props) => {
-  const { insert } = props;
+export const DetailsBlockInitializer = () => {
+  const { insert } = useSchemaInitializer();
   const { getCollection } = useCollectionManager();
+  const itemConfig = useSchemaInitializerItem();
   return (
     <DataBlockInitializer
-      {...props}
+      {...itemConfig}
       icon={<TableOutlined />}
       componentType={'Details'}
       onCreateBlockSchema={async ({ item }) => {

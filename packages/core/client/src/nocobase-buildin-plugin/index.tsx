@@ -5,19 +5,22 @@ import { Button, Modal, Result, Spin } from 'antd';
 import React, { FC } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
-import { Application } from '../application';
+import { Application, useApp } from '../application';
 import { Plugin } from '../application/Plugin';
 import { SigninPage, SigninPageExtensionPlugin, SignupPage } from '../auth';
 import { BlockSchemaComponentPlugin } from '../block-provider';
-import CSSVariableProvider from '../css-variable/CSSVariableProvider';
 import { RemoteDocumentTitlePlugin } from '../document-title';
-import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
-import { AntdSchemaComponentPlugin, MenuItemInitializers, SchemaComponentPlugin } from '../schema-component';
+import {
+  AntdSchemaComponentPlugin,
+  KanbanPlugin,
+  SchemaComponentPlugin,
+  menuItemInitializer,
+} from '../schema-component';
 import { ErrorFallback } from '../schema-component/antd/error-fallback';
-import { SchemaInitializerPlugin } from '../schema-initializer';
+import { AssociationFilterPlugin, SchemaInitializerPlugin } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
 import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
@@ -29,26 +32,28 @@ const AppSpin = () => {
   );
 };
 
-const AppError: FC<{ app: Application }> = observer(({ app }) => (
-  <div>
-    <Result
-      className={css`
-        top: 50%;
-        position: absolute;
-        width: 100%;
-        transform: translate(0, -50%);
-      `}
-      status="error"
-      title={app.i18n.t('Failed to load plugin')}
-      subTitle={app.i18n.t(app.error?.message)}
-      extra={[
-        <Button type="primary" key="try" onClick={() => window.location.reload()}>
-          {app.i18n.t('Try again')}
-        </Button>,
-      ]}
-    />
-  </div>
-));
+const AppError: FC<{ error: Error; app: Application }> = observer(({ app, error }) => {
+  return (
+    <div>
+      <Result
+        className={css`
+          top: 50%;
+          position: absolute;
+          width: 100%;
+          transform: translate(0, -50%);
+        `}
+        status="error"
+        title={app.i18n.t('Failed to load plugin')}
+        subTitle={app.i18n.t(error?.message)}
+        extra={[
+          <Button type="primary" key="try" onClick={() => window.location.reload()}>
+            {app.i18n.t('Try again')}
+          </Button>,
+        ]}
+      />
+    </div>
+  );
+});
 
 const getProps = (app: Application) => {
   if (app.ws.serverDown) {
@@ -222,10 +227,9 @@ export class NocoBaseBuildInPlugin extends Plugin {
     this.addRoutes();
 
     this.app.use(CurrentUserProvider);
-    this.app.use(GlobalThemeProvider);
-    this.app.use(AntdAppProvider);
-    this.app.use(CSSVariableProvider);
     this.app.use(CurrentUserSettingsMenuProvider);
+
+    this.app.schemaInitializerManager.add(menuItemInitializer);
   }
 
   addRoutes() {
@@ -273,6 +277,8 @@ export class NocoBaseBuildInPlugin extends Plugin {
     });
   }
   async addPlugins() {
+    await this.app.pm.add(AssociationFilterPlugin);
+    await this.app.pm.add(KanbanPlugin);
     await this.app.pm.add(LocalePlugin, { name: 'builtin-locale' });
     await this.app.pm.add(AdminLayoutPlugin, { name: 'admin-layout' });
     await this.app.pm.add(SystemSettingsPlugin, { name: 'system-setting' });
@@ -287,14 +293,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
       },
     });
     await this.app.pm.add(SchemaComponentPlugin, { name: 'schema-component' });
-    await this.app.pm.add(SchemaInitializerPlugin, {
-      name: 'schema-initializer',
-      config: {
-        initializers: {
-          MenuItemInitializers,
-        },
-      },
-    });
+    await this.app.pm.add(SchemaInitializerPlugin, { name: 'schema-initializer' });
     await this.app.pm.add(BlockSchemaComponentPlugin, { name: 'block-schema-component' });
     await this.app.pm.add(AntdSchemaComponentPlugin, { name: 'antd-schema-component' });
     await this.app.pm.add(SigninPageExtensionPlugin, { name: 'signin-page-extension' });

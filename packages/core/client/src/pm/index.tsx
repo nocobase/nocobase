@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plugin } from '../application/Plugin';
 import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';
-import { SettingsCenterComponent } from './PluginSetting';
+import { AdminSettingsLayout } from './PluginSetting';
 import { PluginManager } from './PluginManager';
 import { ACLPane } from '../acl/ACLShortcut';
 import { CollectionManagerPane } from '../collection-manager';
@@ -75,7 +75,7 @@ export class PMPlugin extends Plugin {
 
     this.app.router.add('admin.settings', {
       path: ADMIN_SETTINGS_PATH,
-      element: <SettingsCenterComponent />,
+      element: <AdminSettingsLayout />,
     });
   }
 }

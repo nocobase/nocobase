@@ -1,7 +1,9 @@
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { useCollection } from '../../collection-manager';
 
 // 表单的操作配置
-export const GridCardActionInitializers = {
+export const gridCardActionInitializers = new SchemaInitializer({
+  name: 'GridCardActionInitializers',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -11,19 +13,20 @@ export const GridCardActionInitializers = {
     {
       type: 'itemGroup',
       title: "{{t('Enable actions')}}",
+      name: 'enableActions',
       children: [
         {
-          type: 'item',
+          name: 'filter',
           title: "{{t('Filter')}}",
-          component: 'FilterActionInitializer',
+          Component: 'FilterActionInitializer',
           schema: {
             'x-align': 'left',
           },
         },
         {
-          type: 'item',
+          name: 'addNew',
           title: "{{t('Add new')}}",
-          component: 'CreateActionInitializer',
+          Component: 'CreateActionInitializer',
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
@@ -31,23 +34,23 @@ export const GridCardActionInitializers = {
               skipScopeCheck: true,
             },
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
         {
-          type: 'item',
+          name: 'refresh',
           title: "{{t('Refresh')}}",
-          component: 'RefreshActionInitializer',
+          Component: 'RefreshActionInitializer',
           schema: {
             'x-align': 'right',
           },
         },
         {
-          type: 'item',
+          name: 'import',
           title: "{{t('Import')}}",
-          component: 'ImportActionInitializer',
+          Component: 'ImportActionInitializer',
           schema: {
             'x-align': 'right',
             'x-acl-action': 'importXlsx',
@@ -56,15 +59,15 @@ export const GridCardActionInitializers = {
               skipScopeCheck: true,
             },
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
-          type: 'item',
+          name: 'export',
           title: "{{t('Export')}}",
-          component: 'ExportActionInitializer',
+          Component: 'ExportActionInitializer',
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
@@ -75,82 +78,23 @@ export const GridCardActionInitializers = {
         },
       ],
     },
-    // {
-    //   type: 'divider',
-    //   visible: () => {
-    //     const collection = useCollection();
-    //     return (collection as any).template !== 'view';
-    //   },
-    // },
-    // {
-    //   type: 'subMenu',
-    //   title: '{{t("Customize")}}',
-    //   children: [
-    //     {
-    //       type: 'item',
-    //       title: '{{t("Bulk update")}}',
-    //       component: 'CustomizeActionInitializer',
-    //       schema: {
-    //         type: 'void',
-    //         title: '{{ t("Bulk update") }}',
-    //         'x-component': 'Action',
-    //         'x-align': 'right',
-    //         'x-acl-action': 'update',
-    //         'x-decorator': 'ACLActionProvider',
-    //         'x-acl-action-props': {
-    //           skipScopeCheck: true,
-    //         },
-    //         'x-action': 'customize:bulkUpdate',
-    //         'x-designer': 'Action.Designer',
-    //         'x-action-settings': {
-    //           assignedValues: {},
-    //           updateMode: 'selected',
-    //           onSuccess: {
-    //             manualClose: true,
-    //             redirecting: false,
-    //             successMessage: '{{t("Updated successfully")}}',
-    //           },
-    //         },
-    //         'x-component-props': {
-    //           icon: 'EditOutlined',
-    //           useProps: '{{ useCustomizeBulkUpdateActionProps }}',
-    //         },
-    //       },
-    //     },
-    //     {
-    //       type: 'item',
-    //       title: '{{t("Bulk edit")}}',
-    //       component: 'CustomizeBulkEditActionInitializer',
-    //       schema: {
-    //         'x-align': 'right',
-    //         'x-decorator': 'ACLActionProvider',
-    //         'x-acl-action': 'update',
-    //         'x-acl-action-props': {
-    //           skipScopeCheck: true,
-    //         },
-    //       },
-    //     },
-    //   ],
-    //   visible: () => {
-    //     const collection = useCollection();
-    //     return (collection as any).template !== 'view';
-    //   },
-    // },
   ],
-};
+});
 
-export const GridCardItemActionInitializers = {
+export const gridCardItemActionInitializers = new SchemaInitializer({
+  name: 'GridCardItemActionInitializers',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [
     {
       type: 'itemGroup',
       title: '{{t("Enable actions")}}',
+      name: 'enable-actions',
       children: [
         {
-          type: 'item',
+          name: 'view',
           title: '{{t("View")}}',
-          component: 'ViewActionInitializer',
+          Component: 'ViewActionInitializer',
           schema: {
             'x-component': 'Action.Link',
             'x-action': 'view',
@@ -159,31 +103,31 @@ export const GridCardItemActionInitializers = {
           },
         },
         {
-          type: 'item',
+          name: 'edit',
           title: '{{t("Edit")}}',
-          component: 'UpdateActionInitializer',
+          Component: 'UpdateActionInitializer',
           schema: {
             'x-component': 'Action.Link',
             'x-action': 'update',
             'x-decorator': 'ACLActionProvider',
             'x-align': 'left',
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
-          type: 'item',
+          name: 'delete',
           title: '{{t("Delete")}}',
-          component: 'DestroyActionInitializer',
+          Component: 'DestroyActionInitializer',
           schema: {
             'x-component': 'Action.Link',
             'x-action': 'destroy',
             'x-decorator': 'ACLActionProvider',
             'x-align': 'left',
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return collection.template !== 'sql';
           },
@@ -191,16 +135,18 @@ export const GridCardItemActionInitializers = {
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
       type: 'subMenu',
       title: '{{t("Customize")}}',
+      name: 'customize',
       children: [
         {
-          type: 'item',
+          name: 'popup',
           title: '{{t("Popup")}}',
-          component: 'CustomizeActionInitializer',
+          Component: 'CustomizeActionInitializer',
           schema: {
             type: 'void',
             title: '{{ t("Popup") }}',
@@ -248,9 +194,9 @@ export const GridCardItemActionInitializers = {
           },
         },
         {
-          type: 'item',
+          name: 'update-record',
           title: '{{t("Update record")}}',
-          component: 'CustomizeActionInitializer',
+          Component: 'CustomizeActionInitializer',
           schema: {
             title: '{{ t("Update record") }}',
             'x-component': 'Action.Link',
@@ -270,19 +216,19 @@ export const GridCardItemActionInitializers = {
               useProps: '{{ useCustomizeUpdateActionProps }}',
             },
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
         {
-          type: 'item',
+          name: 'custom-request',
           title: '{{t("Custom request")}}',
-          component: 'CustomRequestInitializer',
+          Component: 'CustomRequestInitializer',
           schema: {
             'x-action': 'customize:table:request',
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
@@ -290,4 +236,4 @@ export const GridCardItemActionInitializers = {
       ],
     },
   ],
-};
+});
