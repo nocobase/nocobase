@@ -1,4 +1,4 @@
-import { ConfigProvider, App } from 'antd';
+import { App, ConfigProvider } from 'antd';
 import dayjs from 'dayjs';
 import { loadConstrueLocale } from '../../antd-config-provider/loadConstrueLocale';
 import { Plugin } from '../../application/Plugin';
