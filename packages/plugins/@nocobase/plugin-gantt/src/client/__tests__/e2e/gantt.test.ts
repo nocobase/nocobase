@@ -56,20 +56,16 @@ test.describe('configure fields in gantt block', () => {
     await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
 
     //关系字段,断言请求的appends是否符合预期
-    try {
-      const [request] = await Promise.all([
-        page.waitForRequest((request) => request.url().includes('api/general:list')),
-        page.getByRole('menuitem', { name: 'Many to one', exact: true }).click(),
-      ]);
-      // 获取请求参数
-      const requestUrl = request.url();
-      // 解析查询参数
-      const queryParams = new URLSearchParams(new URL(requestUrl).search);
-      const appends = queryParams.get('appends[]');
-      await expect(appends).toContain('manyToOne');
-    } finally {
-      console.log('error');
-    }
+    const [request] = await Promise.all([
+      page.waitForRequest((request) => request.url().includes('api/general:list')),
+      page.getByRole('menuitem', { name: 'Many to one', exact: true }).click(),
+    ]);
+    // 获取请求参数
+    const requestUrl = request.url();
+    // 解析查询参数
+    const queryParams = new URLSearchParams(new URL(requestUrl).search);
+    const appends = queryParams.get('appends[]');
+    await expect(appends).toContain('manyToOne');
     //支持修改标题字段
     await page.getByRole('button', { name: 'Many to one' }).hover();
     await page
@@ -99,20 +95,16 @@ test.describe('configure params in gantt block', () => {
     await page.getByTestId('select-filter-field').getByLabel('Search').click();
     await page.getByTitle('ID').getByText('ID').click();
     await page.getByRole('spinbutton').fill('1');
-    try {
-      const [request] = await Promise.all([
-        page.waitForRequest((request) => request.url().includes('api/general:list')),
-        page.getByRole('button', { name: 'OK' }).click(),
-      ]);
-      const requestUrl = request.url();
-      const queryParams = new URLSearchParams(new URL(requestUrl).search);
-      const filter = queryParams.get('filter');
-      //请求参数符合预期
-      expect(JSON.parse(filter)).toEqual({ $and: [{ id: { $eq: 1 } }] });
-      await expect(page.getByLabel('table-index-2')).not.toBeVisible();
-    } catch {
-      console.log('error');
-    }
+    const [request] = await Promise.all([
+      page.waitForRequest((request) => request.url().includes('api/general:list')),
+      page.getByRole('button', { name: 'OK' }).click(),
+    ]);
+    const requestUrl = request.url();
+    const queryParams = new URLSearchParams(new URL(requestUrl).search);
+    const filter = queryParams.get('filter');
+    //请求参数符合预期
+    expect(JSON.parse(filter)).toEqual({ $and: [{ id: { $eq: 1 } }] });
+    await expect(page.getByLabel('table-index-2')).not.toBeVisible();
   });
 
   test('set title field in gantt block', async ({ page, mockPage, mockRecord }) => {
@@ -199,18 +191,12 @@ test.describe('action in gantt block', () => {
     await page.mouse.move(initialX, initialY);
     await page.mouse.down();
     await page.mouse.move(targetX, targetY);
-    try {
-      const [request] = await Promise.all([
-        page.waitForRequest((request) => request.url().includes('api/general:update')),
-        page.mouse.up(),
-      ]);
-      const postData = request.postDataJSON();
-      //开始时间被调整了，结束时间无改变
-      expect(postData.startDatetime).not.toEqual(mockData.startDatetime);
-      expect(postData.endDatetime).toEqual(mockData.endDatetime);
-    } catch {
-      console.log('error');
-    }
+    const [request] = await Promise.all([
+      page.waitForRequest((request) => request.url().includes('api/general:update')),
+      page.mouse.up(),
+    ]);
+    const postData = request.postDataJSON();
+    expect(postData.startDatetime).not.toEqual(mockData.startDatetime);
   });
   test('configure button in gannt block', async ({ page, mockPage }) => {
     await mockPage(oneEmptyGantt).goto();

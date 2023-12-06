@@ -53,20 +53,16 @@ test('configure fields in kanban block', async ({ page, mockPage, mockRecord, mo
   await expect(await page.getByLabel('block-item-CollectionField-general-kanban-general.id')).not.toBeVisible();
 
   //添加关系字段,断言请求的appends是否符合预期
-  try {
-    const [request] = await Promise.all([
-      page.waitForRequest((request) => request.url().includes('api/general:list')),
-      page.getByRole('menuitem', { name: 'Many to one', exact: true }).click(),
-    ]);
-    // 获取请求参数
-    const requestUrl = request.url();
-    // 解析查询参数
-    const queryParams = new URLSearchParams(new URL(requestUrl).search);
-    const appends = queryParams.get('appends[]');
-    await expect(appends).toContain('manyToOne');
-  } finally {
-    console.log('error');
-  }
+  const [request] = await Promise.all([
+    page.waitForRequest((request) => request.url().includes('api/general:list')),
+    page.getByRole('menuitem', { name: 'Many to one', exact: true }).click(),
+  ]);
+  // 获取请求参数
+  const requestUrl = request.url();
+  // 解析查询参数
+  const queryParams = new URLSearchParams(new URL(requestUrl).search);
+  const appends = queryParams.get('appends[]');
+  await expect(appends).toContain('manyToOne');
   await expect(await page.getByLabel('block-item-CollectionField-general-kanban-general.manyToOne')).toBeVisible();
   //修改标题字段
   await page.getByLabel('schema-initializer-ActionBar-KanbanActionInitializers-general').click();
@@ -118,19 +114,15 @@ test('configure params in kanban block', async ({ page, mockPage, mockRecords, m
   await page.getByTestId('select-filter-field').getByLabel('Search').click();
   await page.getByTitle('ID').getByText('ID').click();
   await page.getByRole('spinbutton').fill('1');
-  try {
-    const [request] = await Promise.all([
-      page.waitForRequest((request) => request.url().includes('api/general:list')),
-      page.getByRole('button', { name: 'OK' }).click(),
-    ]);
-    const requestUrl = request.url();
-    const queryParams = new URLSearchParams(new URL(requestUrl).search);
-    const filter = queryParams.get('filter');
-    //请求参数符合预期
-    expect(JSON.parse(filter)).toEqual({ $and: [{ id: { $eq: 1 } }] });
-  } catch {
-    console.log('error');
-  }
+  const [request] = await Promise.all([
+    page.waitForRequest((request) => request.url().includes('api/general:list')),
+    page.getByRole('button', { name: 'OK' }).click(),
+  ]);
+  const requestUrl = request.url();
+  const queryParams = new URLSearchParams(new URL(requestUrl).search);
+  const filter = queryParams.get('filter');
+  //请求参数符合预期
+  expect(JSON.parse(filter)).toEqual({ $and: [{ id: { $eq: 1 } }] });
 });
 
 //看板的操作配置

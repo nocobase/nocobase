@@ -51,17 +51,13 @@ test('data will be updated && Assign field values && after successful submission
   await page.locator('input[type="text"]').fill('/admin/pm/list/local/');
   await page.getByRole('button', { name: 'OK' }).click();
   await page.getByLabel('action-Action-Bulk update-customize:bulkUpdate-general-table').click();
-  try {
-    const [request] = await Promise.all([
-      page.waitForRequest((request) => request.url().includes('api/general:update')),
-      page.getByRole('button', { name: 'OK' }).click(),
-    ]);
-    const postData = request.postDataJSON();
-    //更新的数据符合预期
-    expect(postData.singleSelect).toEqual('option3');
-  } catch {
-    console.log('error');
-  }
+  const [request] = await Promise.all([
+    page.waitForRequest((request) => request.url().includes('api/general:update')),
+    page.getByRole('button', { name: 'OK' }).click(),
+  ]);
+  const postData = request.postDataJSON();
+  //更新的数据符合预期
+  expect(postData.singleSelect).toEqual('option3');
   await page.getByRole('button', { name: 'OK' }).click();
   expect(page.url()).toContain('/admin/pm/list/local/');
 });

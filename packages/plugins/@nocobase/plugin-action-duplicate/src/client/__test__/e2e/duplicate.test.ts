@@ -39,18 +39,13 @@ test('direct duplicate', async ({ page, mockPage, mockCollections, mockRecords }
   await page.getByLabel('Direct duplicate').check();
   await page.getByRole('button', { name: 'singleLineText (Duplicate)' }).click();
   await page.getByRole('button', { name: 'OK', exact: true }).click();
-
-  try {
-    const [request] = await Promise.all([
-      page.waitForRequest((request) => request.url().includes('api/general:create')),
-      page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0').click(),
-    ]);
-    const postData = request.postDataJSON();
-    //直接复制,复制的数据符合预期
-    expect(postData.singleLineText).toEqual(data[0].singleLineText);
-  } catch {
-    console.log('error');
-  }
+  const [request] = await Promise.all([
+    page.waitForRequest((request) => request.url().includes('api/general:create')),
+    page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0').click(),
+  ]);
+  const postData = request.postDataJSON();
+  //直接复制,复制的数据符合预期
+  expect(postData.singleLineText).toEqual(data[0].singleLineText);
 });
 
 test('copy into the form and continue to fill in', async ({ page, mockPage, mockRecord }) => {
@@ -107,20 +102,16 @@ test('copy into the form and continue to fill in', async ({ page, mockPage, mock
       .getByRole('textbox')
       .inputValue(),
   ).toBe(data['singleLineText']);
-  try {
-    const [request] = await Promise.all([
-      page.waitForRequest((request) => request.url().includes('api/general:create')),
-      page.getByLabel('action-Action-Submit-submit-general-form').click(),
-    ]);
-    const postData = request.postDataJSON();
-    const manyToMany = postData.manyToMany.map((v) => v.id);
-    const expectManyToMany = data.manyToMany.map((v) => v.id);
-    //提交的数据符合预期
-    expect(postData.singleLineText).toEqual(data.singleLineText);
-    expect(postData.manyToOne['id']).toBe(data.manyToOne['id']);
-    expect(postData.oneToOneBelongsTo['id']).toBe(data.oneToOneBelongsTo['id']);
-    expect(manyToMany).toEqual(expect.arrayContaining(expectManyToMany));
-  } catch {
-    console.log('error');
-  }
+  const [request] = await Promise.all([
+    page.waitForRequest((request) => request.url().includes('api/general:create')),
+    page.getByLabel('action-Action-Submit-submit-general-form').click(),
+  ]);
+  const postData = request.postDataJSON();
+  const manyToMany = postData.manyToMany.map((v) => v.id);
+  const expectManyToMany = data.manyToMany.map((v) => v.id);
+  //提交的数据符合预期
+  expect(postData.singleLineText).toEqual(data.singleLineText);
+  expect(postData.manyToOne['id']).toBe(data.manyToOne['id']);
+  expect(postData.oneToOneBelongsTo['id']).toBe(data.oneToOneBelongsTo['id']);
+  expect(manyToMany).toEqual(expect.arrayContaining(expectManyToMany));
 });
