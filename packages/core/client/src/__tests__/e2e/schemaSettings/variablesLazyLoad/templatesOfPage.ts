@@ -1,7 +1,7 @@
-import { PageConfig, generalWithMultiLevelRelationshipFields } from '@nocobase/test/client';
+import { PageConfig, generalWithMultiLevelM2oFields } from '@nocobase/test/client';
 
 export const testingLazyLoadingOfAssociationFieldsForTheCurrentForm: PageConfig = {
-  collections: generalWithMultiLevelRelationshipFields,
+  collections: generalWithMultiLevelM2oFields,
   pageSchema: {
     _isJSONSchemaObject: true,
     version: '2.0',

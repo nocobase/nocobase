@@ -100,18 +100,16 @@ test.describe('display association fields', () => {
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.id-ID')).toHaveText(
       `ID:${record.id}`,
     );
-    await expect(page.getByLabel('block-item-CollectionField-m2oField1-form-m2oField1.id-ID')).toHaveText(
-      `ID:${record.m2oField0.id}`,
-    );
-    await expect(page.getByLabel('block-item-CollectionField-m2oField2-form-m2oField2.id-ID')).toHaveText(
-      `ID:${record.m2oField0.m2oField1.id}`,
-    );
-    await expect(page.getByLabel('block-item-CollectionField-m2oField3-form-m2oField3.id-ID')).toHaveText(
-      `ID:${record.m2oField0.m2oField1.m2oField2.id}`,
-    );
-    await expect(page.getByLabel('block-item-CollectionField-m2oField3-form-m2oField3.m2oField3-m2oField3')).toHaveText(
-      `m2oField3:${record.m2oField0.m2oField1.m2oField2.m2oField3.id}`,
-    );
+
+    for (let index = 0; index < record.m2mField0.length; index++) {
+      await expect(
+        page
+          .getByLabel('block-item-CollectionField-general-form-general.m2mField0-m2mField0')
+          .getByLabel('block-item-CollectionField-m2mField1-form-m2mField1.m2mField1-m2mField1')
+          .nth(index),
+      ).toHaveText(new RegExp(record.m2mField0[index].m2mField1.map((item) => item.id).join(',')));
+    }
+
     await page.getByLabel('drawer-Action.Container-general-View record-mask').click();
 
     // 编辑详情
@@ -119,17 +117,13 @@ test.describe('display association fields', () => {
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.id-ID')).toHaveText(
       `ID:${record.id}`,
     );
-    await expect(page.getByLabel('block-item-CollectionField-m2oField1-form-m2oField1.id-ID')).toHaveText(
-      `ID:${record.m2oField0.id}`,
-    );
-    await expect(page.getByLabel('block-item-CollectionField-m2oField2-form-m2oField2.id-ID')).toHaveText(
-      `ID:${record.m2oField0.m2oField1.id}`,
-    );
-    await expect(page.getByLabel('block-item-CollectionField-m2oField3-form-m2oField3.id-ID')).toHaveText(
-      `ID:${record.m2oField0.m2oField1.m2oField2.id}`,
-    );
-    await expect(page.getByLabel('block-item-CollectionField-m2oField3-form-m2oField3.m2oField3-m2oField3')).toHaveText(
-      `m2oField3:${record.m2oField0.m2oField1.m2oField2.m2oField3.id}`,
-    );
+    for (let index = 0; index < record.m2mField0.length; index++) {
+      await expect(
+        page
+          .getByLabel('block-item-CollectionField-general-form-general.m2mField0-m2mField0')
+          .getByLabel('block-item-CollectionField-m2mField1-form-m2mField1.m2mField1-m2mField1')
+          .nth(index),
+      ).toHaveText(new RegExp(record.m2mField0[index].m2mField1.map((item) => item.id).join('')));
+    }
   });
 });
