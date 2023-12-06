@@ -24,7 +24,7 @@ i18n
     lng: localStorage.getItem('NOCOBASE_LOCALE') || 'en-US',
     // debug: true,
     defaultNS: 'client',
-    fallbackNS: 'client',
+    // fallbackNS: 'client',
     // backend: {
     //   // for all available options read the backend's repository readme file
     //   loadPath: '/api/locales/{{lng}}/{{ns}}.json',
