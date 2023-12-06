@@ -33,6 +33,12 @@ export class CalendarPlugin extends Plugin {
       RecordAssociationCalendarBlockInitializer,
     });
 
+    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    blockInitializers?.add('dataBlocks.calendar', {
+      title: generateNTemplate('Calendar'),
+      Component: 'CalendarBlockInitializer',
+    });
+
     this.app.addScopes({ useCalendarBlockProps });
     this.app.use(CalendarProvider);
     this.app.schemaInitializerManager.add(CalendarActionInitializers);
