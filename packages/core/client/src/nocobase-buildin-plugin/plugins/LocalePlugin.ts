@@ -1,4 +1,4 @@
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, App } from 'antd';
 import dayjs from 'dayjs';
 import { loadConstrueLocale } from '../../antd-config-provider/loadConstrueLocale';
 import { Plugin } from '../../application/Plugin';
@@ -19,6 +19,7 @@ export class LocalePlugin extends Plugin {
       const data = res?.data;
       this.locales = data?.data || {};
       this.app.use(ConfigProvider, { locale: this.locales.antd, popupMatchSelectWidth: false });
+      this.app.use(App);
       if (data?.data?.lang && !locale) {
         api.auth.setLocale(data?.data?.lang);
         this.app.i18n.changeLanguage(data?.data?.lang);
