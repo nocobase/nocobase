@@ -5,11 +5,11 @@ const useStyles = createStyles(({ token, css }) => {
     gridRow: css`
       fill: ${token.colorBgContainer};
     `,
+    gridHeightRow: css`
+      fill: #e6f7ff;
+      border-color: ${token.colorBorder};
+    `,
     nbGridbody: css`
-      .gridheightrow: {
-        fill: #e6f7ff;
-        border-color: ${token.colorBorder};
-      }
       .gridrowline: {
         stroke: ${token.colorBorderSecondary};
         stroke-width: 0;

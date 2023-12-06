@@ -42,7 +42,7 @@ export const GridBody: React.FC<GridBodyProps> = ({
         y={y}
         width={svgWidth}
         height={rowHeight}
-        className={selectedRowKeys?.includes(+task.id) ? cx('gridHeightRow') : styles.gridRow}
+        className={selectedRowKeys?.includes(+task.id) ? styles.gridHeightRow : styles.gridRow}
       />,
     );
     rowLines.push(
