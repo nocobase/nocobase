@@ -26,9 +26,13 @@ Schema 渲染的上下文。
 
 ## Hooks
 
-### useSchemaComponentContext()
+### useSchemaOptionsContext()
 
-用于获取 `SchemaComponentContext` 的值，是 `useContext(SchemaComponentContext)` 的封装。
+用于获取注册的 `scope` 和 `components`。
+
+```tsx | pure
+const { scope, components } = useSchemaOptionsContext();
+```
 
 ## 组件
 
