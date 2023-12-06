@@ -321,6 +321,10 @@ export class ACL extends EventEmitter {
     this.snippetManager.register(snippet);
   }
 
+  getSnippet(name: string) {
+    return this.snippetManager.snippets.get(name);
+  }
+
   filterParams(ctx, resourceName, params) {
     if (params?.filter?.createdById) {
       const collection = ctx.db.getCollection(resourceName);

@@ -37,7 +37,7 @@ class SnippetManager {
     const matched = snippet.actions.some((action) => minimatch(actionPath, action));
 
     if (matched) {
-      return negated ? false : true;
+      return !negated;
     }
 
     return null;

@@ -1,4 +1,5 @@
-import { Database, ViewFieldInference } from '@nocobase/database';
+import { Database } from '@nocobase/database';
+import { ViewColumnTypeMapper } from '../view-column-type-mapper';
 
 export default {
   name: 'dbViews',
@@ -7,7 +8,7 @@ export default {
       const { filterByTk, schema } = ctx.action.params;
       const db = ctx.app.db as Database;
 
-      const fields = await ViewFieldInference.inferFields({
+      const fields = await ViewColumnTypeMapper.inferFields({
         db,
         viewName: filterByTk,
         viewSchema: schema,
@@ -32,7 +33,7 @@ export default {
       const db = ctx.app.db as Database;
       const dbViews = await db.queryInterface.listViews();
 
-      const viewCollections = Array.from(db.collections.values()).filter((collection) => collection.isView());
+      const viewCollections = Array.from(db.collections.values()).filter((collection) => collection.options.view);
 
       ctx.body = dbViews
         .map((dbView) => {

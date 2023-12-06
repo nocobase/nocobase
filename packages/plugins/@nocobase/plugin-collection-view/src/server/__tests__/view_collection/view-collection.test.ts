@@ -1,21 +1,86 @@
 import { uid } from '@nocobase/utils';
-import { Database, mockDatabase } from '../../index';
 import { ViewCollection } from '../../view-collection';
-import pgOnly from '../inhertits/helper';
+import { mockDatabase, mockServer, MockServer, pgOnly } from '@nocobase/test';
+import { Database } from '@nocobase/database';
+import PluginCollectionView from '../../plugin';
 
-pgOnly()('', () => {
+describe('view collection', () => {
   let db: Database;
 
-  beforeEach(async () => {
-    db = mockDatabase({
-      tablePrefix: '',
-    });
+  let app: MockServer;
 
-    await db.clean({ drop: true });
+  beforeEach(async () => {
+    app = mockServer({});
+
+    await app.cleanDb();
+    app.plugin(PluginCollectionView);
+    await app.loadAndInstall();
+
+    db = app.db;
   });
 
   afterEach(async () => {
-    await db.close();
+    await app.destroy();
+  });
+
+  it('should create view collection instance', async () => {
+    const UserCollection = db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const viewName = `t_${uid(6)}`;
+    const dropSQL = `DROP VIEW IF EXISTS ${viewName};`;
+    await db.sequelize.query(dropSQL);
+
+    const viewSQL = `CREATE VIEW ${viewName} AS select id as aaa, name from ${UserCollection.quotedTableName()}`;
+
+    await db.sequelize.query(viewSQL);
+
+    const viewCollection = db.collection({
+      name: viewName,
+      view: true,
+      schema: db.inDialect('postgres') ? 'public' : undefined,
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'integer',
+          name: 'aaa',
+        },
+      ],
+    });
+
+    expect(viewCollection).toBeInstanceOf(ViewCollection);
+  });
+});
+
+pgOnly()('view collection in postgres', () => {
+  let db: Database;
+
+  let app: MockServer;
+
+  beforeEach(async () => {
+    app = mockServer({});
+
+    await app.cleanDb();
+    app.plugin(PluginCollectionView);
+    await app.loadAndInstall();
+
+    db = app.db;
+  });
+
+  afterEach(async () => {
+    await app.destroy();
   });
 
   describe('view as through table', () => {

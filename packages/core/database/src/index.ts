@@ -39,7 +39,6 @@ export * from './repository';
 export * from './update-associations';
 export { snakeCase } from './utils';
 export * from './value-parsers';
-export * from './view-collection';
-export * from './view/view-inference';
+export * from './db-column/db-column-type-mappter';
 export * from './sql-collection';
 export * from './helpers';

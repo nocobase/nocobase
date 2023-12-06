@@ -135,6 +135,7 @@ export abstract class Field {
         return;
       }
     }
+
     // 排序字段通过 sortable 控制
     const sortable = this.collection.options.sortable;
     if (sortable) {
@@ -150,12 +151,6 @@ export abstract class Field {
         return;
       }
     }
-
-    // if (this.options.field && this.name !== this.options.field) {
-    //   // field 指向的是真实的字段名，如果与 name 不一样，说明字段只是引用
-    //   this.remove();
-    //   return;
-    // }
 
     if (this.collection.isView()) {
       this.remove();

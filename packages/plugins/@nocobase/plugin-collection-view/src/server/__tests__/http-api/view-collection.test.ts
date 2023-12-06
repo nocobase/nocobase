@@ -1,7 +1,7 @@
 import { Database, DataTypes, Field, Repository } from '@nocobase/database';
-import { MockServer } from '@nocobase/test';
+import { mockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
-import { createApp } from '../index';
+import PluginCollectionView from '../../index';
 
 describe('view collection', () => {
   let app: MockServer;
@@ -13,11 +13,14 @@ describe('view collection', () => {
   let fieldsRepository: Repository;
 
   beforeEach(async () => {
-    app = await createApp({
-      database: {
-        tablePrefix: '',
-      },
+    app = mockServer({
+      plugins: ['collection-manager', 'error-handler'],
     });
+    await app.cleanDb();
+
+    app.plugin(PluginCollectionView, { name: 'collection-view' });
+
+    await app.loadAndInstall({});
 
     db = app.db;
 

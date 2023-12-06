@@ -1,5 +1,5 @@
 import { mockDatabase } from '@nocobase/database';
-import Application, { AppSupervisor, ApplicationOptions, Gateway, PluginManager } from '@nocobase/server';
+import Application, { ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
@@ -89,17 +89,6 @@ export class MockServer extends Application {
     await this.runCommand('start', '--quickstart');
   }
 
-  protected createDatabase(options: ApplicationOptions) {
-    const oldDatabase = this._db;
-
-    const databaseOptions = oldDatabase ? oldDatabase.options : <any>options?.database || {};
-    const database = mockDatabase(databaseOptions);
-    database.setLogger(this._logger);
-    database.setContext({ app: this });
-
-    return database;
-  }
-
   async destroy(options: any = {}): Promise<void> {
     await super.destroy(options);
 
@@ -187,6 +176,17 @@ export class MockServer extends Application {
       },
     });
     return proxy as any;
+  }
+
+  protected createDatabase(options: ApplicationOptions) {
+    const oldDatabase = this._db;
+
+    const databaseOptions = oldDatabase ? oldDatabase.options : <any>options?.database || {};
+    const database = mockDatabase(databaseOptions);
+    database.setLogger(this._logger);
+    database.setContext({ app: this });
+
+    return database;
   }
 }
 

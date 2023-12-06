@@ -1,6 +1,7 @@
 import { uid } from '@nocobase/utils';
-import { Database, mockDatabase, ViewFieldInference } from '../../index';
-import { pgOnly } from '@nocobase/test';
+import { mockDatabase, pgOnly } from '@nocobase/test';
+import { Database } from '@nocobase/database';
+import { ViewColumnTypeMapper } from '../../view-column-type-mapper';
 
 pgOnly()('view with association', () => {
   let db: Database;
@@ -93,7 +94,7 @@ pgOnly()('view with association', () => {
 
     await db.sequelize.query(viewSQL);
 
-    const inferResult = await ViewFieldInference.inferFields({
+    const inferResult = await ViewColumnTypeMapper.inferFields({
       db,
       viewName,
       viewSchema: 'public',

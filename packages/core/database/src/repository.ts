@@ -310,13 +310,11 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       delete queryOptions.include;
     }
 
-    const count = await this.collection.model.count({
+    // @ts-ignore
+    return await this.collection.model.count({
       ...queryOptions,
       transaction,
     });
-
-    // @ts-ignore
-    return count;
   }
 
   async aggregate(options: AggregateOptions & { optionsTransformer?: (options: any) => any }): Promise<any> {

@@ -383,14 +383,20 @@ export class Collection<
   }
 
   async removeFromDb(options?: QueryInterfaceDropTableOptions) {
-    if (
-      !this.isView() &&
-      (await this.existsInDb({
-        transaction: options?.transaction,
-      }))
-    ) {
-      const queryInterface = this.db.sequelize.getQueryInterface();
-      await queryInterface.dropTable(this.getTableNameWithSchema(), options);
+    // @ts-ignore
+    const onRemoveFromDb = this.db.collectionFactory.collectionTypes.get(this.constructor)?.onRemoveFromDb;
+
+    if (onRemoveFromDb) {
+      await onRemoveFromDb(options);
+    } else {
+      if (
+        await this.existsInDb({
+          transaction: options?.transaction,
+        })
+      ) {
+        const queryInterface = this.db.sequelize.getQueryInterface();
+        await queryInterface.dropTable(this.getTableNameWithSchema(), options);
+      }
     }
 
     return this.remove();
@@ -683,6 +689,10 @@ export class Collection<
     }
 
     return undefined;
+  }
+
+  public isCollectionType(collectionClass: typeof Collection) {
+    return this instanceof collectionClass;
   }
 
   public isView() {

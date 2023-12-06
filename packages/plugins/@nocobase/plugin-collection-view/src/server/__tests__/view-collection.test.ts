@@ -1,25 +1,29 @@
-import Database, { Repository, ViewCollection, ViewFieldInference } from '@nocobase/database';
-import Application from '@nocobase/server';
+import Database, { Repository } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
-import { createApp } from '../index';
+import { MockServer, mockServer } from '@nocobase/test';
+import PluginCollectionView from '@nocobase/plugin-collection-view';
+import { ViewCollection } from '../view-collection';
+import { ViewColumnTypeMapper } from '../view-column-type-mapper';
 
 describe('view collection', function () {
   let db: Database;
-  let app: Application;
+  let app: MockServer;
 
   let collectionRepository: Repository;
 
   let fieldsRepository: Repository;
 
   beforeEach(async () => {
-    app = await createApp({
-      database: {
-        tablePrefix: '',
-      },
+    app = mockServer({
+      plugins: ['collection-manager', 'error-handler'],
     });
 
-    db = app.db;
+    await app.cleanDb();
+    app.plugin(PluginCollectionView, { name: 'collection-view' });
 
+    await app.loadAndInstall({});
+
+    db = app.db;
     collectionRepository = db.getCollection('collections').repository;
     fieldsRepository = db.getCollection('fields').repository;
   });
@@ -63,7 +67,7 @@ describe('view collection', function () {
 
     await db.sequelize.query(createSQL);
 
-    const inferredFields = await ViewFieldInference.inferFields({
+    const inferredFields = await ViewColumnTypeMapper.inferFields({
       db,
       viewName,
       viewSchema: 'public',
@@ -122,7 +126,7 @@ describe('view collection', function () {
 
     await db.sequelize.query(createSQL);
 
-    const inferredFields = await ViewFieldInference.inferFields({
+    const inferredFields = await ViewColumnTypeMapper.inferFields({
       db,
       viewName,
       viewSchema: 'public',

@@ -71,7 +71,6 @@ import {
 } from './types';
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
-import { ViewCollection } from './view-collection';
 import { CollectionFactory } from './collection-factory';
 import chalk from 'chalk';
 import { checkDatabaseVersion } from './helpers';
@@ -328,12 +327,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.collectionFactory.registerCollectionType(InheritedCollection, {
       condition: (options) => {
         return options.inherits && lodash.castArray(options.inherits).length > 0;
-      },
-    });
-
-    this.collectionFactory.registerCollectionType(ViewCollection, {
-      condition: (options) => {
-        return options.viewName || options.view;
       },
     });
 

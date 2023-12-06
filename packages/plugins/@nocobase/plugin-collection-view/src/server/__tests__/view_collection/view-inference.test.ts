@@ -1,5 +1,5 @@
 import { Database, mockDatabase } from '@nocobase/database';
-import { ViewFieldInference } from '../../view/view-inference';
+import { ViewColumnTypeMapper } from '../../view-column-type-mapper';
 
 describe('view inference', function () {
   let db: Database;
@@ -45,7 +45,7 @@ describe('view inference', function () {
 
     await db.sequelize.query(viewSQL);
 
-    const inferredFields = await ViewFieldInference.inferFields({
+    const inferredFields = await ViewColumnTypeMapper.inferFields({
       db,
       viewName,
       viewSchema: 'public',
@@ -111,7 +111,7 @@ describe('view inference', function () {
 
     await db.sequelize.query(viewSQL);
 
-    const inferredFields = await ViewFieldInference.inferFields({
+    const inferredFields = await ViewColumnTypeMapper.inferFields({
       db,
       viewName,
       viewSchema: 'public',

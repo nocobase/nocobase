@@ -1,18 +1,24 @@
-import { Database, mockDatabase } from '@nocobase/database';
+import { Database } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
+import { MockServer, mockServer } from '@nocobase/test';
+import PluginCollectionView from '@nocobase/plugin-collection-view';
 
 describe('view repository', () => {
   let db: Database;
 
+  let app: MockServer;
   beforeEach(async () => {
-    db = mockDatabase({
-      tablePrefix: '',
-    });
-    await db.clean({ drop: true });
+    app = mockServer({});
+
+    await app.cleanDb();
+    app.plugin(PluginCollectionView);
+    await app.loadAndInstall();
+
+    db = app.db;
   });
 
   afterEach(async () => {
-    await db.close();
+    await app.destroy();
   });
 
   it('should support find view without primary key', async () => {

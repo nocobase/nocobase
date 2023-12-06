@@ -32,10 +32,6 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
   protected _previousDataValuesWithAssociations = {};
 
   static async sync(options) {
-    if (this.collection.isView()) {
-      return;
-    }
-
     if (this.collection.options.sync === false) {
       return;
     }
