@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { loadConstrueLocale } from '../../antd-config-provider/loadConstrueLocale';
 import { Plugin } from '../../application/Plugin';
 import { dayjsLocale } from '../../locale';
+import { setValidateLanguage } from '@formily/validator';
 
 export class LocalePlugin extends Plugin {
   locales: any = {};
@@ -27,6 +28,7 @@ export class LocalePlugin extends Plugin {
       Object.keys(data?.data?.resources || {}).forEach((key) => {
         this.app.i18n.addResources(data?.data?.lang, key, data?.data?.resources[key] || {});
       });
+      setValidateLanguage(data?.data?.lang);
       loadConstrueLocale(data?.data);
       const dayjsLang = dayjsLocale[data?.data?.lang] || 'en';
       await import(`dayjs/locale/${dayjsLang}`);
