@@ -3,7 +3,11 @@ import { commonTesting, testDefaultValue, testPattern } from '../commonTesting';
 
 const gotoPage = async (mockPage, mockRecords) => {
   const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndRelationFields).waitForInit();
-  await mockRecords('users', 3);
+  await mockRecords('users', [
+    { email: 'aaaaa@gmail.com' },
+    { email: 'bbbbb@gmail.com' },
+    { email: 'ccccc@gmail.com' },
+  ]);
   await nocoPage.goto();
 };
 

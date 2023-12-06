@@ -4,7 +4,11 @@ import { twoTableWithRelationalFields, twoTableWithSameCollection } from './temp
 test.describe('connect data blocks: table block', () => {
   test('connections between same collections', async ({ page, mockPage, mockRecords }) => {
     const nocoPage = await mockPage(twoTableWithSameCollection).waitForInit();
-    const records = await mockRecords('users', 3);
+    const records = await mockRecords('users', [
+      { email: 'aaaaa@gmail.com' },
+      { email: 'bbbbb@gmail.com' },
+      { email: 'ccccc@gmail.com' },
+    ]);
     await nocoPage.goto();
 
     // 将左边的 Table 连接到右边的 Table
@@ -23,7 +27,11 @@ test.describe('connect data blocks: table block', () => {
 
   test('connecting via Relational Fields', async ({ page, mockPage, mockRecords }) => {
     const nocoPage = await mockPage(twoTableWithRelationalFields).waitForInit();
-    const records = await mockRecords('users', 3);
+    await mockRecords('users', [
+      { email: 'aaaaa@gmail.com' },
+      { email: 'bbbbb@gmail.com' },
+      { email: 'ccccc@gmail.com' },
+    ]);
     await nocoPage.goto();
 
     // 将左边的 Table 连接到右边的 Table
