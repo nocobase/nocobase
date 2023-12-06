@@ -6,25 +6,6 @@ import { CalendarBlockInitializer, RecordAssociationCalendarBlockInitializer } f
 import { generateNTemplate } from '../locale';
 import { calendar } from './collection-templates/calendar';
 
-const CalendarProvider = React.memo((props) => {
-  const items = useContext<any>(SchemaInitializerContext);
-  const children: any[] = items.BlockInitializers.items[0].children;
-
-  useEffect(() => {
-    if (!children.find((item) => item.component === 'CalendarBlockInitializer')) {
-      children.splice(3, 0, {
-        key: 'calendar',
-        type: 'item',
-        title: generateNTemplate('Calendar'),
-        component: 'CalendarBlockInitializer',
-      });
-    }
-  }, []);
-
-  return <>{props.children}</>;
-});
-CalendarProvider.displayName = 'CalendarProvider';
-
 export class CalendarPlugin extends Plugin {
   async load() {
     this.app.addComponents({
@@ -40,7 +21,6 @@ export class CalendarPlugin extends Plugin {
     });
 
     this.app.addScopes({ useCalendarBlockProps });
-    this.app.use(CalendarProvider);
     this.app.schemaInitializerManager.add(CalendarActionInitializers);
     this.app.schemaInitializerManager.add(CalendarFormActionInitializers);
     registerTemplate('calendar', calendar);
