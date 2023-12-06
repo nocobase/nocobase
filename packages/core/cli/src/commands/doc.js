@@ -58,7 +58,7 @@ module.exports = (cli) => {
       } else {
         run('dumi', [command], {
           env: {
-            APP_ROOT: process.env.APP_ROOT,
+            APP_ROOT: process.env.APP_ROOT || './packages/core/client',
             DOC_LANG: process.env.DOC_LANG,
           },
         });
