@@ -2,6 +2,7 @@ import { css, cx } from '@emotion/css';
 import { createForm } from '@formily/core';
 import { RecursionField, Schema, useFieldSchema } from '@formily/react';
 import { message } from 'antd';
+import { debounce, throttle } from 'lodash';
 import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -58,6 +59,28 @@ const GanttRecordViewer = (props) => {
     )
   );
 };
+const debounceHandleTaskChange = debounce(async (task: Task, resource, fieldNames, service, t) => {
+  await resource.update({
+    filterByTk: task.id,
+    values: {
+      [fieldNames.start]: task.start,
+      [fieldNames.end]: task.end,
+    },
+  });
+  message.success(t('Saved successfully'));
+  await service?.refresh();
+}, 300);
+
+const debounceHandleProcessChange = debounce(async (task: Task, resource, fieldNames, service, t) => {
+  await resource.update({
+    filterByTk: task.id,
+    values: {
+      [fieldNames.progress]: task.progress / 100,
+    },
+  });
+  message.success(t('Saved successfully'));
+  await service?.refresh();
+}, 300);
 export const Gantt: any = (props: any) => {
   const { styles } = useStyles();
   const { token } = useToken();
@@ -406,25 +429,10 @@ export const Gantt: any = (props: any) => {
     setSelectedRowKeys(keys);
   };
   const handleProgressChange = async (task: Task) => {
-    await resource.update({
-      filterByTk: task.id,
-      values: {
-        [fieldNames.progress]: task.progress / 100,
-      },
-    });
-    message.success(t('Saved successfully'));
-    await service?.refresh();
+    debounceHandleProcessChange(task, resource, fieldNames, service, t);
   };
   const handleTaskChange = async (task: Task) => {
-    await resource.update({
-      filterByTk: task.id,
-      values: {
-        [fieldNames.start]: task.start,
-        [fieldNames.end]: task.end,
-      },
-    });
-    message.success(t('Saved successfully'));
-    await service?.refresh();
+    debounceHandleTaskChange(task, resource, fieldNames, service, t);
   };
   const handleBarClick = (data) => {
     const flattenTree = (treeData) => {
