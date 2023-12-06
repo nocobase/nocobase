@@ -6,9 +6,10 @@ import { Alert, Tree as AntdTree, ModalProps } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
+import { useApp } from '../../../application';
 import { usePlugin } from '../../../application/hooks';
+import { SchemaSettingOptions, SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
-import { SchemaSettings, SchemaSettingOptions } from '../../../application/schema-settings';
 import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
@@ -27,7 +28,6 @@ import {
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
-import { useApp } from '../../../application';
 
 const Tree = connect(
   AntdTree,
@@ -789,7 +789,7 @@ export const ActionDesigner = (props) => {
   const fieldSchema = useFieldSchema();
   const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
   const settingsName = `ActionSettings:${fieldSchema['x-action']}`;
-  const defaultActionSettings = 'ActionSettings';
+  const defaultActionSettings = schemaSettings || 'ActionSettings';
   const hasAction = app.schemaSettingsManager.has(settingsName);
 
   return (

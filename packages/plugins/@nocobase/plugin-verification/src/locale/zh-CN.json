@@ -1,0 +1,22 @@
+{
+  "Verification": "验证码",
+  "Verification providers": "验证码提供商",
+  "Provider type": "提供商类型",
+  "Aliyun SMS": "阿里云短信服务",
+  "Access Key ID": "Access Key ID",
+  "Access Key Secret": "Access Key Secret",
+  "Endpoint": "接入点",
+  "Sign": "签名",
+  "Template code": "模板代码",
+  "Secret Id": "Secret Id",
+  "Secret Key": "Secret Key",
+  "Region": "地域",
+  "Sign name": "短信签名内容",
+  "Sms sdk app id": "短信应用 ID",
+  "Template Id": "短信模板 ID",
+  "Verification send failed, please try later or contact to administrator": "验证码发送失败，请稍后重试或联系管理员",
+  "Not a valid cellphone number, please re-enter": "不是有效的手机号，请重新输入",
+  "Please don't retry in {{time}} seconds": "请 {{time}} 秒后再试",
+  "You are trying so frequently, please slow down": "您的操作太频繁，请稍后再试",
+  "Verification code is invalid": "无效的验证码"
+}

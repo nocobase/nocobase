@@ -60,8 +60,18 @@ describe('resources', () => {
   });
 
   test('filterExists', async () => {
-    const result = await resources.filterExists(['Edit', 'Add new', 'Admin', 'Test']);
-    expect(result).toEqual(['Test']);
+    const result = await resources.filterExists([
+      { text: 'Edit', module: 'resources.client' },
+      { text: 'Add new', module: 'resources.client' },
+      { text: 'Admin', module: 'resources.acl' },
+      { text: 'Test', module: 'resources.acl' },
+    ]);
+    expect(result).toEqual([
+      {
+        text: 'Test',
+        module: 'resources.acl',
+      },
+    ]);
   });
 
   test('updateCacheTexts', async () => {
