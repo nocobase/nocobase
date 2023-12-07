@@ -4,7 +4,7 @@
   "displayName.zh-CN": "权限控制",
   "description": "A simple access control based on roles, resources and actions",
   "description.zh-CN": "基于角色、资源和操作的权限控制。",
-  "version": "0.17.0-alpha.1",
+  "version": "0.17.0-alpha.3",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {

@@ -64,7 +64,7 @@ const CurrentFields = (props) => {
   const { [targetKey]: filterByTk, titleField, template } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
   const { refreshCM, isTitleField, getTemplate } = useCollectionManager();
-
+  const targetTemplate = getTemplate(template);
   const columns: TableColumnProps<any>[] = [
     {
       dataIndex: ['uiSchema', 'rawTitle'],
@@ -130,7 +130,7 @@ const CurrentFields = (props) => {
             content: t('Are you sure you want to delete it?'),
           },
           useAction: useDestroyActionAndRefreshCM,
-          disabled: isDeleteButtonDisabled(record),
+          disabled: isDeleteButtonDisabled(record) || targetTemplate?.forbidDeletion,
           title: t('Delete'),
         };
 
@@ -405,6 +405,7 @@ export const CollectionFields = () => {
       useAction: useBulkDestroyActionAndRefreshCM,
       title: t('Delete'),
       icon: 'DeleteOutlined',
+      disabled: targetTemplate?.forbidDeletion,
       confirm: {
         title: t('Delete record'),
         content: t('Are you sure you want to delete it?'),

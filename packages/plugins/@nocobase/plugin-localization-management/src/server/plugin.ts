@@ -7,6 +7,7 @@ import localization from './actions/localization';
 import localizationTexts from './actions/localizationTexts';
 import Resources from './resources';
 import { getTextsFromDBRecord } from './utils';
+import { NAMESPACE_COLLECTIONS, NAMESPACE_MENUS } from './constans';
 
 export class LocalizationManagementPlugin extends Plugin {
   resources: Resources;
@@ -18,12 +19,13 @@ export class LocalizationManagementPlugin extends Plugin {
     }
 
     uiSchemaStoragePlugin.serverHooks.register('onSelfSave', 'extractTextToLocale', async ({ schemaInstance }) => {
+      const module = `resources.${NAMESPACE_MENUS}`;
       const schema = schemaInstance.get('schema');
       const title = schema?.title || schema?.['x-component-props']?.title;
       if (!title) {
         return;
       }
-      const result = await this.resources.filterExists([title]);
+      const result = await this.resources.filterExists([{ text: title, module }]);
       if (!result.length) {
         return;
       }
@@ -31,7 +33,7 @@ export class LocalizationManagementPlugin extends Plugin {
         .getRepository('localizationTexts')
         .create({
           values: {
-            module: 'resources.client',
+            module,
             text: title,
           },
         })
@@ -73,6 +75,7 @@ export class LocalizationManagementPlugin extends Plugin {
     });
 
     this.db.on('afterSave', async (instance: Model) => {
+      const module = `resources.${NAMESPACE_COLLECTIONS}`;
       const model = instance.constructor as typeof Model;
       const collection = model.collection;
       if (!collection) {
@@ -87,12 +90,17 @@ export class LocalizationManagementPlugin extends Plugin {
       }
       const textsFromDB = getTextsFromDBRecord(fields, instance);
       textsFromDB.forEach((text) => {
-        texts.push(text);
+        texts.push({ text, module });
       });
       texts = await this.resources.filterExists(texts);
       this.db
         .getModel('localizationTexts')
-        .bulkCreate(texts.map((text) => ({ module: 'resources.client', text })))
+        .bulkCreate(
+          texts.map(({ text, module }) => ({
+            module,
+            text,
+          })),
+        )
         .then((newTexts) => this.resources.updateCacheTexts(newTexts))
         .catch((err) => {});
     });
@@ -112,22 +120,12 @@ export class LocalizationManagementPlugin extends Plugin {
       if (resourceName === 'app' && actionName === 'getLang') {
         const custom = await this.resources.getResources(ctx.get('X-Locale') || 'en-US');
         const appLang = ctx.body;
-        const resources = {};
-        Object.keys(appLang.resources).forEach((key) => {
-          const resource = custom[`resources.${key}`];
-          resources[key] = resource ? deepmerge(appLang.resources[key], resource) : { ...appLang.resources[key] };
-        });
-        // For duplicate texts, use translations from client to override translations in other modules
-        const client = resources['client'] || {};
-        Object.keys(resources).forEach((key) => {
-          if (key === 'client') {
-            return;
-          }
-          Object.keys(resources[key]).forEach((text) => {
-            if (client[text]) {
-              resources[key][text] = client[text];
-            }
-          });
+        const resources = { ...appLang.resources };
+        Object.keys(custom).forEach((key) => {
+          const module = key.replace('resources.', '');
+          const resource = appLang.resources[module];
+          const customResource = custom[key];
+          resources[module] = resource ? deepmerge(resource, customResource) : customResource;
         });
         ctx.body = {
           ...appLang,

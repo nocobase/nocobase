@@ -50,14 +50,10 @@ export default class Resources {
     return resources;
   }
 
-  async filterExists(texts: (string | { text: string })[]) {
-    let existTexts = await this.getTexts();
-    existTexts = existTexts.map((item) => item.text);
+  async filterExists(texts: { text: string; module: string }[]) {
+    const existTexts = await this.getTexts();
     return texts.filter((text) => {
-      if (typeof text === 'string') {
-        return !existTexts.includes(text);
-      }
-      return !existTexts.includes(text.text);
+      return !existTexts.find((item: any) => item.text === text.text && item.module === text.module);
     });
   }
 
