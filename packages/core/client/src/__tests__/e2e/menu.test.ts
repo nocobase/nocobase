@@ -1,4 +1,4 @@
-import { enableToConfig, expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
 import { approximateColor } from './utils';
 
 test.describe('menu page', () => {
@@ -65,7 +65,6 @@ test.describe('menu page', () => {
       name: pageTitle1,
     }).goto();
     await mockPage({ name: pageTitle2 }).goto();
-    await enableToConfig(page);
     await page.getByRole('menu').getByText(pageTitle1).click();
     await page.getByRole('menu').getByText(pageTitle1).hover();
     await page.getByLabel(pageTitle1).getByLabel('designer-schema-settings').hover();

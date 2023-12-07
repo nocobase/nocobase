@@ -181,7 +181,6 @@ export class NocoPage {
 }
 
 const _test = base.extend<{
-  page: Page;
   mockPage: (config?: PageConfig) => NocoPage;
   mockCollections: <T = any>(collectionSettings: CollectionSetting[]) => Promise<T>;
   mockCollection: <T = any>(collectionSetting: CollectionSetting) => Promise<T>;
@@ -201,16 +200,6 @@ const _test = base.extend<{
   createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
   deletePage: (pageName: string) => Promise<void>;
 }>({
-  page: async ({ page: _page }, use) => {
-    const page: Page = Object.create(_page);
-    page.goto = async function goto(url: string, options?: any) {
-      const result = await _page.goto(url, options);
-      await enableToConfig(_page);
-      return result;
-    };
-
-    await use(page);
-  },
   mockPage: async ({ page }, use) => {
     // 保证每个测试运行时 faker 的随机值都是一样的
     faker.seed(1);
@@ -593,23 +582,6 @@ const createRandomData = async (collectionName: string, count = 10, data?: any) 
 
   return (await result.json()).data;
 };
-
-/**
- * 使页面成为可配置态
- */
-export async function enableToConfig(page: Page) {
-  try {
-    // 根据是否有 style 判断是否已经是可配置态（因为配置状态的按钮样式是通过 style 属性设置的）
-    const style = await page.getByTestId('ui-editor-button').getAttribute('style', {
-      timeout: 2000,
-    });
-    if (!style) {
-      await page.getByTestId('ui-editor-button').click();
-    }
-  } catch (e) {
-    // ignore
-  }
-}
 
 function getHeaders(storageState: any) {
   const headers: any = {};
