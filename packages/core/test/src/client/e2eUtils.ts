@@ -213,7 +213,7 @@ const _test = base.extend<{
   },
   mockPage: async ({ page }, use) => {
     // 保证每个测试运行时 faker 的随机值都是一样的
-    faker.seed(1);
+    // faker.seed(1);
 
     const nocoPages: NocoPage[] = [];
     const mockPage = (config?: PageConfig) => {
@@ -601,7 +601,7 @@ export async function enableToConfig(page: Page) {
   try {
     // 根据是否有 style 判断是否已经是可配置态（因为配置状态的按钮样式是通过 style 属性设置的）
     const style = await page.getByTestId('ui-editor-button').getAttribute('style', {
-      timeout: 2000,
+      timeout: 10000,
     });
     if (!style) {
       await page.getByTestId('ui-editor-button').click();

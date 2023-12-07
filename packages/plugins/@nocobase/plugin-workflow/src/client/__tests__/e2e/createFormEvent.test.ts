@@ -3,11 +3,11 @@ import { dayjs } from '@nocobase/utils';
 import { CreateWorkFlow } from './pageobject/workFlow';
 
 test.describe('workflow manage', () => {
-  test('add new from event', async ({ page }) => {
+  test('add new form event', async ({ page }) => {
     //用例编号
     const caseNum = 'WF02AA';
     //用例标题
-    const caseTitle = 'add new from event';
+    const caseTitle = 'add new form event';
 
     // 1、前置条件：已登录
 
