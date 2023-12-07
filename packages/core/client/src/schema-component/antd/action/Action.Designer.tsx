@@ -996,6 +996,22 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         },
       },
       {
+        name: 'secondConFirm',
+        Component: SecondConFirm,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          const isPopupAction = [
+            'create',
+            'update',
+            'view',
+            'customize:popup',
+            'duplicate',
+            'customize:create',
+          ].includes(fieldSchema['x-action'] || '');
+          return !isPopupAction;
+        },
+      },
+      {
         name: 'assignFieldValues',
         Component: AssignedFieldValues,
         useVisible() {
@@ -1069,7 +1085,40 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
     ],
   },
 ];
+function SecondConFirm() {
+  const { dn } = useDesignable();
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+  const compile = useCompile();
+  return (
+    <SchemaSettingsSwitchItem
+      title={t('Second confirmation')}
+      checked={!!fieldSchema?.['x-component-props']?.confirm?.content}
+      onChange={(value) => {
+        if (!fieldSchema['x-component-props']) {
+          fieldSchema['x-component-props'] = {};
+        }
+        if (value) {
+          fieldSchema['x-component-props'].confirm = value
+            ? {
+                title: t('Confirm action'),
+                content: t('Are you sure you want to do {{done}}', { done: compile(fieldSchema?.title) }),
+              }
+            : {};
+        } else {
+          fieldSchema['x-component-props'].confirm = {};
+        }
 
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': { ...fieldSchema['x-component-props'] },
+          },
+        });
+      }}
+    />
+  );
+}
 export const actionSettings = new SchemaSettings({
   name: 'ActionSettings',
   items: actionSettingsItems,

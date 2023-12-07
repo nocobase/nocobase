@@ -65,7 +65,7 @@ export const Action: ComposedAction = observer(
     const variables = useVariables();
     const localVariables = useLocalVariables({ currentForm: { values: record } as any });
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
-
+    const confirms = confirm || fieldSchema?.['x-component-props']?.['confirm'];
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
 
@@ -106,9 +106,9 @@ export const Action: ComposedAction = observer(
             setVisible(true);
             run();
           };
-          if (confirm) {
+          if (confirms?.content) {
             modal.confirm({
-              ...confirm,
+              ...confirms,
               onOk,
             });
           } else {
