@@ -251,14 +251,14 @@ const _test = base.extend<{
 
     const mockCollections = async (collectionSettings: CollectionSetting[]) => {
       collectionSettings = omitSomeFields(collectionSettings);
-      collectionsName = collectionSettings.map((item) => item.name);
+      collectionsName = [...collectionsName, ...collectionSettings.map((item) => item.name)];
       return createCollections(collectionSettings);
     };
 
     await use(mockCollections);
 
     if (collectionsName.length) {
-      await deleteCollections(collectionsName);
+      await deleteCollections(_.uniq(collectionsName));
     }
   },
   mockCollection: async ({ page }, use) => {
@@ -266,14 +266,14 @@ const _test = base.extend<{
 
     const mockCollection = async (collectionSetting: CollectionSetting) => {
       const collectionSettings = omitSomeFields([collectionSetting]);
-      collectionsName = collectionSettings.map((item) => item.name);
+      collectionsName = [...collectionsName, ...collectionSettings.map((item) => item.name)];
       return createCollections(collectionSettings);
     };
 
     await use(mockCollection);
 
     if (collectionsName.length) {
-      await deleteCollections(collectionsName);
+      await deleteCollections(_.uniq(collectionsName));
     }
   },
   mockRecords: async ({ page }, use) => {
