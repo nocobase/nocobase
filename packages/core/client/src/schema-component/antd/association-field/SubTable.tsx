@@ -9,14 +9,13 @@ import { Button } from 'antd';
 import React from 'react';
 import { FormActiveFieldsProvider } from '../../../block-provider';
 import { FlagProvider } from '../../../flag-provider';
-import { useSubTableSpecialCase } from '../form-item/hooks/useSpecialCase';
 import { Table } from '../table-v2/Table';
 import { useAssociationFieldContext } from './hooks';
 
 export const SubTable: any = observer(
   (props: any) => {
     const { field } = useAssociationFieldContext<ArrayField>();
-    useSubTableSpecialCase({ field });
+    // useSubTableSpecialCase({ field });
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
       if (!isArr(field.value)) return;
