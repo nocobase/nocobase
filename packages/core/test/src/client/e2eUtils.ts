@@ -266,23 +266,42 @@ const _test = base.extend<{
     }
   },
   mockRecords: async ({ page }, use) => {
+    let records = [];
+    let _collectionName = '';
     const mockRecords = async (collectionName: string, count: any = 3, data?: any) => {
+      _collectionName = collectionName;
+
       if (_.isArray(count)) {
         data = count;
         count = data.length;
+      }
+      if (['users', 'roles'].includes(collectionName)) {
+        records = await createRandomData(collectionName, count, data);
+        return records;
       }
       return createRandomData(collectionName, count, data);
     };
 
     await use(mockRecords);
+
+    if (records?.length) {
+      await deleteRecords(_collectionName, records);
+    }
   },
   mockRecord: async ({ page }, use) => {
+    const record = {};
+    let _collectionName = '';
     const mockRecord = async (collectionName: string, data?: any) => {
+      _collectionName = collectionName;
       const result = await createRandomData(collectionName, 1, data);
       return result[0];
     };
 
     await use(mockRecord);
+
+    if (record) {
+      await deleteRecords(_collectionName, [record]);
+    }
   },
   deletePage: async ({ page }, use) => {
     const deletePage = async (pageName: string) => {
@@ -451,6 +470,24 @@ const deleteCollections = async (collectionNames: string[]) => {
   const params = collectionNames.map((name) => `filterByTk[]=${name}`).join('&');
 
   const result = await api.post(`/api/collections:destroy?${params}`, {
+    headers,
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+};
+
+const deleteRecords = async (collectionName: string, records: any[]) => {
+  const api = await request.newContext({
+    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+  });
+
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const params = records.map((record) => `filterByTk[]=${record.id}`).join('&');
+
+  const result = await api.post(`/api/${collectionName}:destroy?${params}`, {
     headers,
   });
 

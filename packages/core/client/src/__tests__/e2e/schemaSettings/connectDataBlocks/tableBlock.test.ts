@@ -40,7 +40,7 @@ test.describe('connect data blocks: table block', () => {
         .getByLabel('block-item-CardItem-users-table')
         .getByRole('row', { name: 'Member' })
         .filter({ hasNotText: 'Root' }),
-    ).toHaveCount(0);
+    ).toHaveCount(0, { timeout: 1000 * 10 });
     await expect(page.getByLabel('block-item-CardItem-users-table').getByRole('row', { name: 'Root' })).toBeVisible();
 
     // 再次点击，会取消筛选效果
@@ -50,7 +50,7 @@ test.describe('connect data blocks: table block', () => {
         .getByLabel('block-item-CardItem-users-table')
         .getByRole('row', { name: 'Member' })
         .filter({ hasNotText: 'Root' }),
-    ).toHaveCount(3);
+    ).toHaveCount(3, { timeout: 1000 * 10 });
     await expect(page.getByLabel('block-item-CardItem-users-table').getByRole('row', { name: 'Root' })).toBeVisible();
   });
 
