@@ -1091,32 +1091,34 @@ function SecondConFirm() {
   const { t } = useTranslation();
   const compile = useCompile();
   return (
-    <SchemaSettingsSwitchItem
-      title={t('Second confirmation')}
-      checked={!!fieldSchema?.['x-component-props']?.confirm?.content}
-      onChange={(value) => {
-        if (!fieldSchema['x-component-props']) {
-          fieldSchema['x-component-props'] = {};
-        }
-        if (value) {
-          fieldSchema['x-component-props'].confirm = value
-            ? {
-                title: t('Confirm action'),
-                content: t('Are you sure you want to do {{done}}', { done: compile(fieldSchema?.title) }),
-              }
-            : {};
-        } else {
-          fieldSchema['x-component-props'].confirm = {};
-        }
+    fieldSchema?.['x-action'] !== 'destroy' && (
+      <SchemaSettingsSwitchItem
+        title={t('Second confirmation')}
+        checked={!!fieldSchema?.['x-component-props']?.confirm?.content}
+        onChange={(value) => {
+          if (!fieldSchema['x-component-props']) {
+            fieldSchema['x-component-props'] = {};
+          }
+          if (value) {
+            fieldSchema['x-component-props'].confirm = value
+              ? {
+                  title: t('Confirm action'),
+                  content: t('Are you sure you want to do {{done}}', { done: compile(fieldSchema?.title) }),
+                }
+              : {};
+          } else {
+            fieldSchema['x-component-props'].confirm = {};
+          }
 
-        dn.emit('patch', {
-          schema: {
-            ['x-uid']: fieldSchema['x-uid'],
-            'x-component-props': { ...fieldSchema['x-component-props'] },
-          },
-        });
-      }}
-    />
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-component-props': { ...fieldSchema['x-component-props'] },
+            },
+          });
+        }}
+      />
+    )
   );
 }
 export const actionSettings = new SchemaSettings({
