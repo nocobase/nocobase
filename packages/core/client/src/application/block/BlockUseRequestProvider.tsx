@@ -30,31 +30,36 @@ function useCurrentRequest(options: Omit<BlockContextProps, 'type'>) {
   }, [record, association, sourceId, action, filterByTk, collection]);
 
   const useRequestOptions = useMemo(() => {
-    if (record) return () => Promise.resolve(record);
+    if (record) return () => Promise.resolve(record.current);
     if (!action) {
       throw new Error(`[nocobase]: The 'action' parameter is missing in the BlockRequestProvider component`);
     }
     return {
       url,
       params,
+      method: action === 'create' ? 'POST' : 'GET',
     } as AxiosRequestConfig;
   }, [action, params, record, url]);
 
-  const [refreshDeps, setRefreshDeps] = useState([]);
+  const res = useRequest(useRequestOptions, {
+    manual: true,
+  });
+
+  // 因为修改 Schema 会导致 params 对象发生变化，所以这里使用 `DeepCompare`
   useDeepCompareEffect(() => {
-    setRefreshDeps([params, url, !!record]);
+    if (action !== 'create') {
+      res.run();
+    }
   }, [params, url, !!record]);
 
-  return useRequest(useRequestOptions, {
-    refreshDeps,
-  });
+  return res;
 }
 
 function useParentRequest(options: Omit<BlockContextProps, 'type'>) {
   const { sourceId, association, parentRecord } = options;
 
   const useRequestOptions = useMemo(() => {
-    if (parentRecord) return () => Promise.resolve(parentRecord);
+    if (parentRecord) return () => Promise.resolve(parentRecord.current);
     if (!association) return () => Promise.resolve(undefined);
     // "association": "Collection.Field"
     const arr = association.split('.');
@@ -65,13 +70,8 @@ function useParentRequest(options: Omit<BlockContextProps, 'type'>) {
     } as AxiosRequestConfig;
   }, [association, parentRecord, sourceId]);
 
-  const [refreshDeps, setRefreshDeps] = useState([]);
-  useDeepCompareEffect(() => {
-    setRefreshDeps([association, parentRecord, sourceId, !!parentRecord]);
-  }, [association, parentRecord, sourceId, !!parentRecord]);
-
   return useRequest(useRequestOptions, {
-    refreshDeps,
+    refreshDeps: [association, parentRecord, sourceId, !!parentRecord],
   });
 }
 
@@ -97,8 +97,14 @@ export const BlockRequestProviderV2: FC = ({ children }) => {
 
   return (
     <BlockRequestContextV2.Provider value={{ requestResult: currentRequest }}>
-      {action === 'list' || record || parentRecord ? (
-        <RecordProviderV2 record={currentRequest.data} parent={parentRequest.data}>
+      {action !== 'list' || record || parentRecord ? (
+        <RecordProviderV2
+          current={currentRequest.data}
+          parent={parentRequest.data}
+          record={record}
+          parentRecord={parentRecord}
+          isNew={action === 'create'}
+        >
           {children}
         </RecordProviderV2>
       ) : (

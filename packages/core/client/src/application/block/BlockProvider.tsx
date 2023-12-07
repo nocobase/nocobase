@@ -8,7 +8,7 @@ export interface BlockContextProps {
   sourceId: string | number;
   filterByTk: string | number;
   record: RecordV2;
-  action?: string;
+  action?: 'create' | 'list' | 'get';
   params?: Record<string, any>;
   parentRecord?: RecordV2;
   type: string;

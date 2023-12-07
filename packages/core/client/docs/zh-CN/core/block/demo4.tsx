@@ -57,15 +57,14 @@ function useDemoFormProps(): DemoFormProps {
 }
 
 const useFormBlockDecoratorProps: DataBlockDecorator = () => {
-  const { current } = useRecordV2<{ filterByTk: number }>();
+  const record = useRecordV2();
   return {
-    type: 'collection-get',
-    filterByTk: current.filterByTk,
+    type: 'collection-record',
+    record,
   };
 };
 
 const collection = 'users';
-const action = 'get';
 
 const schema = {
   type: 'void',
@@ -76,46 +75,23 @@ const schema = {
   'x-use-component-props': 'useDemoFormProps',
   'x-decorator-props': {
     collection: collection,
-    action: action,
   },
 };
 
 const Demo = () => {
-  const [id, setId] = useState(1);
   return (
-    <RecordProviderV2 current={{ filterByTk: id }}>
-      <Select
-        defaultValue={id}
-        options={[
-          { key: 1, value: 1, label: 'Bamboo' },
-          { key: 2, value: 2, label: 'Mary' },
-        ]}
-        onChange={(v) => {
-          setId(v);
-        }}
-      ></Select>
+    <RecordProviderV2
+      current={{
+        id: 1,
+        username: 'Bamboo',
+        age: 18,
+      }}
+    >
       <SchemaComponent schema={schema}></SchemaComponent>
     </RecordProviderV2>
   );
 };
 
-const mocks = {
-  [`${collection}:${action}/1`]: {
-    id: 1,
-    username: 'Bamboo',
-    age: 18,
-  },
-  [`${collection}:${action}/2`]: {
-    id: 2,
-    username: 'Mary',
-    age: 25,
-  },
-};
-
-const Root = createApp(
-  Demo,
-  { components: { DemoForm }, scopes: { useDemoFormProps, useFormBlockDecoratorProps } },
-  mocks,
-);
+const Root = createApp(Demo, { components: { DemoForm }, scopes: { useDemoFormProps, useFormBlockDecoratorProps } });
 
 export default Root;

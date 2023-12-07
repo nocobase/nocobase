@@ -1,140 +1,76 @@
 import React, { FC } from 'react';
-import {
-  RecordV2,
-  RecordProviderV2,
-  SchemaComponent,
-  useBlockRequestV2,
-  useBlockV2,
-  withSchemaComponentProps,
-  useDesignable,
-} from '@nocobase/client';
+import { SchemaComponent, useBlockRequestV2, withSchemaComponentProps } from '@nocobase/client';
 import { createApp } from './createApp';
-import { Switch, Table, TableProps } from 'antd';
+import { Button, Form, Input, InputNumber } from 'antd';
+import { FormProps } from 'antd/lib';
 
-interface DemoTableRecordType {
-  name: string;
+interface DemoFormFieldType {
+  id: number;
+  username: string;
+  age: number;
 }
-type DemoTableProps = TableProps<DemoTableRecordType>;
-const DemoTable: FC<DemoTableProps> = withSchemaComponentProps((props) => {
-  const { dn } = useDesignable();
+type DemoFormProps = FormProps<DemoFormFieldType>;
+const DemoForm: FC<DemoFormProps> = withSchemaComponentProps((props) => {
   return (
-    <>
-      <Switch
-        defaultChecked={props.bordered}
-        checkedChildren="Bordered"
-        onChange={(v) => {
-          dn.deepMerge({
-            'x-decorator-props': {
-              bordered: v,
-            },
-          });
-        }}
-      ></Switch>
-      <Table {...props}></Table>
-    </>
+    <Form labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} style={{ maxWidth: 600 }} autoComplete="off" {...props}>
+      <Form.Item<DemoFormFieldType>
+        label="Username"
+        name="username"
+        rules={[{ required: true, message: 'Please input your username!' }]}
+      >
+        <Input />
+      </Form.Item>
+      <Form.Item<DemoFormFieldType>
+        label="Age"
+        name="age"
+        rules={[{ required: true, message: 'Please input your age!' }]}
+      >
+        <InputNumber />
+      </Form.Item>
+      <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
+        <Button type="primary" htmlType="submit">
+          Submit
+        </Button>
+      </Form.Item>
+    </Form>
   );
 });
 
-function useDemoTableProps(): DemoTableProps {
-  const { data, loading } = useBlockRequestV2<{ data: DemoTableRecordType[]; total: number }>();
-  const { rowKey, params, bordered } = useBlockV2<{ rowKey?: string; params?: Record<string, any> }>();
-  const { dn } = useDesignable();
+function useDemoFormProps(): DemoFormProps {
+  const { run } = useBlockRequestV2<DemoFormFieldType>();
   return {
-    columns: [
-      {
-        title: 'ID',
-        dataIndex: 'id',
-        key: 'id',
-      },
-      {
-        title: 'Name',
-        dataIndex: 'name',
-        key: 'name',
-      },
-      {
-        title: 'Address',
-        dataIndex: 'address',
-        key: 'address',
-      },
-    ],
-    loading,
-    dataSource: data?.data || [],
-    rowKey,
-    bordered,
-    pagination: {
-      pageSize: params.pageSize || 5,
-      current: params.page || 1,
-      total: data?.total,
-      onChange(page, pageSize) {
-        dn.deepMerge({
-          'x-decorator-props': {
-            params: {
-              pageSize,
-              page,
-            },
-          },
-        });
-      },
+    onFinish: (values) => {
+      run({ data: values });
     },
   };
 }
 
 const collection = 'users';
-const action = 'list';
-const associationA = 'a';
-const associationB = 'b';
-const association = `${associationA}.${associationB}`;
+const action = 'create';
 
 const schema = {
   type: 'void',
   name: 'hello',
   'x-decorator': 'DataBlockProviderV2',
-  'x-component': 'DemoTable',
-  'x-use-component-props': 'useDemoTableProps',
+  'x-component': 'DemoForm',
+  'x-use-component-props': 'useDemoFormProps',
   'x-decorator-props': {
-    action: action,
-    params: {
-      pageSize: 5,
-      page: 1,
-    },
-    rowKey: 'id',
-    dragSort: false,
-    resource: collection,
-    showIndex: true,
     collection: collection,
-    bordered: false,
-    association,
+    action: action,
   },
 };
 
 const Demo = () => {
-  const record = new RecordV2({ current: { sourceId: 1 } });
-  return (
-    <RecordProviderV2 record={record}>
-      <SchemaComponent schema={schema}></SchemaComponent>
-    </RecordProviderV2>
-  );
+  return <SchemaComponent schema={schema}></SchemaComponent>;
 };
 
 const mocks = {
-  [`${associationA}/1/${associationB}:${action}`]: function (config: any) {
-    console.log('请求结果');
-    const { page = 1, pageSize } = config.params;
-    const fixedData = [];
-    for (let i = 0; i < pageSize; i += 1) {
-      fixedData.push({
-        id: (page - 1) * pageSize + i + 1,
-        name: ['Light', 'Bamboo', 'Little'][i % 3],
-        address: `New York No. ${i + 1} Lake Park`,
-      });
-    }
-    return {
-      data: fixedData,
-      total: 200,
-    };
+  [`${collection}:${action}`]: (config) => {
+    console.log('请求结果', config.data);
+    return [200, { msg: 'ok' }];
   },
 };
 
-const Root = createApp(Demo, { components: { DemoTable }, scopes: { useDemoTableProps } }, mocks);
+const Root = createApp(Demo, { components: { DemoForm }, scopes: { useDemoFormProps } }, mocks);
 
 export default Root;

@@ -7,22 +7,36 @@ export interface RecordContextValue<CurrentType = {}, ParentType = {}> {
 
 export const RecordContextV2 = createContext<RecordContextValue<any, any>>({} as any);
 
-export interface RecordProviderProps {
+export interface RecordProviderProps<CurrentType = {}, ParentType = {}> {
   children?: ReactNode;
-  record?: RecordV2;
-  current?: RecordV2;
-  parent?: RecordV2;
+  current?: CurrentType;
+  record?: RecordV2<CurrentType, ParentType>;
+  parent?: ParentType;
+  parentRecord?: RecordV2<ParentType>;
   isNew?: boolean;
 }
 
-export const RecordProviderV2: FC<RecordProviderProps> = ({ current, parent, isNew, children }) => {
-  const record = useMemo(() => {
-    const parentVal = parent || current.parent;
-    const isNewVal = isNew || current.isNew;
-    return new RecordV2({ current, parent: parentVal, isNew: isNewVal });
-  }, [current, parent, isNew]);
+export const RecordProviderV2: FC<RecordProviderProps> = ({
+  record,
+  current,
+  parent,
+  isNew,
+  parentRecord,
+  children,
+}) => {
+  const parentRecordValue = useMemo(() => {
+    if (parentRecord) return parentRecord;
+    if (parent) return new RecordV2(parent);
+    return record?.parentRecord;
+  }, [parent, parentRecord, record?.parentRecord]);
 
-  return <RecordContextV2.Provider value={{ record }}>{children}</RecordContextV2.Provider>;
+  const currentRecordValue = useMemo(() => {
+    const isNewVal = isNew || record?.isNew;
+    const currentVal = current || record?.current;
+    return new RecordV2({ current: currentVal, parentRecord: parentRecordValue, isNew: isNewVal });
+  }, [parentRecordValue, record, isNew, current]);
+
+  return <RecordContextV2.Provider value={{ record: currentRecordValue }}>{children}</RecordContextV2.Provider>;
 };
 
 export const useRecordV2 = <CurrentType = {}, ParentType = {}>(showError = true): RecordV2<CurrentType, ParentType> => {

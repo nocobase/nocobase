@@ -6,7 +6,7 @@ import {
   useBlockRequestV2,
   useBlockV2,
   withSchemaComponentProps,
-  DataBlockDecorator,
+  useDesignable,
 } from '@nocobase/client';
 import { createApp } from './createApp';
 import { Switch, Table, TableProps } from 'antd';
@@ -16,7 +16,7 @@ interface DemoTableRecordType {
 }
 type DemoTableProps = TableProps<DemoTableRecordType>;
 const DemoTable: FC<DemoTableProps> = withSchemaComponentProps((props) => {
-  const { dn } = useBlockV2();
+  const { dn } = useDesignable();
   return (
     <>
       <Switch
@@ -37,8 +37,8 @@ const DemoTable: FC<DemoTableProps> = withSchemaComponentProps((props) => {
 
 function useDemoTableProps(): DemoTableProps {
   const { data, loading } = useBlockRequestV2<{ data: DemoTableRecordType[]; total: number }>();
-  const { props, dn } = useBlockV2<{ rowKey?: string; params?: Record<string, any>; bordered?: boolean }>();
-  const { rowKey, params, bordered } = props;
+  const { rowKey, params, bordered } = useBlockV2<{ rowKey?: string; params?: Record<string, any> }>();
+  const { dn } = useDesignable();
   return {
     columns: [
       {
@@ -81,49 +81,51 @@ function useDemoTableProps(): DemoTableProps {
 
 const collection = 'users';
 const action = 'list';
-
-const useTableDataBlockDecoratorProps: DataBlockDecorator = () => {
-  return {
-    type: 'collection-list',
-    params: {
-      address: 'New York',
-    },
-  };
-};
+const associationA = 'a';
+const associationB = 'b';
+const association = `${associationA}.${associationB}`;
 
 const schema = {
   type: 'void',
   name: 'hello',
   'x-decorator': 'DataBlockProviderV2',
-  'x-use-decorator-props': 'useTableDataBlockDecoratorProps',
   'x-component': 'DemoTable',
   'x-use-component-props': 'useDemoTableProps',
   'x-decorator-props': {
     action: action,
-    collection: collection,
     params: {
       pageSize: 5,
       page: 1,
     },
     rowKey: 'id',
+    dragSort: false,
+    resource: collection,
+    showIndex: true,
+    collection: collection,
     bordered: false,
+    association,
   },
 };
 
 const Demo = () => {
-  return <SchemaComponent schema={schema}></SchemaComponent>;
+  const record = new RecordV2({ current: { sourceId: 1 } });
+  return (
+    <RecordProviderV2 record={record}>
+      <SchemaComponent schema={schema}></SchemaComponent>
+    </RecordProviderV2>
+  );
 };
 
 const mocks = {
-  [`${collection}:${action}`]: function (config: any) {
+  [`${associationA}/1/${associationB}:${action}`]: function (config: any) {
     console.log('请求结果');
-    const { page = 1, pageSize, address } = config.params;
+    const { page = 1, pageSize } = config.params;
     const fixedData = [];
     for (let i = 0; i < pageSize; i += 1) {
       fixedData.push({
         id: (page - 1) * pageSize + i + 1,
         name: ['Light', 'Bamboo', 'Little'][i % 3],
-        address: `${address} No. ${i + 1} Lake Park`,
+        address: `New York No. ${i + 1} Lake Park`,
       });
     }
     return {
@@ -133,10 +135,6 @@ const mocks = {
   },
 };
 
-const Root = createApp(
-  Demo,
-  { components: { DemoTable }, scopes: { useDemoTableProps, useTableDataBlockDecoratorProps } },
-  mocks,
-);
+const Root = createApp(Demo, { components: { DemoTable }, scopes: { useDemoTableProps } }, mocks);
 
 export default Root;

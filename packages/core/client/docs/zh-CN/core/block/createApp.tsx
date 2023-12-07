@@ -17,6 +17,10 @@ export function createApp(Demo: ComponentType<any>, options: ApplicationOptions,
       const res = typeof data === 'function' ? data(config) : data;
       return [200, res];
     });
+    mock.onPost(url).reply(async (config) => {
+      const res = typeof data === 'function' ? data(config) : data;
+      return [200, res];
+    });
   });
 
   const Provider = () => {
