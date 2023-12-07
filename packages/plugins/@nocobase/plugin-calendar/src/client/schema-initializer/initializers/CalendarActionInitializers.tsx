@@ -5,7 +5,7 @@ import { generateNTemplate } from '../../../locale';
 export const CalendarActionInitializers = new SchemaInitializer({
   title: generateNTemplate('Configure actions'),
   icon: 'SettingOutlined',
-  name: 'configureActions',
+  name: 'CalendarActionInitializers',
   style: { marginLeft: 8 },
   items: [
     {
