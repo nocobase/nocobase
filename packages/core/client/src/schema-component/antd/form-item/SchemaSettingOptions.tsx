@@ -651,7 +651,7 @@ export const EditTitleField = () => {
     });
     dn.refresh();
   };
-  return options.length > 0 ? (
+  return options.length > 0 && fieldSchema['x-component'] === 'CollectionField' ? (
     <SchemaSettingsSelectItem
       key="title-field"
       title={t('Title field')}
