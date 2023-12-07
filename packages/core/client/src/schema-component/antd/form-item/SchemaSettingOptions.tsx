@@ -613,7 +613,7 @@ export const EditTitleField = () => {
                 type: 'object',
                 properties: {
                   name: {
-                    title: t('Custom field name'),
+                    title: t('Custom Field Name'),
                     required: true,
                     default: handlLabel(label),
                     'x-decorator': 'FormItem',

@@ -98,7 +98,7 @@ const filterOption = (input, option) => (option?.label ?? '').toLowerCase().incl
 
 const replacePlaceholders = (inputStr, values) => {
   return inputStr.replace(/{{(.*?)}}/g, function (match, placeholder) {
-    return values?.hasOwnProperty.call(placeholder) ? values[placeholder] : match;
+    return Object.prototype.hasOwnProperty.call(values, placeholder) ? values[placeholder] : match;
   });
 };
 

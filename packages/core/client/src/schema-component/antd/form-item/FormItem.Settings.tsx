@@ -1,7 +1,7 @@
 import { ArrayCollapse, FormLayout, FormItem } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { Select } from 'antd';
+import { Select, Typography } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +31,7 @@ import { useColorFields } from '../table-v2/Table.Column.Designer';
 import { FormDialog } from '..';
 import { SchemaComponent } from '../../..';
 import { Variable } from '@nocobase/client';
+const { Text } = Typography;
 export const CUSTOM = 'CUSTOM';
 export const formItemSettings = new SchemaSettings({
   name: 'FormItemSettings',
@@ -707,9 +708,11 @@ export const formItemSettings = new SchemaSettings({
       type: 'select',
       useVisible() {
         const fieldMode = useFieldMode();
-        const options = useOptions();
         const collectionField = useCollectionField();
-        return fieldMode !== 'SubTable' && collectionField.uiSchema['x-component'] === 'Select';
+        const isSelect =
+          collectionField.uiSchema['x-component'] === 'AssociationField' ||
+          collectionField.uiSchema['x-component'] === 'Select';
+        return fieldMode !== 'SubTable' && isSelect;
       },
       useComponentProps() {
         const { t } = useTranslation();
@@ -756,7 +759,7 @@ export const formItemSettings = new SchemaSettings({
                       type: 'object',
                       properties: {
                         name: {
-                          title: t('Custom field name'),
+                          title: t('Custom Field Name'),
                           required: true,
                           default: handlLabel(label),
                           'x-decorator': 'FormItem',
@@ -796,7 +799,7 @@ export const formItemSettings = new SchemaSettings({
           dn.refresh();
         };
         return {
-          title: t('Title field1'),
+          title: t('Title field'),
           options: [
             ...options,
             {
