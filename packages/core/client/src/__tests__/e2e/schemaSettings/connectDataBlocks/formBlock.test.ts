@@ -26,6 +26,9 @@ test.describe('connect data blocks: form block', () => {
     // 点击筛选按钮
     await page.getByLabel('action-Action-Filter records-submit-general-filter-form').click();
 
+    // 等待 Table 数据刷新
+    await page.waitForTimeout(1000);
+
     // 筛选之后，下面的 Table 只有一行数据（其中有一行是空白的，所以最终的 count 是 2）
     await expect(page.getByLabel('block-item-CardItem-general-table').getByRole('row')).toHaveCount(2);
     await expect(

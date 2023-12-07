@@ -23,7 +23,7 @@ test.describe('connect data blocks: table block', () => {
 
   test('connecting via Relational Fields', async ({ page, mockPage, mockRecords }) => {
     const nocoPage = await mockPage(twoTableWithRelationalFields).waitForInit();
-    const records = await mockRecords('users', 3);
+    await mockRecords('users', 3);
     await nocoPage.goto();
 
     // 将左边的 Table 连接到右边的 Table
