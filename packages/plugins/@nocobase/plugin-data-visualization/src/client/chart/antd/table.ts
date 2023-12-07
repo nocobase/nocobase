@@ -15,9 +15,17 @@ export class Table extends AntdChart {
           key: item,
         }))
       : [];
+    const rowKey = columns[0]?.dataIndex;
     const dataSource = data.map((item: any) => {
       Object.keys(item).map((key: string) => {
         const props = fieldProps[key];
+        if (props?.interface === 'percent') {
+          const value = Math.round(parseFloat(item[key]) * 100).toFixed(2);
+          item[key] = `${value}%`;
+        }
+        if (typeof item[key] === 'boolean') {
+          item[key] = item[key].toString();
+        }
         if (props?.transformer) {
           item[key] = props.transformer(item[key]);
         }
@@ -28,14 +36,18 @@ export class Table extends AntdChart {
     return {
       bordered: true,
       size: 'middle',
-      pagination:
-        dataSource.length < pageSize
-          ? false
-          : {
-              pageSize,
-            },
+      // pagination:
+      //   dataSource.length < pageSize
+      //     ? false
+      //     : {
+      //         pageSize,
+      //       },
       dataSource,
       columns,
+      scroll: {
+        x: 'max-content',
+      },
+      rowKey,
       ...general,
       ...advanced,
     };

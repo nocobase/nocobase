@@ -33,7 +33,6 @@ export const useLanguageSettings = () => {
               },
             });
             api.auth.setLocale(lang);
-            await i18n.changeLanguage(lang);
             window.location.reload();
           }}
         />

@@ -1,7 +1,0 @@
-export default {
-  'Parallel branch': '分岐',
-  'All succeeded': 'すべて成功',
-  'Any succeeded': 'いずれかが成功',
-  'Continue after all branches succeeded': 'すべての分岐が成功した後に続行',
-  'Continue after any branch succeeded': 'いずれかの分岐が成功した後に続行',
-};

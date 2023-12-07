@@ -1,7 +1,0 @@
-export default {
-  'Parallel branch': 'Paralel dal',
-  'All succeeded': 'Hepsi başarılı',
-  'Any succeeded': 'Herhangi biri başarılı',
-  'Continue after all branches succeeded': 'Tüm dallar başarılı olduktan sonra devam et',
-  'Continue after any branch succeeded': 'Herhangi bir dal başarılı olduktan sonra devam et',
-};
