@@ -24,7 +24,7 @@ test.describe('enable drag and drop sorting', () => {
     // 显示出来 email 和 ID
     await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'email' }).click();
-    await page.getByRole('menuitem', { name: 'ID' }).click();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await page.mouse.move(300, 0);
 
     // 默认的排序

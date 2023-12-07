@@ -44,8 +44,8 @@ test.describe('Grid Card', () => {
       .first();
 
     await formItemInitializer.hover();
-    await page.getByRole('menuitem', { name: 'ID' }).click();
-    await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).toBeChecked();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).toBeChecked();
 
     // add association fields
     await page.mouse.wheel(0, 300);
@@ -63,8 +63,8 @@ test.describe('Grid Card', () => {
 
     // delete fields
     await formItemInitializer.hover();
-    await page.getByRole('menuitem', { name: 'ID' }).click();
-    await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).not.toBeChecked();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).not.toBeChecked();
 
     await page.mouse.wheel(0, 300);
     await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
@@ -83,7 +83,7 @@ test.describe('Grid Card', () => {
 
     // add text
     await formItemInitializer.hover();
-    await page.getByRole('menuitem', { name: 'ID' }).hover();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).hover();
     await page.mouse.wheel(0, 300);
     await page.getByRole('menuitem', { name: 'Add text' }).click();
 

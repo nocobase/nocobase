@@ -182,7 +182,7 @@ test.describe('LinkageRules', () => {
     // 添加一个条件：ID 等于 1
     await page.getByText('Add condition', { exact: true }).click();
     await page.getByTestId('select-filter-field').click();
-    await page.getByRole('menuitemcheckbox', { name: 'ID' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
     await page.getByRole('spinbutton').click();
     await page.getByRole('spinbutton').fill('1');
 
@@ -206,7 +206,7 @@ test.describe('LinkageRules', () => {
     // 添加一个条件：ID 等于 1
     await page.getByRole('tabpanel').getByText('Add condition', { exact: true }).click();
     await page.getByRole('button', { name: 'Search Select field' }).getByLabel('Search').click();
-    await page.getByRole('menuitemcheckbox', { name: 'ID' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
     await page.getByRole('spinbutton').click();
     await page.getByRole('spinbutton').fill('1');
 

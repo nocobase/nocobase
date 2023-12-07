@@ -14,14 +14,14 @@ test.describe('set default sorting rules', () => {
     // 设置一个按 ID 降序的规则
     await page.getByRole('button', { name: 'plus Add sort field' }).click();
     await page.getByTestId('select-single').click();
-    await page.getByRole('option', { name: 'ID' }).click();
+    await page.getByRole('option', { name: 'ID', exact: true }).click();
     await page.getByText('DESC', { exact: true }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // 显示出来 email 和 ID
     await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'email' }).click();
-    await page.getByRole('menuitem', { name: 'ID' }).click();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await page.mouse.move(300, 0);
 
     // 规则生效后的顺序：3，2，1

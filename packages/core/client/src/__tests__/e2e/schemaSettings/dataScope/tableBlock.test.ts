@@ -12,7 +12,7 @@ test.describe('constants', () => {
     // 添加一个 ID 为 1 的条件
     await page.getByText('Add condition', { exact: true }).click();
     await page.getByTestId('select-filter-field').click();
-    await page.getByRole('menuitemcheckbox', { name: 'ID' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
     await page.getByRole('spinbutton').click();
     await page.getByRole('spinbutton').fill('1');
     await page.getByRole('button', { name: 'OK', exact: true }).click();

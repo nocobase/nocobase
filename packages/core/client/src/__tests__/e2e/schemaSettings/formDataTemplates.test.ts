@@ -24,13 +24,13 @@ test.describe('formDataTemplates', () => {
     // 添加一个数据范围，条件是：ID = 2
     await page.getByText('Add condition', { exact: true }).click();
     await page.getByTestId('select-filter-field').getByLabel('Search').click();
-    await page.getByRole('menuitemcheckbox', { name: 'ID' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
     await page.getByLabel('Form data templates').getByRole('spinbutton').click();
     await page.getByLabel('Form data templates').getByRole('spinbutton').fill('2');
 
     // 选择 ID 作为 title field
     await page.getByTestId('select-single').click();
-    await page.getByRole('option', { name: 'ID' }).click();
+    await page.getByRole('option', { name: 'ID', exact: true }).click();
 
     // 仅选中一个字段
     await page.getByRole('button', { name: 'singleLineText (Duplicate)' }).click();

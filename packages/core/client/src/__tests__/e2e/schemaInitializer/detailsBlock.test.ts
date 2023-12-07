@@ -8,8 +8,8 @@ test.describe('Details block', () => {
 
     // add fields
     await formItemInitializer.hover();
-    await page.getByRole('menuitem', { name: 'ID' }).click();
-    await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).toBeChecked();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).toBeChecked();
 
     // add association fields
     await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
@@ -26,8 +26,8 @@ test.describe('Details block', () => {
 
     // delete fields
     await formItemInitializer.hover();
-    await page.getByRole('menuitem', { name: 'ID' }).click();
-    await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).not.toBeChecked();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).not.toBeChecked();
 
     await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();

@@ -33,11 +33,11 @@ test.describe('Table', () => {
 
     // collection fields -------------------------------------------------------------
     await configureColumnButton.hover();
-    await page.getByRole('menuitem', { name: 'ID' }).click();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).first().click();
     await page.getByRole('menuitem', { name: 'One to one (has one)' }).first().click();
     await page.getByRole('menuitem', { name: 'Many to one' }).first().click();
-    await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).toBeChecked();
     await expect(page.getByRole('menuitem', { name: 'One to one (belongs to)' }).getByRole('switch')).toBeChecked();
     await expect(page.getByRole('menuitem', { name: 'One to one (has one)' }).getByRole('switch')).toBeChecked();
     await expect(page.getByRole('menuitem', { name: 'Many to one' }).getByRole('switch')).toBeChecked();
@@ -48,11 +48,11 @@ test.describe('Table', () => {
 
     // 点击开关，删除创建的字段
     await configureColumnButton.hover();
-    await page.getByRole('menuitem', { name: 'ID' }).click();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).first().click();
     await page.getByRole('menuitem', { name: 'One to one (has one)' }).first().click();
     await page.getByRole('menuitem', { name: 'Many to one' }).first().click();
-    await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).not.toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).not.toBeChecked();
     await expect(page.getByRole('menuitem', { name: 'One to one (belongs to)' }).getByRole('switch')).not.toBeChecked();
     await expect(page.getByRole('menuitem', { name: 'One to one (has one)' }).getByRole('switch')).not.toBeChecked();
     await expect(page.getByRole('menuitem', { name: 'Many to one' }).getByRole('switch')).not.toBeChecked();

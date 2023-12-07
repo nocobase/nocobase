@@ -8,16 +8,16 @@ test.describe('Filter Form Block', () => {
 
     // add fields
     await formItemInitializer.hover();
-    await page.getByRole('menuitem', { name: 'ID' }).click();
-    await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).toBeChecked();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).toBeChecked();
 
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CollectionField-general-filter-form-general.id-ID')).toBeVisible();
 
     // delete fields
     await formItemInitializer.hover();
-    await page.getByRole('menuitem', { name: 'ID' }).click();
-    await expect(page.getByRole('menuitem', { name: 'ID' }).getByRole('switch')).not.toBeChecked();
+    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+    await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).not.toBeChecked();
 
     await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CollectionField-general-filter-form-general.id-ID')).not.toBeVisible();
