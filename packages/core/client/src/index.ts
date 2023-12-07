@@ -46,3 +46,4 @@ export * from './schema-templates';
 export * from './style';
 export * from './system-settings';
 export * from './user';
+export * from './variables';

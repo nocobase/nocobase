@@ -55,6 +55,9 @@ const useSourceFieldsOptions = () => {
           }),
       };
     });
+    if (!collection) {
+      return;
+    }
     const children = (collection.fields as FieldOptions[])
       .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
       ?.map((v) => {

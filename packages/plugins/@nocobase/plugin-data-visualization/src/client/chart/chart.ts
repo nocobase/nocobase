@@ -14,6 +14,7 @@ export type RenderProps = {
     [field: string]: {
       label: string;
       transformer: Transformer;
+      interface: string;
     };
   };
 };

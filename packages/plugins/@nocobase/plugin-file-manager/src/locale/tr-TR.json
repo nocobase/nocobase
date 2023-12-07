@@ -1,0 +1,17 @@
+{
+  "File manager": "Dosya depoları",
+  "Attachment": "Dosya eki",
+  "MIME type": "Kabul et",
+  "Allow uploading multiple files": "Birden çok dosya yüklemeye izin ver",
+  "Storage name": "Depo adı",
+  "Storage type": "Depolama türü",
+  "Default storage": "Varsayılan depo",
+  "Storage base URL": "Depolama temel URLsi",
+  "Destination": "Hedef",
+  "Use the built-in static file server": "Yerleşik statik dosya sunucusunu kullanın",
+  "Local storage": "Lokal depolama",
+  "Aliyun OSS": "Aliyun OSS",
+  "Amazon S3": "Amazon S3",
+  "Tencent COS": "Tencent COS",
+  "Filename": "Dosya adı"
+}

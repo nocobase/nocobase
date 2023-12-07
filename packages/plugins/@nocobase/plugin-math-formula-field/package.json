@@ -4,7 +4,7 @@
   "displayName.zh-CN": "数学公式字段",
   "description": "A powerful mathematical formula field plugin designed to provide flexible mathematical and formula calculation capabilities for databases or data management systems. It seamlessly integrates with various database systems such as MySQL, PostgreSQL, and offers an intuitive user interface for defining and executing mathematical formula fields.",
   "description.zh-CN": "一个功能强大的数学公式字段插件，旨在为数据库或数据管理系统提供灵活的数学计算和公式计算功能。它可以与各种数据库系统（如MySQL、PostgreSQL）无缝集成，并提供直观的用户界面来定义和执行数学公式字段。",
-  "version": "0.17.0-alpha.1",
+  "version": "0.17.0-alpha.3",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {

@@ -1,13 +1,13 @@
 {
   "name": "@nocobase/database",
-  "version": "0.17.0-alpha.1",
+  "version": "0.17.0-alpha.3",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
   "dependencies": {
-    "@nocobase/logger": "0.17.0-alpha.1",
-    "@nocobase/utils": "0.17.0-alpha.1",
+    "@nocobase/logger": "0.17.0-alpha.3",
+    "@nocobase/utils": "0.17.0-alpha.3",
     "async-mutex": "^0.3.2",
     "cron-parser": "4.4.0",
     "dayjs": "^1.11.8",
@@ -22,7 +22,8 @@
     "qs": "^6.11.2",
     "semver": "^7.3.7",
     "sequelize": "^6.26.0",
-    "umzug": "^3.1.1"
+    "umzug": "^3.1.1",
+    "chalk": "^4.1.1"
   },
   "devDependencies": {
     "@types/glob": "^7.2.0",
