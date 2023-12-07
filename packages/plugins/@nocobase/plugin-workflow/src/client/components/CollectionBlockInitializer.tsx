@@ -10,7 +10,8 @@ import {
   useSchemaInitializerItem,
   useSchemaTemplateManager,
 } from '@nocobase/client';
-import { traverseSchema } from '../nodes/manual/utils';
+
+import { traverseSchema } from '../utils';
 
 function InnerCollectionBlockInitializer({ collection, dataSource, ...props }) {
   const { insert } = useSchemaInitializer();
