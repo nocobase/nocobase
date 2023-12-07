@@ -4,8 +4,7 @@ import {
   RecordProviderV2,
   SchemaComponent,
   useBlockRequestV2,
-  useBlockDataV2,
-  useDesignable,
+  useBlockV2,
   withSchemaComponentProps,
 } from '@nocobase/client';
 import { createApp } from './createApp';
@@ -16,7 +15,7 @@ interface DemoTableRecordType {
 }
 type DemoTableProps = TableProps<DemoTableRecordType>;
 const DemoTable: FC<DemoTableProps> = withSchemaComponentProps((props) => {
-  const { dn } = useDesignable();
+  const { dn } = useBlockV2();
   return (
     <>
       <Switch
@@ -37,8 +36,8 @@ const DemoTable: FC<DemoTableProps> = withSchemaComponentProps((props) => {
 
 function useDemoTableProps(): DemoTableProps {
   const { data, loading } = useBlockRequestV2<{ data: DemoTableRecordType[]; total: number }>();
-  const { rowKey, params, bordered } = useBlockDataV2<{ rowKey?: string; params?: Record<string, any> }>();
-  const { dn } = useDesignable();
+  const { props, dn } = useBlockV2<{ rowKey?: string; params?: Record<string, any>; bordered?: boolean }>();
+  const { rowKey, params, bordered } = props;
   return {
     columns: [
       {
@@ -90,26 +89,18 @@ const schema = {
   'x-use-component-props': 'useDemoTableProps',
   'x-decorator-props': {
     action: action,
+    collection: collection,
     params: {
       pageSize: 5,
       page: 1,
     },
     rowKey: 'id',
-    dragSort: false,
-    resource: collection,
-    showIndex: true,
-    collection: collection,
     bordered: false,
   },
 };
 
 const Demo = () => {
-  const record = new RecordV2({ current: {} });
-  return (
-    <RecordProviderV2 record={record}>
-      <SchemaComponent schema={schema}></SchemaComponent>
-    </RecordProviderV2>
-  );
+  return <SchemaComponent schema={schema}></SchemaComponent>;
 };
 
 const mocks = {

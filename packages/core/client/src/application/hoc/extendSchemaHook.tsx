@@ -1,4 +1,5 @@
-import React, { ComponentType, useEffect, useMemo } from 'react';
+import React, { ComponentType, useMemo } from 'react';
+import { merge } from 'lodash';
 import { useDesignable, useSchemaComponentContext } from '../../schema-component';
 
 const useDefaultSchemaProps = () => undefined;
@@ -21,13 +22,7 @@ export function extendSchemaHook(schemaProperty: string) {
       }, [scope, useComponentPropsStr]);
       const schemaProps = useSchemaProps();
 
-      useEffect(() => {
-        if (!schemaProps) {
-          console.error(`${useComponentPropsStr} is not registered`);
-        }
-      }, [schemaProps, useComponentPropsStr]);
-
-      return <Component {...schemaProps} {...props} />;
+      return <Component {...merge(schemaProps, props)} />;
     };
 
     ComponentWithProps.displayName = `${Component.displayName || Component.name}(${schemaProperty})`;

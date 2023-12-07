@@ -10,14 +10,14 @@
 <GET|POST>   /api/<collection>/<sourceId>/<association>:<action>/<filterByTk>
 ```
 
-- `/api/<collection>:<action>`
+- collection-get
 
 <code src="./demo1.tsx"></code>
 
 - `/api/<collection>:<action>/<filterByTk>`
-
+<!--
 <code src="./demo2.tsx"></code>
 
 - `/api/<collection>/<sourceId>/<association>:<action>`
 
-<code src="./demo3.tsx"></code>
+<code src="./demo3.tsx"></code> -->

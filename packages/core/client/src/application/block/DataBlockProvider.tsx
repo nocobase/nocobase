@@ -1,46 +1,93 @@
-import { observer } from '@formily/react';
 import React, { FC, ReactNode, useMemo } from 'react';
-import { useRecordV2 } from './RecordProvider';
-import { BlockProviderV2 } from './BlockProvider';
+import { BlockProviderV2, BlockContextProps } from './BlockProvider';
 import { CollectionProviderV2 } from './CollectionProvider';
 import { AssociationProviderV2 } from './AssociationProvider';
 import { BlockRequestProviderV2 } from './BlockUseRequestProvider';
-import { merge } from 'lodash';
+import { useDesignable } from '../../schema-component';
+import { withSchemaDecoratorProps } from '../hoc';
 
-interface DataBlockProviderProps {
-  collection: string;
-  action: string;
-  params?: Record<string, any>;
-  sourceId?: string;
-  association?: string;
-  useParams?: string;
-  useSourceId?: string;
-  children?: ReactNode;
-  [index: string]: any;
+interface CollectionCreateDataBlockProps extends Pick<BlockContextProps, 'collection'> {
+  action: 'create';
+  type: 'collection-create';
 }
 
-export const DataBlockProviderV2: FC<DataBlockProviderProps> = observer((props) => {
-  const { collection, association, action, params, children } = props;
-  const record = useRecordV2<{ sourceId?: string; filterByTk?: string; params?: Record<string, any> }>();
-  const mergedParams = useMemo(() => {
-    return merge(params, record.current.params);
-  }, [params, record]);
-  return (
-    <BlockProviderV2 {...props}>
-      <CollectionProviderV2 name={collection}>
-        <AssociationProviderV2 name={association}>
-          <BlockRequestProviderV2
-            collection={collection}
-            association={association}
-            action={action}
-            sourceId={record.current.sourceId}
-            filterByTk={record.current.filterByTk}
-            params={mergedParams}
-          >
-            {children}
-          </BlockRequestProviderV2>
-        </AssociationProviderV2>
-      </CollectionProviderV2>
-    </BlockProviderV2>
-  );
-});
+interface CollectionGetDataBlockProps extends Pick<BlockContextProps, 'collection' | 'filterByTk' | 'params'> {
+  action: 'get';
+  type: 'collection-get';
+}
+
+interface CollectionListDataBlockProps extends Pick<BlockContextProps, 'collection' | 'params'> {
+  action: 'list';
+  type: 'collection-list';
+}
+
+type CollectionRecordDataBlockProps = Pick<BlockContextProps, 'collection' | 'record'> & { type: 'collection-record' };
+
+interface AssociationCreateDataBlockProps extends Pick<BlockContextProps, 'association' | 'sourceId' | 'parentRecord'> {
+  action: 'create';
+  type: 'association-create';
+}
+
+interface AssociationGetDataBlockProps
+  extends Pick<BlockContextProps, 'association' | 'sourceId' | 'parentRecord' | 'filterByTk' | 'params'> {
+  action: 'get';
+  type: 'association-get';
+}
+
+interface AssociationListDataBlockProps
+  extends Pick<BlockContextProps, 'association' | 'sourceId' | 'parentRecord' | 'params'> {
+  action: 'list';
+  type: 'association-list';
+}
+
+type AssociationRecordDataBlockProps = Pick<BlockContextProps, 'association' | 'record' | 'parentRecord'> & {
+  type: 'association-record';
+};
+
+export type DataBlockProviderProps =
+  | CollectionCreateDataBlockProps
+  | CollectionGetDataBlockProps
+  | CollectionListDataBlockProps
+  | CollectionRecordDataBlockProps
+  | AssociationCreateDataBlockProps
+  | AssociationGetDataBlockProps
+  | AssociationListDataBlockProps
+  | AssociationRecordDataBlockProps;
+
+export type DataBlockDecorator = () =>
+  | Omit<CollectionCreateDataBlockProps, 'collection' | 'action'>
+  | Omit<CollectionGetDataBlockProps, 'collection' | 'action'>
+  | Omit<CollectionListDataBlockProps, 'collection' | 'action'>
+  | Omit<CollectionRecordDataBlockProps, 'collection' | 'action'>
+  | Omit<AssociationCreateDataBlockProps, 'association' | 'action'>
+  | Omit<AssociationGetDataBlockProps, 'association' | 'action'>
+  | Omit<AssociationListDataBlockProps, 'association' | 'action'>
+  | Omit<AssociationRecordDataBlockProps, 'association' | 'action'>;
+
+export const DataBlockProviderV2: FC<DataBlockProviderProps & { children?: ReactNode }> = withSchemaDecoratorProps(
+  (props) => {
+    const { collection, association } = props as Partial<BlockContextProps>;
+    const AssociationOrCollection = useMemo(() => {
+      if (association) {
+        return {
+          Component: AssociationProviderV2,
+          name: association,
+        };
+      }
+      return {
+        Component: CollectionProviderV2,
+        name: collection,
+      };
+    }, [collection, association]);
+
+    const { dn } = useDesignable();
+
+    return (
+      <BlockProviderV2 dn={dn} props={props as BlockContextProps}>
+        <AssociationOrCollection.Component name={AssociationOrCollection.name}>
+          <BlockRequestProviderV2>{props.children}</BlockRequestProviderV2>
+        </AssociationOrCollection.Component>
+      </BlockProviderV2>
+    );
+  },
+);

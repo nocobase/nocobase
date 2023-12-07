@@ -1,14 +1,9 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 import { CollectionOptions, useCollectionManager } from '../../collection-manager';
 
-interface CollectionContextValue {
-  name: string;
-  collection?: CollectionOptions;
-}
+export const CollectionContextV2 = createContext<CollectionOptions>({} as any);
 
-export const CollectionContextV2 = createContext<CollectionContextValue>({} as any);
-
-export interface CollectionProviderProps extends CollectionContextValue {
+export interface CollectionProviderProps extends CollectionOptions {
   children?: ReactNode;
 }
 
@@ -18,16 +13,12 @@ export const CollectionProviderV2: FC<CollectionProviderProps> = ({ children, na
     if (collection) return collection;
     return get(name);
   }, [collection, get, name]);
-  return (
-    <CollectionContextV2.Provider value={{ name, collection: collectionValue }}>
-      {children}
-    </CollectionContextV2.Provider>
-  );
+  return <CollectionContextV2.Provider value={collectionValue}>{children}</CollectionContextV2.Provider>;
 };
 
-export const useCollectionV2 = () => {
+export const useCollectionV2 = (showError = true) => {
   const context = useContext(CollectionContextV2);
-  if (!context) {
+  if (showError && !context) {
     throw new Error('useCollection() must be used within a CollectionProvider');
   }
 

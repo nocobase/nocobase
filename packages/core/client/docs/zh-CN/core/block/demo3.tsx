@@ -4,7 +4,7 @@ import {
   RecordProviderV2,
   SchemaComponent,
   useBlockRequestV2,
-  useBlockDataV2,
+  useBlockV2,
   withSchemaComponentProps,
   useDesignable,
 } from '@nocobase/client';
@@ -37,7 +37,7 @@ const DemoTable: FC<DemoTableProps> = withSchemaComponentProps((props) => {
 
 function useDemoTableProps(): DemoTableProps {
   const { data, loading } = useBlockRequestV2<{ data: DemoTableRecordType[]; total: number }>();
-  const { rowKey, params, bordered } = useBlockDataV2<{ rowKey?: string; params?: Record<string, any> }>();
+  const { rowKey, params, bordered } = useBlockV2<{ rowKey?: string; params?: Record<string, any> }>();
   const { dn } = useDesignable();
   return {
     columns: [
