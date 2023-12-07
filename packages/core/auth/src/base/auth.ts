@@ -18,6 +18,14 @@ export class BaseAuth extends Auth {
     const { userCollection } = config;
     super(config);
     this.userCollection = userCollection;
+    this.ctx.db.on('users.afterSave', async (user: Model) => {
+      const cache = this.ctx.cache as Cache;
+      await cache.set(this.getCacheKey(user.id), user);
+    });
+    this.ctx.db.on('users.afterDestory', async (user: Model) => {
+      const cache = this.ctx.cache as Cache;
+      await cache.del(this.getCacheKey(user.id));
+    });
   }
 
   get userRepository() {
@@ -57,15 +65,12 @@ export class BaseAuth extends Auth {
       }
 
       const cache = this.ctx.cache as Cache;
-      return await cache.wrap(
-        this.getCacheKey(userId),
-        () =>
-          this.userRepository.findOne({
-            filter: {
-              id: userId,
-            },
-          }),
-        120 * 1000,
+      return await cache.wrap(this.getCacheKey(userId), () =>
+        this.userRepository.findOne({
+          filter: {
+            id: userId,
+          },
+        }),
       );
     } catch (err) {
       this.ctx.logger.error(err);

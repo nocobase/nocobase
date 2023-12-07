@@ -75,19 +75,19 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     await next();
   });
 
-  app.use(i18n, { tag: 'i18n', after: 'cors' });
+  app.use(prePerfHooksWrap(i18n, { name: 'i18n' }), { tag: 'i18n', after: 'cors' });
 
   if (options.dataWrapping !== false) {
-    app.use(dataWrapping(), { tag: 'dataWrapping', after: 'i18n' });
+    app.use(postPerfHooksWrap(dataWrapping(), { name: 'dataWrapping' }), { tag: 'dataWrapping', after: 'i18n' });
   }
 
-  app.resourcer.use(parseVariables, {
+  app.resourcer.use(prePerfHooksWrap(parseVariables, { name: 'parseVariables' }), {
     tag: 'parseVariables',
     after: 'acl',
   });
-  app.resourcer.use(dateTemplate, { tag: 'dateTemplate', after: 'acl' });
+  app.resourcer.use(postPerfHooksWrap(dateTemplate, { name: 'dataTemplate' }), { tag: 'dateTemplate', after: 'acl' });
 
-  app.use(db2resource, { tag: 'db2resource', after: 'dataWrapping' });
+  app.use(prePerfHooksWrap(db2resource, { name: 'db2resource' }), { tag: 'db2resource', after: 'dataWrapping' });
   app.use(app.resourcer.restApiMiddleware(), { tag: 'restApi', after: 'db2resource' });
 }
 

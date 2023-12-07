@@ -13,8 +13,14 @@ export class TokenBlacklistService implements ITokenBlacklistService {
   constructor(protected plugin: AuthPlugin) {
     this.repo = plugin.db.getRepository('tokenBlacklist');
 
+    // Try to create a bloom filter and cache blocked tokens in it
     plugin.app.on('beforeStart', async () => {
-      this.bloomFilter = await plugin.app.cacheManager.createBloomFilter();
+      try {
+        this.bloomFilter = await plugin.app.cacheManager.createBloomFilter();
+      } catch (error) {
+        // TODO (xile): log error
+        return;
+      }
       // https://redis.io/docs/data-types/probabilistic/bloom-filter/#reserving-bloom-filters
       // 0.1% error rate requires 14.4 bits per item
       // 14.4*1000000/8/1024/1024 = 1.72MB
@@ -31,7 +37,10 @@ export class TokenBlacklistService implements ITokenBlacklistService {
 
   async has(token: string) {
     if (this.bloomFilter) {
-      return await this.bloomFilter.exists(this.cacheKey, token);
+      const exists = await this.bloomFilter.exists(this.cacheKey, token);
+      if (!exists) {
+        return false;
+      }
     }
     return !!(await this.repo.findOne({
       filter: {

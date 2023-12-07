@@ -13,6 +13,7 @@ import { setCurrentRole } from './middlewares/setCurrentRole';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
+import { Cache } from '@nocobase/cache';
 
 export interface AssociationFieldAction {
   associationActions: string[];
@@ -345,6 +346,15 @@ export class PluginACL extends Plugin {
           });
         }
       });
+    });
+
+    this.app.db.on('rolesUsers.afterSave', async (model) => {
+      const cache = this.app.cache as Cache;
+      await cache.del(`roles:${model.get('userId')}`);
+    });
+    this.app.db.on('rolesUsers.afterDestroy', async (model) => {
+      const cache = this.app.cache as Cache;
+      await cache.del(`roles:${model.get('userId')}`);
     });
 
     const writeRolesToACL = async (app, options) => {

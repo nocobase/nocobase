@@ -16,7 +16,7 @@ export async function setCurrentRole(ctx: Context, next) {
 
   const cache = ctx.cache as Cache;
   const repository = ctx.db.getRepository('users.roles', ctx.state.currentUser.id) as unknown as Repository;
-  const roles = (await cache.wrap(`roles:${ctx.state.currentUser.id}`, () => repository.find(), 120 * 1000)) as Model[];
+  const roles = (await cache.wrap(`roles:${ctx.state.currentUser.id}`, () => repository.find())) as Model[];
   ctx.state.currentUser.setDataValue('roles', roles);
 
   // 1. If the X-Role is set, use the specified role
