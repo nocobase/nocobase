@@ -4,6 +4,7 @@ import { FieldsSelect } from '../components/FieldsSelect';
 import { NAMESPACE, lang } from '../locale';
 import { appends, collection, filter } from '../schemas/collection';
 import { getCollectionFieldOptions } from '../variable';
+import { Trigger } from '.';
 
 const COLLECTION_TRIGGER_MODE = {
   CREATED: 1,
@@ -19,11 +20,11 @@ const collectionModeOptions = [
   { label: `{{t("After record deleted", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.DELETED },
 ];
 
-export default {
-  title: `{{t("Collection event", { ns: "${NAMESPACE}" })}}`,
-  type: 'collection',
-  description: `{{t("Event will be triggered on collection data row created, updated or deleted.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Trigger {
+  title = `{{t("Collection event", { ns: "${NAMESPACE}" })}}`;
+  type = 'collection';
+  description = `{{t("Event will be triggered on collection data row created, updated or deleted.", { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     collection: {
       ...collection,
       ['x-reactions']: [
@@ -139,15 +140,17 @@ export default {
         },
       ],
     },
-  },
-  scope: {
+  };
+  scope = {
     useCollectionDataSource,
-  },
-  components: {
+  };
+  components = {
     FieldsSelect,
-  },
+  };
   useVariables(config, options) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { getCollectionFields } = useCollectionManager();
     const rootFields = [
       {
@@ -172,7 +175,7 @@ export default {
       getCollectionFields,
     });
     return result;
-  },
+  }
   useInitializers(config): SchemaInitializerItemType | null {
     if (!config.collection) {
       return null;
@@ -187,6 +190,5 @@ export default {
       collection: config.collection,
       dataSource: '{{$context.data}}',
     };
-  },
-  initializers: {},
-};
+  }
+}
