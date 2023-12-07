@@ -574,9 +574,10 @@ export const EditTitleField = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+
   const isAssociationField = useIsAssociationField();
   let options = useOptions();
-  if (!isAssociationField) {
+  if (!isAssociationField && collectionField.uiSchema['x-component'] === 'Select') {
     options = options.concat([
       {
         label: t('Name'),
@@ -651,7 +652,7 @@ export const EditTitleField = () => {
     });
     dn.refresh();
   };
-  return options.length > 0 && fieldSchema['x-component'] === 'CollectionField' ? (
+  return options.length > 0 ? (
     <SchemaSettingsSelectItem
       key="title-field"
       title={t('Title field')}

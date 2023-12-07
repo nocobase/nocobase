@@ -708,7 +708,8 @@ export const formItemSettings = new SchemaSettings({
       useVisible() {
         const fieldMode = useFieldMode();
         const options = useOptions();
-        return fieldMode !== 'SubTable';
+        const collectionField = useCollectionField();
+        return fieldMode !== 'SubTable' && collectionField.uiSchema['x-component'] === 'Select';
       },
       useComponentProps() {
         const { t } = useTranslation();
@@ -795,7 +796,7 @@ export const formItemSettings = new SchemaSettings({
           dn.refresh();
         };
         return {
-          title: t('Title field'),
+          title: t('Title field1'),
           options: [
             ...options,
             {
