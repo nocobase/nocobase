@@ -4,7 +4,11 @@ import { oneCollapseAndOneTableWithSameCollection } from './templatesOfPage';
 test.describe('connect data blocks: collapse block', () => {
   test('connections between same collections', async ({ page, mockPage, mockRecords }) => {
     const nocoPage = await mockPage(oneCollapseAndOneTableWithSameCollection).waitForInit();
-    const records = await mockRecords('general', 3);
+    const records = await mockRecords('general', [
+      { singleSelect: 'option1' },
+      { singleSelect: 'option2' },
+      { singleSelect: 'option3' },
+    ]);
     await nocoPage.goto();
 
     // 将上面的 Collapse 连接到下面的 Table
@@ -17,14 +21,16 @@ test.describe('connect data blocks: collapse block', () => {
     await page.getByRole('button', { name: 'right singleSelect search' }).click();
     await page.getByLabel('block-item-CardItem-general-filter-collapse').getByText('Option1').click();
 
-    // 等待 Table 数据刷新
-    await page.waitForTimeout(1000);
-
-    // 筛选之后，下面的 Table 只有一行数据（其中有一行是空白的，所以需要加 1）
     // 注意：在本地运行时，由于运行结束后不会清空之前创建的数据，所以在第一次运行之后，下面会报错。如果遇到这种情况，可以先不管
-    await expect(page.getByLabel('block-item-CardItem-general-table').getByRole('row')).toHaveCount(
-      records.filter((item) => item.singleSelect === 'option1').length + 1,
-    );
+    await expect(
+      page.getByLabel('block-item-CardItem-general-table').getByRole('row', { name: 'Option2' }),
+    ).toBeHidden();
+    await expect(
+      page.getByLabel('block-item-CardItem-general-table').getByRole('row', { name: 'Option3' }),
+    ).toBeHidden();
+    await expect(
+      page.getByLabel('block-item-CardItem-general-table').getByRole('row', { name: 'Option1' }),
+    ).toBeVisible();
 
     // 再次点击，重置筛选
     await page.getByLabel('block-item-CardItem-general-filter-collapse').getByText('Option1').click();
