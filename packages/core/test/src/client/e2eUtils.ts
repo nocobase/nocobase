@@ -276,8 +276,9 @@ const _test = base.extend<{
         count = data.length;
       }
       if (['users', 'roles'].includes(collectionName)) {
-        records = await createRandomData(collectionName, count, data);
-        return records;
+        const result = await createRandomData(collectionName, count, data);
+        records = [...records, ...result];
+        return result;
       }
       return createRandomData(collectionName, count, data);
     };
@@ -289,18 +290,22 @@ const _test = base.extend<{
     }
   },
   mockRecord: async ({ page }, use) => {
-    const record = {};
+    const records = [];
     let _collectionName = '';
     const mockRecord = async (collectionName: string, data?: any) => {
       _collectionName = collectionName;
       const result = await createRandomData(collectionName, 1, data);
+      if (['users', 'roles'].includes(collectionName)) {
+        records.push(result[0]);
+        return result[0];
+      }
       return result[0];
     };
 
     await use(mockRecord);
 
-    if (record) {
-      await deleteRecords(_collectionName, [record]);
+    if (records?.length) {
+      await deleteRecords(_collectionName, records);
     }
   },
   deletePage: async ({ page }, use) => {
@@ -485,7 +490,11 @@ const deleteRecords = async (collectionName: string, records: any[]) => {
 
   const state = await api.storageState();
   const headers = getHeaders(state);
-  const params = records.map((record) => `filterByTk[]=${record.id}`).join('&');
+  const params = records
+    .map((record) => record?.id)
+    .filter((id) => id != null)
+    .map((id) => `filterByTk[]=${id}`)
+    .join('&');
 
   const result = await api.post(`/api/${collectionName}:destroy?${params}`, {
     headers,
