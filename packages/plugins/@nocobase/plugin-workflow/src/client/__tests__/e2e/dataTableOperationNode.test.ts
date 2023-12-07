@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { expect, test } from '@nocobase/test/client';
 import { e2e_GeneralFormsTable, appendJsonCollectionName, generateRandomLetters } from './pageobject/e2eTemplateJson';
 import { e2e_GeneralFormsTableData, } from './pageobject/e2eTemplateJson';

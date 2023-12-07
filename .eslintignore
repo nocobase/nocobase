@@ -28,3 +28,4 @@ packages/app/client/src/.plugins
 docker
 storage
 benchmark
+packages/plugins/@nocobase/plugin-workflow/src/client/__tests__/e2e
