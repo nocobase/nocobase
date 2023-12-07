@@ -30,6 +30,8 @@ test.describe('table block', () => {
     await page.getByRole('menuitem', { name: 'Fix block' }).click();
     await expect(page.getByRole('menuitem', { name: 'Fix block' }).getByRole('switch')).toBeChecked();
 
+    // 等待页面重新渲染
+    await page.waitForTimeout(100);
     const fixedTableSize = await page.getByLabel('block-item-CardItem-general-table').boundingBox();
     expect(fixedTableSize.height).toBeGreaterThan(570);
     expect(fixedTableSize.height).toBeLessThan(575);
