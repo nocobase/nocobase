@@ -394,9 +394,8 @@ export function removeRequireCache(fileOrPackageName: string) {
   delete require.cache[fileOrPackageName];
 }
 
-export function requireNoCache(fileOrPackageName: string) {
-  removeRequireCache(fileOrPackageName);
-  return require(fileOrPackageName);
+export async function requireNoCache(fileOrPackageName: string) {
+  return (await import(fileOrPackageName)).default;
 }
 
 export function requireModule(m: any) {

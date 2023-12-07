@@ -14,6 +14,10 @@ const swcrc = {
 
 ((swcrc.jsc ??= {}).experimental ??= {}).plugins = [['jest_workaround', {}]];
 
+const nameMapper = pathsToModuleNameMapper(compilerOptions.paths, {
+  prefix: '<rootDir>/',
+});
+
 const config = {
   rootDir: process.cwd(),
   collectCoverage: false,
@@ -23,9 +27,7 @@ const config = {
   setupFiles: ['./jest.setup.ts'],
   setupFilesAfterEnv: ['./jest.setupAfterEnv.ts'],
   moduleNameMapper: {
-    ...pathsToModuleNameMapper(compilerOptions.paths, {
-      prefix: '<rootDir>/',
-    }),
+    ...nameMapper,
   },
   transform: {
     '^.+\\.(t|j)sx?$': ['@swc/jest', swcrc],

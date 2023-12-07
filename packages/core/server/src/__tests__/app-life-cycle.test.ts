@@ -2,6 +2,7 @@ import Application, { ApplicationOptions } from '../application';
 import { createAppProxy } from '../helper';
 import Plugin from '../plugin';
 import { AddPresetError } from '../plugin-manager';
+import { vi } from 'vitest';
 
 const mockServer = (options?: ApplicationOptions) => {
   return new Application({
@@ -25,7 +26,7 @@ describe('application life cycle', () => {
   describe('reInitEvents', () => {
     it('should be called', async () => {
       app = mockServer();
-      const loadFn = jest.fn();
+      const loadFn = vi.fn();
       app.on('event1', () => {
         loadFn();
       });

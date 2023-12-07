@@ -1,5 +1,4 @@
 import '@testing-library/jest-dom';
-
 /**
  * 解决 TypeError: URL.createObjectURL is not a function
  * 解决 ReferenceError: Worker is not defined
@@ -8,6 +7,10 @@ import 'jsdom-worker';
 
 import { vi } from 'vitest';
 import '../packages/core/client/src/i18n';
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
 
 // 解决 TypeError: window.matchMedia is not a function
 // 参见： https://github.com/vitest-dev/vitest/issues/821#issuecomment-1046954558

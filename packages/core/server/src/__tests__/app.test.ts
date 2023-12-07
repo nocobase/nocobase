@@ -1,17 +1,10 @@
-import { DataTypes, mockDatabase } from '@nocobase/database';
-import Application, { ApplicationOptions } from '../application';
+import { DataTypes } from '@nocobase/database';
 import Plugin from '../plugin';
-
-const mockServer = (options?: ApplicationOptions) => {
-  return new Application({
-    database: mockDatabase(),
-    acl: false,
-    ...options,
-  });
-};
+import { MockServer, mockServer } from '@nocobase/test';
+import { vi } from 'vitest';
 
 describe('app destroy', () => {
-  let app: Application;
+  let app: MockServer;
 
   afterEach(async () => {
     if (app) {
@@ -21,6 +14,7 @@ describe('app destroy', () => {
 
   test('case1', async () => {
     app = mockServer();
+    await app.cleanDb();
     await app.load();
     await app.install();
     app.pm.collection.addField('foo', { type: 'string' });
@@ -80,6 +74,7 @@ describe('app destroy', () => {
     app = mockServer({
       plugins: [P],
     });
+    await app.cleanDb();
     await app.load();
     await app.install();
     await app.db.getRepository('test').create({ values: {} });
@@ -95,7 +90,7 @@ describe('app destroy', () => {
   });
 
   test('command', async () => {
-    const loadFn = jest.fn();
+    const loadFn = vi.fn();
     app = mockServer();
     const command = app.command('foo');
     command.command('bar').action(() => loadFn());

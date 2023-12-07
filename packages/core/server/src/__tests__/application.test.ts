@@ -2,6 +2,7 @@ import supertest from 'supertest';
 import { Application } from '../application';
 import { Plugin } from '../plugin';
 import longJson from './fixtures/long-json';
+import { vi } from 'vitest';
 
 class MyPlugin extends Plugin {
   async load() {}
@@ -146,13 +147,13 @@ describe('application', () => {
 
   it('should call application with command', async () => {
     await app.runCommand('start');
-    const jestFn = jest.fn();
+    const jestFn = vi.fn();
 
     app.on('beforeInstall', async () => {
       jestFn();
     });
 
-    const runningJest = jest.fn();
+    const runningJest = vi.fn();
 
     app.on('maintaining', ({ status }) => {
       if (status === 'command_running') {

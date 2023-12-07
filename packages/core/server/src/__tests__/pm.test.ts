@@ -1,18 +1,10 @@
-import { mockDatabase } from '@nocobase/database';
-import Application, { ApplicationOptions } from '../application';
 import Plugin from '../plugin';
 import { PluginManager } from '../plugin-manager';
-
-const mockServer = (options?: ApplicationOptions) => {
-  return new Application({
-    database: mockDatabase(),
-    acl: false,
-    ...options,
-  });
-};
+import { vi } from 'vitest';
+import { MockServer, mockServer } from '@nocobase/test';
 
 describe('pm', () => {
-  let app: Application;
+  let app: MockServer;
 
   afterEach(async () => {
     if (app) {
@@ -147,7 +139,7 @@ describe('pm', () => {
   });
 
   test('enable', async () => {
-    const loadFn = jest.fn();
+    const loadFn = vi.fn();
     class Plugin1 extends Plugin {
       async beforeEnable() {
         loadFn();
@@ -172,7 +164,7 @@ describe('pm', () => {
     PluginManager.resolvePlugin = (pluginName) => {
       return Plugin1;
     };
-    const loadFn = jest.fn();
+    const loadFn = vi.fn();
     class Plugin1 extends Plugin {
       async beforeEnable() {
         loadFn();
@@ -185,6 +177,7 @@ describe('pm', () => {
       }
     }
     app = mockServer();
+    await app.cleanDb();
     await app.load();
     await app.install();
     await app.pm.repository.create({
@@ -202,12 +195,13 @@ describe('pm', () => {
     PluginManager.resolvePlugin = resolvePlugin;
   });
 
-  test('enable', async () => {
+  test('enable12', async () => {
     const resolvePlugin = PluginManager.resolvePlugin;
+
     PluginManager.resolvePlugin = (pluginName) => {
       return Plugin1;
     };
-    const loadFn = jest.fn();
+    const loadFn = vi.fn();
     class Plugin1 extends Plugin {
       async beforeEnable() {
         loadFn();
@@ -220,6 +214,7 @@ describe('pm', () => {
       }
     }
     app = mockServer();
+    await app.cleanDb();
     await app.load();
     await app.install();
     await app.pm.repository.create({
@@ -241,8 +236,8 @@ describe('pm', () => {
     PluginManager.resolvePlugin = resolvePlugin;
   });
 
-  test('enable', async () => {
-    const loadFn = jest.fn();
+  test('enable11', async () => {
+    const loadFn = vi.fn();
     class Plugin1 extends Plugin {
       async beforeEnable() {
         loadFn();
@@ -266,6 +261,7 @@ describe('pm', () => {
       }
     }
     const resolvePlugin = PluginManager.resolvePlugin;
+
     PluginManager.resolvePlugin = (pluginName: string) => {
       return {
         Plugin1,
@@ -273,6 +269,7 @@ describe('pm', () => {
       }[pluginName];
     };
     app = mockServer();
+    await app.cleanDb();
     await app.load();
     await app.install();
     await app.pm.repository.create({
@@ -285,6 +282,7 @@ describe('pm', () => {
         },
       ],
     });
+
     await app.reload();
     await app.pm.enable(['Plugin1', 'Plugin2']);
     expect(app.pm.get('Plugin1').enabled).toBeTruthy();
@@ -303,7 +301,7 @@ describe('pm', () => {
     PluginManager.resolvePlugin = (pluginName) => {
       return Plugin1;
     };
-    const loadFn = jest.fn();
+    const loadFn = vi.fn();
     class Plugin1 extends Plugin {
       async beforeDisable() {
         loadFn();
@@ -313,6 +311,8 @@ describe('pm', () => {
       }
     }
     app = mockServer();
+    await app.cleanDb();
+
     await app.load();
     await app.install();
     await app.pm.repository.create({
@@ -333,7 +333,7 @@ describe('pm', () => {
     PluginManager.resolvePlugin = (pluginName) => {
       return Plugin1;
     };
-    const loadFn = jest.fn();
+    const loadFn = vi.fn();
     class Plugin1 extends Plugin {
       async beforeDisable() {
         loadFn();
@@ -343,6 +343,8 @@ describe('pm', () => {
       }
     }
     app = mockServer();
+    await app.cleanDb();
+
     await app.load();
     await app.install();
     await app.pm.repository.create({
@@ -390,6 +392,8 @@ describe('pm', () => {
     app = mockServer({
       plugins: ['Plugin0'],
     });
+
+    await app.cleanDb();
     await app.load();
     await app.install();
     expect(app.pm.get('Plugin1').enabled).toBeTruthy();
@@ -405,8 +409,10 @@ describe('pm', () => {
     PluginManager.resolvePlugin = (pluginName) => {
       return Plugin1;
     };
+
     const hooks = [];
     const result = [];
+
     class Plugin1 extends Plugin {
       prop: any;
       async afterAdd() {
@@ -441,17 +447,19 @@ describe('pm', () => {
       }
     }
     app = mockServer();
+    await app.cleanDb();
+
     await app.load();
     await app.install();
+
     await app.pm.repository.create({
       values: {
         name: 'Plugin1',
-        // enabled: true,
-        // installed: true,
       },
     });
+
     await app.reload();
-    // console.log(hooks);
+
     expect(app.pm.get('Plugin1')['prop']).toBeUndefined();
     expect(result).toEqual([]);
     await app.pm.enable('Plugin1');

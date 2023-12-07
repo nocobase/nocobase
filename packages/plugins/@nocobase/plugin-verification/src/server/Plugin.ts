@@ -129,7 +129,7 @@ export default class VerificationPlugin extends Plugin {
 
     await this.importCollections(path.resolve(__dirname, 'collections'));
 
-    initProviders(this);
+    await initProviders(this);
     initActions(this);
 
     // add middleware to action

@@ -15,6 +15,11 @@ const alias = Object.keys(paths).reduce<{ find: string; replacement: string }[]>
   return acc;
 }, []);
 
+alias.push({
+  find: 'packages/core/utils/src/plugin-symlink',
+  replacement: 'packages/core/utils/plugin-symlink.js',
+});
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -35,7 +40,7 @@ export default defineConfig({
       { find: /^~antd\/(.*)/, replacement: 'antd/$1' },
       ...alias,
     ],
-    include: ['packages/**/{dumi-theme-nocobase,sdk,client,utils}/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
+    include: ['packages/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
     exclude: [
       '**/node_modules/**',
       '**/dist/**',

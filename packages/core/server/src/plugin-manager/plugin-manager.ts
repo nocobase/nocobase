@@ -19,7 +19,6 @@ import {
   getNpmInfo,
   getPluginInfoByNpm,
   removeTmpDir,
-  requireModule,
   requireNoCache,
   updatePluginByCompressedFileUrl,
 } from './utils';
@@ -40,7 +39,6 @@ export class AddPresetError extends Error {}
 export class PluginManager {
   app: Application;
   collection: Collection;
-  _repository: PluginManagerRepository;
   pluginInstances = new Map<typeof Plugin, Plugin>();
   pluginAliases = new Map<string, Plugin>();
   server: net.Server;
@@ -61,28 +59,33 @@ export class PluginManager {
       name: 'pm',
       actions: ['pm:*'],
     });
+
     this.app.db.addMigrations({
       namespace: 'core/pm',
       directory: resolve(__dirname, '../migrations'),
     });
+
     this.app.resourcer.use(uploadMiddleware);
   }
+
+  _repository: PluginManagerRepository;
 
   get repository() {
     return this.app.db.getRepository('applicationPlugins') as PluginManagerRepository;
   }
 
-  static getPackageJson(packageName: string) {
-    return requireNoCache(`${packageName}/package.json`);
+  static async getPackageJson(packageName: string) {
+    return await requireNoCache(`${packageName}/package.json`);
   }
 
-  static getPackageName(name: string) {
+  static async getPackageName(name: string) {
     const prefixes = this.getPluginPkgPrefix();
     for (const prefix of prefixes) {
       try {
-        require.resolve(`${prefix}${name}`);
+        await import(`${prefix}${name}`);
         return `${prefix}${name}`;
       } catch (error) {
+        console.log(error);
         continue;
       }
     }
@@ -128,11 +131,11 @@ export class PluginManager {
     });
   }
 
-  static resolvePlugin(pluginName: string | typeof Plugin, isUpgrade = false, isPkg = false) {
+  static async resolvePlugin(pluginName: string | typeof Plugin, isUpgrade = false, isPkg = false) {
     if (typeof pluginName === 'string') {
-      const packageName = isPkg ? pluginName : this.getPackageName(pluginName);
+      const packageName = isPkg ? pluginName : await this.getPackageName(pluginName);
       this.clearCache(packageName);
-      return requireModule(packageName);
+      return (await import(packageName)).default;
     } else {
       return pluginName;
     }
@@ -215,11 +218,12 @@ export class PluginManager {
     }
     try {
       if (typeof plugin === 'string' && options.name && !options.packageName) {
-        const packageName = PluginManager.getPackageName(options.name);
+        const packageName = await PluginManager.getPackageName(options.name);
         options['packageName'] = packageName;
       }
+
       if (options.packageName) {
-        const packageJson = PluginManager.getPackageJson(options.packageName);
+        const packageJson = await PluginManager.getPackageJson(options.packageName);
         options['packageJson'] = packageJson;
         options['version'] = packageJson.version;
       }
@@ -230,7 +234,7 @@ export class PluginManager {
     this.app.log.debug(`adding plugin [${options.name}]...`);
     let P: any;
     try {
-      P = PluginManager.resolvePlugin(options.packageName || plugin, isUpgrade, !!options.packageName);
+      P = await PluginManager.resolvePlugin(options.packageName || plugin, isUpgrade, !!options.packageName);
     } catch (error) {
       this.app.log.warn('plugin not found', error);
       return;
@@ -512,13 +516,6 @@ export class PluginManager {
     await this.app.emitStartedEvent();
   }
 
-  protected async initPresetPlugins() {
-    for (const plugin of this.options.plugins) {
-      const [p, opts = {}] = Array.isArray(plugin) ? plugin : [plugin];
-      await this.add(p, { enabled: true, isPreset: true, ...opts });
-    }
-  }
-
   async loadOne(plugin: Plugin) {
     this.app.setMaintainingMessage(`loading plugin ${plugin.name}...`);
     if (plugin.state.loaded || !plugin.enabled) {
@@ -711,6 +708,13 @@ export class PluginManager {
     const plugin = this.get(name);
     const npmInfo = await getNpmInfo(plugin.options.packageName, plugin.options.registry, plugin.options.authToken);
     return Object.keys(npmInfo.versions);
+  }
+
+  protected async initPresetPlugins() {
+    for (const plugin of this.options.plugins) {
+      const [p, opts = {}] = Array.isArray(plugin) ? plugin : [plugin];
+      await this.add(p, { enabled: true, isPreset: true, ...opts });
+    }
   }
 }
 

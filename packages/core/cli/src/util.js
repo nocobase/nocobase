@@ -193,8 +193,9 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
       .slice(cwdLength + 1)
       .split(sep)
       .join('/');
-    paths[packageJsonName] = [`${relativePath}/src`];
     paths[`${packageJsonName}/client`] = [`${relativePath}/src/client`];
+    paths[`${packageJsonName}/package.json`] = [`${relativePath}/package.json`];
+    paths[packageJsonName] = [`${relativePath}/src`];
   });
 
   const tsConfigJsonPath = join(cwd, './tsconfig.paths.json');

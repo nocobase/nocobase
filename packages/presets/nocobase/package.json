@@ -2,7 +2,7 @@
   "name": "@nocobase/preset-nocobase",
   "version": "0.17.0-alpha.2",
   "license": "AGPL-3.0",
-  "main": "./lib/server/index.js",
+  "main": "./src/server/index.ts",
   "dependencies": {
     "@formily/json-schema": "2.x",
     "@nocobase/plugin-acl": "0.17.0-alpha.2",

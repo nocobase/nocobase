@@ -39,7 +39,7 @@ export class Migration {
 
 export interface MigrationItem {
   name: string;
-  migration?: typeof Migration;
+  migration?: typeof Migration | string;
   context?: any;
   up?: any;
   down?: any;
@@ -59,7 +59,8 @@ export class Migrations {
 
   add(item: MigrationItem) {
     const Migration = item.migration;
-    if (Migration) {
+
+    if (Migration && typeof Migration === 'function') {
       const migration = new Migration({ ...this.context, ...item.context });
       migration.name = item.name;
       this.items.push(migration);
@@ -70,7 +71,20 @@ export class Migrations {
 
   callback() {
     return async (ctx) => {
-      return this.items;
+      return await Promise.all(
+        this.items.map(async (item) => {
+          if (typeof item.migration === 'string') {
+            // use es module to import migration
+            const module = await import(item.migration);
+            const Migration = module.default;
+            const migration = new Migration({ ...this.context, ...item.context });
+            migration.name = item.name;
+            return migration;
+          }
+
+          return item;
+        }),
+      );
     };
   }
 }
