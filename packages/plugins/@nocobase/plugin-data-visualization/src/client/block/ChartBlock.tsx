@@ -1,24 +1,27 @@
-import { SchemaInitializerContext, useDesignable, useSchemaInitializer } from '@nocobase/client';
+import { SchemaComponentOptions, SchemaInitializerContext, useSchemaInitializer } from '@nocobase/client';
 import React, { useState } from 'react';
-import { ChartConfigContext, ChartConfigCurrent, ChartConfigure } from '../configure/ChartConfigure';
-import { ChartRendererProvider } from '../renderer';
+import { ChartConfigProvider } from '../configure';
+import { ChartDataProvider } from './ChartDataProvider';
+import { ChartRenderer, ChartRendererProvider } from '../renderer';
+import { ChartFilterBlockProvider, ChartFilterBlockDesigner } from '../filter';
+import { ChartFilterProvider } from '../filter/FilterProvider';
 
 export const ChartV2Block: React.FC = (props) => {
-  const { insertAdjacent } = useDesignable();
-  const [visible, setVisible] = useState(false);
-  const [current, setCurrent] = useState<ChartConfigCurrent>({} as any);
   const [initialVisible, setInitialVisible] = useState(false);
   const schemaInitializerContextData = useSchemaInitializer();
   return (
     <SchemaInitializerContext.Provider
       value={{ ...schemaInitializerContextData, visible: initialVisible, setVisible: setInitialVisible }}
     >
-      <ChartConfigContext.Provider value={{ visible, setVisible, current, setCurrent }}>
-        {props.children}
-        <ChartRendererProvider {...current.field?.decoratorProps}>
-          <ChartConfigure insert={(schema, options) => insertAdjacent('beforeEnd', schema, options)} />
-        </ChartRendererProvider>
-      </ChartConfigContext.Provider>
+      <SchemaComponentOptions
+        components={{ ChartRenderer, ChartRendererProvider, ChartFilterBlockProvider, ChartFilterBlockDesigner }}
+      >
+        <ChartDataProvider>
+          <ChartFilterProvider>
+            <ChartConfigProvider>{props.children}</ChartConfigProvider>
+          </ChartFilterProvider>
+        </ChartDataProvider>
+      </SchemaComponentOptions>
     </SchemaInitializerContext.Provider>
   );
 };

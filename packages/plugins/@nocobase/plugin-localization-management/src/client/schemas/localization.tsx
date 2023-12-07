@@ -6,18 +6,6 @@ const collection = {
     {
       interface: 'input',
       type: 'string',
-      name: 'module',
-      uiSchema: {
-        type: 'string',
-        title: '{{t("Module")}}',
-        'x-component': 'Select',
-        required: true,
-        enum: '{{ useModules()}}',
-      },
-    },
-    {
-      interface: 'input',
-      type: 'string',
       name: 'text',
       uiSchema: {
         type: 'string',
@@ -34,6 +22,26 @@ const collection = {
         type: 'string',
         title: '{{t("Translation")}}',
         'x-component': 'Input.TextArea',
+      },
+    },
+    {
+      interface: 'select',
+      type: 'string',
+      name: 'moduleTitle',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Module")}}',
+        'x-component': 'Select',
+        enum: [
+          {
+            value: 'Menu',
+            label: '{{t("Menu")}}',
+          },
+          {
+            value: 'Collections & Fields',
+            label: '{{t("Collections & Fields", {ns:"localization-management"})}}',
+          },
+        ],
       },
     },
   ],
@@ -121,18 +129,6 @@ export const localizationSchema: ISchema = {
         useDataSource: '{{ cm.useDataSourceFromRAC }}',
       },
       properties: {
-        // module: {
-        //   type: 'void',
-        //   'x-decorator': 'Table.Column.Decorator',
-        //   'x-component': 'Table.Column',
-        //   properties: {
-        //     module: {
-        //       type: 'string',
-        //       'x-component': 'CollectionField',
-        //       'x-read-pretty': true,
-        //     },
-        //   },
-        // },
         text: {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
@@ -156,6 +152,18 @@ export const localizationSchema: ISchema = {
               'x-component-props': {
                 component: 'TranslationField',
               },
+              'x-read-pretty': true,
+            },
+          },
+        },
+        moduleTitle: {
+          type: 'void',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
+          properties: {
+            moduleTitle: {
+              type: 'string',
+              'x-component': 'CollectionField',
               'x-read-pretty': true,
             },
           },
@@ -189,11 +197,11 @@ export const localizationSchema: ISchema = {
                       },
                       title: '{{t("Edit")}}',
                       properties: {
-                        // module: {
-                        //   'x-component': 'CollectionField',
-                        //   'x-decorator': 'FormItem',
-                        //   'x-read-pretty': true,
-                        // },
+                        moduleTitle: {
+                          'x-component': 'CollectionField',
+                          'x-decorator': 'FormItem',
+                          'x-read-pretty': true,
+                        },
                         text: {
                           'x-component': 'CollectionField',
                           'x-decorator': 'FormItem',

@@ -3,7 +3,7 @@ import { useCollectionDataSource } from '@nocobase/client';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { collection, filter } from '../schemas/collection';
 import { isValidFilter } from '../utils';
-import { NAMESPACE } from '../locale';
+import { NAMESPACE, lang } from '../locale';
 
 export default {
   title: '{{t("Delete record")}}',
@@ -18,7 +18,7 @@ export default {
         filter: {
           ...filter,
           ['x-validator'](value) {
-            return isValidFilter(value) ? '' : `{{t("Please add at least one condition", { ns: "${NAMESPACE}" })}}`;
+            return isValidFilter(value) ? '' : lang('Please add at least one condition');
           },
         },
       },

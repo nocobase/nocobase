@@ -20,6 +20,8 @@ export interface ICollectionTemplate {
   description?: string;
   /**配置字段中的操作按钮 */
   configureActions?: Record<string, ISchema>;
+  //是否禁止删除字段
+  forbidDeletion?: boolean;
 }
 
 interface AvailableFieldInterfacesInclude {
