@@ -1,29 +1,26 @@
+import { vi } from 'vitest';
 import { uid } from '@nocobase/utils';
 import { Database, mockDatabase } from '../../index';
 import { ViewCollection } from '../../view-collection';
 import pgOnly from '../inhertits/helper';
-
 pgOnly()('', () => {
   let db: Database;
-
   beforeEach(async () => {
     db = mockDatabase({
       tablePrefix: '',
     });
-
-    await db.clean({ drop: true });
+    await db.clean({
+      drop: true,
+    });
   });
-
   afterEach(async () => {
     await db.close();
   });
-
   describe('view as through table', () => {
     let Order;
     let OrderItem;
     let Item;
     let OrderItemView;
-
     beforeEach(async () => {
       Order = db.collection({
         name: 'orders',
@@ -40,7 +37,6 @@ pgOnly()('', () => {
           },
         ],
       });
-
       OrderItem = db.collection({
         name: 'orderItems',
         timestamps: false,
@@ -64,23 +60,21 @@ pgOnly()('', () => {
           },
         ],
       });
-
       Item = db.collection({
         name: 'items',
-        fields: [{ name: 'name', type: 'string' }],
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+          },
+        ],
       });
-
       await db.sync();
-
       const viewName = 'order_item_view';
-
       const dropViewSQL = `DROP VIEW IF EXISTS ${viewName}`;
       await db.sequelize.query(dropViewSQL);
-
       const viewSQL = `CREATE VIEW ${viewName} as SELECT order_item.order_id as order_id, order_item.item_id as item_id, items.name as item_name FROM ${OrderItem.quotedTableName()} as order_item INNER JOIN ${Item.quotedTableName()} as items ON order_item.item_id = items.id`;
-
       await db.sequelize.query(viewSQL);
-
       OrderItemView = db.collection({
         name: viewName,
         view: true,
@@ -97,9 +91,7 @@ pgOnly()('', () => {
           },
         ],
       });
-
       await db.sync();
-
       Order.setField('items', {
         type: 'belongsToMany',
         target: 'items',
@@ -110,9 +102,7 @@ pgOnly()('', () => {
         targetKey: 'id',
         onDelete: 'CASCADE',
       });
-
       await db.sync();
-
       await db.getRepository('orders').create({
         values: {
           name: 'order1',
@@ -133,16 +123,13 @@ pgOnly()('', () => {
         },
       });
     });
-
     it('should skip on delete on view collection', async () => {
       const order1 = await db.getRepository('orders').findOne({});
-
       const item1 = await db.getRepository('items').findOne({
         filter: {
           name: 'item1',
         },
       });
-
       let error;
       try {
         await db.getRepository('orders').destroy({
@@ -151,10 +138,8 @@ pgOnly()('', () => {
       } catch (err) {
         error = err;
       }
-
       expect(error).toBeUndefined();
     });
-
     it('should filter by view collection as through table', async () => {
       const orders = await db.getRepository('orders').find({
         appends: ['items'],
@@ -164,11 +149,9 @@ pgOnly()('', () => {
           },
         },
       });
-
       expect(orders).toHaveLength(0);
     });
   });
-
   it('should update view collection', async () => {
     const UserCollection = db.collection({
       name: 'users',
@@ -177,7 +160,10 @@ pgOnly()('', () => {
         {
           name: 'name',
           type: 'string',
-          interface: { type: 'string', title: '姓名' },
+          interface: {
+            type: 'string',
+            title: '姓名',
+          },
         },
         {
           name: 'group',
@@ -186,7 +172,6 @@ pgOnly()('', () => {
         },
       ],
     });
-
     const GroupCollection = db.collection({
       name: 'groups',
       timestamps: false,
@@ -194,28 +179,39 @@ pgOnly()('', () => {
         {
           name: 'name',
           type: 'string',
-          interface: { type: 'string', title: '分组名' },
+          interface: {
+            type: 'string',
+            title: '分组名',
+          },
         },
       ],
     });
-
     await db.sync();
-
     const viewName = `users_with_group`;
     const dropSQL = `DROP VIEW IF EXISTS ${viewName}`;
     await db.sequelize.query(dropSQL);
     const viewSQL = `CREATE VIEW ${viewName} AS SELECT users.id AS user_id, users.name AS user_name, groups.name AS group_name FROM ${UserCollection.quotedTableName()} AS users INNER JOIN ${GroupCollection.quotedTableName()} AS groups ON users.group_id = groups.id`;
     await db.sequelize.query(viewSQL);
-
     const UsersWithGroup = db.collection({
       name: viewName,
       view: true,
       schema: db.inDialect('postgres') ? 'public' : undefined,
       writableView: true,
       fields: [
-        { name: 'user_id', type: 'bigInt' },
-        { name: 'user_name', type: 'string', source: 'users.name' },
-        { name: 'group_name', type: 'string', source: 'groups.name' },
+        {
+          name: 'user_id',
+          type: 'bigInt',
+        },
+        {
+          name: 'user_name',
+          type: 'string',
+          source: 'users.name',
+        },
+        {
+          name: 'group_name',
+          type: 'string',
+          source: 'groups.name',
+        },
       ],
     });
 
@@ -235,56 +231,46 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
     `);
-
     await db.sequelize.query(`
     CREATE TRIGGER insert_users_with_group_trigger
     INSTEAD OF INSERT ON ${UsersWithGroup.quotedTableName()}
     FOR EACH ROW EXECUTE FUNCTION insert_users_with_group();
     `);
-
     const returned = await UsersWithGroup.repository.create({
       values: {
         user_name: 'u1',
         group_name: 'g1',
       },
     });
-
     expect(returned.get('user_name')).toBe('u1');
     expect(returned.get('group_name')).toBe('g1');
-
     const records = await UsersWithGroup.repository.find();
     const firstRecord = records[0].toJSON();
     expect(firstRecord.user_name).toBe('u1');
     expect(firstRecord.group_name).toBe('g1');
   });
 });
-
 describe('create view', () => {
   let db: Database;
-
   beforeEach(async () => {
     db = mockDatabase({
       tablePrefix: '',
     });
-
-    await db.clean({ drop: true });
+    await db.clean({
+      drop: true,
+    });
   });
-
   afterEach(async () => {
     await db.close();
   });
-
   it('should create view collection in difference schema', async () => {
     if (!db.inDialect('postgres')) return;
     const schemaName = `t_${uid(6)}`;
     const testSchemaSql = `CREATE SCHEMA IF NOT EXISTS ${schemaName};`;
     await db.sequelize.query(testSchemaSql);
-
     const viewName = 'test_view';
-
     const viewSQL = `CREATE OR REPLACE VIEW ${schemaName}.test_view AS SELECT 1+1 as result`;
     await db.sequelize.query(viewSQL);
-
     const viewCollection = db.collection({
       name: viewName,
       schema: schemaName,
@@ -296,12 +282,9 @@ describe('create view', () => {
         },
       ],
     });
-
     const results = await viewCollection.repository.find();
-
     expect(results.length).toBe(1);
   });
-
   it('should create view collection', async () => {
     const UserCollection = db.collection({
       name: 'users',
@@ -317,7 +300,6 @@ describe('create view', () => {
         },
       ],
     });
-
     const ProfileCollection = db.collection({
       name: 'profiles',
       fields: [
@@ -332,9 +314,7 @@ describe('create view', () => {
         },
       ],
     });
-
     await db.sync();
-
     await UserCollection.repository.create({
       values: {
         name: 'foo',
@@ -345,15 +325,11 @@ describe('create view', () => {
     });
     const schema = UserCollection.collectionSchema();
     const viewName = 'users_with_profile';
-
     const appendSchema = db.inDialect('postgres') ? `"${schema}".` : '';
-
     const dropViewSQL = `DROP VIEW IF EXISTS ${appendSchema}${viewName}`;
     await db.sequelize.query(dropViewSQL);
     const viewSql = `CREATE VIEW ${appendSchema}${viewName} AS SELECT users.name, profiles.age FROM ${appendSchema}${UserCollection.model.tableName} as users LEFT JOIN ${appendSchema}${ProfileCollection.model.tableName} as profiles ON users.id = profiles.user_id;`;
-
     await db.sequelize.query(viewSql);
-
     db.collection({
       name: viewName,
       view: true,
@@ -370,23 +346,18 @@ describe('create view', () => {
     });
     const UserWithProfileView = db.getCollection(viewName);
     expect(UserWithProfileView).toBeInstanceOf(ViewCollection);
-
     const fooData = await UserWithProfileView.repository.findOne({
       filter: {
         name: 'foo',
       },
     });
-
     expect(fooData.get('name')).toBe('foo');
     expect(fooData.get('age')).toBe(18);
   });
-
   it('should not sync view collection', async () => {
     const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
     await db.sequelize.query(dropViewSQL);
-
     const viewSql = `CREATE VIEW test_view AS SELECT 1+1 as result`;
-
     await db.sequelize.query(viewSql);
     const viewCollection = db.collection({
       name: 'view_collection',
@@ -398,15 +369,11 @@ describe('create view', () => {
         },
       ],
     });
-
-    const jestFn = jest.fn();
-
+    const jestFn = vi.fn();
     db.on('beforeSync', jestFn);
-
     await viewCollection.sync();
     expect(jestFn).not.toBeCalled();
   });
-
   it('should create view collection with source field options', async () => {
     const UserCollection = db.collection({
       name: 'users',
@@ -417,24 +384,21 @@ describe('create view', () => {
           patterns: [
             {
               type: 'integer',
-              options: { key: 1 },
+              options: {
+                key: 1,
+              },
             },
           ],
         },
       ],
     });
-
     await db.sync();
-
     const viewName = 'users_view';
-
     const dropViewSQL = `DROP VIEW IF EXISTS ${viewName}`;
     await db.sequelize.query(dropViewSQL);
-
     const viewSQL = `
        CREATE VIEW ${viewName} as SELECT users.* FROM ${UserCollection.quotedTableName()} as users
     `;
-
     await db.sequelize.query(viewSQL);
 
     // create view collection
@@ -449,7 +413,6 @@ describe('create view', () => {
         },
       ],
     });
-
     const viewNameField = ViewCollection.getField('name');
     expect(viewNameField.options.patterns).toEqual(UserCollection.getField('name').options.patterns);
   });

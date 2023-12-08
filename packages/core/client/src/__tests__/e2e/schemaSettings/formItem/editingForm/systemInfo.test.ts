@@ -1,25 +1,20 @@
 import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields, test } from '@nocobase/test/client';
 import { commonTesting } from '../commonTesting';
-
 const gotoPage = async (mockPage, mockRecord) => {
   const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields).waitForInit();
   const record = await mockRecord('general');
   await nocoPage.goto();
-
   return record;
 };
-
 const openDialog = async (page: Page) => {
   await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
 };
-
 const showMenu = async (page: Page, fieldName: string) => {
   await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-`).hover();
   await page
     .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
     .hover();
 };
-
 const openDialogAndShowMenu = async ({
   page,
   mockPage,
@@ -35,7 +30,6 @@ const openDialogAndShowMenu = async ({
   await openDialog(page);
   await showMenu(page, fieldName);
 };
-
 test.describe('created at', () => {
   commonTesting({
     openDialogAndShowMenu,
@@ -44,11 +38,23 @@ test.describe('created at', () => {
     mode: 'options',
     blockType: 'editing',
   });
-
   test('options', async ({ page, mockPage, mockRecord }) => {
-    await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName: 'createdAt' });
-    await expect(page.getByRole('menuitem', { name: 'Edit tooltip' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'Date display format' })).toBeVisible();
+    await openDialogAndShowMenu({
+      page,
+      mockPage,
+      mockRecord,
+      fieldName: 'createdAt',
+    });
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Edit tooltip',
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Date display format',
+      }),
+    ).toBeVisible();
   });
 });
 test.describe('created by', () => {
@@ -59,19 +65,45 @@ test.describe('created by', () => {
     mode: 'options',
     blockType: 'editing',
   });
-
   test('options', async ({ page, mockPage, mockRecord }) => {
-    await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName: 'createdBy' });
-    await expect(page.getByRole('menuitem', { name: 'Edit tooltip' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'Enable link' })).toBeVisible();
+    await openDialogAndShowMenu({
+      page,
+      mockPage,
+      mockRecord,
+      fieldName: 'createdBy',
+    });
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Edit tooltip',
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Enable link',
+      }),
+    ).toBeVisible();
   });
 });
 test.describe('id', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'id', fieldType: 'system', mode: 'options', blockType: 'editing' });
-
+  commonTesting({
+    openDialogAndShowMenu,
+    fieldName: 'id',
+    fieldType: 'system',
+    mode: 'options',
+    blockType: 'editing',
+  });
   test('options', async ({ page, mockPage, mockRecord }) => {
-    await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName: 'id' });
-    await expect(page.getByRole('menuitem', { name: 'Edit tooltip' })).toBeVisible();
+    await openDialogAndShowMenu({
+      page,
+      mockPage,
+      mockRecord,
+      fieldName: 'id',
+    });
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Edit tooltip',
+      }),
+    ).toBeVisible();
   });
 });
 test.describe('table oid', () => {
@@ -82,10 +114,18 @@ test.describe('table oid', () => {
     mode: 'options',
     blockType: 'editing',
   });
-
   test('options', async ({ page, mockPage, mockRecord }) => {
-    await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName: 'tableoid' });
-    await expect(page.getByRole('menuitem', { name: 'Edit tooltip' })).toBeVisible();
+    await openDialogAndShowMenu({
+      page,
+      mockPage,
+      mockRecord,
+      fieldName: 'tableoid',
+    });
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Edit tooltip',
+      }),
+    ).toBeVisible();
   });
 });
 test.describe('last updated at', () => {
@@ -105,10 +145,22 @@ test.describe('last updated by', () => {
     mode: 'options',
     blockType: 'editing',
   });
-
   test('options', async ({ page, mockPage, mockRecord }) => {
-    await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName: 'updatedBy' });
-    await expect(page.getByRole('menuitem', { name: 'Edit tooltip' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'Enable link' })).toBeVisible();
+    await openDialogAndShowMenu({
+      page,
+      mockPage,
+      mockRecord,
+      fieldName: 'updatedBy',
+    });
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Edit tooltip',
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Enable link',
+      }),
+    ).toBeVisible();
   });
 });

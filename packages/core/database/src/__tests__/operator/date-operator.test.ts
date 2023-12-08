@@ -1,21 +1,19 @@
 import Database from '../../database';
 import { Repository } from '../../repository';
 import { mockDatabase } from '../index';
-
 describe('date operator test', () => {
   let db: Database;
-
   let repository: Repository;
-
   afterEach(async () => {
     await db.close();
   });
-
   beforeEach(async () => {
     db = mockDatabase({
       timezone: '+00:00',
     });
-    await db.clean({ drop: true });
+    await db.clean({
+      drop: true,
+    });
     const Test = db.collection({
       name: 'tests',
       fields: [
@@ -32,7 +30,6 @@ describe('date operator test', () => {
     repository = Test.repository;
     await db.sync();
   });
-
   test('$dateOn', async () => {
     await repository.create({
       values: [
@@ -68,7 +65,6 @@ describe('date operator test', () => {
     });
     expect(count).toBe(4);
   });
-
   test('$dateNotOn', async () => {
     await repository.create({
       values: [
@@ -104,7 +100,6 @@ describe('date operator test', () => {
     });
     expect(count).toBe(0);
   });
-
   test('$dateBefore', async () => {
     await repository.create({
       values: [
@@ -144,7 +139,6 @@ describe('date operator test', () => {
     });
     expect(count).toBe(1);
   });
-
   test('$dateNotBefore', async () => {
     await repository.create({
       values: [
@@ -184,7 +178,6 @@ describe('date operator test', () => {
     });
     expect(count).toBe(4);
   });
-
   test('$dateAfter', async () => {
     await repository.create({
       values: [
@@ -224,7 +217,6 @@ describe('date operator test', () => {
     });
     expect(count).toBe(4);
   });
-
   test('$dateNotAfter', async () => {
     await repository.create({
       values: [
@@ -264,7 +256,6 @@ describe('date operator test', () => {
     });
     expect(count).toBe(1);
   });
-
   test('$dateBetween', async () => {
     await repository.create({
       values: [

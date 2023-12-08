@@ -1,11 +1,9 @@
 import dayjs from 'dayjs';
 import { Database, mockDatabase } from '../..';
 import { DateValueParser } from '../../value-parsers';
-
 describe('number value parser', () => {
   let parser: DateValueParser;
   let db: Database;
-
   beforeEach(() => {
     db = mockDatabase();
     db.collection({
@@ -48,14 +46,12 @@ describe('number value parser', () => {
     });
     parser = new DateValueParser({}, {});
   });
-
   const expectValue = (value, field = 'date') => {
     const collection = db.getCollection('tests');
     parser = new DateValueParser(collection.getField(field), {});
     parser.setValue(value);
     return expect(parser.getValue());
   };
-
   it('should be correct', () => {
     expectValue(42510).toBe('2016-05-20T00:00:00.000Z');
     expectValue('42510').toBe('2016-05-20T00:00:00.000Z');

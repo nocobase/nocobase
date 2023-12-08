@@ -1,5 +1,4 @@
 import { mergeFields, parseFields, parseQuery, parseRequest } from '..';
-
 describe('utils', () => {
   describe('parseQuery', () => {
     it('filter support normal json type', () => {
@@ -21,56 +20,82 @@ describe('utils', () => {
       });
     });
   });
-
   describe('parseFields', () => {
     it('plain string fields equal to only', () => {
       expect(parseFields('name,age')).toMatchObject({
         only: ['name', 'age'],
       });
     });
-
     it('plain array fields equal to only', () => {
       expect(parseFields(['name', 'age'])).toMatchObject({
         only: ['name', 'age'],
       });
     });
-
     it('only string fields equal to only', () => {
-      expect(parseFields({ only: 'name,age' })).toMatchObject({
+      expect(
+        parseFields({
+          only: 'name,age',
+        }),
+      ).toMatchObject({
         only: ['name', 'age'],
       });
     });
-
     it('only array fields equal to only', () => {
-      expect(parseFields({ only: ['name', 'age'] })).toMatchObject({
+      expect(
+        parseFields({
+          only: ['name', 'age'],
+        }),
+      ).toMatchObject({
         only: ['name', 'age'],
       });
     });
-
     it('plain only and expect fields', () => {
       // input as "fields=title&fields[only]=content&fields[except]=status&fields[except]=created_at"
-      const result = parseFields(['title', { only: 'content' }, { except: ['status', 'created_at'] }]);
+      const result = parseFields([
+        'title',
+        {
+          only: 'content',
+        },
+        {
+          except: ['status', 'created_at'],
+        },
+      ]);
       expect(result).toMatchObject({
         only: ['title', 'content'],
         except: ['status', 'created_at'],
       });
     });
   });
-
   describe('mergeFields', () => {
     describe('empty default', () => {
       it('always contains "appends"', async () => {
-        expect(mergeFields({}, { only: ['col'] })).toMatchObject({ appends: [], only: ['col'] });
+        expect(
+          mergeFields(
+            {},
+            {
+              only: ['col'],
+            },
+          ),
+        ).toMatchObject({
+          appends: [],
+          only: ['col'],
+        });
       });
-
       it('appends', async () => {
-        expect(mergeFields({}, { only: ['col1'], appends: ['col2'] })).toMatchObject({
+        expect(
+          mergeFields(
+            {},
+            {
+              only: ['col1'],
+              appends: ['col2'],
+            },
+          ),
+        ).toMatchObject({
           only: ['col1'],
           appends: ['col2'],
         });
       });
     });
-
     describe('options provided', () => {
       it('defaults provided: only, except, appends', () => {
         expect(
@@ -93,64 +118,82 @@ describe('utils', () => {
       });
     });
   });
-
   describe('parseRequest', () => {
     it('index action', () => {
       const params = parseRequest({
         path: '/posts',
         method: 'GET',
       });
-      expect(params).toMatchObject({ resourceName: 'posts', actionName: 'list' });
+      expect(params).toMatchObject({
+        resourceName: 'posts',
+        actionName: 'list',
+      });
     });
-
     it('store action', () => {
       const params = parseRequest({
         path: '/posts',
         method: 'POST',
       });
-      expect(params).toMatchObject({ resourceName: 'posts', actionName: 'create' });
+      expect(params).toMatchObject({
+        resourceName: 'posts',
+        actionName: 'create',
+      });
     });
-
     it('get action', () => {
       const params = parseRequest({
         path: '/posts/1',
         method: 'GET',
       });
-      expect(params).toMatchObject({ resourceName: 'posts', resourceIndex: '1', actionName: 'get' });
+      expect(params).toMatchObject({
+        resourceName: 'posts',
+        resourceIndex: '1',
+        actionName: 'get',
+      });
     });
-
     it('update action', () => {
       const params = parseRequest({
         path: '/posts/1',
         method: 'PUT',
       });
-      expect(params).toMatchObject({ resourceName: 'posts', resourceIndex: '1', actionName: 'update' });
+      expect(params).toMatchObject({
+        resourceName: 'posts',
+        resourceIndex: '1',
+        actionName: 'update',
+      });
     });
-
     it('update action', () => {
       const params = parseRequest({
         path: '/posts/1',
         method: 'PATCH',
       });
-      expect(params).toMatchObject({ resourceName: 'posts', resourceIndex: '1', actionName: 'update' });
+      expect(params).toMatchObject({
+        resourceName: 'posts',
+        resourceIndex: '1',
+        actionName: 'update',
+      });
     });
-
     it('delete action', () => {
       const params = parseRequest({
         path: '/posts/1',
         method: 'delete',
       });
-      expect(params).toMatchObject({ resourceName: 'posts', resourceIndex: '1', actionName: 'destroy' });
+      expect(params).toMatchObject({
+        resourceName: 'posts',
+        resourceIndex: '1',
+        actionName: 'destroy',
+      });
     });
-
     it('delete action', () => {
       const params = parseRequest({
         path: '/posts/1,2,3,4,5,6',
         method: 'delete',
       });
-      expect(params).toMatchObject({ resourceName: 'posts', resourceIndex: '1,2,3,4,5,6', actionName: 'destroy' });
+      expect(params).toMatchObject({
+        resourceName: 'posts',
+        resourceIndex: '1,2,3,4,5,6',
+        actionName: 'destroy',
+      });
     });
-
     it('index action', () => {
       const params = parseRequest({
         path: '/posts/1/comments',
@@ -163,7 +206,6 @@ describe('utils', () => {
         actionName: 'list',
       });
     });
-
     it('store action', () => {
       const params = parseRequest({
         path: '/posts/1/comments',
@@ -176,7 +218,6 @@ describe('utils', () => {
         actionName: 'create',
       });
     });
-
     it('get action', () => {
       const params = parseRequest({
         path: '/posts/1/comments/1',
@@ -190,7 +231,6 @@ describe('utils', () => {
         actionName: 'get',
       });
     });
-
     it('update action', () => {
       const params = parseRequest({
         path: '/posts/1/comments/1',
@@ -204,7 +244,6 @@ describe('utils', () => {
         actionName: 'update',
       });
     });
-
     it('update action', () => {
       const params = parseRequest({
         path: '/posts/1/comments/1',
@@ -218,7 +257,6 @@ describe('utils', () => {
         actionName: 'update',
       });
     });
-
     it('get action', () => {
       const params = parseRequest({
         path: '/posts/1/comments/1',
@@ -232,31 +270,37 @@ describe('utils', () => {
         actionName: 'destroy',
       });
     });
-
     it('export action', () => {
       const params = parseRequest({
         path: '/posts:export',
         method: 'GET',
       });
-      expect(params).toMatchObject({ resourceName: 'posts', actionName: 'export' });
+      expect(params).toMatchObject({
+        resourceName: 'posts',
+        actionName: 'export',
+      });
     });
-
     it('export action', () => {
       const params = parseRequest({
         path: '/posts:export',
         method: 'POST',
       });
-      expect(params).toMatchObject({ resourceName: 'posts', actionName: 'export' });
+      expect(params).toMatchObject({
+        resourceName: 'posts',
+        actionName: 'export',
+      });
     });
-
     it('export action', () => {
       const params = parseRequest({
         path: '/posts:export/1',
         method: 'POST',
       });
-      expect(params).toMatchObject({ resourceName: 'posts', resourceIndex: '1', actionName: 'export' });
+      expect(params).toMatchObject({
+        resourceName: 'posts',
+        resourceIndex: '1',
+        actionName: 'export',
+      });
     });
-
     it('attach action', () => {
       const params = parseRequest({
         path: '/posts/1/tags:attach/2',
@@ -270,7 +314,6 @@ describe('utils', () => {
         actionName: 'attach',
       });
     });
-
     it('prefix options', () => {
       const params = parseRequest(
         {
@@ -281,9 +324,11 @@ describe('utils', () => {
           prefix: '/api',
         },
       );
-      expect(params).toMatchObject({ resourceName: 'posts', actionName: 'list' });
+      expect(params).toMatchObject({
+        resourceName: 'posts',
+        actionName: 'list',
+      });
     });
-
     it('prefix options', () => {
       const params = parseRequest(
         {
@@ -296,7 +341,6 @@ describe('utils', () => {
       );
       expect(params).toBeFalsy();
     });
-
     it('actions options', () => {
       const params = parseRequest(
         {
@@ -309,23 +353,31 @@ describe('utils', () => {
           },
         },
       );
-      expect(params).toMatchObject({ resourceName: 'posts', actionName: 'query' });
+      expect(params).toMatchObject({
+        resourceName: 'posts',
+        actionName: 'query',
+      });
     });
-
     it('actions options', () => {
       const params = parseRequest({
         path: '/posts:list',
         method: 'GET',
       });
-      expect(params).toMatchObject({ resourceName: 'posts', actionName: 'list' });
+      expect(params).toMatchObject({
+        resourceName: 'posts',
+        actionName: 'list',
+      });
     });
-
     it('actions options', () => {
       const params = parseRequest({
         path: '/resourcer/user.posts:list',
         method: 'GET',
       });
-      expect(params).toMatchObject({ associatedName: 'user', resourceName: 'posts', actionName: 'list' });
+      expect(params).toMatchObject({
+        associatedName: 'user',
+        resourceName: 'posts',
+        actionName: 'list',
+      });
     });
   });
 });

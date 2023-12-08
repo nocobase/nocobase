@@ -1,5 +1,4 @@
 import { expect, test } from '@nocobase/test/client';
-
 const config = {
   pageSchema: {
     _isJSONSchemaObject: true,
@@ -361,7 +360,6 @@ test('BUG: in the Duplicate mode, the Roles field should not have a value after 
   mockPage,
 }) => {
   await mockPage(config).goto();
-
   await page.getByLabel('action-Action.Link-Duplicate-duplicate-users-table-0').click();
   await expect(page.getByRole('textbox')).toHaveValue('Super Admin');
   await expect(page.getByTestId('select-object-multiple')).toHaveText('');

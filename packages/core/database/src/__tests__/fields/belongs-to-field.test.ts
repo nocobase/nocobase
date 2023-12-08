@@ -1,44 +1,51 @@
 import { Database } from '../../database';
 import { mockDatabase } from '../';
 import { IdentifierError } from '../../errors/identifier-error';
-
 describe('belongs to field', () => {
   let db: Database;
-
   beforeEach(async () => {
     db = mockDatabase();
   });
-
   afterEach(async () => {
     await db.close();
   });
-
   it('association undefined', async () => {
     const Comment = db.collection({
       name: 'comments',
-      fields: [{ type: 'belongsTo', name: 'post' }],
+      fields: [
+        {
+          type: 'belongsTo',
+          name: 'post',
+        },
+      ],
     });
     expect(Comment.model.associations['post']).toBeUndefined();
   });
-
   it('association defined', async () => {
     const Comment = db.collection({
       name: 'comments',
       fields: [
-        { type: 'string', name: 'content' },
-        { type: 'belongsTo', name: 'post' },
+        {
+          type: 'string',
+          name: 'content',
+        },
+        {
+          type: 'belongsTo',
+          name: 'post',
+        },
       ],
     });
-
     expect(Comment.model.associations.post).toBeUndefined();
-
     const Post = db.collection({
       name: 'posts',
-      fields: [{ type: 'string', name: 'title' }],
+      fields: [
+        {
+          type: 'string',
+          name: 'title',
+        },
+      ],
     });
-
     const association = Comment.model.associations.post;
-
     expect(Comment.model.associations.post).toBeDefined();
     expect(association.foreignKey).toBe('postId');
     // @ts-ignore
@@ -62,13 +69,16 @@ describe('belongs to field', () => {
       title: 'title111',
     });
   });
-
   it('custom targetKey and foreignKey', async () => {
     db.collection({
       name: 'posts',
-      fields: [{ type: 'string', name: 'key' }],
+      fields: [
+        {
+          type: 'string',
+          name: 'key',
+        },
+      ],
     });
-
     const Comment = db.collection({
       name: 'comments',
       fields: [
@@ -80,7 +90,6 @@ describe('belongs to field', () => {
         },
       ],
     });
-
     const association = Comment.model.associations.post;
     expect(association).toBeDefined();
     expect(association.foreignKey).toBe('postKey');
@@ -89,17 +98,19 @@ describe('belongs to field', () => {
     expect(association.targetKey).toBe('key');
     expect(Comment.model.rawAttributes['postKey']).toBeDefined();
   });
-
   it('should throw error when foreignKey is too long', async () => {
     const Post = db.collection({
       name: 'posts',
-      fields: [{ type: 'string', name: 'key', unique: true }],
+      fields: [
+        {
+          type: 'string',
+          name: 'key',
+          unique: true,
+        },
+      ],
     });
-
     const longForeignKey = 'a'.repeat(128);
-
     let error;
-
     try {
       db.collection({
         name: 'comments1',
@@ -115,15 +126,16 @@ describe('belongs to field', () => {
     } catch (e) {
       error = e;
     }
-
     expect(error).toBeInstanceOf(IdentifierError);
   });
-
   it('custom name and target', async () => {
     const Comment = db.collection({
       name: 'comments',
       fields: [
-        { type: 'string', name: 'content' },
+        {
+          type: 'string',
+          name: 'content',
+        },
         {
           type: 'belongsTo',
           name: 'article',
@@ -136,7 +148,13 @@ describe('belongs to field', () => {
     expect(Comment.model.associations.article).toBeUndefined();
     const Post = db.collection({
       name: 'posts',
-      fields: [{ type: 'string', name: 'key', unique: true }],
+      fields: [
+        {
+          type: 'string',
+          name: 'key',
+          unique: true,
+        },
+      ],
     });
     const association = Comment.model.associations.article;
     expect(Comment.model.associations.article).toBeDefined();
@@ -162,15 +180,24 @@ describe('belongs to field', () => {
       key: 'title111',
     });
   });
-
   it('schema delete', async () => {
     const Comment = db.collection({
       name: 'comments',
-      fields: [{ type: 'belongsTo', name: 'post' }],
+      fields: [
+        {
+          type: 'belongsTo',
+          name: 'post',
+        },
+      ],
     });
     const Post = db.collection({
       name: 'posts',
-      fields: [{ type: 'hasMany', name: 'comments' }],
+      fields: [
+        {
+          type: 'hasMany',
+          name: 'comments',
+        },
+      ],
     });
     // await db.sync();
     Comment.removeField('post');
@@ -179,115 +206,180 @@ describe('belongs to field', () => {
     Post.removeField('comments');
     expect(Comment.model.rawAttributes.postId).toBeUndefined();
   });
-
   it('has inverse field', async () => {
     const Post = db.collection({
       name: 'posts',
-      fields: [{ type: 'hasMany', name: 'comments' }],
+      fields: [
+        {
+          type: 'hasMany',
+          name: 'comments',
+        },
+      ],
     });
-
     const Comment = db.collection({
       name: 'comments',
-      fields: [{ type: 'belongsTo', name: 'post' }],
+      fields: [
+        {
+          type: 'belongsTo',
+          name: 'post',
+        },
+      ],
     });
-
     const belongsToField = Comment.fields.get('post');
     expect(belongsToField).toBeDefined();
     const association = Post.model.associations;
     expect(association['comments']).toBeDefined();
   });
-
   describe('foreign constraints', () => {
     it('should set null on delete', async () => {
       const Product = db.collection({
         name: 'products',
-        fields: [{ type: 'string', name: 'name' }],
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
       });
-
       const Order = db.collection({
         name: 'order',
-        fields: [{ type: 'belongsTo', name: 'product', onDelete: 'SET NULL' }],
+        fields: [
+          {
+            type: 'belongsTo',
+            name: 'product',
+            onDelete: 'SET NULL',
+          },
+        ],
       });
-
       await db.sync();
-
-      const p = await Product.repository.create({ values: { name: 'p1' } });
-      const o = await Order.repository.create({ values: { product: p.id } });
-
+      const p = await Product.repository.create({
+        values: {
+          name: 'p1',
+        },
+      });
+      const o = await Order.repository.create({
+        values: {
+          product: p.id,
+        },
+      });
       expect(o.productId).toBe(p.id);
-
       await Product.repository.destroy({
         filterByTk: p.id,
       });
-
       const newO = await o.reload();
-
       expect(newO.productId).toBeNull();
     });
-
     it('should delete reference map item when field unbind', async () => {
       const Product = db.collection({
         name: 'products',
-        fields: [{ type: 'string', name: 'name' }],
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
       });
-
       const Order = db.collection({
         name: 'order',
-        fields: [{ type: 'belongsTo', name: 'product', onDelete: 'CASCADE' }],
+        fields: [
+          {
+            type: 'belongsTo',
+            name: 'product',
+            onDelete: 'CASCADE',
+          },
+        ],
       });
-
       await db.sync();
-
       Order.removeField('product');
-
       expect(db.referenceMap.getReferences(Product.name)).toHaveLength(0);
     });
-
     it('should delete cascade', async () => {
       const Product = db.collection({
         name: 'products',
-        fields: [{ type: 'string', name: 'name' }],
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
       });
-
       const Order = db.collection({
         name: 'order',
-        fields: [{ type: 'belongsTo', name: 'product', onDelete: 'CASCADE' }],
+        fields: [
+          {
+            type: 'belongsTo',
+            name: 'product',
+            onDelete: 'CASCADE',
+          },
+        ],
       });
-
       await db.sync();
-      const p = await Product.repository.create({ values: { name: 'p1' } });
-      await Order.repository.create({ values: { product: p.id } });
-      await Order.repository.create({ values: { product: p.id } });
-
-      expect(await Order.repository.count({ filter: { productId: p.id } })).toBe(2);
-
+      const p = await Product.repository.create({
+        values: {
+          name: 'p1',
+        },
+      });
+      await Order.repository.create({
+        values: {
+          product: p.id,
+        },
+      });
+      await Order.repository.create({
+        values: {
+          product: p.id,
+        },
+      });
+      expect(
+        await Order.repository.count({
+          filter: {
+            productId: p.id,
+          },
+        }),
+      ).toBe(2);
       await Product.repository.destroy({
         filterByTk: p.id,
       });
-
-      expect(await Order.repository.count({ filter: { productId: p.id } })).toBe(0);
+      expect(
+        await Order.repository.count({
+          filter: {
+            productId: p.id,
+          },
+        }),
+      ).toBe(0);
     });
-
     it('should delete restrict', async () => {
       const Product = db.collection({
         name: 'products',
-        fields: [{ type: 'string', name: 'name' }],
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
       });
-
       const Order = db.collection({
         name: 'order',
-        fields: [{ type: 'belongsTo', name: 'product', onDelete: 'RESTRICT' }],
+        fields: [
+          {
+            type: 'belongsTo',
+            name: 'product',
+            onDelete: 'RESTRICT',
+          },
+        ],
       });
-
       await db.sync();
-
-      const p = await Product.repository.create({ values: { name: 'p1' } });
-      const o = await Order.repository.create({ values: { product: p.id } });
-
+      const p = await Product.repository.create({
+        values: {
+          name: 'p1',
+        },
+      });
+      const o = await Order.repository.create({
+        values: {
+          product: p.id,
+        },
+      });
       expect(o.productId).toBe(p.id);
-
       let error = null;
-
       try {
         await Product.repository.destroy({
           filterByTk: p.id,
@@ -295,7 +387,6 @@ describe('belongs to field', () => {
       } catch (e) {
         error = e;
       }
-
       expect(error).not.toBeNull();
     });
   });

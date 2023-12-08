@@ -1,17 +1,13 @@
 import { mockDatabase } from '../';
 import { Database } from '../../database';
-
 describe('afterCreateWithAssociations', () => {
   let db: Database;
-
   beforeEach(async () => {
     db = mockDatabase();
   });
-
   afterEach(async () => {
     await db.close();
   });
-
   test('case 1', async () => {
     db.collection({
       name: 'test',
@@ -25,7 +21,9 @@ describe('afterCreateWithAssociations', () => {
       await repo.create({
         values: {},
       });
-    } catch (error) {}
+    } catch (error) {
+      console.log(error);
+    }
     const count = await repo.count();
     expect(count).toBe(0);
   });

@@ -1,6 +1,5 @@
 import { expect, test } from '@nocobase/test/client';
 import { createBlock } from './utils';
-
 test.describe('Page.Grid', () => {
   test('create block', async ({ page, mockPage }) => {
     await mockPage().goto();

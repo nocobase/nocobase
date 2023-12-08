@@ -1,18 +1,16 @@
 import { Database } from '../database';
 import { mockDatabase } from './';
-
 describe('sort', function () {
   let db: Database;
-
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({ drop: true });
+    await db.clean({
+      drop: true,
+    });
   });
-
   afterEach(async () => {
     await db.close();
   });
-
   test('order nulls last', async () => {
     const Test = db.collection({
       name: 'test',

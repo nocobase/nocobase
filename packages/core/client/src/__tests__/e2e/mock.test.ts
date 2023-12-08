@@ -1,5 +1,4 @@
 import { expect, test } from '@nocobase/test/client';
-
 const phonePageConfig = {
   collections: [
     {
@@ -182,15 +181,27 @@ const phonePageConfig = {
     'x-async': true,
   },
 };
-
 test.describe('mock record', () => {
   test('email field', async ({ page, mockPage, mockRecords }) => {
     const nocoPage = await mockPage(phonePageConfig).waitForInit();
-    const records = await mockRecords<{ email: string }>('t_x3mxc1ymorw', 3);
+    const records = await mockRecords<{
+      email: string;
+    }>('t_x3mxc1ymorw', 3);
     await nocoPage.goto();
-
-    await expect(page.getByRole('cell', { name: records[0].email })).toBeVisible();
-    await expect(page.getByRole('cell', { name: records[1].email })).toBeVisible();
-    await expect(page.getByRole('cell', { name: records[2].email })).toBeVisible();
+    await expect(
+      page.getByRole('cell', {
+        name: records[0].email,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('cell', {
+        name: records[1].email,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('cell', {
+        name: records[2].email,
+      }),
+    ).toBeVisible();
   });
 });

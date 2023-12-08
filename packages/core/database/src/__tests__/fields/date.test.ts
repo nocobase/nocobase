@@ -1,25 +1,26 @@
 import { mockDatabase } from '../';
 import { Database } from '../../database';
 import { Repository } from '../../repository';
-
 describe('date-field', () => {
   let db: Database;
   let repository: Repository;
-
   beforeEach(async () => {
     db = mockDatabase();
     db.collection({
       name: 'tests',
-      fields: [{ name: 'date1', type: 'date' }],
+      fields: [
+        {
+          name: 'date1',
+          type: 'date',
+        },
+      ],
     });
     await db.sync();
     repository = db.getRepository('tests');
   });
-
   afterEach(async () => {
     await db.close();
   });
-
   const createExpectToBe = async (key, actual, expected) => {
     const instance = await repository.create({
       values: {
@@ -28,7 +29,6 @@ describe('date-field', () => {
     });
     return expect(instance.get(key).toISOString()).toEqual(expected);
   };
-
   test('create', async () => {
     // sqlite 时区不能自定义，只有 +00:00，postgres 和 mysql 可以自定义 DB_TIMEZONE
     await createExpectToBe('date1', '2023-03-24', '2023-03-24T00:00:00.000Z');
@@ -49,7 +49,6 @@ describe('date-field', () => {
           },
         },
       });
-
       await repository.find({
         filter: {
           date1: {
@@ -58,7 +57,6 @@ describe('date-field', () => {
           },
         },
       });
-
       await repository.find({
         filter: {
           date1: {

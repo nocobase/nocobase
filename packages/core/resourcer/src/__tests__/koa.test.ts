@@ -2,13 +2,11 @@ import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import supertest from 'supertest';
 import { Resourcer } from '../resourcer';
-
 describe('koa middleware', () => {
   it('shound work', async () => {
     const app = new Koa();
     const resourcer = new Resourcer();
     const agent = supertest.agent(app.callback());
-
     resourcer.define({
       name: 'test',
       actions: {
@@ -21,13 +19,11 @@ describe('koa middleware', () => {
         },
       },
     });
-
     app.use(
       resourcer.middleware({
         prefix: '/api',
       }),
     );
-
     app.use(async (ctx, next) => {
       if (ctx.path === '/api/test') {
         ctx.body = ctx.body || {};
@@ -37,16 +33,13 @@ describe('koa middleware', () => {
         ctx.body.arr.push(4);
       }
     });
-
     const response = await agent.get('/api/test');
     expect(response.body.arr).toEqual([5, 3, 4, 6]);
   });
-
   it('shound work', async () => {
     const app = new Koa();
     const resourcer = new Resourcer();
     const agent = supertest.agent(app.callback());
-
     resourcer.registerActionHandlers({
       async index(ctx, next) {
         ctx.body = ctx.body || {};
@@ -56,11 +49,9 @@ describe('koa middleware', () => {
         ctx.body.arr.push(6);
       },
     });
-
     resourcer.define({
       name: 'test',
     });
-
     app.use(
       resourcer.middleware({
         prefix: '/api',
@@ -69,7 +60,6 @@ describe('koa middleware', () => {
         },
       }),
     );
-
     app.use(async (ctx, next) => {
       if (ctx.path === '/api/test') {
         ctx.body = ctx.body || {};
@@ -79,11 +69,9 @@ describe('koa middleware', () => {
         ctx.body.arr.push(4);
       }
     });
-
     const response = await agent.get('/api/test');
     expect(response.body.arr).toEqual([5, 3, 4, 6]);
   });
-
   it('shound be 404', async () => {
     const app = new Koa();
     const resourcer = new Resourcer();
@@ -92,12 +80,10 @@ describe('koa middleware', () => {
     const response = await agent.get('/test');
     expect(response.status).toBe(404);
   });
-
   it('shound work', async () => {
     const app = new Koa();
     const resourcer = new Resourcer();
     const agent = supertest.agent(app.callback());
-
     resourcer.define({
       name: 'test',
       actions: {
@@ -110,7 +96,6 @@ describe('koa middleware', () => {
         },
       },
     });
-
     app.use(
       resourcer.middleware({
         prefix: '/api',
@@ -119,7 +104,6 @@ describe('koa middleware', () => {
         },
       }),
     );
-
     app.use(async (ctx, next) => {
       if (ctx.path === '/api/test') {
         ctx.body = ctx.body || {};
@@ -129,16 +113,13 @@ describe('koa middleware', () => {
         ctx.body.arr.push(4);
       }
     });
-
     const response = await agent.get('/api/test');
     expect(response.body.arr).toEqual([5, 3, 4, 6]);
   });
-
   it('shound work', async () => {
     const app = new Koa();
     const resourcer = new Resourcer();
     const agent = supertest.agent(app.callback());
-
     resourcer.define({
       name: 'tables.fields',
       actions: {
@@ -151,13 +132,10 @@ describe('koa middleware', () => {
         },
       },
     });
-
     app.use(resourcer.middleware());
-
     const response = await agent.get('/tables/demos/fields');
     expect(response.body.arr).toEqual([3, 4]);
   });
-
   describe('action options', () => {
     let resourcer: Resourcer;
     let app: Koa;
@@ -209,8 +187,14 @@ describe('koa middleware', () => {
         sort: ['-id'],
         filter: {
           $and: [
-            { col1: 'val1', col2: 'val2' },
-            { col2: '&val2', col3: 'val3' },
+            {
+              col1: 'val1',
+              col2: 'val2',
+            },
+            {
+              col2: '&val2',
+              col3: 'val3',
+            },
           ],
         },
         fields: ['id'],
@@ -230,11 +214,16 @@ describe('koa middleware', () => {
           },
         },
       });
-      const response = await agent.post('/tests').send({ aa: 'aa' });
+      const response = await agent.post('/tests').send({
+        aa: 'aa',
+      });
       expect(response.body).toMatchObject({
         actionName: 'create',
         resourceName: 'tests',
-        values: { col1: 'val1', aa: 'aa' },
+        values: {
+          col1: 'val1',
+          aa: 'aa',
+        },
       });
     });
     it('options3', async () => {
@@ -249,12 +238,17 @@ describe('koa middleware', () => {
         },
       });
       const response = await agent.post('/resourcer/tests:create').send({
-        values: { aa: 'aa' },
+        values: {
+          aa: 'aa',
+        },
       });
       expect(response.body).toMatchObject({
         actionName: 'create',
         resourceName: 'tests',
-        values: { col1: 'val1', aa: 'aa' },
+        values: {
+          col1: 'val1',
+          aa: 'aa',
+        },
       });
     });
     it('options4', async () => {
@@ -270,13 +264,18 @@ describe('koa middleware', () => {
       });
       const response = await agent.post('/resourcer/tests:update').send({
         resourceIndex: 1,
-        values: { aa: 'aa' },
+        values: {
+          aa: 'aa',
+        },
       });
       expect(response.body).toMatchObject({
         resourceIndex: 1,
         actionName: 'update',
         resourceName: 'tests',
-        values: { col1: 'val1', aa: 'aa' },
+        values: {
+          col1: 'val1',
+          aa: 'aa',
+        },
       });
     });
     describe('hasOne', () => {
@@ -606,7 +605,11 @@ describe('koa middleware', () => {
         actions: {
           list: {
             async middleware(ctx, next) {
-              ctx.action.mergeParams({ filter: { user_name: ctx.action.params.associatedIndex } });
+              ctx.action.mergeParams({
+                filter: {
+                  user_name: ctx.action.params.associatedIndex,
+                },
+              });
               await next();
             },
           },
@@ -618,7 +621,9 @@ describe('koa middleware', () => {
         associatedIndex: 'name',
         resourceName: 'posts',
         actionName: 'list',
-        filter: { user_name: 'name' },
+        filter: {
+          user_name: 'name',
+        },
       });
     });
     it('fields9', async () => {
@@ -627,7 +632,9 @@ describe('koa middleware', () => {
         actions: {
           list: {
             async middleware(ctx, next) {
-              ctx.action.mergeParams({ fields: [ctx.action.params.associatedIndex] });
+              ctx.action.mergeParams({
+                fields: [ctx.action.params.associatedIndex],
+              });
               await next();
             },
           },

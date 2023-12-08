@@ -1,5 +1,4 @@
 import { getDateVars, getDayRange, parseFilter, utc2unit, Utc2unitOptions } from '../parse-filter';
-
 describe('utc to unit', () => {
   const expectUtc2unit = (options: Utc2unitOptions) => {
     const r = utc2unit(options);
@@ -114,7 +113,6 @@ describe('utc to unit', () => {
     }).toBe('2023-01-05+00:00');
   });
 });
-
 describe('getDayRange', () => {
   const expectDayRange = (options) => {
     const r = getDayRange(options);
@@ -146,7 +144,6 @@ describe('getDayRange', () => {
     }).toEqual(['2023-03-23', '2023-03-30', '[)', '+08:00']);
   });
 });
-
 describe('parseFilter', () => {
   const expectParseFilter = (filter, options) => {
     return {
@@ -157,7 +154,6 @@ describe('parseFilter', () => {
       },
     };
   };
-
   test('timezone', async () => {
     await expectParseFilter(
       {
@@ -167,9 +163,15 @@ describe('parseFilter', () => {
       {
         timezone: '+00:00',
       },
-    ).toEqual({ a: { $dateOn: '2023+00:00' }, b: { $dateOn: '2023+08:00' } });
+    ).toEqual({
+      a: {
+        $dateOn: '2023+00:00',
+      },
+      b: {
+        $dateOn: '2023+08:00',
+      },
+    });
   });
-
   test('timezone', async () => {
     await expectParseFilter(
       {
@@ -192,9 +194,18 @@ describe('parseFilter', () => {
           }
         },
       },
-    ).toEqual({ a: { $dateOn: '2023+06:00' }, b: { $dateOn: '2023+08:00' }, c: { $dateOn: '2023+08:00' } });
+    ).toEqual({
+      a: {
+        $dateOn: '2023+06:00',
+      },
+      b: {
+        $dateOn: '2023+08:00',
+      },
+      c: {
+        $dateOn: '2023+08:00',
+      },
+    });
   });
-
   test('vars', async () => {
     await expectParseFilter(
       {
@@ -213,9 +224,16 @@ describe('parseFilter', () => {
           },
         },
       },
-    ).toEqual({ a: { $dateOn: '2023-01-01+08:00' }, b: { $eq: 'bar', $ne: null } });
+    ).toEqual({
+      a: {
+        $dateOn: '2023-01-01+08:00',
+      },
+      b: {
+        $eq: 'bar',
+        $ne: null,
+      },
+    });
   });
-
   test('$date.today', async () => {
     await expectParseFilter(
       {
@@ -228,9 +246,12 @@ describe('parseFilter', () => {
           $date: getDateVars(),
         },
       },
-    ).toEqual({ a: { $dateOn: '2023-01-01+08:00' } });
+    ).toEqual({
+      a: {
+        $dateOn: '2023-01-01+08:00',
+      },
+    });
   });
-
   test('$user', async () => {
     await expectParseFilter(
       {
@@ -250,9 +271,22 @@ describe('parseFilter', () => {
           },
         },
       },
-    ).toEqual({ user: { id: { $eq: 1 } }, team: { id: { $eq: 2 }, name: { $eq: null } } });
+    ).toEqual({
+      user: {
+        id: {
+          $eq: 1,
+        },
+      },
+      team: {
+        id: {
+          $eq: 2,
+        },
+        name: {
+          $eq: null,
+        },
+      },
+    });
   });
-
   test('$user', async () => {
     await expectParseFilter(
       {
@@ -267,9 +301,22 @@ describe('parseFilter', () => {
           },
         },
       },
-    ).toEqual({ user: { id: { $eq: null } }, team: { id: { $eq: null }, name: { $eq: null } } });
+    ).toEqual({
+      user: {
+        id: {
+          $eq: null,
+        },
+      },
+      team: {
+        id: {
+          $eq: null,
+        },
+        name: {
+          $eq: null,
+        },
+      },
+    });
   });
-
   test('$user', async () => {
     const date = new Date();
     await expectParseFilter(
@@ -287,9 +334,12 @@ describe('parseFilter', () => {
           },
         },
       },
-    ).toEqual({ createdAt: { $eq: date } });
+    ).toEqual({
+      createdAt: {
+        $eq: date,
+      },
+    });
   });
-
   test('$user & array', async () => {
     const date = new Date();
     await expectParseFilter(
@@ -300,14 +350,26 @@ describe('parseFilter', () => {
         vars: {
           $user: async (fields) => {
             return {
-              roles: [{ name: 'admin' }, { name: 'user' }],
+              roles: [
+                {
+                  name: 'admin',
+                },
+                {
+                  name: 'user',
+                },
+              ],
             };
           },
         },
       },
-    ).toEqual({ roles: { name: { $eq: ['admin', 'user'] } } });
+    ).toEqual({
+      roles: {
+        name: {
+          $eq: ['admin', 'user'],
+        },
+      },
+    });
   });
-
   test('$dateOn', async () => {
     const date = new Date();
     await expectParseFilter(
@@ -325,6 +387,10 @@ describe('parseFilter', () => {
           },
         },
       },
-    ).toEqual({ createdAt: { $dateOn: date.toISOString() } });
+    ).toEqual({
+      createdAt: {
+        $dateOn: date.toISOString(),
+      },
+    });
   });
 });

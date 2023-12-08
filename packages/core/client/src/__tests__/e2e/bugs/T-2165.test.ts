@@ -1,5 +1,4 @@
 import { expect, test } from '@nocobase/test/client';
-
 const config = {
   pageSchema: {
     _isJSONSchemaObject: true,
@@ -282,11 +281,13 @@ const config = {
 // fix https://nocobase.height.app/T-2165
 test('BUG: variable labels should be displayed normally', async ({ page, mockPage }) => {
   await mockPage(config).goto();
-
   await page.getByLabel('block-item-CardItem-users-form').hover();
   await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-users').hover();
-  await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
-
+  await page
+    .getByRole('menuitem', {
+      name: 'Linkage rules',
+    })
+    .click();
   await expect(page.getByText('Current form / Nickname')).toBeVisible();
   await expect(page.getByText('Current form / Phone')).toBeVisible();
 });

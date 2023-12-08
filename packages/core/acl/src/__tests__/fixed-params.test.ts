@@ -1,10 +1,8 @@
 import { ACL } from '../acl';
 import FixedParamsManager from '../fixed-params-manager';
-
 describe('fixed params', () => {
   it('should merge params', async () => {
     const fixedParamsManager = new FixedParamsManager();
-
     fixedParamsManager.addParams('collections', 'destroy', () => {
       return {
         filter: {
@@ -12,7 +10,6 @@ describe('fixed params', () => {
         },
       };
     });
-
     fixedParamsManager.addParams('collections', 'destroy', () => {
       return {
         filter: {
@@ -20,7 +17,6 @@ describe('fixed params', () => {
         },
       };
     });
-
     const params = fixedParamsManager.getParams('collections', 'destroy');
     expect(params).toEqual({
       filter: {
@@ -35,25 +31,24 @@ describe('fixed params', () => {
       },
     });
   });
-
   it('should add fixed params to acl action', async () => {
     const acl = new ACL();
-
     const adminRole = acl.define({
       role: 'admin',
       actions: {
         'collections:destroy': {},
       },
     });
-
     let canResult = acl.can({
       role: 'admin',
       resource: 'collections',
       action: 'destroy',
     });
-
-    expect(canResult).toEqual({ role: 'admin', resource: 'collections', action: 'destroy' });
-
+    expect(canResult).toEqual({
+      role: 'admin',
+      resource: 'collections',
+      action: 'destroy',
+    });
     acl.addFixedParams('collections', 'destroy', () => {
       return {
         filter: {
@@ -61,13 +56,11 @@ describe('fixed params', () => {
         },
       };
     });
-
     canResult = acl.can({
       role: 'admin',
       resource: 'collections',
       action: 'destroy',
     });
-
     expect(canResult).toEqual({
       role: 'admin',
       resource: 'collections',

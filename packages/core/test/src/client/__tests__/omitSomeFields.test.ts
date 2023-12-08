@@ -1,5 +1,4 @@
 import { omitSomeFields } from '../e2eUtils';
-
 describe('omitSomeFields', () => {
   test('should omit key & collectionName', () => {
     const collections = [
@@ -33,7 +32,6 @@ describe('omitSomeFields', () => {
         ],
       },
     ];
-
     expect(omitSomeFields(collections)).toMatchSnapshot();
   });
 });

@@ -2,7 +2,6 @@ import { Collection } from '../collection';
 import { Database } from '../database';
 import { updateAssociations } from '../update-associations';
 import { mockDatabase } from './';
-
 describe('update associations', () => {
   describe('belongsTo', () => {
     let db: Database;
@@ -12,11 +11,9 @@ describe('update associations', () => {
         drop: true,
       });
     });
-
     afterEach(async () => {
       await db.close();
     });
-
     test('update belongs to with foreign key and object', async () => {
       const throughAB = db.collection({
         name: 'throughAB',
@@ -29,7 +26,6 @@ describe('update associations', () => {
           },
         ],
       });
-
       const throughBC = db.collection({
         name: 'throughBC',
         fields: [
@@ -41,7 +37,6 @@ describe('update associations', () => {
           },
         ],
       });
-
       const throughCD = db.collection({
         name: 'throughCD',
         fields: [
@@ -53,27 +48,43 @@ describe('update associations', () => {
           },
         ],
       });
-
       const A = db.collection({
         name: 'A',
         fields: [
-          { type: 'string', name: 'name' },
-          { type: 'hasMany', name: 'throughAB', foreignKey: 'aId', target: 'throughAB' },
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'hasMany',
+            name: 'throughAB',
+            foreignKey: 'aId',
+            target: 'throughAB',
+          },
         ],
       });
-
       const B = db.collection({
         name: 'B',
         fields: [
-          { type: 'string', name: 'name' },
-          { type: 'hasMany', name: 'throughBC', foreignKey: 'bId', target: 'throughBC' },
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'hasMany',
+            name: 'throughBC',
+            foreignKey: 'bId',
+            target: 'throughBC',
+          },
         ],
       });
-
       const C = db.collection({
         name: 'C',
         fields: [
-          { type: 'string', name: 'name' },
+          {
+            type: 'string',
+            name: 'name',
+          },
           {
             type: 'hasMany',
             name: 'throughCD',
@@ -82,14 +93,16 @@ describe('update associations', () => {
           },
         ],
       });
-
       const D = db.collection({
         name: 'D',
-        fields: [{ type: 'string', name: 'name' }],
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
       });
-
       await db.sync();
-
       const a1 = await A.repository.create({
         values: {
           name: 'a1',
@@ -116,35 +129,51 @@ describe('update associations', () => {
           ],
         },
       });
-
       expect(
         a1.get('throughAB')[0].get('b').get('throughBC')[0].get('c').get('throughCD')[0].get('d').get('name'),
       ).toBe('d1');
     });
-
     it('post.user', async () => {
-      const User = db.collection<{ id: string; name: string }, { name: string }>({
+      const User = db.collection<
+        {
+          id: string;
+          name: string;
+        },
+        {
+          name: string;
+        }
+      >({
         name: 'users',
-        fields: [{ type: 'string', name: 'name' }],
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
       });
-
       const Post = db.collection({
         name: 'posts',
         fields: [
-          { type: 'string', name: 'name' },
-          { type: 'belongsTo', name: 'user' },
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'belongsTo',
+            name: 'user',
+          },
         ],
       });
-
       await db.sync();
-
-      const user = await User.model.create({ name: 'user1' });
-      const post1 = await Post.model.create({ name: 'post1' });
-
+      const user = await User.model.create({
+        name: 'user1',
+      });
+      const post1 = await Post.model.create({
+        name: 'post1',
+      });
       await updateAssociations(post1, {
         user,
       });
-
       expect(post1.toJSON()).toMatchObject({
         id: 1,
         name: 'post1',
@@ -154,25 +183,25 @@ describe('update associations', () => {
           name: 'user1',
         },
       });
-
-      const post2 = await Post.model.create({ name: 'post2' });
+      const post2 = await Post.model.create({
+        name: 'post2',
+      });
       await updateAssociations(post2, {
         user: user.getDataValue('id'),
       });
-
       expect(post2.toJSON()).toMatchObject({
         id: 2,
         name: 'post2',
         userId: 1,
       });
-
-      const post3 = await Post.model.create({ name: 'post3' });
+      const post3 = await Post.model.create({
+        name: 'post3',
+      });
       await updateAssociations(post3, {
         user: {
           name: 'user3',
         },
       });
-
       expect(post3.toJSON()).toMatchObject({
         id: 3,
         name: 'post3',
@@ -182,20 +211,19 @@ describe('update associations', () => {
           name: 'user3',
         },
       });
-
-      const post4 = await Post.model.create({ name: 'post4' });
+      const post4 = await Post.model.create({
+        name: 'post4',
+      });
       await updateAssociations(post4, {
         user: {
           id: user.getDataValue('id'),
           name: 'user4',
         },
       });
-
       const p4 = await db.getRepository('posts').findOne({
         filterByTk: post4.id,
         appends: ['user'],
       });
-
       expect(p4?.toJSON()).toMatchObject({
         id: 4,
         name: 'post4',
@@ -207,7 +235,6 @@ describe('update associations', () => {
       });
     });
   });
-
   describe('hasMany', () => {
     let db: Database;
     let User: Collection;
@@ -217,13 +244,24 @@ describe('update associations', () => {
       User = db.collection({
         name: 'users',
         fields: [
-          { type: 'string', name: 'name' },
-          { type: 'hasMany', name: 'posts' },
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'hasMany',
+            name: 'posts',
+          },
         ],
       });
       Post = db.collection({
         name: 'posts',
-        fields: [{ type: 'string', name: 'name' }],
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
       });
       await db.sync();
     });
@@ -231,7 +269,9 @@ describe('update associations', () => {
       await db.close();
     });
     it('user.posts', async () => {
-      const user1 = await User.model.create<any>({ name: 'user1' });
+      const user1 = await User.model.create<any>({
+        name: 'user1',
+      });
       await updateAssociations(user1, {
         posts: {
           name: 'post1',
@@ -248,7 +288,9 @@ describe('update associations', () => {
       });
     });
     it('user.posts', async () => {
-      const user1 = await User.model.create<any>({ name: 'user1' });
+      const user1 = await User.model.create<any>({
+        name: 'user1',
+      });
       await updateAssociations(user1, {
         posts: [
           {
@@ -267,8 +309,12 @@ describe('update associations', () => {
       });
     });
     it('user.posts', async () => {
-      const user1 = await User.model.create<any>({ name: 'user1' });
-      const post1 = await Post.model.create<any>({ name: 'post1' });
+      const user1 = await User.model.create<any>({
+        name: 'user1',
+      });
+      const post1 = await Post.model.create<any>({
+        name: 'post1',
+      });
       await updateAssociations(user1, {
         posts: post1.id,
       });
@@ -281,12 +327,15 @@ describe('update associations', () => {
       });
     });
     it('user.posts', async () => {
-      const user1 = await User.model.create<any>({ name: 'user1' });
-      const post1 = await Post.model.create<any>({ name: 'post1' });
+      const user1 = await User.model.create<any>({
+        name: 'user1',
+      });
+      const post1 = await Post.model.create<any>({
+        name: 'post1',
+      });
       await updateAssociations(user1, {
         posts: post1,
       });
-
       expect(user1.toJSON()).toMatchObject({
         name: 'user1',
       });
@@ -296,15 +345,18 @@ describe('update associations', () => {
       });
     });
     it('user.posts', async () => {
-      const user1 = await User.model.create<any>({ name: 'user1' });
-      const post1 = await Post.model.create<any>({ name: 'post1' });
+      const user1 = await User.model.create<any>({
+        name: 'user1',
+      });
+      const post1 = await Post.model.create<any>({
+        name: 'post1',
+      });
       await updateAssociations(user1, {
         posts: {
           id: post1.id,
           name: 'post111',
         },
       });
-
       expect(user1.toJSON()).toMatchObject({
         name: 'user1',
       });
@@ -315,10 +367,18 @@ describe('update associations', () => {
       });
     });
     it('user.posts', async () => {
-      const user1 = await User.model.create<any>({ name: 'user1' });
-      const post1 = await Post.model.create<any>({ name: 'post1' });
-      const post2 = await Post.model.create<any>({ name: 'post2' });
-      const post3 = await Post.model.create<any>({ name: 'post3' });
+      const user1 = await User.model.create<any>({
+        name: 'user1',
+      });
+      const post1 = await Post.model.create<any>({
+        name: 'post1',
+      });
+      const post2 = await Post.model.create<any>({
+        name: 'post2',
+      });
+      const post3 = await Post.model.create<any>({
+        name: 'post3',
+      });
       await updateAssociations(user1, {
         posts: [
           {
@@ -329,7 +389,6 @@ describe('update associations', () => {
           post3,
         ],
       });
-
       expect(user1.toJSON()).toMatchObject({
         name: 'user1',
       });
@@ -350,45 +409,64 @@ describe('update associations', () => {
       });
     });
   });
-
   describe('nested', () => {
     let db: Database;
     let User: Collection;
     let Post: Collection;
     let Comment: Collection;
-
     beforeEach(async () => {
       db = mockDatabase();
-      await db.clean({ drop: true });
+      await db.clean({
+        drop: true,
+      });
       User = db.collection({
         name: 'users',
         fields: [
-          { type: 'string', name: 'name' },
-          { type: 'hasMany', name: 'posts' },
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'hasMany',
+            name: 'posts',
+          },
         ],
       });
       Post = db.collection({
         name: 'posts',
         fields: [
-          { type: 'string', name: 'name' },
-          { type: 'belongsTo', name: 'user' },
-          { type: 'hasMany', name: 'comments' },
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'belongsTo',
+            name: 'user',
+          },
+          {
+            type: 'hasMany',
+            name: 'comments',
+          },
         ],
       });
       Comment = db.collection({
         name: 'comments',
         fields: [
-          { type: 'string', name: 'name' },
-          { type: 'belongsTo', name: 'post' },
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'belongsTo',
+            name: 'post',
+          },
         ],
       });
       await db.sync();
     });
-
     afterEach(async () => {
       await db.close();
     });
-
     test('create many with nested associations', async () => {
       await User.repository.createMany({
         records: [
@@ -421,9 +499,10 @@ describe('update associations', () => {
         ],
       });
     });
-
     it('nested', async () => {
-      const user = await User.model.create({ name: 'user1' });
+      const user = await User.model.create({
+        name: 'user1',
+      });
       await updateAssociations(user, {
         posts: [
           {
@@ -450,57 +529,73 @@ describe('update associations', () => {
           },
         ],
       });
-
       const post1 = await Post.model.findOne({
-        where: { name: 'post1' },
+        where: {
+          name: 'post1',
+        },
       });
-
       const comment1 = await Comment.model.findOne({
-        where: { name: 'comment1' },
+        where: {
+          name: 'comment1',
+        },
       });
-
       expect(post1).toMatchObject({
         userId: user.get('id'),
       });
-
       expect(comment1).toMatchObject({
         postId: post1.get('id'),
       });
     });
   });
-
   describe('belongsToMany', () => {
     let db: Database;
     let Post: Collection;
     let Tag: Collection;
     let PostTag: Collection;
-
     beforeEach(async () => {
       db = mockDatabase();
-      await db.clean({ drop: true });
+      await db.clean({
+        drop: true,
+      });
       PostTag = db.collection({
         name: 'posts_tags',
-        fields: [{ type: 'string', name: 'tagged_at' }],
+        fields: [
+          {
+            type: 'string',
+            name: 'tagged_at',
+          },
+        ],
       });
       Post = db.collection({
         name: 'posts',
         fields: [
-          { type: 'belongsToMany', name: 'tags', through: 'posts_tags' },
-          { type: 'string', name: 'title' },
+          {
+            type: 'belongsToMany',
+            name: 'tags',
+            through: 'posts_tags',
+          },
+          {
+            type: 'string',
+            name: 'title',
+          },
         ],
       });
-
       Tag = db.collection({
         name: 'tags',
         fields: [
-          { type: 'belongsToMany', name: 'posts', through: 'posts_tags' },
-          { type: 'string', name: 'name' },
+          {
+            type: 'belongsToMany',
+            name: 'posts',
+            through: 'posts_tags',
+          },
+          {
+            type: 'string',
+            name: 'name',
+          },
         ],
       });
-
       await db.sync();
     });
-
     afterEach(async () => {
       await db.close();
     });
@@ -515,7 +610,9 @@ describe('update associations', () => {
                 tagged_at: '123',
               },
             },
-            { name: 't2' },
+            {
+              name: 't2',
+            },
           ],
         },
       });

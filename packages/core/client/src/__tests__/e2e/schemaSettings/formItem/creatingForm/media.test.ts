@@ -1,18 +1,21 @@
 import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndMediaFields, test } from '@nocobase/test/client';
 import { commonTesting, testDefaultValue, testPattern, testSetValidationRules } from '../commonTesting';
-
 const gotoPage = async (mockPage) => {
   const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndMediaFields).waitForInit();
   await nocoPage.goto();
 };
-
 const openDialog = async (page: Page) => {
-  await page.getByRole('button', { name: 'Add new' }).click();
+  await page
+    .getByRole('button', {
+      name: 'Add new',
+    })
+    .click();
 };
-
 const showMenu = async (page: Page, fieldName: string) => {
   await page
-    .getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`, { exact: true })
+    .getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`, {
+      exact: true,
+    })
     .hover();
   await page
     .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`, {
@@ -20,7 +23,6 @@ const showMenu = async (page: Page, fieldName: string) => {
     })
     .hover();
 };
-
 const openDialogAndShowMenu = async ({
   page,
   mockPage,
@@ -36,10 +38,12 @@ const openDialogAndShowMenu = async ({
   await openDialog(page);
   await showMenu(page, fieldName);
 };
-
 test.describe('markdown', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'markdown', mode: 'options' });
-
+  commonTesting({
+    openDialogAndShowMenu,
+    fieldName: 'markdown',
+    mode: 'options',
+  });
   test('set default value', async ({ page, mockPage, mockRecord }) => {
     await testDefaultValue({
       page,
@@ -56,7 +60,6 @@ test.describe('markdown', () => {
       },
     });
   });
-
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     await testPattern({
       page,
@@ -88,7 +91,6 @@ test.describe('markdown', () => {
       },
     });
   });
-
   test('Set validation rules', async ({ page, mockPage }) => {
     await testSetValidationRules({
       page,
@@ -98,10 +100,12 @@ test.describe('markdown', () => {
     });
   });
 });
-
 test.describe('rich text', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'richText', mode: 'options' });
-
+  commonTesting({
+    openDialogAndShowMenu,
+    fieldName: 'richText',
+    mode: 'options',
+  });
   test('set default value', async ({ page, mockPage, mockRecord }) => {
     await testDefaultValue({
       page,
@@ -121,7 +125,6 @@ test.describe('rich text', () => {
       },
     });
   });
-
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     await testPattern({
       page,
@@ -150,7 +153,6 @@ test.describe('rich text', () => {
       },
     });
   });
-
   test('Set validation rules', async ({ page, mockPage }) => {
     await testSetValidationRules({
       page,
@@ -160,24 +162,39 @@ test.describe('rich text', () => {
     });
   });
 });
-
 test.describe('attachment', () => {
-  commonTesting({ openDialogAndShowMenu, fieldName: 'attachment', mode: 'options' });
-
+  commonTesting({
+    openDialogAndShowMenu,
+    fieldName: 'attachment',
+    mode: 'options',
+  });
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     await testPattern({
       page,
       gotoPage: () => gotoPage(mockPage),
       openDialog: () => openDialog(page),
       showMenu: () => showMenu(page, 'attachment'),
+
       expectEditable: async () => {
-        await expect(page.getByRole('button', { name: 'plus Upload' })).toBeVisible();
+        await expect(
+          page.getByRole('button', {
+            name: 'plus Upload',
+          }),
+        ).toBeVisible();
       },
       expectReadonly: async () => {
-        await expect(page.getByRole('button', { name: 'plus Upload' })).not.toBeVisible();
+        await expect(
+          page.getByRole('button', {
+            name: 'plus Upload',
+          }),
+        ).not.toBeVisible();
       },
       expectEasyReading: async () => {
-        await expect(page.getByRole('button', { name: 'plus Upload' })).not.toBeVisible();
+        await expect(
+          page.getByRole('button', {
+            name: 'plus Upload',
+          }),
+        ).not.toBeVisible();
       },
     });
   });

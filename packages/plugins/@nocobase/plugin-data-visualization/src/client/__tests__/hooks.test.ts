@@ -12,7 +12,6 @@ import {
   useOrderFieldsOptions,
   useTransformers,
 } from '../hooks';
-
 describe('hooks', () => {
   beforeEach(() => {
     vi.spyOn(client, 'useCollectionManager').mockReturnValue({
@@ -78,11 +77,9 @@ describe('hooks', () => {
       },
     } as any);
   });
-
   afterEach(() => {
     vi.restoreAllMocks();
   });
-
   test('useFieldsWithAssociation', () => {
     const { result } = renderHook(() => useFieldsWithAssociation('orders'));
     expect(result.current).toMatchObject([
@@ -116,7 +113,6 @@ describe('hooks', () => {
       },
     ]);
   });
-
   test('useChartFields', () => {
     const fields = renderHook(() => useFieldsWithAssociation('orders')).result.current;
     const { result } = renderHook(() => useChartFields(fields));
@@ -153,7 +149,6 @@ describe('hooks', () => {
       },
     ]);
   });
-
   test('useFormatters', () => {
     const fields = renderHook(() => useFieldsWithAssociation('orders')).result.current;
     const { result } = renderHook(() => useFormatters(fields));
@@ -167,7 +162,6 @@ describe('hooks', () => {
     func(field);
     expect(field.dataSource).toEqual(formatters.datetime);
   });
-
   test('useFieldTypes', () => {
     const fields = renderHook(() => useFieldsWithAssociation('orders')).result.current;
     const { result } = renderHook(() => useFieldTypes(fields));
@@ -181,7 +175,16 @@ describe('hooks', () => {
     const query = (path: string, val: string) => ({
       get: () => {
         if (path === 'query') {
-          return { measures: [{ field: ['price'] }, { field: ['name'] }] };
+          return {
+            measures: [
+              {
+                field: ['price'],
+              },
+              {
+                field: ['name'],
+              },
+            ],
+          };
         }
         return val;
       },
@@ -199,10 +202,15 @@ describe('hooks', () => {
     func(field1);
     func(field2);
     expect(field1.dataSource.map((item) => item.value)).toEqual(Object.keys(transformers));
-    expect(state1).toEqual({ value: 'number', disabled: true });
-    expect(state2).toEqual({ value: null, disabled: false });
+    expect(state1).toEqual({
+      value: 'number',
+      disabled: true,
+    });
+    expect(state2).toEqual({
+      value: null,
+      disabled: false,
+    });
   });
-
   test('useTransformers', () => {
     const field = {
       query: () => ({
@@ -213,7 +221,6 @@ describe('hooks', () => {
     renderHook(() => useTransformers(field));
     expect(field.dataSource.map((item) => item.value)).toEqual(Object.keys(transformers['datetime']));
   });
-
   test('useFieldTransformers', () => {
     const { result } = renderHook(() =>
       useFieldTransformer([
@@ -232,7 +239,6 @@ describe('hooks', () => {
     expect(result.current['1']).toBeDefined();
     expect(result.current['2']).toBeUndefined();
   });
-
   test('useOrderFieldsOptions', () => {
     const fields = renderHook(() => useFieldsWithAssociation('orders')).result.current;
     const { result } = renderHook(() => useOrderFieldsOptions([], fields));
@@ -240,7 +246,11 @@ describe('hooks', () => {
     const field1 = {
       query: () => ({
         get: () => ({
-          measures: [{ field: ['price'] }],
+          measures: [
+            {
+              field: ['price'],
+            },
+          ],
         }),
       }),
       dataSource: [],
@@ -251,7 +261,12 @@ describe('hooks', () => {
     const field2 = {
       query: () => ({
         get: () => ({
-          measures: [{ field: ['price'], aggregation: 'sum' }],
+          measures: [
+            {
+              field: ['price'],
+              aggregation: 'sum',
+            },
+          ],
         }),
       }),
       componentProps: {
@@ -267,7 +282,13 @@ describe('hooks', () => {
       value: 'name',
       children: 'children',
     });
-    expect(field2.dataSource).toMatchObject([{ key: 'price', value: 'price', label: 'Price' }]);
+    expect(field2.dataSource).toMatchObject([
+      {
+        key: 'price',
+        value: 'price',
+        label: 'Price',
+      },
+    ]);
     expect(field2.componentProps.fieldNames).toEqual({});
   });
 });

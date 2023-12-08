@@ -1,17 +1,13 @@
 import { mockDatabase } from '../';
 import { Database } from '../../database';
-
 describe('array field', () => {
   let db: Database;
-
   beforeEach(async () => {
     db = mockDatabase();
   });
-
   afterEach(async () => {
     await db.close();
   });
-
   it('should not be ambiguous', async () => {
     db.collection({
       name: 'a',

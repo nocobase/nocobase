@@ -1,17 +1,17 @@
+import { vi } from 'vitest';
 import { Database } from '../database';
 import { mockDatabase } from './';
-
 describe('update through', () => {
   let db: Database;
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({ drop: true });
+    await db.clean({
+      drop: true,
+    });
   });
-
   afterEach(async () => {
     await db.close();
   });
-
   it('should not be reset', async () => {
     db.collection({
       name: 'c',
@@ -45,8 +45,8 @@ describe('update through', () => {
       fields: [],
     });
     await db.sync();
-    const callback1 = jest.fn();
-    const callback2 = jest.fn();
+    const callback1 = vi.fn();
+    const callback2 = vi.fn();
     db.on('c.afterCreate', callback1);
     db.on('c.afterBulkCreate', callback2);
     const b = await db.getRepository('b').create({
@@ -64,7 +64,6 @@ describe('update through', () => {
         b: [b.toJSON()],
       },
     });
-
     const c2 = await db.getRepository('c').findOne();
     expect(c1.get('id')).toBe(c2.get('id'));
     expect(callback1).toHaveBeenCalledTimes(1);

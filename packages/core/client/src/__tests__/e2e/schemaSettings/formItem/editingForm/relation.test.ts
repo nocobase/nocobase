@@ -1,26 +1,21 @@
 import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndRelationFields, test } from '@nocobase/test/client';
 import { commonTesting, testPattern } from '../commonTesting';
-
 const gotoPage = async (mockPage, mockRecords) => {
   const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndRelationFields).waitForInit();
   await mockRecords('users', 3);
   const record = (await mockRecords('general', 1))[0];
   await nocoPage.goto();
-
   return record;
 };
-
 const openDialog = async (page: Page) => {
   await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
 };
-
 const showMenu = async (page: Page, fieldName: string) => {
   await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
   await page
     .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
     .hover();
 };
-
 const openDialogAndShowMenu = async ({
   page,
   mockPage,
@@ -37,7 +32,6 @@ const openDialogAndShowMenu = async ({
   await openDialog(page);
   await showMenu(page, fieldName);
 };
-
 test.describe('many to many', () => {
   commonTesting({
     openDialogAndShowMenu,
@@ -46,7 +40,6 @@ test.describe('many to many', () => {
     mode: 'options',
     blockType: 'editing',
   });
-
   test('pattern', async ({ page, mockPage, mockRecords }) => {
     let record;
     await testPattern({
@@ -79,90 +72,180 @@ test.describe('many to many', () => {
       },
     });
   });
-
   test('Set the data scope', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'manyToMany');
-    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
-    await page.getByText('Add condition', { exact: true }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Set the data scope',
+      })
+      .click();
+    await page
+      .getByText('Add condition', {
+        exact: true,
+      })
+      .click();
     await page.getByTestId('select-filter-field').click();
-    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page
+      .getByRole('menuitemcheckbox', {
+        name: 'ID',
+        exact: true,
+      })
+      .click();
     await page.getByRole('spinbutton').click();
     await page.getByRole('spinbutton').fill('3');
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await page
+      .getByRole('button', {
+        name: 'OK',
+        exact: true,
+      })
+      .click();
 
     // 再次打开弹窗，设置的值应该还在
     await showMenu(page, 'manyToMany');
-    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Set the data scope',
+      })
+      .click();
     await expect(page.getByTestId('select-filter-field')).toHaveText('ID');
     await expect(page.getByRole('spinbutton')).toHaveValue('3');
-    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page
+      .getByRole('button', {
+        name: 'Cancel',
+        exact: true,
+      })
+      .click();
 
     // 数据应该被过滤了
     await page
       .getByLabel('block-item-CollectionField-general-form-general.manyToMany-manyToMany')
       .getByTestId('select-object-multiple')
       .click();
-    await expect(page.getByRole('option', { name: '3', exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: '3',
+        exact: true,
+      }),
+    ).toBeVisible();
   });
-
   test('set default sorting rules', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'manyToMany');
-    await page.getByRole('menuitem', { name: 'Set default sorting rules' }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Set default sorting rules',
+      })
+      .click();
 
     // 配置
-    await page.getByRole('button', { name: 'Add sort field' }).click();
+    await page
+      .getByRole('button', {
+        name: 'Add sort field',
+      })
+      .click();
     await page.getByTestId('select-single').getByLabel('Search').click();
-    await page.getByRole('option', { name: 'ID' }).click();
-    await page.getByText('DESC', { exact: true }).click();
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await page
+      .getByRole('option', {
+        name: 'ID',
+      })
+      .click();
+    await page
+      .getByText('DESC', {
+        exact: true,
+      })
+      .click();
+    await page
+      .getByRole('button', {
+        name: 'OK',
+        exact: true,
+      })
+      .click();
 
     // 再次打开弹窗，设置的值应该还在
     await showMenu(page, 'manyToMany');
-    await page.getByRole('menuitem', { name: 'Set default sorting rules' }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Set default sorting rules',
+      })
+      .click();
     await expect(page.getByRole('dialog').getByTestId('select-single')).toHaveText('ID');
   });
-
   test('field component', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'manyToMany');
-    await page.getByRole('menuitem', { name: 'Field component' }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Field component',
+      })
+      .click();
 
     // 断言支持的选项
-    await expect(page.getByRole('option', { name: 'Select', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Record picker', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Sub-table', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Sub-form', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Sub-form(Popover)', exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Select',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Record picker',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Sub-table',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Sub-form',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Sub-form(Popover)',
+        exact: true,
+      }),
+    ).toBeVisible();
   });
-
   test('quick create', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'manyToMany');
-
-    await expect(page.getByRole('menuitem', { name: 'Quick create' })).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Quick create',
+      }),
+    ).toBeVisible();
   });
-
   test('allow multiple', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'manyToMany');
-    await expect(page.getByRole('menuitem', { name: 'Allow multiple' })).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Allow multiple',
+      }),
+    ).toBeVisible();
   });
-
   test('title field', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'manyToMany');
-    await expect(page.getByRole('menuitem', { name: 'Title field' })).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Title field',
+      }),
+    ).toBeVisible();
   });
 });
-
 test.describe('many to one', () => {
   commonTesting({
     openDialogAndShowMenu,
@@ -171,7 +254,6 @@ test.describe('many to one', () => {
     mode: 'options',
     blockType: 'editing',
   });
-
   test('pattern', async ({ page, mockPage, mockRecords }) => {
     let record;
     await testPattern({
@@ -204,64 +286,122 @@ test.describe('many to one', () => {
       },
     });
   });
-
   test('Set the data scope', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'manyToOne');
-    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
-    await page.getByText('Add condition', { exact: true }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Set the data scope',
+      })
+      .click();
+    await page
+      .getByText('Add condition', {
+        exact: true,
+      })
+      .click();
     await page.getByTestId('select-filter-field').click();
-    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page
+      .getByRole('menuitemcheckbox', {
+        name: 'ID',
+        exact: true,
+      })
+      .click();
     await page.getByRole('spinbutton').click();
     await page.getByRole('spinbutton').fill('3');
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await page
+      .getByRole('button', {
+        name: 'OK',
+        exact: true,
+      })
+      .click();
 
     // 再次打开弹窗，设置的值应该还在
     await showMenu(page, 'manyToOne');
-    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Set the data scope',
+      })
+      .click();
     await expect(page.getByTestId('select-filter-field')).toHaveText('ID');
     await expect(page.getByRole('spinbutton')).toHaveValue('3');
-    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page
+      .getByRole('button', {
+        name: 'Cancel',
+        exact: true,
+      })
+      .click();
 
     // 数据应该被过滤了
     await page
       .getByLabel('block-item-CollectionField-general-form-general.manyToOne-manyToOne')
       .getByTestId(/select-object/)
       .click();
-    await expect(page.getByRole('option', { name: '3', exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: '3',
+        exact: true,
+      }),
+    ).toBeVisible();
     await expect(page.getByRole('option')).toHaveCount(2);
   });
-
   test('field component', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'manyToOne');
-    await page.getByRole('menuitem', { name: 'Field component' }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Field component',
+      })
+      .click();
 
     // 断言支持的选项
-    await expect(page.getByRole('option', { name: 'Select', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Record picker', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Sub-form', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Sub-form(Popover)', exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Select',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Record picker',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Sub-form',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Sub-form(Popover)',
+        exact: true,
+      }),
+    ).toBeVisible();
   });
-
   test('quick create', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'manyToOne');
-
-    await expect(page.getByRole('menuitem', { name: 'Quick create' })).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Quick create',
+      }),
+    ).toBeVisible();
   });
-
   test('title field', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'manyToOne');
-    await expect(page.getByRole('menuitem', { name: 'Title field' })).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Title field',
+      }),
+    ).toBeVisible();
   });
 });
-
 test.describe('one to many', () => {
   commonTesting({
     openDialogAndShowMenu,
@@ -270,7 +410,6 @@ test.describe('one to many', () => {
     mode: 'options',
     blockType: 'editing',
   });
-
   test('pattern', async ({ page, mockPage, mockRecords }) => {
     let record;
     await testPattern({
@@ -303,25 +442,51 @@ test.describe('one to many', () => {
       },
     });
   });
-
   test('Set the data scope', async ({ page, mockPage, mockRecords }) => {
     const record = await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'oneToMany');
-    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
-    await page.getByText('Add condition', { exact: true }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Set the data scope',
+      })
+      .click();
+    await page
+      .getByText('Add condition', {
+        exact: true,
+      })
+      .click();
     await page.getByTestId('select-filter-field').click();
-    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page
+      .getByRole('menuitemcheckbox', {
+        name: 'ID',
+        exact: true,
+      })
+      .click();
     await page.getByRole('spinbutton').click();
     await page.getByRole('spinbutton').fill('3');
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await page
+      .getByRole('button', {
+        name: 'OK',
+        exact: true,
+      })
+      .click();
 
     // 再次打开弹窗，设置的值应该还在
     await showMenu(page, 'oneToMany');
-    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Set the data scope',
+      })
+      .click();
     await expect(page.getByTestId('select-filter-field')).toHaveText('ID');
     await expect(page.getByRole('spinbutton')).toHaveValue('3');
-    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page
+      .getByRole('button', {
+        name: 'Cancel',
+        exact: true,
+      })
+      .click();
 
     // 数据应该被过滤了
     await page
@@ -331,44 +496,79 @@ test.describe('one to many', () => {
     // 但是在编辑模式下，本身已经有数据，所以需要加上已有数据的个数
     await expect(page.getByRole('option')).toHaveCount(1 + record.oneToMany.length);
   });
-
   test('field component', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'oneToMany');
-    await page.getByRole('menuitem', { name: 'Field component' }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Field component',
+      })
+      .click();
 
     // 断言支持的选项
-    await expect(page.getByRole('option', { name: 'Select', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Record picker', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Sub-table', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Sub-form', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Sub-form(Popover)', exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Select',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Record picker',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Sub-table',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Sub-form',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Sub-form(Popover)',
+        exact: true,
+      }),
+    ).toBeVisible();
   });
-
   test('quick create', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'oneToMany');
-
-    await expect(page.getByRole('menuitem', { name: 'Quick create' })).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Quick create',
+      }),
+    ).toBeVisible();
   });
-
   test('allow multiple', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'oneToMany');
-    await expect(page.getByRole('menuitem', { name: 'Allow multiple' })).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Allow multiple',
+      }),
+    ).toBeVisible();
   });
-
   test('title field', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'oneToMany');
-    await expect(page.getByRole('menuitem', { name: 'Title field' })).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Title field',
+      }),
+    ).toBeVisible();
   });
 });
-
 test.describe('one to one (belongs to)', () => {
   commonTesting({
     openDialogAndShowMenu,
@@ -377,7 +577,6 @@ test.describe('one to one (belongs to)', () => {
     mode: 'options',
     blockType: 'editing',
   });
-
   test('pattern', async ({ page, mockPage, mockRecords }) => {
     let record;
     await testPattern({
@@ -410,64 +609,122 @@ test.describe('one to one (belongs to)', () => {
       },
     });
   });
-
   test('Set the data scope', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'oneToOneBelongsTo');
-    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
-    await page.getByText('Add condition', { exact: true }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Set the data scope',
+      })
+      .click();
+    await page
+      .getByText('Add condition', {
+        exact: true,
+      })
+      .click();
     await page.getByTestId('select-filter-field').click();
-    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page
+      .getByRole('menuitemcheckbox', {
+        name: 'ID',
+        exact: true,
+      })
+      .click();
     await page.getByRole('spinbutton').click();
     await page.getByRole('spinbutton').fill('3');
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await page
+      .getByRole('button', {
+        name: 'OK',
+        exact: true,
+      })
+      .click();
 
     // 再次打开弹窗，设置的值应该还在
     await showMenu(page, 'oneToOneBelongsTo');
-    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Set the data scope',
+      })
+      .click();
     await expect(page.getByTestId('select-filter-field')).toHaveText('ID');
     await expect(page.getByRole('spinbutton')).toHaveValue('3');
-    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page
+      .getByRole('button', {
+        name: 'Cancel',
+        exact: true,
+      })
+      .click();
 
     // 数据应该被过滤了
     await page
       .getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo-oneToOneBelongsTo')
       .getByTestId(/select-object/)
       .click();
-    await expect(page.getByRole('option', { name: '3', exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: '3',
+        exact: true,
+      }),
+    ).toBeVisible();
     await expect(page.getByRole('option')).toHaveCount(2);
   });
-
   test('field component', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'oneToOneBelongsTo');
-    await page.getByRole('menuitem', { name: 'Field component' }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Field component',
+      })
+      .click();
 
     // 断言支持的选项
-    await expect(page.getByRole('option', { name: 'Select', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Record picker', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Sub-form', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Sub-form(Popover)', exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Select',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Record picker',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Sub-form',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Sub-form(Popover)',
+        exact: true,
+      }),
+    ).toBeVisible();
   });
-
   test('quick create', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'oneToOneBelongsTo');
-
-    await expect(page.getByRole('menuitem', { name: 'Quick create' })).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Quick create',
+      }),
+    ).toBeVisible();
   });
-
   test('title field', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'oneToOneBelongsTo');
-    await expect(page.getByRole('menuitem', { name: 'Title field' })).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Title field',
+      }),
+    ).toBeVisible();
   });
 });
-
 test.describe('one to one (has one)', () => {
   commonTesting({
     openDialogAndShowMenu,
@@ -476,7 +733,6 @@ test.describe('one to one (has one)', () => {
     mode: 'options',
     blockType: 'editing',
   });
-
   test('pattern', async ({ page, mockPage, mockRecords }) => {
     let record;
     await testPattern({
@@ -509,25 +765,51 @@ test.describe('one to one (has one)', () => {
       },
     });
   });
-
   test('Set the data scope', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'oneToOneHasOne');
-    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
-    await page.getByText('Add condition', { exact: true }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Set the data scope',
+      })
+      .click();
+    await page
+      .getByText('Add condition', {
+        exact: true,
+      })
+      .click();
     await page.getByTestId('select-filter-field').click();
-    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
+    await page
+      .getByRole('menuitemcheckbox', {
+        name: 'ID',
+        exact: true,
+      })
+      .click();
     await page.getByRole('spinbutton').click();
     await page.getByRole('spinbutton').fill('3');
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await page
+      .getByRole('button', {
+        name: 'OK',
+        exact: true,
+      })
+      .click();
 
     // 再次打开弹窗，设置的值应该还在
     await showMenu(page, 'oneToOneHasOne');
-    await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Set the data scope',
+      })
+      .click();
     await expect(page.getByTestId('select-filter-field')).toHaveText('ID');
     await expect(page.getByRole('spinbutton')).toHaveValue('3');
-    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page
+      .getByRole('button', {
+        name: 'Cancel',
+        exact: true,
+      })
+      .click();
 
     // 数据应该被过滤了
     await page
@@ -536,32 +818,60 @@ test.describe('one to one (has one)', () => {
       .click();
     await expect(page.getByRole('option')).toHaveCount(2);
   });
-
   test('field component', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'oneToOneHasOne');
-    await page.getByRole('menuitem', { name: 'Field component' }).click();
+    await page
+      .getByRole('menuitem', {
+        name: 'Field component',
+      })
+      .click();
 
     // 断言支持的选项
-    await expect(page.getByRole('option', { name: 'Select', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Record picker', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Sub-form', exact: true })).toBeVisible();
-    await expect(page.getByRole('option', { name: 'Sub-form(Popover)', exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Select',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Record picker',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Sub-form',
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', {
+        name: 'Sub-form(Popover)',
+        exact: true,
+      }),
+    ).toBeVisible();
   });
-
   test('quick create', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'oneToOneHasOne');
-
-    await expect(page.getByRole('menuitem', { name: 'Quick create' })).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Quick create',
+      }),
+    ).toBeVisible();
   });
-
   test('title field', async ({ page, mockPage, mockRecords }) => {
     await gotoPage(mockPage, mockRecords);
     await openDialog(page);
     await showMenu(page, 'oneToOneHasOne');
-    await expect(page.getByRole('menuitem', { name: 'Title field' })).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Title field',
+      }),
+    ).toBeVisible();
   });
 });

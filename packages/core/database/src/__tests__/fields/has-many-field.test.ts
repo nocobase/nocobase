@@ -1,37 +1,49 @@
 import { Database } from '../../database';
 import { mockDatabase } from '../';
 import { IdentifierError } from '../../errors/identifier-error';
-
 describe('has many field', () => {
   let db: Database;
-
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({ drop: true });
+    await db.clean({
+      drop: true,
+    });
   });
-
   afterEach(async () => {
     await db.close();
   });
-
   it('association undefined', async () => {
     const collection = db.collection({
       name: 'posts',
-      fields: [{ type: 'hasMany', name: 'comments' }],
+      fields: [
+        {
+          type: 'hasMany',
+          name: 'comments',
+        },
+      ],
     });
     await db.sync();
     expect(collection.model.associations['comments']).toBeUndefined();
   });
-
   it('association defined', async () => {
     const { model } = db.collection({
       name: 'posts',
-      fields: [{ type: 'hasMany', name: 'comments' }],
+      fields: [
+        {
+          type: 'hasMany',
+          name: 'comments',
+        },
+      ],
     });
     expect(model.associations['comments']).toBeUndefined();
     const comments = db.collection({
       name: 'comments',
-      fields: [{ type: 'string', name: 'content' }],
+      fields: [
+        {
+          type: 'string',
+          name: 'content',
+        },
+      ],
     });
     const association = model.associations.comments;
     expect(association).toBeDefined();
@@ -47,12 +59,15 @@ describe('has many field', () => {
     const postComments = await post.getComments();
     expect(postComments.map((comment) => comment.content)).toEqual(['content111']);
   });
-
   it('custom sourceKey', async () => {
     const collection = db.collection({
       name: 'posts',
       fields: [
-        { type: 'string', name: 'key', unique: true },
+        {
+          type: 'string',
+          name: 'key',
+          unique: true,
+        },
         {
           type: 'hasMany',
           name: 'comments',
@@ -73,12 +88,15 @@ describe('has many field', () => {
     expect(comments.model.rawAttributes['postKey']).toBeDefined();
     await db.sync();
   });
-
   it('custom sourceKey and foreignKey', async () => {
     const collection = db.collection({
       name: 'posts',
       fields: [
-        { type: 'string', name: 'key', unique: true },
+        {
+          type: 'string',
+          name: 'key',
+          unique: true,
+        },
         {
           type: 'hasMany',
           name: 'comments',
@@ -99,12 +117,15 @@ describe('has many field', () => {
     expect(comments.model.rawAttributes['postKey']).toBeDefined();
     await db.sync();
   });
-
   it('custom name and target', async () => {
     const collection = db.collection({
       name: 'posts',
       fields: [
-        { type: 'string', name: 'key', unique: true },
+        {
+          type: 'string',
+          name: 'key',
+          unique: true,
+        },
         {
           type: 'hasMany',
           name: 'reviews',
@@ -116,7 +137,12 @@ describe('has many field', () => {
     });
     db.collection({
       name: 'comments',
-      fields: [{ type: 'string', name: 'content' }],
+      fields: [
+        {
+          type: 'string',
+          name: 'content',
+        },
+      ],
     });
     const association = collection.model.associations.reviews;
     expect(association).toBeDefined();
@@ -133,15 +159,24 @@ describe('has many field', () => {
     const postComments = await post.getReviews();
     expect(postComments.map((comment) => comment.content)).toEqual(['content111']);
   });
-
   it('schema delete', async () => {
     const Post = db.collection({
       name: 'posts',
-      fields: [{ type: 'hasMany', name: 'comments' }],
+      fields: [
+        {
+          type: 'hasMany',
+          name: 'comments',
+        },
+      ],
     });
     const Comment = db.collection({
       name: 'comments',
-      fields: [{ type: 'belongsTo', name: 'post' }],
+      fields: [
+        {
+          type: 'belongsTo',
+          name: 'post',
+        },
+      ],
     });
     await db.sync();
     Post.removeField('comments');
@@ -150,99 +185,118 @@ describe('has many field', () => {
     Comment.removeField('post');
     expect(Comment.model.rawAttributes.postId).toBeUndefined();
   });
-
   it('should throw error when foreignKey is too long', async () => {
     const longForeignKey = 'a'.repeat(64);
-
     const Post = db.collection({
       name: 'posts',
-      fields: [{ type: 'hasMany', name: 'comments', foreignKey: longForeignKey }],
+      fields: [
+        {
+          type: 'hasMany',
+          name: 'comments',
+          foreignKey: longForeignKey,
+        },
+      ],
     });
-
     let error;
     try {
       const Comment = db.collection({
         name: 'comments',
-        fields: [{ type: 'belongsTo', name: 'post' }],
+        fields: [
+          {
+            type: 'belongsTo',
+            name: 'post',
+          },
+        ],
       });
     } catch (e) {
       error = e;
     }
-
     expect(error).toBeInstanceOf(IdentifierError);
   });
-
   describe('foreign key constraint', function () {
     it('should cascade delete', async () => {
       const Post = db.collection({
         name: 'posts',
         fields: [
-          { type: 'string', name: 'title' },
-          { type: 'hasMany', name: 'comments', onDelete: 'CASCADE' },
+          {
+            type: 'string',
+            name: 'title',
+          },
+          {
+            type: 'hasMany',
+            name: 'comments',
+            onDelete: 'CASCADE',
+          },
         ],
       });
-
       const Comment = db.collection({
         name: 'comments',
         fields: [
-          { type: 'string', name: 'content' },
-          { type: 'belongsTo', name: 'post', onDelete: 'CASCADE' },
+          {
+            type: 'string',
+            name: 'content',
+          },
+          {
+            type: 'belongsTo',
+            name: 'post',
+            onDelete: 'CASCADE',
+          },
         ],
       });
-
       await db.sync();
-
       const post = await Post.repository.create({
         values: {
           title: 'post1',
         },
       });
-
       const comment = await Comment.repository.create({
         values: {
           content: 'comment1',
           postId: post.id,
         },
       });
-
       await Post.repository.destroy({
         filterByTk: post.id,
       });
-
       expect(await Comment.repository.count()).toEqual(0);
     });
-
     it('should throw error when foreign key constraint is violated', async function () {
       const Post = db.collection({
         name: 'posts',
         fields: [
-          { type: 'string', name: 'title' },
-          { type: 'hasMany', name: 'comments', onDelete: 'RESTRICT' },
+          {
+            type: 'string',
+            name: 'title',
+          },
+          {
+            type: 'hasMany',
+            name: 'comments',
+            onDelete: 'RESTRICT',
+          },
         ],
       });
-
       const Comment = db.collection({
         name: 'comments',
-        fields: [{ type: 'string', name: 'content' }],
+        fields: [
+          {
+            type: 'string',
+            name: 'content',
+          },
+        ],
       });
-
       await db.sync();
-
       const post = await Post.repository.create({
         values: {
           title: 'post1',
         },
       });
-
       const comment = await Comment.repository.create({
         values: {
           content: 'comment1',
           postId: post.id,
         },
       });
-
       let error;
-
       try {
         await Post.repository.destroy({
           filterByTk: post.id,
@@ -250,7 +304,6 @@ describe('has many field', () => {
       } catch (e) {
         error = e;
       }
-
       expect(error).toBeDefined();
     });
   });
