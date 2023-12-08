@@ -50,7 +50,7 @@ jobs:
       - name: Install project dependencies
         run: yarn --prefer-offline
       - name: Test with Sqlite
-        run: node --max_old_space_size=4096 ./node_modules/.bin/vitest --run --config ./vite-node.config.mts
+        run: node --max_old_space_size=4096 ./node_modules/.bin/vitest --run --config ./vitest-node.config.mts
         env:
           SINGLE_THREAD: false
           LOGGER_LEVEL: error
@@ -108,7 +108,7 @@ jobs:
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          node --max_old_space_size=4096 ./node_modules/.bin/vitest --run --config ./vite-node.config.mts
+          node --max_old_space_size=4096 ./node_modules/.bin/vitest --run --config ./vitest-node.config.mts
         env:
           SINGLE_THREAD: false
           LOGGER_LEVEL: error
@@ -162,7 +162,7 @@ jobs:
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          node --max_old_space_size=4096 ./node_modules/.bin/vitest --run --config ./vite-node.config.mts
+          node --max_old_space_size=4096 ./node_modules/.bin/vitest --run --config ./vitest-node.config.mts
         env:
           SINGLE_THREAD: false
           LOGGER_LEVEL: error
@@ -213,7 +213,7 @@ jobs:
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          node --max_old_space_size=4096 ./node_modules/.bin/vitest --run --config ./vite-node.config.mts
+          node --max_old_space_size=4096 ./node_modules/.bin/vitest --run --config ./vitest-node.config.mts
         env:
           SINGLE_THREAD: false
           LOGGER_LEVEL: error
