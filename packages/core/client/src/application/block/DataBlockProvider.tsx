@@ -54,7 +54,9 @@ export type DataBlockProviderProps =
   | AssociationListDataBlockProps
   | AssociationRecordDataBlockProps;
 
-export type DataBlockDecorator = () =>
+export type DataBlockDecorator = (
+  props: DataBlockProviderProps & { [index: string]: any },
+) =>
   | Omit<CollectionCreateDataBlockProps, 'collection' | 'action'>
   | Omit<CollectionGetDataBlockProps, 'collection' | 'action'>
   | Omit<CollectionListDataBlockProps, 'collection' | 'action'>
@@ -66,7 +68,7 @@ export type DataBlockDecorator = () =>
 
 export const DataBlockProviderV2: FC<DataBlockProviderProps & { children?: ReactNode }> = withSchemaDecoratorProps(
   (props) => {
-    const { collection, association } = props as Partial<BlockContextProps>;
+    const { type: _unUse, collection, association, children, ...resets } = props as Partial<BlockContextProps>;
     const AssociationOrCollection = useMemo(() => {
       if (association) {
         return {
@@ -81,11 +83,10 @@ export const DataBlockProviderV2: FC<DataBlockProviderProps & { children?: React
     }, [collection, association]);
 
     const { dn } = useDesignable();
-
     return (
-      <BlockProviderV2 dn={dn} props={props as BlockContextProps}>
+      <BlockProviderV2 dn={dn} props={{ ...resets, collection, association } as BlockContextProps}>
         <AssociationOrCollection.Component name={AssociationOrCollection.name}>
-          <BlockRequestProviderV2>{props.children}</BlockRequestProviderV2>
+          <BlockRequestProviderV2>{children}</BlockRequestProviderV2>
         </AssociationOrCollection.Component>
       </BlockProviderV2>
     );

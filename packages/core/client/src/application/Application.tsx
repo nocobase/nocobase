@@ -40,7 +40,7 @@ export type DevDynamicImport = (packageName: string) => Promise<{ default: typeo
 export type ComponentAndProps<T = any> = [ComponentType, T];
 export interface ApplicationOptions {
   name?: string;
-  apiClient?: APIClientOptions;
+  apiClient?: APIClientOptions | APIClient;
   ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
   providers?: (ComponentType | ComponentAndProps)[];
@@ -97,7 +97,7 @@ export class Application {
     this.devDynamicImport = options.devDynamicImport;
     this.scopes = merge(this.scopes, options.scopes);
     this.components = merge(this.components, options.components);
-    this.apiClient = new APIClient(options.apiClient);
+    this.apiClient = options.apiClient instanceof APIClient ? options.apiClient : new APIClient(options.apiClient);
     this.apiClient.app = this;
     this.i18n = options.i18n || i18n;
     this.router = new RouterManager({

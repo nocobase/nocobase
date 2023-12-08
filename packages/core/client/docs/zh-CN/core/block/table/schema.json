@@ -1,0 +1,26 @@
+{
+  "type": "void",
+  "name": "root",
+  "x-decorator": "DataBlockProviderV2",
+  "x-use-decorator-props": "useTableDecoratorProps",
+  "x-decorator-props": {
+    "collection": "users",
+    "action": "list",
+    "params": {
+      "pageSize": 20
+    },
+    "rowKey": "id"
+  },
+  "x-toolbar": "TableToolbar",
+  "x-settings": "tableSettings",
+  "x-component": "CardItem",
+  "properties": {
+    "ve197icvkz4": {
+      "type": "array",
+      "x-initializer": "tableColumnInitializer",
+      "x-component": "NocoBaseTable",
+      "x-use-component-props": "useTableProps",
+      "ptw1didvz8u": {}
+    }
+  }
+}

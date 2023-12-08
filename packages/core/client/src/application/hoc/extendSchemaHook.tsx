@@ -20,7 +20,7 @@ export function extendSchemaHook(schemaProperty: string) {
         }
         return res || useDefaultSchemaProps;
       }, [scope, useComponentPropsStr]);
-      const schemaProps = useSchemaProps();
+      const schemaProps = useSchemaProps(props);
 
       return <Component {...merge(schemaProps, props)} />;
     };

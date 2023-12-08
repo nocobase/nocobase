@@ -18,3 +18,6 @@
 
 <code src="./demo4.tsx"></code>
 
+## 综合示例
+
+<code src="./table/index.tsx"></code>

@@ -1,0 +1,264 @@
+{
+  "_isJSONSchemaObject": true,
+  "version": "2.0",
+  "type": "void",
+  "x-decorator": "TableBlockProvider",
+  "x-acl-action": "users:list",
+  "x-decorator-props": {
+    "collection": "users",
+    "resource": "users",
+    "action": "list",
+    "params": {
+      "pageSize": 20
+    },
+    "rowKey": "id",
+    "showIndex": true,
+    "dragSort": false,
+    "disableTemplate": false
+  },
+  "x-designer": "TableBlockDesigner",
+  "x-component": "CardItem",
+  "x-filter-targets": [],
+  "properties": {
+    "actions": {
+      "_isJSONSchemaObject": true,
+      "version": "2.0",
+      "type": "void",
+      "x-initializer": "TableActionInitializers",
+      "x-component": "ActionBar",
+      "x-component-props": {
+        "style": {
+          "marginBottom": "var(--nb-spacing)"
+        }
+      },
+      "properties": {
+        "a94r4fylw0f": {
+          "_isJSONSchemaObject": true,
+          "version": "2.0",
+          "type": "void",
+          "x-action": "create",
+          "x-acl-action": "create",
+          "title": "{{t('Add new')}}",
+          "x-designer": "Action.Designer",
+          "x-component": "Action",
+          "x-decorator": "ACLActionProvider",
+          "x-component-props": {
+            "openMode": "drawer",
+            "type": "primary",
+            "component": "CreateRecordAction",
+            "icon": "PlusOutlined"
+          },
+          "x-align": "right",
+          "x-acl-action-props": {
+            "skipScopeCheck": true
+          },
+          "properties": {
+            "drawer": {
+              "_isJSONSchemaObject": true,
+              "version": "2.0",
+              "type": "void",
+              "title": "{{ t(\"Add record\") }}",
+              "x-component": "Action.Container",
+              "x-component-props": {
+                "className": "nb-action-popup"
+              },
+              "properties": {
+                "tabs": {
+                  "_isJSONSchemaObject": true,
+                  "version": "2.0",
+                  "type": "void",
+                  "x-component": "Tabs",
+                  "x-component-props": {},
+                  "x-initializer": "TabPaneInitializersForCreateFormBlock",
+                  "properties": {
+                    "tab1": {
+                      "_isJSONSchemaObject": true,
+                      "version": "2.0",
+                      "type": "void",
+                      "title": "{{t(\"Add new\")}}",
+                      "x-component": "Tabs.TabPane",
+                      "x-designer": "Tabs.Designer",
+                      "x-component-props": {},
+                      "properties": {
+                        "grid": {
+                          "_isJSONSchemaObject": true,
+                          "version": "2.0",
+                          "type": "void",
+                          "x-component": "Grid",
+                          "x-initializer": "CreateFormBlockInitializers",
+                          "x-uid": "rgh15rmpn51",
+                          "x-async": false,
+                          "x-index": 1
+                        }
+                      },
+                      "x-uid": "xcmqqdez9up",
+                      "x-async": false,
+                      "x-index": 1
+                    }
+                  },
+                  "x-uid": "b7zpfmevge2",
+                  "x-async": false,
+                  "x-index": 1
+                }
+              },
+              "x-uid": "dvp2ppiiol3",
+              "x-async": false,
+              "x-index": 1
+            }
+          },
+          "x-uid": "31ntpwf34wy",
+          "x-async": false,
+          "x-index": 2
+        }
+      },
+      "x-uid": "m58frw0kwnm",
+      "x-async": false,
+      "x-index": 1
+    },
+    "ve197icvkz4": {
+      "_isJSONSchemaObject": true,
+      "version": "2.0",
+      "type": "array",
+      "x-initializer": "TableColumnInitializers",
+      "x-component": "TableV2",
+      "x-component-props": {
+        "rowKey": "id",
+        "rowSelection": {
+          "type": "checkbox"
+        },
+        "useProps": "{{ useTableBlockProps }}"
+      },
+      "properties": {
+        "actions": {
+          "_isJSONSchemaObject": true,
+          "version": "2.0",
+          "type": "void",
+          "title": "{{ t(\"Actions\") }}",
+          "x-action-column": "actions",
+          "x-decorator": "TableV2.Column.ActionBar",
+          "x-component": "TableV2.Column",
+          "x-designer": "TableV2.ActionColumnDesigner",
+          "x-initializer": "TableActionColumnInitializers",
+          "properties": {
+            "actions": {
+              "_isJSONSchemaObject": true,
+              "version": "2.0",
+              "type": "void",
+              "x-decorator": "DndContext",
+              "x-component": "Space",
+              "x-component-props": {
+                "split": "|"
+              },
+              "x-uid": "yu3vl95pjxe",
+              "x-async": false,
+              "x-index": 1
+            }
+          },
+          "x-uid": "f174ti2ljhj",
+          "x-async": false,
+          "x-index": 1
+        },
+        "ptw1didvz8u": {
+          "_isJSONSchemaObject": true,
+          "version": "2.0",
+          "type": "void",
+          "x-decorator": "TableV2.Column.Decorator",
+          "x-designer": "TableV2.Column.Designer",
+          "x-component": "TableV2.Column",
+          "properties": {
+            "id": {
+              "_isJSONSchemaObject": true,
+              "version": "2.0",
+              "x-collection-field": "users.id",
+              "x-component": "CollectionField",
+              "x-component-props": {},
+              "x-read-pretty": true,
+              "x-decorator": null,
+              "x-decorator-props": {
+                "labelStyle": {
+                  "display": "none"
+                }
+              },
+              "x-uid": "btph12il4oe",
+              "x-async": false,
+              "x-index": 1
+            }
+          },
+          "x-uid": "gtkofwm9ge1",
+          "x-async": false,
+          "x-index": 2
+        },
+        "ayc1c6i8lo3": {
+          "_isJSONSchemaObject": true,
+          "version": "2.0",
+          "type": "void",
+          "x-decorator": "TableV2.Column.Decorator",
+          "x-designer": "TableV2.Column.Designer",
+          "x-component": "TableV2.Column",
+          "properties": {
+            "nickname": {
+              "_isJSONSchemaObject": true,
+              "version": "2.0",
+              "x-collection-field": "users.nickname",
+              "x-component": "CollectionField",
+              "x-component-props": {
+                "ellipsis": true
+              },
+              "x-read-pretty": true,
+              "x-decorator": null,
+              "x-decorator-props": {
+                "labelStyle": {
+                  "display": "none"
+                }
+              },
+              "x-uid": "nrc2to382kx",
+              "x-async": false,
+              "x-index": 1
+            }
+          },
+          "x-uid": "8ip9l7b0xfz",
+          "x-async": false,
+          "x-index": 3
+        },
+        "jg6znqow8ds": {
+          "_isJSONSchemaObject": true,
+          "version": "2.0",
+          "type": "void",
+          "x-decorator": "TableV2.Column.Decorator",
+          "x-designer": "TableV2.Column.Designer",
+          "x-component": "TableV2.Column",
+          "properties": {
+            "username": {
+              "_isJSONSchemaObject": true,
+              "version": "2.0",
+              "x-collection-field": "users.username",
+              "x-component": "CollectionField",
+              "x-component-props": {
+                "ellipsis": true
+              },
+              "x-read-pretty": true,
+              "x-decorator": null,
+              "x-decorator-props": {
+                "labelStyle": {
+                  "display": "none"
+                }
+              },
+              "x-uid": "a4y8vhd49n2",
+              "x-async": false,
+              "x-index": 1
+            }
+          },
+          "x-uid": "yk1ydfk1gug",
+          "x-async": false,
+          "x-index": 4
+        }
+      },
+      "x-uid": "fmq2qd3uthy",
+      "x-async": false,
+      "x-index": 2
+    }
+  },
+  "x-uid": "mgsx7skkb50",
+  "x-async": false,
+  "x-index": 1
+}
