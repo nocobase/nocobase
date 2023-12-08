@@ -56,6 +56,10 @@ vi.mock('../../collection-manager', async () => {
 });
 
 const { apiClient, mockRequest } = mockAPIClient();
+
+// 用于解析 `$nRole` 的值
+apiClient.auth.role = 'root';
+
 mockRequest.onGet('/auth:check').reply(() => {
   return [
     200,
@@ -63,6 +67,16 @@ mockRequest.onGet('/auth:check').reply(() => {
       data: {
         id: 0,
         nickname: 'from request',
+      },
+    },
+  ];
+});
+mockRequest.onGet('/roles:check').reply(() => {
+  return [
+    200,
+    {
+      data: {
+        role: 'root',
       },
     },
   ];
@@ -194,6 +208,7 @@ describe('useVariables', () => {
             "tomorrow": [Function],
             "yesterday": [Function],
           },
+          "$nRole": "root",
           "$system": {
             "now": [Function],
           },
@@ -404,6 +419,7 @@ describe('useVariables', () => {
             "tomorrow": [Function],
             "yesterday": [Function],
           },
+          "$nRole": "root",
           "$system": {
             "now": [Function],
           },
@@ -487,6 +503,7 @@ describe('useVariables', () => {
             "tomorrow": [Function],
             "yesterday": [Function],
           },
+          "$nRole": "root",
           "$new": {
             "name": "new variable",
           },
