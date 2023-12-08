@@ -76,3 +76,6 @@ export default class extends Plugin {
     }
   }
 }
+
+export * from './e2eCollectionModel';
+export * from './e2ePageObjectModel';
