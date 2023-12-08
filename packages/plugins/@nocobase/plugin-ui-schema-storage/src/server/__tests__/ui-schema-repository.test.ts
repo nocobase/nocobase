@@ -1142,7 +1142,7 @@ describe('ui_schema repository', () => {
   });
 
   it('should insert big schema', async () => {
-    const schema = require('./fixtures/data').default;
+    const schema = (await import('./fixtures/data')).default;
 
     console.time('test');
     await repository.insertNewSchema(schema);
