@@ -1,10 +1,9 @@
+import { vi } from 'vitest';
 import supertest from 'supertest';
 import { Application } from '../application';
-
 describe('i18next', () => {
   let app: Application;
   let agent: supertest.SuperAgentTest;
-
   beforeEach(() => {
     app = new Application({
       database: {
@@ -27,17 +26,14 @@ describe('i18next', () => {
     });
     agent = supertest.agent(app.callback());
   });
-
   afterEach(async () => {
     return app.destroy();
   });
-
   it('global', async () => {
     expect(app.i18n.t('hello')).toEqual('Hello');
     app.i18n.changeLanguage('zh-CN');
     expect(app.i18n.t('hello')).toEqual('你好');
   });
-
   it('ctx', async () => {
     app.resource({
       name: 'tests',
