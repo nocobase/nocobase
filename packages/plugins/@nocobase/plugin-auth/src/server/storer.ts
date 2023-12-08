@@ -19,7 +19,7 @@ export class Storer implements IStorer {
       }
       await this.cache.setValueInObject(this.key, model.name, model);
     });
-    this.db.on('authenticators.afterDestory', async (model: AuthModel) => {
+    this.db.on('authenticators.afterDestroy', async (model: AuthModel) => {
       await this.cache.delValueInObject(this.key, model.name);
     });
   }

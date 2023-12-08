@@ -348,6 +348,7 @@ export class PluginACL extends Plugin {
       });
     });
 
+    // Delete cache when the roles of a user changed
     this.app.db.on('rolesUsers.afterSave', async (model) => {
       const cache = this.app.cache as Cache;
       await cache.del(`roles:${model.get('userId')}`);
