@@ -141,21 +141,21 @@ test.describe('add action & remove action', () => {
     await page.getByLabel('block-item-CardItem-users-table').click();
     await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').click();
     //添加按钮
-    await page.getByLabel('Enable actions-Filter').click();
-    await page.getByLabel('Enable actions-Add new').click();
-    await page.getByLabel('Enable actions-Delete').click();
+    await page.getByRole('menuitem', { name: 'Filter' }).click();
+    await page.getByRole('menuitem', { name: 'Add new' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
     await page.getByText('Enable actions').hover();
     await expect(page.getByLabel('action-Filter.Action-Filter-filter-users-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Add new-create-users-table')).toBeVisible();
     await expect(page.getByLabel('action-Action-Delete-destroy-users-table')).toBeVisible();
-    await expect(page.getByLabel('Enable actions-Filter').getByRole('switch')).toBeChecked();
-    await expect(page.getByLabel('Enable actions-Add new').getByRole('switch')).toBeChecked();
-    await expect(page.getByLabel('Enable actions-Delete').getByRole('switch')).toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch')).toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch')).toBeChecked();
     //移除按钮
-    await page.getByLabel('Enable actions-Filter').click();
-    await page.getByLabel('Enable actions-Add new').click();
-    await page.getByLabel('Enable actions-Delete').click();
+    await page.getByRole('menuitem', { name: 'Filter' }).click();
+    await page.getByRole('menuitem', { name: 'Add new' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
     await expect(page.getByLabel('action-Action-Add new-create-users-table')).not.toBeVisible();
     await expect(
       page.getByLabel('block-item-CardItem-users-table').getByRole('button', { name: 'Delete' }),
@@ -163,24 +163,22 @@ test.describe('add action & remove action', () => {
     await expect(
       page.getByLabel('block-item-CardItem-users-table').getByLabel('Filter', { exact: true }),
     ).not.toBeVisible();
-    await expect(page.getByLabel('Enable actions-Filter').getByRole('switch')).not.toBeChecked();
-    await expect(page.getByLabel('Enable actions-Add new').getByRole('switch')).not.toBeChecked();
-    await expect(page.getByLabel('Enable actions-Delete').getByRole('switch')).not.toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch')).not.toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).not.toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'Delete' }).getByRole('switch')).not.toBeChecked();
   });
 });
 
 test.describe('action drag in block', () => {
   test('drag th action orders', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
-    await page.getByLabel('block-item-CardItem-users-table').click();
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').click();
-    //添加按钮
-    await page.getByLabel('Enable actions-Add new').click();
-    await page.getByLabel('Enable actions-Delete').click();
-    await page.getByLabel('Enable actions-Refresh').click();
     await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
-    await page.getByText('Enable actions').hover();
-    await page.waitForTimeout(1000); // 等待1秒钟
+    //添加按钮
+    await page.getByRole('menuitem', { name: 'Add new' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByRole('menuitem', { name: 'Refresh' }).click();
+    // 向右挪动鼠标指针，用以关闭下拉列表
+    await page.mouse.move(300, 0);
 
     const addNewBtn = await page.getByLabel('action-Action-Add new-create-users-table');
     await addNewBtn.hover();
@@ -205,14 +203,13 @@ test.describe('action drag in block', () => {
 test.describe('action display config', () => {
   test('editing action name,icon and color', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
-    await page.getByLabel('block-item-CardItem-users-table').click();
-    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').click();
+    await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
     //添加按钮
-    await page.getByLabel('Enable actions-Add new').click();
+    await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByLabel('action-Action-Add new-create-users-table').hover();
     await page.getByLabel('action-Action-Add new-create-users-table').getByLabel('designer-schema-settings').hover();
     //更新按钮图标、名称、样式
-    await page.getByLabel('Edit button').click();
+    await page.getByRole('menuitem', { name: 'Edit button' }).click();
     await page.getByRole('textbox').fill('Add new1');
     await page.getByRole('button', { name: 'close', exact: true }).click();
     await page.getByRole('button', { name: 'Select icon', exact: true }).click();
@@ -220,7 +217,7 @@ test.describe('action display config', () => {
     await page.getByLabel('Danger red').check();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(
-      await page.getByLabel('block-item-CardItem-users-table').locator('.nb-action-bar').getByLabel('user-add'),
+      page.getByLabel('block-item-CardItem-users-table').locator('.nb-action-bar').getByLabel('user-add'),
     ).toBeVisible();
     await expect(
       page.getByLabel('block-item-CardItem-users-table').locator('.nb-action-bar').locator('.ant-btn-dangerous'),
@@ -228,18 +225,17 @@ test.describe('action display config', () => {
   });
   test('action open mode ', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
-    await page.getByLabel('block-item-CardItem-users-table').click();
     await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
     //添加按钮
-    await page.getByLabel('Enable actions-Add new').click();
+    await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByLabel('action-Action-Add new-create-users-table').click();
-    await expect(await page.locator('.ant-drawer')).toBeVisible();
+    await expect(page.locator('.ant-drawer')).toBeVisible();
 
     //更新按钮打开方式
     await page.locator('.ant-drawer-mask').click();
     await page.getByLabel('action-Action-Add new-create-users-table').hover();
     await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
-    await page.getByTitle('Open mode').click();
+    await page.getByRole('menuitem', { name: 'Open mode' }).click();
     await page.getByRole('option', { name: 'Dialog' }).click();
     await page.getByLabel('action-Action-Add new-create-users-table').click();
     const drawerComponent = page.getByTestId('modal-Action.Container-users-Add record');
@@ -247,25 +243,24 @@ test.describe('action display config', () => {
   });
   test('setting action model size', async ({ page, mockPage }) => {
     await mockPage({ pageSchema: tablePageSchema }).goto();
-    await page.getByLabel('block-item-CardItem-users-table').click();
     await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
     //添加按钮
-    await page.getByLabel('Enable actions-Add new').click();
+    await page.getByRole('menuitem', { name: 'Add new' }).click();
     await page.getByLabel('action-Action-Add new-create-users-table').click();
-    await expect(await page.locator('.ant-drawer')).toBeVisible();
+    await expect(page.locator('.ant-drawer')).toBeVisible();
     await page.locator('.ant-drawer-mask').click();
     //修改尺寸
     await page.getByLabel('action-Action-Add new-create-users-table').hover();
     await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-users' }).hover();
-    await page.getByTitle('Popup size').click();
+    await page.getByRole('menuitem', { name: 'Popup size' }).click();
 
     //默认尺寸为Middle
-    await expect(await page.getByTitle('Popup size').locator('.ant-select-selection-item').innerText()).toBe('Middle');
+    await expect(page.getByTitle('Popup size').locator('.ant-select-selection-item')).toHaveText('Middle');
     //设置为large
     await page.getByRole('option', { name: 'Large' }).click();
 
     await page.getByLabel('action-Action-Add new-create-users-table').click();
-    const drawerItem = await page.locator('.ant-drawer > .ant-drawer-content-wrapper');
+    const drawerItem = page.locator('.ant-drawer > .ant-drawer-content-wrapper');
     const drawerWidth = await drawerItem.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       const parent = element.parentElement;
@@ -274,7 +269,7 @@ test.describe('action display config', () => {
       return percentageWidth;
     });
     //宽度为70%
-    await expect(drawerWidth).toBe(70);
+    expect(drawerWidth).toBe(70);
   });
 });
 
@@ -286,26 +281,26 @@ test.describe('action linkage rule', () => {
       .getByRole('button', { name: 'Actions', exact: true })
       .hover();
     await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users').hover();
-    await page.getByLabel('Enable actions-View').click();
+    await page.getByRole('menuitem', { name: 'View' }).click();
     await page.getByLabel('block-item-CardItem-users-table').getByLabel('View').hover();
     await page.getByLabel('View').getByLabel('designer-schema-settings').hover();
-    await page.getByRole('button', { name: 'Linkage rules' }).click();
+    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
     await page.getByRole('button', { name: 'plus Add linkage rule', exact: true }).click();
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('filter-select-field').click();
+    await page.getByTestId('select-filter-field').click();
     await page.getByTitle('ID', { exact: true }).getByText('ID').click();
     await page.getByRole('spinbutton').fill('1');
     await page.getByText('Add property').click();
     await page.getByTestId('select-linkage-properties').click();
     await page.getByText('Hidden').click();
-    await page.locator('.ant-modal').getByRole('button', { name: 'OK' }).click();
+    await page.locator('.ant-modal').getByRole('button', { name: 'OK', exact: true }).click();
     //配置中，按钮显示半透明
     const actionItem = page.getByLabel('block-item-CardItem-users-table').getByLabel('View');
     const inputErrorBorderColor = await actionItem.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.opacity;
     });
-    await expect(inputErrorBorderColor).toBe('0.1');
+    expect(inputErrorBorderColor).toBe('0.1');
     //使用中，按钮隐藏
     await page.getByRole('button', { name: 'highlight' }).click();
     await expect(page.getByLabel('block-item-CardItem-users-table').getByLabel('View')).not.toBeVisible();
@@ -317,26 +312,27 @@ test.describe('action linkage rule', () => {
       .getByRole('button', { name: 'Actions', exact: true })
       .hover();
     await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users').hover();
-    await page.getByLabel('Enable actions-View').click();
+    await page.getByRole('menuitem', { name: 'View' }).click();
     await page.getByLabel('block-item-CardItem-users-table').getByLabel('View').hover();
     await page.getByLabel('View').getByLabel('designer-schema-settings').hover();
-    await page.getByRole('button', { name: 'Linkage rules' }).click();
+    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
     await page.getByRole('button', { name: 'plus Add linkage rule', exact: true }).click();
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('filter-select-field').click();
+    await page.getByTestId('select-filter-field').click();
     await page.getByTitle('ID', { exact: true }).getByText('ID').click();
     await page.getByRole('spinbutton').fill('1');
     await page.getByText('Add property').click();
     await page.getByTestId('select-linkage-properties').click();
     await page.getByText('Disabled').click();
-    await page.locator('.ant-modal').getByRole('button', { name: 'OK' }).click();
-    await page.waitForTimeout(1000); // 等待1秒钟
+    await page.locator('.ant-modal').getByRole('button', { name: 'OK', exact: true }).click();
+
     const linkBtn = page.getByLabel('block-item-CardItem-users-table').getByLabel('View');
     const linkBtnCursor = await linkBtn.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
       return computedStyle.cursor;
     });
+
     //按钮禁用
-    await expect(linkBtnCursor).toBe('not-allowed');
+    expect(linkBtnCursor).toBe('not-allowed');
   });
 });

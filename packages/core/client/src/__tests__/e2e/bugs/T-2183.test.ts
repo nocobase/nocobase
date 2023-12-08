@@ -165,7 +165,7 @@ test('BUG: should save conditions', async ({ page, mockPage }) => {
   await mockPage(config).goto();
   await page.getByLabel('action-Filter.Action-Filter-filter-users-table').click();
   await page.getByText('Add condition', { exact: true }).click();
-  await page.getByTestId('filter-select-field').getByLabel('Search').click();
+  await page.getByTestId('select-filter-field').getByLabel('Search').click();
   await page.getByRole('menuitemcheckbox', { name: 'ID' }).click();
   await page.getByRole('button', { name: 'Save conditions' }).click();
 
@@ -173,6 +173,6 @@ test('BUG: should save conditions', async ({ page, mockPage }) => {
   await page.getByLabel('action-Filter.Action-Filter-filter-users-table').click();
 
   // After refreshing the browser, the set field and operator should still be visible
-  await expect(page.getByTestId('filter-select-field').getByText('ID')).toBeVisible();
-  await expect(page.getByTestId('filter-select-operator').getByText('is')).toBeVisible();
+  await expect(page.getByTestId('select-filter-field').getByText('ID')).toBeVisible();
+  await expect(page.getByTestId('select-filter-operator').getByText('is')).toBeVisible();
 });

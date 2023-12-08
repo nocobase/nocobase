@@ -2,13 +2,13 @@ import { DragOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import React from 'react';
+import { useSchemaInitializerRender } from '../../../application';
 import { DragHandler } from '../../../schema-component';
-import { useSchemaInitializer } from '../../../schema-initializer';
 import { useGetAriaLabelOfDesigner } from '../../../schema-settings/hooks/useGetAriaLabelOfDesigner';
 
 export const TableActionColumnDesigner = (props: any) => {
   const fieldSchema = useFieldSchema();
-  const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+  const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
   const { getAriaLabel } = useGetAriaLabelOfDesigner();
   return (
     <div className={'general-schema-designer'}>

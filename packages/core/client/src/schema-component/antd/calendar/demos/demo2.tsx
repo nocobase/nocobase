@@ -3,9 +3,11 @@ import {
   AntdSchemaComponentProvider,
   APIClient,
   APIClientProvider,
+  Application,
   BlockSchemaComponentProvider,
   CollectionManagerProvider,
   SchemaComponent,
+  Plugin,
   SchemaComponentProvider,
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
@@ -100,7 +102,7 @@ const mock = (api: APIClient) => {
 
 mock(apiClient);
 
-export default () => {
+const Root = () => {
   return (
     <APIClientProvider apiClient={apiClient}>
       <SchemaComponentProvider>
@@ -115,3 +117,9 @@ export default () => {
     </APIClientProvider>
   );
 };
+
+const app = new Application({
+  providers: [Root],
+});
+
+export default app.getRootComponent();

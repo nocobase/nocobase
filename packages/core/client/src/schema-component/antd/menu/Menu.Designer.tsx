@@ -5,7 +5,15 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { findByUid } from '.';
 import { createDesignable } from '../..';
-import { GeneralSchemaDesigner, SchemaSettings, useAPIClient, useDesignable } from '../../../';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSubMenu,
+  useAPIClient,
+  useDesignable,
+} from '../../../';
 
 const toItems = (properties = {}) => {
   const items = [];
@@ -58,8 +66,8 @@ const InsertMenuItems = (props) => {
     },
   ];
   return (
-    <SchemaSettings.SubMenu eventKey={eventKey} title={title}>
-      <SchemaSettings.ModalItem
+    <SchemaSettingsSubMenu eventKey={eventKey} title={title}>
+      <SchemaSettingsModalItem
         eventKey={`${insertPosition}group`}
         title={t('Group')}
         schema={
@@ -96,7 +104,8 @@ const InsertMenuItems = (props) => {
           });
         }}
       />
-      <SchemaSettings.ModalItem
+
+      <SchemaSettingsModalItem
         eventKey={`${insertPosition}page`}
         title={t('Page')}
         schema={
@@ -147,7 +156,7 @@ const InsertMenuItems = (props) => {
           });
         }}
       />
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         eventKey={`${insertPosition}link`}
         title={t('Link')}
         schema={
@@ -188,7 +197,7 @@ const InsertMenuItems = (props) => {
           });
         }}
       />
-    </SchemaSettings.SubMenu>
+    </SchemaSettingsSubMenu>
   );
 };
 
@@ -250,7 +259,7 @@ export const MenuDesigner = () => {
   }
   return (
     <GeneralSchemaDesigner>
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Edit')}
         eventKey="edit"
         schema={schema as ISchema}
@@ -282,7 +291,7 @@ export const MenuDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Move to')}
         eventKey="move-to"
         components={{ TreeSelect }}
@@ -330,12 +339,12 @@ export const MenuDesigner = () => {
           dn.insertAdjacent(position, fieldSchema);
         }}
       />
-      <SchemaSettings.Divider />
+      <SchemaSettingsDivider />
       <InsertMenuItems eventKey={'insertbeforeBegin'} title={t('Insert before')} insertPosition={'beforeBegin'} />
       <InsertMenuItems eventKey={'insertafterEnd'} title={t('Insert after')} insertPosition={'afterEnd'} />
       <InsertMenuItems eventKey={'insertbeforeEnd'} title={t('Insert inner')} insertPosition={'beforeEnd'} />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         confirm={{
           title: t('Delete menu item'),
         }}

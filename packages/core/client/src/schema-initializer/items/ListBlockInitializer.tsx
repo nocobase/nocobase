@@ -3,13 +3,15 @@ import { OrderedListOutlined } from '@ant-design/icons';
 import { createListBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
 import { useCollectionManager } from '../../collection-manager';
+import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const ListBlockInitializer = (props) => {
-  const { insert } = props;
+export const ListBlockInitializer = () => {
   const { getCollection } = useCollectionManager();
+  const { insert } = useSchemaInitializer();
+  const itemConfig = useSchemaInitializerItem();
   return (
     <DataBlockInitializer
-      {...props}
+      {...itemConfig}
       icon={<OrderedListOutlined />}
       componentType={'List'}
       onCreateBlockSchema={async ({ item }) => {

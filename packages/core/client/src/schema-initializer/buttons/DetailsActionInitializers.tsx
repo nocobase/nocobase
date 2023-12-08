@@ -1,5 +1,8 @@
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
+
 // 表单的操作配置
-export const DetailsActionInitializers = {
+export const detailsActionInitializers = new SchemaInitializer({
+  name: 'DetailsActionInitializers',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   style: {
@@ -9,11 +12,12 @@ export const DetailsActionInitializers = {
     {
       type: 'itemGroup',
       title: '{{t("Enable actions")}}',
+      name: 'enableActions',
       children: [
         {
-          type: 'item',
+          name: 'edit',
           title: '{{t("Edit")}}',
-          component: 'UpdateActionInitializer',
+          Component: 'UpdateActionInitializer',
           schema: {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
@@ -23,18 +27,18 @@ export const DetailsActionInitializers = {
           },
         },
         {
-          type: 'item',
+          name: 'delete',
           title: '{{t("Delete")}}',
-          component: 'DestroyActionInitializer',
+          Component: 'DestroyActionInitializer',
           schema: {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
           },
         },
         {
-          type: 'item',
+          name: 'duplicate',
           title: '{{t("Duplicate")}}',
-          component: 'DuplicateActionInitializer',
+          Component: 'DuplicateActionInitializer',
           schema: {
             'x-component': 'Action',
             'x-action': 'duplicate',
@@ -47,4 +51,4 @@ export const DetailsActionInitializers = {
       ],
     },
   ],
-};
+});

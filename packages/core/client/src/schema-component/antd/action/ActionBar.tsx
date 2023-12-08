@@ -3,9 +3,9 @@ import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import React, { CSSProperties, useContext } from 'react';
 import { createPortal } from 'react-dom';
-import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext } from '../../common';
 import { useDesignable, useProps } from '../../hooks';
+import { useSchemaInitializerRender } from '../../../application';
 
 interface ActionBarContextForceProps {
   layout?: 'one-column' | 'tow-columns';
@@ -51,7 +51,7 @@ export const ActionBar = observer(
     const { forceProps = {} } = useActionBarContext();
     const { layout = 'tow-columns', style, spaceProps, ...others } = { ...useProps(props), ...forceProps } as any;
     const fieldSchema = useFieldSchema();
-    const { InitializerComponent } = useSchemaInitializer(fieldSchema['x-initializer']);
+    const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
     const { designable } = useDesignable();
 
     if (layout === 'one-column') {
@@ -72,7 +72,7 @@ export const ActionBar = observer(
                   </Space>
                 </div>
               )}
-              <InitializerComponent style={{ margin: '0 !important' }} />
+              {render({ style: { margin: '0 !important' } })}
             </div>
           </DndContext>
         </Portal>
@@ -125,7 +125,7 @@ export const ActionBar = observer(
             </Space>
           </DndContext>
         </div>
-        <InitializerComponent />
+        {render()}
       </div>
     );
   },

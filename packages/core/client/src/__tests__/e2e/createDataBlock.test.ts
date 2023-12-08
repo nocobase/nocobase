@@ -5,8 +5,8 @@ test.describe('create data block', () => {
     await mockPage().goto();
 
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
-    await page.getByLabel('dataBlocks-table', { exact: true }).hover();
-    await page.getByLabel('dataBlocks-table-Users').click();
+    await page.getByRole('menuitem', { name: 'table Table' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
 
     await expect(page.getByText('Configure columns')).toBeVisible();
   });
@@ -15,8 +15,9 @@ test.describe('create data block', () => {
     await mockPage().goto();
 
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
-    await page.getByLabel('dataBlocks-form', { exact: true }).hover();
-    await page.getByLabel('dataBlocks-form-Users').click();
+    await page.getByRole('menuitem', { name: 'Form' }).first().hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+    await page.mouse.move(300, 0);
 
     await expect(page.getByText('Configure fields')).toBeVisible();
   });
@@ -25,8 +26,8 @@ test.describe('create data block', () => {
     await mockPage().goto();
 
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
-    await page.getByLabel('dataBlocks-details', { exact: true }).hover();
-    await page.getByLabel('dataBlocks-details-Users').click();
+    await page.getByRole('menuitem', { name: 'Details' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
 
     await expect(page.getByText('Configure fields')).toBeVisible();
   });
@@ -35,8 +36,8 @@ test.describe('create data block', () => {
     await mockPage().goto();
 
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
-    await page.getByLabel('dataBlocks-List', { exact: true }).hover();
-    await page.getByLabel('dataBlocks-List-Users').click();
+    await page.getByRole('menuitem', { name: 'ordered-list List' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
 
     await expect(page.getByText('Configure fields').first()).toBeVisible();
   });
@@ -45,8 +46,8 @@ test.describe('create data block', () => {
     await mockPage().goto();
 
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
-    await page.getByLabel('dataBlocks-GridCard', { exact: true }).hover();
-    await page.getByLabel('dataBlocks-GridCard-Users').click();
+    await page.getByRole('menuitem', { name: 'Grid Card' }).hover();
+    await page.getByRole('menuitem', { name: 'Users' }).click();
 
     await expect(page.getByText('Configure fields').first()).toBeVisible();
   });

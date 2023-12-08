@@ -15,7 +15,7 @@ import { default as classNames, default as cls } from 'classnames';
 import React, { useContext, useState } from 'react';
 import ReactDragListView from 'react-drag-listview';
 import { DndContext } from '../..';
-import { RecordIndexProvider, RecordProvider, useRequest, useSchemaInitializer } from '../../../';
+import { RecordIndexProvider, RecordProvider, useRequest, useSchemaInitializerRender } from '../../../';
 import { useToken } from '../__builtins__';
 
 const isColumnComponent = (schema: Schema) => {
@@ -25,7 +25,7 @@ const isColumnComponent = (schema: Schema) => {
 const useTableColumns = () => {
   const field = useField<ArrayField>();
   const schema = useFieldSchema();
-  const { exists, render } = useSchemaInitializer(schema['x-initializer']);
+  const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
   const scope = useContext(SchemaExpressionScopeContext);
 
   const columns = schema
