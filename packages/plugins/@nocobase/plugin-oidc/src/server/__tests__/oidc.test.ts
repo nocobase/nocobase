@@ -39,7 +39,7 @@ describe('oidc', () => {
     await app.destroy();
   });
   afterEach(async () => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     await db.getRepository('users').destroy({
       truncate: true,
     });
