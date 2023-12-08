@@ -1,24 +1,24 @@
+import { vi } from 'vitest';
 import { Database } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
 import { SAML } from '@node-saml/node-saml';
 import { authType } from '../../constants';
 import SAMLPlugin from '../index';
-
 describe('saml', () => {
   let app: MockServer;
   let db: Database;
   let agent;
   let authenticator;
-
   beforeAll(async () => {
     app = mockServer({
       plugins: ['users', 'auth'],
     });
     app.plugin(SAMLPlugin);
-    await app.loadAndInstall({ clean: true });
+    await app.loadAndInstall({
+      clean: true,
+    });
     db = app.db;
     agent = app.agent();
-
     const authenticatorRepo = db.getRepository('authenticators');
     authenticator = await authenticatorRepo.create({
       values: {
@@ -35,23 +35,19 @@ describe('saml', () => {
       },
     });
   });
-
   afterAll(async () => {
     await app.destroy();
   });
-
   afterEach(async () => {
     jest.restoreAllMocks();
     await db.getRepository('users').destroy({
       truncate: true,
     });
   });
-
   it('should get auth url', async () => {
     const res = await agent.set('X-Authenticator', 'saml-auth').resource('saml').getAuthUrl();
     expect(res.body.data).toBeDefined();
   });
-
   it('should not sign in without auto signup', async () => {
     await authenticator.update({
       options: {
@@ -61,7 +57,7 @@ describe('saml', () => {
         },
       },
     });
-    jest.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
+    vi.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
       profile: {
         nameID: 'test@nocobase.com',
         email: 'test@nocobase.com',
@@ -72,14 +68,11 @@ describe('saml', () => {
       },
       loggedOut: false,
     });
-
     const res = await agent.set('X-Authenticator', 'saml-auth').resource('auth').signIn().send({
       samlResponse: {},
     });
-
     expect(res.statusCode).toBe(401);
   });
-
   it('should sign in with auto signup', async () => {
     await authenticator.update({
       options: {
@@ -89,7 +82,7 @@ describe('saml', () => {
         },
       },
     });
-    jest.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
+    vi.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
       profile: {
         nameID: 'test@nocobase.com',
         email: 'test@nocobase.com',
@@ -100,16 +93,13 @@ describe('saml', () => {
       },
       loggedOut: false,
     });
-
     const res = await agent.set('X-Authenticator', 'saml-auth').resource('auth').signIn().send({
       samlResponse: {},
     });
-
     expect(res.statusCode).toBe(200);
     expect(res.body.data.user).toBeDefined();
     expect(res.body.data.user.nickname).toBe('Test Nocobase');
   });
-
   it('should sign in via email', async () => {
     await authenticator.update({
       options: {
@@ -122,8 +112,7 @@ describe('saml', () => {
         },
       },
     });
-
-    jest.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
+    vi.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
       profile: {
         nameID: 'old@nocobase.com',
         email: 'old@nocobase.com',
@@ -134,7 +123,6 @@ describe('saml', () => {
       },
       loggedOut: false,
     });
-
     const email = 'old@nocobase.com';
     const userRepo = db.getRepository('users');
     const user = await userRepo.create({
@@ -143,7 +131,6 @@ describe('saml', () => {
         email,
       },
     });
-
     const res = await agent
       .set('X-Authenticator', 'saml-auth')
       .resource('auth')
@@ -153,11 +140,9 @@ describe('saml', () => {
           SAMLResponse: '',
         },
       });
-
     expect(res.body.data.user).toBeDefined();
     expect(res.body.data.user.id).toBe(user.id);
   });
-
   it('should sign in via usernmae', async () => {
     await authenticator.update({
       options: {
@@ -170,8 +155,7 @@ describe('saml', () => {
         },
       },
     });
-
-    jest.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
+    vi.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
       profile: {
         nameID: 'username',
         email: 'old@nocobase.com',
@@ -182,7 +166,6 @@ describe('saml', () => {
       },
       loggedOut: false,
     });
-
     const email = 'old@nocobase.com';
     const userRepo = db.getRepository('users');
     const user = await userRepo.create({
@@ -192,7 +175,6 @@ describe('saml', () => {
         email,
       },
     });
-
     const res = await agent
       .set('X-Authenticator', 'saml-auth')
       .resource('auth')
@@ -202,7 +184,6 @@ describe('saml', () => {
           SAMLResponse: '',
         },
       });
-
     expect(res.body.data.user).toBeDefined();
     expect(res.body.data.user.id).toBe(user.id);
   });

@@ -4,20 +4,15 @@ import { MockServer } from '@nocobase/test';
 import { setCurrentRole } from '../middlewares/setCurrentRole';
 import { prepareApp } from './prepare';
 import { vi } from 'vitest';
-
 describe('role', () => {
   let api: MockServer;
   let db: Database;
-
   let usersPlugin: UsersPlugin;
   let ctx;
-
   beforeEach(async () => {
     api = await prepareApp();
-
     db = api.db;
     usersPlugin = api.getPlugin('users');
-
     ctx = {
       db,
       state: {
@@ -25,11 +20,9 @@ describe('role', () => {
       },
     };
   });
-
   afterEach(async () => {
     await api.destroy();
   });
-
   it('should set role with X-Role when exists', async () => {
     ctx.state.currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],
@@ -42,7 +35,6 @@ describe('role', () => {
     await setCurrentRole(ctx, () => {});
     expect(ctx.state.currentRole).toBe('admin');
   });
-
   it('should set role with default', async () => {
     ctx.state.currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],
@@ -55,7 +47,6 @@ describe('role', () => {
     await setCurrentRole(ctx, () => {});
     expect(ctx.state.currentRole).toBe('root');
   });
-
   it('should throw 401', async () => {
     ctx.state.currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],
@@ -68,10 +59,12 @@ describe('role', () => {
     const throwFn = vi.fn();
     ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
-    expect(throwFn).lastCalledWith(401, { code: 'ROLE_NOT_FOUND_ERR', message: 'The user role does not exist.' });
+    expect(throwFn).lastCalledWith(401, {
+      code: 'ROLE_NOT_FOUND_ERR',
+      message: 'The user role does not exist.',
+    });
     expect(ctx.state.currentRole).not.toBeDefined();
   });
-
   it('should set role with anonymous', async () => {
     ctx.state.currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],

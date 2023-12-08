@@ -37,11 +37,6 @@ export default defineConfig({
   test: {
     globals: true,
     setupFiles: 'scripts/vitest-node.setup.ts',
-    poolOptions: {
-      threads: {
-        singleThread: process.env.SINGLE_THREAD === 'false' ? false : true,
-      },
-    },
     alias: [...aliasItems],
     include: ['packages/**/__tests__/**/*.test.ts'],
     exclude: [

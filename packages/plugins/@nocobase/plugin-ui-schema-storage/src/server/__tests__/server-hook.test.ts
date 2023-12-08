@@ -1,15 +1,14 @@
+import { vi } from 'vitest';
 import { Database } from '@nocobase/database';
 import PluginCollectionManager from '@nocobase/plugin-collection-manager';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import UiSchemaStoragePlugin, { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { mockServer, MockServer } from '@nocobase/test';
-
 describe('server hooks', () => {
   let app: MockServer;
   let db: Database;
   let uiSchemaRepository: UiSchemaRepository;
   let uiSchemaPlugin: UiSchemaStoragePlugin;
-
   const schema = {
     'x-uid': 'root',
     name: 'root',
@@ -49,38 +48,35 @@ describe('server hooks', () => {
       },
     },
   };
-
   afterEach(async () => {
     await app.destroy();
   });
-
   beforeEach(async () => {
     app = mockServer({
       registerActions: true,
     });
-
     await app.cleanDb();
     db = app.db;
-
-    app.plugin(UiSchemaStoragePlugin, { name: 'ui-schema-storage' });
-    app.plugin(PluginErrorHandler, { name: 'error-handler' });
-    app.plugin(PluginCollectionManager, { name: 'collection-manager' });
-
+    app.plugin(UiSchemaStoragePlugin, {
+      name: 'ui-schema-storage',
+    });
+    app.plugin(PluginErrorHandler, {
+      name: 'error-handler',
+    });
+    app.plugin(PluginCollectionManager, {
+      name: 'collection-manager',
+    });
     await app.loadAndInstall();
-
     uiSchemaRepository = db.getRepository('uiSchemas');
     await uiSchemaRepository.insert(schema);
-
     uiSchemaPlugin = app.getPlugin<UiSchemaStoragePlugin>('ui-schema-storage');
   });
-
   it('should call server hooks onFieldDestroy', async () => {
     const PostModel = await db.getRepository('collections').create({
       values: {
         name: 'posts',
       },
     });
-
     const fieldModel = await db.getRepository('fields').create({
       values: {
         name: 'title',
@@ -91,10 +87,8 @@ describe('server hooks', () => {
 
     // @ts-ignore
     await PostModel.migrate();
-
     const serverHooks = uiSchemaPlugin.serverHooks;
-    const hookFn = jest.fn();
-
+    const hookFn = vi.fn();
     serverHooks.register('onCollectionFieldDestroy', 'onFieldDestroy', hookFn);
 
     // destroy a field
@@ -104,17 +98,14 @@ describe('server hooks', () => {
       },
       individualHooks: true,
     });
-
     expect(hookFn).toHaveBeenCalled();
   });
-
   it('should call server hooks onCollectionDestroy', async () => {
     const PostModel = await db.getRepository('collections').create({
       values: {
         name: 'posts',
       },
     });
-
     const fieldModel = await db.getRepository('fields').create({
       values: {
         name: 'title',
@@ -125,11 +116,8 @@ describe('server hooks', () => {
 
     // @ts-ignore
     await PostModel.migrate();
-
     const serverHooks = uiSchemaPlugin.serverHooks;
-
-    const hookFn = jest.fn();
-
+    const hookFn = vi.fn();
     serverHooks.register('onCollectionDestroy', 'onCollectionDestroy', hookFn);
 
     // destroy a field
@@ -139,10 +127,8 @@ describe('server hooks', () => {
       },
       individualHooks: true,
     });
-
     expect(hookFn).toHaveBeenCalled();
   });
-
   it('should call server hooks onUiSchemaCreate', async () => {
     const menuSchema = {
       'x-uid': 'menu',
@@ -153,17 +139,12 @@ describe('server hooks', () => {
         },
       ],
     };
-
     const serverHooks = uiSchemaPlugin.serverHooks;
-    const hookFn = jest.fn();
-
+    const hookFn = vi.fn();
     serverHooks.register('onSelfCreate', 'afterCreateMenu', hookFn);
-
     await uiSchemaRepository.insert(menuSchema);
-
     expect(hookFn).toHaveBeenCalled();
   });
-
   it('should call server hooks onAnyCollectionFieldDestroy', async () => {
     const menuSchema = {
       'x-uid': 'menu',
@@ -175,15 +156,12 @@ describe('server hooks', () => {
         },
       ],
     };
-
     await uiSchemaRepository.insert(menuSchema);
-
     const PostModel = await db.getRepository('collections').create({
       values: {
         name: 'posts',
       },
     });
-
     const fieldModel = await db.getRepository('fields').create({
       values: {
         name: 'title',
@@ -194,10 +172,8 @@ describe('server hooks', () => {
 
     // @ts-ignore
     await PostModel.migrate();
-
     const serverHooks = uiSchemaPlugin.serverHooks;
-    const hookFn = jest.fn();
-
+    const hookFn = vi.fn();
     serverHooks.register('onAnyCollectionFieldDestroy', 'test1', hookFn);
 
     // destroy a field
@@ -207,10 +183,8 @@ describe('server hooks', () => {
       },
       individualHooks: true,
     });
-
     expect(hookFn).toHaveBeenCalled();
   });
-
   it('should rollback after throw error', async () => {
     const testSchema = {
       'x-uid': 'test',
@@ -224,19 +198,16 @@ describe('server hooks', () => {
         },
       ],
     };
-
     await uiSchemaRepository.create({
       values: {
         schema: testSchema,
       },
     });
-
     const PostModel = await db.getRepository('collections').create({
       values: {
         name: 'posts',
       },
     });
-
     const fieldModel = await db.getRepository('fields').create({
       values: {
         name: 'title',
@@ -247,17 +218,13 @@ describe('server hooks', () => {
 
     // @ts-ignore
     await PostModel.migrate();
-
     const serverHooks = uiSchemaPlugin.serverHooks;
-
-    const jestFn = jest.fn();
-
+    const jestFn = vi.fn();
     serverHooks.register('onCollectionFieldDestroy', 'preventDestroy', async ({ options }) => {
       await options.transaction.rollback();
       jestFn();
       throw new Error('cant delete field');
     });
-
     try {
       // destroy a field
       await db.getRepository('fields').destroy({
@@ -266,8 +233,9 @@ describe('server hooks', () => {
         },
         individualHooks: true,
       });
-    } catch (e) {}
-
+    } catch (e) {
+      console.log(e);
+    }
     expect(jestFn).toHaveBeenCalled();
     expect(
       await db.getRepository('fields').findOne({
@@ -277,7 +245,6 @@ describe('server hooks', () => {
       }),
     ).toBeDefined();
   });
-
   it('should call onSelfMove', async () => {
     const schema = {
       'x-uid': 'A',
@@ -307,17 +274,12 @@ describe('server hooks', () => {
         },
       },
     };
-
     const serverHooks = uiSchemaPlugin.serverHooks;
-
-    const jestFn = jest.fn();
-
+    const jestFn = vi.fn();
     serverHooks.register('onSelfMove', 'testOnSelfMove', async ({ options }) => {
       jestFn();
     });
-
     await uiSchemaRepository.insert(schema);
-
     await uiSchemaRepository.insertAdjacent(
       'afterEnd',
       'E',
@@ -337,7 +299,6 @@ describe('server hooks', () => {
         },
       },
     );
-
     expect(jestFn).toHaveBeenCalled();
   });
 });
