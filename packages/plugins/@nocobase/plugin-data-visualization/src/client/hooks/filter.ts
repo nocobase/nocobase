@@ -6,7 +6,7 @@ import { Schema } from '@formily/react';
 import { useChartsTranslation } from '../locale';
 import { ChartFilterContext } from '../filter/FilterProvider';
 import { useMemoizedFn } from 'ahooks';
-import { parse } from '@nocobase/utils';
+import { parse } from '@nocobase/utils/client';
 import lodash from 'lodash';
 import { getValuesByPath } from '../utils';
 import deepmerge from 'deepmerge';
