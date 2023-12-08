@@ -74,6 +74,7 @@
     "@commitlint/prompt-cli": "^16.1.0",
     "@faker-js/faker": "8.1.0",
     "@playwright/test": "^1.37.1",
+    "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^14.0.0",
     "@testing-library/user-event": "^14.4.3",
     "@types/react": "^17.0.0",
