@@ -1,10 +1,10 @@
 import path from 'path';
 
-import { Plugin, ApplicationOptions } from '@nocobase/server';
+import { ApplicationOptions, Plugin } from '@nocobase/server';
 import { MockServer, mockServer } from '@nocobase/test';
 
-import instructions from './instructions';
 import functions from './functions';
+import instructions from './instructions';
 
 interface MockServerOptions extends ApplicationOptions {
   autoStart?: boolean;
@@ -76,6 +76,3 @@ export default class extends Plugin {
     }
   }
 }
-
-export * from './e2eCollectionModel';
-export * from './e2ePageObjectModel';

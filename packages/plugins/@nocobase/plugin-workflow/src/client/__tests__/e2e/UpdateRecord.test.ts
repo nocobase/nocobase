@@ -1,6 +1,6 @@
-import { CreateWorkFlow, EditWorkFlow, WorkflowManagement, WorkflowListRecords } from '@nocobase/plugin-workflow-test';
-import { e2e_GeneralFormsTable, appendJsonCollectionName } from '@nocobase/plugin-workflow-test';
-import { CollectionTriggerNode, UpdateRecordNode } from '@nocobase/plugin-workflow-test';
+import { CreateWorkFlow, EditWorkFlow, WorkflowManagement, WorkflowListRecords } from '@nocobase/plugin-workflow-test/client';
+import { e2e_GeneralFormsTable, appendJsonCollectionName } from '@nocobase/plugin-workflow-test/client';
+import { CollectionTriggerNode, UpdateRecordNode } from '@nocobase/plugin-workflow-test/client';
 import { expect, test } from '@nocobase/test/client';
 import { dayjs } from '@nocobase/utils';
 import { faker } from '@faker-js/faker';
@@ -18,7 +18,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, batch update, filter single line text field not empty, common table single line text field data, set single line text field constant data';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -29,7 +29,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'orgname';
       const triggerNodeFieldDisplayName = '公司名称(单行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -40,7 +40,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ orgname: updateNodeCollectionRecordOne }, { orgname: updateNodeCollectionRecordTwo }, { orgname: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -53,7 +53,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -64,7 +64,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -83,7 +83,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -95,7 +95,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -111,7 +111,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -119,38 +119,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
       await page.getByRole('textbox').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -165,7 +165,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -179,7 +179,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -188,7 +188,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, batch update, filter single line text field not empty, common table single line text field data, set trigger node single line text field variable', async ({
       page,
       mockCollections,
@@ -201,7 +201,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, batch update, filter single line text field not empty, common table single line text field data, set trigger node single line text field variable';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -212,7 +212,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'orgname';
       const triggerNodeFieldDisplayName = '公司名称(单行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -223,7 +223,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ orgname: updateNodeCollectionRecordOne }, { orgname: updateNodeCollectionRecordTwo }, { orgname: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -236,7 +236,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -247,7 +247,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -266,7 +266,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -281,7 +281,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -298,7 +298,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -306,38 +306,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = updayteRecordNodefieldData;
       await page.getByRole('textbox').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -352,7 +352,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -366,7 +366,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -375,7 +375,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, batch update, filter multi-line text field not empty, common table multi-line text field data, set multi-line text field constant data', async ({
       page,
       mockCollections,
@@ -388,7 +388,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, batch update, filter multi-line text field not empty, common table multi-line text field data, set multi-line text field constant data';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -399,7 +399,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'address';
       const triggerNodeFieldDisplayName = '公司地址(多行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -410,7 +410,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ address: updateNodeCollectionRecordOne }, { address: updateNodeCollectionRecordTwo }, { address: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -423,7 +423,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -434,7 +434,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -453,7 +453,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -465,7 +465,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -481,7 +481,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -489,38 +489,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
       await page.getByRole('textbox').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -535,7 +535,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -549,7 +549,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -558,7 +558,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, batch update, filter multiline text field not empty, common table multiline text field data, set trigger node multiline text field variable', async ({
       page,
       mockCollections,
@@ -571,7 +571,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, batch update, filter multiline text field not empty, common table multiline text field data, set trigger node multiline text field variable';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -582,7 +582,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'address';
       const triggerNodeFieldDisplayName = '公司地址(多行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -593,7 +593,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ address: updateNodeCollectionRecordOne }, { address: updateNodeCollectionRecordTwo }, { address: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -606,7 +606,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -617,7 +617,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -636,7 +636,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -651,7 +651,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -668,7 +668,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -676,38 +676,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = updayteRecordNodefieldData;
       await page.getByRole('textbox').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -722,7 +722,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -736,7 +736,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -745,7 +745,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, batch update, filter integer field not null, common table integer field data, set integer field constant data', async ({
       page,
       mockCollections,
@@ -758,7 +758,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, batch update, filter integer field not null, common table integer field data, set integer field constant data';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -769,7 +769,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'staffnum';
       const triggerNodeFieldDisplayName = '员工人数(整数)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -780,7 +780,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = faker.number.int();
       const updateNodeCollectionRecordThree = faker.number.int();
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ staffnum: updateNodeCollectionRecordOne }, { staffnum: updateNodeCollectionRecordTwo }, { staffnum: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -793,7 +793,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -804,7 +804,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -823,7 +823,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -835,7 +835,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -851,7 +851,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -859,38 +859,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = faker.number.int();
       await page.getByRole('spinbutton').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -905,7 +905,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -919,7 +919,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -928,7 +928,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, batch update, filter integer field not empty, common table integer field data, set trigger node integer field variable', async ({
       page,
       mockCollections,
@@ -941,7 +941,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, batch update, filter integer field not empty, common table integer field data, set trigger node integer field variable';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -952,7 +952,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'staffnum';
       const triggerNodeFieldDisplayName = '员工人数(整数)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -963,7 +963,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = faker.number.int();
       const updateNodeCollectionRecordThree = faker.number.int();
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ staffnum: updateNodeCollectionRecordOne }, { staffnum: updateNodeCollectionRecordTwo }, { staffnum: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -976,7 +976,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -987,7 +987,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -1006,7 +1006,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -1021,7 +1021,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -1038,7 +1038,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -1046,38 +1046,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = updayteRecordNodefieldData;
       await page.getByRole('spinbutton').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -1092,7 +1092,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -1106,7 +1106,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -1115,7 +1115,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, batch update, filter numeric field not null, common table numeric field data, set numeric field constant data', async ({
       page,
       mockCollections,
@@ -1128,7 +1128,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, batch update, filter numeric field not null, common table numeric field data, set numeric field constant data';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -1139,7 +1139,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'regcapital';
       const triggerNodeFieldDisplayName = '注册资本(数字)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -1152,7 +1152,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = faker.number.float({ min: 0, max: 999999999, precision: 0.0001 });
       const updateNodeCollectionRecordThree = faker.number.float({ min: 0, max: 999999999, precision: 0.0001 });
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ regcapital: updateNodeCollectionRecordOne }, { regcapital: updateNodeCollectionRecordTwo }, { regcapital: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -1165,7 +1165,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -1176,7 +1176,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -1195,7 +1195,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -1207,7 +1207,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -1223,7 +1223,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -1231,38 +1231,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = faker.number.float({ min: 0, max: 999999999, precision: 0.0001 });
       await page.getByRole('spinbutton').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -1277,7 +1277,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -1291,7 +1291,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -1300,7 +1300,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, batch update, filter numeric field not empty, common table numeric field data, set trigger node numeric field variable', async ({
       page,
       mockCollections,
@@ -1313,7 +1313,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, batch update, filter numeric field not empty, common table numeric field data, set trigger node numeric field variable';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -1324,7 +1324,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'regcapital';
       const triggerNodeFieldDisplayName = '注册资本(数字)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -1335,7 +1335,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = faker.number.float({ min: 0, max: 999999999, precision: 0.0001 });
       const updateNodeCollectionRecordThree = faker.number.float({ min: 0, max: 999999999, precision: 0.0001 });
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ regcapital: updateNodeCollectionRecordOne }, { regcapital: updateNodeCollectionRecordTwo }, { regcapital: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -1348,7 +1348,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -1359,7 +1359,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -1378,7 +1378,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -1393,7 +1393,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -1410,7 +1410,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -1418,38 +1418,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = updayteRecordNodefieldData;
       await page.getByRole('spinbutton').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -1464,7 +1464,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -1478,7 +1478,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -1487,7 +1487,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, batch update, filter dropdown radio field not null, common table dropdown radio field data, set dropdown radio field constant data', async ({
       page,
       mockCollections,
@@ -1500,7 +1500,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, batch update, filter dropdown radio field not null, common table dropdown radio field data, set dropdown radio field constant data';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -1511,7 +1511,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'status_singleselect';
       const triggerNodeFieldDisplayName = '公司状态(下拉单选)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -1524,7 +1524,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = '2';
       const updateNodeCollectionRecordThree = '3';
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ status_singleselect: updateNodeCollectionRecordOne }, { status_singleselect: updateNodeCollectionRecordTwo }, { status_singleselect: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -1537,7 +1537,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -1548,7 +1548,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -1567,7 +1567,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -1575,13 +1575,13 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('block-item-CollectionFieldset-workflows-Fields values').getByTestId('select-single').getByLabel('Search').click();
       await page.getByRole('option', { name: '注销' }).click();
       await updateRecordNode.submitButton.click();
-  
+
       await page.getByRole('link', { name: 'Workflow' }).click();
       await workflowListRecords.editAction.click();
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -1597,7 +1597,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText('在业')).toBeVisible();
       await expect(page.getByText('吊销')).toBeVisible();
       await expect(page.getByText('注销')).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -1605,39 +1605,39 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = '注销';
       await page.getByTestId('select-single').getByLabel('Search').click();
       await page.getByRole('option', { name: '注销' }).click();
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByRole('button', { name: '注销' })).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -1652,7 +1652,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText('注销').first()).toBeVisible();
       await expect(page.getByText('注销').nth(1)).toBeVisible();
       await expect(page.getByText('注销').nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -1666,7 +1666,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -1675,7 +1675,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, batch update, filter dropdown radio field not empty, common table dropdown radio field data, set trigger node dropdown radio field variable', async ({
       page,
       mockCollections,
@@ -1688,7 +1688,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, batch update, filter dropdown radio field not empty, common table dropdown radio field data, set trigger node dropdown radio field variable';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -1699,7 +1699,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'status_singleselect';
       const triggerNodeFieldDisplayName = '公司状态(下拉单选)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -1710,7 +1710,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = '2';
       const updateNodeCollectionRecordThree = '3';
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ status_singleselect: updateNodeCollectionRecordOne }, { status_singleselect: updateNodeCollectionRecordTwo }, { status_singleselect: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -1723,7 +1723,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -1734,7 +1734,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -1753,7 +1753,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -1768,7 +1768,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -1785,7 +1785,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText('在业')).toBeVisible();
       await expect(page.getByText('吊销')).toBeVisible();
       await expect(page.getByText('注销')).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -1793,39 +1793,39 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = '注销';
       await page.getByTestId('select-single').getByLabel('Search').click();
       await page.getByRole('option', { name: '注销' }).click();
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByRole('button', { name: '注销' })).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -1840,7 +1840,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText('注销').first()).toBeVisible();
       await expect(page.getByText('注销').nth(1)).toBeVisible();
       await expect(page.getByText('注销').nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -1854,7 +1854,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -1863,7 +1863,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, batch update, filter dropdown radio fields not null, common table dropdown radio fields data, set dropdown radio fields constant data', async ({
       page,
       mockCollections,
@@ -1876,7 +1876,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, batch update, filter dropdown radio fields not null, common table dropdown radio fields data, set dropdown radio fields constant data';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -1887,7 +1887,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'range_multipleselect';
       const triggerNodeFieldDisplayName = '经营范围(下拉多选)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -1900,7 +1900,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = ['F3134','I3007'];
       const updateNodeCollectionRecordThree = ['I3006','I3007'];
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ range_multipleselect: updateNodeCollectionRecordOne }, { range_multipleselect: updateNodeCollectionRecordTwo }, { range_multipleselect: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -1913,7 +1913,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -1924,7 +1924,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -1943,7 +1943,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -1952,13 +1952,13 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('option', { name: '数据处理服务', exact: true }).click();
       await page.getByRole('option', { name: '计算机系统服务', exact: true }).click();
       await updateRecordNode.submitButton.click();
-  
+
       await page.getByRole('link', { name: 'Workflow' }).click();
       await workflowListRecords.editAction.click();
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -1974,7 +1974,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByRole('button', { name: '软件销售 人工智能基础软件开发' })).toBeVisible();
       await expect(page.getByRole('button', { name: '软件开发 人工智能基础软件开发' })).toBeVisible();
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' })).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -1982,32 +1982,32 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       // const addDataTriggerWorkflowPagefieldData = '注销';
       await page.getByTestId('select-multiple').click();
@@ -2016,7 +2016,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTestId('select-multiple').click();
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' })).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -2031,7 +2031,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' }).first()).toBeVisible();
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' }).nth(1)).toBeVisible();
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' }).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -2045,7 +2045,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -2054,7 +2054,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, batch update, filter dropdown radio fields not empty, common table dropdown radio fields data, set trigger node dropdown radio fields variable', async ({
       page,
       mockCollections,
@@ -2067,7 +2067,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, batch update, filter dropdown radio fields not empty, common table dropdown radio fields data, set trigger node dropdown radio fields variable';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -2078,7 +2078,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'range_multipleselect';
       const triggerNodeFieldDisplayName = '经营范围(下拉多选)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -2089,7 +2089,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = ['F3134','I3007'];
       const updateNodeCollectionRecordThree = ['I3006','I3007'];
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ range_multipleselect: updateNodeCollectionRecordOne }, { range_multipleselect: updateNodeCollectionRecordTwo }, { range_multipleselect: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -2102,7 +2102,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -2113,7 +2113,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -2132,7 +2132,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -2147,7 +2147,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -2164,7 +2164,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByRole('button', { name: '软件销售 人工智能基础软件开发' })).toBeVisible();
       await expect(page.getByRole('button', { name: '软件开发 人工智能基础软件开发' })).toBeVisible();
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' })).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -2172,32 +2172,32 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
           // 2、测试步骤：录入数据触发工作流
       // const addDataTriggerWorkflowPagefieldData = '注销';
       await page.getByTestId('select-multiple').click();
@@ -2206,7 +2206,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTestId('select-multiple').click();
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' })).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -2221,7 +2221,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' }).first()).toBeVisible();
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' }).nth(1)).toBeVisible();
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' }).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -2235,7 +2235,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -2244,7 +2244,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, batch update, filter date field not null, common table date field data, set date field constant data', async ({
       page,
       mockCollections,
@@ -2257,7 +2257,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, batch update, filter dropdown radio fields not null, common table dropdown radio fields data, set dropdown radio fields constant data';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -2268,7 +2268,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'establishdate';
       const triggerNodeFieldDisplayName = '成立日期(日期)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -2281,7 +2281,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = dayjs().add(-2,'day').format('YYYY-MM-DD');
       const updateNodeCollectionRecordThree = dayjs().add(-1,'day').format('YYYY-MM-DD');
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ establishdate: updateNodeCollectionRecordOne }, { establishdate: updateNodeCollectionRecordTwo }, { establishdate: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -2294,7 +2294,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -2305,7 +2305,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -2324,7 +2324,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -2333,13 +2333,13 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('block-item-CollectionFieldset').getByPlaceholder('Select date').fill(updateRecordNodefieldData);
       await page.getByTitle(updateRecordNodefieldData.toString()).locator('div').click();
       await updateRecordNode.submitButton.click();
-  
+
       await page.getByRole('link', { name: 'Workflow' }).click();
       await workflowListRecords.editAction.click();
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -2356,7 +2356,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -2364,32 +2364,32 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = dayjs().format('YYYY-MM-DD');
       await page.getByPlaceholder('Select date').click();
@@ -2399,7 +2399,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('button', { name: 'Cancel', exact: true }).click();
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -2414,7 +2414,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -2428,7 +2428,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -2437,7 +2437,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, batch update, filter date field not empty, common table date field data, set trigger node date field variable', async ({
       page,
       mockCollections,
@@ -2450,7 +2450,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, batch update, filter dropdown radio fields not empty, common table dropdown radio fields data, set trigger node dropdown radio fields variable';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -2461,7 +2461,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'establishdate';
       const triggerNodeFieldDisplayName = '成立日期(日期)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -2472,7 +2472,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = dayjs().add(-2,'day').format('YYYY-MM-DD');
       const updateNodeCollectionRecordThree = dayjs().add(-1,'day').format('YYYY-MM-DD');
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ establishdate: updateNodeCollectionRecordOne }, { establishdate: updateNodeCollectionRecordTwo }, { establishdate: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -2485,7 +2485,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -2496,7 +2496,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -2515,7 +2515,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -2530,7 +2530,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -2547,7 +2547,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -2555,32 +2555,32 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
           // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = updayteRecordNodefieldData;
       await page.getByPlaceholder('Select date').click();
@@ -2590,7 +2590,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('button', { name: 'Cancel', exact: true }).click();
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -2605,7 +2605,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -2619,7 +2619,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -2642,7 +2642,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, update item by item, filter single line text field not empty, common table single line text field data, set single line text field constant data';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -2653,7 +2653,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'orgname';
       const triggerNodeFieldDisplayName = '公司名称(单行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -2664,7 +2664,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ orgname: updateNodeCollectionRecordOne }, { orgname: updateNodeCollectionRecordTwo }, { orgname: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -2677,7 +2677,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -2688,7 +2688,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -2708,7 +2708,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -2720,7 +2720,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -2736,7 +2736,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -2744,38 +2744,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
       await page.getByRole('textbox').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -2790,7 +2790,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -2804,7 +2804,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -2813,7 +2813,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, update item by item, filter single line text field not empty, common table single line text field data, set trigger node single line text field variable', async ({
       page,
       mockCollections,
@@ -2826,7 +2826,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, update item by item, filter single line text field not empty, common table single line text field data, set trigger node single line text field variable';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -2837,7 +2837,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'orgname';
       const triggerNodeFieldDisplayName = '公司名称(单行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -2848,7 +2848,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ orgname: updateNodeCollectionRecordOne }, { orgname: updateNodeCollectionRecordTwo }, { orgname: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -2861,7 +2861,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -2872,7 +2872,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -2892,7 +2892,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -2907,7 +2907,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -2924,7 +2924,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -2932,38 +2932,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = updayteRecordNodefieldData;
       await page.getByRole('textbox').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -2978,7 +2978,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -2992,7 +2992,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -3001,7 +3001,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, update item by item, filter multi-line text field not empty, common table multi-line text field data, set multi-line text field constant data', async ({
       page,
       mockCollections,
@@ -3014,7 +3014,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, update item by item, filter multi-line text field not empty, common table multi-line text field data, set multi-line text field constant data';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -3025,7 +3025,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'address';
       const triggerNodeFieldDisplayName = '公司地址(多行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -3036,7 +3036,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ address: updateNodeCollectionRecordOne }, { address: updateNodeCollectionRecordTwo }, { address: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -3049,7 +3049,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -3060,7 +3060,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -3080,7 +3080,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -3092,7 +3092,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -3108,7 +3108,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -3116,38 +3116,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
       await page.getByRole('textbox').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -3162,7 +3162,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -3176,7 +3176,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -3185,7 +3185,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, update item by item, filter multiline text field not empty, common table multiline text field data, set trigger node multiline text field variable', async ({
       page,
       mockCollections,
@@ -3198,7 +3198,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, update item by item, filter multiline text field not empty, common table multiline text field data, set trigger node multiline text field variable';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -3209,7 +3209,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'address';
       const triggerNodeFieldDisplayName = '公司地址(多行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -3220,7 +3220,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ address: updateNodeCollectionRecordOne }, { address: updateNodeCollectionRecordTwo }, { address: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -3233,7 +3233,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -3244,7 +3244,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -3264,7 +3264,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -3279,7 +3279,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -3296,7 +3296,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -3304,38 +3304,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = updayteRecordNodefieldData;
       await page.getByRole('textbox').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -3350,7 +3350,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -3364,7 +3364,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -3373,7 +3373,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, update item by item, filter integer field not null, common table integer field data, set integer field constant data', async ({
       page,
       mockCollections,
@@ -3386,7 +3386,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, update item by item, filter integer field not null, common table integer field data, set integer field constant data';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -3397,7 +3397,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'staffnum';
       const triggerNodeFieldDisplayName = '员工人数(整数)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -3408,7 +3408,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = faker.number.int();
       const updateNodeCollectionRecordThree = faker.number.int();
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ staffnum: updateNodeCollectionRecordOne }, { staffnum: updateNodeCollectionRecordTwo }, { staffnum: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -3421,7 +3421,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -3432,7 +3432,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -3452,7 +3452,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -3464,7 +3464,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -3480,7 +3480,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -3488,38 +3488,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = faker.number.int();
       await page.getByRole('spinbutton').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -3534,7 +3534,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -3548,7 +3548,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -3557,7 +3557,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, update item by item, filter integer field not empty, common table integer field data, set trigger node integer field variable', async ({
       page,
       mockCollections,
@@ -3570,7 +3570,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, update item by item, filter integer field not empty, common table integer field data, set trigger node integer field variable';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -3581,7 +3581,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'staffnum';
       const triggerNodeFieldDisplayName = '员工人数(整数)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -3592,7 +3592,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = faker.number.int();
       const updateNodeCollectionRecordThree = faker.number.int();
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ staffnum: updateNodeCollectionRecordOne }, { staffnum: updateNodeCollectionRecordTwo }, { staffnum: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -3605,7 +3605,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -3616,7 +3616,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -3636,7 +3636,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -3651,7 +3651,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -3668,7 +3668,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -3676,38 +3676,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = updayteRecordNodefieldData;
       await page.getByRole('spinbutton').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -3722,7 +3722,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -3736,7 +3736,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -3745,7 +3745,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, update item by item, filter numeric field not null, common table numeric field data, set numeric field constant data', async ({
       page,
       mockCollections,
@@ -3758,7 +3758,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, update item by item, filter numeric field not null, common table numeric field data, set numeric field constant data';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -3769,7 +3769,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'regcapital';
       const triggerNodeFieldDisplayName = '注册资本(数字)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -3782,7 +3782,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = faker.number.float({ min: 0, max: 999999999, precision: 0.0001 });
       const updateNodeCollectionRecordThree = faker.number.float({ min: 0, max: 999999999, precision: 0.0001 });
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ regcapital: updateNodeCollectionRecordOne }, { regcapital: updateNodeCollectionRecordTwo }, { regcapital: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -3795,7 +3795,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -3806,7 +3806,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -3826,7 +3826,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -3838,7 +3838,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -3854,7 +3854,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -3862,38 +3862,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = faker.number.float({ min: 0, max: 999999999, precision: 0.0001 });
       await page.getByRole('spinbutton').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -3908,7 +3908,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -3922,7 +3922,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -3931,7 +3931,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, update item by item, filter numeric field not empty, common table numeric field data, set trigger node numeric field variable', async ({
       page,
       mockCollections,
@@ -3944,7 +3944,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, update item by item, filter numeric field not empty, common table numeric field data, set trigger node numeric field variable';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -3955,7 +3955,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'regcapital';
       const triggerNodeFieldDisplayName = '注册资本(数字)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -3966,7 +3966,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = faker.number.float({ min: 0, max: 999999999, precision: 0.0001 });
       const updateNodeCollectionRecordThree = faker.number.float({ min: 0, max: 999999999, precision: 0.0001 });
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ regcapital: updateNodeCollectionRecordOne }, { regcapital: updateNodeCollectionRecordTwo }, { regcapital: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -3979,7 +3979,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -3990,7 +3990,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -4010,7 +4010,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -4025,7 +4025,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -4042,7 +4042,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -4050,38 +4050,38 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = updayteRecordNodefieldData;
       await page.getByRole('spinbutton').fill(addDataTriggerWorkflowPagefieldData.toString());
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -4096,7 +4096,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -4110,7 +4110,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -4119,7 +4119,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, update item by item, filter dropdown radio field not null, common table dropdown radio field data, set dropdown radio field constant data', async ({
       page,
       mockCollections,
@@ -4132,7 +4132,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, update item by item, filter dropdown radio field not null, common table dropdown radio field data, set dropdown radio field constant data';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -4143,7 +4143,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'status_singleselect';
       const triggerNodeFieldDisplayName = '公司状态(下拉单选)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -4156,7 +4156,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = '2';
       const updateNodeCollectionRecordThree = '3';
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ status_singleselect: updateNodeCollectionRecordOne }, { status_singleselect: updateNodeCollectionRecordTwo }, { status_singleselect: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -4169,7 +4169,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -4180,7 +4180,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -4200,7 +4200,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -4208,13 +4208,13 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('block-item-CollectionFieldset-workflows-Fields values').getByTestId('select-single').getByLabel('Search').click();
       await page.getByRole('option', { name: '注销' }).click();
       await updateRecordNode.submitButton.click();
-  
+
       await page.getByRole('link', { name: 'Workflow' }).click();
       await workflowListRecords.editAction.click();
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -4230,7 +4230,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText('在业')).toBeVisible();
       await expect(page.getByText('吊销')).toBeVisible();
       await expect(page.getByText('注销')).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -4238,39 +4238,39 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = '注销';
       await page.getByTestId('select-single').getByLabel('Search').click();
       await page.getByRole('option', { name: '注销' }).click();
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByRole('button', { name: '注销' })).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -4285,7 +4285,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText('注销').first()).toBeVisible();
       await expect(page.getByText('注销').nth(1)).toBeVisible();
       await expect(page.getByText('注销').nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -4299,7 +4299,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -4308,7 +4308,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, update item by item, filter dropdown radio field not empty, common table dropdown radio field data, set trigger node dropdown radio field variable', async ({
       page,
       mockCollections,
@@ -4321,7 +4321,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, update item by item, filter dropdown radio field not empty, common table dropdown radio field data, set trigger node dropdown radio field variable';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -4332,7 +4332,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'status_singleselect';
       const triggerNodeFieldDisplayName = '公司状态(下拉单选)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -4343,7 +4343,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = '2';
       const updateNodeCollectionRecordThree = '3';
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ status_singleselect: updateNodeCollectionRecordOne }, { status_singleselect: updateNodeCollectionRecordTwo }, { status_singleselect: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -4356,7 +4356,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -4367,7 +4367,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -4387,7 +4387,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -4402,7 +4402,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -4419,7 +4419,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText('在业')).toBeVisible();
       await expect(page.getByText('吊销')).toBeVisible();
       await expect(page.getByText('注销')).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -4427,39 +4427,39 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = '注销';
       await page.getByTestId('select-single').getByLabel('Search').click();
       await page.getByRole('option', { name: '注销' }).click();
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByRole('button', { name: '注销' })).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -4474,7 +4474,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText('注销').first()).toBeVisible();
       await expect(page.getByText('注销').nth(1)).toBeVisible();
       await expect(page.getByText('注销').nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -4488,7 +4488,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -4497,7 +4497,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, update item by item, filter dropdown radio fields not null, common table dropdown radio fields data, set dropdown radio fields constant data', async ({
       page,
       mockCollections,
@@ -4510,7 +4510,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, update item by item, filter dropdown radio fields not null, common table dropdown radio fields data, set dropdown radio fields constant data';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -4521,7 +4521,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'range_multipleselect';
       const triggerNodeFieldDisplayName = '经营范围(下拉多选)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -4534,7 +4534,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = ['F3134','I3007'];
       const updateNodeCollectionRecordThree = ['I3006','I3007'];
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ range_multipleselect: updateNodeCollectionRecordOne }, { range_multipleselect: updateNodeCollectionRecordTwo }, { range_multipleselect: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -4547,7 +4547,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -4558,7 +4558,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -4578,7 +4578,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -4587,13 +4587,13 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('option', { name: '数据处理服务', exact: true }).click();
       await page.getByRole('option', { name: '计算机系统服务', exact: true }).click();
       await updateRecordNode.submitButton.click();
-  
+
       await page.getByRole('link', { name: 'Workflow' }).click();
       await workflowListRecords.editAction.click();
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -4609,7 +4609,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByRole('button', { name: '软件销售 人工智能基础软件开发' })).toBeVisible();
       await expect(page.getByRole('button', { name: '软件开发 人工智能基础软件开发' })).toBeVisible();
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' })).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -4617,32 +4617,32 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       // const addDataTriggerWorkflowPagefieldData = '注销';
       await page.getByTestId('select-multiple').click();
@@ -4651,7 +4651,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTestId('select-multiple').click();
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' })).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -4666,7 +4666,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' }).first()).toBeVisible();
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' }).nth(1)).toBeVisible();
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' }).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -4680,7 +4680,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -4689,7 +4689,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, update item by item, filter dropdown radio fields not empty, common table dropdown radio fields data, set trigger node dropdown radio fields variable', async ({
       page,
       mockCollections,
@@ -4702,7 +4702,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, update item by item, filter dropdown radio fields not empty, common table dropdown radio fields data, set trigger node dropdown radio fields variable';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -4713,7 +4713,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'range_multipleselect';
       const triggerNodeFieldDisplayName = '经营范围(下拉多选)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -4724,7 +4724,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = ['F3134','I3007'];
       const updateNodeCollectionRecordThree = ['I3006','I3007'];
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ range_multipleselect: updateNodeCollectionRecordOne }, { range_multipleselect: updateNodeCollectionRecordTwo }, { range_multipleselect: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -4737,7 +4737,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -4748,7 +4748,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -4768,7 +4768,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -4783,7 +4783,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -4800,7 +4800,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByRole('button', { name: '软件销售 人工智能基础软件开发' })).toBeVisible();
       await expect(page.getByRole('button', { name: '软件开发 人工智能基础软件开发' })).toBeVisible();
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' })).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -4808,32 +4808,32 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
           // 2、测试步骤：录入数据触发工作流
       // const addDataTriggerWorkflowPagefieldData = '注销';
       await page.getByTestId('select-multiple').click();
@@ -4842,7 +4842,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTestId('select-multiple').click();
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' })).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -4857,7 +4857,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' }).first()).toBeVisible();
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' }).nth(1)).toBeVisible();
       await expect(page.getByRole('button', { name: '数据处理服务 计算机系统服务' }).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -4871,7 +4871,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -4880,7 +4880,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, update item by item, filter date field not null, common table date field data, set date field constant data', async ({
       page,
       mockCollections,
@@ -4893,7 +4893,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, update item by item, filter dropdown radio fields not null, common table dropdown radio fields data, set dropdown radio fields constant data';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -4904,7 +4904,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'establishdate';
       const triggerNodeFieldDisplayName = '成立日期(日期)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -4917,7 +4917,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = dayjs().add(-2,'day').format('YYYY-MM-DD');
       const updateNodeCollectionRecordThree = dayjs().add(-1,'day').format('YYYY-MM-DD');
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ establishdate: updateNodeCollectionRecordOne }, { establishdate: updateNodeCollectionRecordTwo }, { establishdate: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -4930,7 +4930,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -4941,7 +4941,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -4961,7 +4961,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -4970,13 +4970,13 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('block-item-CollectionFieldset').getByPlaceholder('Select date').fill(updateRecordNodefieldData);
       await page.getByTitle(updateRecordNodefieldData.toString()).locator('div').click();
       await updateRecordNode.submitButton.click();
-  
+
       await page.getByRole('link', { name: 'Workflow' }).click();
       await workflowListRecords.editAction.click();
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -4993,7 +4993,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -5001,32 +5001,32 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
       // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = dayjs().format('YYYY-MM-DD');
       await page.getByPlaceholder('Select date').click();
@@ -5036,7 +5036,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('button', { name: 'Cancel', exact: true }).click();
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -5051,7 +5051,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -5065,7 +5065,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -5074,7 +5074,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await expect(page.getByText(workFlowName)).toBeHidden();
     });
-  
+
     test('Collection event add data trigger, update item by item, filter date field not empty, common table date field data, set trigger node date field variable', async ({
       page,
       mockCollections,
@@ -5087,7 +5087,7 @@ test.describe('update data node,batch update', () => {
       //用例标题
       const caseTitle =
         'Collection event add data trigger, update item by item, filter dropdown radio fields not empty, common table dropdown radio fields data, set trigger node dropdown radio fields variable';
-  
+
       // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
       //创建数据表
       const e2eJsonCollectionDisplayName = '自动>组织[普通表]';
@@ -5098,7 +5098,7 @@ test.describe('update data node,batch update', () => {
       const triggerNodeFieldName = 'establishdate';
       const triggerNodeFieldDisplayName = '成立日期(日期)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), triggerNodeAppendText).collections);
-  
+
       // 创建更新节点数据表
       const updateNodeCollectionDisplayName = e2eJsonCollectionDisplayName + updateNodeAppendText;
       const updateNodeCollectionName = e2eJsonCollectionName + updateNodeAppendText;
@@ -5109,7 +5109,7 @@ test.describe('update data node,batch update', () => {
       const updateNodeCollectionRecordTwo = dayjs().add(-2,'day').format('YYYY-MM-DD');
       const updateNodeCollectionRecordThree = dayjs().add(-1,'day').format('YYYY-MM-DD');
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ establishdate: updateNodeCollectionRecordOne }, { establishdate: updateNodeCollectionRecordTwo }, { establishdate: updateNodeCollectionRecordThree }]);
-  
+
       //配置工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
@@ -5122,7 +5122,7 @@ test.describe('update data node,batch update', () => {
       await page.getByTitle('Collection event').getByText('Collection event').click();
       await createWorkFlow.submitButton.click();
       await expect(page.getByText(workFlowName)).toBeVisible();
-  
+
       //配置工作流触发器
       const workflowListRecords = new WorkflowListRecords(page, workFlowName);
       await workflowListRecords.configureAction.click();
@@ -5133,7 +5133,7 @@ test.describe('update data node,batch update', () => {
       await collectionTriggerNode.triggerOnDropdown.click();
       await page.getByText('After record added', { exact: true }).click();
       await collectionTriggerNode.submitButton.click();
-  
+
       //配置更新数据节点
       await collectionTriggerNode.addNodeButton.click();
       await page.getByRole('button', { name: 'update', exact: true }).click();
@@ -5153,7 +5153,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
       await page.getByTestId('filter-select-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
-  
+
       // 设置字段
       await updateRecordNode.addFieldsButton.click();
       await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
@@ -5168,7 +5168,7 @@ test.describe('update data node,batch update', () => {
       const editWorkFlow = new EditWorkFlow(page, workFlowName);
       await editWorkFlow.statusIsOn.check();
       await editWorkFlow.submitButton.click();
-  
+
       // 配置更新数据节点的数据表页面，查看更新前数据
       const updateNodeCollectionPage = mockPage();
       await updateNodeCollectionPage.goto();
@@ -5185,7 +5185,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updateNodeCollectionRecordTwo.toString())).toBeVisible();
       await expect(page.getByText(updateNodeCollectionRecordThree.toString())).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString())).not.toBeVisible();
-  
+
       //配置新增数据触发工作流页面
       const addDataTriggerWorkflowPage = mockPage();
       await addDataTriggerWorkflowPage.goto();
@@ -5193,32 +5193,32 @@ test.describe('update data node,batch update', () => {
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeCollectionDisplayName}`}).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page.getByText('Configure columns').hover();
       await page.getByText(triggerNodeFieldDisplayName).click();
       await page.getByText('Configure actions').hover();
       await page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch').click();
       await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
-  
+
       await page.getByLabel(`action-Action-Add new-create-${triggerNodeCollectionName}-table`).click();
       await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: 'form Form' }).click();
-  
+
       // 移开鼠标，关闭菜单
       await page.mouse.move(300, 0);
-  
+
       await page
         .getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${triggerNodeCollectionName}`)
         .hover();
       await page.getByRole('menuitem', { name: 'Submit' }).click();
       await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${triggerNodeCollectionName}`).hover();
       await page.getByRole('menuitem', { name: `${triggerNodeFieldDisplayName}` }).click();
-  
+
       await page.mouse.move(300, 0);
-  
+
           // 2、测试步骤：录入数据触发工作流
       const addDataTriggerWorkflowPagefieldData = updayteRecordNodefieldData;
       await page.getByPlaceholder('Select date').click();
@@ -5228,7 +5228,7 @@ test.describe('update data node,batch update', () => {
       await page.getByRole('button', { name: 'Cancel', exact: true }).click();
       await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
       await page.waitForLoadState('networkidle');
-  
+
       // 3、预期结果：数据添加成功，工作流成功触发,查询数据节点获取到多条记录
       await expect(page.getByText(addDataTriggerWorkflowPagefieldData.toString())).toBeVisible();
       await page.goto('/admin/settings/workflow');
@@ -5243,7 +5243,7 @@ test.describe('update data node,batch update', () => {
       await expect(page.getByText(updayteRecordNodefieldData.toString()).first()).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(1)).toBeVisible();
       await expect(page.getByText(updayteRecordNodefieldData.toString()).nth(2)).toBeVisible();
-  
+
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');
       await workflowListRecords.executionCountPopup.click();
@@ -5257,7 +5257,7 @@ test.describe('update data node,batch update', () => {
       // 判断字符串包含createRecordNodefieldData
       expect(nodeResultString).toContain('3');
       await page.getByLabel('Close', { exact: true }).click();
-  
+
       // 4、后置处理：删除工作流
       await page.goto('/admin/settings/workflow');
       await page.waitForLoadState('networkidle');

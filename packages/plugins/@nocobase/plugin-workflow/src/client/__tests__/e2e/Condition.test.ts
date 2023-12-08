@@ -1,7 +1,7 @@
-import { CreateWorkFlow, EditWorkFlow, WorkflowManagement, WorkflowListRecords } from '@nocobase/plugin-workflow-test';
-import { e2e_GeneralFormsTable, appendJsonCollectionName } from '@nocobase/plugin-workflow-test';
-import { CollectionTriggerNode, ConditionYesNode, QueryRecordNode } from '@nocobase/plugin-workflow-test';
-import { ClculationNode, ConditionBranchNode } from '@nocobase/plugin-workflow-test';
+import { CreateWorkFlow, EditWorkFlow, WorkflowManagement, WorkflowListRecords } from '@nocobase/plugin-workflow-test/client';
+import { e2e_GeneralFormsTable, appendJsonCollectionName } from '@nocobase/plugin-workflow-test/client';
+import { CollectionTriggerNode, ConditionYesNode, QueryRecordNode } from '@nocobase/plugin-workflow-test/client';
+import { ClculationNode, ConditionBranchNode } from '@nocobase/plugin-workflow-test/client';
 import { expect, test } from '@nocobase/test/client';
 import { dayjs } from '@nocobase/utils';
 import { faker } from '@faker-js/faker';

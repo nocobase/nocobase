@@ -1,9 +1,9 @@
 import { expect, test } from '@nocobase/test/client';
 import { dayjs } from '@nocobase/utils';
 import { faker } from '@faker-js/faker';
-import { e2e_GeneralFormsTable, appendJsonCollectionName } from '@nocobase/plugin-workflow-test';
-import { CreateWorkFlow, EditWorkFlow, CollectionTriggerNode, FromEventTriggerNode } from '@nocobase/plugin-workflow-test';
-import { WorkflowManagement, WorkflowListRecords } from '@nocobase/plugin-workflow-test';
+import { e2e_GeneralFormsTable, appendJsonCollectionName } from '@nocobase/plugin-workflow-test/client';
+import { CreateWorkFlow, EditWorkFlow, CollectionTriggerNode, FromEventTriggerNode } from '@nocobase/plugin-workflow-test/client';
+import { WorkflowManagement, WorkflowListRecords } from '@nocobase/plugin-workflow-test/client';
 
 test.describe('Filter', () => {
     test('filter workflow name', async ({ page }) => {
