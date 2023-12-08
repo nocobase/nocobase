@@ -1,0 +1,33 @@
+{
+  "name": "@nocobase/plugin-workflow-manual",
+  "displayName": "Workflow: Manual node",
+  "displayName.zh-CN": "工作流：人工处理节点",
+  "description": "Could be used for workflows which some of decisions are made by users.",
+  "description.zh-CN": "用于人工控制部分决策的流程。",
+  "version": "0.17.0-alpha.3",
+  "license": "AGPL-3.0",
+  "main": "./dist/server/index.js",
+  "devDependencies": {
+    "@ant-design/icons": "5.x",
+    "@formily/antd-v5": "1.x",
+    "@formily/core": "2.x",
+    "@formily/react": "2.x",
+    "antd": "5.x",
+    "lodash": "4.17.21",
+    "react": "18.x",
+    "react-i18next": "^11.15.1",
+    "react-router-dom": "^6.11.2"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/plugin-collection-manager": "0.x",
+    "@nocobase/plugin-users": "0.x",
+    "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
+    "@nocobase/plugin-workflow-test": ">=0.17.0-alpha.3",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/utils": "0.x"
+  },
+  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+}

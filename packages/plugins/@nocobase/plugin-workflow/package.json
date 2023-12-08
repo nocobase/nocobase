@@ -36,10 +36,11 @@
     "@nocobase/plugin-collection-manager": "0.x",
     "@nocobase/plugin-error-handler": "0.x",
     "@nocobase/plugin-users": "0.x",
+    "@nocobase/plugin-workflow-test": ">=0.17.0-alpha.3",
     "@nocobase/resourcer": "0.x",
     "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x",
-    "@nocobase/utils": "0.x"
+    "@nocobase/utils": "0.x",
+    "@nocobase/test": "0.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }
