@@ -1,5 +1,5 @@
-import { expect, test, oneEmptyTableBlockWithCustomizeActions } from '@nocobase/test/client';
-import { oneEmptyGantt, oneEmptyTableBlockWithCustomizeUpdate } from './utils';
+import { expect, test } from '@nocobase/test/client';
+import { oneEmptyTableBlockWithCustomizeUpdate } from './utils';
 
 test.describe('data will be updated && Assign field values && after successful submission', () => {
   test('data will be updated && Assign field values && after successful submission', async ({
@@ -40,6 +40,7 @@ test.describe('data will be updated && Assign field values && after successful s
     //更新的数据符合预期
     expect(postData.singleSelect).toEqual('option3');
     await page.getByRole('button', { name: 'OK' }).click();
+    //成功后跳转路由
     expect(page.url()).toContain('/admin/pm/list/local/');
   });
 });
