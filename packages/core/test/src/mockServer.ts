@@ -204,7 +204,7 @@ export function mockServer(options: ApplicationOptions = {}) {
 
   // @ts-ignore
   if (!PluginManager.findPackagePatched) {
-    PluginManager.getPackageJson = () => {
+    PluginManager.getPackageJson = async () => {
       return {
         version: '0.0.0',
       };

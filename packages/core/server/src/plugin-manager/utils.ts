@@ -191,7 +191,7 @@ export async function downloadAndUnzipToTempDir(fileUrl: string, authToken?: str
     throw new Error(`decompress ${fileUrl} failed`);
   }
 
-  const packageJson = requireNoCache(packageJsonPath);
+  const packageJson = await requireNoCache(packageJsonPath);
   const mainFile = path.join(tempPackageContentDir, packageJson.main);
   if (!fs.existsSync(mainFile)) {
     await removeTmpDir(tempFile, tempPackageContentDir);
@@ -408,14 +408,14 @@ export function requireModule(m: any) {
   return m.__esModule ? m.default : m;
 }
 
-function getExternalVersionFromDistFile(packageName: string): false | Record<string, string> {
+async function getExternalVersionFromDistFile(packageName: string): Promise<false | Record<string, string>> {
   const { exists, filePath } = getPackageFilePathWithExistCheck(packageName, 'dist/externalVersion.js');
   if (!exists) {
     return false;
   }
 
   try {
-    return requireNoCache(filePath);
+    return await requireNoCache(filePath);
   } catch (e) {
     console.error(e);
     return false;
@@ -499,7 +499,7 @@ export interface DepCompatible {
 export async function getCompatible(packageName: string) {
   let externalVersion: Record<string, string>;
   if (!process.env.IS_DEV_CMD) {
-    const res = getExternalVersionFromDistFile(packageName);
+    const res = await getExternalVersionFromDistFile(packageName);
     if (!res) {
       return false;
     } else {
