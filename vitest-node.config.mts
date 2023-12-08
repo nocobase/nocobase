@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import tsConfigPaths from './tsconfig.paths.json';
+
 const paths = tsConfigPaths.compilerOptions.paths;
 
 const alias = Object.keys(paths).reduce<{ find: string; replacement: string }[]>((acc, key) => {
@@ -50,6 +51,7 @@ export default defineConfig({
       '**/es/**',
       '**/e2e/**',
       '**/{vitest,commitlint}.config.*',
+      'packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}'
     ],
     testTimeout: 300000,
     bail: 1,

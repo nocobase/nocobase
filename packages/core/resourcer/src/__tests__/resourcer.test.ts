@@ -1,6 +1,7 @@
 import path from 'path';
-import { Resourcer, Action, ResourcerContext } from '..';
+import { Action, Resourcer, ResourcerContext } from '..';
 import Resource from '../resource';
+
 describe('resourcer', () => {
   it('action', async () => {
     const resourcer = new Resourcer();
@@ -481,7 +482,7 @@ describe('resourcer', () => {
   });
   it('should work', async () => {
     const resourcer = new Resourcer();
-    resourcer.import({
+    await resourcer.import({
       directory: path.resolve(__dirname, 'resources'),
     });
     const context = {
@@ -550,9 +551,9 @@ describe('resourcer', () => {
     const resourcer = new Resourcer();
     resourcer.define({
       name: 'test',
-      middleware: require('./middlewares/demo0'),
+      middleware: (await import('./middlewares/demo0')).default,
       actions: {
-        list: require('./actions/demo0'),
+        list: (await import('./actions/demo0')).default,
       },
     });
 
@@ -573,9 +574,9 @@ describe('resourcer', () => {
     const resourcer = new Resourcer();
     resourcer.define({
       name: 'test',
-      middleware: require('./middlewares/demo1'),
+      middleware: (await import('./middlewares/demo1')).default,
       actions: {
-        list: require('./actions/demo1'),
+        list: (await import('./actions/demo1')).default,
       },
     });
     const context = {
@@ -594,10 +595,10 @@ describe('resourcer', () => {
     const resourcer = new Resourcer();
     resourcer.define({
       name: 'test',
-      middleware: require('./middlewares/demo1'),
+      middleware: (await import('./middlewares/demo1')).default,
       actions: {
         list: {
-          handler: require('./actions/demo1'),
+          handler: (await import('./actions/demo1')).default,
         },
       },
     });
@@ -617,10 +618,10 @@ describe('resourcer', () => {
     const resourcer = new Resourcer();
     resourcer.define({
       name: 'test',
-      middleware: require('./middlewares/demo1'),
+      middleware: (await import('./middlewares/demo1')).default,
       actions: {
         list: {
-          handler: require('./actions/demo1'),
+          handler: (await import('./actions/demo1')).default,
         },
       },
     });
