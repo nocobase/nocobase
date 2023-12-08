@@ -1,0 +1,24 @@
+{
+  "name": "@nocobase/plugin-workflow-form-trigger",
+  "displayName": "Workflow: Form trigger",
+  "displayName.zh-CN": "工作流：表单触发器",
+  "description": "Bind form buttons to trigger workflow events when submitting.",
+  "description.zh-CN": "可对表单按钮绑定，在提交时触发对应的工作流事件。",
+  "version": "0.17.0-alpha.3",
+  "license": "AGPL-3.0",
+  "main": "./dist/server/index.js",
+  "devDependencies": {
+    "antd": "5.x",
+    "react": "18.x",
+    "react-i18next": "^11.15.1"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/database": "0.x",
+    "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
+    "@nocobase/plugin-workflow-test": ">=0.17.0-alpha.3",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  },
+  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+}

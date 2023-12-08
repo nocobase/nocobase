@@ -96,7 +96,7 @@ export class LocalizationManagementPlugin extends Plugin {
       this.db
         .getModel('localizationTexts')
         .bulkCreate(
-          texts.map((text) => ({
+          texts.map(({ text, module }) => ({
             module,
             text,
           })),

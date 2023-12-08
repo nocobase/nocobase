@@ -1,6 +1,6 @@
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
-import { getApp, sleep } from '..';
+import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { EXECUTION_STATUS } from '../../constants';
 
 describe('workflow > actions > executions', () => {

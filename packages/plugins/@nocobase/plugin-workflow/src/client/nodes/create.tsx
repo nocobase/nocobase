@@ -5,13 +5,14 @@ import CollectionFieldset from '../components/CollectionFieldset';
 import { NAMESPACE } from '../locale';
 import { appends, collection, values } from '../schemas/collection';
 import { getCollectionFieldOptions } from '../variable';
+import { Instruction } from '.';
 
-export default {
-  title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
-  type: 'create',
-  group: 'collection',
-  description: `{{t("Add new record to a collection. You can use variables from upstream nodes to assign values to fields.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Instruction {
+  title = `{{t("Create record", { ns: "${NAMESPACE}" })}}`;
+  type = 'create';
+  group = 'collection';
+  description = `{{t("Add new record to a collection. You can use variables from upstream nodes to assign values to fields.", { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     collection,
     // multiple: {
     //   type: 'boolean',
@@ -30,16 +31,17 @@ export default {
         appends,
       },
     },
-  },
-  view: {},
-  scope: {
+  };
+  scope = {
     useCollectionDataSource,
-  },
-  components: {
+  };
+  components = {
     CollectionFieldset,
-  },
+  };
   useVariables({ key: name, title, config }, options) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { getCollectionFields } = useCollectionManager();
     // const depth = config?.params?.appends?.length
     //   ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1)
@@ -65,7 +67,7 @@ export default {
     });
 
     return result;
-  },
+  }
   useInitializers(node): SchemaInitializerItemType | null {
     if (!node.config.collection) {
       return null;
@@ -79,6 +81,5 @@ export default {
       collection: node.config.collection,
       dataSource: `{{$jobsMapByNodeKey.${node.key}}}`,
     };
-  },
-  initializers: {},
-};
+  }
+}
