@@ -18,14 +18,6 @@ export class BaseAuth extends Auth {
     const { userCollection } = config;
     super(config);
     this.userCollection = userCollection;
-    this.ctx.db.on('users.afterSave', async (user: Model) => {
-      const cache = this.ctx.cache as Cache;
-      await cache.set(this.getCacheKey(user.id), user);
-    });
-    this.ctx.db.on('users.afterDestory', async (user: Model) => {
-      const cache = this.ctx.cache as Cache;
-      await cache.del(this.getCacheKey(user.id));
-    });
   }
 
   get userRepository() {
