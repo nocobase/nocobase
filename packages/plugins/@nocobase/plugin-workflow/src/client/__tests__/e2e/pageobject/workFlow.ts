@@ -186,7 +186,7 @@ export class CollectionTriggerNode {
   constructor(page: Page, triggerName: string, collectionName: string) {
     this.page = page;
     this.node = page.getByLabel(`Trigger-${triggerName}`);
-    this.nodeTitle = page.getByLabel(`Trigger-${triggerName}`).getByLabel('textarea');
+    this.nodeTitle = page.getByLabel(`Trigger-${triggerName}`).getByRole('textbox');
     this.nodeConfigure = page.getByLabel(`Trigger-${triggerName}`).getByRole('button', { name: 'Configure' });
     this.collectionDropDown = page.getByTestId('select-collection').getByLabel('Search');
     this.triggerOnDropdown = page.getByTestId('select-single').getByLabel('Search');
@@ -209,7 +209,7 @@ export class FromEventTriggerNode {
   constructor(page: Page, triggerName: string, collectionName: string) {
     this.page = page;
     this.node = page.getByLabel(`Trigger-${triggerName}`);
-    this.nodeTitle = page.getByLabel(`Trigger-${triggerName}`).getByLabel('textarea');
+    this.nodeTitle = page.getByLabel(`Trigger-${triggerName}`).getByRole('textbox');
     this.nodeConfigure = page.getByLabel(`Trigger-${triggerName}`).getByRole('button', { name: 'Configure' });
     this.collectionDropDown = page.getByTestId('select-collection');
     this.relationalDataDropdown = page.getByTestId('select-field-Preload associations');
@@ -235,7 +235,7 @@ export class ClculationNode {
   constructor(page: Page, nodeName: string) {
     this.page = page;
     this.node = page.getByLabel(`Calculation-${nodeName}`, { exact: true });
-    this.nodeTitle = page.getByLabel(`Calculation-${nodeName}`, { exact: true }).getByLabel('textarea');
+    this.nodeTitle = page.getByLabel(`Calculation-${nodeName}`, { exact: true }).getByRole('textbox');
     this.nodeConfigure = page
       .getByLabel(`Calculation-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
@@ -268,7 +268,7 @@ export class QueryRecordNode {
   constructor(page: Page, nodeName: string) {
     this.page = page;
     this.node = page.getByLabel(`Query record-${nodeName}`, { exact: true });
-    this.nodeTitle = page.getByLabel(`Query record-${nodeName}`, { exact: true }).getByLabel('textarea');
+    this.nodeTitle = page.getByLabel(`Query record-${nodeName}`, { exact: true }).getByRole('textbox');
     this.nodeConfigure = page
       .getByLabel(`Query record-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
@@ -298,7 +298,7 @@ export class CreateRecordNode {
   constructor(page: Page, nodeName: string) {
     this.page = page;
     this.node = page.getByLabel(`Create record-${nodeName}`, { exact: true });
-    this.nodeTitle = page.getByLabel(`Create record-${nodeName}`, { exact: true }).getByLabel('textarea');
+    this.nodeTitle = page.getByLabel(`Create record-${nodeName}`, { exact: true }).getByRole('textbox');
     this.nodeConfigure = page
       .getByLabel(`Create record-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
@@ -325,7 +325,7 @@ export class UpdateRecordNode {
   constructor(page: Page, nodeName: string) {
     this.page = page;
     this.node = page.getByLabel(`Update record-${nodeName}`, { exact: true });
-    this.nodeTitle = page.getByLabel(`Update record-${nodeName}`, { exact: true }).getByLabel('textarea');
+    this.nodeTitle = page.getByLabel(`Update record-${nodeName}`, { exact: true }).getByRole('textbox');
     this.nodeConfigure = page
       .getByLabel(`Update record-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
@@ -351,7 +351,7 @@ export class DeleteRecordNode {
   constructor(page: Page, nodeName: string) {
     this.page = page;
     this.node = page.getByLabel(`Delete record-${nodeName}`, { exact: true });
-    this.nodeTitle = page.getByLabel(`Delete record-${nodeName}`, { exact: true }).getByLabel('textarea');
+    this.nodeTitle = page.getByLabel(`Delete record-${nodeName}`, { exact: true }).getByRole('textbox');
     this.nodeConfigure = page
       .getByLabel(`Delete record-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
@@ -382,7 +382,7 @@ export class AggregateNode {
   constructor(page: Page, nodeName: string) {
     this.page = page;
     this.node = page.getByLabel(`Aggregate-${nodeName}`, { exact: true });
-    this.nodeTitle = page.getByLabel(`Aggregate-${nodeName}`, { exact: true }).getByLabel('textarea');
+    this.nodeTitle = page.getByLabel(`Aggregate-${nodeName}`, { exact: true }).getByRole('textbox');
     this.nodeConfigure = page
       .getByLabel(`Aggregate-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
@@ -420,7 +420,7 @@ export class ManualNode {
   constructor(page: Page, nodeName: string) {
     this.page = page;
     this.node = page.getByLabel(`Manual-${nodeName}`, { exact: true });
-    this.nodeTitle = page.getByLabel(`Manual-${nodeName}`, { exact: true }).getByLabel('textarea');
+    this.nodeTitle = page.getByLabel(`Manual-${nodeName}`, { exact: true }).getByRole('textbox');
     this.nodeConfigure = page
       .getByLabel(`Manual-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
@@ -452,7 +452,7 @@ export class ConditionYesNode {
   constructor(page: Page, nodeName: string) {
     this.page = page;
     this.node = page.getByLabel(`Condition-${nodeName}`, { exact: true });
-    this.nodeTitle = page.getByLabel(`Condition-${nodeName}`, { exact: true }).getByLabel('textarea');
+    this.nodeTitle = page.getByLabel(`Condition-${nodeName}`, { exact: true }).getByRole('textbox');
     this.nodeConfigure = page
       .getByLabel(`Condition-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
@@ -487,7 +487,7 @@ export class ConditionBranchNode {
   constructor(page: Page, nodeName: string) {
     this.page = page;
     this.node = page.getByLabel(`Condition-${nodeName}`, { exact: true });
-    this.nodeTitle = page.getByLabel(`Condition-${nodeName}`, { exact: true }).getByLabel('textarea');
+    this.nodeTitle = page.getByLabel(`Condition-${nodeName}`, { exact: true }).getByRole('textbox');
     this.nodeConfigure = page
       .getByLabel(`Condition-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });

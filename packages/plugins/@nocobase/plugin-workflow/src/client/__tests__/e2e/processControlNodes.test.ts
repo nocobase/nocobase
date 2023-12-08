@@ -58,7 +58,7 @@ test.describe('clculation node', () => {
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'calculation', exact: true }).click();
     const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Calculation-Calculation', { exact: true }).getByLabel('textarea').fill(calculationNodeName);
+    await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
     const calculationNode = new ClculationNode(page, calculationNodeName);
     await calculationNode.nodeConfigure.click();
     await page.getByLabel('variable-button').click();
@@ -183,7 +183,7 @@ test.describe('clculation node', () => {
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'calculation', exact: true }).click();
     const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Calculation-Calculation', { exact: true }).getByLabel('textarea').fill(calculationNodeName);
+    await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
     const calculationNode = new ClculationNode(page, calculationNodeName);
     await calculationNode.nodeConfigure.click();
     await calculationNode.formulaCalculationEngine.click();
@@ -311,7 +311,7 @@ test.describe('clculation node', () => {
     const preCalculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preCalculationNodeName);
     const preCalculationNode = new ClculationNode(page, preCalculationNodeName);
     await preCalculationNode.nodeConfigure.click();
@@ -326,7 +326,7 @@ test.describe('clculation node', () => {
     await preCalculationNode.addNodeButton.click();
     await page.getByRole('button', { name: 'calculation', exact: true }).click();
     const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Calculation-Calculation', { exact: true }).getByLabel('textarea').fill(calculationNodeName);
+    await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
     const calculationNode = new ClculationNode(page, calculationNodeName);
     await calculationNode.nodeConfigure.click();
     await page.getByLabel('variable-button').click();
@@ -452,7 +452,7 @@ test.describe('clculation node', () => {
     const preCalculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preCalculationNodeName);
     const preCalculationNode = new ClculationNode(page, preCalculationNodeName);
     await preCalculationNode.nodeConfigure.click();
@@ -468,7 +468,7 @@ test.describe('clculation node', () => {
     await preCalculationNode.addNodeButton.click();
     await page.getByRole('button', { name: 'calculation', exact: true }).click();
     const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Calculation-Calculation', { exact: true }).getByLabel('textarea').fill(calculationNodeName);
+    await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
     const calculationNode = new ClculationNode(page, calculationNodeName);
     await calculationNode.nodeConfigure.click();
     await calculationNode.formulaCalculationEngine.click();
@@ -595,7 +595,7 @@ test.describe('clculation node', () => {
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -617,7 +617,7 @@ test.describe('clculation node', () => {
     await preQueryRecordNode.addNodeButton.click();
     await page.getByRole('button', { name: 'calculation', exact: true }).click();
     const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Calculation-Calculation', { exact: true }).getByLabel('textarea').fill(calculationNodeName);
+    await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
     const calculationNode = new ClculationNode(page, calculationNodeName);
     await calculationNode.nodeConfigure.click();
     await page.getByLabel('variable-button').click();
@@ -744,7 +744,7 @@ test.describe('clculation node', () => {
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -766,7 +766,7 @@ test.describe('clculation node', () => {
     await preQueryRecordNode.addNodeButton.click();
     await page.getByRole('button', { name: 'calculation', exact: true }).click();
     const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Calculation-Calculation', { exact: true }).getByLabel('textarea').fill(calculationNodeName);
+    await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
     const calculationNode = new ClculationNode(page, calculationNodeName);
     await calculationNode.nodeConfigure.click();
     await calculationNode.formulaCalculationEngine.click();
@@ -905,7 +905,7 @@ test.describe('clculation node', () => {
     const preCreateRecordNodeName = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Create record-Create record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preCreateRecordNodeName);
     const preCreateRecordNode = new CreateRecordNode(page, preCreateRecordNodeName);
     await preCreateRecordNode.nodeConfigure.click();
@@ -924,7 +924,7 @@ test.describe('clculation node', () => {
     await preCreateRecordNode.addNodeButton.click();
     await page.getByRole('button', { name: 'calculation', exact: true }).click();
     const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Calculation-Calculation', { exact: true }).getByLabel('textarea').fill(calculationNodeName);
+    await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
     const calculationNode = new ClculationNode(page, calculationNodeName);
     await calculationNode.nodeConfigure.click();
     await page.getByLabel('variable-button').click();
@@ -1066,7 +1066,7 @@ test.describe('clculation node', () => {
     const preCreateRecordNodeName = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Create record-Create record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preCreateRecordNodeName);
     const preCreateRecordNode = new CreateRecordNode(page, preCreateRecordNodeName);
     await preCreateRecordNode.nodeConfigure.click();
@@ -1085,7 +1085,7 @@ test.describe('clculation node', () => {
     await preCreateRecordNode.addNodeButton.click();
     await page.getByRole('button', { name: 'calculation', exact: true }).click();
     const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Calculation-Calculation', { exact: true }).getByLabel('textarea').fill(calculationNodeName);
+    await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
     const calculationNode = new ClculationNode(page, calculationNodeName);
     await calculationNode.nodeConfigure.click();
     await calculationNode.formulaCalculationEngine.click();
@@ -1216,7 +1216,7 @@ test.describe('clculation node', () => {
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'aggregate', exact: true }).click();
     const preAggregateNodeName = 'Aggregate' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Aggregate-Aggregate', { exact: true }).getByLabel('textarea').fill(preAggregateNodeName);
+    await page.getByLabel('Aggregate-Aggregate', { exact: true }).getByRole('textbox').fill(preAggregateNodeName);
     const preAggregateNode = new AggregateNode(page, preAggregateNodeName);
     await preAggregateNode.nodeConfigure.click();
     await preAggregateNode.collectionDropDown.click();
@@ -1229,7 +1229,7 @@ test.describe('clculation node', () => {
     await preAggregateNode.addNodeButton.click();
     await page.getByRole('button', { name: 'calculation', exact: true }).click();
     const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Calculation-Calculation', { exact: true }).getByLabel('textarea').fill(calculationNodeName);
+    await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
     const calculationNode = new ClculationNode(page, calculationNodeName);
     await calculationNode.nodeConfigure.click();
     await page.getByLabel('variable-button').click();
@@ -1356,7 +1356,7 @@ test.describe('clculation node', () => {
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'aggregate', exact: true }).click();
     const preAggregateNodeName = 'Aggregate' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Aggregate-Aggregate', { exact: true }).getByLabel('textarea').fill(preAggregateNodeName);
+    await page.getByLabel('Aggregate-Aggregate', { exact: true }).getByRole('textbox').fill(preAggregateNodeName);
     const preAggregateNode = new AggregateNode(page, preAggregateNodeName);
     await preAggregateNode.nodeConfigure.click();
     await preAggregateNode.collectionDropDown.click();
@@ -1369,7 +1369,7 @@ test.describe('clculation node', () => {
     await preAggregateNode.addNodeButton.click();
     await page.getByRole('button', { name: 'calculation', exact: true }).click();
     const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Calculation-Calculation', { exact: true }).getByLabel('textarea').fill(calculationNodeName);
+    await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
     const calculationNode = new ClculationNode(page, calculationNodeName);
     await calculationNode.nodeConfigure.click();
     await calculationNode.formulaCalculationEngine.click();
@@ -1511,7 +1511,7 @@ test.describe('clculation node', () => {
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'manual', exact: true }).click();
     const preManualNodeName = 'Manual' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Manual-Manual', { exact: true }).getByLabel('textarea').fill(preManualNodeName);
+    await page.getByLabel('Manual-Manual', { exact: true }).getByRole('textbox').fill(preManualNodeName);
     const preManualNode = new ManualNode(page, preManualNodeName);
     await preManualNode.nodeConfigure.click();
     await preManualNode.assigneesDropDown.click();
@@ -1548,7 +1548,7 @@ test.describe('clculation node', () => {
     await preManualNode.addNodeButton.click();
     await page.getByRole('button', { name: 'calculation', exact: true }).click();
     const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Calculation-Calculation', { exact: true }).getByLabel('textarea').fill(calculationNodeName);
+    await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
     const calculationNode = new ClculationNode(page, calculationNodeName);
     await calculationNode.nodeConfigure.click();
     await page.getByLabel('variable-button').click();
@@ -1712,7 +1712,7 @@ test.describe('clculation node', () => {
     await collectionTriggerNode.addNodeButton.click();
     await page.getByRole('button', { name: 'manual', exact: true }).click();
     const preManualNodeName = 'Manual' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Manual-Manual', { exact: true }).getByLabel('textarea').fill(preManualNodeName);
+    await page.getByLabel('Manual-Manual', { exact: true }).getByRole('textbox').fill(preManualNodeName);
     const preManualNode = new ManualNode(page, preManualNodeName);
     await preManualNode.nodeConfigure.click();
     await preManualNode.assigneesDropDown.click();
@@ -1749,7 +1749,7 @@ test.describe('clculation node', () => {
     await preManualNode.addNodeButton.click();
     await page.getByRole('button', { name: 'calculation', exact: true }).click();
     const calculationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Calculation-Calculation', { exact: true }).getByLabel('textarea').fill(calculationNodeName);
+    await page.getByLabel('Calculation-Calculation', { exact: true }).getByRole('textbox').fill(calculationNodeName);
     const calculationNode = new ClculationNode(page, calculationNodeName);
     await calculationNode.nodeConfigure.click();
     await calculationNode.formulaCalculationEngine.click();
@@ -1906,7 +1906,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -2042,7 +2042,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -2178,7 +2178,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -2316,7 +2316,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -2455,7 +2455,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -2476,7 +2476,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -2626,7 +2626,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -2649,7 +2649,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -2797,7 +2797,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -2818,7 +2818,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -2968,7 +2968,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -2991,7 +2991,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -3141,7 +3141,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.mathRadio.click();
@@ -3280,7 +3280,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.mathRadio.click();
@@ -3419,7 +3419,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.mathRadio.click();
@@ -3558,7 +3558,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.mathRadio.click();
@@ -3697,7 +3697,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -3836,7 +3836,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -3975,7 +3975,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -4114,7 +4114,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -4254,7 +4254,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -4275,7 +4275,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -4423,7 +4423,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -4446,7 +4446,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -4594,7 +4594,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -4615,7 +4615,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -4764,7 +4764,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -4787,7 +4787,7 @@ test.describe('Conditional judgment nodes continue if yes', () => {
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('rejectOnFalse').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionYesNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -4933,7 +4933,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -4951,7 +4951,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -4963,7 +4963,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -5107,7 +5107,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -5125,7 +5125,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -5137,7 +5137,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -5281,7 +5281,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -5301,7 +5301,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -5313,7 +5313,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -5456,7 +5456,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -5476,7 +5476,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -5488,7 +5488,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -5632,7 +5632,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -5653,7 +5653,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -5678,7 +5678,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -5690,7 +5690,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -5840,7 +5840,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -5863,7 +5863,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -5888,7 +5888,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -5900,7 +5900,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -6048,7 +6048,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -6069,7 +6069,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -6096,7 +6096,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -6108,7 +6108,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -6256,7 +6256,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -6279,7 +6279,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await page.getByText('Add condition', { exact: true }).click();
@@ -6306,7 +6306,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -6318,7 +6318,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -6466,7 +6466,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.mathRadio.click();
@@ -6487,7 +6487,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -6499,7 +6499,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -6642,7 +6642,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.mathRadio.click();
@@ -6663,7 +6663,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -6675,7 +6675,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -6818,7 +6818,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.mathRadio.click();
@@ -6839,7 +6839,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -6851,7 +6851,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -6994,7 +6994,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.mathRadio.click();
@@ -7015,7 +7015,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -7027,7 +7027,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -7170,7 +7170,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -7191,7 +7191,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -7203,7 +7203,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -7346,7 +7346,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -7367,7 +7367,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -7379,7 +7379,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -7522,7 +7522,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -7543,7 +7543,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -7555,7 +7555,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -7698,7 +7698,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -7719,7 +7719,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -7731,7 +7731,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -7875,7 +7875,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -7896,7 +7896,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -7920,7 +7920,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -7932,7 +7932,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -8081,7 +8081,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -8104,7 +8104,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -8128,7 +8128,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -8140,7 +8140,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -8289,7 +8289,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -8310,7 +8310,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -8334,7 +8334,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -8346,7 +8346,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();
@@ -8496,7 +8496,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const preQueryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(preQueryRecordNodeName);
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
@@ -8519,7 +8519,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     await page.getByRole('button', { name: 'condition', exact: true }).hover();
     await page.getByLabel('branch').click();
     const conditionNodeName = 'condition' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('Condition-Condition', { exact: true }).getByLabel('textarea').fill(conditionNodeName);
+    await page.getByLabel('Condition-Condition', { exact: true }).getByRole('textbox').fill(conditionNodeName);
     const conditionNode = new ConditionBranchNode(page, conditionNodeName);
     await conditionNode.nodeConfigure.click();
     await conditionNode.formulaRadio.click();
@@ -8540,7 +8540,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const noBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(noBranchcalCulationNodeName);
     const noBranchcalCulationNode = new ClculationNode(page, noBranchcalCulationNodeName);
     await noBranchcalCulationNode.nodeConfigure.click();
@@ -8552,7 +8552,7 @@ test.describe('Conditional judgment nodes yes and no continue respectively', () 
     const yesBranchcalCulationNodeName = 'calculation' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Calculation-Calculation', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(yesBranchcalCulationNodeName);
     const yesBranchcalCulationNode = new ClculationNode(page, yesBranchcalCulationNodeName);
     await yesBranchcalCulationNode.nodeConfigure.click();

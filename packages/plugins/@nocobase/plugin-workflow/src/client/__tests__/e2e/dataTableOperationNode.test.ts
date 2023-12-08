@@ -65,7 +65,7 @@ test.describe('query data node', () => {
     const queryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(queryRecordNodeName);
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
@@ -215,7 +215,7 @@ test.describe('query data node', () => {
     const queryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(queryRecordNodeName);
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
@@ -370,7 +370,7 @@ test.describe('query data node', () => {
     const queryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(queryRecordNodeName);
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
@@ -559,7 +559,7 @@ test.describe('query data node', () => {
     const queryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(queryRecordNodeName);
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
@@ -748,7 +748,7 @@ test.describe('query data node', () => {
     const queryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(queryRecordNodeName);
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
@@ -920,7 +920,7 @@ test.describe('query data node', () => {
     const queryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(queryRecordNodeName);
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
@@ -1098,7 +1098,7 @@ test.describe('query data node', () => {
     const queryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(queryRecordNodeName);
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
@@ -1276,7 +1276,7 @@ test.describe('query data node', () => {
     const queryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(queryRecordNodeName);
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
@@ -1446,7 +1446,7 @@ test.describe('query data node', () => {
     const queryRecordNodeName = 'Query record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Query record-Query record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(queryRecordNodeName);
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
@@ -1613,7 +1613,7 @@ test.describe('create data node', () => {
     const createRecordNodeName = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Create record-Create record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(createRecordNodeName);
     const createRecordNode = new CreateRecordNode(page, createRecordNodeName);
     await createRecordNode.nodeConfigure.click();
@@ -1773,7 +1773,7 @@ test.describe('create data node', () => {
     const createRecordNodeName = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Create record-Create record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(createRecordNodeName);
     const createRecordNode = new CreateRecordNode(page, createRecordNodeName);
     await createRecordNode.nodeConfigure.click();
@@ -1938,7 +1938,7 @@ test.describe('create data node', () => {
     const createRecordNodeName = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Create record-Create record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(createRecordNodeName);
     const createRecordNode = new CreateRecordNode(page, createRecordNodeName);
     await createRecordNode.nodeConfigure.click();
@@ -2098,7 +2098,7 @@ test.describe('create data node', () => {
     const createRecordNodeName = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Create record-Create record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(createRecordNodeName);
     const createRecordNode = new CreateRecordNode(page, createRecordNodeName);
     await createRecordNode.nodeConfigure.click();
@@ -2263,7 +2263,7 @@ test.describe('create data node', () => {
     const createRecordNodeName = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Create record-Create record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(createRecordNodeName);
     const createRecordNode = new CreateRecordNode(page, createRecordNodeName);
     await createRecordNode.nodeConfigure.click();
@@ -2423,7 +2423,7 @@ test.describe('create data node', () => {
     const createRecordNodeName = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Create record-Create record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(createRecordNodeName);
     const createRecordNode = new CreateRecordNode(page, createRecordNodeName);
     await createRecordNode.nodeConfigure.click();
@@ -2588,7 +2588,7 @@ test.describe('create data node', () => {
     const createRecordNodeName = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Create record-Create record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(createRecordNodeName);
     const createRecordNode = new CreateRecordNode(page, createRecordNodeName);
     await createRecordNode.nodeConfigure.click();
@@ -2751,7 +2751,7 @@ test.describe('create data node', () => {
     const createRecordNodeName = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Create record-Create record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(createRecordNodeName);
     const createRecordNode = new CreateRecordNode(page, createRecordNodeName);
     await createRecordNode.nodeConfigure.click();
@@ -2916,7 +2916,7 @@ test.describe('create data node', () => {
     const createRecordNodeName = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Create record-Create record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(createRecordNodeName);
     const createRecordNode = new CreateRecordNode(page, createRecordNodeName);
     await createRecordNode.nodeConfigure.click();
@@ -3084,7 +3084,7 @@ test.describe('create data node', () => {
     const createRecordNodeName = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Create record-Create record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(createRecordNodeName);
     const createRecordNode = new CreateRecordNode(page, createRecordNodeName);
     await createRecordNode.nodeConfigure.click();
@@ -3256,7 +3256,7 @@ test.describe('create data node', () => {
     const createRecordNodeName = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Create record-Create record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(createRecordNodeName);
     const createRecordNode = new CreateRecordNode(page, createRecordNodeName);
     await createRecordNode.nodeConfigure.click();
@@ -3425,7 +3425,7 @@ test.describe('create data node', () => {
     const createRecordNodeName = 'Create record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Create record-Create record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(createRecordNodeName);
     const createRecordNode = new CreateRecordNode(page, createRecordNodeName);
     await createRecordNode.nodeConfigure.click();
@@ -3599,7 +3599,7 @@ test.describe('update data node,batch update', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -3782,7 +3782,7 @@ test.describe('update data node,batch update', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -3969,7 +3969,7 @@ test.describe('update data node,batch update', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -3986,7 +3986,7 @@ test.describe('update data node,batch update', () => {
     await updateRecordNode.addFieldsButton.click();
     await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
     const updayteRecordNodefieldData = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('block-item-CollectionFieldset').getByLabel('textarea').fill(updayteRecordNodefieldData);
+    await page.getByLabel('block-item-CollectionFieldset').getByRole('textbox').fill(updayteRecordNodefieldData);
     await updateRecordNode.submitButton.click();
     await page.getByRole('link', { name: 'Workflow' }).click();
     await workflowListRecords.editAction.click();
@@ -4045,7 +4045,7 @@ test.describe('update data node,batch update', () => {
 
     // 2、测试步骤：录入数据触发工作流
     const addDataTriggerWorkflowPagefieldData = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('textarea').fill(addDataTriggerWorkflowPagefieldData.toString());
+    await page.getByRole('textbox').fill(addDataTriggerWorkflowPagefieldData.toString());
     await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
     await page.waitForLoadState('networkidle');
 
@@ -4152,7 +4152,7 @@ test.describe('update data node,batch update', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -4232,7 +4232,7 @@ test.describe('update data node,batch update', () => {
 
     // 2、测试步骤：录入数据触发工作流
     const addDataTriggerWorkflowPagefieldData = updayteRecordNodefieldData;
-    await page.getByLabel('textarea').fill(addDataTriggerWorkflowPagefieldData.toString());
+    await page.getByRole('textbox').fill(addDataTriggerWorkflowPagefieldData.toString());
     await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
     await page.waitForLoadState('networkidle');
 
@@ -4339,7 +4339,7 @@ test.describe('update data node,batch update', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -4522,7 +4522,7 @@ test.describe('update data node,batch update', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -4711,7 +4711,7 @@ test.describe('update data node,batch update', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -4894,7 +4894,7 @@ test.describe('update data node,batch update', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -5083,7 +5083,7 @@ test.describe('update data node,batch update', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -5269,7 +5269,7 @@ test.describe('update data node,batch update', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -5459,7 +5459,7 @@ test.describe('update data node,batch update', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -5648,7 +5648,7 @@ test.describe('update data node,batch update', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -5840,7 +5840,7 @@ test.describe('update data node,batch update', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -6031,7 +6031,7 @@ test.describe('update data node,batch update', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -6223,7 +6223,7 @@ test.describe('update data node,update item by item', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -6407,7 +6407,7 @@ test.describe('update data node,update item by item', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -6595,7 +6595,7 @@ test.describe('update data node,update item by item', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -6613,7 +6613,7 @@ test.describe('update data node,update item by item', () => {
     await updateRecordNode.addFieldsButton.click();
     await page.getByRole('menuitem', { name: updateNodeFieldDisplayName }).click();
     const updayteRecordNodefieldData = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('block-item-CollectionFieldset').getByLabel('textarea').fill(updayteRecordNodefieldData);
+    await page.getByLabel('block-item-CollectionFieldset').getByRole('textbox').fill(updayteRecordNodefieldData);
     await updateRecordNode.submitButton.click();
     await page.getByRole('link', { name: 'Workflow' }).click();
     await workflowListRecords.editAction.click();
@@ -6672,7 +6672,7 @@ test.describe('update data node,update item by item', () => {
 
     // 2、测试步骤：录入数据触发工作流
     const addDataTriggerWorkflowPagefieldData = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('textarea').fill(addDataTriggerWorkflowPagefieldData.toString());
+    await page.getByRole('textbox').fill(addDataTriggerWorkflowPagefieldData.toString());
     await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
     await page.waitForLoadState('networkidle');
 
@@ -6779,7 +6779,7 @@ test.describe('update data node,update item by item', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -6860,7 +6860,7 @@ test.describe('update data node,update item by item', () => {
 
     // 2、测试步骤：录入数据触发工作流
     const addDataTriggerWorkflowPagefieldData = updayteRecordNodefieldData;
-    await page.getByLabel('textarea').fill(addDataTriggerWorkflowPagefieldData.toString());
+    await page.getByRole('textbox').fill(addDataTriggerWorkflowPagefieldData.toString());
     await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
     await page.waitForLoadState('networkidle');
 
@@ -6967,7 +6967,7 @@ test.describe('update data node,update item by item', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -7151,7 +7151,7 @@ test.describe('update data node,update item by item', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -7341,7 +7341,7 @@ test.describe('update data node,update item by item', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -7525,7 +7525,7 @@ test.describe('update data node,update item by item', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -7715,7 +7715,7 @@ test.describe('update data node,update item by item', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -7902,7 +7902,7 @@ test.describe('update data node,update item by item', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -8093,7 +8093,7 @@ test.describe('update data node,update item by item', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -8283,7 +8283,7 @@ test.describe('update data node,update item by item', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -8476,7 +8476,7 @@ test.describe('update data node,update item by item', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -8668,7 +8668,7 @@ test.describe('update data node,update item by item', () => {
     const updateRecordNodeName = 'Update record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Update record-Update record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(updateRecordNodeName);
     const updateRecordNode = new UpdateRecordNode(page, updateRecordNodeName);
     await updateRecordNode.nodeConfigure.click();
@@ -8861,7 +8861,7 @@ test.describe('delete data node', () => {
     const deleteRecordNodeName = 'Delete record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Delete record-Delete record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(deleteRecordNodeName);
     const deleteRecordNode = new DeleteRecordNode(page, deleteRecordNodeName);
     await deleteRecordNode.nodeConfigure.click();
@@ -9035,7 +9035,7 @@ test.describe('delete data node', () => {
     const deleteRecordNodeName = 'Delete record' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Delete record-Delete record', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(deleteRecordNodeName);
     const deleteRecordNode = new DeleteRecordNode(page, deleteRecordNodeName);
     await deleteRecordNode.nodeConfigure.click();
@@ -9213,7 +9213,7 @@ test.describe('aggregate node,Datasheet data', () => {
     const aggregateRecordNodeName = 'Aggregate' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Aggregate-Aggregate', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(aggregateRecordNodeName);
     const aggregateRecordNode = new AggregateNode(page, aggregateRecordNodeName);
     await aggregateRecordNode.nodeConfigure.click();
@@ -9358,7 +9358,7 @@ test.describe('aggregate node,Datasheet data', () => {
     const aggregateRecordNodeName = 'Aggregate' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Aggregate-Aggregate', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(aggregateRecordNodeName);
     const aggregateRecordNode = new AggregateNode(page, aggregateRecordNodeName);
     await aggregateRecordNode.nodeConfigure.click();
@@ -9507,7 +9507,7 @@ test.describe('aggregate node,Datasheet data', () => {
     const aggregateRecordNodeName = 'Aggregate' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Aggregate-Aggregate', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(aggregateRecordNodeName);
     const aggregateRecordNode = new AggregateNode(page, aggregateRecordNodeName);
     await aggregateRecordNode.nodeConfigure.click();
@@ -9657,7 +9657,7 @@ test.describe('aggregate node,Datasheet data', () => {
     const aggregateRecordNodeName = 'Aggregate' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Aggregate-Aggregate', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(aggregateRecordNodeName);
     const aggregateRecordNode = new AggregateNode(page, aggregateRecordNodeName);
     await aggregateRecordNode.nodeConfigure.click();
@@ -9806,7 +9806,7 @@ test.describe('aggregate node,Datasheet data', () => {
     const aggregateRecordNodeName = 'Aggregate' + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page
       .getByLabel('Aggregate-Aggregate', { exact: true })
-      .getByLabel('textarea')
+      .getByRole('textbox')
       .fill(aggregateRecordNodeName);
     const aggregateRecordNode = new AggregateNode(page, aggregateRecordNodeName);
     await aggregateRecordNode.nodeConfigure.click();
