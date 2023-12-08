@@ -50,8 +50,9 @@ jobs:
       - name: Install project dependencies
         run: yarn --prefer-offline
       - name: Test with Sqlite
-        run: node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
+        run: node --max_old_space_size=4096 ./node_modules/.bin/vitest
         env:
+          SINGLE_THREAD: false
           LOGGER_LEVEL: error
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
@@ -107,8 +108,9 @@ jobs:
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
+          node --max_old_space_size=4096 ./node_modules/.bin/vitest
         env:
+          SINGLE_THREAD: false
           LOGGER_LEVEL: error
           DB_DIALECT: postgres
           DB_HOST: postgres
@@ -160,8 +162,9 @@ jobs:
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
+          node --max_old_space_size=4096 ./node_modules/.bin/vitest
         env:
+          SINGLE_THREAD: false
           LOGGER_LEVEL: error
           DB_DIALECT: mysql
           DB_HOST: mysql
@@ -210,8 +213,9 @@ jobs:
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
+          node --max_old_space_size=4096 ./node_modules/.bin/vitest
         env:
+          SINGLE_THREAD: false
           LOGGER_LEVEL: error
           DB_DIALECT: mariadb
           DB_HOST: mariadb

@@ -39,7 +39,7 @@ export default defineConfig({
     setupFiles: 'scripts/vitest-node.setup.ts',
     poolOptions: {
       threads: {
-        singleThread: true,
+        singleThread: process.env.SINGLE_THREAD === 'false' ? false : true,
       },
     },
     alias: [...aliasItems],
@@ -51,7 +51,7 @@ export default defineConfig({
       '**/es/**',
       '**/e2e/**',
       '**/{vitest,commitlint}.config.*',
-      'packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}'
+      'packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}',
     ],
     testTimeout: 300000,
     bail: 1,

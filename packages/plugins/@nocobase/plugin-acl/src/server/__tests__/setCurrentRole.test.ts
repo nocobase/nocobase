@@ -3,6 +3,7 @@ import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 import { setCurrentRole } from '../middlewares/setCurrentRole';
 import { prepareApp } from './prepare';
+import { vi } from 'vitest';
 
 describe('role', () => {
   let api: MockServer;
@@ -64,7 +65,7 @@ describe('role', () => {
         return 'abc';
       }
     };
-    const throwFn = jest.fn();
+    const throwFn = vi.fn();
     ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
     expect(throwFn).lastCalledWith(401, { code: 'ROLE_NOT_FOUND_ERR', message: 'The user role does not exist.' });
