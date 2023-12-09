@@ -266,47 +266,37 @@ const _test = base.extend<{
     }
   },
   mockRecords: async ({ page }, use) => {
-    let records = [];
-    let _collectionName = '';
     const mockRecords = async (collectionName: string, count: any = 3, data?: any) => {
-      _collectionName = collectionName;
-
       if (_.isArray(count)) {
         data = count;
         count = data.length;
-      }
-      if (['users', 'roles'].includes(collectionName)) {
-        const result = await createRandomData(collectionName, count, data);
-        records = [...records, ...result];
-        return result;
       }
       return createRandomData(collectionName, count, data);
     };
 
     await use(mockRecords);
 
-    if (records?.length) {
-      await deleteRecords(_collectionName, records);
-    }
+    // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
+    const deletePromises = [
+      deleteRecords('users', { id: { $ne: 1 } }),
+      deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
+    ];
+    await Promise.all(deletePromises);
   },
   mockRecord: async ({ page }, use) => {
-    const records = [];
-    let _collectionName = '';
     const mockRecord = async (collectionName: string, data?: any) => {
-      _collectionName = collectionName;
       const result = await createRandomData(collectionName, 1, data);
-      if (['users', 'roles'].includes(collectionName)) {
-        records.push(result[0]);
-        return result[0];
-      }
       return result[0];
     };
 
     await use(mockRecord);
 
-    if (records?.length) {
-      await deleteRecords(_collectionName, records);
-    }
+    // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
+    const deletePromises = [
+      deleteRecords('users', { id: { $ne: 1 } }),
+      deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
+    ];
+    await Promise.all(deletePromises);
   },
   deletePage: async ({ page }, use) => {
     const deletePage = async (pageName: string) => {
@@ -317,6 +307,13 @@ const _test = base.extend<{
     };
 
     await use(deletePage);
+
+    // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
+    const deletePromises = [
+      deleteRecords('users', { id: { $ne: 1 } }),
+      deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
+    ];
+    await Promise.all(deletePromises);
   },
 });
 
@@ -483,20 +480,20 @@ const deleteCollections = async (collectionNames: string[]) => {
   }
 };
 
-const deleteRecords = async (collectionName: string, records: any[]) => {
+/**
+ * 将数据表中 mock 出来的 records 删除掉
+ * @param collectionName
+ * @param records
+ */
+const deleteRecords = async (collectionName: string, filter: any) => {
   const api = await request.newContext({
     storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
   });
 
   const state = await api.storageState();
   const headers = getHeaders(state);
-  const params = records
-    .map((record) => record?.id)
-    .filter((id) => id != null)
-    .map((id) => `filterByTk[]=${id}`)
-    .join('&');
 
-  const result = await api.post(`/api/${collectionName}:destroy?${params}`, {
+  const result = await api.post(`/api/${collectionName}:destroy?filter=${JSON.stringify(filter)}`, {
     headers,
   });
 

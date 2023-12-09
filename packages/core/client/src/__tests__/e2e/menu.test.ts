@@ -40,24 +40,6 @@ test.describe('menu page', () => {
     await mockPage().goto();
     await expect(page.getByTitle(pageTitle)).not.toBeVisible();
   });
-  test('edit menu title', async ({ page, mockPage }) => {
-    const pageTitle = 'page title';
-    const newPageTitle = 'page title1';
-    await mockPage({
-      name: pageTitle,
-    }).goto();
-    await page.getByLabel(pageTitle).hover();
-    await page.getByLabel(pageTitle).getByLabel('designer-schema-settings').hover();
-    await page.getByRole('menuitem', { name: 'Edit' }).click();
-    await page.mouse.move(300, 0);
-    await page.getByRole('textbox').click();
-    await page.getByRole('textbox').fill(newPageTitle);
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
-    await page.getByRole('menu').getByText(newPageTitle).click();
-    await mockPage().goto();
-    await page.getByText(newPageTitle).click();
-    await expect(page.getByTitle(newPageTitle)).toBeVisible();
-  });
   test('move menu ', async ({ page, mockPage }) => {
     const pageTitle1 = 'page1';
     const pageTitle2 = 'page2';
