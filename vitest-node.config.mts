@@ -52,5 +52,10 @@ export default defineConfig({
     bail: 1,
     // 在 GitHub Actions 中不输出日志
     silent: !!process.env.GITHUB_ACTIONS,
+    poolOptions: {
+      threads: {
+        singleThread: process.env.SINGLE_THREAD == 'false' ? false : true,
+      },
+    },
   },
 });

@@ -23,7 +23,7 @@
     "start": "nocobase start",
     "build": "nocobase build",
     "tar": "nocobase tar",
-    "test": "nocobase test",
+    "test": "vitest --config=./vitest-node.config.mjs",
     "test:client": "vitest",
     "e2e": "nocobase e2e",
     "test:e2e": "tsx ./scripts/runE2e.setup.ts",
