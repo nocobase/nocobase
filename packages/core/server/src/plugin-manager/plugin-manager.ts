@@ -1,7 +1,8 @@
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
-import { isURL } from '@nocobase/utils';
+import { importModule, isURL } from '@nocobase/utils';
 import { fsExists } from '@nocobase/utils/plugin-symlink';
 import execa from 'execa';
+import fs from 'fs';
 import _ from 'lodash';
 import net from 'net';
 import { resolve, sep } from 'path';
@@ -19,7 +20,6 @@ import {
   getNpmInfo,
   getPluginInfoByNpm,
   removeTmpDir,
-  requireNoCache,
   updatePluginByCompressedFileUrl,
 } from './utils';
 
@@ -75,7 +75,9 @@ export class PluginManager {
   }
 
   static async getPackageJson(packageName: string) {
-    return await requireNoCache(`${packageName}/package.json`);
+    const file = await fs.promises.realpath(resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json'));
+    const data = await fs.promises.readFile(file, { encoding: 'utf-8' });
+    return JSON.parse(data);
   }
 
   static async getPackageName(name: string) {
@@ -85,7 +87,7 @@ export class PluginManager {
         await import(`${prefix}${name}`);
         return `${prefix}${name}`;
       } catch (error) {
-        console.log(error);
+        // console.log(error);
         continue;
       }
     }
@@ -135,7 +137,7 @@ export class PluginManager {
     if (typeof pluginName === 'string') {
       const packageName = isPkg ? pluginName : await this.getPackageName(pluginName);
       this.clearCache(packageName);
-      return (await import(packageName)).default;
+      return await importModule(packageName);
     } else {
       return pluginName;
     }

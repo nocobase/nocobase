@@ -1,4 +1,4 @@
-import { isURL } from '@nocobase/utils';
+import { importModule, isURL } from '@nocobase/utils';
 import { createStoragePluginSymLink } from '@nocobase/utils/plugin-symlink';
 import axios, { AxiosRequestConfig } from 'axios';
 import decompress from 'decompress';
@@ -9,6 +9,7 @@ import { builtinModules } from 'module';
 import os from 'os';
 import path from 'path';
 import semver from 'semver';
+import { getDepPkgPath, getPackageDir, getPackageFilePathWithExistCheck } from './clientStaticUtils';
 import {
   APP_NAME,
   DEFAULT_PLUGIN_PATH,
@@ -20,7 +21,6 @@ import {
 } from './constants';
 import deps from './deps';
 import { PluginData } from './types';
-import { getDepPkgPath, getPackageDir, getPackageFilePathWithExistCheck } from './clientStaticUtils';
 
 /**
  * get temp dir
@@ -395,7 +395,7 @@ export function removeRequireCache(fileOrPackageName: string) {
 }
 
 export async function requireNoCache(fileOrPackageName: string) {
-  return (await import(fileOrPackageName)).default;
+  return await importModule(fileOrPackageName);
 }
 
 export function requireModule(m: any) {

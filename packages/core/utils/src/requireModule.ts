@@ -13,5 +13,6 @@ export function requireModule(m: any) {
 export default requireModule;
 
 export async function importModule(m: string) {
-  return (await import(m)).default;
+  const r = (await import(m)).default;
+  return r.__esModule ? r.default : r;
 }

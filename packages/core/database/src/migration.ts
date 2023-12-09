@@ -1,3 +1,4 @@
+import { importModule } from '@nocobase/utils';
 import { QueryInterface, Sequelize } from 'sequelize';
 import Database from './database';
 
@@ -75,8 +76,7 @@ export class Migrations {
         this.items.map(async (item) => {
           if (typeof item.migration === 'string') {
             // use es module to import migration
-            const module = await import(item.migration);
-            const Migration = module.default;
+            const Migration = await importModule(item.migration);
             const migration = new Migration({ ...this.context, ...item.context });
             migration.name = item.name;
             return migration;
