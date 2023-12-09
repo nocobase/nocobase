@@ -75,9 +75,23 @@ export class PluginManager {
   }
 
   static async getPackageJson(packageName: string) {
-    const file = await fs.promises.realpath(resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json'));
-    const data = await fs.promises.readFile(file, { encoding: 'utf-8' });
-    return JSON.parse(data);
+    try {
+      return (
+        await import(`${packageName}/package.json`, {
+          assert: {
+            type: 'json',
+          },
+        })
+      ).default;
+    } catch (err) {
+      if (err.message.includes('needs an import assertion of type')) {
+        const file = await fs.promises.realpath(resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json'));
+        const data = await fs.promises.readFile(file, { encoding: 'utf-8' });
+        return JSON.parse(data);
+      }
+
+      throw err;
+    }
   }
 
   static async getPackageName(name: string) {
@@ -205,8 +219,6 @@ export class PluginManager {
       },
     });
     await tsxRerunning();
-    // await createDevPluginSymLink(pluginName);
-    // await this.add(pluginName, { packageName: pluginName }, true);
   }
 
   async add(plugin?: any, options: any = {}, insert = false, isUpgrade = false) {
@@ -241,7 +253,9 @@ export class PluginManager {
       this.app.log.warn('plugin not found', error);
       return;
     }
+
     const instance: Plugin = new P(createAppProxy(this.app), options);
+
     this.pluginInstances.set(P, instance);
     if (options.name) {
       this.pluginAliases.set(options.name, instance);
