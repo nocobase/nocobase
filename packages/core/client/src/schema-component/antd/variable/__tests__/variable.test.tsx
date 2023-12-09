@@ -20,23 +20,25 @@ describe('Variable', () => {
   it('Variable.TextArea', async () => {
     render(<App2 />);
 
-    const input = document.querySelector('.ant-input') as HTMLElement;
-    const variableSelector = document.querySelector('.ant-select-selector') as HTMLElement;
+    const input = document.querySelector('.ant-input');
+    const variableSelector = document.querySelector('.ant-select-selector');
     expect(input).toBeInTheDocument();
     expect(variableSelector).toBeInTheDocument();
 
     await userEvent.click(variableSelector);
     await userEvent.click(screen.getByText('v1'));
     await waitFor(() => {
-      expect(input.innerHTML).toMatchInlineSnapshot('"<span class=\\"ant-tag ant-tag-blue\\" contenteditable=\\"false\\" data-variable=\\"v1\\">v1</span>"');
+      expect(input.innerHTML).toMatchInlineSnapshot(
+        '"<span class="ant-tag ant-tag-blue" contenteditable="false" data-variable="v1">v1</span>"',
+      );
     });
   });
 
   it('Variable.JSON', async () => {
     render(<App3 />);
 
-    const input = document.querySelector('.ant-input') as HTMLTextAreaElement;
-    const variableSelector = document.querySelector('.ant-select-selector') as HTMLElement;
+    const input = document.querySelector<HTMLTextAreaElement>('.ant-input');
+    const variableSelector = document.querySelector('.ant-select-selector');
     expect(input).toBeInTheDocument();
     expect(variableSelector).toBeInTheDocument();
 
@@ -46,7 +48,7 @@ describe('Variable', () => {
     await userEvent.click(screen.getByText('v1'));
     await userEvent.type(input, '" }');
     await waitFor(() => {
-      expect(input.value).toMatchInlineSnapshot('"{ \\"a\\": \\"{{v1}}\\" }"');
+      expect(input.value).toMatchInlineSnapshot('"{ "a": "{{v1}}" }"');
     });
   });
 });
