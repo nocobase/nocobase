@@ -58,7 +58,7 @@ test('Collection event add data trigger, aggregated data table, no filtering, no
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -203,7 +203,7 @@ test('Collection event add data trigger, aggregated data table, no filtering, no
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -352,7 +352,7 @@ test('Collection event add data trigger, aggregated data table, no filtering, no
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -502,7 +502,7 @@ test('Collection event add data trigger, aggregated data table, no filtering, no
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -651,7 +651,7 @@ test('Collection event add data trigger, aggregated data table, no filtering, no
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();

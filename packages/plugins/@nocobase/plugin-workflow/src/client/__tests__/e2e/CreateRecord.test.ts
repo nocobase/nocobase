@@ -55,7 +55,7 @@ test('Collection event add data trigger, single row text fields for common table
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -215,7 +215,7 @@ test('Collection event add data trigger, normal table single line text field, se
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -380,7 +380,7 @@ test('Collection event add data trigger, normal table integer field, set constan
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -540,7 +540,7 @@ test('Collection event add data trigger, normal table integer field, set trigger
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -705,7 +705,7 @@ test('Collection event add data trigger, normal table numeric field, set constan
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -865,7 +865,7 @@ test('Collection event add data trigger, normal table numeric field, set trigger
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -1030,7 +1030,7 @@ test('Collection event add data trigger, normal table dropdown radio field, set 
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -1193,7 +1193,7 @@ test('Collection event add data trigger, normal table dropdown radio field, set 
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -1358,7 +1358,7 @@ test('Collection event add data trigger, normal table dropdown radio fields, set
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -1526,7 +1526,7 @@ test('Collection event add data trigger, normal table dropdown radio fields, set
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -1698,7 +1698,7 @@ test('Collection event add data trigger, normal table date field, set constant d
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -1867,7 +1867,7 @@ test('Collection event add data trigger, normal table date field, set trigger no
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();

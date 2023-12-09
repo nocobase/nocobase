@@ -52,7 +52,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -188,7 +188,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -324,7 +324,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -462,7 +462,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -600,7 +600,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -616,10 +616,10 @@ test.describe('Continue when "Yes"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -765,12 +765,12 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID').click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
@@ -787,10 +787,10 @@ test.describe('Continue when "Yes"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByTestId('filter-select-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();
@@ -943,7 +943,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -958,10 +958,10 @@ test.describe('Continue when "Yes"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables right' }).click();
@@ -1108,12 +1108,12 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID').click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
@@ -1129,10 +1129,10 @@ test.describe('Continue when "Yes"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByTestId('filter-select-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();
@@ -1287,7 +1287,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -1426,7 +1426,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -1565,7 +1565,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -1704,7 +1704,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -1843,7 +1843,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -1982,7 +1982,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -2121,7 +2121,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -2260,7 +2260,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -2399,7 +2399,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -2415,10 +2415,10 @@ test.describe('Continue when "Yes"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -2562,12 +2562,12 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID').click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
@@ -2584,10 +2584,10 @@ test.describe('Continue when "Yes"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByTestId('filter-select-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();
@@ -2739,7 +2739,7 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -2755,10 +2755,10 @@ test.describe('Continue when "Yes"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -2903,12 +2903,12 @@ test.describe('Continue when "Yes"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID').click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
@@ -2925,10 +2925,10 @@ test.describe('Continue when "Yes"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByTestId('filter-select-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();
@@ -3079,7 +3079,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -3253,7 +3253,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -3427,7 +3427,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -3602,7 +3602,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -3777,7 +3777,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -3793,10 +3793,10 @@ test.describe('Branch into "Yes" and "No"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -3979,12 +3979,12 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID').click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
@@ -4001,10 +4001,10 @@ test.describe('Branch into "Yes" and "No"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByTestId('filter-select-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();
@@ -4194,7 +4194,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -4209,10 +4209,10 @@ test.describe('Branch into "Yes" and "No"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables right' }).click();
@@ -4396,12 +4396,12 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID').click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
@@ -4417,10 +4417,10 @@ test.describe('Branch into "Yes" and "No"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByTestId('filter-select-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();
@@ -4612,7 +4612,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -4788,7 +4788,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -4964,7 +4964,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -5140,7 +5140,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -5316,7 +5316,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -5492,7 +5492,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -5668,7 +5668,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -5844,7 +5844,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -6020,7 +6020,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -6036,10 +6036,10 @@ test.describe('Branch into "Yes" and "No"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -6220,12 +6220,12 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID').click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
@@ -6242,10 +6242,10 @@ test.describe('Branch into "Yes" and "No"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByTestId('filter-select-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();
@@ -6434,7 +6434,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -6450,10 +6450,10 @@ test.describe('Branch into "Yes" and "No"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -6635,12 +6635,12 @@ test.describe('Branch into "Yes" and "No"', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID').click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
@@ -6657,10 +6657,10 @@ test.describe('Branch into "Yes" and "No"', () => {
         const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
         await preQueryRecordNode.nodeConfigure.click();
         await preQueryRecordNode.collectionDropDown.click();
-        await page.getByText(triggerNodeCollectionDisplayName).click();
+        await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByTestId('filter-select-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();

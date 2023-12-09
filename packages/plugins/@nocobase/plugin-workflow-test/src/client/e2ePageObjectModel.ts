@@ -188,7 +188,8 @@ export class CollectionTriggerNode {
     this.node = page.getByLabel(`Trigger-${triggerName}`);
     this.nodeTitle = page.getByLabel(`Trigger-${triggerName}`).getByRole('textbox');
     this.nodeConfigure = page.getByLabel(`Trigger-${triggerName}`).getByRole('button', { name: 'Configure' });
-    this.collectionDropDown = page.getByTestId('select-collection').getByLabel('Search');
+    // this.collectionDropDown = page.getByTestId('select-collection').getByLabel('Search');
+    this.collectionDropDown = page.getByRole('button', { name: 'Select collection' }).getByLabel('Search');
     this.triggerOnDropdown = page.getByTestId('select-single').getByLabel('Search');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
@@ -211,7 +212,7 @@ export class FromEventTriggerNode {
     this.node = page.getByLabel(`Trigger-${triggerName}`);
     this.nodeTitle = page.getByLabel(`Trigger-${triggerName}`).getByRole('textbox');
     this.nodeConfigure = page.getByLabel(`Trigger-${triggerName}`).getByRole('button', { name: 'Configure' });
-    this.collectionDropDown = page.getByTestId('select-collection');
+    this.collectionDropDown = page.getByRole('button', { name: 'Select collection' }).getByLabel('Search');
     this.relationalDataDropdown = page.getByTestId('select-field-Preload associations');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
@@ -429,9 +430,9 @@ export class ManualNode {
     this.addBlockButton = page.getByLabel('schema-initializer-Grid-AddBlockButton-workflows');
     this.triggerDataMenu = page.getByLabel('Data blocks-triggerData');
     this.nodeDataMenu = page.getByLabel('nodes', { exact: true });
-    this.customFormMenu = page.getByLabel('Form-customForm', { exact: true });
-    this.createRecordFormMenu = page.getByLabel('createRecordForm', { exact: true });
-    this.updateRecordFormMenu = page.getByLabel('updateRecordForm', { exact: true });
+    this.customFormMenu = page.getByRole('menuitem', { name: 'Custom form' });
+    this.createRecordFormMenu = page.getByRole('menuitem', { name: 'Create record form' });
+    this.updateRecordFormMenu = page.getByRole('menuitem', { name: 'Update record form' });
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = page.getByLabel(`add-button-manual-${nodeName}`, { exact: true });

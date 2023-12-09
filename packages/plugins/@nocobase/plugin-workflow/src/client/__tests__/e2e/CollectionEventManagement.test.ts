@@ -2,7 +2,7 @@ import { expect, test } from '@nocobase/test/client';
 import { dayjs } from '@nocobase/utils';
 import { faker } from '@faker-js/faker';
 import { e2e_GeneralFormsTable, appendJsonCollectionName } from '@nocobase/plugin-workflow-test/client';
-import { CreateWorkFlow, EditWorkFlow, CollectionTriggerNode, FromEventTriggerNode } from '@nocobase/plugin-workflow-test/client';
+import { CreateWorkFlow, EditWorkFlow, CollectionTriggerNode } from '@nocobase/plugin-workflow-test/client';
 import { WorkflowManagement, WorkflowListRecords } from '@nocobase/plugin-workflow-test/client';
 
 test.describe('Filter', () => {
@@ -18,7 +18,7 @@ test.describe('Filter', () => {
         const workFlowName = caseTitle + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await page.getByLabel('action-Action-Submit-workflows').click();
 
         await expect(page.getByText(workFlowName)).toBeAttached();
@@ -53,7 +53,7 @@ test.describe('Add new', () => {
         const workFlowName = caseTitle + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await page.getByLabel('action-Action-Submit-workflows').click();
 
         // 3、预期结果：列表中出现新建的工作流
@@ -84,7 +84,7 @@ test.describe('Delete', () => {
         const workFlowName = caseTitle + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await page.getByLabel('action-Action-Submit-workflows').click();
 
         await expect(page.getByText(workFlowName)).toBeAttached();
@@ -116,7 +116,7 @@ test.describe('Edit', () => {
         let workFlowName = caseTitle + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await page.getByLabel('action-Action-Submit-workflows').click();
 
         await expect(page.getByText(workFlowName)).toBeAttached();
@@ -154,7 +154,7 @@ test.describe('Duplicate', () => {
         const workFlowName = caseTitle + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await page.getByLabel('action-Action-Submit-workflows').click();
 
         await expect(page.getByText(workFlowName)).toBeAttached();
@@ -197,7 +197,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const fieldDisplayName = '公司名称(单行文本)';
 
         //创建数据表
-        const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+        const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
         //配置工作流
         await page.goto('/admin/settings/workflow');
         await page.waitForLoadState('networkidle');
@@ -207,40 +207,32 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const workFlowName = caseTitle + appendText;
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await createWorkFlow.submitButton.click();
         await expect(page.getByText(workFlowName)).toBeVisible();
 
         //配置工作流触发器
         const workflowListRecords = new WorkflowListRecords(page, workFlowName);
         await workflowListRecords.configureAction.click();
-        // await page.getByLabel(`action-WorkflowLink-Configure-workflows-${workFlowName}`).click();
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
         await collectionTriggerNode.nodeConfigure.click();
-        // await page.getByRole('button', { name: 'Configure' }).click();
         await collectionTriggerNode.collectionDropDown.click();
-        // await page.getByTestId('select-collection').getByLabel('Search').click();
-        await page.getByText(collectionDisplayName).click();
+        await page.getByRole('option', { name: collectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
-        // await page.getByTestId('select-single').getByLabel('Search').click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
-        // await page.getByLabel('action-Action-Submit-workflows').click();
         await page.getByRole('link', { name: 'Workflow' }).click();
         await workflowListRecords.editAction.click();
-        // await page.getByLabel(`action-Action.Link-Edit-workflows-${workFlowName}`).click();
         const editWorkFlow = new EditWorkFlow(page, workFlowName);
         await editWorkFlow.statusIsOn.check();
-        // await page.getByLabel('On', { exact: true }).check();
         await editWorkFlow.submitButton.click();
-        // await page.getByLabel('action-Action-Submit-workflows').click();
 
         //配置录入数据区块
         await newPage.goto();
         await page.waitForLoadState('networkidle');
         await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
         await page.getByRole('menuitem', { name: 'table Table' }).hover();
-        await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+        await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
 
         // 移开鼠标，关闭菜单
         await page.mouse.move(300, 0);
@@ -261,8 +253,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
         await page.getByRole('menuitem', { name: 'Submit' }).click();
         await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-        await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
-
+        await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
         await page.mouse.move(300, 0);
 
         // 2、测试步骤：进入“数据区块”-“添加”按钮，填写表单，点击“确定”按钮
@@ -276,11 +267,9 @@ test.describe('Configuration page to configure the Trigger node', () => {
         await page.goto('/admin/settings/workflow');
         await page.waitForLoadState('networkidle');
         await expect(workflowListRecords.executionCountPopup).toHaveText('1');
-        // await expect(page.getByRole('table').locator('a').filter({ hasText: '1' })).toBeVisible();
 
         // 4、后置处理：删除工作流
         await workflowListRecords.deleteAction.click();
-        // await page.getByLabel(`action-Action.Link-Delete-workflows-${workFlowName}`).click();
         await page.getByRole('button', { name: 'OK', exact: true }).click();
         await expect(page.getByText(workFlowName)).toBeHidden();
     });
@@ -302,7 +291,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const fieldDisplayName = '公司名称(单行文本)';
 
         //创建数据表
-        const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+        const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
         //配置工作流
         await page.goto('/admin/settings/workflow');
         await page.waitForLoadState('networkidle');
@@ -312,7 +301,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const workFlowName = caseTitle + appendText;
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await createWorkFlow.submitButton.click();
         await expect(page.getByText(workFlowName)).toBeVisible();
 
@@ -322,7 +311,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(collectionDisplayName).click();
+        await page.getByRole('option', { name: collectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record updated', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -337,7 +326,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         await page.waitForLoadState('networkidle');
         await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
         await page.getByRole('menuitem', { name: 'table Table' }).hover();
-        await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+        await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
 
         // 移开鼠标，关闭菜单
         await page.mouse.move(300, 0);
@@ -357,7 +346,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
         await page.getByRole('menuitem', { name: 'Submit' }).click();
         await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-        await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+        await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
         await page.mouse.move(300, 0);
 
         //新增一条数据用于编辑
@@ -369,10 +358,10 @@ test.describe('Configuration page to configure the Trigger node', () => {
         //配置编辑数据区块
         //查询录入的数据
         await page.getByLabel(`schema-initializer-ActionBar-TableActionInitializers-${collectionName}`).hover();
-        await page.getByLabel('Enable actions-Filter').getByRole('switch').click();
+        await page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch').click();
         await page.getByLabel(`action-Filter.Action-Filter-filter-${collectionName}-table`).click();
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByTitle(fieldDisplayName).getByText(fieldDisplayName).click();
         await page.getByRole('textbox').fill(fieldData);
         await page.getByRole('button', { name: 'Submit' }).click();
@@ -382,11 +371,11 @@ test.describe('Configuration page to configure the Trigger node', () => {
         await page
             .getByLabel(`designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-${collectionName}`)
             .hover();
-        await page.getByLabel('Enable actions-Edit').getByRole('switch').click();
+        await page.getByRole('menuitem', { name: 'Edit' }).click();
         //进入编辑弹窗，配置编辑表单
         await page.getByLabel(`action-Action.Link-Edit-update-${collectionName}-table-0`).click();
         await page.getByLabel(`schema-initializer-Grid-RecordBlockInitializers-${collectionName}`).hover();
-        await page.getByLabel('Current record blocks-form').click();
+        await page.getByRole('menuitem', { name: 'form Form' }).click();
         await page.mouse.move(0, 300);
         await page.getByLabel(`schema-initializer-ActionBar-UpdateFormActionInitializers-${collectionName}`).hover();
         await page.getByRole('menuitem', { name: 'Submit' }).click();
@@ -423,7 +412,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const fieldDisplayName = '公司名称(单行文本)';
 
         //创建数据表
-        const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+        const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
         //配置工作流
         await page.goto('/admin/settings/workflow');
         await page.waitForLoadState('networkidle');
@@ -433,7 +422,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const workFlowName = caseTitle + appendText;
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await createWorkFlow.submitButton.click();
         await expect(page.getByText(workFlowName)).toBeVisible();
 
@@ -443,7 +432,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(collectionDisplayName).click();
+        await page.getByRole('option', { name: collectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added or updated', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -457,7 +446,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         await newPage.goto();
         await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
         await page.getByRole('menuitem', { name: 'table Table' }).hover();
-        await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+        await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
 
         // 移开鼠标，关闭菜单
         await page.mouse.move(300, 0);
@@ -477,7 +466,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
         await page.getByRole('menuitem', { name: 'Submit' }).click();
         await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-        await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+        await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
         await page.mouse.move(300, 0);
 
         // 2、测试步骤：进入“数据区块”-“添加”按钮，填写表单，点击“提交”按钮
@@ -490,10 +479,10 @@ test.describe('Configuration page to configure the Trigger node', () => {
         //配置编辑数据区块
         //查询录入的数据
         await page.getByLabel(`schema-initializer-ActionBar-TableActionInitializers-${collectionName}`).hover();
-        await page.getByLabel('Enable actions-Filter').getByRole('switch').click();
+        await page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch').click();
         await page.getByLabel(`action-Filter.Action-Filter-filter-${collectionName}-table`).click();
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByTitle(fieldDisplayName).getByText(fieldDisplayName).click();
         await page.getByRole('textbox').fill(fieldData);
         await page.getByRole('button', { name: 'Submit' }).click();
@@ -503,11 +492,11 @@ test.describe('Configuration page to configure the Trigger node', () => {
         await page
             .getByLabel(`designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-${collectionName}`)
             .hover();
-        await page.getByLabel('Enable actions-Edit').getByRole('switch').click();
+        await page.getByRole('menuitem', { name: 'Edit' }).click();
         //进入编辑弹窗，配置编辑表单
         await page.getByLabel(`action-Action.Link-Edit-update-${collectionName}-table-0`).click();
         await page.getByLabel(`schema-initializer-Grid-RecordBlockInitializers-${collectionName}`).hover();
-        await page.getByLabel('Current record blocks-form').click();
+        await page.getByRole('menuitem', { name: 'form Form' }).click();
         await page.mouse.move(0, 300);
         await page.getByLabel(`schema-initializer-ActionBar-UpdateFormActionInitializers-${collectionName}`).hover();
         await page.getByRole('menuitem', { name: 'Submit' }).click();
@@ -542,7 +531,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const fieldDisplayName = '公司名称(单行文本)';
 
         //创建数据表
-        const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+        const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
         //配置工作流
         await page.goto('/admin/settings/workflow');
         await page.waitForLoadState('networkidle');
@@ -552,7 +541,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const workFlowName = caseTitle + appendText;
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await createWorkFlow.submitButton.click();
         await expect(page.getByText(workFlowName)).toBeVisible();
 
@@ -562,12 +551,12 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(collectionDisplayName).click();
+        await page.getByRole('option', { name: collectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         // 设置触发器过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByLabel('block-item-Filter-workflows-Only triggers when match conditions').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('公司状态(下拉单选)').click();
         await page
             .getByLabel('block-item-Filter-workflows-Only triggers when match conditions')
@@ -587,7 +576,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         await page.waitForLoadState('networkidle');
         await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
         await page.getByRole('menuitem', { name: 'table Table' }).hover();
-        await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+        await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
 
         // 移开鼠标，关闭菜单
         await page.mouse.move(300, 0);
@@ -608,8 +597,8 @@ test.describe('Configuration page to configure the Trigger node', () => {
         await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
         await page.getByRole('menuitem', { name: 'Submit' }).click();
         await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-        await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
-        await page.getByRole('button', { name: 'Display collection fields-公司状态(下拉单选)' }).click();
+        await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
+        await page.getByRole('menuitem', { name: '公司状态(下拉单选)' }).click();
         await page.mouse.move(300, 0);
 
         // 2、测试步骤：进入“数据区块”-“添加”按钮，填写表单，点击“确定”按钮
@@ -649,7 +638,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const fieldDisplayName = '公司名称(单行文本)';
 
         //创建数据表
-        const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+        const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
         //配置工作流
         await page.goto('/admin/settings/workflow');
         await page.waitForLoadState('networkidle');
@@ -659,7 +648,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const workFlowName = caseTitle + appendText;
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await createWorkFlow.submitButton.click();
         await expect(page.getByText(workFlowName)).toBeVisible();
 
@@ -669,12 +658,12 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(collectionDisplayName).click();
+        await page.getByRole('option', { name: collectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record updated', { exact: true }).click();
         // 设置触发器过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByLabel('block-item-Filter-workflows-Only triggers when match conditions').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('公司状态(下拉单选)').click();
         await page
             .getByLabel('block-item-Filter-workflows-Only triggers when match conditions')
@@ -694,7 +683,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         await page.waitForLoadState('networkidle');
         await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
         await page.getByRole('menuitem', { name: 'table Table' }).hover();
-        await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+        await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
 
         // 移开鼠标，关闭菜单
         await page.mouse.move(300, 0);
@@ -714,8 +703,8 @@ test.describe('Configuration page to configure the Trigger node', () => {
         await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
         await page.getByRole('menuitem', { name: 'Submit' }).click();
         await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-        await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
-        await page.getByRole('button', { name: 'Display collection fields-公司状态(下拉单选)' }).click();
+        await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
+        await page.getByRole('menuitem', { name: '公司状态(下拉单选)' }).click();
         await page.mouse.move(300, 0);
 
         //新增一条数据用于编辑
@@ -729,10 +718,10 @@ test.describe('Configuration page to configure the Trigger node', () => {
         //配置编辑数据区块
         //查询录入的数据
         await page.getByLabel(`schema-initializer-ActionBar-TableActionInitializers-${collectionName}`).hover();
-        await page.getByLabel('Enable actions-Filter').getByRole('switch').click();
+        await page.getByRole('menuitem', { name: 'Filter' }).getByRole('switch').click();
         await page.getByLabel(`action-Filter.Action-Filter-filter-${collectionName}-table`).click();
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByTestId('filter-select-field').getByLabel('Search').click();
+        await page.getByRole('button', { name: 'Select field' }).click();
         await page.getByTitle(fieldDisplayName).getByText(fieldDisplayName).click();
         await page.getByRole('textbox').fill(fieldData);
         await page.getByRole('button', { name: 'Submit' }).click();
@@ -742,11 +731,11 @@ test.describe('Configuration page to configure the Trigger node', () => {
         await page
             .getByLabel(`designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-${collectionName}`)
             .hover();
-        await page.getByLabel('Enable actions-Edit').getByRole('switch').click();
+        await page.getByRole('menuitem', { name: 'Edit' }).getByRole('switch').click();
         //进入编辑弹窗，配置编辑表单
         await page.getByLabel(`action-Action.Link-Edit-update-${collectionName}-table-0`).click();
         await page.getByLabel(`schema-initializer-Grid-RecordBlockInitializers-${collectionName}`).hover();
-        await page.getByLabel('Current record blocks-form').click();
+        await page.getByRole('menuitem', { name: 'form Form' }).click();
         await page.mouse.move(0, 300);
         await page.getByLabel(`schema-initializer-ActionBar-UpdateFormActionInitializers-${collectionName}`).hover();
         await page.getByRole('menuitem', { name: 'Submit' }).click();
@@ -785,7 +774,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
         const fieldDisplayName = '公司名称(单行文本)';
 
         //创建数据表
-        // const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+        // const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
         //配置工作流
         await page.goto('/admin/settings/workflow');
         await page.waitForLoadState('networkidle');
@@ -795,7 +784,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
         const workFlowName = caseTitle + appendText;
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await createWorkFlow.submitButton.click();
         await expect(page.getByText(workFlowName)).toBeVisible();
 
@@ -836,7 +825,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
         const fieldDisplayName = '公司名称(单行文本)';
 
         //创建数据表
-        const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+        const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
         //配置工作流
         await page.goto('/admin/settings/workflow');
         await page.waitForLoadState('networkidle');
@@ -846,18 +835,20 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
         const workFlowName = caseTitle + appendText;
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await createWorkFlow.submitButton.click();
         await expect(page.getByText(workFlowName)).toBeVisible();
 
         //配置工作流触发器
         const workflowListRecords = new WorkflowListRecords(page, workFlowName);
         await workflowListRecords.configureAction.click();
-        const fromEventTriggerNode = new FromEventTriggerNode(page, workFlowName, collectionName);
-        await fromEventTriggerNode.nodeConfigure.click();
-        await fromEventTriggerNode.collectionDropDown.click();
-        await page.getByText(collectionDisplayName).click();
-        await fromEventTriggerNode.submitButton.click();
+        const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
+        await collectionTriggerNode.nodeConfigure.click();
+        await collectionTriggerNode.collectionDropDown.click();
+        await page.getByRole('option', { name: collectionDisplayName }).click();
+        await collectionTriggerNode.triggerOnDropdown.click();
+        await page.getByText('After record added', { exact: true }).click();
+        await collectionTriggerNode.submitButton.click();
         await page.getByRole('link', { name: 'Workflow' }).click();
         await workflowListRecords.editAction.click();
         const editWorkFlow = new EditWorkFlow(page, workFlowName);
@@ -869,7 +860,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
         await page.waitForLoadState('networkidle');
         await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
         await page.getByRole('menuitem', { name: 'table Table' }).hover();
-        await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+        await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
         // 移开鼠标，关闭菜单
         await page.mouse.move(300, 0);
 
@@ -887,20 +878,11 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
         await page.mouse.move(300, 0);
 
         await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-        await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+        await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
         await page.mouse.move(300, 0);
 
         await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
         await page.getByRole('menuitem', { name: 'Submit' }).click();
-        await page.getByLabel(`action-Action-Submit-submit-${collectionName}-form`).hover();
-        await page
-            .getByRole('button', { name: `designer-schema-settings-Action-Action.Designer-${collectionName}` })
-            .hover();
-        await page.getByLabel('Bind workflows').click();
-        await page.getByRole('button', { name: 'plus Add workflow' }).click();
-        await page.getByTestId('select-single').getByLabel('Search').click();
-        await page.getByText(workFlowName).click();
-        await page.getByRole('button', { name: 'OK', exact: true }).click();
 
         // 2、测试步骤：进入“数据区块”页面，添加一条数据,再进入工作流配置界面，复制到新版本
         const fieldData = fieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -948,7 +930,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
         const fieldDisplayName = '公司名称(单行文本)';
 
         //创建数据表
-        const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+        const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
         //配置工作流
         await page.goto('/admin/settings/workflow');
         await page.waitForLoadState('networkidle');
@@ -958,18 +940,20 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
         const workFlowName = caseTitle + appendText;
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await createWorkFlow.submitButton.click();
         await expect(page.getByText(workFlowName)).toBeVisible();
 
         //配置工作流触发器
         const workflowListRecords = new WorkflowListRecords(page, workFlowName);
         await workflowListRecords.configureAction.click();
-        const fromEventTriggerNode = new FromEventTriggerNode(page, workFlowName, collectionName);
-        await fromEventTriggerNode.nodeConfigure.click();
-        await fromEventTriggerNode.collectionDropDown.click();
-        await page.getByText(collectionDisplayName).click();
-        await fromEventTriggerNode.submitButton.click();
+        const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
+        await collectionTriggerNode.nodeConfigure.click();
+        await collectionTriggerNode.collectionDropDown.click();
+        await page.getByRole('option', { name: collectionDisplayName }).click();
+        await collectionTriggerNode.triggerOnDropdown.click();
+        await page.getByText('After record added', { exact: true }).click();
+        await collectionTriggerNode.submitButton.click();
         await page.getByRole('link', { name: 'Workflow' }).click();
         await workflowListRecords.editAction.click();
         const editWorkFlow = new EditWorkFlow(page, workFlowName);
@@ -981,7 +965,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
         await page.waitForLoadState('networkidle');
         await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
         await page.getByRole('menuitem', { name: 'table Table' }).hover();
-        await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+        await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
         // 移开鼠标，关闭菜单
         await page.mouse.move(300, 0);
 
@@ -999,20 +983,11 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
         await page.mouse.move(300, 0);
 
         await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-        await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+        await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
         await page.mouse.move(300, 0);
 
         await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
         await page.getByRole('menuitem', { name: 'Submit' }).click();
-        await page.getByLabel(`action-Action-Submit-submit-${collectionName}-form`).hover();
-        await page
-            .getByRole('button', { name: `designer-schema-settings-Action-Action.Designer-${collectionName}` })
-            .hover();
-        await page.getByLabel('Bind workflows').click();
-        await page.getByRole('button', { name: 'plus Add workflow' }).click();
-        await page.getByTestId('select-single').getByLabel('Search').click();
-        await page.getByText(workFlowName).click();
-        await page.getByRole('button', { name: 'OK', exact: true }).click();
 
         // 2、测试步骤：进入“数据区块”页面，添加一条数据,再进入工作流执行日志界面，返回工作流管理界面
         const fieldData = fieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -1054,7 +1029,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
         const fieldDisplayName = '公司名称(单行文本)';
 
         //创建数据表
-        const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+        const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
         //配置工作流
         await page.goto('/admin/settings/workflow');
         await page.waitForLoadState('networkidle');
@@ -1064,18 +1039,20 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
         const workFlowName = caseTitle + appendText;
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await createWorkFlow.submitButton.click();
         await expect(page.getByText(workFlowName)).toBeVisible();
 
         //配置工作流触发器
         const workflowListRecords = new WorkflowListRecords(page, workFlowName);
         await workflowListRecords.configureAction.click();
-        const fromEventTriggerNode = new FromEventTriggerNode(page, workFlowName, collectionName);
-        await fromEventTriggerNode.nodeConfigure.click();
-        await fromEventTriggerNode.collectionDropDown.click();
-        await page.getByText(collectionDisplayName).click();
-        await fromEventTriggerNode.submitButton.click();
+        const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
+        await collectionTriggerNode.nodeConfigure.click();
+        await collectionTriggerNode.collectionDropDown.click();
+        await page.getByRole('option', { name: collectionDisplayName }).click();
+        await collectionTriggerNode.triggerOnDropdown.click();
+        await page.getByText('After record added', { exact: true }).click();
+        await collectionTriggerNode.submitButton.click();
         await page.getByRole('link', { name: 'Workflow' }).click();
         await workflowListRecords.editAction.click();
         const editWorkFlow = new EditWorkFlow(page, workFlowName);
@@ -1087,7 +1064,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
         await page.waitForLoadState('networkidle');
         await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
         await page.getByRole('menuitem', { name: 'table Table' }).hover();
-        await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+        await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
         // 移开鼠标，关闭菜单
         await page.mouse.move(300, 0);
 
@@ -1105,20 +1082,11 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
         await page.mouse.move(300, 0);
 
         await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-        await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+        await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
         await page.mouse.move(300, 0);
 
         await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
         await page.getByRole('menuitem', { name: 'Submit' }).click();
-        await page.getByLabel(`action-Action-Submit-submit-${collectionName}-form`).hover();
-        await page
-            .getByRole('button', { name: `designer-schema-settings-Action-Action.Designer-${collectionName}` })
-            .hover();
-        await page.getByLabel('Bind workflows').click();
-        await page.getByRole('button', { name: 'plus Add workflow' }).click();
-        await page.getByTestId('select-single').getByLabel('Search').click();
-        await page.getByText(workFlowName).click();
-        await page.getByRole('button', { name: 'OK', exact: true }).click();
 
         // 2、测试步骤：进入“数据区块”页面，添加一条数据,再进入工作流执行日志界面，返回工作流管理界面
         const fieldData = fieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -1164,7 +1132,7 @@ test.describe('Configuration page disable enable', () => {
         const fieldDisplayName = '公司名称(单行文本)';
 
         //创建数据表
-        const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+        const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
         //配置工作流
         await page.goto('/admin/settings/workflow');
         await page.waitForLoadState('networkidle');
@@ -1174,7 +1142,7 @@ test.describe('Configuration page disable enable', () => {
         const workFlowName = caseTitle + appendText;
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await createWorkFlow.submitButton.click();
         await expect(page.getByText(workFlowName)).toBeVisible();
 
@@ -1184,7 +1152,7 @@ test.describe('Configuration page disable enable', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(collectionDisplayName).click();
+        await page.getByRole('option', { name: collectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -1199,7 +1167,7 @@ test.describe('Configuration page disable enable', () => {
         await page.waitForLoadState('networkidle');
         await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
         await page.getByRole('menuitem', { name: 'table Table' }).hover();
-        await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+        await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
 
         // 移开鼠标，关闭菜单
         await page.mouse.move(300, 0);
@@ -1220,7 +1188,7 @@ test.describe('Configuration page disable enable', () => {
         await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
         await page.getByRole('menuitem', { name: 'Submit' }).click();
         await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-        await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+        await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
 
         await page.mouse.move(300, 0);
 
@@ -1272,7 +1240,7 @@ test.describe('Configuration page disable enable', () => {
         const fieldDisplayName = '公司名称(单行文本)';
 
         //创建数据表
-        const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+        const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
         //配置工作流
         await page.goto('/admin/settings/workflow');
         await page.waitForLoadState('networkidle');
@@ -1282,7 +1250,7 @@ test.describe('Configuration page disable enable', () => {
         const workFlowName = caseTitle + appendText;
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await createWorkFlow.submitButton.click();
         await expect(page.getByText(workFlowName)).toBeVisible();
 
@@ -1292,7 +1260,7 @@ test.describe('Configuration page disable enable', () => {
         const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
         await collectionTriggerNode.nodeConfigure.click();
         await collectionTriggerNode.collectionDropDown.click();
-        await page.getByText(collectionDisplayName).click();
+        await page.getByRole('option', { name: collectionDisplayName }).click();
         await collectionTriggerNode.triggerOnDropdown.click();
         await page.getByText('After record added', { exact: true }).click();
         await collectionTriggerNode.submitButton.click();
@@ -1307,7 +1275,7 @@ test.describe('Configuration page disable enable', () => {
         await page.waitForLoadState('networkidle');
         await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
         await page.getByRole('menuitem', { name: 'table Table' }).hover();
-        await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+        await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
 
         // 移开鼠标，关闭菜单
         await page.mouse.move(300, 0);
@@ -1328,7 +1296,7 @@ test.describe('Configuration page disable enable', () => {
         await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
         await page.getByRole('menuitem', { name: 'Submit' }).click();
         await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-        await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+        await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
 
         await page.mouse.move(300, 0);
 
@@ -1398,7 +1366,7 @@ test.describe('Configuration page copy to new version', () => {
         const fieldDisplayName = '公司名称(单行文本)';
 
         //创建数据表
-        const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+        const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
         //配置工作流
         await page.goto('/admin/settings/workflow');
         await page.waitForLoadState('networkidle');
@@ -1408,18 +1376,20 @@ test.describe('Configuration page copy to new version', () => {
         const workFlowName = caseTitle + appendText;
         await createWorkFlow.name.fill(workFlowName);
         await createWorkFlow.triggerType.click();
-        await page.getByTitle('Collection event').getByText('Collection event').click();
+        await page.getByRole('option', { name: 'Collection event' }).click();
         await createWorkFlow.submitButton.click();
         await expect(page.getByText(workFlowName)).toBeVisible();
 
         //配置工作流触发器
         const workflowListRecords = new WorkflowListRecords(page, workFlowName);
         await workflowListRecords.configureAction.click();
-        const fromEventTriggerNode = new FromEventTriggerNode(page, workFlowName, collectionName);
-        await fromEventTriggerNode.nodeConfigure.click();
-        await fromEventTriggerNode.collectionDropDown.click();
-        await page.getByText(collectionDisplayName).click();
-        await fromEventTriggerNode.submitButton.click();
+        const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
+        await collectionTriggerNode.nodeConfigure.click();
+        await collectionTriggerNode.collectionDropDown.click();
+        await page.getByRole('option', { name: collectionDisplayName }).click();
+        await collectionTriggerNode.triggerOnDropdown.click();
+        await page.getByText('After record added', { exact: true }).click();
+        await collectionTriggerNode.submitButton.click();
         await page.getByRole('link', { name: 'Workflow' }).click();
         await workflowListRecords.editAction.click();
         const editWorkFlow = new EditWorkFlow(page, workFlowName);
@@ -1431,7 +1401,7 @@ test.describe('Configuration page copy to new version', () => {
         await page.waitForLoadState('networkidle');
         await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
         await page.getByRole('menuitem', { name: 'table Table' }).hover();
-        await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+        await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
         // 移开鼠标，关闭菜单
         await page.mouse.move(300, 0);
 
@@ -1449,20 +1419,11 @@ test.describe('Configuration page copy to new version', () => {
         await page.mouse.move(300, 0);
 
         await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-        await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+        await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
         await page.mouse.move(300, 0);
 
         await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
         await page.getByRole('menuitem', { name: 'Submit' }).click();
-        await page.getByLabel(`action-Action-Submit-submit-${collectionName}-form`).hover();
-        await page
-            .getByRole('button', { name: `designer-schema-settings-Action-Action.Designer-${collectionName}` })
-            .hover();
-        await page.getByLabel('Bind workflows').click();
-        await page.getByRole('button', { name: 'plus Add workflow' }).click();
-        await page.getByTestId('select-single').getByLabel('Search').click();
-        await page.getByText(workFlowName).click();
-        await page.getByRole('button', { name: 'OK', exact: true }).click();
 
         // 2、测试步骤：进入“数据区块”页面，添加一条数据,再进入工作流配置界面，复制到新版本
         const fieldData = fieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -1477,9 +1438,9 @@ test.describe('Configuration page copy to new version', () => {
         await page.getByLabel('more').click();
         await page.getByLabel('revision').click();
         await page.waitForLoadState('networkidle');
-        await fromEventTriggerNode.nodeConfigure.click();
+        await collectionTriggerNode.nodeConfigure.click();
         // 3、预期结果：新版本工作流配置内容同旧版本一样
-        await expect(fromEventTriggerNode.collectionDropDown).toHaveText(collectionDisplayName);
+        await expect(page.getByRole('button', {name: collectionDisplayName}).getByLabel('Search')).toBeVisible();
 
         // 4、后置处理：删除工作流
         await page.goto('/admin/settings/workflow');

@@ -27,7 +27,7 @@ test('Collection event add data trigger, static type, Math engine, get trigger n
     const fieldDisplayName = '公司名称(单行文本)';
 
     //创建数据表
-    const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+    const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
     //配置工作流
     await page.goto('/admin/settings/workflow');
     await page.waitForLoadState('networkidle');
@@ -47,7 +47,7 @@ test('Collection event add data trigger, static type, Math engine, get trigger n
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(collectionDisplayName).click();
+    await page.getByRole('option', { name: collectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -77,7 +77,7 @@ test('Collection event add data trigger, static type, Math engine, get trigger n
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
 
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
@@ -98,7 +98,7 @@ test('Collection event add data trigger, static type, Math engine, get trigger n
     await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-    await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+    await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
 
     await page.mouse.move(300, 0);
 
@@ -152,7 +152,7 @@ test('Collection event add data trigger, static type, Formula engine, get trigge
     const fieldDisplayName = '公司名称(单行文本)';
 
     //创建数据表
-    const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+    const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
     //配置工作流
     await page.goto('/admin/settings/workflow');
     await page.waitForLoadState('networkidle');
@@ -172,7 +172,7 @@ test('Collection event add data trigger, static type, Formula engine, get trigge
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(collectionDisplayName).click();
+    await page.getByRole('option', { name: collectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -203,7 +203,7 @@ test('Collection event add data trigger, static type, Formula engine, get trigge
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
 
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
@@ -224,7 +224,7 @@ test('Collection event add data trigger, static type, Formula engine, get trigge
     await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-    await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+    await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
 
     await page.mouse.move(300, 0);
 
@@ -278,7 +278,7 @@ test('Collection event add data triggers, static type, Math engine, get predeces
     const fieldDisplayName = '公司名称(单行文本)';
 
     //创建数据表
-    const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+    const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
     //配置工作流
     await page.goto('/admin/settings/workflow');
     await page.waitForLoadState('networkidle');
@@ -298,7 +298,7 @@ test('Collection event add data triggers, static type, Math engine, get predeces
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(collectionDisplayName).click();
+    await page.getByRole('option', { name: collectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -344,7 +344,7 @@ test('Collection event add data triggers, static type, Math engine, get predeces
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
 
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
@@ -365,7 +365,7 @@ test('Collection event add data triggers, static type, Math engine, get predeces
     await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-    await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+    await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
 
     await page.mouse.move(300, 0);
 
@@ -419,7 +419,7 @@ test('Collection event add data triggers, static type, Formula engine, get prede
     const fieldDisplayName = '公司名称(单行文本)';
 
     //创建数据表
-    const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+    const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
     //配置工作流
     await page.goto('/admin/settings/workflow');
     await page.waitForLoadState('networkidle');
@@ -439,7 +439,7 @@ test('Collection event add data triggers, static type, Formula engine, get prede
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(collectionDisplayName).click();
+    await page.getByRole('option', { name: collectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -487,7 +487,7 @@ test('Collection event add data triggers, static type, Formula engine, get prede
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
 
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
@@ -508,7 +508,7 @@ test('Collection event add data triggers, static type, Formula engine, get prede
     await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-    await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+    await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
 
     await page.mouse.move(300, 0);
 
@@ -562,7 +562,7 @@ test('Collection events add data triggers, static types, Math engine, get single
     const fieldDisplayName = '公司名称(单行文本)';
 
     //创建数据表
-    const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+    const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
     //配置工作流
     await page.goto('/admin/settings/workflow');
     await page.waitForLoadState('networkidle');
@@ -582,7 +582,7 @@ test('Collection events add data triggers, static types, Math engine, get single
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(collectionDisplayName).click();
+    await page.getByRole('option', { name: collectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -598,17 +598,16 @@ test('Collection events add data triggers, static types, Math engine, get single
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
     await preQueryRecordNode.collectionDropDown.click();
-    await page.getByText(collectionDisplayName).click();
+    await page.getByRole('option', { name: collectionDisplayName }).click();
     // 设置过滤条件
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('filter-select-field').getByLabel('Search').click();
+    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
     await page.getByText('ID', { exact: true }).click();
-    await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
+    await page.getByLabel('block-item-Filter-workflows-Filter').getByLabel('variable-button').click();
     await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
-    // 不好断言
-    // await expect(page.getByLabel('block-item-Filter-workflows-').getByRole('spinbutton')).toHaveText('Trigger variables / Trigger data / ID');
+    await expect(page.getByLabel('block-item-Filter-workflows-Filter').getByLabel('variable-tag')).toHaveText('Trigger variables / Trigger data / ID');
     await preQueryRecordNode.submitButton.click();
 
     //配置计算节点
@@ -636,7 +635,7 @@ test('Collection events add data triggers, static types, Math engine, get single
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
 
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
@@ -657,7 +656,7 @@ test('Collection events add data triggers, static types, Math engine, get single
     await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-    await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+    await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
 
     await page.mouse.move(300, 0);
 
@@ -711,7 +710,7 @@ test('Collection events add data triggers, static types, Formula engine, get sin
     const fieldDisplayName = '公司名称(单行文本)';
 
     //创建数据表
-    const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
+    const newPage = mockPage(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), appendText));
     //配置工作流
     await page.goto('/admin/settings/workflow');
     await page.waitForLoadState('networkidle');
@@ -731,7 +730,7 @@ test('Collection events add data triggers, static types, Formula engine, get sin
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, collectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(collectionDisplayName).click();
+    await page.getByRole('option', { name: collectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -747,17 +746,16 @@ test('Collection events add data triggers, static types, Formula engine, get sin
     const preQueryRecordNode = new QueryRecordNode(page, preQueryRecordNodeName);
     await preQueryRecordNode.nodeConfigure.click();
     await preQueryRecordNode.collectionDropDown.click();
-    await page.getByText(collectionDisplayName).click();
+    await page.getByRole('option', { name: collectionDisplayName }).click();
     // 设置过滤条件
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('filter-select-field').getByLabel('Search').click();
+    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
     await page.getByText('ID', { exact: true }).click();
-    await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
+    await page.getByLabel('block-item-Filter-workflows-Filter').getByLabel('variable-button').click();
     await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
     await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
-    // 不好断言
-    // await expect(page.getByLabel('block-item-Filter-workflows-').getByRole('spinbutton')).toHaveText('Trigger variables / Trigger data / ID');
+    await expect(page.getByLabel('block-item-Filter-workflows-Filter').getByLabel('variable-tag')).toHaveText('Trigger variables / Trigger data / ID');
     await preQueryRecordNode.submitButton.click();
 
     //配置计算节点
@@ -786,7 +784,7 @@ test('Collection events add data triggers, static types, Formula engine, get sin
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${collectionDisplayName}`}).click();
 
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
@@ -807,7 +805,7 @@ test('Collection events add data triggers, static types, Formula engine, get sin
     await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-${collectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${collectionName}`).hover();
-    await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+    await page.getByRole('menuitem', { name: `${fieldDisplayName}` }).click();
 
     await page.mouse.move(300, 0);
 
@@ -892,7 +890,7 @@ test('Collection event add data trigger, static type, Math engine, get front add
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -1053,7 +1051,7 @@ test('Collection event add data trigger, static type, Formula engine, get front 
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -1205,7 +1203,7 @@ test('Collection event adds data triggers, static types, Math engine, fetches da
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -1345,7 +1343,7 @@ test('Collection event adds data triggers, static types, Formula engine, fetches
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -1499,7 +1497,7 @@ test('Collection event add data trigger, static type, Math engine, get front man
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -1517,26 +1515,21 @@ test('Collection event add data trigger, static type, Math engine, get front man
     await preManualNode.configureUserInterfaceButton.click();
     await preManualNode.addBlockButton.hover();
     await preManualNode.createRecordFormMenu.hover();
-    await page
-        .getByLabel(
-            `Form-createRecordForm-createRecordForm-child-createRecordForm-child-${createRecordFormCollectionName}`,
-            { exact: true },
-        )
-        .click();
+    await page.getByRole('menuitem', { name: createRecordFormCollectionDisplayName }).click();
     await page.mouse.move(300, 0, { steps: 100 });
     //配置表单标题
-    await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${createRecordFormCollectionName}`).hover();
+    await page.getByLabel(`block-item-CardItem-${createRecordFormCollectionName}`).hover();
     await page
         .getByLabel(`designer-schema-settings-CardItem-CreateFormDesigner-${createRecordFormCollectionName}`)
         .hover();
-    await page.getByLabel('Edit block title').click();
+    await page.getByRole('menuitem', { name: 'Edit block title' }).click();
     const createRecordFormBlockTitle =
         createRecordFormCollectionDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
-    await page.getByLabel('block-item-Input-').getByRole('textbox').fill(createRecordFormBlockTitle);
+    await page.getByLabel('Edit block title').getByRole('textbox').fill(createRecordFormBlockTitle);
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     //配置录入数据字段
     await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${createRecordFormCollectionName}`).hover();
-    await page.getByLabel('Display collection fields-公司名称(单行文本)').getByRole('switch').click();
+    await page.getByRole('menuitem', { name: '公司名称(单行文本)' }).getByRole('switch').click();
     await page.getByLabel('schema-initializer-Tabs-TabPaneInitializers-workflows').hover();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.mouse.click(300, 0);
@@ -1602,7 +1595,7 @@ test('Collection event add data trigger, static type, Math engine, get front man
     await workflowTodoPage.goto();
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
-    await page.getByLabel('media-workflowTodos').click();
+    await page.getByRole('menuitem', { name: 'Workflow todos' }).click()
     await page.waitForLoadState('networkidle');
     // 2、测试步骤：添加数据触发工作流，进入待办区块页面办理任务
     await addDataPage.goto();
@@ -1700,7 +1693,7 @@ test('Collection event add data trigger, static type, Formula engine, get front 
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -1737,7 +1730,7 @@ test('Collection event add data trigger, static type, Formula engine, get front 
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     //配置录入数据字段
     await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-${createRecordFormCollectionName}`).hover();
-    await page.getByLabel('Display collection fields-公司名称(单行文本)').getByRole('switch').click();
+    await page.getByRole('menuitem', { name: '公司名称(单行文本)' }).getByRole('switch').click();
     await page.getByLabel('schema-initializer-Tabs-TabPaneInitializers-workflows').hover();
     await page.mouse.move(300, 0, { steps: 100 });
     await page.mouse.click(300, 0);

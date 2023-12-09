@@ -49,7 +49,7 @@ test('Collection event add data trigger, no filter no sort query common table 1 
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -65,10 +65,10 @@ test('Collection event add data trigger, no filter no sort query common table 1 
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
     await queryRecordNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     // // 设置过滤条件
     // await page.getByText('Add condition', { exact: true }).click();
-    // await page.getByTestId('filter-select-field').getByLabel('Search').click();
+    // await page.getByRole('button', { name: 'Select field' }).click();
     // await page.getByText('ID', { exact: true }).click();
     // await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
     // await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -198,7 +198,7 @@ test('Collection event add data trigger, no filtering and no sorting, query comm
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -214,11 +214,11 @@ test('Collection event add data trigger, no filtering and no sorting, query comm
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
     await queryRecordNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await queryRecordNode.allowMultipleDataBoxesForResults.check();
     // 设置过滤条件
     // await page.getByText('Add condition', { exact: true }).click();
-    // await page.getByTestId('filter-select-field').getByLabel('Search').click();
+    // await page.getByRole('button', { name: 'Select field' }).click();
     // await page.getByText('ID', { exact: true }).click();
     // await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
     // await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -353,7 +353,7 @@ test('Collection event add data trigger, no filter ID ascending, query common ta
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -369,7 +369,7 @@ test('Collection event add data trigger, no filter ID ascending, query common ta
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
     await queryRecordNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await queryRecordNode.allowMultipleDataBoxesForResults.check();
     // 设置排序条件
     await queryRecordNode.addSortFieldsButton.click();
@@ -378,7 +378,7 @@ test('Collection event add data trigger, no filter ID ascending, query common ta
     await page.getByLabel('block-item-Radio.Group-workflows').getByText('ASC').click();
     // 设置过滤条件
     // await page.getByText('Add condition', { exact: true }).click();
-    // await page.getByTestId('filter-select-field').getByLabel('Search').click();
+    // await page.getByRole('button', { name: 'Select field' }).click();
     // await page.getByText('ID', { exact: true }).click();
     // await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
     // await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -542,7 +542,7 @@ test('Collection event add data trigger, no filter ID descending, query common t
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -558,7 +558,7 @@ test('Collection event add data trigger, no filter ID descending, query common t
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
     await queryRecordNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await queryRecordNode.allowMultipleDataBoxesForResults.check();
     // 设置排序条件
     await queryRecordNode.addSortFieldsButton.click();
@@ -567,7 +567,7 @@ test('Collection event add data trigger, no filter ID descending, query common t
     await page.getByLabel('block-item-Radio.Group-workflows').getByText('DESC').click();
     // 设置过滤条件
     // await page.getByText('Add condition', { exact: true }).click();
-    // await page.getByTestId('filter-select-field').getByLabel('Search').click();
+    // await page.getByRole('button', { name: 'Select field' }).click();
     // await page.getByText('ID', { exact: true }).click();
     // await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
     // await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -731,7 +731,7 @@ test('Collection event add data trigger, no filtering and no sorting, query mult
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -747,11 +747,11 @@ test('Collection event add data trigger, no filtering and no sorting, query mult
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
     await queryRecordNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await queryRecordNode.allowMultipleDataBoxesForResults.check();
     // 设置过滤条件
     // await page.getByText('Add condition', { exact: true }).click();
-    // await page.getByTestId('filter-select-field').getByLabel('Search').click();
+    // await page.getByRole('button', { name: 'Select field' }).click();
     // await page.getByText('ID', { exact: true }).click();
     // await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
     // await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -903,7 +903,7 @@ test('Collection event add data trigger, no filtering and no sorting, query the 
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -919,11 +919,11 @@ test('Collection event add data trigger, no filtering and no sorting, query the 
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
     await queryRecordNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     // await queryRecordNode.allowMultipleDataBoxesForResults.check();
     // 设置过滤条件
     // await page.getByText('Add condition', { exact: true }).click();
-    // await page.getByTestId('filter-select-field').getByLabel('Search').click();
+    // await page.getByRole('button', { name: 'Select field' }).click();
     // await page.getByText('ID', { exact: true }).click();
     // await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
     // await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -1081,7 +1081,7 @@ test('Collection event add data trigger, no filtering and no sorting, query the 
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -1097,11 +1097,11 @@ test('Collection event add data trigger, no filtering and no sorting, query the 
     const queryRecordNode = new QueryRecordNode(page, queryRecordNodeName);
     await queryRecordNode.nodeConfigure.click();
     await queryRecordNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await queryRecordNode.allowMultipleDataBoxesForResults.check();
     // 设置过滤条件
     // await page.getByText('Add condition', { exact: true }).click();
-    // await page.getByTestId('filter-select-field').getByLabel('Search').click();
+    // await page.getByRole('button', { name: 'Select field' }).click();
     // await page.getByText('ID', { exact: true }).click();
     // await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
     // await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -1259,7 +1259,7 @@ test('Collection event add data trigger, filter to meet all conditions (status_s
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -1279,7 +1279,7 @@ test('Collection event add data trigger, filter to meet all conditions (status_s
     // await queryRecordNode.allowMultipleDataBoxesForResults.check();
     // 设置过滤条件
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('filter-select-field').getByLabel('Search').click();
+    await page.getByRole('button', { name: 'Select field' }).click();
     await page.getByRole('menuitemcheckbox', { name: '公司状态(下拉单选)' }).click();
     await page.getByTestId('select-single').click();
     await page.getByRole('option', { name: '存续' }).click();
@@ -1429,7 +1429,7 @@ test('Collection event add data trigger, filter to satisfy any condition (status
     const collectionTriggerNode = new CollectionTriggerNode(page, workFlowName, triggerNodeCollectionName);
     await collectionTriggerNode.nodeConfigure.click();
     await collectionTriggerNode.collectionDropDown.click();
-    await page.getByText(triggerNodeCollectionDisplayName).click();
+    await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     await collectionTriggerNode.triggerOnDropdown.click();
     await page.getByText('After record added', { exact: true }).click();
     await collectionTriggerNode.submitButton.click();
@@ -1451,7 +1451,7 @@ test('Collection event add data trigger, filter to satisfy any condition (status
     await page.getByTestId('filter-select-all-or-any').click();
     await page.getByRole('option', { name: 'Any' }).click();
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('filter-select-field').getByLabel('Search').click();
+    await page.getByRole('button', { name: 'Select field' }).click();
     await page.getByRole('menuitemcheckbox', { name: '公司状态(下拉单选)' }).click();
     await page.getByTestId('select-single').click();
     await page.getByRole('option', { name: '存续' }).click();
