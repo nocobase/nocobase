@@ -1,4 +1,3 @@
-import dotenv from 'dotenv';
-import path from 'path';
+import { initEnv } from '@nocobase/cli';
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
+initEnv();
