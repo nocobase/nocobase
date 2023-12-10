@@ -21,13 +21,25 @@ export default class ThemeEditorMigration extends Migration {
       return;
     }
 
-    await repository.update({
-      values: {
-        default: true,
-      },
-      filterByTk: defaultThemeId,
+    await this.db.sequelize.transaction(async (t) => {
+      await repository.update({
+        values: {
+          default: false,
+        },
+        filter: {
+          default: true,
+        },
+        transaction: t,
+      });
+      await repository.update({
+        values: {
+          default: true,
+          optional: true,
+        },
+        filterByTk: defaultThemeId,
+        transaction: t,
+      });
     });
-    return;
   }
 
   async down() {}
