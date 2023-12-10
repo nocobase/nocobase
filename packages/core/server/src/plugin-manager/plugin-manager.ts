@@ -75,23 +75,9 @@ export class PluginManager {
   }
 
   static async getPackageJson(packageName: string) {
-    try {
-      return (
-        await import(`${packageName}/package.json`, {
-          assert: {
-            type: 'json',
-          },
-        })
-      ).default;
-    } catch (err) {
-      if (err.message.includes('needs an import assertion of type')) {
-        const file = await fs.promises.realpath(resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json'));
-        const data = await fs.promises.readFile(file, { encoding: 'utf-8' });
-        return JSON.parse(data);
-      }
-
-      throw err;
-    }
+    const file = await fs.promises.realpath(resolve(process.env.NODE_MODULES_PATH, packageName, 'package.json'));
+    const data = await fs.promises.readFile(file, { encoding: 'utf-8' });
+    return JSON.parse(data);
   }
 
   static async getPackageName(name: string) {
