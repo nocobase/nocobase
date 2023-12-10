@@ -28,6 +28,7 @@
     "@nocobase/database": "0.x",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
-    "@nocobase/utils": "0.x"
+    "@nocobase/utils": "0.x",
+    "@nocobase/actions": "0.x"
   }
 }

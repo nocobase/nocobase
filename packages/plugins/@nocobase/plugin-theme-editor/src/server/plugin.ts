@@ -1,21 +1,14 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { compact, compactDark, dark, defaultTheme } from './builtinThemes';
+import themeActions from './actions/theme-config';
 
 export class ThemeEditorPlugin extends Plugin {
   theme: any;
 
   afterAdd() {}
 
-  async beforeLoad() {
-    this.db.addMigrations({
-      namespace: 'theme-editor',
-      directory: resolve(__dirname, './migrations'),
-      context: {
-        plugin: this,
-      },
-    });
-  }
+  async beforeLoad() {}
 
   async load() {
     this.db.collection({
@@ -39,8 +32,25 @@ export class ThemeEditorPlugin extends Plugin {
           type: 'uid',
           name: 'uid',
         },
+        {
+          type: 'boolean',
+          name: 'default',
+          defaultValue: false,
+        },
       ],
     });
+    this.db.addMigrations({
+      namespace: 'theme-editor',
+      directory: resolve(__dirname, './migrations'),
+      context: {
+        plugin: this,
+      },
+    });
+
+    Object.entries(themeActions).forEach(([action, handler]) =>
+      this.app.resourcer.registerAction(`themeConfig:${action}`, handler),
+    );
+
     this.app.acl.allow('themeConfig', 'list', 'public');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.themeConfig`,
