@@ -16,7 +16,7 @@ exports[`omitSomeFields > should omit key & collectionName 1`] = `
         "reverseKey": null,
         "type": "bigInt",
         "uiSchema": {
-          "title": "{{t(\\"ID\\")}}",
+          "title": "{{t("ID")}}",
           "type": "number",
           "x-component": "InputNumber",
           "x-read-pretty": true,
