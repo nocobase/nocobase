@@ -502,3 +502,24 @@ export class ConditionBranchNode {
     this.addYesBranchNode = page.getByLabel(`add-button-condition-${nodeName}-1`);
   }
 }
+
+export default module.exports = {
+  CreateWorkFlow,
+  EditWorkFlow,
+  WorkflowManagement,
+  WorkflowListRecords,
+  ApprovalTriggerNode,
+  ApprovalNode,
+  ScheduleTriggerNode,
+  CollectionTriggerNode,
+  FromEventTriggerNode,
+  ClculationNode,
+  QueryRecordNode,
+  CreateRecordNode,
+  UpdateRecordNode,
+  DeleteRecordNode,
+  AggregateNode,
+  ManualNode,
+  ConditionYesNode,
+  ConditionBranchNode,
+};
