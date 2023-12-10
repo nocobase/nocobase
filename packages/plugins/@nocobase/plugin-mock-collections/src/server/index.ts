@@ -222,7 +222,14 @@ export class PluginMockCollectionsServer extends Plugin {
           size = values.length;
         }
         const data = await mockCollectionData(resourceName, size);
-        // ctx.body = data;
+        // ctx.body = {
+        //   values: (Array.isArray(data) ? data : [data]).map((item, index) => {
+        //     if (Array.isArray(values)) {
+        //       return { ...item, ...values[index] };
+        //     }
+        //     return { ...item, ...values };
+        //   }),
+        // };
         ctx.body = await repository.create({
           values: (Array.isArray(data) ? data : [data]).map((item, index) => {
             if (Array.isArray(values)) {
