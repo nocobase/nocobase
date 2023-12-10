@@ -40,5 +40,5 @@ export * from './update-associations';
 export { snakeCase } from './utils';
 export * from './value-parsers';
 export * from './db-column/db-column-type-mappter';
-export * from './sql-collection';
 export * from './helpers';
+export { default as sqlParser } from './sql-parser';

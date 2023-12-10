@@ -1,5 +1,4 @@
-import { Model } from '../model';
-import sqlParser from '../sql-parser';
+import { sqlParser, Model } from '@nocobase/database';
 import { selectQuery } from './query-generator';
 
 export class SQLModel extends Model {

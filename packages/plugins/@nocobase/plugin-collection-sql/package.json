@@ -1,5 +1,5 @@
 {
-  "name": "@nocobase/plugin-collection-view",
+  "name": "@nocobase/plugin-collection-sql",
   "version": "0.17.0-alpha.1",
   "main": "dist/server/index.js",
   "dependencies": {},
@@ -7,7 +7,6 @@
     "@nocobase/client": "0.x",
     "@nocobase/server": "0.x",
     "@nocobase/database": "0.x",
-    "@nocobase/utils": "0.x",
     "@nocobase/test": "0.x"
   }
 }

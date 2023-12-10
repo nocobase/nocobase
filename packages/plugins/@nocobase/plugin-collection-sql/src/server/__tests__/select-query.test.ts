@@ -1,4 +1,4 @@
-import { SQLModel } from '../../sql-collection/sql-model';
+import { SQLModel } from '../sql-collection/sql-model';
 import { Sequelize } from 'sequelize';
 
 describe('select query', () => {

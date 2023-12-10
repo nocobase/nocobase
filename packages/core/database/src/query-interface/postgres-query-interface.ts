@@ -1,6 +1,6 @@
 import lodash from 'lodash';
 import { Collection } from '../collection';
-import sqlParser from '../sql-parser/postgres';
+import sqlParser from '../sql-parser';
 import QueryInterface from './query-interface';
 
 export default class PostgresQueryInterface extends QueryInterface {
@@ -48,7 +48,9 @@ export default class PostgresQueryInterface extends QueryInterface {
   }
 
   parseSQL(sql: string): any {
-    return sqlParser.parse(sql);
+    return sqlParser.parse(sql, {
+      database: 'Postgresql',
+    });
   }
 
   async viewColumnUsage(options): Promise<{

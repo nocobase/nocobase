@@ -1,6 +1,6 @@
-import Database from '../../database';
-import { mockDatabase } from '../../mock-database';
-import { SQLModel } from '../../sql-collection/sql-model';
+import Database, { mockDatabase } from '@nocobase/database';
+
+import { SQLModel } from '../sql-collection/sql-model';
 
 describe('infer fields', () => {
   let db: Database;
