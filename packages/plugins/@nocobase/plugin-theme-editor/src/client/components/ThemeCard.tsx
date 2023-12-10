@@ -276,7 +276,7 @@ const ThemeCard = (props: Props) => {
         {text}
       </Tag>
     );
-  }, [currentThemeId, item.id, item.optional, t]);
+  }, [currentThemeId, defaultThemeId, item.id, item.optional, t]);
 
   const cardStyle = useMemo(() => {
     if (getCurrentEditingTheme()?.id === item.id) {
