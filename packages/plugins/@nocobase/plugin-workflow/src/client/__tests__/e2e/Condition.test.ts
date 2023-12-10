@@ -14,7 +14,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -150,7 +150,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -286,7 +286,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -424,7 +424,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -562,7 +562,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -619,7 +619,7 @@ test.describe('Continue when "Yes"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -727,7 +727,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -770,8 +770,8 @@ test.describe('Continue when "Yes"', () => {
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
-        await page.getByText('ID').click();
+        await page.getByLabel('block-item-Filter-workflows-Only triggers when match conditions').getByRole('button', { name: 'Select field' }).click();
+        await page.getByText('ID', { exact: true }).click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
         await collectionTriggerNode.submitButton.click();
@@ -790,9 +790,9 @@ test.describe('Continue when "Yes"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
-        await page.getByTestId('filter-select-operator').click();
+        await page.getByRole('button').getByTestId('select-filter-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables right' }).click();
@@ -905,7 +905,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -961,7 +961,7 @@ test.describe('Continue when "Yes"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables right' }).click();
@@ -1070,7 +1070,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -1113,8 +1113,8 @@ test.describe('Continue when "Yes"', () => {
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
-        await page.getByText('ID').click();
+        await page.getByLabel('block-item-Filter-workflows-Only triggers when match conditions').getByRole('button', { name: 'Select field' }).click();
+        await page.getByText('ID', { exact: true }).click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
         await collectionTriggerNode.submitButton.click();
@@ -1132,9 +1132,9 @@ test.describe('Continue when "Yes"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
-        await page.getByTestId('filter-select-operator').click();
+        await page.getByRole('button').getByTestId('select-filter-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables right' }).click();
@@ -1249,7 +1249,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -1388,7 +1388,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -1527,7 +1527,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -1666,7 +1666,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -1805,7 +1805,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -1944,7 +1944,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -2083,7 +2083,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -2222,7 +2222,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -2361,7 +2361,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -2418,7 +2418,7 @@ test.describe('Continue when "Yes"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -2524,7 +2524,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -2567,8 +2567,8 @@ test.describe('Continue when "Yes"', () => {
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
-        await page.getByText('ID').click();
+        await page.getByLabel('block-item-Filter-workflows-Only triggers when match conditions').getByRole('button', { name: 'Select field' }).click();
+        await page.getByText('ID', { exact: true }).click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
         await collectionTriggerNode.submitButton.click();
@@ -2587,9 +2587,9 @@ test.describe('Continue when "Yes"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
-        await page.getByTestId('filter-select-operator').click();
+        await page.getByRole('button').getByTestId('select-filter-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -2701,7 +2701,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -2758,7 +2758,7 @@ test.describe('Continue when "Yes"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -2865,7 +2865,7 @@ test.describe('Continue when "Yes"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -2908,8 +2908,8 @@ test.describe('Continue when "Yes"', () => {
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
-        await page.getByText('ID').click();
+        await page.getByLabel('block-item-Filter-workflows-Only triggers when match conditions').getByRole('button', { name: 'Select field' }).click();
+        await page.getByText('ID', { exact: true }).click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
         await collectionTriggerNode.submitButton.click();
@@ -2928,9 +2928,9 @@ test.describe('Continue when "Yes"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
-        await page.getByTestId('filter-select-operator').click();
+        await page.getByRole('button').getByTestId('select-filter-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -3041,7 +3041,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -3215,7 +3215,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -3389,7 +3389,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -3564,7 +3564,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -3739,7 +3739,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -3796,7 +3796,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -3941,7 +3941,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -3984,8 +3984,8 @@ test.describe('Branch into "Yes" and "No"', () => {
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
-        await page.getByText('ID').click();
+        await page.getByLabel('block-item-Filter-workflows-Only triggers when match conditions').getByRole('button', { name: 'Select field' }).click();
+        await page.getByText('ID', { exact: true }).click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
         await collectionTriggerNode.submitButton.click();
@@ -4004,9 +4004,9 @@ test.describe('Branch into "Yes" and "No"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
-        await page.getByTestId('filter-select-operator').click();
+        await page.getByRole('button').getByTestId('select-filter-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables right' }).click();
@@ -4156,7 +4156,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -4212,7 +4212,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables right' }).click();
@@ -4358,7 +4358,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -4401,8 +4401,8 @@ test.describe('Branch into "Yes" and "No"', () => {
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
-        await page.getByText('ID').click();
+        await page.getByLabel('block-item-Filter-workflows-Only triggers when match conditions').getByRole('button', { name: 'Select field' }).click();
+        await page.getByText('ID', { exact: true }).click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
         await collectionTriggerNode.submitButton.click();
@@ -4420,9 +4420,9 @@ test.describe('Branch into "Yes" and "No"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
-        await page.getByTestId('filter-select-operator').click();
+        await page.getByRole('button').getByTestId('select-filter-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables right' }).click();
@@ -4574,7 +4574,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -4750,7 +4750,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -4926,7 +4926,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -5102,7 +5102,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -5278,7 +5278,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -5454,7 +5454,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -5630,7 +5630,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -5806,7 +5806,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -5982,7 +5982,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -6039,7 +6039,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -6182,7 +6182,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -6225,8 +6225,8 @@ test.describe('Branch into "Yes" and "No"', () => {
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
-        await page.getByText('ID').click();
+        await page.getByLabel('block-item-Filter-workflows-Only triggers when match conditions').getByRole('button', { name: 'Select field' }).click();
+        await page.getByText('ID', { exact: true }).click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
         await collectionTriggerNode.submitButton.click();
@@ -6245,9 +6245,9 @@ test.describe('Branch into "Yes" and "No"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
-        await page.getByTestId('filter-select-operator').click();
+        await page.getByRole('button').getByTestId('select-filter-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -6396,7 +6396,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -6453,7 +6453,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -6597,7 +6597,7 @@ test.describe('Branch into "Yes" and "No"', () => {
         mockPage,
     }) => {
         //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-        const triggerNodeAppendText = faker.lorem.word(4);
+        const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
         const createRecordFormAppendText = faker.lorem.word(4);
         //用例标题
         const caseTitle =
@@ -6640,8 +6640,8 @@ test.describe('Branch into "Yes" and "No"', () => {
         await page.getByText('After record added', { exact: true }).click();
         // 过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
-        await page.getByText('ID').click();
+        await page.getByLabel('block-item-Filter-workflows-Only triggers when match conditions').getByRole('button', { name: 'Select field' }).click();
+        await page.getByText('ID', { exact: true }).click();
         await page.getByRole('spinbutton').click();
         await page.getByRole('spinbutton').fill('2');
         await collectionTriggerNode.submitButton.click();
@@ -6660,9 +6660,9 @@ test.describe('Branch into "Yes" and "No"', () => {
         await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
         // 设置过滤条件
         await page.getByText('Add condition', { exact: true }).click();
-        await page.getByRole('button', { name: 'Select field' }).click();
+        await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
         await page.getByText('ID', { exact: true }).click();
-        await page.getByTestId('filter-select-operator').click();
+        await page.getByRole('button').getByTestId('select-filter-operator').click();
         await page.getByRole('option', { name: 'is not' }).click();
         await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
         await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();

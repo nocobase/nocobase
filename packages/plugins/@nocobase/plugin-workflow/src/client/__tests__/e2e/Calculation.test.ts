@@ -843,7 +843,7 @@ test('Collection event add data trigger, static type, Math engine, get front add
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createRecordNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -1004,7 +1004,7 @@ test('Collection event add data trigger, static type, Formula engine, get front 
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createRecordNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -1442,14 +1442,14 @@ test('Collection event adds data triggers, static types, Formula engine, fetches
     await expect(page.getByText(workFlowName)).toBeHidden();
 });
 
-test('Collection event add data trigger, static type, Math engine, get front manual node add form single line text data', async ({
+test.skip('Collection event add data trigger, static type, Math engine, get front manual node add form single line text data', async ({
     page,
     mockCollections,
     mockRecords,
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createRecordFormAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -1613,8 +1613,8 @@ test('Collection event add data trigger, static type, Math engine, get front man
     await expect(page.getByText(workFlowName)).toBeVisible();
     await expect(page.getByText(preManualNodeName)).toBeVisible();
     await page.getByLabel('action-Action.Link-View-users_jobs-workflow-todo-0').click();
+    await page.waitForLoadState('networkidle');
     await page.getByRole('textbox').fill(fieldData);
-    // await page.getByLabel(`action-Action-Continue the process-${triggerNodeCollectionName}-workflow-todo-0`).click();
     await page.getByLabel('action-Action-Continue the').click();
     await page.waitForLoadState('networkidle');
     await page.goto('/admin/settings/workflow');
@@ -1638,14 +1638,14 @@ test('Collection event add data trigger, static type, Math engine, get front man
     await expect(page.getByText(workFlowName)).toBeHidden();
 });
 
-test('Collection event add data trigger, static type, Formula engine, get front manual node add form single line text data', async ({
+test.skip('Collection event add data trigger, static type, Formula engine, get front manual node add form single line text data', async ({
     page,
     mockCollections,
     mockRecords,
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createRecordFormAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =

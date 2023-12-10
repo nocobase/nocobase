@@ -13,7 +13,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -79,9 +79,9 @@ test.describe('update data node,batch update', () => {
       await page.getByText(updateNodeCollectionDisplayName).click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -102,7 +102,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -196,7 +196,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -262,9 +262,9 @@ test.describe('update data node,batch update', () => {
       await page.getByText(updateNodeCollectionDisplayName).click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -288,7 +288,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -383,7 +383,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -449,9 +449,9 @@ test.describe('update data node,batch update', () => {
       await page.getByText(updateNodeCollectionDisplayName).click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -472,7 +472,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -566,7 +566,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -632,9 +632,9 @@ test.describe('update data node,batch update', () => {
       await page.getByText(updateNodeCollectionDisplayName).click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -658,7 +658,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -753,7 +753,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -819,9 +819,9 @@ test.describe('update data node,batch update', () => {
       await page.getByText(updateNodeCollectionDisplayName).click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -842,7 +842,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -936,7 +936,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -1002,9 +1002,9 @@ test.describe('update data node,batch update', () => {
       await page.getByText(updateNodeCollectionDisplayName).click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -1028,7 +1028,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -1123,7 +1123,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -1191,9 +1191,9 @@ test.describe('update data node,batch update', () => {
       await page.getByText(updateNodeCollectionDisplayName).click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -1214,7 +1214,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -1308,7 +1308,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -1374,9 +1374,9 @@ test.describe('update data node,batch update', () => {
       await page.getByText(updateNodeCollectionDisplayName).click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -1400,7 +1400,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -1495,7 +1495,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -1563,9 +1563,9 @@ test.describe('update data node,batch update', () => {
       await page.getByText(updateNodeCollectionDisplayName).click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -1588,7 +1588,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -1683,7 +1683,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -1749,9 +1749,9 @@ test.describe('update data node,batch update', () => {
       await page.getByText(updateNodeCollectionDisplayName).click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -1775,7 +1775,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -1871,7 +1871,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -1939,9 +1939,9 @@ test.describe('update data node,batch update', () => {
       await page.getByText(updateNodeCollectionDisplayName).click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -1965,7 +1965,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -2062,7 +2062,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -2128,9 +2128,9 @@ test.describe('update data node,batch update', () => {
       await page.getByText(updateNodeCollectionDisplayName).click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -2154,7 +2154,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -2252,7 +2252,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -2320,9 +2320,9 @@ test.describe('update data node,batch update', () => {
       await page.getByText(updateNodeCollectionDisplayName).click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -2346,7 +2346,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -2445,7 +2445,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -2511,9 +2511,9 @@ test.describe('update data node,batch update', () => {
       await page.getByText(updateNodeCollectionDisplayName).click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -2537,7 +2537,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -2637,7 +2637,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -2704,9 +2704,9 @@ test.describe('update data node,batch update', () => {
       await updateRecordNode.articleByArticleUpdateModeRadio.click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -2727,7 +2727,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -2821,7 +2821,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -2888,9 +2888,9 @@ test.describe('update data node,batch update', () => {
       await updateRecordNode.articleByArticleUpdateModeRadio.click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -2914,7 +2914,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -3009,7 +3009,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -3076,9 +3076,9 @@ test.describe('update data node,batch update', () => {
       await updateRecordNode.articleByArticleUpdateModeRadio.click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -3099,7 +3099,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -3193,7 +3193,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -3260,9 +3260,9 @@ test.describe('update data node,batch update', () => {
       await updateRecordNode.articleByArticleUpdateModeRadio.click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -3286,7 +3286,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -3381,7 +3381,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -3448,9 +3448,9 @@ test.describe('update data node,batch update', () => {
       await updateRecordNode.articleByArticleUpdateModeRadio.click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -3471,7 +3471,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -3565,7 +3565,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -3632,9 +3632,9 @@ test.describe('update data node,batch update', () => {
       await updateRecordNode.articleByArticleUpdateModeRadio.click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -3658,7 +3658,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -3753,7 +3753,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -3822,9 +3822,9 @@ test.describe('update data node,batch update', () => {
       await updateRecordNode.articleByArticleUpdateModeRadio.click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -3845,7 +3845,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -3939,7 +3939,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -4006,9 +4006,9 @@ test.describe('update data node,batch update', () => {
       await updateRecordNode.articleByArticleUpdateModeRadio.click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -4032,7 +4032,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -4127,7 +4127,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -4196,9 +4196,9 @@ test.describe('update data node,batch update', () => {
       await updateRecordNode.articleByArticleUpdateModeRadio.click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -4221,7 +4221,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -4316,7 +4316,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -4383,9 +4383,9 @@ test.describe('update data node,batch update', () => {
       await updateRecordNode.articleByArticleUpdateModeRadio.click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -4409,7 +4409,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -4505,7 +4505,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -4574,9 +4574,9 @@ test.describe('update data node,batch update', () => {
       await updateRecordNode.articleByArticleUpdateModeRadio.click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -4600,7 +4600,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -4697,7 +4697,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -4764,9 +4764,9 @@ test.describe('update data node,batch update', () => {
       await updateRecordNode.articleByArticleUpdateModeRadio.click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -4790,7 +4790,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -4888,7 +4888,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -4957,9 +4957,9 @@ test.describe('update data node,batch update', () => {
       await updateRecordNode.articleByArticleUpdateModeRadio.click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -4983,7 +4983,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();
@@ -5082,7 +5082,7 @@ test.describe('update data node,batch update', () => {
       mockPage,
     }) => {
       //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-      const triggerNodeAppendText = faker.lorem.word(4);
+      const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
       const updateNodeAppendText = faker.lorem.word(4);
       //用例标题
       const caseTitle =
@@ -5149,9 +5149,9 @@ test.describe('update data node,batch update', () => {
       await updateRecordNode.articleByArticleUpdateModeRadio.click();
       // 设置过滤条件
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('filter-select-field').click();
+      await page.getByLabel('block-item-Filter-workflows-Only update records matching conditions').getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: updateNodeFieldDisplayName.toString() }).click();
-      await page.getByTestId('filter-select-operator').click();
+      await page.getByTestId('select-filter-operator').click();
       await page.getByRole('option', { name: 'is not empty' }).click();
 
       // 设置字段
@@ -5175,7 +5175,7 @@ test.describe('update data node,batch update', () => {
       await page.waitForLoadState('networkidle');
       await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
       await page.getByRole('menuitem', { name: 'table Table' }).hover();
-      await page.getByLabel(`dataBlocks-table-${updateNodeCollectionDisplayName}`).click();
+      await page.getByRole('menuitem', { name: updateNodeCollectionDisplayName }).click();
       await page.mouse.move(300, 0);
       await page.getByText('Configure columns').hover();
       await page.getByText(updateNodeFieldDisplayName).click();

@@ -12,7 +12,7 @@ test('Collection event add data trigger, single row text fields for common table
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -135,7 +135,7 @@ test('Collection event add data trigger, single row text fields for common table
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${createNodeCollectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${createNodeCollectionDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByText('Configure columns').hover();
     await page.getByText(createNodeFieldDisplayName).click();
@@ -172,7 +172,7 @@ test('Collection event add data trigger, normal table single line text field, se
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -300,7 +300,7 @@ test('Collection event add data trigger, normal table single line text field, se
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${createNodeCollectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${createNodeCollectionDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByText('Configure columns').hover();
     await page.getByText(createNodeFieldDisplayName).click();
@@ -337,7 +337,7 @@ test('Collection event add data trigger, normal table integer field, set constan
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -460,7 +460,7 @@ test('Collection event add data trigger, normal table integer field, set constan
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${createNodeCollectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${createNodeCollectionDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByText('Configure columns').hover();
     await page.getByText(createNodeFieldDisplayName).click();
@@ -497,7 +497,7 @@ test('Collection event add data trigger, normal table integer field, set trigger
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -625,7 +625,7 @@ test('Collection event add data trigger, normal table integer field, set trigger
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${createNodeCollectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${createNodeCollectionDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByText('Configure columns').hover();
     await page.getByText(createNodeFieldDisplayName).click();
@@ -662,7 +662,7 @@ test('Collection event add data trigger, normal table numeric field, set constan
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -785,7 +785,7 @@ test('Collection event add data trigger, normal table numeric field, set constan
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${createNodeCollectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${createNodeCollectionDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByText('Configure columns').hover();
     await page.getByText(createNodeFieldDisplayName).click();
@@ -822,7 +822,7 @@ test('Collection event add data trigger, normal table numeric field, set trigger
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -950,7 +950,7 @@ test('Collection event add data trigger, normal table numeric field, set trigger
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${createNodeCollectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${createNodeCollectionDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByText('Configure columns').hover();
     await page.getByText(createNodeFieldDisplayName).click();
@@ -987,7 +987,7 @@ test('Collection event add data trigger, normal table dropdown radio field, set 
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -1113,7 +1113,7 @@ test('Collection event add data trigger, normal table dropdown radio field, set 
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${createNodeCollectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${createNodeCollectionDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByText('Configure columns').hover();
     await page.getByText(createNodeFieldDisplayName).click();
@@ -1150,7 +1150,7 @@ test('Collection event add data trigger, normal table dropdown radio field, set 
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -1278,7 +1278,7 @@ test('Collection event add data trigger, normal table dropdown radio field, set 
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${createNodeCollectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${createNodeCollectionDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByText('Configure columns').hover();
     await page.getByText(createNodeFieldDisplayName).click();
@@ -1315,7 +1315,7 @@ test('Collection event add data trigger, normal table dropdown radio fields, set
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -1446,7 +1446,7 @@ test('Collection event add data trigger, normal table dropdown radio fields, set
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${createNodeCollectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${createNodeCollectionDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByText('Configure columns').hover();
     await page.getByText(createNodeFieldDisplayName).click();
@@ -1483,7 +1483,7 @@ test('Collection event add data trigger, normal table dropdown radio fields, set
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -1617,7 +1617,7 @@ test('Collection event add data trigger, normal table dropdown radio fields, set
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${createNodeCollectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${createNodeCollectionDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByText('Configure columns').hover();
     await page.getByText(createNodeFieldDisplayName).click();
@@ -1655,7 +1655,7 @@ test('Collection event add data trigger, normal table date field, set constant d
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -1787,7 +1787,7 @@ test('Collection event add data trigger, normal table date field, set constant d
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${createNodeCollectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${createNodeCollectionDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByText('Configure columns').hover();
     await page.getByText(createNodeFieldDisplayName).click();
@@ -1824,7 +1824,7 @@ test('Collection event add data trigger, normal table date field, set trigger no
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const createNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -1956,7 +1956,7 @@ test('Collection event add data trigger, normal table date field, set trigger no
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${createNodeCollectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${createNodeCollectionDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByText('Configure columns').hover();
     await page.getByText(createNodeFieldDisplayName).click();

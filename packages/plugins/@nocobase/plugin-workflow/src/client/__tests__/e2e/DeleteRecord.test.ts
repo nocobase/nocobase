@@ -12,7 +12,7 @@ test('Collection event add data trigger, filter single line text field not null,
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const deleteNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -78,9 +78,9 @@ test('Collection event add data trigger, filter single line text field not null,
     await page.getByText(deleteNodeCollectionDisplayName).click();
     // 设置过滤条件
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('filter-select-field').click();
+    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
     await page.getByRole('menuitemcheckbox', { name: deleteNodeFieldDisplayName.toString() }).click();
-    await page.getByTestId('filter-select-operator').click();
+    await page.getByTestId('select-filter-operator').click();
     await page.getByRole('option', { name: 'is not empty' }).click();
     await deleteRecordNode.submitButton.click();
 
@@ -96,7 +96,7 @@ test('Collection event add data trigger, filter single line text field not null,
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${deleteNodeCollectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${deleteNodeCollectionDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByText('Configure columns').hover();
     await page.getByText(deleteNodeFieldDisplayName).click();
@@ -186,7 +186,7 @@ test('Collection event add data trigger, filter single line text field is trigge
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const deleteNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -252,7 +252,7 @@ test('Collection event add data trigger, filter single line text field is trigge
     await page.getByText(deleteNodeCollectionDisplayName).click();
     // 设置过滤条件
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('filter-select-field').click();
+    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
     await page.getByRole('menuitemcheckbox', { name: deleteNodeFieldDisplayName.toString() }).click();
     await page.getByLabel('variable-button').click();
     await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -274,7 +274,7 @@ test('Collection event add data trigger, filter single line text field is trigge
     await page.waitForLoadState('networkidle');
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByRole('menuitem', { name: 'table Table' }).hover();
-    await page.getByLabel(`dataBlocks-table-${deleteNodeCollectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: `${deleteNodeCollectionDisplayName}` }).click();
     await page.mouse.move(300, 0);
     await page.getByText('Configure columns').hover();
     await page.getByText(deleteNodeFieldDisplayName).click();

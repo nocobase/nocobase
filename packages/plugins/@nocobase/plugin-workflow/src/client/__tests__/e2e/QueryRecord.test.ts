@@ -68,7 +68,7 @@ test('Collection event add data trigger, no filter no sort query common table 1 
     await page.getByRole('option', { name: triggerNodeCollectionDisplayName }).click();
     // // 设置过滤条件
     // await page.getByText('Add condition', { exact: true }).click();
-    // await page.getByRole('button', { name: 'Select field' }).click();
+    // await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
     // await page.getByText('ID', { exact: true }).click();
     // await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
     // await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -218,7 +218,7 @@ test('Collection event add data trigger, no filtering and no sorting, query comm
     await queryRecordNode.allowMultipleDataBoxesForResults.check();
     // 设置过滤条件
     // await page.getByText('Add condition', { exact: true }).click();
-    // await page.getByRole('button', { name: 'Select field' }).click();
+    // await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
     // await page.getByText('ID', { exact: true }).click();
     // await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
     // await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -378,7 +378,7 @@ test('Collection event add data trigger, no filter ID ascending, query common ta
     await page.getByLabel('block-item-Radio.Group-workflows').getByText('ASC').click();
     // 设置过滤条件
     // await page.getByText('Add condition', { exact: true }).click();
-    // await page.getByRole('button', { name: 'Select field' }).click();
+    // await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
     // await page.getByText('ID', { exact: true }).click();
     // await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
     // await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -567,7 +567,7 @@ test('Collection event add data trigger, no filter ID descending, query common t
     await page.getByLabel('block-item-Radio.Group-workflows').getByText('DESC').click();
     // 设置过滤条件
     // await page.getByText('Add condition', { exact: true }).click();
-    // await page.getByRole('button', { name: 'Select field' }).click();
+    // await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
     // await page.getByText('ID', { exact: true }).click();
     // await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
     // await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -751,7 +751,7 @@ test('Collection event add data trigger, no filtering and no sorting, query mult
     await queryRecordNode.allowMultipleDataBoxesForResults.check();
     // 设置过滤条件
     // await page.getByText('Add condition', { exact: true }).click();
-    // await page.getByRole('button', { name: 'Select field' }).click();
+    // await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
     // await page.getByText('ID', { exact: true }).click();
     // await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
     // await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -923,7 +923,7 @@ test('Collection event add data trigger, no filtering and no sorting, query the 
     // await queryRecordNode.allowMultipleDataBoxesForResults.check();
     // 设置过滤条件
     // await page.getByText('Add condition', { exact: true }).click();
-    // await page.getByRole('button', { name: 'Select field' }).click();
+    // await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
     // await page.getByText('ID', { exact: true }).click();
     // await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
     // await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -1101,7 +1101,7 @@ test('Collection event add data trigger, no filtering and no sorting, query the 
     await queryRecordNode.allowMultipleDataBoxesForResults.check();
     // 设置过滤条件
     // await page.getByText('Add condition', { exact: true }).click();
-    // await page.getByRole('button', { name: 'Select field' }).click();
+    // await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
     // await page.getByText('ID', { exact: true }).click();
     // await page.getByLabel('block-item-Filter-workflows-').getByLabel('variable-button').click();
     // await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
@@ -1215,7 +1215,7 @@ test('Collection event add data trigger, filter to meet all conditions (status_s
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const queryNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -1279,7 +1279,7 @@ test('Collection event add data trigger, filter to meet all conditions (status_s
     // await queryRecordNode.allowMultipleDataBoxesForResults.check();
     // 设置过滤条件
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByRole('button', { name: 'Select field' }).click();
+    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
     await page.getByRole('menuitemcheckbox', { name: '公司状态(下拉单选)' }).click();
     await page.getByTestId('select-single').click();
     await page.getByRole('option', { name: '存续' }).click();
@@ -1385,7 +1385,7 @@ test('Collection event add data trigger, filter to satisfy any condition (status
     mockPage,
 }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const queryNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -1451,7 +1451,7 @@ test('Collection event add data trigger, filter to satisfy any condition (status
     await page.getByTestId('filter-select-all-or-any').click();
     await page.getByRole('option', { name: 'Any' }).click();
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByRole('button', { name: 'Select field' }).click();
+    await page.getByLabel('block-item-Filter-workflows-Filter').getByRole('button', { name: 'Select field' }).click();
     await page.getByRole('menuitemcheckbox', { name: '公司状态(下拉单选)' }).click();
     await page.getByTestId('select-single').click();
     await page.getByRole('option', { name: '存续' }).click();

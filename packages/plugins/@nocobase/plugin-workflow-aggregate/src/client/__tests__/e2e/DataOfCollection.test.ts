@@ -12,7 +12,7 @@ test('Collection event add data trigger, aggregated data table, no filtering, no
     mockPage,
   }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const aggregateNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -157,7 +157,7 @@ test('Collection event add data trigger, aggregated data table, no filtering, no
     mockPage,
   }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const aggregateNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -306,7 +306,7 @@ test('Collection event add data trigger, aggregated data table, no filtering, no
     mockPage,
   }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const aggregateNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -456,7 +456,7 @@ test('Collection event add data trigger, aggregated data table, no filtering, no
     mockPage,
   }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const aggregateNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
@@ -605,7 +605,7 @@ test('Collection event add data trigger, aggregated data table, no filtering, no
     mockPage,
   }) => {
     //后缀标识，用于不同用例调用e2eTemplateJson.ts中相同模板JSON生成不同的数据表标识、名称
-    const triggerNodeAppendText = faker.lorem.word(4);
+    const triggerNodeAppendText = faker.number.int({ min: 1000, max: 9999 }).toString();
     const aggregateNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
