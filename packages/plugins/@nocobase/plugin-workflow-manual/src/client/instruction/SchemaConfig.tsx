@@ -466,7 +466,7 @@ export function SchemaConfig({ value, onChange }) {
           },
         },
       }),
-    [value],
+    [],
   );
 
   const refresh = useCallback(
