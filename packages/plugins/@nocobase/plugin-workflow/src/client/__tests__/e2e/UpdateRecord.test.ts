@@ -37,8 +37,8 @@ test.describe('update data node,batch update', () => {
       const updateNodeFieldDisplayName = '公司名称(单行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), updateNodeAppendText).collections);
       const updateNodeCollectionRecordOne = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().add(5,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().add(10,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ orgname: updateNodeCollectionRecordOne }, { orgname: updateNodeCollectionRecordTwo }, { orgname: updateNodeCollectionRecordThree }]);
 
       //配置工作流
@@ -220,8 +220,8 @@ test.describe('update data node,batch update', () => {
       const updateNodeFieldDisplayName = '公司名称(单行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), updateNodeAppendText).collections);
       const updateNodeCollectionRecordOne = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().add(5,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().add(10,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ orgname: updateNodeCollectionRecordOne }, { orgname: updateNodeCollectionRecordTwo }, { orgname: updateNodeCollectionRecordThree }]);
 
       //配置工作流
@@ -407,8 +407,8 @@ test.describe('update data node,batch update', () => {
       const updateNodeFieldDisplayName = '公司地址(多行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), updateNodeAppendText).collections);
       const updateNodeCollectionRecordOne = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().add(5,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().add(10,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ address: updateNodeCollectionRecordOne }, { address: updateNodeCollectionRecordTwo }, { address: updateNodeCollectionRecordThree }]);
 
       //配置工作流
@@ -590,8 +590,8 @@ test.describe('update data node,batch update', () => {
       const updateNodeFieldDisplayName = '公司地址(多行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), updateNodeAppendText).collections);
       const updateNodeCollectionRecordOne = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().add(5,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().add(10,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ address: updateNodeCollectionRecordOne }, { address: updateNodeCollectionRecordTwo }, { address: updateNodeCollectionRecordThree }]);
 
       //配置工作流
@@ -2661,8 +2661,8 @@ test.describe('update data node,batch update', () => {
       const updateNodeFieldDisplayName = '公司名称(单行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), updateNodeAppendText).collections);
       const updateNodeCollectionRecordOne = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().add(5,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().add(10,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ orgname: updateNodeCollectionRecordOne }, { orgname: updateNodeCollectionRecordTwo }, { orgname: updateNodeCollectionRecordThree }]);
 
       //配置工作流
@@ -2845,8 +2845,8 @@ test.describe('update data node,batch update', () => {
       const updateNodeFieldDisplayName = '公司名称(单行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), updateNodeAppendText).collections);
       const updateNodeCollectionRecordOne = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().add(5,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().add(10,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ orgname: updateNodeCollectionRecordOne }, { orgname: updateNodeCollectionRecordTwo }, { orgname: updateNodeCollectionRecordThree }]);
 
       //配置工作流
@@ -3033,8 +3033,8 @@ test.describe('update data node,batch update', () => {
       const updateNodeFieldDisplayName = '公司地址(多行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), updateNodeAppendText).collections);
       const updateNodeCollectionRecordOne = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().add(5,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().add(10,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ address: updateNodeCollectionRecordOne }, { address: updateNodeCollectionRecordTwo }, { address: updateNodeCollectionRecordThree }]);
 
       //配置工作流
@@ -3217,8 +3217,8 @@ test.describe('update data node,batch update', () => {
       const updateNodeFieldDisplayName = '公司地址(多行文本)';
       await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), updateNodeAppendText).collections);
       const updateNodeCollectionRecordOne = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordTwo = updateNodeFieldDisplayName + dayjs().add(5,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+      const updateNodeCollectionRecordThree = updateNodeFieldDisplayName + dayjs().add(10,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
       const updateNodeCollectionRecords = await mockRecords(updateNodeCollectionName, [{ address: updateNodeCollectionRecordOne }, { address: updateNodeCollectionRecordTwo }, { address: updateNodeCollectionRecordThree }]);
 
       //配置工作流

@@ -36,8 +36,8 @@ test('Collection event add data trigger, filter single line text field not null,
     const deleteNodeFieldDisplayName = '公司名称(单行文本)';
     await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), deleteNodeAppendText).collections);
     const deleteNodeCollectionRecordOne = deleteNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-    const deleteNodeCollectionRecordTwo = deleteNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-    const deleteNodeCollectionRecordThree = deleteNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+    const deleteNodeCollectionRecordTwo = deleteNodeFieldDisplayName + dayjs().add(5,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+    const deleteNodeCollectionRecordThree = deleteNodeFieldDisplayName + dayjs().add(10,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
     const deleteNodeCollectionRecords = await mockRecords(deleteNodeCollectionName, [{ orgname: deleteNodeCollectionRecordOne }, { orgname: deleteNodeCollectionRecordTwo }, { orgname: deleteNodeCollectionRecordThree }]);
 
     //配置工作流
@@ -190,7 +190,7 @@ test('Collection event add data trigger, filter single line text field is trigge
     const deleteNodeAppendText = faker.lorem.word(4);
     //用例标题
     const caseTitle =
-        'Collection event add data trigger, filter single line text field not null, delete common table data';
+        'Collection event add data trigger, filter single line text field is trigger node single line text field variable , delete common table data';
 
     // 1、前置条件：1.1、已登录;1.2、存在一个配置好数据表的数据表事件工作流；1.3、存在一个添加数据的区块
     //创建数据表
@@ -210,8 +210,8 @@ test('Collection event add data trigger, filter single line text field is trigge
     const deleteNodeFieldDisplayName = '公司名称(单行文本)';
     await mockCollections(appendJsonCollectionName(JSON.parse(JSON.stringify(e2e_GeneralFormsTable)), deleteNodeAppendText).collections);
     const deleteNodeCollectionRecordOne = deleteNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-    const deleteNodeCollectionRecordTwo = deleteNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
-    const deleteNodeCollectionRecordThree = deleteNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+    const deleteNodeCollectionRecordTwo = deleteNodeFieldDisplayName + dayjs().add(5,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
+    const deleteNodeCollectionRecordThree = deleteNodeFieldDisplayName + dayjs().add(5,'second').format('YYYYMMDDHHmmss.SSS').toString() + faker.lorem.word(4);
     const deleteNodeCollectionRecords = await mockRecords(deleteNodeCollectionName, [{ orgname: deleteNodeCollectionRecordOne }, { orgname: deleteNodeCollectionRecordTwo }, { orgname: deleteNodeCollectionRecordThree }]);
 
     //配置工作流
