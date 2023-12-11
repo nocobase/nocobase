@@ -725,7 +725,7 @@ test('Collection event add data trigger, normal table numeric field, set constan
     // 设置字段
     await createRecordNode.addFieldsButton.click();
     await page.getByRole('menuitem', { name: createNodeFieldDisplayName }).click();
-    const createRecordNodefieldData = faker.number.int();
+    const createRecordNodefieldData = faker.number.float({ min: 0, max: 999999999, precision: 0.0001 });
     await page.getByLabel('block-item-CollectionFieldset-workflows-Fields values').getByRole('spinbutton').fill(createRecordNodefieldData.toString());
     await createRecordNode.submitButton.click();
 
@@ -769,7 +769,7 @@ test('Collection event add data trigger, normal table numeric field, set constan
     await page.mouse.move(300, 0);
 
     // 2、测试步骤：录入数据触发工作流
-    const addDataTriggerWorkflowPagefieldData = faker.number.int();
+    const addDataTriggerWorkflowPagefieldData = faker.number.float({ min: 0, max: 999999999, precision: 0.0001 });
     await page.getByRole('spinbutton').fill(addDataTriggerWorkflowPagefieldData.toString());
     await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
     await page.waitForLoadState('networkidle');
@@ -934,7 +934,7 @@ test('Collection event add data trigger, normal table numeric field, set trigger
     await page.mouse.move(300, 0);
 
     // 2、测试步骤：录入数据触发工作流
-    const addDataTriggerWorkflowPagefieldData = faker.number.int();
+    const addDataTriggerWorkflowPagefieldData = faker.number.float({ min: 0, max: 999999999, precision: 0.0001 });
     await page.getByRole('spinbutton').fill(addDataTriggerWorkflowPagefieldData.toString());
     await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
     await page.waitForLoadState('networkidle');
