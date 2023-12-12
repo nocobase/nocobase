@@ -36,7 +36,7 @@ test.describe('configure params in gantt block', () => {
     await expect(page.getByLabel('table-index-2')).not.toBeVisible();
   });
 
-  test('set title field in gantt block', async ({ page, mockPage, mockRecord }) => {
+  test('set title field', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
     await mockRecord('general', mockData);
     await page.getByLabel('block-item-gantt').hover();
@@ -49,7 +49,7 @@ test.describe('configure params in gantt block', () => {
     await barLabel.hover();
     expect(await barLabel.textContent()).toBe(mockData['singleLineText2']);
   });
-  test('set start date field in gantt block', async ({ page, mockPage, mockRecord }) => {
+  test('set start date field ', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
     await mockRecord('general', mockData);
     await page.getByLabel('block-item-gantt').hover();
@@ -62,7 +62,7 @@ test.describe('configure params in gantt block', () => {
     const tooltip2 = await page.getByLabel('nb-gantt-tooltip');
     await expect(await tooltip2.innerText()).toContain(getYmd(new Date(mockData['startDatetime2'])));
   });
-  test('set end date field in gantt block', async ({ page, mockPage, mockRecord }) => {
+  test('set end date field ', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
     await mockRecord('general', mockData);
     await page.getByLabel('block-item-gantt').hover();
@@ -76,7 +76,7 @@ test.describe('configure params in gantt block', () => {
     const tooltip2 = await page.getByLabel('nb-gantt-tooltip');
     await expect(await tooltip2.innerText()).toContain(getYmd(new Date(mockData['endDatetime2'])));
   });
-  test('set time scale in gantt block', async ({ page, mockPage, mockRecord }) => {
+  test('set time scale ', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
     await mockRecord('general', mockData);
     await page.getByLabel('block-item-gantt').hover();
