@@ -13,7 +13,7 @@ export default class ThemeEditorMigration extends Migration {
       return;
     }
 
-    await this.db.sync();
+    await repository.collection.sync();
 
     const systemSettings = await this.db.getRepository('systemSettings').findOne();
     const defaultThemeId = systemSettings.options?.themeId;
