@@ -1,21 +1,18 @@
-export interface RecordOptions<CurrentType = {}, ParentType = {}> {
-  current?: CurrentType;
-  parentRecord?: RecordV2<ParentType>;
-  isNew?: boolean;
+export interface RecordOptions<DataType = {}, ParentDataType = {}> {
+  data?: DataType;
+  parentRecord?: RecordV2<ParentDataType>;
 }
 
-export class RecordV2<CurrentType = {}, ParentType = {}> {
-  public current?: CurrentType;
-  public parentRecord?: RecordV2<ParentType>;
-  public isNew = false;
-  constructor(options: RecordOptions<CurrentType, ParentType>) {
-    const { current, parentRecord, isNew } = options;
-    this.current = current;
+export class RecordV2<DataType = {}, ParentDataType = {}> {
+  public data?: DataType;
+  public parentRecord?: RecordV2<ParentDataType>;
+  constructor(options: RecordOptions<DataType, ParentDataType>) {
+    const { data, parentRecord } = options;
+    this.data = data;
     this.parentRecord = parentRecord;
-    this.isNew = isNew;
   }
 
-  setParentRecord(parentRecord: RecordV2<ParentType>) {
+  setParentRecord(parentRecord: RecordV2<ParentDataType>) {
     this.parentRecord = parentRecord;
   }
 }

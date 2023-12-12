@@ -1,5 +1,5 @@
 import React, { FC } from 'react';
-import { SchemaComponent, useBlockRequestV2, withSchemaComponentProps } from '@nocobase/client';
+import { SchemaComponent, useBlockResourceV2, withSchemaComponentProps } from '@nocobase/client';
 import { createApp } from './createApp';
 import { Button, Form, Input, InputNumber } from 'antd';
 import { FormProps } from 'antd/lib';
@@ -37,16 +37,15 @@ const DemoForm: FC<DemoFormProps> = withSchemaComponentProps((props) => {
 });
 
 function useDemoFormProps(): DemoFormProps {
-  const { run } = useBlockRequestV2<DemoFormFieldType>();
+  const resource = useBlockResourceV2();
   return {
     onFinish: (values) => {
-      run({ data: values });
+      resource.create({ values });
     },
   };
 }
 
 const collection = 'users';
-const action = 'create';
 
 const schema = {
   type: 'void',
@@ -56,7 +55,6 @@ const schema = {
   'x-use-component-props': 'useDemoFormProps',
   'x-decorator-props': {
     collection: collection,
-    action: action,
   },
 };
 
@@ -65,7 +63,7 @@ const Demo = () => {
 };
 
 const mocks = {
-  [`${collection}:${action}`]: (config) => {
+  [`${collection}:create`]: (config) => {
     console.log('请求结果', config.data);
     return [200, { msg: 'ok' }];
   },

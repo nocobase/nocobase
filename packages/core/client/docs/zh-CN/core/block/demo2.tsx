@@ -4,8 +4,8 @@ import {
   SchemaComponent,
   useBlockRequestV2,
   withSchemaComponentProps,
-  DataBlockDecorator,
-  useRecordV2,
+  UseDataBlockProps,
+  useRecordDataV2,
 } from '@nocobase/client';
 import { createApp } from './createApp';
 import { Button, Form, Input, InputNumber, Select } from 'antd';
@@ -44,7 +44,7 @@ const DemoForm: FC<DemoFormProps> = withSchemaComponentProps((props) => {
 });
 
 function useDemoFormProps(): DemoFormProps {
-  const { data } = useBlockRequestV2<DemoFormFieldType>();
+  const data = useRecordDataV2<DemoFormFieldType>();
   const [form] = Form.useForm();
   useEffect(() => {
     form.setFieldsValue(data);
@@ -56,11 +56,10 @@ function useDemoFormProps(): DemoFormProps {
   };
 }
 
-const useFormBlockDecoratorProps: DataBlockDecorator = () => {
-  const { current } = useRecordV2<{ filterByTk: number }>();
+const useFormBlockDecoratorProps: UseDataBlockProps<'CollectionGet'> = () => {
+  const { filterByTk } = useRecordDataV2<{ filterByTk: number }>();
   return {
-    type: 'collection-get',
-    filterByTk: current.filterByTk,
+    filterByTk,
   };
 };
 
@@ -83,7 +82,7 @@ const schema = {
 const Demo = () => {
   const [id, setId] = useState(1);
   return (
-    <RecordProviderV2 current={{ filterByTk: id }}>
+    <RecordProviderV2 record={{ filterByTk: id }}>
       <Select
         defaultValue={id}
         options={[
@@ -100,15 +99,22 @@ const Demo = () => {
 };
 
 const mocks = {
-  [`${collection}:${action}/1`]: {
-    id: 1,
-    username: 'Bamboo',
-    age: 18,
-  },
-  [`${collection}:${action}/2`]: {
-    id: 2,
-    username: 'Mary',
-    age: 25,
+  [`${collection}:${action}`]: function (config) {
+    const { filterByTk } = config.params;
+    return {
+      data:
+        filterByTk === 1
+          ? {
+              id: 1,
+              username: 'Bamboo',
+              age: 18,
+            }
+          : {
+              id: 2,
+              username: 'Mary',
+              age: 25,
+            },
+    };
   },
 };
 

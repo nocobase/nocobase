@@ -1,12 +1,10 @@
 import React, { FC } from 'react';
 import {
-  RecordV2,
-  RecordProviderV2,
   SchemaComponent,
   useBlockRequestV2,
-  useBlockV2,
+  useBlockSettingsV2,
   withSchemaComponentProps,
-  DataBlockDecorator,
+  UseDataBlockProps,
 } from '@nocobase/client';
 import { createApp } from './createApp';
 import { Switch, Table, TableProps } from 'antd';
@@ -16,7 +14,7 @@ interface DemoTableRecordType {
 }
 type DemoTableProps = TableProps<DemoTableRecordType>;
 const DemoTable: FC<DemoTableProps> = withSchemaComponentProps((props) => {
-  const { dn } = useBlockV2();
+  const { dn } = useBlockSettingsV2();
   return (
     <>
       <Switch
@@ -37,7 +35,11 @@ const DemoTable: FC<DemoTableProps> = withSchemaComponentProps((props) => {
 
 function useDemoTableProps(): DemoTableProps {
   const { data, loading } = useBlockRequestV2<{ data: DemoTableRecordType[]; total: number }>();
-  const { props, dn } = useBlockV2<{ rowKey?: string; params?: Record<string, any>; bordered?: boolean }>();
+  const { props, changeSchemaProps } = useBlockSettingsV2<{
+    rowKey?: string;
+    params?: Record<string, any>;
+    bordered?: boolean;
+  }>();
   const { rowKey, params, bordered } = props;
   return {
     columns: [
@@ -66,12 +68,10 @@ function useDemoTableProps(): DemoTableProps {
       current: params.page || 1,
       total: data?.total,
       onChange(page, pageSize) {
-        dn.deepMerge({
-          'x-decorator-props': {
-            params: {
-              pageSize,
-              page,
-            },
+        changeSchemaProps({
+          params: {
+            pageSize,
+            page,
           },
         });
       },
@@ -82,9 +82,8 @@ function useDemoTableProps(): DemoTableProps {
 const collection = 'users';
 const action = 'list';
 
-const useTableDataBlockDecoratorProps: DataBlockDecorator = () => {
+const useTableDataBlockDecoratorProps: UseDataBlockProps<'CollectionList'> = () => {
   return {
-    type: 'collection-list',
     params: {
       address: 'New York',
     },

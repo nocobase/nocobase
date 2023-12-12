@@ -1,5 +1,6 @@
 export * from './AssociationProvider';
-export * from './BlockProvider';
+export * from './BlockSettingsProvider';
+export * from './BlockResourceProvider';
 export * from './BlockUseRequestProvider';
 export * from './CollectionProvider';
 export * from './DataBlockProvider';

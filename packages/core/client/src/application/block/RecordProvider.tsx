@@ -1,50 +1,63 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 import { RecordV2 } from './Record';
 
-export interface RecordContextValue<CurrentType = {}, ParentType = {}> {
-  record: RecordV2<CurrentType, ParentType>;
-}
+export const RecordContextV2 = createContext<RecordV2<any, any>>(null);
+RecordContextV2.displayName = 'RecordContextV2';
 
-export const RecordContextV2 = createContext<RecordContextValue<any, any>>({} as any);
-
-export interface RecordProviderProps<CurrentType = {}, ParentType = {}> {
+export interface RecordProviderProps<DataType = {}, ParentDataType = {}> {
   children?: ReactNode;
-  current?: CurrentType;
-  record?: RecordV2<CurrentType, ParentType>;
-  parent?: ParentType;
-  parentRecord?: RecordV2<ParentType>;
-  isNew?: boolean;
+  record?: RecordV2<DataType, ParentDataType> | DataType;
+  parentRecord?: RecordV2<ParentDataType> | DataType;
 }
 
-export const RecordProviderV2: FC<RecordProviderProps> = ({
-  record,
-  current,
-  parent,
-  isNew,
-  parentRecord,
-  children,
-}) => {
+export const RecordProviderV2: FC<RecordProviderProps> = ({ record, parentRecord, children }) => {
   const parentRecordValue = useMemo(() => {
-    if (parentRecord) return parentRecord;
-    if (parent) return new RecordV2(parent);
-    return record?.parentRecord;
-  }, [parent, parentRecord, record?.parentRecord]);
+    if (parentRecord) {
+      if (parentRecord instanceof RecordV2) return parentRecord;
+      return new RecordV2(parentRecord);
+    }
+    if (record instanceof RecordV2) return record.parentRecord;
+  }, [parentRecord, record]);
 
   const currentRecordValue = useMemo(() => {
-    const isNewVal = isNew || record?.isNew;
-    const currentVal = current || record?.current;
-    return new RecordV2({ current: currentVal, parentRecord: parentRecordValue, isNew: isNewVal });
-  }, [parentRecordValue, record, isNew, current]);
+    let res: RecordV2;
+    if (record) {
+      if (record instanceof RecordV2) {
+        res = record;
+      } else {
+        res = new RecordV2({ data: record });
+      }
+    } else {
+      res = new RecordV2({});
+    }
+    res.setParentRecord(parentRecordValue);
+    return res;
+  }, [parentRecordValue, record]);
 
-  return <RecordContextV2.Provider value={{ record: currentRecordValue }}>{children}</RecordContextV2.Provider>;
+  return <RecordContextV2.Provider value={currentRecordValue}>{children}</RecordContextV2.Provider>;
 };
 
-export const useRecordV2 = <CurrentType = {}, ParentType = {}>(showError = true): RecordV2<CurrentType, ParentType> => {
-  const context = useContext<RecordContextValue<CurrentType, ParentType>>(RecordContextV2);
+export function useRecordV2<DataType = {}, ParentDataType = {}>(showError = true): RecordV2<DataType, ParentDataType> {
+  const context = useContext<RecordV2<DataType, ParentDataType>>(RecordContextV2);
 
   if (showError && !context) {
     throw new Error('useRecordV2() must be used within a RecordProviderV2');
   }
 
-  return context.record;
-};
+  return context;
+}
+
+export function useRecordDataV2<DataType>(showError = true): DataType {
+  const record = useRecordV2<DataType>(showError);
+  return record.data;
+}
+
+export function useParentRecordV2<ParentDataType>(showError = true): RecordV2<ParentDataType> {
+  const record = useRecordV2<any, ParentDataType>(showError);
+  return record.parentRecord;
+}
+
+export function useParentRecordDataV2<ParentDataType>(showError = true): ParentDataType {
+  const record = useParentRecordV2<ParentDataType>(showError);
+  return record.data;
+}

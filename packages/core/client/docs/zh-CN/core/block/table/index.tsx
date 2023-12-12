@@ -7,7 +7,6 @@ import {
   CollectionManagerProvider,
   TableCollectionFieldInitializer,
 } from '@nocobase/client';
-import { APIClient } from '@nocobase/sdk';
 import MockAdapter from 'axios-mock-adapter';
 import requestData from './requestData.json';
 import schema from './schema.json';
@@ -23,14 +22,10 @@ const Root = () => {
   );
 };
 
-const apiClient = new APIClient({
-  baseURL: 'http://localhost:8000/api',
-});
-const mock = new MockAdapter(apiClient.axios);
-mock.onGet('users:list').reply(200, requestData);
-
 const app = new Application({
-  apiClient: apiClient.axios,
+  apiClient: {
+    baseURL: 'http://localhost:8000/api',
+  },
   plugins: [TablePlugin],
   providers: [Root],
   components: {
@@ -40,5 +35,8 @@ const app = new Application({
   },
   designable: true,
 });
+
+const mock = new MockAdapter(app.apiClient.axios);
+mock.onGet('users:list').reply(200, requestData);
 
 export default app.getRootComponent();

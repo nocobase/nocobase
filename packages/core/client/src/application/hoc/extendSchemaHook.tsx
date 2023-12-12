@@ -4,8 +4,13 @@ import { useDesignable, useSchemaComponentContext } from '../../schema-component
 
 const useDefaultSchemaProps = () => undefined;
 
+interface WithSchemaHookOptions {
+  displayName?: string;
+}
+
 export function extendSchemaHook(schemaProperty: string) {
-  function withSchemaHook<T = any>(Component: ComponentType<T>) {
+  function withSchemaHook<T = any>(Component: ComponentType<T>, options: WithSchemaHookOptions = {}) {
+    const displayName = options.displayName || Component.displayName || Component.name;
     const ComponentWithProps: ComponentType<T> = (props) => {
       const { dn } = useDesignable();
       const { scope } = useSchemaComponentContext();
@@ -25,7 +30,8 @@ export function extendSchemaHook(schemaProperty: string) {
       return <Component {...merge(schemaProps, props)} />;
     };
 
-    ComponentWithProps.displayName = `${Component.displayName || Component.name}(${schemaProperty})`;
+    Component.displayName = displayName;
+    ComponentWithProps.displayName = `${schemaProperty}(${displayName})`;
 
     return ComponentWithProps;
   }

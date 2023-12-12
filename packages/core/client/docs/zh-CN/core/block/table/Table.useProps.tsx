@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { useBlockRequestV2, useBlockV2, useDesignable, useSchemaInitializerRender } from '@nocobase/client';
+import React from 'react';
+import { useBlockRequestV2, useBlockSettingsV2, useDesignable, useSchemaInitializerRender } from '@nocobase/client';
 import { ISchema, RecursionField, Schema, useFieldSchema } from '@formily/react';
 import { TableProps } from 'antd';
 
@@ -66,7 +66,7 @@ const useTableColumns = () => {
 
 export function useTableProps(): TableProps<any> {
   const { data, loading } = useBlockRequestV2<TableRequest>();
-  const { props, dn } = useBlockV2<{
+  const { props, dn } = useBlockSettingsV2<{
     rowKey?: string;
     params?: Record<string, any>;
     bordered?: boolean;

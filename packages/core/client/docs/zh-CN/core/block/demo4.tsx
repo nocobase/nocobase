@@ -1,14 +1,14 @@
-import React, { FC, useEffect, useState } from 'react';
+import React, { FC, useEffect } from 'react';
 import {
   RecordProviderV2,
   SchemaComponent,
-  useBlockRequestV2,
   withSchemaComponentProps,
-  DataBlockDecorator,
+  UseDataBlockProps,
   useRecordV2,
+  useRecordDataV2,
 } from '@nocobase/client';
 import { createApp } from './createApp';
-import { Button, Form, Input, InputNumber, Select } from 'antd';
+import { Button, Form, Input, InputNumber } from 'antd';
 import { FormProps } from 'antd/lib';
 
 interface DemoFormFieldType {
@@ -44,22 +44,20 @@ const DemoForm: FC<DemoFormProps> = withSchemaComponentProps((props) => {
 });
 
 function useDemoFormProps(): DemoFormProps {
-  const { data } = useBlockRequestV2<DemoFormFieldType>();
+  const data = useRecordDataV2<DemoFormFieldType>();
   const [form] = Form.useForm();
   useEffect(() => {
     form.setFieldsValue(data);
   }, [data, form]);
   return {
-    initialValues: data,
     preserve: true,
     form,
   };
 }
 
-const useFormBlockDecoratorProps: DataBlockDecorator = () => {
+const useFormBlockDecoratorProps: UseDataBlockProps<'CollectionRecord'> = () => {
   const record = useRecordV2();
   return {
-    type: 'collection-record',
     record,
   };
 };
@@ -81,7 +79,7 @@ const schema = {
 const Demo = () => {
   return (
     <RecordProviderV2
-      current={{
+      record={{
         id: 1,
         username: 'Bamboo',
         age: 18,

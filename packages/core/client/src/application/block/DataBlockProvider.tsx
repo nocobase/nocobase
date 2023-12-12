@@ -1,74 +1,58 @@
-import React, { FC, ReactNode, useMemo } from 'react';
-import { BlockProviderV2, BlockContextProps } from './BlockProvider';
+import React, { FC, ReactNode, useCallback, useMemo } from 'react';
+import { BlockSettingsProviderV2, BlockSettingsContextProps } from './BlockSettingsProvider';
 import { CollectionProviderV2 } from './CollectionProvider';
 import { AssociationProviderV2 } from './AssociationProvider';
 import { BlockRequestProviderV2 } from './BlockUseRequestProvider';
 import { useDesignable } from '../../schema-component';
 import { withSchemaDecoratorProps } from '../hoc';
+import { BlockResourceProviderV2 } from './BlockResourceProvider';
 
-interface CollectionCreateDataBlockProps extends Pick<BlockContextProps, 'collection'> {
-  action: 'create';
-  type: 'collection-create';
-}
+type CollectionCreate = Pick<BlockSettingsContextProps, 'collection'>;
 
-interface CollectionGetDataBlockProps extends Pick<BlockContextProps, 'collection' | 'filterByTk' | 'params'> {
+interface CollectionGet extends Pick<BlockSettingsContextProps, 'collection' | 'filterByTk' | 'params'> {
   action: 'get';
-  type: 'collection-get';
 }
 
-interface CollectionListDataBlockProps extends Pick<BlockContextProps, 'collection' | 'params'> {
+interface CollectionList extends Pick<BlockSettingsContextProps, 'collection' | 'params'> {
   action: 'list';
-  type: 'collection-list';
 }
 
-type CollectionRecordDataBlockProps = Pick<BlockContextProps, 'collection' | 'record'> & { type: 'collection-record' };
+type CollectionRecord = Pick<BlockSettingsContextProps, 'collection' | 'record'>;
 
-interface AssociationCreateDataBlockProps extends Pick<BlockContextProps, 'association' | 'sourceId' | 'parentRecord'> {
-  action: 'create';
-  type: 'association-create';
-}
+type AssociationCreate = Pick<BlockSettingsContextProps, 'association' | 'sourceId' | 'parentRecord'>;
 
-interface AssociationGetDataBlockProps
-  extends Pick<BlockContextProps, 'association' | 'sourceId' | 'parentRecord' | 'filterByTk' | 'params'> {
+interface AssociationGet
+  extends Pick<BlockSettingsContextProps, 'association' | 'sourceId' | 'parentRecord' | 'filterByTk' | 'params'> {
   action: 'get';
-  type: 'association-get';
 }
 
-interface AssociationListDataBlockProps
-  extends Pick<BlockContextProps, 'association' | 'sourceId' | 'parentRecord' | 'params'> {
+interface AssociationList
+  extends Pick<BlockSettingsContextProps, 'association' | 'sourceId' | 'parentRecord' | 'params'> {
   action: 'list';
-  type: 'association-list';
 }
 
-type AssociationRecordDataBlockProps = Pick<BlockContextProps, 'association' | 'record' | 'parentRecord'> & {
-  type: 'association-record';
+type AssociationRecord = Pick<BlockSettingsContextProps, 'association' | 'record' | 'parentRecord'>;
+
+type AllDataBlockType = {
+  CollectionCreate: CollectionCreate;
+  CollectionGet: CollectionGet;
+  CollectionList: CollectionList;
+  CollectionRecord: CollectionRecord;
+  AssociationCreate: AssociationCreate;
+  AssociationGet: AssociationGet;
+  AssociationList: AssociationList;
+  AssociationRecord: AssociationRecord;
 };
 
-export type DataBlockProviderProps =
-  | CollectionCreateDataBlockProps
-  | CollectionGetDataBlockProps
-  | CollectionListDataBlockProps
-  | CollectionRecordDataBlockProps
-  | AssociationCreateDataBlockProps
-  | AssociationGetDataBlockProps
-  | AssociationListDataBlockProps
-  | AssociationRecordDataBlockProps;
+export type DataBlockProviderProps = AllDataBlockType[keyof AllDataBlockType];
 
-export type DataBlockDecorator = (
+export type UseDataBlockProps<T extends keyof AllDataBlockType> = (
   props: DataBlockProviderProps & { [index: string]: any },
-) =>
-  | Omit<CollectionCreateDataBlockProps, 'collection' | 'action'>
-  | Omit<CollectionGetDataBlockProps, 'collection' | 'action'>
-  | Omit<CollectionListDataBlockProps, 'collection' | 'action'>
-  | Omit<CollectionRecordDataBlockProps, 'collection' | 'action'>
-  | Omit<AssociationCreateDataBlockProps, 'association' | 'action'>
-  | Omit<AssociationGetDataBlockProps, 'association' | 'action'>
-  | Omit<AssociationListDataBlockProps, 'association' | 'action'>
-  | Omit<AssociationRecordDataBlockProps, 'association' | 'action'>;
+) => Omit<AllDataBlockType[T], 'association' | 'collection' | 'action'> & { [index: string]: any };
 
 export const DataBlockProviderV2: FC<DataBlockProviderProps & { children?: ReactNode }> = withSchemaDecoratorProps(
   (props) => {
-    const { type: _unUse, collection, association, children, ...resets } = props as Partial<BlockContextProps>;
+    const { collection, association, children, ...resets } = props as Partial<BlockSettingsContextProps>;
     const AssociationOrCollection = useMemo(() => {
       if (association) {
         return {
@@ -83,12 +67,29 @@ export const DataBlockProviderV2: FC<DataBlockProviderProps & { children?: React
     }, [collection, association]);
 
     const { dn } = useDesignable();
+
+    const changeSchemaProps = useCallback(
+      (data) => {
+        dn.deepMerge({
+          'x-decorator-props': data,
+        });
+      },
+      [dn],
+    );
+
     return (
-      <BlockProviderV2 dn={dn} props={{ ...resets, collection, association } as BlockContextProps}>
+      <BlockSettingsProviderV2
+        changeSchemaProps={changeSchemaProps}
+        dn={dn}
+        props={{ ...resets, collection, association } as BlockSettingsContextProps}
+      >
         <AssociationOrCollection.Component name={AssociationOrCollection.name}>
-          <BlockRequestProviderV2>{children}</BlockRequestProviderV2>
+          <BlockResourceProviderV2>
+            <BlockRequestProviderV2>{children}</BlockRequestProviderV2>
+          </BlockResourceProviderV2>
         </AssociationOrCollection.Component>
-      </BlockProviderV2>
+      </BlockSettingsProviderV2>
     );
   },
+  { displayName: 'DataBlockProviderV2' },
 );
