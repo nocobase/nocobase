@@ -1,12 +1,12 @@
 import Database, { Repository } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
-import { TokenBlacklistService } from '../token-blacklist';
+import { ITokenBlacklistService } from '@nocobase/auth';
 
 describe('token-blacklist', () => {
   let app: MockServer;
   let db: Database;
   let repo: Repository;
-  let tokenBlacklist: TokenBlacklistService;
+  let tokenBlacklist: ITokenBlacklistService;
 
   beforeAll(async () => {
     app = mockServer({
@@ -15,7 +15,7 @@ describe('token-blacklist', () => {
     await app.loadAndInstall({ clean: true });
     db = app.db;
     repo = db.getRepository('tokenBlacklist');
-    tokenBlacklist = new TokenBlacklistService(app.getPlugin('auth'));
+    tokenBlacklist = app.authManager.jwt.blacklist;
   });
 
   afterAll(async () => {
