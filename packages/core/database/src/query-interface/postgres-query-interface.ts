@@ -1,7 +1,7 @@
 import lodash from 'lodash';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser/postgres';
-import QueryInterface from './query-interface';
+import QueryInterface, { TableInfo } from './query-interface';
 
 export default class PostgresQueryInterface extends QueryInterface {
   constructor(db) {
@@ -113,7 +113,7 @@ export default class PostgresQueryInterface extends QueryInterface {
     }
   }
 
-  async showTableDefinition(tableInfo: { name: string; schema?: string }) {
+  async showTableDefinition(tableInfo: TableInfo): Promise<any> {
     const showFunc = `
 CREATE OR REPLACE FUNCTION show_create_table(p_schema text, p_table_name text)
 RETURNS text AS
@@ -134,7 +134,7 @@ $BODY$
     await this.db.sequelize.query(showFunc, { type: 'RAW' });
 
     const res = await this.db.sequelize.query(
-      `SELECT show_create_table('${tableInfo.schema}', '${tableInfo.name || 'public'}')`,
+      `SELECT show_create_table('${tableInfo.schema || 'public'}', '${tableInfo.tableName}')`,
       {
         type: 'SELECT',
       },
