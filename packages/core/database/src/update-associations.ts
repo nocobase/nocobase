@@ -385,7 +385,7 @@ export async function updateMultipleAssociation(
   const createAccessor = association.accessors.create;
 
   if (isUndefinedOrNull(value)) {
-    await model[setAccessor](null, { transaction, context });
+    await model[setAccessor](null, { transaction, context, individualHooks: true });
     model.setDataValue(key, null);
     return;
   }

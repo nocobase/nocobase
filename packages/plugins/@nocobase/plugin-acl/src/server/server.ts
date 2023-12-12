@@ -354,6 +354,7 @@ export class PluginACL extends Plugin {
       await cache.del(`roles:${model.get('userId')}`);
     });
     this.app.db.on('rolesUsers.afterDestroy', async (model) => {
+      console.log('======= rolesUsers.afterDestroy', model.get('userId'), model.get('roleName'));
       const cache = this.app.cache as Cache;
       await cache.del(`roles:${model.get('userId')}`);
     });
