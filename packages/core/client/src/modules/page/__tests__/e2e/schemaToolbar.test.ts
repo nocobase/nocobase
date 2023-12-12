@@ -1,4 +1,4 @@
-import { test, twoTabsPage } from '@nocobase/test/client';
+import { expect, test, twoTabsPage } from '@nocobase/test/client';
 
 test.describe('tabs drag', () => {
   test('drag', async ({ page, mockPage }) => {

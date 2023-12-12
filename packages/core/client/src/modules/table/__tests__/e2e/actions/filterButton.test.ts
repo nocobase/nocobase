@@ -1,4 +1,5 @@
-import { T2183, T2186, expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
+import { T2183, T2186 } from '../templatesOfBug';
 
 // fix https://nocobase.height.app/T-2183
 test('BUG: should save conditions', async ({ page, mockPage }) => {

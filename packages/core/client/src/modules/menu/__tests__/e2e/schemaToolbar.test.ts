@@ -1,4 +1,4 @@
-import { test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
 
 test.describe('drag', () => {
   test('single page', async ({ page, mockPage }) => {

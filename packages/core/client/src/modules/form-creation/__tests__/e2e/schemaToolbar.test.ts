@@ -1,4 +1,4 @@
-import { oneFormBlockBasedOnUsers, test } from '@nocobase/test/client';
+import { expect, oneFormBlockBasedOnUsers, test } from '@nocobase/test/client';
 
 test.describe('drag', () => {
   test('drag field for layout', async ({ page, mockPage }) => {

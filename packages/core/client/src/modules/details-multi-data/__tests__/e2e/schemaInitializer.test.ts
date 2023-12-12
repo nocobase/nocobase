@@ -1,6 +1,7 @@
 import { createBlockInPage, expect, oneEmptyDetailsBlock, test } from '@nocobase/test/client';
 
 test('create detail block in page', async ({ page, mockPage }) => {
+  await mockPage().goto();
   await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
   await createBlockInPage(page, 'Details');
   await expect(page.getByLabel('block-item-CardItem-users-details')).toBeVisible();

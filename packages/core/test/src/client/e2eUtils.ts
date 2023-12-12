@@ -125,6 +125,65 @@ interface CreatePageOptions {
   pageSchema?: any;
 }
 
+interface ExtendUtils {
+  /**
+   * 根据配置，生成一个 NocoBase 的页面
+   * @param config 页面配置
+   * @param manualDestroy 是否需要手动销毁页面，如果为 true 则需要显式调用 destroy 方法
+   * @returns
+   */
+  mockPage: (config?: PageConfig, manualDestroy?: boolean) => NocoPage;
+  /**
+   * 根据配置，生成多个 collections
+   * @param collectionSettings
+   * @param manualDestroy 是否需要手动销毁 collections，如果为 true 则需要显式调用 destroy 方法
+   * @returns 返回一个 destroy 方法，用于销毁创建的 collections
+   */
+  mockCollections: (collectionSettings: CollectionSetting[], manualDestroy?: boolean) => Promise<() => Promise<any>>;
+  /**
+   * 根据配置，生成一个 collection
+   * @param collectionSetting
+   * @param manualDestroy 是否需要手动销毁 collection，如果为 true 则需要显式调用 destroy 方法
+   * @returns 返回一个 destroy 方法，用于销毁创建的 collection
+   */
+  mockCollection: (collectionSetting: CollectionSetting, manualDestroy?: boolean) => Promise<() => Promise<any>>;
+  /**
+   * 自动生成一条对应 collection 的数据
+   * @param collectionName 数据表名称
+   * @param data 自定义的数据，缺失时会生成随机数据
+   * @returns 返回一条生成的数据
+   */
+  mockRecord: <T = any>(collectionName: string, data?: any) => Promise<T>;
+  /**
+   * 自动生成多条对应 collection 的数据
+   */
+  mockRecords: {
+    /**
+     * @param collectionName - 数据表名称
+     * @param count - 生成的数据条数
+     */
+    <T = any>(collectionName: string, count?: number): Promise<T[]>;
+    /**
+     * @param collectionName - 数据表名称
+     * @param data - 指定生成的数据
+     */
+    <T = any>(collectionName: string, data?: any[]): Promise<T[]>;
+  };
+  /**
+   * 该方法已弃用，请使用 mockCollections
+   * @deprecated
+   * @param collectionSettings
+   * @returns
+   */
+  createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
+  /**
+   * 根据页面 title 删除对应的页面
+   * @param pageName 显示在页面菜单中的名称
+   * @returns
+   */
+  deletePage: (pageName: string) => Promise<void>;
+}
+
 const PORT = process.env.APP_PORT || 20000;
 const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
 
@@ -180,34 +239,17 @@ export class NocoPage {
   }
 }
 
-const _test = base.extend<{
-  mockPage: (config?: PageConfig) => NocoPage;
-  mockCollections: <T = any>(collectionSettings: CollectionSetting[]) => Promise<T>;
-  mockCollection: <T = any>(collectionSetting: CollectionSetting) => Promise<T>;
-  mockRecord: <T = any>(collectionName: string, data?: any) => Promise<T>;
-  mockRecords: {
-    /**
-     * @param collectionName - 数据表名称
-     * @param count - 生成的数据条数
-     */
-    <T = any>(collectionName: string, count?: number): Promise<T[]>;
-    /**
-     * @param collectionName - 数据表名称
-     * @param data - 指定生成的数据
-     */
-    <T = any>(collectionName: string, data?: any[]): Promise<T[]>;
-  };
-  createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
-  deletePage: (pageName: string) => Promise<void>;
-}>({
+const _test = base.extend<ExtendUtils>({
   mockPage: async ({ page }, use) => {
     // 保证每个测试运行时 faker 的随机值都是一样的
     faker.seed(1);
 
     const nocoPages: NocoPage[] = [];
-    const mockPage = (config?: PageConfig) => {
+    const mockPage = (config?: PageConfig, manualDestroy = false) => {
       const nocoPage = new NocoPage(page, config);
-      nocoPages.push(nocoPage);
+      if (!manualDestroy) {
+        nocoPages.push(nocoPage);
+      }
       return nocoPage;
     };
 
@@ -237,33 +279,53 @@ const _test = base.extend<{
   },
   mockCollections: async ({ page }, use) => {
     let collectionsName = [];
+    let destroy = async () => {
+      if (collectionsName.length) {
+        await deleteCollections(collectionsName);
+      }
+    };
 
-    const mockCollections = async (collectionSettings: CollectionSetting[]) => {
+    const mockCollections = async (collectionSettings: CollectionSetting[], manualDestroy = false) => {
       collectionSettings = omitSomeFields(collectionSettings);
       collectionsName = collectionSettings.map((item) => item.name);
-      return createCollections(collectionSettings);
+      await createCollections(collectionSettings);
+
+      if (manualDestroy) {
+        const _destroy = destroy;
+        destroy = async () => {};
+        return _destroy;
+      }
+
+      return destroy;
     };
 
     await use(mockCollections);
-
-    if (collectionsName.length) {
-      await deleteCollections(collectionsName);
-    }
+    await destroy();
   },
   mockCollection: async ({ page }, use) => {
     let collectionsName = [];
+    let destroy = async () => {
+      if (collectionsName.length) {
+        await deleteCollections(collectionsName);
+      }
+    };
 
-    const mockCollection = async (collectionSetting: CollectionSetting) => {
+    const mockCollection = async (collectionSetting: CollectionSetting, manualDestroy = false) => {
       const collectionSettings = omitSomeFields([collectionSetting]);
       collectionsName = collectionSettings.map((item) => item.name);
-      return createCollections(collectionSettings);
+      await createCollections(collectionSettings);
+
+      if (manualDestroy) {
+        const _destroy = destroy;
+        destroy = async () => {};
+        return _destroy;
+      }
+
+      return destroy;
     };
 
     await use(mockCollection);
-
-    if (collectionsName.length) {
-      await deleteCollections(collectionsName);
-    }
+    await destroy();
   },
   mockRecords: async ({ page }, use) => {
     const mockRecords = async (collectionName: string, count: any = 3, data?: any) => {

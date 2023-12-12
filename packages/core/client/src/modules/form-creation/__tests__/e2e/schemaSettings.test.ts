@@ -1,7 +1,5 @@
 import {
   Page,
-  T2165,
-  T2174,
   expect,
   expectSettingsMenu,
   oneEmptyForm,
@@ -11,6 +9,7 @@ import {
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
 } from '@nocobase/test/client';
+import { T2165, T2174 } from './templatesOfBug';
 
 const clickOption = async (page: Page, optionName: string) => {
   await page.getByLabel('block-item-CardItem-general-form').hover();
@@ -1180,6 +1179,3 @@ test.describe('actions settings', () => {
     });
   });
 });
-function mockPage(T2174: any) {
-  throw new Error('Function not implemented.');
-}

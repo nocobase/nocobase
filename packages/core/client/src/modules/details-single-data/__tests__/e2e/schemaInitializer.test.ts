@@ -30,6 +30,7 @@ test('create actions', async ({ page, mockPage, mockRecord }) => {
     page,
     showMenu: async () => {
       await page.getByLabel('action-Action-Edit-update-general-form-0').hover();
+      await page.getByRole('button', { name: 'designer-schema-settings-Action-Action.Designer-general' }).hover();
     },
     supportedOptions: ['Edit button', 'Linkage rules', 'Open mode', 'Popup size', 'Delete'],
   });

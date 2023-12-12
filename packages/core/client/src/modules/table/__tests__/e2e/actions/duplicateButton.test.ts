@@ -1,4 +1,5 @@
-import { T2187, expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
+import { T2187 } from '../templatesOfBug';
 
 // fix https://nocobase.height.app/T-2187
 test('BUG: in the Duplicate mode, the Roles field should not have a value after clicking it because it is not selected', async ({

@@ -1,4 +1,4 @@
-import { expectSettingsMenu, oneEmptyGridCardBlock, test } from '@nocobase/test/client';
+import { expect, expectSettingsMenu, oneEmptyGridCardBlock, test } from '@nocobase/test/client';
 
 test.describe('block settings', () => {
   test('supported options', async ({ page, mockPage }) => {
