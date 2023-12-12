@@ -1,5 +1,5 @@
 import { expect, test, oneEmptyTableBlockWithCustomizeActions } from '@nocobase/test/client';
-import { oneEmptyGantt, oneEmptyTableBlockWithCustomizeUpdate } from './utils';
+import { oneEmptyGantt } from './utils';
 
 test.describe('TableActionInitializers & GanttActionInitializers & MapActionInitializers ', () => {
   test('TableActionInitializers should add bulk update', async ({ page, mockPage }) => {
