@@ -373,7 +373,7 @@ export const generalWithDatetime: CollectionSetting[] = [
 /**
  * 创建一个名为 general 的 collection，其包含所有 relation 类型的字段
  */
-export const generalWithRelation: CollectionSetting[] = [
+export const generalWithAssociation: CollectionSetting[] = [
   {
     name: 'general',
     title: 'General',

@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { uid } from '@formily/shared';
-import { Page, test as base, request } from '@playwright/test';
+import { Page, test as base, expect, request } from '@playwright/test';
 import _ from 'lodash';
 
 export * from '@playwright/test';
@@ -664,3 +664,50 @@ function getHeaders(storageState: any) {
 
   return headers;
 }
+
+/**
+ * 辅助断言 SchemaSettings 的菜单项是否存在
+ * @param param0
+ */
+export async function expectSettingsMenu({ showMenu, supportedOptions, page }) {
+  await showMenu();
+  for (const option of supportedOptions) {
+    await expect(page.getByRole('menuitem', { name: option })).toBeVisible();
+  }
+}
+
+/**
+ * 辅助断言 Initializer 的菜单项是否存在
+ * @param param0
+ */
+export async function expectInitializerMenu({ showMenu, supportedOptions, page }) {
+  await showMenu();
+  for (const option of supportedOptions) {
+    await expect(page.getByRole('menuitem', { name: option })).toBeVisible();
+  }
+}
+
+/**
+ * 用于辅助在 page 中创建区块
+ * @param page
+ * @param name
+ */
+export const createBlockInPage = async (page: Page, name: string) => {
+  await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+
+  if (name === 'Form') {
+    await page.getByText('Form', { exact: true }).first().hover();
+  } else if (name === 'Filter form') {
+    await page.getByText('Form', { exact: true }).nth(1).hover();
+  } else {
+    await page.getByText(name, { exact: true }).hover();
+  }
+
+  if (name === 'Markdown') {
+    await page.getByRole('menuitem', { name: 'Markdown' }).click();
+  } else {
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+  }
+
+  await page.mouse.move(300, 0);
+};
