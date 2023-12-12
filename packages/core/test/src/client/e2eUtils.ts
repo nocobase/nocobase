@@ -128,25 +128,28 @@ interface CreatePageOptions {
 interface ExtendUtils {
   /**
    * 根据配置，生成一个 NocoBase 的页面
-   * @param config 页面配置
-   * @param manualDestroy 是否需要手动销毁页面，如果为 true 则需要显式调用 destroy 方法
+   * @param pageConfig 页面配置
    * @returns
    */
-  mockPage: (config?: PageConfig, manualDestroy?: boolean) => NocoPage;
+  mockPage: (pageConfig?: PageConfig) => NocoPage;
+  /**
+   * 根据配置，生成一个需要手动销毁的 NocoPage 页面
+   * @param pageConfig
+   * @returns
+   */
+  mockManualDestroyPage: (pageConfig?: PageConfig) => NocoPage;
   /**
    * 根据配置，生成多个 collections
    * @param collectionSettings
-   * @param manualDestroy 是否需要手动销毁 collections，如果为 true 则需要显式调用 destroy 方法
    * @returns 返回一个 destroy 方法，用于销毁创建的 collections
    */
-  mockCollections: (collectionSettings: CollectionSetting[], manualDestroy?: boolean) => Promise<() => Promise<any>>;
+  mockCollections: (collectionSettings: CollectionSetting[]) => Promise<any>;
   /**
    * 根据配置，生成一个 collection
    * @param collectionSetting
-   * @param manualDestroy 是否需要手动销毁 collection，如果为 true 则需要显式调用 destroy 方法
    * @returns 返回一个 destroy 方法，用于销毁创建的 collection
    */
-  mockCollection: (collectionSetting: CollectionSetting, manualDestroy?: boolean) => Promise<() => Promise<any>>;
+  mockCollection: (collectionSetting: CollectionSetting) => Promise<any>;
   /**
    * 自动生成一条对应 collection 的数据
    * @param collectionName 数据表名称
@@ -194,8 +197,8 @@ export class NocoPage {
   private _waitForInit: Promise<void>;
 
   constructor(
-    private page: Page,
     private options?: PageConfig,
+    private page?: Page,
   ) {
     this._waitForInit = this.init();
   }
@@ -208,7 +211,7 @@ export class NocoPage {
       await createCollections(collections);
     }
 
-    this.uid = await createPage(this.page, {
+    this.uid = await createPage({
       type: this.options?.type,
       name: this.options?.name,
       pageSchema: this.options?.pageSchema,
@@ -219,7 +222,12 @@ export class NocoPage {
 
   async goto() {
     await this._waitForInit;
-    await this.page.goto(this.url);
+    await this.page?.goto(this.url);
+  }
+
+  async getUrl() {
+    await this._waitForInit;
+    return this.url;
   }
 
   async waitForInit(this: NocoPage) {
@@ -245,11 +253,9 @@ const _test = base.extend<ExtendUtils>({
     faker.seed(1);
 
     const nocoPages: NocoPage[] = [];
-    const mockPage = (config?: PageConfig, manualDestroy = false) => {
-      const nocoPage = new NocoPage(page, config);
-      if (!manualDestroy) {
-        nocoPages.push(nocoPage);
-      }
+    const mockPage = (config?: PageConfig) => {
+      const nocoPage = new NocoPage(config, page);
+      nocoPages.push(nocoPage);
       return nocoPage;
     };
 
@@ -259,6 +265,14 @@ const _test = base.extend<ExtendUtils>({
     for (const nocoPage of nocoPages) {
       await nocoPage.destroy();
     }
+  },
+  mockManualDestroyPage: async ({ browser }, use) => {
+    const mockManualDestroyPage = (config?: PageConfig) => {
+      const nocoPage = new NocoPage(config);
+      return nocoPage;
+    };
+
+    await use(mockManualDestroyPage);
   },
   createCollections: async ({ page }, use) => {
     let collectionsName = [];
@@ -279,24 +293,16 @@ const _test = base.extend<ExtendUtils>({
   },
   mockCollections: async ({ page }, use) => {
     let collectionsName = [];
-    let destroy = async () => {
+    const destroy = async () => {
       if (collectionsName.length) {
         await deleteCollections(collectionsName);
       }
     };
 
-    const mockCollections = async (collectionSettings: CollectionSetting[], manualDestroy = false) => {
+    const mockCollections = async (collectionSettings: CollectionSetting[]) => {
       collectionSettings = omitSomeFields(collectionSettings);
       collectionsName = collectionSettings.map((item) => item.name);
-      await createCollections(collectionSettings);
-
-      if (manualDestroy) {
-        const _destroy = destroy;
-        destroy = async () => {};
-        return _destroy;
-      }
-
-      return destroy;
+      return createCollections(collectionSettings);
     };
 
     await use(mockCollections);
@@ -304,24 +310,16 @@ const _test = base.extend<ExtendUtils>({
   },
   mockCollection: async ({ page }, use) => {
     let collectionsName = [];
-    let destroy = async () => {
+    const destroy = async () => {
       if (collectionsName.length) {
         await deleteCollections(collectionsName);
       }
     };
 
-    const mockCollection = async (collectionSetting: CollectionSetting, manualDestroy = false) => {
+    const mockCollection = async (collectionSetting: CollectionSetting, options?: { manualDestroy: boolean }) => {
       const collectionSettings = omitSomeFields([collectionSetting]);
       collectionsName = collectionSettings.map((item) => item.name);
-      await createCollections(collectionSettings);
-
-      if (manualDestroy) {
-        const _destroy = destroy;
-        destroy = async () => {};
-        return _destroy;
-      }
-
-      return destroy;
+      return createCollections(collectionSettings);
     };
 
     await use(mockCollection);
@@ -414,7 +412,7 @@ const updateUidOfPageSchema = (uiSchema: any) => {
 /**
  * 在 NocoBase 中创建一个页面
  */
-const createPage = async (page: Page, options?: CreatePageOptions) => {
+const createPage = async (options?: CreatePageOptions) => {
   const { type = 'page', url, name, pageSchema } = options || {};
   const api = await request.newContext({
     storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
@@ -497,9 +495,6 @@ const createPage = async (page: Page, options?: CreatePageOptions) => {
   } else {
     throw new Error('systemSettings is not ok');
   }
-
-  // @ts-ignore
-  (page._currentPageUidList || (page._currentPageUidList = [])).push(pageUid);
 
   return pageUid;
 };

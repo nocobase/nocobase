@@ -1,14 +1,16 @@
 import { NocoPage, Page, expect, oneEmptyTableBlockWithActions, test } from '@nocobase/test/client';
 
 test.describe('tabs settings', () => {
-  let nocoPage: NocoPage;
+  let commonPage: NocoPage;
+  let commonPageUrl: string;
 
-  test.beforeAll(async ({ mockPage }) => {
-    nocoPage = await mockPage(oneEmptyTableBlockWithActions, true).waitForInit();
+  test.beforeAll(async ({ mockManualDestroyPage }) => {
+    commonPage = await mockManualDestroyPage(oneEmptyTableBlockWithActions).waitForInit();
+    commonPageUrl = await commonPage.getUrl();
   });
 
-  test.afterAll(async ({ page }) => {
-    await nocoPage.destroy();
+  test.afterAll(async () => {
+    await commonPage.destroy();
   });
 
   async function showSettings(page: Page) {
@@ -16,8 +18,8 @@ test.describe('tabs settings', () => {
     await page.getByLabel('designer-schema-settings-Tabs.TabPane-Tabs.Designer-general').hover();
   }
 
-  test('edit', async ({ page, mockPage }) => {
-    await nocoPage.goto();
+  test('edit', async ({ page }) => {
+    await page.goto(commonPageUrl);
     await page.getByRole('button', { name: 'Add new' }).click();
 
     await showSettings(page);
@@ -33,8 +35,8 @@ test.describe('tabs settings', () => {
     await expect(page.getByLabel('account-book').locator('svg')).toBeVisible();
   });
 
-  test('delete', async ({ page, mockPage }) => {
-    await nocoPage.goto();
+  test('delete', async ({ page }) => {
+    await page.goto(commonPageUrl);
     await page.getByRole('button', { name: 'Add new' }).click();
 
     await showSettings(page);
