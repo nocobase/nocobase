@@ -570,6 +570,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.log.error(e);
     }
 
+    if (this._cacheManager) {
+      await this._cacheManager.close();
+    }
+
     await this.emitAsync('afterStop', this, options);
 
     this.stopped = true;

@@ -62,6 +62,7 @@ export class BaseAuth extends Auth {
           filter: {
             id: userId,
           },
+          raw: true,
         }),
       );
     } catch (err) {

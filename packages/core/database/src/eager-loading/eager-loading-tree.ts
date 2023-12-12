@@ -208,7 +208,7 @@ export class EagerLoadingTree {
               include: includeForFilter,
             } as any)
           ).map((row) => {
-            return { row, pk: row.get(primaryKeyField) };
+            return { row, pk: row[primaryKeyField] };
           });
 
           const findOptions = {

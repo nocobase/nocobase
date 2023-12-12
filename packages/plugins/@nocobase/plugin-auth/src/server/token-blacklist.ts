@@ -17,17 +17,17 @@ export class TokenBlacklistService implements ITokenBlacklistService {
     plugin.app.on('beforeStart', async () => {
       try {
         this.bloomFilter = await plugin.app.cacheManager.createBloomFilter();
+        // https://redis.io/docs/data-types/probabilistic/bloom-filter/#reserving-bloom-filters
+        // 0.1% error rate requires 14.4 bits per item
+        // 14.4*1000000/8/1024/1024 = 1.72MB
+        await this.bloomFilter.reserve(this.cacheKey, 0.001, 1000000);
+        const data = await this.repo.find({ fields: ['token'], raw: true });
+        const tokens = data.map((item: any) => item.token);
+        await this.bloomFilter.mAdd(this.cacheKey, tokens);
       } catch (error) {
-        // TODO (xile): log error
-        return;
+        plugin.app.logger.error('token-blacklist: create bloom filter failed', error);
+        this.bloomFilter = null;
       }
-      // https://redis.io/docs/data-types/probabilistic/bloom-filter/#reserving-bloom-filters
-      // 0.1% error rate requires 14.4 bits per item
-      // 14.4*1000000/8/1024/1024 = 1.72MB
-      await this.bloomFilter.reserve(this.cacheKey, 0.001, 1000000);
-      const data = await this.repo.find({ fields: ['token'], raw: true });
-      const tokens = data.map((item: any) => item.token);
-      await this.bloomFilter.mAdd(this.cacheKey, tokens);
     });
   }
 
