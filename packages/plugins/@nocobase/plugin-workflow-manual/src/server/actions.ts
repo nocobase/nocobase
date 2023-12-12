@@ -56,12 +56,12 @@ export async function submit(context: Context, next) {
   }
   const presetValues = processor.getParsedValue(actionItem.values ?? {}, userJob.nodeId, {
     // @deprecated
-    currentUser: currentUser.toJSON(),
+    currentUser: currentUser,
     // @deprecated
     currentRecord: values.result[formKey],
     // @deprecated
     currentTime: new Date(),
-    $user: currentUser.toJSON(),
+    $user: currentUser,
     $nForm: values.result[formKey],
     $nDate: {
       now: new Date(),

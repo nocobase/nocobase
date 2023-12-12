@@ -1,6 +1,7 @@
 import { Collection, Model } from '@nocobase/database';
 import { Auth, AuthConfig } from '../auth';
 import { JwtService } from './jwt-service';
+import { Cache } from '@nocobase/cache';
 
 /**
  * BaseAuth
@@ -35,6 +36,10 @@ export class BaseAuth extends Auth {
     return this.ctx.state.currentUser;
   }
 
+  getCacheKey(userId: number) {
+    return `auth:${userId}`;
+  }
+
   validateUsername(username: string) {
     return /^[^@.<>"'/]{2,16}$/.test(username);
   }
@@ -51,11 +56,15 @@ export class BaseAuth extends Auth {
         this.ctx.headers['x-role'] = roleName;
       }
 
-      return await this.userRepository.findOne({
-        filter: {
-          id: userId,
-        },
-      });
+      const cache = this.ctx.cache as Cache;
+      return await cache.wrap(this.getCacheKey(userId), () =>
+        this.userRepository.findOne({
+          filter: {
+            id: userId,
+          },
+          raw: true,
+        }),
+      );
     } catch (err) {
       this.ctx.logger.error(err);
       return null;
@@ -71,7 +80,6 @@ export class BaseAuth extends Auth {
     try {
       user = await this.validate();
     } catch (err) {
-      console.log(err);
       this.ctx.throw(401, err.message);
     }
     if (!user) {
@@ -91,6 +99,9 @@ export class BaseAuth extends Auth {
     if (!token) {
       return;
     }
+    const { userId } = await this.jwt.decode(token);
+    await this.ctx.app.emitAsync('beforeSignOut', { userId });
+    await this.ctx.cache.del(this.getCacheKey(userId));
     return await this.jwt.block(token);
   }
 }
