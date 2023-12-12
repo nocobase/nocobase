@@ -1,4 +1,3 @@
-import { Page } from '@nocobase/client';
 import { expect, test, oneEmptyTableBlockWithActions } from '@nocobase/test/client';
 import { oneEmptyTableBlockWithExportAndImportAction } from './utils';
 
@@ -19,7 +18,7 @@ test.describe('action acl check for view', () => {
       page.getByLabel('view_checkbox').uncheck(),
     ]);
     const postData = request.postDataJSON();
-    await expect(postData.strategy.actions).not.toContainEqual('view');
+    expect(postData.strategy.actions).not.toContainEqual('view');
     await page.goBack();
     await page.reload();
     await expect(page.getByLabel('block-item-CardItem-general-table')).not.toBeVisible();
@@ -47,7 +46,7 @@ test.describe('action acl check for edit', () => {
       page.getByLabel('update_checkbox').uncheck(),
     ]);
     const postData = request.postDataJSON();
-    await expect(postData.strategy.actions).not.toContainEqual('update');
+    expect(postData.strategy.actions).not.toContainEqual('update');
     await page.getByLabel('drawer-Action.Drawer-roles-Configure permissions-mask').click();
     await page.goBack();
     await page.getByTestId('user-center-button').hover();
