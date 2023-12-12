@@ -1,7 +1,6 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { compact, compactDark, dark, defaultTheme } from './builtinThemes';
-import themeActions from './actions/theme-config';
 
 export class ThemeEditorPlugin extends Plugin {
   theme: any;
@@ -33,7 +32,7 @@ export class ThemeEditorPlugin extends Plugin {
           name: 'uid',
         },
         {
-          type: 'boolean',
+          type: 'radio',
           name: 'default',
           defaultValue: false,
         },
@@ -46,10 +45,6 @@ export class ThemeEditorPlugin extends Plugin {
         plugin: this,
       },
     });
-
-    Object.entries(themeActions).forEach(([action, handler]) =>
-      this.app.resourcer.registerAction(`themeConfig:${action}`, handler),
-    );
 
     this.app.acl.allow('themeConfig', 'list', 'public');
     this.app.acl.registerSnippet({

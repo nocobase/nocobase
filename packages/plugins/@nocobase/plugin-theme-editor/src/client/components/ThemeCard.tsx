@@ -146,10 +146,11 @@ const ThemeCard = (props: Props) => {
           await Promise.all([
             // 用户在设置该主题为默认主题时，肯定也希望该主题可被用户选择
             api.request({
-              url: `themeConfig:setDefault`,
+              url: `themeConfig:update/${item.id}`,
               method: 'post',
               data: {
-                themeId: item.id,
+                optional: true,
+                default: true,
               },
             }),
           ]);
