@@ -91,4 +91,3 @@ export default class SqliteQueryInterface extends QueryInterface {
     return Promise.resolve(undefined);
   }
 }
-Z;
