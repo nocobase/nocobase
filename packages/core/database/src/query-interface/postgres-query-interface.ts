@@ -118,11 +118,11 @@ export default class PostgresQueryInterface extends QueryInterface {
 CREATE OR REPLACE FUNCTION show_create_table(p_schema text, p_table_name text)
 RETURNS text AS
 $BODY$
-SELECT 'CREATE TABLE ' || p_schema || '.' || p_table_name || ' (' || E'\\n' || '' ||
+SELECT 'CREATE TABLE ' || quote_ident(p_schema) || '.' || quote_ident(p_table_name) || ' (' || E'\\n' || '' ||
     string_agg(column_list.column_expr, ', ' || E'\\n' || '') ||
     '' || E'\\n' || ');'
 FROM (
-  SELECT '    ' || column_name || ' ' || data_type ||
+  SELECT '    ' || quote_ident(column_name) || ' ' || data_type ||
        coalesce('(' || character_maximum_length || ')', '') ||
        case when is_nullable = 'YES' then '' else ' NOT NULL' end as column_expr
   FROM information_schema.columns
