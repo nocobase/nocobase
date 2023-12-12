@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-theme-editor",
-  "version": "0.17.0-alpha.3",
+  "version": "0.17.0-alpha.4",
   "main": "dist/server/index.js",
   "displayName": "Theme editor",
   "displayName.zh-CN": "主题编辑器",
@@ -24,6 +24,7 @@
     "vanilla-jsoneditor": "^0.17.8"
   },
   "peerDependencies": {
+    "@nocobase/actions": "0.x",
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
     "@nocobase/server": "0.x",
