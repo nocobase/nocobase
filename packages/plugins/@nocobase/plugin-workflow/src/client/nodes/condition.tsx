@@ -5,14 +5,14 @@ import { Registry } from '@nocobase/utils/client';
 import { Button, Select } from 'antd';
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { NodeDefaultView } from '.';
+import { Instruction, NodeDefaultView } from '.';
 import { Branch } from '../Branch';
 import { RadioWithTooltip, RadioWithTooltipOption } from '../components/RadioWithTooltip';
 import { renderEngineReference } from '../components/renderEngineReference';
 import { useFlowContext } from '../FlowContext';
 import { lang, NAMESPACE } from '../locale';
 import useStyles from '../style';
-import { useWorkflowVariableOptions } from '../variable';
+import { useWorkflowVariableOptions, WorkflowVariableTextArea } from '../variable';
 
 interface Calculator {
   name: string;
@@ -321,12 +321,12 @@ function CalculationConfig({ value, onChange }) {
   return <CalculationGroup value={rule.group} onChange={(group) => onChange({ ...rule, group })} />;
 }
 
-export default {
-  title: `{{t("Condition", { ns: "${NAMESPACE}" })}}`,
-  type: 'condition',
-  group: 'control',
-  description: `{{t('Based on boolean result of the calculation to determine whether to "continue" or "exit" the process, or continue on different branches of "yes" and "no".', { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Instruction {
+  title = `{{t("Condition", { ns: "${NAMESPACE}" })}}`;
+  type = 'condition';
+  group = 'control';
+  description = `{{t('Based on boolean result of the calculation to determine whether to "continue" or "exit" the process, or continue on different branches of "yes" and "no".', { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     rejectOnFalse: {
       type: 'boolean',
       title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
@@ -379,7 +379,7 @@ export default {
       type: 'string',
       title: `{{t("Condition expression", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'CalculationExpression',
+      'x-component': 'WorkflowVariableTextArea',
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
         const { evaluate } = evaluators.get(values.engine);
@@ -404,9 +404,8 @@ export default {
       },
       required: true,
     },
-  },
-  view: {},
-  options: [
+  };
+  options = [
     {
       label: `{{t('Continue when "Yes"', { ns: "${NAMESPACE}" })}}`,
       key: 'rejectOnFalse',
@@ -417,10 +416,24 @@ export default {
       key: 'branch',
       value: { rejectOnFalse: false },
     },
-  ],
-  component: function Component({ data }) {
+  ];
+
+  scope = {
+    renderEngineReference,
+    useWorkflowVariableOptions,
+  };
+  components = {
+    CalculationConfig,
+    WorkflowVariableTextArea,
+    RadioWithTooltip,
+  };
+
+  Component({ data }) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { t } = useTranslation();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { nodes } = useFlowContext();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { styles } = useStyles();
     const {
       id,
@@ -444,18 +457,5 @@ export default {
         )}
       </NodeDefaultView>
     );
-  },
-  scope: {
-    renderEngineReference,
-    useWorkflowVariableOptions,
-  },
-  components: {
-    CalculationConfig,
-    CalculationExpression(props) {
-      const scope = useWorkflowVariableOptions();
-
-      return <Variable.TextArea scope={scope} {...props} />;
-    },
-    RadioWithTooltip,
-  },
-};
+  }
+}

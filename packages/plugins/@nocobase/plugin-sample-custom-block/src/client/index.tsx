@@ -1,15 +1,16 @@
 import { TableOutlined } from '@ant-design/icons';
-import { Plugin, SchemaInitializer, SchemaInitializerContext } from '@nocobase/client';
-import React, { useContext } from 'react';
+import { SchemaInitializerItem, Plugin, useSchemaInitializer, useSchemaInitializerItem } from '@nocobase/client';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { HelloDesigner } from './HelloDesigner';
 
-export const HelloBlockInitializer = (props) => {
-  const { insert } = props;
+export const HelloBlockInitializer = () => {
+  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
+  const itemConfig = useSchemaInitializerItem();
   return (
-    <SchemaInitializer.Item
-      {...props}
+    <SchemaInitializerItem
+      {...itemConfig}
       icon={<TableOutlined />}
       onClick={() => {
         insert({
@@ -30,26 +31,18 @@ export const HelloBlockInitializer = (props) => {
   );
 };
 
-const CustomBlockProvider = React.memo((props) => {
-  const items = useContext<any>(SchemaInitializerContext);
-  const children = items.BlockInitializers.items[2].children;
-  children.push({
-    key: 'customBlock',
-    type: 'item',
-    title: '{{t("Hello block")}}',
-    component: 'HelloBlockInitializer',
-  });
-  return <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>;
-});
-CustomBlockProvider.displayName = 'CustomBlockProvider';
-
 class CustomBlockPlugin extends Plugin {
   async load() {
     this.app.addComponents({
       HelloDesigner,
       HelloBlockInitializer,
     });
-    this.app.addProvider(CustomBlockProvider);
+
+    const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    blockInitializers?.add('otherBlocks.customBlock', {
+      title: '{{t("Hello block")}}',
+      Component: 'HelloBlockInitializer',
+    });
   }
 }
 

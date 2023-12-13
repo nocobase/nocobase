@@ -1,24 +1,28 @@
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
+
 // 表单的操作配置
-export const FilterFormActionInitializers = {
+export const filterFormActionInitializers = new SchemaInitializer({
+  name: 'FilterFormActionInitializers',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [
     {
       type: 'itemGroup',
       title: '{{t("Enable actions")}}',
+      name: 'enableActions',
       children: [
         {
-          type: 'item',
+          name: 'filter',
           title: '{{t("Filter")}}',
-          component: 'CreateFilterActionInitializer',
+          Component: 'CreateFilterActionInitializer',
           schema: {
             'x-action-settings': {},
           },
         },
         {
-          type: 'item',
+          name: 'reset',
           title: '{{t("Reset")}}',
-          component: 'CreateResetActionInitializer',
+          Component: 'CreateResetActionInitializer',
           schema: {
             'x-action-settings': {},
           },
@@ -26,4 +30,4 @@ export const FilterFormActionInitializers = {
       ],
     },
   ],
-};
+});

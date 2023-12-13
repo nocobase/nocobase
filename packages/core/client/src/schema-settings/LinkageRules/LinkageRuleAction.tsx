@@ -53,6 +53,9 @@ export const FormFieldLinkageRuleAction = observer(
             `}
           >
             <TreeSelect
+              // @ts-ignore
+              role="button"
+              data-testid="select-linkage-property-field"
               className={css`
                 min-width: 160px;
               `}
@@ -72,6 +75,9 @@ export const FormFieldLinkageRuleAction = observer(
               placeholder={t('Select field')}
             />
             <Select
+              // @ts-ignore
+              role="button"
+              data-testid="select-linkage-action-field"
               popupMatchSelectWidth={false}
               value={operator}
               className={css`

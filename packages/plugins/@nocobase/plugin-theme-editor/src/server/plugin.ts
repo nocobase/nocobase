@@ -7,7 +7,12 @@ export class ThemeEditorPlugin extends Plugin {
 
   afterAdd() {}
 
-  async beforeLoad() {
+  async beforeLoad() {}
+
+  async load() {
+    this.db.collection({
+      name: 'themeConfig',
+    });
     this.db.addMigrations({
       namespace: 'theme-editor',
       directory: resolve(__dirname, './migrations'),
@@ -15,9 +20,7 @@ export class ThemeEditorPlugin extends Plugin {
         plugin: this,
       },
     });
-  }
 
-  async load() {
     await this.importCollections(path.resolve(__dirname, './collections'));
     this.app.acl.allow('themeConfig', 'list', 'public');
 

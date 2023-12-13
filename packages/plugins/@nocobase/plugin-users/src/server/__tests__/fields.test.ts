@@ -50,8 +50,8 @@ describe('createdBy/updatedBy', () => {
       });
 
       const data = p2.toJSON();
-      expect(data.createdBy.id).toBe(currentUser.get('id'));
-      expect(data.updatedBy.id).toBe(currentUser.get('id'));
+      expect(data.createdBy.id).toBe(currentUser.id);
+      expect(data.updatedBy.id).toBe(currentUser.id);
     });
 
     it('case 3', async () => {

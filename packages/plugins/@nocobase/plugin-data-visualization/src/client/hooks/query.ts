@@ -3,7 +3,7 @@ import { ISchema, Schema, useForm } from '@formily/react';
 import { CollectionFieldOptions, useACLRoleContext, useCollectionManager } from '@nocobase/client';
 import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChartConfigContext } from '../configure/ChartConfigure';
+import { ChartConfigContext } from '../configure';
 import formatters from '../block/formatters';
 import { useChartsTranslation } from '../locale';
 import { ChartRendererContext } from '../renderer';

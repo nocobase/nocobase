@@ -1,0 +1,21 @@
+{
+  "API keys": "API keys",
+  "API key created successfully": "API key created successfully",
+  "Make sure to copy your personal access key now as you will not be able to see this again.": "Make sure to copy your personal access key now as you will not be able to see this again.",
+  "Key name": "Key name",
+  "Expiration": "Expiration",
+  "Delete API key": "Delete API key",
+  "Role": "Role",
+  "Keys manager": "Keys manager",
+  "Created at": "Created at",
+  "Add API key": "Add API key",
+  "Never": "Never",
+  "Custom": "Custom",
+  "Never expires": "Never expires",
+  "1 Day": "1 Day",
+  "7 Days": "7 Days",
+  "30 Days": "30 Days",
+  "90 Days": "90 Days",
+  "Role not found": "Role not found",
+  "Allow only your own roles to be selected": "Allow only your own roles to be selected"
+}

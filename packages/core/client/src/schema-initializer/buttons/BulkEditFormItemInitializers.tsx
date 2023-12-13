@@ -1,60 +1,36 @@
-import { union } from 'lodash';
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { SchemaInitializer } from '../SchemaInitializer';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap, useCustomBulkEditFormItemInitializerFields } from '../utils';
 
-export const BulkEditFormItemInitializers = (props: any) => {
-  const { t } = useTranslation();
-  const { insertPosition, component } = props;
-  return (
-    <SchemaInitializer.Button
-      wrap={gridRowColWrap}
-      icon={'SettingOutlined'}
-      items={union<any>(
-        [
-          {
-            type: 'itemGroup',
-            title: t('Display fields'),
-            children: useCustomBulkEditFormItemInitializerFields(),
-          },
-        ],
-        // associationFields.length > 0
-        //   ? [
-        //       {
-        //         type: 'divider',
-        //       },
-        //       {
-        //         type: 'itemGroup',
-        //         title: t('Display association fields'),
-        //         children: associationFields,
-        //       },
-        //     ]
-        //   : [],
-        [
-          {
-            type: 'divider',
-          },
-          {
-            type: 'item',
-            title: t('Add text'),
-            component: 'BlockInitializer',
-            schema: {
-              type: 'void',
-              'x-editable': false,
-              'x-decorator': 'FormItem',
-              'x-designer': 'Markdown.Void.Designer',
-              'x-component': 'Markdown.Void',
-              'x-component-props': {
-                content: t('This is a demo text, **supports Markdown syntax**.'),
-              },
-            },
-          },
-        ],
-      )}
-      insertPosition={insertPosition}
-      component={component}
-      title={component ? null : t('Configure fields')}
-    />
-  );
-};
+export const bulkEditFormItemInitializers = new SchemaInitializer({
+  name: 'BulkEditFormItemInitializers',
+  wrap: gridRowColWrap,
+  icon: 'SettingOutlined',
+  title: '{{t("Configure fields")}}',
+  items: [
+    {
+      name: 'displayFields',
+      type: 'itemGroup',
+      title: '{{t("Display fields")}}',
+      useChildren: useCustomBulkEditFormItemInitializerFields,
+    },
+    {
+      name: 'divider',
+      type: 'divider',
+    },
+    {
+      name: 'addText',
+      title: '{{t("Add text")}}',
+      Component: 'BlockItemInitializer',
+      schema: {
+        type: 'void',
+        'x-editable': false,
+        'x-decorator': 'FormItem',
+        'x-designer': 'Markdown.Void.Designer',
+        'x-component': 'Markdown.Void',
+        'x-component-props': {
+          content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',
+        },
+      },
+    },
+  ],
+});

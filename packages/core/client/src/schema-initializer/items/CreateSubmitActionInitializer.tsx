@@ -1,5 +1,4 @@
 import React from 'react';
-import { useFieldSchema } from '@formily/react';
 import { ActionInitializer } from './ActionInitializer';
 
 export const CreateSubmitActionInitializer = (props) => {

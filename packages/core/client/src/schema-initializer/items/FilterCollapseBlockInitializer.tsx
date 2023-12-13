@@ -1,21 +1,23 @@
 import { TableOutlined } from '@ant-design/icons';
 import React from 'react';
 
+import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { createCollapseBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
 
-export const FilterCollapseBlockInitializer = (props) => {
-  const { insert, item } = props;
-  const items = item?.key === 'filterCollapseBlockInTableSelector' && [];
+export const FilterCollapseBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { insert } = useSchemaInitializer();
+  const items = itemConfig?.name === 'filterCollapseBlockInTableSelector' ? [] : undefined;
 
   return (
     <DataBlockInitializer
-      {...props}
+      {...itemConfig}
       icon={<TableOutlined />}
       componentType={'FilterCollapse'}
       onCreateBlockSchema={async ({ item }) => {
         const schema = createCollapseBlockSchema({
-          collection: item.name,
+          collection: item.collectionName || item.name,
           // 与数据区块做区分
           blockType: 'filter',
         });

@@ -8,10 +8,13 @@ process.on('SIGINT', () => {
 });
 
 const run = async () => {
-  const { awaitForNocoBase } = await runNocoBase({
-    stdio: 'ignore', // 不输出服务的日志，避免干扰测试的日志
-    signal: abortController.signal,
-  });
+  const { awaitForNocoBase } = await runNocoBase(
+    {
+      stdio: 'ignore', // 不输出服务的日志，避免干扰测试的日志
+      signal: abortController.signal,
+    },
+    true,
+  );
 
   await awaitForNocoBase();
 

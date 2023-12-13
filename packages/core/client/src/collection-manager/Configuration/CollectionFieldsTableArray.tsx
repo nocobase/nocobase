@@ -14,7 +14,7 @@ import {
   useCompile,
   useRecord,
   useRequest,
-  useSchemaInitializer,
+  useSchemaInitializerRender,
 } from '../..';
 import { overridingSchema } from '../Configuration/schemas/collectionFields';
 
@@ -158,7 +158,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
     });
     const useTableColumns = () => {
       const schema = useFieldSchema();
-      const { exists, render } = useSchemaInitializer(schema['x-initializer']);
+      const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
       const columns = schema
         .reduceProperties((buf, s) => {
           if (isColumnComponent(s)) {

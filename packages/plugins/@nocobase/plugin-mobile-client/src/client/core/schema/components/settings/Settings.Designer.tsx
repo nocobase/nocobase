@@ -1,4 +1,4 @@
-import { GeneralSchemaDesigner, SchemaSettings } from '@nocobase/client';
+import { GeneralSchemaDesigner, SchemaSettingsRemove } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from '../../../../locale';
 
@@ -7,7 +7,7 @@ export const SettingsDesigner = () => {
 
   return (
     <GeneralSchemaDesigner>
-      <SchemaSettings.Remove
+      <SchemaSettingsRemove
         key="remove"
         removeParentsIfNoChildren
         confirm={{

@@ -3,7 +3,9 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
   GeneralSchemaItems,
-  SchemaSettings,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
   isPatternDisabled,
   useCollection,
   useCollectionManager,
@@ -43,7 +45,7 @@ const Designer = () => {
     <GeneralSchemaDesigner>
       <GeneralSchemaItems />
       {form && !form?.readPretty && !isPatternDisabled(fieldSchema) && (
-        <SchemaSettings.SelectItem
+        <SchemaSettingsSelectItem
           key="pattern"
           title={t('Pattern')}
           options={[
@@ -94,7 +96,7 @@ const Designer = () => {
           }}
         />
       )}
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         key="map-zoom"
         title={t('Set default zoom level')}
         schema={
@@ -130,7 +132,7 @@ const Designer = () => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.Remove
+      <SchemaSettingsRemove
         key="remove"
         removeParentsIfNoChildren
         confirm={{

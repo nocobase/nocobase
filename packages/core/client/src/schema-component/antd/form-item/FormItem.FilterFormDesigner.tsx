@@ -1,45 +1,6 @@
-import { useFieldSchema } from '@formily/react';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
-import {
-  EditComponent,
-  EditDescription,
-  EditOperator,
-  EditTitle,
-  EditTitleField,
-  EditTooltip,
-  EditValidationRules,
-} from './SchemaSettingOptions';
+import { GeneralSchemaDesigner } from '../../../schema-settings';
 
 export const FilterFormDesigner = () => {
-  const { getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
-  const { t } = useTranslation();
-  const fieldSchema = useFieldSchema();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-
-  return (
-    <GeneralSchemaDesigner>
-      <EditTitle />
-      <EditDescription />
-      <EditTooltip />
-      <EditValidationRules />
-      <EditComponent />
-      <EditOperator />
-      <EditTitleField />
-      {collectionField ? <SchemaSettings.Divider /> : null}
-      <SchemaSettings.Remove
-        key="remove"
-        removeParentsIfNoChildren
-        confirm={{
-          title: t('Delete field'),
-        }}
-        breakRemoveOn={{
-          'x-component': 'Grid',
-        }}
-      />
-    </GeneralSchemaDesigner>
-  );
+  return <GeneralSchemaDesigner schemaSettings="FilterFormItemSettings"></GeneralSchemaDesigner>;
 };

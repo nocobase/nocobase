@@ -2,7 +2,7 @@ import { Model, Transaction, Transactionable } from '@nocobase/database';
 import { appendArrayColumn } from '@nocobase/evaluators';
 import { Logger } from '@nocobase/logger';
 import { parse } from '@nocobase/utils';
-import Plugin from '.';
+import type Plugin from './Plugin';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 import { Runner } from './instructions';
 import type { ExecutionModel, FlowNodeModel, JobModel } from './types';

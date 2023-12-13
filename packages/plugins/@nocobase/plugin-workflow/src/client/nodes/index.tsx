@@ -1,25 +1,27 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
-import { cloneDeep } from 'lodash';
 import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
 import { App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
+import { cloneDeep } from 'lodash';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
   ActionContextProvider,
   FormProvider,
   SchemaComponent,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItemType,
   css,
   cx,
   useAPIClient,
   useActionContext,
   useCompile,
+  usePlugin,
   useResourceActionContext,
 } from '@nocobase/client';
-import { Registry, parse, str2moment } from '@nocobase/utils/client';
+import { parse, str2moment } from '@nocobase/utils/client';
 
+import WorkflowPlugin from '..';
 import { AddButton } from '../AddButton';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
@@ -30,21 +32,7 @@ import { lang } from '../locale';
 import useStyles from '../style';
 import { VariableOption, VariableOptions } from '../variable';
 
-import aggregate from './aggregate';
-import calculation from './calculation';
-import condition from './condition';
-import create from './create';
-import delay from './delay';
-import destroy from './destroy';
-import loop from './loop';
-import manual from './manual';
-import parallel from './parallel';
-import query from './query';
-import request from './request';
-import sql from './sql';
-import update from './update';
-
-export interface Instruction {
+export abstract class Instruction {
   title: string;
   type: string;
   group: string;
@@ -54,32 +42,12 @@ export interface Instruction {
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  component?(props): JSX.Element;
+  Component?(props): JSX.Element;
   useVariables?(node, options?): VariableOption;
   useScopeVariables?(node, options?): VariableOptions;
-  useInitializers?(node): SchemaInitializerItemOptions | null;
-  initializers?: { [key: string]: any };
+  useInitializers?(node): SchemaInitializerItemType | null;
   isAvailable?(ctx: object): boolean;
 }
-
-export const instructions = new Registry<Instruction>();
-
-instructions.register('calculation', calculation);
-instructions.register('condition', condition);
-instructions.register('parallel', parallel);
-instructions.register('loop', loop);
-instructions.register('delay', delay);
-
-instructions.register('manual', manual);
-
-instructions.register('query', query);
-instructions.register('create', create);
-instructions.register('update', update);
-instructions.register('destroy', destroy);
-instructions.register('aggregate', aggregate);
-
-instructions.register('request', request);
-instructions.register('sql', sql);
 
 function useUpdateAction() {
   const form = useForm();
@@ -144,7 +112,8 @@ export function useUpstreamScopes(node) {
 export function Node({ data }) {
   const { styles } = useStyles();
   const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
-  const { component: Component = NodeDefaultView } = instructions.get(data.type);
+  const workflowPlugin = usePlugin(WorkflowPlugin);
+  const { Component = NodeDefaultView } = workflowPlugin.instructions.get(data.type);
 
   return (
     <NodeContext.Provider value={data}>
@@ -284,8 +253,8 @@ export function NodeDefaultView(props) {
   const api = useAPIClient();
   const { workflow, refresh } = useFlowContext() ?? {};
   const { styles } = useStyles();
-
-  const instruction = instructions.get(data.type);
+  const workflowPlugin = usePlugin(WorkflowPlugin);
+  const instruction = workflowPlugin.instructions.get(data.type);
   const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
   const typeTitle = compile(instruction.title);
 
@@ -357,8 +326,6 @@ export function NodeDefaultView(props) {
           <span className="workflow-node-id">{data.id}</span>
         </div>
         <Input.TextArea
-          role="button"
-          aria-label="textarea"
           disabled={workflow.executed}
           value={editingTitle}
           onChange={(ev) => setEditingTitle(ev.target.value)}

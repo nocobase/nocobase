@@ -50,6 +50,10 @@ interface BaseProps {
    */
   noDisabled?: boolean;
   /**
+   * 不需要二级菜单
+   */
+  noChildren?: boolean;
+  /**
    * 对每一个关系字段的 fields 进行过滤
    * @param fields
    * @param option
@@ -131,6 +135,7 @@ export const useBaseVariable = ({
   name,
   title,
   collectionName,
+  noChildren = false,
   // TODO: 等整理完完整测试用例后，再开启该功能
   noDisabled = true,
   returnFields = (fields) => fields,
@@ -202,7 +207,7 @@ export const useBaseVariable = ({
       label: title,
       value: name,
       key: name,
-      isLeaf: false,
+      isLeaf: noChildren,
       field: {
         target: collectionName,
       },

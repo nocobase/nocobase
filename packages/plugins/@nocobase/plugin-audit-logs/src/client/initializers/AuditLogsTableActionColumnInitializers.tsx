@@ -4,60 +4,64 @@ import { createDesignable, Resizable, SchemaInitializer, useAPIClient, useDesign
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const AuditLogsTableActionColumnInitializers = (props: any) => {
-  const fieldSchema = useFieldSchema();
-  const api = useAPIClient();
-  const { refresh } = useDesignable();
-  const { t } = useTranslation();
-  return (
-    <SchemaInitializer.Button
-      insertPosition={'beforeEnd'}
-      insert={(schema) => {
-        const spaceSchema = fieldSchema.reduceProperties((buf, schema) => {
-          if (schema['x-component'] === 'Space') {
-            return schema;
-          }
-          return buf;
-        }, null);
-        if (!spaceSchema) {
-          return;
+export const auditLogsTableActionColumnInitializers = new SchemaInitializer({
+  name: 'AuditLogsTableActionColumnInitializers',
+  insertPosition: 'beforeEnd',
+  Component: (props: any) => <MenuOutlined {...props} style={{ cursor: 'pointer' }} />,
+  useInsert() {
+    const fieldSchema = useFieldSchema();
+    const api = useAPIClient();
+    const { refresh } = useDesignable();
+    const { t } = useTranslation();
+
+    return (schema) => {
+      const spaceSchema = fieldSchema.reduceProperties((buf, schema) => {
+        if (schema['x-component'] === 'Space') {
+          return schema;
         }
-        const dn = createDesignable({
-          t,
-          api,
-          refresh,
-          current: spaceSchema,
-        });
-        dn.loadAPIClientEvents();
-        dn.insertBeforeEnd(schema);
-      }}
-      items={[
+        return buf;
+      }, null);
+      if (!spaceSchema) {
+        return;
+      }
+      const dn = createDesignable({
+        t,
+        api,
+        refresh,
+        current: spaceSchema,
+      });
+      dn.loadAPIClientEvents();
+      dn.insertBeforeEnd(schema);
+    };
+  },
+  items: [
+    {
+      name: 'enableActions',
+      type: 'itemGroup',
+      title: '{{t("Enable actions")}}',
+      children: [
         {
-          type: 'itemGroup',
-          title: t('Enable actions'),
-          children: [
-            {
-              type: 'item',
-              title: t('View'),
-              component: 'AuditLogsViewActionInitializer',
-              schema: {
-                'x-component': 'Action.Link',
-                'x-action': 'view',
-                'x-decorator': 'ACLActionProvider',
-              },
-            },
-          ],
-        },
-        {
-          type: 'divider',
-        },
-        {
+          name: 'view',
           type: 'item',
-          title: t('Column width'),
-          component: Resizable,
+          title: '{{t("View")}}',
+          Component: 'AuditLogsViewActionInitializer',
+          schema: {
+            'x-component': 'Action.Link',
+            'x-action': 'view',
+            'x-decorator': 'ACLActionProvider',
+          },
         },
-      ]}
-      component={<MenuOutlined style={{ cursor: 'pointer' }} />}
-    />
-  );
-};
+      ],
+    },
+    {
+      name: 'divider',
+      type: 'divider',
+    },
+    {
+      name: 'columnWidth',
+      type: 'item',
+      title: '{{t("Column width")}}',
+      Component: Resizable,
+    },
+  ],
+});
