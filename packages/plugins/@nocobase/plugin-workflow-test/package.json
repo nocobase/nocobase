@@ -2,12 +2,10 @@
   "name": "@nocobase/plugin-workflow-test",
   "displayName": "Workflow: test kit",
   "displayName.zh-CN": "工作流：测试工具包",
-  "version": "0.17.0-alpha.3",
+  "version": "0.17.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "dist/server/index.js",
   "types": "./dist/server/index.d.ts",
-  "devDependencies": {
-  },
   "peerDependencies": {
     "@nocobase/database": "0.x",
     "@nocobase/server": "0.x",

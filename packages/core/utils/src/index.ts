@@ -21,5 +21,6 @@ export * from './toposort';
 export * from './uid';
 export * from './url';
 export * from './measure-execution-time';
+export * from './perf-hooks';
 
 export { dayjs, lodash };

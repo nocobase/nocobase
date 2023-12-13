@@ -30,6 +30,7 @@ const postgres = {
 const mysql = {
   varchar: 'string',
   text: 'text',
+  longtext: 'text',
   int: 'integer',
   integer: 'integer',
   bigint: 'bigInt',

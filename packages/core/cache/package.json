@@ -1,11 +1,12 @@
 {
   "name": "@nocobase/cache",
-  "version": "0.17.0-alpha.3",
+  "version": "0.17.0-alpha.5",
   "description": "",
   "license": "Apache-2.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
+    "bloom-filters": "^3.0.1",
     "cache-manager": "^5.2.4",
     "cache-manager-redis-yet": "^4.1.2"
   },

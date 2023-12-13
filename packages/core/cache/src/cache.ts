@@ -97,4 +97,10 @@ export class Cache {
     const object = (await this.get(key)) || {};
     return object[objectKey];
   }
+
+  async delValueInObject(key: string, objectKey: string) {
+    const object = (await this.get(key)) || {};
+    delete object[objectKey];
+    await this.set(key, object);
+  }
 }

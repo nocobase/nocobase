@@ -83,6 +83,7 @@ describe('actions', () => {
     await db.getRepository('roles').destroy({
       filterByTk: 'test',
     });
+    await app.cache.reset();
 
     response = await agent.post('/auth:signIn').send({
       email: 'test2@nocobase.com',

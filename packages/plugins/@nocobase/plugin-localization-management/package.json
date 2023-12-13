@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-localization-management",
-  "version": "0.17.0-alpha.3",
+  "version": "0.17.0-alpha.5",
   "main": "dist/server/index.js",
   "devDependencies": {
     "deepmerge": "^4.3.1"

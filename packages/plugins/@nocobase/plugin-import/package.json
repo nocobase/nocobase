@@ -4,7 +4,7 @@
   "displayName.zh-CN": "数据导入",
   "description": "Import data according to the excel template provided",
   "description.zh-CN": "根据提供的 excel 模板导入数据",
-  "version": "0.17.0-alpha.3",
+  "version": "0.17.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
