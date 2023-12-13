@@ -5,7 +5,6 @@ import Application from '../application';
 import ws from 'ws';
 import { errors } from '../gateway/errors';
 import { AppSupervisor } from '../app-supervisor';
-
 describe('gateway', () => {
   let gateway: Gateway;
   beforeEach(() => {
@@ -188,7 +187,6 @@ describe('gateway', () => {
       let app;
       beforeEach(async () => {
         await connectClient(port);
-
         app = new Application({
           database: {
             dialect: 'sqlite',
@@ -197,9 +195,7 @@ describe('gateway', () => {
           },
           plugins: ['nocobase'],
         });
-
         await waitSecond();
-
         await app.runAsCLI(['install'], {
           from: 'user',
         });
@@ -217,15 +213,12 @@ describe('gateway', () => {
       });
       it('should display a notification-type error message when plugin installation fails', async () => {
         const pluginClass = app.pm.get('mobile-client');
-
         pluginClass.beforeEnable = async () => {
           throw new Error('install error');
         };
-
         await app.runAsCLI(['pm', 'enable', 'mobile-client'], {
           from: 'user',
         });
-
         await waitSecond();
         const runningMessage = messages
           .map((m) => {
@@ -237,7 +230,6 @@ describe('gateway', () => {
         expect(runningMessage.payload.refresh).not.toBeTruthy();
       });
     });
-
     it('should receive app error message', async () => {
       await connectClient(port);
       await waitSecond();

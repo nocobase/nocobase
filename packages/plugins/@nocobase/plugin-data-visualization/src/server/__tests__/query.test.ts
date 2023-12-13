@@ -1,7 +1,6 @@
 import { vi } from 'vitest';
 import { MockServer, mockServer } from '@nocobase/test';
 const formatter = await import('../actions/formatter');
-
 import { cacheMiddleware, parseBuilder, parseFieldAndAssociations } from '../actions/query';
 import compose from 'koa-compose';
 describe('query', () => {
@@ -161,7 +160,6 @@ describe('query', () => {
     });
     it('should parse dimensions', async () => {
       vi.spyOn(formatter, 'formatter').mockReturnValue('formatted-field');
-
       const dimensions = [
         {
           field: ['createdAt'],

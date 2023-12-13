@@ -78,7 +78,6 @@ describe('role', () => {
     await setCurrentRole(ctx, () => {});
     expect(ctx.state.currentRole).toBe('anonymous');
   });
-
   it('should set role in cache', async () => {
     ctx.state.currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],
@@ -92,7 +91,6 @@ describe('role', () => {
     const roles = await ctx.cache.get(`roles:${ctx.state.currentUser.id}`);
     expect(roles).toBeDefined();
   });
-
   it('should update cache when role added', async () => {
     ctx.get = function (name) {
       if (name === 'X-Role') {
@@ -113,7 +111,6 @@ describe('role', () => {
     expect(roles).toBeDefined();
     let testRole = roles.find((role) => role.name === 'test');
     expect(testRole).toBeUndefined();
-
     await db.getRepository('users').update({
       values: {
         roles: [
@@ -133,7 +130,6 @@ describe('role', () => {
     testRole = roles.find((role) => role.name === 'test');
     expect(testRole).toBeDefined();
   });
-
   it('should update cache when one role removed', async () => {
     ctx.get = function (name) {
       if (name === 'X-Role') {
@@ -148,7 +144,6 @@ describe('role', () => {
     expect(roles).toBeDefined();
     let testRole = roles.find((role) => role.name === 'member');
     expect(testRole).toBeDefined();
-
     await db.getRepository('users').update({
       values: {
         roles: [
@@ -170,7 +165,6 @@ describe('role', () => {
     testRole = roles.find((role) => role.name === 'member');
     expect(testRole).toBeUndefined();
   });
-
   it('should update cache when all roles removed', async () => {
     ctx.get = function (name) {
       if (name === 'X-Role') {
@@ -183,7 +177,6 @@ describe('role', () => {
     await setCurrentRole(ctx, () => {});
     let roles = await ctx.cache.get(`roles:${ctx.state.currentUser.id}`);
     expect(roles).toBeDefined();
-
     await db.getRepository('users').update({
       values: {
         roles: null,
@@ -192,13 +185,15 @@ describe('role', () => {
     });
     roles = await ctx.cache.get(`roles:${ctx.state.currentUser.id}`);
     expect(roles).toBeUndefined();
-    const throwFn = jest.fn();
+    const throwFn = vi.fn();
     ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
-    expect(throwFn).lastCalledWith(401, { code: 'ROLE_NOT_FOUND_ERR', message: 'The user role does not exist.' });
+    expect(throwFn).lastCalledWith(401, {
+      code: 'ROLE_NOT_FOUND_ERR',
+      message: 'The user role does not exist.',
+    });
     expect(ctx.state.currentRole).not.toBeDefined();
   });
-
   it('should update cache when role deleted', async () => {
     ctx.get = function (name) {
       if (name === 'X-Role') {
@@ -213,7 +208,6 @@ describe('role', () => {
     expect(roles).toBeDefined();
     let testRole = roles.find((role) => role.name === 'member');
     expect(testRole).toBeDefined();
-
     await db.getRepository('roles').destroy({
       filter: {
         name: 'member',
