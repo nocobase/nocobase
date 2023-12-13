@@ -1,4 +1,4 @@
-import { useAPIClient, useCompile, Checkbox } from '@nocobase/client';
+import { useAPIClient, useCompile, Checkbox, DatePicker } from '@nocobase/client';
 import { Button, Card, message, Modal, Table, Upload, Tabs, Alert, Divider, Space, App, Spin } from 'antd';
 import { FormItem } from '@formily/antd-v5';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -441,6 +441,9 @@ export const BackupAndRestoreList = () => {
                       colSpan: 0,
                     }
                   : {};
+              },
+              render: (value) => {
+                return <DatePicker.ReadPretty value={value} showTime />;
               },
             },
             {
