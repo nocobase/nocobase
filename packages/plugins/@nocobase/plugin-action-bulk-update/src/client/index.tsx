@@ -17,6 +17,7 @@ export class BulkUpdatePlugin extends Plugin {
         'x-align': 'right',
         'x-acl-action': 'update',
         'x-decorator': 'ACLActionProvider',
+        'x-designer': 'Action.Designer',
         'x-acl-action-props': {
           skipScopeCheck: true,
         },
