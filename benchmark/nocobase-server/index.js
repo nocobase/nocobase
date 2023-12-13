@@ -1,5 +1,6 @@
 const { Application } = require('@nocobase/server');
 const dotenv = require('dotenv');
+const { PerformanceObserver, createHistogram } = require('perf_hooks');
 
 dotenv.config();
 
@@ -21,8 +22,14 @@ const app = new Application({
   resourcer: {
     prefix: '/api',
   },
+  logger: {
+    // skip: () => true,
+    // transports: ['console'],
+    // level: 'error',
+  },
   acl: false,
   plugins: [],
+  perfHooks: true,
 });
 
 app.db.collection({
@@ -77,6 +84,13 @@ app.db.collection({
     },
   ],
 });
+
+// const obs = new PerformanceObserver((items) => {
+//   items.getEntries().forEach((item) => {
+//     console.log(item);
+//   });
+// });
+// obs.observe({ entryTypes: ['measure'] });
 
 app.listen(13030, (err) => {
   console.log('nocobase-server: http://localhost:13030/api/users');

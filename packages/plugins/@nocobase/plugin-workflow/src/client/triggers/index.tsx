@@ -1,6 +1,10 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button, Input, Tag, message } from 'antd';
+import { cloneDeep } from 'lodash';
 import { InfoOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
+
 import {
   ActionContextProvider,
   FormProvider,
@@ -11,20 +15,16 @@ import {
   useAPIClient,
   useActionContext,
   useCompile,
+  usePlugin,
   useResourceActionContext,
 } from '@nocobase/client';
-import { Registry } from '@nocobase/utils/client';
-import { Button, Input, Tag, message } from 'antd';
-import { cloneDeep } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+
+import WorkflowPlugin from '..';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { NAMESPACE, lang } from '../locale';
 import useStyles from '../style';
 import { VariableOptions } from '../variable';
-import collection from './collection';
-import formTrigger from './form';
-import schedule from './schedule/';
 
 function useUpdateConfigAction() {
   const form = useForm();
@@ -52,7 +52,7 @@ function useUpdateConfigAction() {
   };
 }
 
-export interface Trigger {
+export abstract class Trigger {
   title: string;
   type: string;
   description?: string;
@@ -67,22 +67,15 @@ export interface Trigger {
   useActionTriggerable?: boolean | (() => boolean);
 }
 
-export const triggers = new Registry<Trigger>();
-
-triggers.register(formTrigger.type, formTrigger);
-triggers.register(collection.type, collection);
-triggers.register(schedule.type, schedule);
-
 function TriggerExecution() {
   const compile = useCompile();
   const { workflow, execution } = useFlowContext();
   const { styles } = useStyles();
+  const trigger = useTrigger();
 
   if (!execution) {
     return null;
   }
-
-  const trigger = triggers.get(workflow.type);
 
   return (
     <SchemaComponent
@@ -156,9 +149,9 @@ export const TriggerConfig = () => {
   const [formValueChanged, setFormValueChanged] = useState(false);
   const { styles } = useStyles();
   const compile = useCompile();
+  const trigger = useTrigger();
 
-  const { title, type, executed } = workflow;
-  const trigger = triggers.get(type);
+  const { title, executed } = workflow;
   const typeTitle = compile(trigger.title);
   const { fieldset, scope, components } = trigger;
   const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
@@ -341,15 +334,7 @@ export const TriggerConfig = () => {
 };
 
 export function useTrigger() {
+  const workflowPlugin = usePlugin(WorkflowPlugin);
   const { workflow } = useFlowContext();
-  return triggers.get(workflow.type);
-}
-
-export function getTriggersOptions() {
-  return Array.from(triggers.getEntities()).map(([value, { title, ...options }]) => ({
-    value,
-    label: title,
-    color: 'gold',
-    options,
-  }));
+  return workflowPlugin.triggers.get(workflow.type);
 }

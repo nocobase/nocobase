@@ -76,7 +76,10 @@ const app = new Koa();
 
 app.use(async (ctx, next) => {
   const repository = db.getRepository('users');
-  ctx.body = await repository.find();
+  ctx.body = await repository.findAndCount({
+    limit: 20,
+    offset: 0,
+  });
   await next();
 });
 

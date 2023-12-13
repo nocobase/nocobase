@@ -20,11 +20,19 @@ import { createCacheManager } from './cache';
 import { registerCli } from './commands';
 import { CronJobManager } from './cron/cron-job-manager';
 import { ApplicationNotInstall } from './errors/application-not-install';
-import { createAppProxy, createI18n, createResourcer, getCommandFullName, registerMiddlewares } from './helper';
+import {
+  createAppProxy,
+  createI18n,
+  createResourcer,
+  enablePerfHooks,
+  getCommandFullName,
+  registerMiddlewares,
+} from './helper';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import { RecordableHistogram } from 'node:perf_hooks';
 import { createErrorHandler, ErrorHandler } from './errors/handler';
 
 const packageJson = require('../package.json');
@@ -51,6 +59,7 @@ export interface ApplicationOptions {
   pmSock?: string;
   name?: string;
   authManager?: AuthManagerOptions;
+  perfHooks?: boolean;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -116,6 +125,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     name: string;
   } = null;
   public running = false;
+  public perfHistograms = new Map<string, RecordableHistogram>();
+
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
   protected _started: boolean;
@@ -177,12 +188,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected _cache: Cache;
 
-  set cache(cache: Cache) {
-    this._cache = cache;
-  }
-
   get cache() {
     return this._cache;
+  }
+
+  set cache(cache: Cache) {
+    this._cache = cache;
   }
 
   protected _cli: AppCommand;
@@ -225,15 +236,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._locales;
   }
 
+  protected _errorHandler: ErrorHandler;
+  get errorHandler() {
+    return this._errorHandler;
+  }
+
   protected _version: ApplicationVersion;
 
   get version() {
     return this._version;
-  }
-
-  protected _errorHandler: ErrorHandler;
-  get errorHandler() {
-    return this._errorHandler;
   }
 
   get log() {
@@ -566,6 +577,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.log.error(e);
     }
 
+    if (this._cacheManager) {
+      await this._cacheManager.close();
+    }
+
     await this.emitAsync('afterStop', this, options);
 
     this.stopped = true;
@@ -735,6 +750,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._locales = new Locale(createAppProxy(this));
     this._errorHandler = createErrorHandler(this);
+
+    if (options.perfHooks) {
+      enablePerfHooks(this);
+    }
 
     registerMiddlewares(this, options);
 

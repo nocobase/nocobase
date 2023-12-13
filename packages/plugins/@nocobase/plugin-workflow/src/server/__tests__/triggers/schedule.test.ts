@@ -1,6 +1,6 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
-import { getApp, sleep } from '..';
+import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 describe.skip('workflow > triggers > schedule', () => {
   let app: Application;

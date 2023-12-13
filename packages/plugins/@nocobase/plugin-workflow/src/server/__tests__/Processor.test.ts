@@ -1,10 +1,10 @@
 import Database from '@nocobase/database';
-import { Application } from '@nocobase/server';
-import { getApp, sleep } from '.';
+import { MockServer } from '@nocobase/test';
+import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '../constants';
 
 describe('workflow > Processor', () => {
-  let app: Application;
+  let app: MockServer;
   let db: Database;
   let PostRepo;
   let WorkflowModel;
@@ -168,7 +168,7 @@ describe('workflow > Processor', () => {
   describe('manual nodes', () => {
     it('manual node should suspend execution, and could be manually resume', async () => {
       const n1 = await workflow.createNode({
-        type: 'manual',
+        type: 'prompt',
       });
 
       const n2 = await workflow.createNode({
@@ -282,7 +282,7 @@ describe('workflow > Processor', () => {
       });
 
       const n2 = await workflow.createNode({
-        type: 'manual',
+        type: 'prompt',
         branchIndex: BRANCH_INDEX.ON_TRUE,
         upstreamId: n1.id,
       });
@@ -352,262 +352,6 @@ describe('workflow > Processor', () => {
 
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(2);
-    });
-  });
-
-  describe('branch: mixed', () => {
-    it('condition branches contains parallel', async () => {
-      const n1 = await workflow.createNode({
-        type: 'condition',
-      });
-
-      const n2 = await workflow.createNode({
-        type: 'parallel',
-        branchIndex: BRANCH_INDEX.ON_TRUE,
-        upstreamId: n1.id,
-      });
-
-      const n3 = await workflow.createNode({
-        type: 'manual',
-        upstreamId: n2.id,
-        branchIndex: 0,
-      });
-
-      const n4 = await workflow.createNode({
-        title: 'parallel echo',
-        type: 'echo',
-        upstreamId: n2.id,
-        branchIndex: 1,
-      });
-
-      const n5 = await workflow.createNode({
-        title: 'last echo',
-        type: 'echo',
-        upstreamId: n1.id,
-      });
-
-      await n1.setDownstream(n5);
-
-      const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
-
-      const [execution] = await workflow.getExecutions();
-      expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
-
-      const pendingJobs = await execution.getJobs();
-      expect(pendingJobs.length).toBe(4);
-
-      const pending = pendingJobs.find((item) => item.nodeId === n3.id);
-      pending.set({
-        status: JOB_STATUS.RESOLVED,
-        result: 123,
-      });
-      pending.execution = execution;
-      await plugin.resume(pending);
-
-      await sleep(500);
-
-      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
-      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
-      expect(jobs.length).toEqual(5);
-    });
-
-    it('condition contains loop (target as 0)', async () => {
-      const n1 = await workflow.createNode({
-        type: 'condition',
-      });
-
-      const n2 = await workflow.createNode({
-        type: 'loop',
-        branchIndex: BRANCH_INDEX.ON_TRUE,
-        upstreamId: n1.id,
-        config: {
-          target: 0,
-        },
-      });
-
-      const n3 = await workflow.createNode({
-        type: 'echo',
-        branchIndex: 0,
-        upstreamId: n2.id,
-      });
-
-      const n4 = await workflow.createNode({
-        type: 'echo',
-        upstreamId: n1.id,
-      });
-
-      await n1.setDownstream(n4);
-
-      const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
-
-      const [e1] = await workflow.getExecutions();
-      expect(e1.status).toEqual(EXECUTION_STATUS.RESOLVED);
-      const jobs = await e1.getJobs({ order: [['id', 'ASC']] });
-      expect(jobs.length).toBe(3);
-      expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-    });
-
-    it('condition contains loop (target as 2)', async () => {
-      const n1 = await workflow.createNode({
-        type: 'condition',
-      });
-
-      const n2 = await workflow.createNode({
-        type: 'loop',
-        branchIndex: BRANCH_INDEX.ON_TRUE,
-        upstreamId: n1.id,
-        config: {
-          target: 2,
-        },
-      });
-
-      const n3 = await workflow.createNode({
-        type: 'echo',
-        branchIndex: 0,
-        upstreamId: n2.id,
-      });
-
-      const n4 = await workflow.createNode({
-        type: 'echo',
-        upstreamId: n1.id,
-      });
-
-      await n1.setDownstream(n4);
-
-      const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
-
-      const [e1] = await workflow.getExecutions();
-      expect(e1.status).toEqual(EXECUTION_STATUS.RESOLVED);
-      const jobs = await e1.getJobs({ order: [['id', 'ASC']] });
-      expect(jobs.length).toBe(5);
-      expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
-    });
-
-    it('parallel branches contains condition', async () => {
-      const n1 = await workflow.createNode({
-        type: 'parallel',
-      });
-
-      const n2 = await workflow.createNode({
-        type: 'manual',
-        upstreamId: n1.id,
-        branchIndex: 0,
-      });
-
-      const n3 = await workflow.createNode({
-        type: 'condition',
-        upstreamId: n1.id,
-        branchIndex: 1,
-      });
-
-      const n4 = await workflow.createNode({
-        title: 'condition echo',
-        type: 'echo',
-        upstreamId: n3.id,
-        branchIndex: BRANCH_INDEX.ON_TRUE,
-      });
-
-      const n5 = await workflow.createNode({
-        title: 'last echo',
-        type: 'echo',
-        upstreamId: n1.id,
-      });
-
-      await n1.setDownstream(n5);
-
-      const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
-
-      const [e1] = await workflow.getExecutions();
-      expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);
-
-      const pendingJobs = await e1.getJobs();
-      expect(pendingJobs.length).toBe(4);
-
-      const pending = pendingJobs.find((item) => item.nodeId === n2.id);
-      pending.set({
-        status: JOB_STATUS.RESOLVED,
-        result: 123,
-      });
-      pending.execution = e1;
-      await plugin.resume(pending);
-
-      await sleep(500);
-
-      const [e2] = await workflow.getExecutions();
-      expect(e2.status).toEqual(EXECUTION_STATUS.RESOLVED);
-      const jobs = await e2.getJobs({ order: [['id', 'ASC']] });
-      expect(jobs.length).toEqual(5);
-    });
-
-    it('loop branch contains parallel branches', async () => {
-      const n1 = await workflow.createNode({
-        type: 'loop',
-        config: {
-          target: 2,
-        },
-      });
-
-      const n2 = await workflow.createNode({
-        type: 'parallel',
-        branchIndex: 0,
-        upstreamId: n1.id,
-        config: {
-          mode: 'any',
-        },
-      });
-
-      const n3 = await workflow.createNode({
-        type: 'condition',
-        config: {
-          rejectOnFalse: true,
-          calculation: {
-            calculator: '<',
-            operands: [`{{$scopes.${n1.id}.item}}`, 1],
-          },
-        },
-        branchIndex: 0,
-        upstreamId: n2.id,
-      });
-      const n4 = await workflow.createNode({
-        type: 'echo',
-        upstreamId: n3.id,
-      });
-      await n3.setDownstream(n4);
-
-      const n5 = await workflow.createNode({
-        type: 'condition',
-        config: {
-          rejectOnFalse: true,
-          calculation: {
-            calculator: '<',
-            operands: [`{{$scopes.${n1.id}.item}}`, 1],
-          },
-        },
-        branchIndex: 1,
-        upstreamId: n2.id,
-      });
-      const n6 = await workflow.createNode({
-        type: 'echo',
-        upstreamId: n5.id,
-      });
-      await n5.setDownstream(n6);
-
-      const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(1000);
-
-      const [e1] = await workflow.getExecutions();
-      expect(e1.status).toEqual(EXECUTION_STATUS.FAILED);
-      const e1jobs = await e1.getJobs();
-      expect(e1jobs.length).toBe(7);
     });
   });
 });

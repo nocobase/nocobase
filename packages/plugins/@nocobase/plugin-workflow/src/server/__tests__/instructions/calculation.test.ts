@@ -1,6 +1,6 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
-import { getApp, sleep } from '..';
+import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { JOB_STATUS } from '../../constants';
 
 describe('workflow > instructions > calculation', () => {
@@ -185,81 +185,6 @@ describe('workflow > instructions > calculation', () => {
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result).toBe('at1');
-    });
-  });
-
-  describe('dynamic expression', () => {
-    it('dynamic expression field in current table', async () => {
-      const n1 = await workflow.createNode({
-        type: 'calculation',
-        config: {
-          dynamic: '{{$context.data.category}}',
-          scope: '{{$context.data}}',
-        },
-      });
-
-      const post = await PostRepo.create({
-        values: {
-          title: 't1',
-          category: {
-            engine: 'math.js',
-            expression: '1 + {{read}}',
-          },
-        },
-      });
-
-      await sleep(500);
-
-      const [execution] = await workflow.getExecutions();
-      const [job] = await execution.getJobs();
-      expect(job.result).toBe(1);
-    });
-
-    it('dynamic expression field in association table', async () => {
-      const n1 = await workflow.createNode({
-        type: 'query',
-        config: {
-          collection: 'categories',
-          params: {
-            filter: {
-              $and: [{ id: '{{$context.data.categoryId}}' }],
-            },
-          },
-        },
-      });
-
-      const n2 = await workflow.createNode({
-        type: 'calculation',
-        config: {
-          dynamic: `{{$jobsMapByNodeKey.${n1.key}}}`,
-          scope: '{{$context.data}}',
-        },
-        upstreamId: n1.id,
-      });
-
-      await n1.setDownstream(n2);
-
-      const category = await CategoryRepo.create({
-        values: {
-          title: 'c1',
-          engine: 'math.js',
-          expression: '1 + {{read}}',
-        },
-      });
-
-      const post = await PostRepo.create({
-        values: {
-          title: 't1',
-          categoryId: category.id,
-        },
-      });
-
-      await sleep(500);
-
-      const [execution] = await workflow.getExecutions();
-      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
-      expect(jobs.length).toBe(2);
-      expect(jobs[1].result).toBe(1);
     });
   });
 });

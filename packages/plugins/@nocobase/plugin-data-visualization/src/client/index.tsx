@@ -3,7 +3,9 @@ import { ChartV2Block, ChartV2BlockDesigner, ChartV2BlockInitializer, chartIniti
 import antd from './chart/antd';
 import g2plot from './chart/g2plot';
 import { ChartGroup } from './chart/group';
-import { ChartRenderer, ChartRendererProvider } from './renderer';
+import { lang } from './locale';
+import { chartFilterActionInitializers, chartFilterItemInitializers } from './filter';
+
 class DataVisualizationPlugin extends Plugin {
   public charts: ChartGroup = new ChartGroup();
 
@@ -12,17 +14,17 @@ class DataVisualizationPlugin extends Plugin {
 
     this.app.addComponents({
       ChartV2BlockInitializer,
-      ChartRenderer,
       ChartV2BlockDesigner,
       ChartV2Block,
-      ChartRendererProvider,
     });
 
     this.app.schemaInitializerManager.add(chartInitializers);
+    this.app.schemaInitializerManager.add(chartFilterItemInitializers);
+    this.app.schemaInitializerManager.add(chartFilterActionInitializers);
 
     const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
     blockInitializers?.add('dataBlocks.chartV2', {
-      title: '{{t("Charts")}}',
+      title: lang('Charts'),
       Component: 'ChartV2BlockInitializer',
     });
   }
@@ -31,6 +33,6 @@ class DataVisualizationPlugin extends Plugin {
 export default DataVisualizationPlugin;
 export { Chart } from './chart/chart';
 export type { ChartProps, ChartType, RenderProps } from './chart/chart';
-export { ChartConfigContext } from './configure/ChartConfigure';
 export type { FieldOption } from './hooks';
 export type { QueryProps } from './renderer';
+export { ChartConfigContext } from './configure';
