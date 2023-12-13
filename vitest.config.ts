@@ -58,6 +58,7 @@ export default defineConfig({
       '**/lib/**',
       '**/es/**',
       '**/e2e/**',
+      '**/__e2e__/**',
       '**/{vitest,commitlint}.config.*',
     ],
     testTimeout: 300000,

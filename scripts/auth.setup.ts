@@ -18,6 +18,11 @@ setup('admin', async ({ page }) => {
 
   await expect(page.getByTestId('user-center-button').getByText('Super Admin')).toBeVisible();
 
+  // 开启配置状态
+  await page.evaluate(() => {
+    localStorage.setItem('NOCOBASE_DESIGNABLE', 'true');
+  });
+
   // 保存登录状态
   await page.context().storageState({ path: adminFile });
 });
