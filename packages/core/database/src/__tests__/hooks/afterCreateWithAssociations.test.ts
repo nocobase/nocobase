@@ -1,13 +1,17 @@
 import { mockDatabase } from '../';
 import { Database } from '../../database';
+
 describe('afterCreateWithAssociations', () => {
   let db: Database;
+
   beforeEach(async () => {
     db = mockDatabase();
   });
+
   afterEach(async () => {
     await db.close();
   });
+
   test('case 1', async () => {
     db.collection({
       name: 'test',

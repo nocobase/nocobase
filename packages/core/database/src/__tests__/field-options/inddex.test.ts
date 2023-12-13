@@ -1,14 +1,18 @@
 import { mockDatabase } from '../';
 import { Database } from '../../database';
 import { md5 } from '../../utils';
+
 describe('index field options', () => {
   let db: Database;
+
   beforeEach(async () => {
     db = mockDatabase();
   });
+
   afterEach(async () => {
     await db.close();
   });
+
   it('case 1', async () => {
     const t1 = 't1234567890223456789032345678904234567890523456789';
     const f1 = 'f1234567890223456789032345678904234567890523456789062345678901';

@@ -1,4 +1,5 @@
 import { expect, test } from '@nocobase/test/client';
+
 async function waitForModalToBeHidden(page) {
   await page.waitForFunction(() => {
     const modal = document.querySelector('.ant-modal');
@@ -9,17 +10,14 @@ async function waitForModalToBeHidden(page) {
     return true; // 如果找不到modal，也算作不可见
   });
 }
+
 test.describe('add plugin in front', () => {
   test.slow();
   test('add plugin npm registry,then remove plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
     await page.getByTestId('plugin-manager-button').click();
     await expect(page.getByLabel('sample-custom-collection-template')).not.toBeVisible();
-    await page
-      .getByRole('button', {
-        name: 'Add new',
-      })
-      .click();
+    await page.getByRole('button', { name: 'Add new' }).click();
     await page
       .getByLabel('block-item-Input-Npm package name')
       .getByRole('textbox')
@@ -39,11 +37,7 @@ test.describe('add plugin in front', () => {
     await expect(page.getByLabel('sample-custom-collection-template')).toBeVisible();
     //将添加的插件删除
     await page.getByLabel('sample-custom-collection-template').getByText('Remove').click();
-    await page
-      .getByRole('button', {
-        name: 'Yes',
-      })
-      .click();
+    await page.getByRole('button', { name: 'Yes' }).click();
     await page.waitForTimeout(300);
     //等待页面刷新结束
     await waitForModalToBeHidden(page);
@@ -54,6 +48,7 @@ test.describe('add plugin in front', () => {
   test.skip('add plugin local upload', async ({ page, mockPage }) => {});
   test.skip('add plugin  file url', async ({ page, mockPage }) => {});
 });
+
 test.describe('remove plugin', () => {
   test.slow();
   test('remove plugin,then add plugin', async ({ page, mockPage }) => {
@@ -66,22 +61,14 @@ test.describe('remove plugin', () => {
     expect(isActive).toBe(false);
     //将hello插件remove
     await page.getByLabel('Hello').getByText('Remove').click();
-    await page
-      .getByRole('button', {
-        name: 'Yes',
-      })
-      .click();
+    await page.getByRole('button', { name: 'Yes' }).click();
     //等待页面刷新结束
     await waitForModalToBeHidden(page);
     await page.waitForLoadState('load');
     await page.getByPlaceholder('Search plugin').fill('hello');
     await expect(page.getByLabel('Hello')).not.toBeVisible();
     //将删除的插件加回来
-    await page
-      .getByRole('button', {
-        name: 'Add new',
-      })
-      .click();
+    await page.getByRole('button', { name: 'Add new' }).click();
     await page
       .getByLabel('block-item-Input-Npm package name')
       .getByRole('textbox')
@@ -107,6 +94,7 @@ test.describe('remove plugin', () => {
     await expect(page.getByLabel('ACL').getByText('Remove')).not.toBeVisible();
   });
 });
+
 test.describe('enable & disabled plugin', () => {
   test.slow();
   test('enable plugin', async ({ page, mockPage }) => {

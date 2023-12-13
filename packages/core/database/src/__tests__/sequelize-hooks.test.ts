@@ -5,13 +5,16 @@ import { mockDatabase } from './index';
 // TODO
 describe('sequelize-hooks', () => {
   let db: Database;
+
   beforeEach(async () => {
     db = mockDatabase();
     await db.sync();
   });
+
   afterEach(async () => {
     await db.close();
   });
+
   test('exec order', async () => {
     const collection = db.collection({
       name: 't_test',
@@ -33,6 +36,7 @@ describe('sequelize-hooks', () => {
     await collection.model.create();
     expect(orders).toEqual(['model.beforeCreate', 'beforeCreate', 'model.afterCreate', 'afterCreate']);
   });
+
   describe('afterSync', () => {
     test('singular name', async () => {
       const collection = db.collection({
@@ -45,6 +49,7 @@ describe('sequelize-hooks', () => {
       await collection.sync();
       expect(spy).toHaveBeenCalledTimes(1);
     });
+
     test('plural name', async () => {
       const collection = db.collection({
         name: 't_tests',

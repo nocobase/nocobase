@@ -1,4 +1,5 @@
 import { expect, test } from '@nocobase/test/client';
+
 const config = {
   pageSchema: {
     _isJSONSchemaObject: true,
@@ -571,14 +572,12 @@ test('BUG: should show default value option', async ({ page, mockPage, mockRecor
   const nocoPage = await mockPage(config).waitForInit();
   await mockRecord('test2174');
   await nocoPage.goto();
+
   await page.getByLabel('action-Action.Link-View details-view-test2174-table-0').click();
   await page.getByLabel('block-item-CollectionField-test2174-form-test2174.singleSelect-Single select').hover();
   await page
     .getByLabel('designer-schema-settings-CollectionField-FormItem.Designer-test2174-test2174.singleSelect')
     .hover();
-  await expect(
-    page.getByRole('menuitem', {
-      name: 'Set default value',
-    }),
-  ).toBeVisible();
+
+  await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
 });

@@ -1,4 +1,5 @@
 import { expect, test } from '@nocobase/test/client';
+
 const pageConfig = {
   collections: [
     {
@@ -241,29 +242,22 @@ const pageConfig = {
     },
   ],
 };
+
 test.describe('createCollections', () => {
   test('quickly create collections', async ({ page, mockPage }) => {
     await mockPage(pageConfig).goto();
+
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
-    await page
-      .getByRole('menuitem', {
-        name: 'table Table',
-      })
-      .hover();
-    await expect(
-      page.getByRole('menuitem', {
-        name: 'collection1',
-      }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole('menuitem', {
-        name: 'collection2',
-      }),
-    ).toBeVisible();
+    await page.getByRole('menuitem', { name: 'table Table' }).hover();
+
+    await expect(page.getByRole('menuitem', { name: 'collection1' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'collection2' })).toBeVisible();
   });
+
   test('no page, just create collections', async ({ page, createCollections }) => {
     await createCollections(pageConfig.collections);
     await page.goto('/admin/settings/collection-manager/collections');
+
     await expect(page.getByText('collection1')).toBeVisible();
     await expect(page.getByText('collection2')).toBeVisible();
   });

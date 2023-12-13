@@ -1,16 +1,17 @@
 import { Database } from '../database';
 import { mockDatabase } from './';
+
 describe('update associations', () => {
   let db: Database;
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({
-      drop: true,
-    });
+    await db.clean({ drop: true });
   });
+
   afterEach(async () => {
     await db.close();
   });
+
   it('hasOne', async () => {
     db.collection({
       name: 'a',
@@ -90,6 +91,7 @@ describe('update associations', () => {
     });
     const d1 = await d.reload();
     expect(d1.cId).toBe(c.id);
+
     const b2 = await db.getRepository('b').create({
       values: {},
     });
@@ -118,6 +120,7 @@ describe('update associations', () => {
     const d22 = await d2.reload();
     expect(d22.cId).toBeNull();
   });
+
   it('hasMany', async () => {
     db.collection({
       name: 'a',
@@ -170,6 +173,7 @@ describe('update associations', () => {
         },
       ],
     });
+
     await db.sync();
     const b = await db.getRepository('b').create({
       values: {},

@@ -1,22 +1,21 @@
 import { Database } from '../../database';
 import { mockDatabase } from '../';
+
 describe('string field', () => {
   let db: Database;
+
   beforeEach(async () => {
     db = mockDatabase();
   });
+
   afterEach(async () => {
     await db.close();
   });
+
   it('define', async () => {
     const Test = db.collection({
       name: 'tests',
-      fields: [
-        {
-          type: 'string',
-          name: 'name',
-        },
-      ],
+      fields: [{ type: 'string', name: 'name' }],
     });
     await db.sync();
     expect(Test.model.rawAttributes['name']).toBeDefined();
@@ -27,20 +26,14 @@ describe('string field', () => {
       name: 'abc',
     });
   });
+
   it('set', async () => {
     const Test = db.collection({
       name: 'tests',
-      fields: [
-        {
-          type: 'string',
-          name: 'name1',
-        },
-      ],
+      fields: [{ type: 'string', name: 'name1' }],
     });
     await db.sync();
-    Test.addField('name2', {
-      type: 'string',
-    });
+    Test.addField('name2', { type: 'string' });
     await db.sync({
       alter: true,
     });
@@ -55,15 +48,11 @@ describe('string field', () => {
       name2: 'a2',
     });
   });
+
   it('model hook', async () => {
     const collection = db.collection({
       name: 'tests',
-      fields: [
-        {
-          type: 'string',
-          name: 'name',
-        },
-      ],
+      fields: [{ type: 'string', name: 'name' }],
     });
     await db.sync();
     collection.model.beforeCreate((model) => {
@@ -72,9 +61,7 @@ describe('string field', () => {
         model.set(name, `${model.get(name)}111`);
       }
     });
-    collection.addField('name2', {
-      type: 'string',
-    });
+    collection.addField('name2', { type: 'string' });
     await db.sync({
       alter: true,
     });

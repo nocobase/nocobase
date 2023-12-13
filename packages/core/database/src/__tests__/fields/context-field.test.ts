@@ -1,17 +1,19 @@
 import { DataTypes } from 'sequelize';
 import { mockDatabase } from '../';
 import { Database } from '../../';
+
 describe('context field', () => {
   let db: Database;
+
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({
-      drop: true,
-    });
+    await db.clean({ drop: true });
   });
+
   afterEach(async () => {
     await db.close();
   });
+
   describe('dataType', () => {
     it('case 1, string', async () => {
       const Test = db.collection({
@@ -28,6 +30,7 @@ describe('context field', () => {
       const attribute = Test.model.rawAttributes['clientIp'];
       expect(attribute.type).toBeInstanceOf(DataTypes.STRING);
     });
+
     it('case 2, integer', async () => {
       const Test = db.collection({
         name: 'tests',
@@ -43,6 +46,7 @@ describe('context field', () => {
       const attribute = Test.model.rawAttributes['userId'];
       expect(attribute.type).toBeInstanceOf(DataTypes.INTEGER);
     });
+
     it('case 3, json', async () => {
       const Test = db.collection({
         name: 'tests',
@@ -59,6 +63,7 @@ describe('context field', () => {
       expect(attribute.type).toBeInstanceOf(DataTypes.JSON);
     });
   });
+
   describe('create and update', () => {
     it('case 1', async () => {
       const Test = db.collection({
@@ -95,6 +100,7 @@ describe('context field', () => {
       const t3 = await Test.repository.findOne();
       expect(t3.get('clientIp')).toBe('11.22.33.55');
     });
+
     it('case 2, createOnly = true', async () => {
       const Test = db.collection({
         name: 'tests',

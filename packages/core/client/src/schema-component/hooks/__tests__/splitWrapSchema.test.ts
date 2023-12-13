@@ -1,5 +1,6 @@
 import { Schema } from '@formily/react';
 import { splitWrapSchema } from '../useDesignable';
+
 describe('splitWrapSchema', () => {
   test('case 1', () => {
     const wrap = new Schema({
@@ -20,9 +21,7 @@ describe('splitWrapSchema', () => {
         },
       },
     });
-    const [schema1, schema2] = splitWrapSchema(wrap, {
-      ['x-uid']: 'aaa',
-    });
+    const [schema1, schema2] = splitWrapSchema(wrap, { ['x-uid']: 'aaa' });
     expect(schema1).toBeNull();
     expect(schema2).toMatchObject({
       'x-uid': 'aaa',
@@ -43,6 +42,7 @@ describe('splitWrapSchema', () => {
       },
     });
   });
+
   test('case 2', () => {
     const wrap = new Schema({
       'x-uid': 'aaa',
@@ -62,9 +62,7 @@ describe('splitWrapSchema', () => {
         },
       },
     });
-    const [schema1, schema2] = splitWrapSchema(wrap, {
-      ['x-uid']: '123',
-    });
+    const [schema1, schema2] = splitWrapSchema(wrap, { ['x-uid']: '123' });
     expect(schema1).toMatchObject({
       'x-uid': 'aaa',
       properties: {

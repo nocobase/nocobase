@@ -1,17 +1,18 @@
 import { vi } from 'vitest';
 import { Database } from '../database';
 import { mockDatabase } from './';
+
 describe('update through', () => {
   let db: Database;
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({
-      drop: true,
-    });
+    await db.clean({ drop: true });
   });
+
   afterEach(async () => {
     await db.close();
   });
+
   it('should not be reset', async () => {
     db.collection({
       name: 'c',
@@ -64,6 +65,7 @@ describe('update through', () => {
         b: [b.toJSON()],
       },
     });
+
     const c2 = await db.getRepository('c').findOne();
     expect(c1.get('id')).toBe(c2.get('id'));
     expect(callback1).toHaveBeenCalledTimes(1);

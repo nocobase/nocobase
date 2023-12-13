@@ -1,23 +1,23 @@
 import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields, test } from '@nocobase/test/client';
 import dayjs from 'dayjs';
 import { commonTesting, testDefaultValue, testPattern } from '../commonTesting';
+
 const gotoPage = async (mockPage) => {
   const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields).waitForInit();
   await nocoPage.goto();
 };
+
 const openDialog = async (page: Page) => {
-  await page
-    .getByRole('button', {
-      name: 'Add new',
-    })
-    .click();
+  await page.getByRole('button', { name: 'Add new' }).click();
 };
+
 const showMenu = async (page: Page, fieldName: string) => {
   await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
   await page
     .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
     .hover();
 };
+
 const openDialogAndShowMenu = async ({
   page,
   mockPage,
@@ -33,13 +33,10 @@ const openDialogAndShowMenu = async ({
   await openDialog(page);
   await showMenu(page, fieldName);
 };
+
 test.describe('datetime', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'datetime',
-    blockType: 'creating',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'datetime', blockType: 'creating', mode: 'options' });
+
   test('set default value', async ({ page, mockPage, mockRecord }) => {
     await testDefaultValue({
       page,
@@ -61,6 +58,7 @@ test.describe('datetime', () => {
       },
     });
   });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     await testPattern({
       page,
@@ -88,25 +86,12 @@ test.describe('datetime', () => {
       },
     });
   });
+
   test('date display format', async ({ page, mockPage, mockRecord }) => {
-    await openDialogAndShowMenu({
-      page,
-      mockPage,
-      mockRecord,
-      fieldName: 'datetime',
-    });
-    await page
-      .getByRole('menuitem', {
-        name: 'Date display format',
-      })
-      .click();
+    await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName: 'datetime' });
+    await page.getByRole('menuitem', { name: 'Date display format' }).click();
     await page.getByLabel('YYYY/MM/DD').click();
-    await page
-      .getByRole('button', {
-        name: 'OK',
-        exact: true,
-      })
-      .click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
 
     // 输入一个值，然后验证格式是否正确
     await page
@@ -114,6 +99,7 @@ test.describe('datetime', () => {
       .getByPlaceholder('Select date')
       .click();
     await page.getByText('Today').click();
+
     await expect(
       page
         .getByLabel('block-item-CollectionField-general-form-general.datetime-datetime')
@@ -122,12 +108,8 @@ test.describe('datetime', () => {
   });
 });
 test.describe('time', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'time',
-    blockType: 'creating',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'time', blockType: 'creating', mode: 'options' });
+
   test('set default value', async ({ page, mockPage, mockRecord }) => {
     await testDefaultValue({
       page,
@@ -147,6 +129,7 @@ test.describe('time', () => {
       },
     });
   });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     await testPattern({
       page,

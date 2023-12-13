@@ -1,8 +1,10 @@
 import { Database, mockDatabase } from '../..';
 import { ToManyValueParser } from '../../value-parsers';
+
 describe('number value parser', () => {
   let parser: ToManyValueParser;
   let db: Database;
+
   beforeEach(async () => {
     db = mockDatabase();
     db.collection({
@@ -35,14 +37,14 @@ describe('number value parser', () => {
     await db.sync();
     const tag = db.getRepository('tags');
     await tag.create({
-      values: {
-        name: 'tag1',
-      },
+      values: { name: 'tag1' },
     });
   });
+
   afterEach(async () => {
     await db.close();
   });
+
   const setValue = async (value) => {
     const post = db.getCollection('posts');
     parser = new ToManyValueParser(post.getField('tags'), {
@@ -52,21 +54,25 @@ describe('number value parser', () => {
     });
     await parser.setValue(value);
   };
+
   const setAttachment = async (value) => {
     const post = db.getCollection('posts');
     parser = new ToManyValueParser(post.getField('attachments'), {});
     await parser.setValue(value);
   };
+
   it('should be [1]', async () => {
     await setValue('tag1');
     expect(parser.errors.length).toBe(0);
     expect(parser.getValue()).toEqual([1]);
   });
+
   it('should be null', async () => {
     await setValue('tag2');
     expect(parser.errors.length).toBe(1);
     expect(parser.getValue()).toBeNull();
   });
+
   it('should be attachment', async () => {
     await setAttachment('https://www.nocobase.com/images/logo.png');
     expect(parser.errors.length).toBe(0);
@@ -80,14 +86,14 @@ describe('number value parser', () => {
     ]);
   });
 });
+
 describe.only('china region', () => {
   let parser: ToManyValueParser;
   let db: Database;
+
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({
-      drop: true,
-    });
+    await db.clean({ drop: true });
     db.collection({
       name: 'users',
       fields: [
@@ -164,29 +170,36 @@ describe.only('china region', () => {
       })),
     );
   });
+
   afterEach(async () => {
     await db.close();
   });
+
   const setValue = async (value) => {
     const r = db.getCollection('users');
     parser = new ToManyValueParser(r.getField('chinaRegion'), {});
     await parser.setValue(value);
   };
+
   it('should be correct', async () => {
     await setValue('北京市/市辖区');
     expect(parser.errors.length).toBe(0);
     expect(parser.getValue()).toEqual(['11', '1101']);
+
     await setValue('北京市 / 市辖区');
     expect(parser.errors.length).toBe(0);
     expect(parser.getValue()).toEqual(['11', '1101']);
+
     await setValue('天津市 / 市辖区');
     expect(parser.errors.length).toBe(0);
     expect(parser.getValue()).toEqual(['12', '1201']);
   });
+
   it('should be null', async () => {
     await setValue('北京市2 / 市辖区');
     expect(parser.errors.length).toBe(1);
     expect(parser.getValue()).toBeNull();
+
     await setValue('北京市 / 市辖区 2');
     expect(parser.errors.length).toBe(1);
     expect(parser.getValue()).toBeNull();

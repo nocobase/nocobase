@@ -1,21 +1,18 @@
 import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndChoicesFields, test } from '@nocobase/test/client';
 import { commonTesting, testDefaultValue, testPattern } from '../commonTesting';
+
 const gotoPage = async (mockPage) => {
   const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndChoicesFields).waitForInit();
   await nocoPage.goto();
 };
+
 const openDialog = async (page: Page) => {
-  await page
-    .getByRole('button', {
-      name: 'Add new',
-    })
-    .click();
+  await page.getByRole('button', { name: 'Add new' }).click();
 };
+
 const showMenu = async (page: Page, fieldName: string) => {
   await page
-    .getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`, {
-      exact: true,
-    })
+    .getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`, { exact: true })
     .hover();
   await page
     .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`, {
@@ -23,6 +20,7 @@ const showMenu = async (page: Page, fieldName: string) => {
     })
     .hover();
 };
+
 const openDialogAndShowMenu = async ({
   page,
   mockPage,
@@ -38,12 +36,10 @@ const openDialogAndShowMenu = async ({
   await openDialog(page);
   await showMenu(page, fieldName);
 };
+
 test.describe('checkbox', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'checkbox',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'checkbox', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -63,6 +59,7 @@ test.describe('checkbox', () => {
       },
     });
   });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     await testPattern({
       page,
@@ -88,20 +85,18 @@ test.describe('checkbox', () => {
           page.getByLabel('block-item-CollectionField-general-form-general.checkbox-checkbox').getByRole('checkbox'),
         ).not.toBeVisible();
         await expect(
-          page.getByLabel('block-item-CollectionField-general-form-general.checkbox-checkbox').getByRole('img', {
-            name: 'check',
-          }),
+          page
+            .getByLabel('block-item-CollectionField-general-form-general.checkbox-checkbox')
+            .getByRole('img', { name: 'check' }),
         ).toBeVisible();
       },
     });
   });
 });
+
 test.describe('checkbox group', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'checkboxGroup',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'checkboxGroup', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -117,13 +112,12 @@ test.describe('checkbox group', () => {
         await expect(
           page
             .getByLabel('block-item-CollectionField-general-form-general.checkboxGroup-checkboxGroup')
-            .getByRole('checkbox', {
-              name: 'Option1',
-            }),
+            .getByRole('checkbox', { name: 'Option1' }),
         ).toBeChecked();
       },
     });
   });
+
   test('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,
@@ -134,9 +128,7 @@ test.describe('checkbox group', () => {
         // 默认是未选中的状态，所以先选中
         await page
           .getByLabel('block-item-CollectionField-general-form-general.checkboxGroup-checkboxGroup')
-          .getByRole('checkbox', {
-            name: 'Option1',
-          })
+          .getByRole('checkbox', { name: 'Option1' })
           .click();
       },
       expectReadonly: async () => {
@@ -144,9 +136,7 @@ test.describe('checkbox group', () => {
         await expect(
           page
             .getByLabel('block-item-CollectionField-general-form-general.checkboxGroup-checkboxGroup')
-            .getByRole('checkbox', {
-              name: 'Option1',
-            }),
+            .getByRole('checkbox', { name: 'Option1' }),
         ).toBeDisabled();
       },
       expectEasyReading: async () => {
@@ -154,9 +144,7 @@ test.describe('checkbox group', () => {
         await expect(
           page
             .getByLabel('block-item-CollectionField-general-form-general.checkboxGroup-checkboxGroup')
-            .getByRole('checkbox', {
-              name: 'Option1',
-            }),
+            .getByRole('checkbox', { name: 'Option1' }),
         ).not.toBeVisible();
         await expect(
           page
@@ -167,12 +155,10 @@ test.describe('checkbox group', () => {
     });
   });
 });
+
 test.describe('china region', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'chinaRegion',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'chinaRegion', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -183,21 +169,9 @@ test.describe('china region', () => {
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
       inputConstantValue: async () => {
         await page.getByLabel('block-item-VariableInput-').getByLabel('Search').click();
-        await page
-          .getByRole('menuitemcheckbox', {
-            name: '北京市',
-          })
-          .click();
-        await page
-          .getByRole('menuitemcheckbox', {
-            name: '市辖区',
-          })
-          .click();
-        await page
-          .getByRole('menuitemcheckbox', {
-            name: '东城区',
-          })
-          .click();
+        await page.getByRole('menuitemcheckbox', { name: '北京市' }).click();
+        await page.getByRole('menuitemcheckbox', { name: '市辖区' }).click();
+        await page.getByRole('menuitemcheckbox', { name: '东城区' }).click();
       },
       expectConstantValue: async () => {
         await expect(
@@ -206,6 +180,7 @@ test.describe('china region', () => {
       },
     });
   });
+
   test('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,
@@ -215,42 +190,24 @@ test.describe('china region', () => {
       expectEditable: async () => {
         await page
           .getByLabel('block-item-CollectionField-general-form-general.chinaRegion-chinaRegion')
-          .getByRole('combobox', {
-            name: 'Search',
-          })
+          .getByRole('combobox', { name: 'Search' })
           .click();
-        await page
-          .getByRole('menuitemcheckbox', {
-            name: '北京市',
-          })
-          .click();
-        await page
-          .getByRole('menuitemcheckbox', {
-            name: '市辖区',
-          })
-          .click();
-        await page
-          .getByRole('menuitemcheckbox', {
-            name: '东城区',
-          })
-          .click();
+        await page.getByRole('menuitemcheckbox', { name: '北京市' }).click();
+        await page.getByRole('menuitemcheckbox', { name: '市辖区' }).click();
+        await page.getByRole('menuitemcheckbox', { name: '东城区' }).click();
       },
       expectReadonly: async () => {
         await expect(
           page
             .getByLabel('block-item-CollectionField-general-form-general.chinaRegion-chinaRegion')
-            .getByRole('combobox', {
-              name: 'Search',
-            }),
+            .getByRole('combobox', { name: 'Search' }),
         ).toBeDisabled();
       },
       expectEasyReading: async () => {
         await expect(
           page
             .getByLabel('block-item-CollectionField-general-form-general.chinaRegion-chinaRegion')
-            .getByRole('combobox', {
-              name: 'Search',
-            }),
+            .getByRole('combobox', { name: 'Search' }),
         ).not.toBeVisible();
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.chinaRegion-chinaRegion'),
@@ -259,12 +216,10 @@ test.describe('china region', () => {
     });
   });
 });
+
 test.describe('multiple select', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'multipleSelect',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'multipleSelect', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -275,21 +230,9 @@ test.describe('multiple select', () => {
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
       inputConstantValue: async () => {
         await page.getByLabel('block-item-VariableInput-').getByTestId('select-multiple').click();
-        await page
-          .getByRole('option', {
-            name: 'Option1',
-          })
-          .click();
-        await page
-          .getByRole('option', {
-            name: 'Option2',
-          })
-          .click();
-        await page
-          .getByRole('option', {
-            name: 'Option3',
-          })
-          .click();
+        await page.getByRole('option', { name: 'Option1' }).click();
+        await page.getByRole('option', { name: 'Option2' }).click();
+        await page.getByRole('option', { name: 'Option3' }).click();
       },
       expectConstantValue: async () => {
         await expect(
@@ -298,6 +241,7 @@ test.describe('multiple select', () => {
       },
     });
   });
+
   test('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,
@@ -309,21 +253,9 @@ test.describe('multiple select', () => {
           .getByLabel('block-item-CollectionField-general-form-general.multipleSelect-multipleSelect')
           .getByTestId('select-multiple')
           .click();
-        await page
-          .getByRole('option', {
-            name: 'Option1',
-          })
-          .click();
-        await page
-          .getByRole('option', {
-            name: 'Option2',
-          })
-          .click();
-        await page
-          .getByRole('option', {
-            name: 'Option3',
-          })
-          .click();
+        await page.getByRole('option', { name: 'Option1' }).click();
+        await page.getByRole('option', { name: 'Option2' }).click();
+        await page.getByRole('option', { name: 'Option3' }).click();
       },
       expectReadonly: async () => {
         await expect(
@@ -345,12 +277,10 @@ test.describe('multiple select', () => {
     });
   });
 });
+
 test.describe('radio group', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'radioGroup',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'radioGroup', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -371,6 +301,7 @@ test.describe('radio group', () => {
       },
     });
   });
+
   test('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,
@@ -403,12 +334,10 @@ test.describe('radio group', () => {
     });
   });
 });
+
 test.describe('single select', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'singleSelect',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'singleSelect', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -419,11 +348,7 @@ test.describe('single select', () => {
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
       inputConstantValue: async () => {
         await page.getByLabel('block-item-VariableInput-').getByLabel('Search').click();
-        await page
-          .getByRole('option', {
-            name: 'Option1',
-          })
-          .click();
+        await page.getByRole('option', { name: 'Option1' }).click();
       },
       expectConstantValue: async () => {
         await expect(
@@ -432,6 +357,7 @@ test.describe('single select', () => {
       },
     });
   });
+
   test('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,
@@ -443,11 +369,7 @@ test.describe('single select', () => {
           .getByLabel('block-item-CollectionField-general-form-general.singleSelect-singleSelect')
           .getByTestId('select-single')
           .click();
-        await page
-          .getByRole('option', {
-            name: 'Option1',
-          })
-          .click();
+        await page.getByRole('option', { name: 'Option1' }).click();
       },
       expectReadonly: async () => {
         await expect(

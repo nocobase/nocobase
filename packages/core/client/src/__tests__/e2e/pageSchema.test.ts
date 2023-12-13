@@ -1,4 +1,5 @@
 import { expect, test } from '@nocobase/test/client';
+
 const pageConfig = {
   pageSchema: {
     _isJSONSchemaObject: true,
@@ -448,9 +449,11 @@ const pageConfig = {
     'x-index': 1,
   },
 };
+
 test.describe('pageSchema', () => {
   test('quickly create page schema', async ({ page, mockPage }) => {
     await mockPage(pageConfig).goto();
+
     await expect(page.getByText('Table block')).toBeVisible();
     await expect(page.getByText('Form block')).toBeVisible();
     await expect(page.getByText('Details block')).toBeVisible();

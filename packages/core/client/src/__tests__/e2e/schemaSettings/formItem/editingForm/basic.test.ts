@@ -1,20 +1,25 @@
 import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndBasicFields, test } from '@nocobase/test/client';
 import { commonTesting, testPattern, testSetValidationRules } from '../commonTesting';
+
 const gotoPage = async (mockPage, mockRecord) => {
   const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
   const record = await mockRecord('general');
   await nocoPage.goto();
+
   return record;
 };
+
 const openDialog = async (page: Page) => {
   await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
 };
+
 const showMenu = async (page: Page, fieldName: string) => {
   await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
   await page
     .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
     .hover();
 };
+
 const openDialogAndShowMenu = async ({
   page,
   mockPage,
@@ -30,12 +35,10 @@ const openDialogAndShowMenu = async ({
   await openDialog(page);
   await showMenu(page, fieldName);
 };
+
 test.describe('color', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'color',
-    blockType: 'editing',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'color', blockType: 'editing' });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
     await testPattern({
@@ -48,22 +51,12 @@ test.describe('color', () => {
       expectEditable: async () => {
         // 默认情况下显示颜色选择框
         await page.getByLabel('color-picker-normal').hover();
-        await expect(
-          page.getByRole('button', {
-            name: 'right Recommended',
-            exact: true,
-          }),
-        ).toBeVisible();
+        await expect(page.getByRole('button', { name: 'right Recommended', exact: true })).toBeVisible();
       },
       expectReadonly: async () => {
         // 只读模式下，不会显示颜色弹窗
         await page.getByLabel('color-picker-normal').hover();
-        await expect(
-          page.getByRole('button', {
-            name: 'right Recommended',
-            exact: true,
-          }),
-        ).not.toBeVisible();
+        await expect(page.getByRole('button', { name: 'right Recommended', exact: true })).not.toBeVisible();
       },
       expectEasyReading: async () => {
         await expect(page.getByLabel('color-picker-read-pretty')).toBeVisible();
@@ -71,13 +64,10 @@ test.describe('color', () => {
     });
   });
 });
+
 test.describe('email', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'email',
-    blockType: 'editing',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'email', blockType: 'editing', mode: 'options' });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
     await testPattern({
@@ -111,13 +101,10 @@ test.describe('email', () => {
     });
   });
 });
+
 test.describe('icon', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'icon',
-    blockType: 'editing',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'icon', blockType: 'editing', mode: 'options' });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
     await testPattern({
@@ -129,58 +116,35 @@ test.describe('icon', () => {
       showMenu: () => showMenu(page, 'icon'),
       expectEditable: async () => {
         // 默认情况下可以编辑图标
-        await page
-          .getByRole('button', {
-            name: 'Select icon',
-          })
-          .click();
+        await page.getByRole('button', { name: 'Select icon' }).click();
         await page.getByLabel('account-book').locator('svg').click();
       },
       expectReadonly: async () => {
         // 只读模式下，选择图标按钮会被禁用
         if (record.icon) {
-          await expect(
-            page.getByRole('button', {
-              name: record.icon,
-            }),
-          ).toBeDisabled();
+          await expect(page.getByRole('button', { name: record.icon })).toBeDisabled();
         } else {
-          await expect(
-            page.getByRole('button', {
-              name: 'Select icon',
-            }),
-          ).toBeDisabled();
+          await expect(page.getByRole('button', { name: 'Select icon' })).toBeDisabled();
         }
       },
       expectEasyReading: async () => {
         // 按钮会消失，只剩下图标
         if (record.icon) {
-          await expect(
-            page.getByRole('button', {
-              name: record.icon,
-            }),
-          ).not.toBeVisible();
+          await expect(page.getByRole('button', { name: record.icon })).not.toBeVisible();
           await expect(
             page.getByLabel('block-item-CollectionField-general-form-general.icon-icon').getByLabel(record.icon),
           ).toBeVisible();
         } else {
-          await expect(
-            page.getByRole('button', {
-              name: 'Select icon',
-            }),
-          ).not.toBeVisible();
+          await expect(page.getByRole('button', { name: 'Select icon' })).not.toBeVisible();
         }
       },
     });
   });
 });
+
 test.describe('single line text', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'singleLineText',
-    blockType: 'editing',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'singleLineText', blockType: 'editing', mode: 'options' });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
     await testPattern({
@@ -219,6 +183,7 @@ test.describe('single line text', () => {
       },
     });
   });
+
   test('Set validation rules', async ({ page, mockPage, mockRecord }) => {
     await testSetValidationRules({
       page,
@@ -228,13 +193,10 @@ test.describe('single line text', () => {
     });
   });
 });
+
 test.describe('integer', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'integer',
-    blockType: 'editing',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'integer', blockType: 'editing', mode: 'options' });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
     await testPattern({
@@ -267,6 +229,7 @@ test.describe('integer', () => {
       },
     });
   });
+
   test('set validation rules', async ({ page, mockPage, mockRecord }) => {
     await testSetValidationRules({
       page,
@@ -276,13 +239,10 @@ test.describe('integer', () => {
     });
   });
 });
+
 test.describe('number', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'number',
-    blockType: 'editing',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'number', blockType: 'editing', mode: 'options' });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     // TODO: number 类型的字段，当输入了小数，然后把 Pattern 切换成 Easy-reading 模式，小数不应该被去掉；
     test.fail();
@@ -327,6 +287,7 @@ test.describe('number', () => {
       },
     });
   });
+
   test('set validation rules', async ({ page, mockPage, mockRecord }) => {
     await testSetValidationRules({
       page,
@@ -336,13 +297,10 @@ test.describe('number', () => {
     });
   });
 });
+
 test.describe('password', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'password',
-    blockType: 'editing',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'password', blockType: 'editing', mode: 'options' });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
     await testPattern({
@@ -380,6 +338,7 @@ test.describe('password', () => {
       },
     });
   });
+
   test('set validation rules', async ({ page, mockPage, mockRecord }) => {
     await testSetValidationRules({
       page,
@@ -389,13 +348,10 @@ test.describe('password', () => {
     });
   });
 });
+
 test.describe('percent', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'percent',
-    blockType: 'editing',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'percent', blockType: 'editing', mode: 'options' });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     // TODO: percent 类型的字段，当输入了小数，然后把 Pattern 切换成 Easy-reading 模式，小数点不应该被去掉；
     test.fail();
@@ -440,6 +396,7 @@ test.describe('percent', () => {
       },
     });
   });
+
   test('set validation rules', async ({ page, mockPage, mockRecord }) => {
     await testSetValidationRules({
       page,
@@ -449,13 +406,10 @@ test.describe('percent', () => {
     });
   });
 });
+
 test.describe('phone', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'phone',
-    blockType: 'editing',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'phone', blockType: 'editing', mode: 'options' });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
     await testPattern({
@@ -494,13 +448,10 @@ test.describe('phone', () => {
     });
   });
 });
+
 test.describe('long text', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'longText',
-    blockType: 'editing',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'longText', blockType: 'editing', mode: 'options' });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
     await testPattern({
@@ -542,6 +493,7 @@ test.describe('long text', () => {
       },
     });
   });
+
   test('set validation rules', async ({ page, mockPage, mockRecord }) => {
     await testSetValidationRules({
       page,
@@ -551,13 +503,10 @@ test.describe('long text', () => {
     });
   });
 });
+
 test.describe('URL', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'url',
-    blockType: 'editing',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'url', blockType: 'editing', mode: 'options' });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
     await testPattern({

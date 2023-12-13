@@ -1,4 +1,5 @@
 import { expect, test } from '@nocobase/test/client';
+
 const config = {
   pageSchema: {
     _isJSONSchemaObject: true,
@@ -163,22 +164,11 @@ const config = {
 test('BUG: should save conditions', async ({ page, mockPage }) => {
   await mockPage(config).goto();
   await page.getByLabel('action-Filter.Action-Filter-filter-users-table').click();
-  await page
-    .getByText('Add condition', {
-      exact: true,
-    })
-    .click();
+  await page.getByText('Add condition', { exact: true }).click();
   await page.getByTestId('select-filter-field').getByLabel('Search').click();
-  await page
-    .getByRole('menuitemcheckbox', {
-      name: 'ID',
-    })
-    .click();
-  await page
-    .getByRole('button', {
-      name: 'Save conditions',
-    })
-    .click();
+  await page.getByRole('menuitemcheckbox', { name: 'ID' }).click();
+  await page.getByRole('button', { name: 'Save conditions' }).click();
+
   await page.reload();
   await page.getByLabel('action-Filter.Action-Filter-filter-users-table').click();
 

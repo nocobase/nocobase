@@ -1,9 +1,10 @@
-import { vi } from 'vitest';
 import supertest from 'supertest';
 import { Application } from '../application';
+
 describe('application', () => {
   let app: Application;
   let agent;
+
   beforeEach(() => {
     app = new Application({
       database: {
@@ -40,9 +41,11 @@ describe('application', () => {
     });
     agent = supertest.agent(app.callback());
   });
+
   afterEach(async () => {
     return app.destroy();
   });
+
   it('resourcer.define', async () => {
     app.resourcer.define({
       name: 'test',

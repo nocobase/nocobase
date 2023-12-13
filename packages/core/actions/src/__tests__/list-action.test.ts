@@ -1,81 +1,68 @@
 import { registerActions } from '@nocobase/actions';
 import { mockServer as actionMockServer } from './index';
+
 describe('list action', () => {
   let app;
   beforeEach(async () => {
     app = actionMockServer();
     registerActions(app);
+
     const Post = app.collection({
       name: 'posts',
       fields: [
-        {
-          type: 'string',
-          name: 'title',
-        },
-        {
-          type: 'hasMany',
-          name: 'comments',
-        },
+        { type: 'string', name: 'title' },
+        { type: 'hasMany', name: 'comments' },
         {
           type: 'belongsToMany',
           name: 'tags',
         },
-        {
-          type: 'string',
-          name: 'status',
-          defaultValue: 'draft',
-        },
+        { type: 'string', name: 'status', defaultValue: 'draft' },
       ],
     });
+
     const Tag = app.collection({
       name: 'tags',
       fields: [
-        {
-          type: 'string',
-          name: 'name',
-        },
-        {
-          type: 'belongsToMany',
-          name: 'posts',
-        },
+        { type: 'string', name: 'name' },
+        { type: 'belongsToMany', name: 'posts' },
       ],
     });
+
     app.collection({
       name: 'comments',
       fields: [
-        {
-          type: 'string',
-          name: 'content',
-        },
-        {
-          type: 'string',
-          name: 'status',
-          defaultValue: 'draft',
-        },
+        { type: 'string', name: 'content' },
+        { type: 'string', name: 'status', defaultValue: 'draft' },
       ],
     });
+
     await app.db.sync();
+
     const t1 = await Tag.repository.create({
       values: {
         name: 't1',
       },
     });
+
     const t2 = await Tag.repository.create({
       values: {
         name: 't2',
       },
     });
+
     const t3 = await Tag.repository.create({
       values: {
         name: 't3',
       },
     });
+
     const p1 = await Post.repository.create({
       values: {
         title: 'pt1',
         tags: [t1.get('id'), t2.get('id')],
       },
     });
+
     await Post.repository.createMany({
       records: [
         {
@@ -89,9 +76,11 @@ describe('list action', () => {
       ],
     });
   });
+
   afterEach(async () => {
     await app.destroy();
   });
+
   test('list with pagination', async () => {
     const response = await app
       .agent()
@@ -102,12 +91,14 @@ describe('list action', () => {
         page: 2,
         sort: ['id'],
       });
+
     const body = response.body;
     expect(body.rows.length).toEqual(1);
     expect(body.rows[0]['id']).toEqual(2);
     expect(body.count).toEqual(3);
     expect(body.totalPage).toEqual(3);
   });
+
   test('list with non-paged', async () => {
     const response = await app.agent().resource('posts').list({
       paginate: false,
@@ -115,47 +106,41 @@ describe('list action', () => {
     const body = response.body;
     expect(body.length).toEqual(3);
   });
+
   test('list by association', async () => {
     // tags with posts id eq 1
     const response = await app
       .agent()
       .resource('posts.tags', 1)
-      .list({
-        fields: ['id', 'postsTags.createdAt'],
-        sort: ['id'],
-      });
+      .list({ fields: ['id', 'postsTags.createdAt'], sort: ['id'] });
+
     const body = response.body;
     expect(body.count).toEqual(2);
-    expect(body.rows).toEqual([
-      {
-        id: 1,
-      },
-      {
-        id: 2,
-      },
-    ]);
+    expect(body.rows).toEqual([{ id: 1 }, { id: 2 }]);
   });
+
   it('should return empty error when relation not exists', async () => {
     const response = await app
       .agent()
       .resource('posts.tags', 999)
-      .list({
-        fields: ['id', 'postsTags.createdAt'],
-        sort: ['id'],
-      });
+      .list({ fields: ['id', 'postsTags.createdAt'], sort: ['id'] });
+
     expect(response.status).toEqual(200);
     expect(response.body.count).toEqual(0);
   });
 });
+
 describe('list-tree', () => {
   let app;
   beforeEach(async () => {
     app = actionMockServer();
     registerActions(app);
   });
+
   afterEach(async () => {
     await app.destroy();
   });
+
   it('should be tree', async () => {
     const values = [
       {
@@ -203,6 +188,7 @@ describe('list-tree', () => {
         ],
       },
     ];
+
     const db = app.db;
     const collection = db.collection({
       name: 'categories',
@@ -229,9 +215,11 @@ describe('list-tree', () => {
       ],
     });
     await db.sync();
+
     await db.getRepository('categories').create({
       values,
     });
+
     const response = await app
       .agent()
       .resource('categories')
@@ -240,9 +228,11 @@ describe('list-tree', () => {
         fields: ['id', 'name'],
         sort: ['id'],
       });
+
     expect(response.status).toEqual(200);
     expect(response.body.rows).toMatchObject(values);
   });
+
   it.only('should be tree', async () => {
     const values = [
       {
@@ -290,6 +280,7 @@ describe('list-tree', () => {
         ],
       },
     ];
+
     const db = app.db;
     const collection = db.collection({
       name: 'categories',
@@ -318,9 +309,11 @@ describe('list-tree', () => {
       ],
     });
     await db.sync();
+
     await db.getRepository('categories').create({
       values,
     });
+
     const response = await app
       .agent()
       .resource('categories')
@@ -329,6 +322,7 @@ describe('list-tree', () => {
         fields: ['id', 'name'],
         sort: ['id'],
       });
+
     expect(response.status).toEqual(200);
     expect(response.body.rows).toMatchObject(values);
   });

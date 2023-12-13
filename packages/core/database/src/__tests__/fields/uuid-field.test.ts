@@ -1,16 +1,18 @@
 import { mockDatabase } from '../';
 import { Database } from '../../database';
+
 describe('string field', () => {
   let db: Database;
+
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({
-      drop: true,
-    });
+    await db.clean({ drop: true });
   });
+
   afterEach(async () => {
     await db.close();
   });
+
   it('define', async () => {
     const Test = db.collection({
       name: 'tests',

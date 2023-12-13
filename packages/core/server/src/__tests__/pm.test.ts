@@ -172,7 +172,7 @@ describe('pm', () => {
   });
   test('enable', async () => {
     const resolvePlugin = PluginManager.resolvePlugin;
-    PluginManager.resolvePlugin = (pluginName) => {
+    PluginManager.resolvePlugin = async (pluginName) => {
       return Plugin1;
     };
     const loadFn = vi.fn();
@@ -205,12 +205,15 @@ describe('pm', () => {
     expect(loadFn).not.toBeCalled();
     PluginManager.resolvePlugin = resolvePlugin;
   });
+
   test('enable12', async () => {
     const resolvePlugin = PluginManager.resolvePlugin;
-    PluginManager.resolvePlugin = (pluginName) => {
+    PluginManager.resolvePlugin = async (pluginName) => {
       return Plugin1;
     };
+
     const loadFn = vi.fn();
+
     class Plugin1 extends Plugin {
       async beforeEnable() {
         loadFn();
@@ -269,7 +272,7 @@ describe('pm', () => {
       }
     }
     const resolvePlugin = PluginManager.resolvePlugin;
-    PluginManager.resolvePlugin = (pluginName: string) => {
+    PluginManager.resolvePlugin = async (pluginName: string) => {
       return {
         Plugin1,
         Plugin2,
@@ -303,7 +306,7 @@ describe('pm', () => {
   });
   test('disable', async () => {
     const resolvePlugin = PluginManager.resolvePlugin;
-    PluginManager.resolvePlugin = (pluginName) => {
+    PluginManager.resolvePlugin = async (pluginName) => {
       return Plugin1;
     };
     const loadFn = vi.fn();
@@ -333,7 +336,7 @@ describe('pm', () => {
   });
   test('disable', async () => {
     const resolvePlugin = PluginManager.resolvePlugin;
-    PluginManager.resolvePlugin = (pluginName) => {
+    PluginManager.resolvePlugin = async (pluginName) => {
       return Plugin1;
     };
     const loadFn = vi.fn();
@@ -383,7 +386,7 @@ describe('pm', () => {
     class Plugin1 extends Plugin {}
     class Plugin2 extends Plugin {}
     const resolvePlugin = PluginManager.resolvePlugin;
-    PluginManager.resolvePlugin = (pluginName: string) => {
+    PluginManager.resolvePlugin = async (pluginName: string) => {
       return {
         Plugin0,
         Plugin1,
@@ -409,7 +412,7 @@ describe('pm', () => {
   });
   test('life-cycle', async () => {
     const resolvePlugin = PluginManager.resolvePlugin;
-    PluginManager.resolvePlugin = (pluginName) => {
+    PluginManager.resolvePlugin = async (pluginName) => {
       return Plugin1;
     };
     const hooks = [];

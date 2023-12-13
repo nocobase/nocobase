@@ -2,48 +2,42 @@ import { mockServer, MockServer } from './index';
 import { registerActions } from '@nocobase/actions';
 import { Collection, Database } from '@nocobase/database';
 import { waitSecond } from '@nocobase/test';
+
 describe('sort action', () => {
   describe('associations', () => {
     let api: MockServer;
+
     let UserCollection: Collection;
+
     beforeEach(async () => {
       api = mockServer();
+
       registerActions(api);
+
       UserCollection = api.db.collection({
         name: 'users',
         fields: [
-          {
-            type: 'string',
-            name: 'name',
-          },
+          { type: 'string', name: 'name' },
           {
             type: 'hasMany',
             name: 'posts',
           },
-          {
-            type: 'sort',
-            name: 'sort',
-          },
+
+          { type: 'sort', name: 'sort' },
         ],
       });
+
       api.db.collection({
         name: 'posts',
         fields: [
-          {
-            type: 'string',
-            name: 'title',
-          },
-          {
-            type: 'sort',
-            name: 'sort',
-          },
-          {
-            type: 'belongsTo',
-            name: 'user',
-          },
+          { type: 'string', name: 'title' },
+          { type: 'sort', name: 'sort' },
+          { type: 'belongsTo', name: 'user' },
         ],
       });
+
       await api.db.sync();
+
       for (let index = 1; index < 5; index++) {
         await UserCollection.repository.create({
           values: {
@@ -63,40 +57,50 @@ describe('sort action', () => {
         });
       }
     });
+
     afterEach(async () => {
       return api.destroy();
     });
+
     it('should not move association items when association not sortable', async () => {
       const u1 = await api.db.getRepository('users').findOne({
         filter: {
           name: 'u1',
         },
       });
+
       const response = await api.agent().resource('users.posts', u1.get('id')).move({
         sourceId: 1,
         targetId: 3,
       });
+
       expect(response.status).not.toEqual(200);
     });
+
     it('should move association item', async () => {
       UserCollection.setField('posts', {
         sortable: true,
         type: 'hasMany',
       });
+
       await api.db.sync({
         alter: {
           drop: false,
         },
         force: false,
       });
+
       const PostCollection = api.db.getCollection('posts');
+
       const sortFieldName = `${UserCollection.model.associations.posts.foreignKey}Sort`;
       expect(PostCollection.fields.get(sortFieldName)).toBeDefined();
+
       const u1 = await api.db.getRepository('users').findOne({
         filter: {
           name: 'u1',
         },
       });
+
       await api
         .agent()
         .resource('users.posts', u1.get('id'))
@@ -105,6 +109,7 @@ describe('sort action', () => {
             title: 'u1p4',
           },
         });
+
       const u1p4 = await api.db.getRepository('posts').findOne({
         filter: {
           title: 'u1p4',
@@ -119,6 +124,7 @@ describe('sort action', () => {
           sourceId: 1,
           targetId: u1p4.get('id'),
         });
+
       const u1Posts = await api
         .agent()
         .resource('users.posts', u1.get('id'))
@@ -126,6 +132,7 @@ describe('sort action', () => {
           fields: ['title'],
           sort: [sortFieldName],
         });
+
       expect(u1Posts.body).toMatchObject({
         rows: [
           {
@@ -144,52 +151,47 @@ describe('sort action', () => {
       });
     });
   });
+
   describe('same scope', () => {
     let api: MockServer;
+
     beforeEach(async () => {
       api = mockServer();
+
       registerActions(api);
       api.db.collection({
         name: 'tests',
         fields: [
-          {
-            type: 'string',
-            name: 'title',
-          },
-          {
-            type: 'sort',
-            name: 'sort',
-          },
-          {
-            type: 'sort',
-            name: 'sort2',
-          },
+          { type: 'string', name: 'title' },
+          { type: 'sort', name: 'sort' },
+          { type: 'sort', name: 'sort2' },
         ],
       });
       await api.db.sync();
       const Test = api.db.getCollection('tests');
+
       for (let index = 1; index < 5; index++) {
-        await Test.repository.create({
-          values: {
-            title: `t${index}`,
-          },
-        });
+        await Test.repository.create({ values: { title: `t${index}` } });
       }
     });
+
     afterEach(async () => {
       return api.destroy();
     });
+
     it('targetId', async () => {
       await api.agent().resource('tests').move({
         sourceId: 1,
         targetId: 3,
       });
+
       const response = await api
         .agent()
         .resource('tests')
         .list({
           sort: ['sort'],
         });
+
       expect(response.body).toMatchObject({
         rows: [
           {
@@ -211,17 +213,20 @@ describe('sort action', () => {
         ],
       });
     });
+
     it('targetId', async () => {
       await api.agent().resource('tests').move({
         sourceId: 3,
         targetId: 1,
       });
+
       const response = await api
         .agent()
         .resource('tests')
         .list({
           sort: ['sort'],
         });
+
       expect(response.body).toMatchObject({
         rows: [
           {
@@ -243,12 +248,14 @@ describe('sort action', () => {
         ],
       });
     });
+
     it('sortField', async () => {
       await api.agent().resource('tests').move({
         sortField: 'sort2',
         sourceId: 1,
         targetId: 3,
       });
+
       const response = await api
         .agent()
         .resource('tests')
@@ -276,11 +283,13 @@ describe('sort action', () => {
         ],
       });
     });
+
     it('sticky', async () => {
       await api.agent().resource('tests').move({
         sourceId: 3,
         sticky: true,
       });
+
       const response = await api
         .agent()
         .resource('tests')
@@ -309,53 +318,39 @@ describe('sort action', () => {
       });
     });
   });
+
   describe('different scope', () => {
     let api: MockServer;
     let db: Database;
+
     beforeEach(async () => {
       api = mockServer();
       db = api.db;
+
       registerActions(api);
       api.db.collection({
         name: 'tests',
         fields: [
-          {
-            type: 'string',
-            name: 'title',
-          },
-          {
-            type: 'integer',
-            name: 'state',
-          },
-          {
-            type: 'sort',
-            name: 'sort',
-            scopeKey: 'state',
-          },
+          { type: 'string', name: 'title' },
+          { type: 'integer', name: 'state' },
+          { type: 'sort', name: 'sort', scopeKey: 'state' },
         ],
       });
       await api.db.sync();
       const Test = api.db.getCollection('tests');
+
       for (let index = 1; index < 5; index++) {
-        await Test.repository.create({
-          values: {
-            title: `t1${index}`,
-            state: 1,
-          },
-        });
+        await Test.repository.create({ values: { title: `t1${index}`, state: 1 } });
       }
       for (let index = 1; index < 5; index++) {
-        await Test.repository.create({
-          values: {
-            title: `t2${index}`,
-            state: 2,
-          },
-        });
+        await Test.repository.create({ values: { title: `t2${index}`, state: 2 } });
       }
     });
+
     afterEach(async () => {
       return api.destroy();
     });
+
     it('should not touch updatedAt on no scope change', async () => {
       const moveItemId = 1;
       const getUpdatedAts = async () => {
@@ -365,14 +360,19 @@ describe('sort action', () => {
           })
         ).map((item) => item.get('updatedAt'));
       };
+
       const beforeUpdatedAts = await getUpdatedAts();
+
       await api.agent().resource('tests').move({
         sourceId: moveItemId,
         targetId: 4,
       });
+
       const afterUpdatedAts = await getUpdatedAts();
+
       expect(afterUpdatedAts).toEqual(beforeUpdatedAts);
     });
+
     it('should only touch updatedAt on change scope item', async () => {
       const moveItemId = 1;
       const getUpdatedAts = async () => {
@@ -380,13 +380,12 @@ describe('sort action', () => {
           await api.db.getRepository('tests').find({
             order: ['id'],
             filter: {
-              id: {
-                $ne: moveItemId,
-              },
+              id: { $ne: moveItemId },
             },
           })
         ).map((item) => item.get('updatedAt'));
       };
+
       const findMoveItem = async () => {
         return await api.db.getRepository('tests').findOne({
           filter: {
@@ -394,18 +393,25 @@ describe('sort action', () => {
           },
         });
       };
+
       const beforeMoveItem = await findMoveItem();
+
       const beforeUpdatedAts = await getUpdatedAts();
+
       await waitSecond(1000);
+
       await api.agent().resource('tests').move({
         sourceId: moveItemId,
         targetId: 6,
       });
+
       const afterUpdatedAts = await getUpdatedAts();
       const afterMoveItem = await findMoveItem();
+
       expect(afterUpdatedAts).toEqual(beforeUpdatedAts);
       expect(beforeMoveItem.get('updatedAt')).not.toEqual(afterMoveItem.get('updatedAt'));
     });
+
     it('should touch updatedAt when no item at target scope', async () => {
       db.collection({
         name: 'tasks',
@@ -425,21 +431,26 @@ describe('sort action', () => {
           },
         ],
       });
+
       await db.sync();
+
       const t1 = await db.getRepository('tasks').create({
         values: {
           title: 't1',
           state: '1',
         },
       });
+
       const t2 = await db.getRepository('tasks').create({
         values: {
           title: 't2',
           state: '1',
         },
       });
+
       const beforeUpdated = t1.get('updatedAt');
       await waitSecond(1000);
+
       await api
         .agent()
         .resource('tasks')
@@ -449,28 +460,31 @@ describe('sort action', () => {
             state: '2',
           },
         });
+
       const afterT1 = await db.getRepository('tasks').findOne({
         filter: {
           id: t1.get('id'),
         },
       });
+
       expect(beforeUpdated).not.toEqual(afterT1.get('updatedAt'));
     });
+
     it('targetId/1->6', async () => {
       await api.agent().resource('tests').move({
         sourceId: 1,
         targetId: 6,
       });
+
       let response = await api
         .agent()
         .resource('tests')
         .list({
           sort: ['sort'],
-          filter: {
-            state: 1,
-          },
+          filter: { state: 1 },
           fields: ['title', 'sort'],
         });
+
       expect(response.body).toMatchObject({
         rows: [
           {
@@ -487,15 +501,15 @@ describe('sort action', () => {
           },
         ],
       });
+
       response = await api
         .agent()
         .resource('tests')
         .list({
           sort: ['sort'],
-          filter: {
-            state: 2,
-          },
+          filter: { state: 2 },
         });
+
       expect(response.body).toMatchObject({
         rows: [
           {
@@ -521,21 +535,22 @@ describe('sort action', () => {
         ],
       });
     });
+
     it('targetId/1->6 - method=insertAfter', async () => {
       await api.agent().resource('tests').move({
         sourceId: 1,
         targetId: 6,
         method: 'insertAfter',
       });
+
       let response = await api
         .agent()
         .resource('tests')
         .list({
           sort: ['sort'],
-          filter: {
-            state: 1,
-          },
+          filter: { state: 1 },
         });
+
       expect(response.body).toMatchObject({
         rows: [
           {
@@ -557,9 +572,7 @@ describe('sort action', () => {
         .resource('tests')
         .list({
           sort: ['sort'],
-          filter: {
-            state: 2,
-          },
+          filter: { state: 2 },
         });
       expect(response.body).toMatchObject({
         rows: [
@@ -586,6 +599,7 @@ describe('sort action', () => {
         ],
       });
     });
+
     it('targetId/6->2', async () => {
       await api.agent().resource('tests').move({
         sourceId: 6,
@@ -596,9 +610,7 @@ describe('sort action', () => {
         .resource('tests')
         .list({
           sort: ['sort'],
-          filter: {
-            state: 1,
-          },
+          filter: { state: 1 },
         });
       expect(response.body).toMatchObject({
         rows: [
@@ -629,9 +641,7 @@ describe('sort action', () => {
         .resource('tests')
         .list({
           sort: ['sort'],
-          filter: {
-            state: 2,
-          },
+          filter: { state: 2 },
         });
       expect(response.body).toMatchObject({
         rows: [
@@ -650,6 +660,7 @@ describe('sort action', () => {
         ],
       });
     });
+
     it('targetId/6->2 - method=insertAfter', async () => {
       await api.agent().resource('tests').move({
         sourceId: 6,
@@ -661,9 +672,7 @@ describe('sort action', () => {
         .resource('tests')
         .list({
           sort: ['sort'],
-          filter: {
-            state: 1,
-          },
+          filter: { state: 1 },
         });
       expect(response.body).toMatchObject({
         rows: [
@@ -694,9 +703,7 @@ describe('sort action', () => {
         .resource('tests')
         .list({
           sort: ['sort'],
-          filter: {
-            state: 2,
-          },
+          filter: { state: 2 },
         });
       expect(response.body).toMatchObject({
         rows: [
@@ -715,6 +722,7 @@ describe('sort action', () => {
         ],
       });
     });
+
     it('targetScope', async () => {
       await api
         .agent()
@@ -730,9 +738,7 @@ describe('sort action', () => {
         .resource('tests')
         .list({
           sort: ['sort'],
-          filter: {
-            state: 1,
-          },
+          filter: { state: 1 },
         });
       expect(response.body).toMatchObject({
         rows: [
@@ -755,9 +761,7 @@ describe('sort action', () => {
         .resource('tests')
         .list({
           sort: ['sort'],
-          filter: {
-            state: 2,
-          },
+          filter: { state: 2 },
         });
       expect(response.body).toMatchObject({
         rows: [
@@ -784,6 +788,7 @@ describe('sort action', () => {
         ],
       });
     });
+
     it('targetScope - method=prepend', async () => {
       await api
         .agent()
@@ -800,9 +805,7 @@ describe('sort action', () => {
         .resource('tests')
         .list({
           sort: ['sort'],
-          filter: {
-            state: 1,
-          },
+          filter: { state: 1 },
         });
       expect(response.body).toMatchObject({
         rows: [
@@ -822,9 +825,7 @@ describe('sort action', () => {
         .resource('tests')
         .list({
           sort: ['sort'],
-          filter: {
-            state: 2,
-          },
+          filter: { state: 2 },
         });
       expect(response.body).toMatchObject({
         rows: [

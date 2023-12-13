@@ -1,21 +1,26 @@
 import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields, test } from '@nocobase/test/client';
 import dayjs from 'dayjs';
 import { commonTesting, testPattern } from '../commonTesting';
+
 const gotoPage = async (mockPage, mockRecord) => {
   const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields).waitForInit();
   const record = await mockRecord('general');
   await nocoPage.goto();
+
   return record;
 };
+
 const openDialog = async (page: Page) => {
   await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
 };
+
 const showMenu = async (page: Page, fieldName: string) => {
   await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
   await page
     .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
     .hover();
 };
+
 const openDialogAndShowMenu = async ({
   page,
   mockPage,
@@ -30,15 +35,13 @@ const openDialogAndShowMenu = async ({
   const record = await gotoPage(mockPage, mockRecord);
   await openDialog(page);
   await showMenu(page, fieldName);
+
   return record;
 };
+
 test.describe('datetime', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'datetime',
-    blockType: 'editing',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'datetime', blockType: 'editing', mode: 'options' });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
     await testPattern({
@@ -69,25 +72,13 @@ test.describe('datetime', () => {
       },
     });
   });
+
   test('date display format', async ({ page, mockPage, mockRecord }) => {
-    const record = await openDialogAndShowMenu({
-      page,
-      mockPage,
-      mockRecord,
-      fieldName: 'datetime',
-    });
-    await page
-      .getByRole('menuitem', {
-        name: 'Date display format',
-      })
-      .click();
+    const record = await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName: 'datetime' });
+    await page.getByRole('menuitem', { name: 'Date display format' }).click();
     await page.getByLabel('YYYY/MM/DD').click();
-    await page
-      .getByRole('button', {
-        name: 'OK',
-        exact: true,
-      })
-      .click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+
     await expect(
       page
         .getByLabel('block-item-CollectionField-general-form-general.datetime-datetime')
@@ -95,13 +86,10 @@ test.describe('datetime', () => {
     ).toHaveValue(dayjs(record.datetime).format('YYYY/MM/DD'));
   });
 });
+
 test.describe('time', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'time',
-    blockType: 'editing',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'time', blockType: 'editing', mode: 'options' });
+
   test('pattern', async ({ page, mockPage, mockRecord }) => {
     let record = null;
     await testPattern({

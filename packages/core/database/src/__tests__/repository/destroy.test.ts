@@ -1,6 +1,7 @@
 import { mockDatabase } from '../index';
 import { Collection } from '../../collection';
 import { Database } from '@nocobase/database';
+
 describe('destroy with targetKey', function () {
   let db: Database;
   let User: Collection;
@@ -9,32 +10,30 @@ describe('destroy with targetKey', function () {
   afterEach(async () => {
     await db.close();
   });
+
   beforeEach(async () => {
     db = mockDatabase();
+
     User = db.collection({
       name: 'users',
       autoGenId: false,
       fields: [
-        {
-          type: 'string',
-          name: 'name',
-          primaryKey: true,
-        },
-        {
-          type: 'string',
-          name: 'status',
-        },
+        { type: 'string', name: 'name', primaryKey: true },
+        { type: 'string', name: 'status' },
       ],
     });
+
     await db.sync({
       force: true,
     });
+
     u1 = await User.repository.create({
       values: {
         name: 'u1',
         status: 'published',
       },
     });
+
     u2 = await User.repository.create({
       values: {
         name: 'u2',
@@ -42,19 +41,21 @@ describe('destroy with targetKey', function () {
       },
     });
   });
+
   it('should destroy all', async () => {
     expect(await User.repository.count()).toEqual(2);
-    await User.repository.destroy({
-      truncate: true,
-    });
+    await User.repository.destroy({ truncate: true });
     expect(await User.repository.count()).toEqual(0);
   });
+
   it('should destroy by target key', async () => {
     await User.repository.destroy({
       filterByTk: 'u2',
     });
+
     expect(await User.repository.count()).toEqual(1);
   });
+
   it('should destroy by target key and filter', async () => {
     await User.repository.destroy({
       filterByTk: 'u1',
@@ -62,7 +63,9 @@ describe('destroy with targetKey', function () {
         status: 'draft',
       },
     });
+
     expect(await User.repository.count()).toEqual(2);
+
     await User.repository.destroy({
       filterByTk: 'u2',
       filter: {
@@ -72,50 +75,41 @@ describe('destroy with targetKey', function () {
     expect(await User.repository.count()).toEqual(1);
   });
 });
+
 describe('destroy', () => {
   let db: Database;
   let User: Collection;
   let Post: Collection;
+
   afterEach(async () => {
     await db.close();
   });
+
   beforeEach(async () => {
     db = mockDatabase();
     await db.clean({
       drop: true,
     });
+
     User = db.collection({
       name: 'users',
       fields: [
-        {
-          type: 'string',
-          name: 'name',
-        },
-        {
-          type: 'hasMany',
-          name: 'posts',
-        },
+        { type: 'string', name: 'name' },
+        { type: 'hasMany', name: 'posts' },
       ],
     });
+
     Post = db.collection({
       name: 'posts',
       fields: [
-        {
-          type: 'string',
-          name: 'title',
-        },
-        {
-          type: 'string',
-          name: 'status',
-        },
-        {
-          type: 'belongsTo',
-          name: 'user',
-        },
+        { type: 'string', name: 'title' },
+        { type: 'string', name: 'status' },
+        { type: 'belongsTo', name: 'user' },
       ],
     });
     await db.sync();
   });
+
   test('destroy records from no pk tables that filterTargetKey configured', async () => {
     const Test = db.collection({
       name: 'test',
@@ -129,23 +123,29 @@ describe('destroy', () => {
         },
       ],
     });
+
     await db.sync();
+
     const t1 = await Test.repository.create({
       values: {
         test: 't1',
       },
     });
+
     await Test.repository.create({
       values: {
         test: 't2',
       },
     });
+
     await Test.repository.destroy({
       filterByTk: 't2',
     });
+
     expect(await Test.repository.count()).toEqual(1);
     expect((await Test.repository.findOne()).get('test')).toEqual('t1');
   });
+
   test('destroy records from tables without primary keys', async () => {
     const Test = db.collection({
       name: 'test',
@@ -158,68 +158,74 @@ describe('destroy', () => {
         },
       ],
     });
+
     await db.sync();
+
     const t1 = await Test.repository.create({
       values: {
         test: 't1',
       },
     });
+
     await Test.repository.create({
       values: {
         test: 't2',
       },
     });
+
     const destroy = async () => {
       await Test.repository.destroy({
         filterByTk: 111,
       });
     };
+
     await expect(destroy()).rejects.toThrowError('filterByTk is not supported for collection that has no primary key');
+
     await Test.repository.destroy({
       filter: {
         test: 't2',
       },
     });
+
     expect(await Test.repository.count()).toEqual(1);
     expect((await Test.repository.findOne()).get('test')).toEqual('t1');
   });
+
   test('destroy record has no primary key', async () => {
     Post.addField('tags', {
       type: 'belongsToMany',
     });
+
     const tags = db.collection({
       name: 'tags',
       fields: [
-        {
-          type: 'belongsToMany',
-          name: 'posts',
-        },
-        {
-          type: 'string',
-          name: 'name',
-        },
+        { type: 'belongsToMany', name: 'posts' },
+        { type: 'string', name: 'name' },
       ],
     });
+
     await db.sync();
+
     const post = await Post.repository.create({
       values: {
         title: 'p1',
-        tags: [
-          {
-            name: 't1',
-          },
-        ],
+        tags: [{ name: 't1' }],
       },
     });
+
     const throughCollection = db.getCollection(tags.getField('posts').options.through);
+
     expect(await throughCollection.repository.count()).toEqual(1);
+
     await throughCollection.repository.destroy({
       filter: {
         postId: post.get('id'),
       },
     });
+
     expect(await throughCollection.repository.count()).toEqual(0);
   });
+
   test('destroy with filter and filterByPk', async () => {
     const p1 = await Post.repository.create({
       values: {
@@ -227,32 +233,32 @@ describe('destroy', () => {
         status: 'published',
       },
     });
+
     await Post.repository.destroy({
       filterByTk: p1.get('id') as number,
       filter: {
         status: 'draft',
       },
     });
+
     expect(await Post.repository.count()).toEqual(1);
   });
+
   test('destroy all', async () => {
     await User.repository.create({
       values: {
         name: 'u1',
-        posts: [
-          {
-            title: 'u1p1',
-          },
-        ],
+        posts: [{ title: 'u1p1' }],
       },
     });
+
     await User.repository.destroy();
     expect(await User.repository.count()).toEqual(1);
-    await Post.repository.destroy({
-      truncate: true,
-    });
+
+    await Post.repository.destroy({ truncate: true });
     expect(await Post.repository.count()).toEqual(0);
   });
+
   test('destroy with filter', async () => {
     await User.repository.createMany({
       records: [
@@ -267,11 +273,13 @@ describe('destroy', () => {
         },
       ],
     });
+
     await User.repository.destroy({
       filter: {
         name: 'u1',
       },
     });
+
     expect(
       await User.repository.findOne({
         filter: {
@@ -281,6 +289,7 @@ describe('destroy', () => {
     ).toBeNull();
     expect(await User.repository.count()).toEqual(2);
   });
+
   test('destroy with filterByPK', async () => {
     await User.repository.createMany({
       records: [
@@ -295,11 +304,13 @@ describe('destroy', () => {
         },
       ],
     });
+
     const u2 = await User.repository.findOne({
       filter: {
         name: 'u2',
       },
     });
+
     await User.repository.destroy(u2['id']);
     expect(await User.repository.count()).toEqual(2);
   });

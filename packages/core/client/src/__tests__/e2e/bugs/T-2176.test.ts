@@ -1,4 +1,5 @@
 import { expect, test } from '@nocobase/test/client';
+
 const config = {
   pageSchema: {
     _isJSONSchemaObject: true,

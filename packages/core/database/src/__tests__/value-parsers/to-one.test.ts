@@ -4,10 +4,9 @@ import { ToManyValueParser } from '../../value-parsers';
 describe('number value parser', () => {
   let parser: ToManyValueParser;
   let db: Database;
+
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({ drop: true });
-
     db.collection({
       name: 'posts',
       fields: [
@@ -29,11 +28,10 @@ describe('number value parser', () => {
     await db.sync();
     const r = db.getRepository('users');
     await r.create({
-      values: {
-        name: 'user1',
-      },
+      values: { name: 'user1' },
     });
   });
+
   afterEach(async () => {
     await db.close();
   });

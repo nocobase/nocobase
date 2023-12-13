@@ -1,22 +1,22 @@
 import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndBasicFields, test } from '@nocobase/test/client';
 import { commonTesting, testDefaultValue, testPattern, testSetValidationRules } from '../commonTesting';
+
 const gotoPage = async (mockPage) => {
   const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
   await nocoPage.goto();
 };
+
 const openDialog = async (page: Page) => {
-  await page
-    .getByRole('button', {
-      name: 'Add new',
-    })
-    .click();
+  await page.getByRole('button', { name: 'Add new' }).click();
 };
+
 const showMenu = async (page: Page, fieldName: string) => {
   await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
   await page
     .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
     .hover();
 };
+
 const openDialogAndShowMenu = async ({
   page,
   mockPage,
@@ -32,25 +32,16 @@ const openDialogAndShowMenu = async ({
   await openDialog(page);
   await showMenu(page, fieldName);
 };
+
 test.describe('color', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'color',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'color' });
+
   test('set default value', async ({ page, mockPage, mockRecord }) => {
-    await openDialogAndShowMenu({
-      page,
-      mockPage,
-      mockRecord,
-      fieldName: 'color',
-    });
+    await openDialogAndShowMenu({ page, mockPage, mockRecord, fieldName: 'color' });
     // 简单测试下是否有选项，值的话无法选中，暂时测不了
-    await expect(
-      page.getByRole('menuitem', {
-        name: 'Set default value',
-      }),
-    ).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
   });
+
   test('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,
@@ -60,22 +51,12 @@ test.describe('color', () => {
       expectEditable: async () => {
         // 默认情况下显示颜色选择框
         await page.getByLabel('color-picker-normal').hover();
-        await expect(
-          page.getByRole('button', {
-            name: 'right Recommended',
-            exact: true,
-          }),
-        ).toBeVisible();
+        await expect(page.getByRole('button', { name: 'right Recommended', exact: true })).toBeVisible();
       },
       expectReadonly: async () => {
         // 只读模式下，不会显示颜色弹窗
         await page.getByLabel('color-picker-normal').hover();
-        await expect(
-          page.getByRole('button', {
-            name: 'right Recommended',
-            exact: true,
-          }),
-        ).not.toBeVisible();
+        await expect(page.getByRole('button', { name: 'right Recommended', exact: true })).not.toBeVisible();
       },
       expectEasyReading: async () => {
         await expect(page.getByLabel('color-picker-read-pretty')).toBeVisible();
@@ -83,12 +64,10 @@ test.describe('color', () => {
     });
   });
 });
+
 test.describe('email', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'email',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'email', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -109,6 +88,7 @@ test.describe('email', () => {
         ).toHaveValue('admin@nocobase.com'),
     });
   });
+
   test('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,
@@ -144,12 +124,10 @@ test.describe('email', () => {
     });
   });
 });
+
 test.describe('icon', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'icon',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'icon', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -159,23 +137,19 @@ test.describe('icon', () => {
       showMenu: () => showMenu(page, 'icon'),
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
       inputConstantValue: async () => {
-        await page
-          .getByLabel('block-item-VariableInput-')
-          .getByRole('button', {
-            name: 'Select icon',
-          })
-          .click();
+        await page.getByLabel('block-item-VariableInput-').getByRole('button', { name: 'Select icon' }).click();
         await page.getByLabel('account-book').locator('svg').click();
       },
       expectConstantValue: async () => {
         await expect(
-          page.getByLabel('block-item-CollectionField-general-form-general.icon-icon').getByRole('button', {
-            name: 'account-book',
-          }),
+          page
+            .getByLabel('block-item-CollectionField-general-form-general.icon-icon')
+            .getByRole('button', { name: 'account-book' }),
         ).toBeVisible();
       },
     });
   });
+
   test('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,
@@ -184,28 +158,16 @@ test.describe('icon', () => {
       showMenu: () => showMenu(page, 'icon'),
       expectEditable: async () => {
         // 默认情况下可以编辑图标
-        await page
-          .getByRole('button', {
-            name: 'Select icon',
-          })
-          .click();
+        await page.getByRole('button', { name: 'Select icon' }).click();
         await page.getByLabel('account-book').locator('svg').click();
       },
       expectReadonly: async () => {
         // 只读模式下，选择图标按钮会被禁用
-        await expect(
-          page.getByRole('button', {
-            name: 'account-book',
-          }),
-        ).toBeDisabled();
+        await expect(page.getByRole('button', { name: 'account-book' })).toBeDisabled();
       },
       expectEasyReading: async () => {
         // 按钮会消失，只剩下图标
-        await expect(
-          page.getByRole('button', {
-            name: 'account-book',
-          }),
-        ).not.toBeVisible();
+        await expect(page.getByRole('button', { name: 'account-book' })).not.toBeVisible();
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.icon-icon').getByLabel('account-book'),
         ).toBeVisible();
@@ -213,12 +175,10 @@ test.describe('icon', () => {
     });
   });
 });
+
 test.describe('single line text', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'singleLineText',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'singleLineText', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -228,8 +188,7 @@ test.describe('single line text', () => {
       showMenu: () => showMenu(page, 'singleLineText'),
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
       constantValue: 'test single line text',
-      variableValue: ['Current user', 'Email'],
-      // 值为 admin@nocobase.com
+      variableValue: ['Current user', 'Email'], // 值为 admin@nocobase.com
       expectConstantValue: async () => {
         await expect(
           page
@@ -246,6 +205,7 @@ test.describe('single line text', () => {
       },
     });
   });
+
   test('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,
@@ -284,6 +244,7 @@ test.describe('single line text', () => {
       },
     });
   });
+
   test('Set validation rules', async ({ page, mockPage }) => {
     await testSetValidationRules({
       page,
@@ -293,12 +254,10 @@ test.describe('single line text', () => {
     });
   });
 });
+
 test.describe('integer', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'integer',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'integer', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -307,8 +266,7 @@ test.describe('integer', () => {
       closeDialog: () => page.getByLabel('drawer-Action.Container-general-Add record-mask').click(),
       showMenu: () => showMenu(page, 'integer'),
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
-      variableValue: ['Current user', 'ID'],
-      // 值为 1
+      variableValue: ['Current user', 'ID'], // 值为 1
       inputConstantValue: async () => {
         await page.getByLabel('block-item-VariableInput-').getByRole('spinbutton').click();
         await page.getByLabel('block-item-VariableInput-').getByRole('spinbutton').fill('112233');
@@ -325,6 +283,7 @@ test.describe('integer', () => {
       },
     });
   });
+
   test('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,
@@ -359,6 +318,7 @@ test.describe('integer', () => {
       },
     });
   });
+
   test('set validation rules', async ({ page, mockPage }) => {
     await testSetValidationRules({
       page,
@@ -368,12 +328,10 @@ test.describe('integer', () => {
     });
   });
 });
+
 test.describe('number', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'number',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'number', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -386,8 +344,7 @@ test.describe('number', () => {
         await page.getByLabel('block-item-VariableInput-').getByRole('spinbutton').click();
         await page.getByLabel('block-item-VariableInput-').getByRole('spinbutton').fill('11.22');
       },
-      variableValue: ['Current user', 'ID'],
-      // 值为 1
+      variableValue: ['Current user', 'ID'], // 值为 1
       expectConstantValue: async () => {
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.number-number').getByRole('spinbutton'),
@@ -400,6 +357,7 @@ test.describe('number', () => {
       },
     });
   });
+
   test('pattern', async ({ page, mockPage }) => {
     // TODO: number 类型的字段，当输入了小数，然后把 Pattern 切换成 Easy-reading 模式，小数不应该被去掉；
     test.fail();
@@ -436,6 +394,7 @@ test.describe('number', () => {
       },
     });
   });
+
   test('set validation rules', async ({ page, mockPage }) => {
     await testSetValidationRules({
       page,
@@ -445,12 +404,10 @@ test.describe('number', () => {
     });
   });
 });
+
 test.describe('password', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'password',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'password', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -460,8 +417,7 @@ test.describe('password', () => {
       showMenu: () => showMenu(page, 'password'),
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
       constantValue: 'test112233password',
-      variableValue: ['Current user', 'Email'],
-      // 值为 admin@nocobase.com
+      variableValue: ['Current user', 'Email'], // 值为 admin@nocobase.com
       expectConstantValue: async () => {
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.password-password').getByRole('textbox'),
@@ -474,6 +430,7 @@ test.describe('password', () => {
       },
     });
   });
+
   test('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,
@@ -508,6 +465,7 @@ test.describe('password', () => {
       },
     });
   });
+
   test('set validation rules', async ({ page, mockPage }) => {
     await testSetValidationRules({
       page,
@@ -517,12 +475,10 @@ test.describe('password', () => {
     });
   });
 });
+
 test.describe('percent', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'percent',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'percent', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -535,8 +491,7 @@ test.describe('percent', () => {
         await page.getByLabel('block-item-VariableInput-').getByRole('spinbutton').click();
         await page.getByLabel('block-item-VariableInput-').getByRole('spinbutton').fill('11.22');
       },
-      variableValue: ['Current user', 'ID'],
-      // 值为 1
+      variableValue: ['Current user', 'ID'], // 值为 1
       expectConstantValue: async () => {
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.percent-percent').getByRole('spinbutton'),
@@ -550,6 +505,7 @@ test.describe('percent', () => {
       },
     });
   });
+
   test('pattern', async ({ page, mockPage }) => {
     // TODO: percent 类型的字段，当输入了小数，然后把 Pattern 切换成 Easy-reading 模式，小数点不应该被去掉；
     test.fail();
@@ -586,6 +542,7 @@ test.describe('percent', () => {
       },
     });
   });
+
   test('set validation rules', async ({ page, mockPage }) => {
     await testSetValidationRules({
       page,
@@ -595,12 +552,10 @@ test.describe('percent', () => {
     });
   });
 });
+
 test.describe('phone', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'phone',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'phone', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -610,8 +565,7 @@ test.describe('phone', () => {
       showMenu: () => showMenu(page, 'phone'),
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
       constantValue: '17777777777',
-      variableValue: ['Current user', 'ID'],
-      // 值为 1
+      variableValue: ['Current user', 'ID'], // 值为 1
       expectConstantValue: async () => {
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.phone-phone').getByRole('textbox'),
@@ -624,6 +578,7 @@ test.describe('phone', () => {
       },
     });
   });
+
   test('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,
@@ -659,12 +614,10 @@ test.describe('phone', () => {
     });
   });
 });
+
 test.describe('long text', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'longText',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'longText', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -676,8 +629,7 @@ test.describe('long text', () => {
       showMenu: () => showMenu(page, 'longText'),
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
       constantValue: 'test long text',
-      variableValue: ['Current user', 'Email'],
-      // 值为 admin@nocobase.com
+      variableValue: ['Current user', 'Email'], // 值为 admin@nocobase.com
       expectConstantValue: async () => {
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').getByRole('textbox'),
@@ -690,6 +642,7 @@ test.describe('long text', () => {
       },
     });
   });
+
   test('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,
@@ -724,6 +677,7 @@ test.describe('long text', () => {
       },
     });
   });
+
   test('set validation rules', async ({ page, mockPage }) => {
     await testSetValidationRules({
       page,
@@ -733,12 +687,10 @@ test.describe('long text', () => {
     });
   });
 });
+
 test.describe('URL', () => {
-  commonTesting({
-    openDialogAndShowMenu,
-    fieldName: 'url',
-    mode: 'options',
-  });
+  commonTesting({ openDialogAndShowMenu, fieldName: 'url', mode: 'options' });
+
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
@@ -750,8 +702,7 @@ test.describe('URL', () => {
       showMenu: () => showMenu(page, 'url'),
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
       constantValue: 'https://nocobase.com',
-      variableValue: ['Current user', 'Email'],
-      // 值为 admin@nocobase.com
+      variableValue: ['Current user', 'Email'], // 值为 admin@nocobase.com
       expectConstantValue: async () => {
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.url-url').getByRole('textbox'),
@@ -764,6 +715,7 @@ test.describe('URL', () => {
       },
     });
   });
+
   test('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,

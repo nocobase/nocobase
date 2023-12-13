@@ -1,4 +1,5 @@
 import { expect, test } from '@nocobase/test/client';
+
 const config = {
   pageSchema: {
     _isJSONSchemaObject: true,
@@ -162,13 +163,10 @@ const config = {
 // fix https://nocobase.height.app/T-2186
 test('BUG(Filter): the input box displayed should correspond to the field type', async ({ page, mockPage }) => {
   await mockPage(config).goto();
+
   await page.getByLabel('action-Filter.Action-Filter-filter-users-table').click();
   await page.getByTestId('select-filter-field').getByLabel('Search').click();
-  await page
-    .getByRole('menuitemcheckbox', {
-      name: 'ID',
-    })
-    .click();
+  await page.getByRole('menuitemcheckbox', { name: 'ID' }).click();
 
   // 应该显示数字输入框
   await expect(page.getByRole('spinbutton')).toBeVisible();

@@ -1,22 +1,21 @@
 import { mockDatabase } from '../';
 import { Database, PasswordField } from '../../';
+
 describe('password field', () => {
   let db: Database;
+
   beforeEach(async () => {
     db = mockDatabase();
   });
+
   afterEach(async () => {
     await db.close();
   });
+
   it('case 1', async () => {
     const User = db.collection({
       name: 'users',
-      fields: [
-        {
-          type: 'password',
-          name: 'password',
-        },
-      ],
+      fields: [{ type: 'password', name: 'password' }],
     });
     await db.sync();
     const user = await User.model.create<any>({

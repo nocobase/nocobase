@@ -1,8 +1,11 @@
+import { vi } from 'vitest';
 import { Schema } from '@formily/react';
 import { createDesignable, Designable } from '../useDesignable';
+
 describe('createDesignable', () => {
   let dn: Designable;
   let schema: Schema;
+
   beforeEach(() => {
     schema = new Schema({
       type: 'void',
@@ -25,6 +28,7 @@ describe('createDesignable', () => {
       current: schema.properties.current,
     });
   });
+
   describe('insert a new node', () => {
     test('insertBeforeBegin', () => {
       dn.insertBeforeBegin({
@@ -55,6 +59,7 @@ describe('createDesignable', () => {
       expect(schema.properties.abc['x-uid']).toBeDefined();
       expect(Object.keys(schema.properties)).toEqual(['abc', 'current']);
     });
+
     test('insertAfterBegin', () => {
       dn.insertAfterBegin({
         name: 'abc',
@@ -84,6 +89,7 @@ describe('createDesignable', () => {
       });
       expect(schema.properties.current.properties.abc['x-uid']).toBeDefined();
     });
+
     test('insertBeforeEnd', () => {
       dn.insertBeforeEnd({
         name: 'abc',
@@ -112,6 +118,7 @@ describe('createDesignable', () => {
       });
       expect(schema.properties.current.properties.abc['x-uid']).toBeDefined();
     });
+
     test('insertAfterEnd', () => {
       dn.insertAfterEnd({
         name: 'abc',
@@ -142,12 +149,14 @@ describe('createDesignable', () => {
       expect(Object.keys(schema.properties)).toEqual(['current', 'abc']);
     });
   });
+
   describe('move an existing node', () => {
     test('insertBeforeBegin', () => {
       dn.insertBeforeBegin(schema.properties.current.properties.child);
       expect(Object.keys(schema.properties)).toEqual(['child', 'current']);
       expect(schema.properties.current?.properties?.child).toBeUndefined();
     });
+
     test('insertBeforeBegin', () => {
       dn.insertBeforeBegin({
         type: 'void',
@@ -165,6 +174,7 @@ describe('createDesignable', () => {
       dn.insertBeforeBegin(schema.properties.a2);
       expect(Object.keys(schema.properties)).toEqual(['a1', 'a3', 'a2', 'current']);
     });
+
     test('insertAfterBegin', () => {
       dn.insertBeforeBegin({
         name: 'a1',
@@ -173,6 +183,7 @@ describe('createDesignable', () => {
       expect(Object.keys(schema.properties.current.properties)).toEqual(['a1', 'child']);
       expect(schema.properties.a1).toBeUndefined();
     });
+
     test('insertBeforeEnd', () => {
       dn.insertBeforeBegin({
         name: 'a1',
@@ -181,11 +192,13 @@ describe('createDesignable', () => {
       expect(Object.keys(schema.properties.current.properties)).toEqual(['child', 'a1']);
       expect(schema.properties.a1).toBeUndefined();
     });
+
     test('insertAfterEnd', () => {
       dn.insertAfterEnd(schema.properties.current.properties.child);
       expect(Object.keys(schema.properties)).toEqual(['current', 'child']);
       expect(schema.properties.current?.properties?.child).toBeUndefined();
     });
+
     test('insertAfterEnd', () => {
       dn.insertAfterEnd({
         type: 'void',
@@ -204,26 +217,31 @@ describe('createDesignable', () => {
       expect(Object.keys(schema.properties)).toEqual(['current', 'a2', 'a3', 'a1']);
     });
   });
+
   describe('recursiveRemoveIfNoChildren', () => {
     test('has child nodes', () => {
       dn.recursiveRemoveIfNoChildren(schema.properties.current);
       expect(schema.properties.current).toBeDefined();
     });
+
     test('no child nodes', () => {
       dn.recursiveRemoveIfNoChildren(schema.properties.current.properties.child);
       expect(schema.properties.current?.properties?.child).toBeUndefined();
     });
   });
+
   describe('remove', () => {
     test('without schema', () => {
       dn.remove();
       expect(schema?.properties?.current).toBeUndefined();
     });
+
     test('without options', () => {
       dn.remove(schema.properties.current.properties.child);
       expect(schema.properties.current).toBeDefined();
       expect(schema.properties.current?.properties?.child).toBeUndefined();
     });
+
     test('removeParentsIfNoChildren + breakRemoveOn json', () => {
       dn.remove(schema.properties.current.properties.child, {
         removeParentsIfNoChildren: true,
@@ -233,6 +251,7 @@ describe('createDesignable', () => {
       });
       expect(schema?.properties?.current).toBeUndefined();
     });
+
     test('removeParentsIfNoChildren + breakRemoveOn function', () => {
       dn.remove(schema.properties.current.properties.child, {
         removeParentsIfNoChildren: true,
@@ -242,9 +261,11 @@ describe('createDesignable', () => {
     });
   });
 });
+
 describe('x-index', () => {
   let dn: Designable;
   let schema: Schema;
+
   beforeEach(() => {
     schema = new Schema({
       type: 'void',
@@ -274,6 +295,7 @@ describe('x-index', () => {
       },
     });
   });
+
   test('insertBeforeBeginOrAfterEnd', () => {
     dn = createDesignable({
       current: schema.properties.block2,
@@ -281,6 +303,7 @@ describe('x-index', () => {
     dn.insertBeforeBeginOrAfterEnd(schema.properties.block5);
     expect(Object.keys(schema.properties)).toEqual(['block1', 'block5', 'block2', 'block3', 'block4']);
   });
+
   test('insertBeforeBegin', () => {
     dn = createDesignable({
       current: schema.properties.block2,
@@ -290,6 +313,7 @@ describe('x-index', () => {
     });
     expect(Object.keys(schema.properties)).toEqual(['block1', 'block0', 'block2', 'block3', 'block4', 'block5']);
   });
+
   test('insertAfterEnd', () => {
     dn = createDesignable({
       current: schema.properties.block2,
@@ -299,6 +323,7 @@ describe('x-index', () => {
     });
     expect(Object.keys(schema.properties)).toEqual(['block1', 'block2', 'block0', 'block3', 'block4', 'block5']);
   });
+
   test('insertAfterBegin', () => {
     dn = createDesignable({
       current: schema,
@@ -308,6 +333,7 @@ describe('x-index', () => {
     });
     expect(Object.keys(schema.properties)).toEqual(['block0', 'block1', 'block2', 'block3', 'block4', 'block5']);
   });
+
   test('insertBeforeEnd', () => {
     dn = createDesignable({
       current: schema,
@@ -318,6 +344,7 @@ describe('x-index', () => {
     expect(Object.keys(schema.properties)).toEqual(['block1', 'block2', 'block3', 'block4', 'block5', 'block0']);
   });
 });
+
 describe('wrap', () => {
   let dn: Designable;
   let schema: Schema;
@@ -331,6 +358,7 @@ describe('wrap', () => {
       },
     };
   };
+
   const rowWrap = (s) => {
     return {
       name: 'row2',
@@ -347,6 +375,7 @@ describe('wrap', () => {
       },
     };
   };
+
   beforeEach(() => {
     schema = new Schema({
       type: 'void',
@@ -371,6 +400,7 @@ describe('wrap', () => {
       },
     });
   });
+
   test('insertBeforeBegin', () => {
     dn = createDesignable({
       current: schema.properties.row1.properties.col11,
@@ -385,6 +415,7 @@ describe('wrap', () => {
     expect(Object.keys(schema.properties.row1.properties)).toEqual(['col12', 'col11']);
     expect(schema.properties.row1.properties.col12.properties.block2).toBeDefined();
   });
+
   test('insertAfterEnd', () => {
     dn = createDesignable({
       current: schema.properties.row1.properties.col11,
@@ -399,6 +430,7 @@ describe('wrap', () => {
     expect(Object.keys(schema.properties.row1.properties)).toEqual(['col11', 'col12']);
     expect(schema.properties.row1.properties.col12.properties.block2).toBeDefined();
   });
+
   test('removeParentsIfNoChildren', () => {
     const coldn = createDesignable({
       current: schema.properties.row1.properties.col11,
@@ -407,9 +439,7 @@ describe('wrap', () => {
       type: 'void',
       name: 'block2',
     };
-    coldn.insertAfterEnd(s, {
-      wrap: colWrap,
-    });
+    coldn.insertAfterEnd(s, { wrap: colWrap });
     const griddn = createDesignable({
       current: schema,
     });
@@ -422,8 +452,10 @@ describe('wrap', () => {
     expect(schema.properties.row2.properties.col21.properties.block2).toBeDefined();
   });
 });
+
 describe('parentsIn', () => {
   let schema: Schema;
+
   beforeEach(() => {
     schema = new Schema({
       type: 'void',
@@ -446,6 +478,7 @@ describe('parentsIn', () => {
       },
     });
   });
+
   test('parentsIn', () => {
     const dn = createDesignable({
       current: schema.properties.menu.properties.item1,

@@ -1,17 +1,19 @@
 import { Collection, Database, mockDatabase } from '@nocobase/database';
+
 describe('update', () => {
   let db: Database;
   let Post: Collection;
   let Tag: Collection;
   let PostTag: Collection;
+
   afterEach(async () => {
     await db.close();
   });
+
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({
-      drop: true,
-    });
+
+    await db.clean({ drop: true });
     PostTag = db.collection({
       name: 'post_tag',
       fields: [
@@ -35,13 +37,11 @@ describe('update', () => {
         },
       ],
     });
+
     Post = db.collection({
       name: 'posts',
       fields: [
-        {
-          type: 'string',
-          name: 'title',
-        },
+        { type: 'string', name: 'title' },
         {
           type: 'belongsToMany',
           name: 'tags',
@@ -57,6 +57,7 @@ describe('update', () => {
         },
       ],
     });
+
     Tag = db.collection({
       name: 'tags',
       fields: [
@@ -73,8 +74,10 @@ describe('update', () => {
         },
       ],
     });
+
     await db.sync();
   });
+
   it('should throw error when update data conflicted', async () => {
     const t1 = await Tag.repository.create({
       values: {
@@ -92,7 +95,9 @@ describe('update', () => {
         tags: [t1.get('id')],
       },
     });
+
     const postTag = await PostTag.repository.findOne();
+
     let error;
     try {
       await Post.repository.update({
@@ -112,6 +117,7 @@ describe('update', () => {
       error = err;
     }
     expect(error).toBeDefined();
+
     let error2;
     try {
       await Post.repository.update({
@@ -131,21 +137,15 @@ describe('update', () => {
       error2 = err;
     }
     expect(error2).toBeDefined();
+
     const User = db.collection({
       name: 'users',
       fields: [
-        {
-          type: 'string',
-          name: 'name',
-        },
-        {
-          type: 'hasMany',
-          name: 'posts',
-          target: 'posts',
-          foreignKey: 'user_id',
-        },
+        { type: 'string', name: 'name' },
+        { type: 'hasMany', name: 'posts', target: 'posts', foreignKey: 'user_id' },
       ],
     });
+
     await db.sync();
     const u1 = await User.repository.create({
       values: {
@@ -153,7 +153,9 @@ describe('update', () => {
         posts: [post1.get('id')],
       },
     });
+
     let error3;
+
     try {
       await User.repository.update({
         filterByTk: u1.get('id'),
@@ -176,19 +178,18 @@ describe('update', () => {
     } catch (err) {
       error3 = err;
     }
+
     expect(error3).toBeDefined();
   });
+
   it('should update tags to null', async () => {
     await db.getRepository('posts').create({
       values: {
         title: 'p1',
-        tags: [
-          {
-            name: 't1',
-          },
-        ],
+        tags: [{ name: 't1' }],
       },
     });
+
     const [p1] = await db.getRepository('posts').update({
       values: {
         tags: null,
@@ -197,15 +198,19 @@ describe('update', () => {
         title: 'p1',
       },
     });
+
     expect(p1.toJSON()['tags']).toEqual([]);
   });
+
   it('should not update items without filter or filterByPk', async () => {
     await db.getRepository('posts').create({
       values: {
         title: 'p1',
       },
     });
+
     let error;
+
     try {
       await db.getRepository('posts').update({
         values: {
@@ -215,15 +220,19 @@ describe('update', () => {
     } catch (e) {
       error = e;
     }
+
     expect(error).not.toBeUndefined();
+
     const p1 = await db.getRepository('posts').findOne();
     expect(p1.toJSON()['title']).toEqual('p1');
+
     await db.getRepository('posts').update({
       values: {
         title: 'p3',
       },
       filterByTk: p1.get('id') as number,
     });
+
     await p1.reload();
     expect(p1.toJSON()['title']).toEqual('p3');
   });

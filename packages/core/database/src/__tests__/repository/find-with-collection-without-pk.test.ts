@@ -1,18 +1,21 @@
 import Database from '../../database';
 import { mockDatabase } from '../index';
+
 describe('find collection that without primary key', () => {
   let db: Database;
+
   beforeAll(async () => {
     db = mockDatabase({
       tablePrefix: '',
     });
-    await db.clean({
-      drop: true,
-    });
+
+    await db.clean({ drop: true });
   });
+
   afterEach(async () => {
     await db.close();
   });
+
   it('should find collection with belongsTo', async () => {
     const B = db.collection({
       name: 'b',
@@ -23,6 +26,7 @@ describe('find collection that without primary key', () => {
         },
       ],
     });
+
     const A = db.collection({
       name: 'a',
       autoGenId: false,
@@ -39,24 +43,29 @@ describe('find collection that without primary key', () => {
         },
       ],
     });
+
     await db.sync();
+
     const b1 = await B.repository.create({
       values: {
         name: 'b1',
       },
     });
+
     await A.repository.create({
       values: {
         name: 'a1',
         b_id: b1.get('id'),
       },
     });
+
     const aWithB = await A.repository.find({
       appends: ['b'],
       filter: {
         'b.name': 'b1',
       },
     });
+
     expect(aWithB[0].get('b').get('name')).toBe('b1');
   });
 });

@@ -1,17 +1,19 @@
 import { mockDatabase } from '../';
 import { Database } from '../../database';
 import { Model } from '../../model';
+
 describe('hidden field options', () => {
   let db: Database;
+
   beforeEach(async () => {
     db = mockDatabase();
-    await db.clean({
-      drop: true,
-    });
+    await db.clean({ drop: true });
   });
+
   afterEach(async () => {
     await db.close();
   });
+
   it('case 1', async () => {
     db.collection({
       name: 'tests',
@@ -45,6 +47,7 @@ describe('hidden field options', () => {
     expect(instance.get('password')).toBe('123');
     expect(instance.toJSON().password).toBeUndefined();
   });
+
   it('case 2', async () => {
     db.collection({
       name: 'posts',
@@ -95,6 +98,7 @@ describe('hidden field options', () => {
     expect(instance.get('user')).toBeInstanceOf(Model);
     expect(instance.toJSON().user).toBeUndefined();
   });
+
   it('case 3', async () => {
     db.collection({
       name: 'posts',
@@ -145,6 +149,7 @@ describe('hidden field options', () => {
     expect(instance.toJSON().user).toBeDefined();
     expect(instance.toJSON().user.password).toBeUndefined();
   });
+
   it('case 6', async () => {
     db.collection({
       name: 'posts',
@@ -195,6 +200,7 @@ describe('hidden field options', () => {
     expect(instance.toJSON().user).toBeDefined();
     expect(instance.toJSON().user.password).toBeUndefined();
   });
+
   it('case 4', async () => {
     db.collection({
       name: 'posts',
@@ -246,6 +252,7 @@ describe('hidden field options', () => {
     expect(instance.get('users')[0]).toBeInstanceOf(Model);
     expect(instance.toJSON().users[0].password).toBeUndefined();
   });
+
   it('case 5', async () => {
     db.collection({
       name: 'posts',

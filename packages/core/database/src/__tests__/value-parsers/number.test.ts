@@ -1,14 +1,18 @@
 import { NumberValueParser } from '../../value-parsers';
+
 describe('number value parser', () => {
   let parser: NumberValueParser;
+
   beforeEach(() => {
     parser = new NumberValueParser({}, {});
   });
+
   const expectValue = (value) => {
     parser = new NumberValueParser({}, {});
     parser.setValue(value);
     return expect(parser.getValue());
   };
+
   it('should be number', () => {
     expectValue(123).toBe(123);
     expect(parser.errors.length === 0).toBeTruthy();
@@ -25,6 +29,7 @@ describe('number value parser', () => {
     expectValue('11,122.5507%').toBe(111.225507);
     expect(parser.errors.length === 0).toBeTruthy();
   });
+
   it('should be null', () => {
     expectValue('').toBe(null);
     expect(parser.errors.length === 0).toBeTruthy();
@@ -33,6 +38,7 @@ describe('number value parser', () => {
     expectValue('-').toBe(null);
     expect(parser.errors.length === 0).toBeTruthy();
   });
+
   it('should be errors', () => {
     expectValue({}).toBe(null);
     expect(parser.errors.length > 0).toBeTruthy();
