@@ -1,7 +1,6 @@
 import gulp from 'gulp';
-import path from 'path';
-import fs from 'fs';
 import gulpTs from 'gulp-typescript';
+import path from 'path';
 import { ROOT_PATH } from './constant';
 
 export const buildDeclaration = (cwd: string, targetDir: string) => {
@@ -17,6 +16,7 @@ export const buildDeclaration = (cwd: string, targetDir: string) => {
       `!${path.join(srcPath, '**/demos{,/**}')}`,
       `!${path.join(srcPath, '**/__test__{,/**}')}`,
       `!${path.join(srcPath, '**/__tests__{,/**}')}`,
+      `!${path.join(srcPath, '**/__e2e__{,/**}')}`,
       `!${path.join(srcPath, '**/*.mdx')}`,
       `!${path.join(srcPath, '**/*.md')}`,
       `!${path.join(srcPath, '**/*.+(test|e2e|spec).+(js|jsx|ts|tsx)')}`,
