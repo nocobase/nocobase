@@ -373,7 +373,7 @@ export const generalWithDatetime: CollectionSetting[] = [
 /**
  * 创建一个名为 general 的 collection，其包含所有 relation 类型的字段
  */
-export const generalWithRelation: CollectionSetting[] = [
+export const generalWithAssociation: CollectionSetting[] = [
   {
     name: 'general',
     title: 'General',
@@ -611,7 +611,7 @@ export const tree: CollectionSetting[] = [
   },
 ];
 
-export const generalWithMultiLevelRelationshipFields: CollectionSetting[] = [
+export const generalWithMultiLevelM2oFields: CollectionSetting[] = [
   {
     name: 'general',
     title: 'General',
@@ -646,6 +646,57 @@ export const generalWithMultiLevelRelationshipFields: CollectionSetting[] = [
         name: 'm2oField2',
         interface: 'm2o',
         target: 'm2oField3',
+      },
+    ],
+  },
+  {
+    name: 'm2oField3',
+    title: 'M2o field 3',
+    fields: [
+      {
+        name: 'm2oField3',
+        interface: 'm2o',
+        target: 'users',
+      },
+    ],
+  },
+];
+
+export const generalWithMultiLevelM2mFields: CollectionSetting[] = [
+  {
+    name: 'general',
+    title: 'General',
+    fields: [
+      {
+        name: 'm2mField0',
+        interface: 'm2m',
+        target: 'm2mField1',
+      },
+      {
+        name: 'singleLineText',
+        interface: 'input',
+      },
+    ],
+  },
+  {
+    name: 'm2mField1',
+    title: 'M2o field 1',
+    fields: [
+      {
+        name: 'm2mField1',
+        interface: 'm2m',
+        target: 'm2mField2',
+      },
+    ],
+  },
+  {
+    name: 'm2mField2',
+    title: 'M2o field 2',
+    fields: [
+      {
+        name: 'm2mField2',
+        interface: 'm2m',
+        target: 'users',
       },
     ],
   },
