@@ -24,5 +24,10 @@ export default defineCollection({
       type: 'uid',
       name: 'uid',
     },
+    {
+      type: 'radio',
+      name: 'default',
+      defaultValue: false,
+    },
   ],
 });
