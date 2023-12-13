@@ -1,6 +1,6 @@
 import { expect, groupPageEmpty, test } from '@nocobase/test/client';
 
-test.describe('create menus', () => {
+test.describe('add menu item', () => {
   test('header', async ({ page, deletePage }) => {
     await page.goto('/');
 
