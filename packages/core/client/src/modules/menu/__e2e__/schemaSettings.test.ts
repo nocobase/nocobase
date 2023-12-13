@@ -5,6 +5,8 @@ test.describe('group page menus schema settings', () => {
     await mockPage({ type: 'group', name: 'group page' }).goto();
     await showSettings(page, 'group page');
     await page.getByRole('menuitem', { name: 'Edit' }).click();
+    await page.mouse.move(300, 0);
+
     // 设置一个新名称
     await page.getByRole('textbox').click();
     await page.getByRole('textbox').fill('new group page');
@@ -12,6 +14,8 @@ test.describe('group page menus schema settings', () => {
     await page.getByRole('button', { name: 'Select icon' }).click();
     await page.getByRole('tooltip').getByLabel('account-book').locator('svg').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
+
+    await page.reload();
 
     await expect(page.getByLabel('new group page')).toBeVisible();
     await expect(page.getByLabel('new group page').getByLabel('account-book').locator('svg')).toBeVisible();
