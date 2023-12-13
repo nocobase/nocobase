@@ -7,7 +7,7 @@ import React, { useCallback, useRef } from 'react';
  * @param props
  * @returns
  */
-export const PopoverWithStopPropagation = (props: PopoverProps) => {
+export const StablePopover = (props: PopoverProps) => {
   // 1. 用于记录点击的元素
   const target = useRef(null);
 
