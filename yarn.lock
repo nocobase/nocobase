@@ -15391,11 +15391,6 @@ jest_workaround@^0.79.19:
   resolved "https://registry.npmmirror.com/jest_workaround/-/jest_workaround-0.79.19.tgz#f5bc569163c33c4533e1c4053c533a8811152a91"
   integrity sha512-g/MtKSwyb4Ohnd5GHeJaduTgznkyst81x+eUBGOSGK7f8doWuRMPpt6XM/13sM2jLB2QNzT/7Djj7o2PhsozIA==
 
-jmespath@^0.16.0:
-  version "0.16.0"
-  resolved "https://registry.npmmirror.com/jmespath/-/jmespath-0.16.0.tgz#b15b0a85dfd4d930d43e69ed605943c802785076"
-  integrity sha512-9FzQjJ7MATs1tSpnco1K6ayiYE3figslrXA72G2HQ/n76RzvYlofyi5QM+iX4YRs/pu3yzxlVQSST23+dMDknw==
-
 jose@^4.14.1:
   version "4.14.4"
   resolved "https://registry.npmmirror.com/jose/-/jose-4.14.4.tgz#59e09204e2670c3164ee24cbfe7115c6f8bff9ca"
@@ -15547,11 +15542,6 @@ json5@^2.1.2, json5@^2.2.2, json5@^2.2.3:
   version "2.2.3"
   resolved "https://registry.npmmirror.com/json5/-/json5-2.2.3.tgz#78cd6f1a19bdc12b73db5ad0c61efd66c1e29283"
 
-jsonata@^2.0.3:
-  version "2.0.3"
-  resolved "https://registry.npmmirror.com/jsonata/-/jsonata-2.0.3.tgz#f8971c2891cb1d6ebfeecbfe657ecc38c1b843a5"
-  integrity sha512-Up2H81MUtjqI/dWwWX7p4+bUMfMrQJVMN/jW6clFMTiYP528fBOBNtRu944QhKTs3+IsVWbgMeUTny5fw2VMUA==
-
 jsonc-parser@^3.2.0:
   version "3.2.0"
   resolved "https://registry.npmmirror.com/jsonc-parser/-/jsonc-parser-3.2.0.tgz#31ff3f4c2b9793f89c67212627c51c6394f88e76"
@@ -15579,11 +15569,6 @@ jsonfile@^6.0.1:
 jsonparse@^1.2.0, jsonparse@^1.3.1:
   version "1.3.1"
   resolved "https://registry.npmmirror.com/jsonparse/-/jsonparse-1.3.1.tgz#3f4dae4a91fac315f71062f8521cc239f1366280"
-
-jsonpath-plus@^7.2.0:
-  version "7.2.0"
-  resolved "https://registry.npmmirror.com/jsonpath-plus/-/jsonpath-plus-7.2.0.tgz#7ad94e147b3ed42f7939c315d2b9ce490c5a3899"
-  integrity sha512-zBfiUPM5nD0YZSBT/o/fbCUlCcepMIdP0CJZxM1+KgA4f2T206f6VAg9e7mX35+KlMaIc5qXW34f3BnwJ3w+RA==
 
 jsonwebtoken@^8.5.1:
   version "8.5.1"

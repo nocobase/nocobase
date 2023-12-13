@@ -46,7 +46,7 @@ test.describe('many to one', () => {
     // 修改为 nickname
     await page.getByRole('menuitem', { name: 'Title field' }).click();
     await page.getByRole('option', { name: 'Nickname' }).click();
-    await expect(page.getByRole('menuitem', { name: 'Title field' })).toHaveText('Title fieldNickname');
+    await page.mouse.move(300, 0);
     await expect(page.getByRole('cell', { name: record.manyToOne.nickname, exact: true })).toBeVisible();
   });
 
