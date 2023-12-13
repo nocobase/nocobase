@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-visualization",
-  "version": "0.17.0-alpha.5",
+  "version": "0.17.0-alpha.6",
   "displayName": "Data Visualization",
   "displayName.zh-CN": "数据可视化",
   "description": "Provides business intelligence and data visualization features",
