@@ -51,8 +51,7 @@
     "react-router": "^6.11.2",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "antd": "5.8.6",
-    "@formily/antd-v5": "1.1.7"
+    "antd": "5.12.2"
   },
   "config": {
     "ghooks": {
