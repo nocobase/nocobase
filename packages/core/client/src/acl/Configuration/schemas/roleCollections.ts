@@ -90,6 +90,20 @@ export const roleCollectionsSchema: ISchema = {
     },
   },
   properties: {
+    filter: {
+      type: 'void',
+      title: '{{ t("Filter") }}',
+      default: {
+        $and: [{ title: { $includes: '' } }, { name: { $includes: '' } }],
+      },
+      'x-action': 'filter',
+      'x-component': 'Filter.Action',
+      'x-component-props': {
+        icon: 'FilterOutlined',
+        useProps: '{{ cm.useFilterActionProps }}',
+      },
+      'x-align': 'left',
+    },
     table1: {
       type: 'void',
       'x-uid': 'input',
