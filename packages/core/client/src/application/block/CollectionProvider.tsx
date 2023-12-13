@@ -26,9 +26,9 @@ export const CollectionProviderV2: FC<CollectionProviderProps> = ({ children, na
   return <CollectionContextV2.Provider value={collectionValue}>{children}</CollectionContextV2.Provider>;
 };
 
-export const useCollectionV2 = (showError = true) => {
+export const useCollectionV2 = () => {
   const context = useContext(CollectionContextV2);
-  if (showError && !context) {
+  if (!context) {
     throw new Error('useCollection() must be used within a CollectionProvider');
   }
 

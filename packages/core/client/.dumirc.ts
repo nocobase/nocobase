@@ -105,12 +105,46 @@ export default defineConfig({
           ],
         },
         {
-          title: 'Block',
+          title: 'Record',
+          type: 'group',
+          children: [
+            {
+              title: 'Record',
+              link: '/core/data-block/record',
+            },
+            {
+              title: 'RecordProvider',
+              link: '/core/data-block/record-provider',
+            },
+          ]
+        },
+        {
+          title: 'DataBlock',
           type: 'group',
           children: [
             {
               title: 'DataBlockProvider',
-              link: '/core/block',
+              link: '/core/data-block',
+            },
+            {
+              title: 'BlockSettingsProvider',
+              link: '/core/data-block/settings',
+            },
+            {
+              title: 'CollectionProvider',
+              link: '/core/data-block/collection',
+            },
+            {
+              title: 'AssociationProvider',
+              link: '/core/data-block/association',
+            },
+            {
+              title: 'BlockResourceProvider',
+              link: '/core/data-block/resource',
+            },
+            {
+              title: 'BlockRequestProvider',
+              link: '/core/data-block/request',
             },
           ]
         }

@@ -2,7 +2,7 @@ import React, { FC, ReactNode, useCallback, useMemo } from 'react';
 import { BlockSettingsProviderV2, BlockSettingsContextProps } from './BlockSettingsProvider';
 import { CollectionProviderV2 } from './CollectionProvider';
 import { AssociationProviderV2 } from './AssociationProvider';
-import { BlockRequestProviderV2 } from './BlockUseRequestProvider';
+import { BlockRequestProviderV2 } from './BlockRequestProvider';
 import { useDesignable } from '../../schema-component';
 import { withSchemaDecoratorProps } from '../hoc';
 import { BlockResourceProviderV2 } from './BlockResourceProvider';

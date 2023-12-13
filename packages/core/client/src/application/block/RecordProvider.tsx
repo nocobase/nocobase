@@ -37,10 +37,12 @@ export const RecordProviderV2: FC<RecordProviderProps> = ({ record, parentRecord
   return <RecordContextV2.Provider value={currentRecordValue}>{children}</RecordContextV2.Provider>;
 };
 
-export function useRecordV2<DataType = {}, ParentDataType = {}>(showError = true): RecordV2<DataType, ParentDataType> {
+export function useRecordV2<DataType = {}, ParentDataType = {}>(
+  showErrorWhenNotExists = true,
+): RecordV2<DataType, ParentDataType> {
   const context = useContext<RecordV2<DataType, ParentDataType>>(RecordContextV2);
 
-  if (showError && !context) {
+  if (showErrorWhenNotExists && !context) {
     throw new Error('useRecordV2() must be used within a RecordProviderV2');
   }
 

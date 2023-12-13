@@ -12,6 +12,10 @@ export class RecordV2<DataType = {}, ParentDataType = {}> {
     this.parentRecord = parentRecord;
   }
 
+  setData(data: DataType) {
+    this.data = data;
+  }
+
   setParentRecord(parentRecord: RecordV2<ParentDataType>) {
     this.parentRecord = parentRecord;
   }

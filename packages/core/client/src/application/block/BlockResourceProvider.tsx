@@ -20,10 +20,10 @@ export const BlockResourceProviderV2: FC<{ children?: ReactNode }> = ({ children
   return <BlockResourceContextV2.Provider value={resource}>{children}</BlockResourceContextV2.Provider>;
 };
 
-export function useBlockResourceV2(showError = true) {
+export function useBlockResourceV2() {
   const context = useContext(BlockResourceContextV2);
 
-  if (showError && !context) {
+  if (!context) {
     throw new Error('useResourceV2() must be used within a RecordProviderV2');
   }
 

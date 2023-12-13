@@ -90,20 +90,16 @@ export const BlockRequestProviderV2: FC = ({ children }) => {
   );
 };
 
-export const useBlockRequestV2 = <T extends {}>(showError = true): UseRequestResult<T> => {
+export const useBlockRequestV2 = <T extends {}>(): UseRequestResult<T> => {
   const context = useContext(BlockRequestContextV2);
-  if (showError && !context) {
+  if (!context) {
     throw new Error('useBlockRequest() must be used within a BlockRequestProvider');
   }
 
   return context;
 };
 
-export const useBlockRequestDataV2 = <T extends {}>(showError = true): UseRequestResult<{ data: T }> => {
+export const useBlockRequestDataV2 = <T extends {}>(): UseRequestResult<{ data: T }> => {
   const context = useContext(BlockRequestContextV2);
-  if (showError && !context) {
-    throw new Error('useBlockRequest() must be used within a BlockRequestProvider');
-  }
-
   return context.data;
 };

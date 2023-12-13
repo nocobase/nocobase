@@ -35,9 +35,9 @@ export const AssociationProviderV2: FC<AssociationProviderProps> = ({ children, 
   );
 };
 
-export const useAssociationV2 = (showError = true) => {
+export const useAssociationV2 = () => {
   const context = useContext(AssociationContextV2);
-  if (showError && !context) {
+  if (!context) {
     throw new Error('useAssociation() must be used within a AssociationProvider');
   }
 

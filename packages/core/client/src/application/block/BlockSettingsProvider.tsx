@@ -11,17 +11,16 @@ export interface BlockSettingsContextProps {
   action?: 'list' | 'get';
   params?: Record<string, any>;
   parentRecord?: RecordV2;
-  type: string;
   [index: string]: any;
 }
 
-interface BlockSettingsContextValue<T = {}> {
+interface BlockSettingsContextValue<T extends {} = {}> {
   props: BlockSettingsContextProps & T;
   dn: Designable;
   changeSchemaProps: any;
 }
 
-export const BlockSettingsContextV2 = createContext<BlockSettingsContextValue>({} as any);
+export const BlockSettingsContextV2 = createContext<BlockSettingsContextValue<any>>({} as any);
 BlockSettingsContextV2.displayName = 'BlockSettingsContextV2';
 
 export interface BlockSettingsProviderProps extends BlockSettingsContextValue {
@@ -36,11 +35,16 @@ export const BlockSettingsProviderV2: FC<BlockSettingsProviderProps> = ({ childr
   );
 };
 
-export const useBlockSettingsV2 = <T extends {}>(showError = true): BlockSettingsContextValue<T> => {
-  const context = useContext(BlockSettingsContextV2) as BlockSettingsContextValue<T>;
-  if (showError && !context) {
+export const useBlockSettingsV2 = <T extends {}>(): BlockSettingsContextValue<T> => {
+  const context = useContext<BlockSettingsContextValue<T>>(BlockSettingsContextV2);
+  if (!context) {
     throw new Error('useBlockSettings() must be used within a BlockSettingsProvider');
   }
 
   return context;
+};
+
+export const useBlockSettingsPropsV2 = <T extends {}>(): BlockSettingsContextValue<T>['props'] => {
+  const context = useBlockSettingsV2<T>();
+  return context.props;
 };
