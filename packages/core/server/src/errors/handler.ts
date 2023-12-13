@@ -3,8 +3,8 @@ import { BaseError } from '@nocobase/database';
 import { PluginCommandError } from './plugin-command-error';
 import lodash from 'lodash';
 import Application from '../application';
-import zhCN from './locale/zh_CN';
-import enUS from './locale/en_US';
+import zhCN from './locale/zh_CN.json';
+import enUS from './locale/en_US.json';
 
 type ErrorLevel = 'fatal' | 'silly' | 'warn';
 
@@ -22,9 +22,9 @@ export function getErrorLevel(e: Error): ErrorLevel {
 }
 
 export class ErrorHandler {
-  constructor() {}
-
   handlers = [];
+
+  constructor() {}
 
   register(guard: (err) => boolean, render: (err, ctx) => void) {
     this.handlers.push({
