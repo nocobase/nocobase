@@ -378,8 +378,240 @@ export const oneEmptyTableBlockWithExportAndImportAction: PageConfig = {
   },
 };
 
-export const backtoRootRole = async (page) => {
-  await page.getByTestId('user-center-button').hover();
-  await page.getByRole('button', { name: 'switch-role' }).click();
-  await page.getByRole('option', { name: 'Root' }).click();
+/**
+ * 页面中有一个空的 Table 区块，并且配有字段：singleLineText,phone,percent
+ */
+export const oneEmptyTableBlockWithFields: PageConfig = {
+  collections: general,
+  pageSchema: {
+    type: 'void',
+    version: '2.0',
+    'x-component': 'Page',
+    _isJSONSchemaObject: true,
+    properties: {
+      hp8xrsakxmp: {
+        type: 'void',
+        version: '2.0',
+        'x-component': 'Grid',
+        'x-initializer': 'BlockInitializers',
+        _isJSONSchemaObject: true,
+        properties: {
+          tjiyzokk0hk: {
+            type: 'void',
+            version: '2.0',
+            'x-component': 'Grid.Row',
+            _isJSONSchemaObject: true,
+            properties: {
+              zoim43wdfj7: {
+                type: 'void',
+                version: '2.0',
+                'x-component': 'Grid.Col',
+                _isJSONSchemaObject: true,
+                properties: {
+                  xqvr8sq84uq: {
+                    type: 'void',
+                    version: '2.0',
+                    'x-designer': 'TableBlockDesigner',
+                    'x-component': 'CardItem',
+                    'x-decorator': 'TableBlockProvider',
+                    'x-acl-action': 'general:list',
+                    'x-filter-targets': [],
+                    'x-decorator-props': {
+                      action: 'list',
+                      params: {
+                        pageSize: 20,
+                      },
+                      rowKey: 'id',
+                      dragSort: false,
+                      resource: 'general',
+                      showIndex: true,
+                      collection: 'general',
+                      disableTemplate: false,
+                    },
+                    _isJSONSchemaObject: true,
+                    properties: {
+                      actions: {
+                        type: 'void',
+                        version: '2.0',
+                        'x-component': 'ActionBar',
+                        'x-initializer': 'TableActionInitializers',
+                        'x-component-props': {
+                          style: {
+                            marginBottom: 'var(--nb-spacing)',
+                          },
+                        },
+                        _isJSONSchemaObject: true,
+                        'x-uid': 'tiqpbf9287d',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                      '1r3duvqvyo6': {
+                        type: 'array',
+                        version: '2.0',
+                        'x-component': 'TableV2',
+                        'x-initializer': 'TableColumnInitializers',
+                        'x-component-props': {
+                          rowKey: 'id',
+                          useProps: '{{ useTableBlockProps }}',
+                          rowSelection: {
+                            type: 'checkbox',
+                          },
+                        },
+                        _isJSONSchemaObject: true,
+                        properties: {
+                          actions: {
+                            type: 'void',
+                            title: '{{ t("Actions") }}',
+                            version: '2.0',
+                            'x-designer': 'TableV2.ActionColumnDesigner',
+                            'x-component': 'TableV2.Column',
+                            'x-decorator': 'TableV2.Column.ActionBar',
+                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-action-column': 'actions',
+                            _isJSONSchemaObject: true,
+                            properties: {
+                              actions: {
+                                type: 'void',
+                                version: '2.0',
+                                'x-component': 'Space',
+                                'x-decorator': 'DndContext',
+                                'x-component-props': {
+                                  split: '|',
+                                },
+                                _isJSONSchemaObject: true,
+                                'x-uid': 'jc6heey1l39',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': 'gk863vfehar',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                          u30tsz1woyi: {
+                            type: 'void',
+                            version: '2.0',
+                            'x-designer': 'TableV2.Column.Designer',
+                            'x-component': 'TableV2.Column',
+                            'x-decorator': 'TableV2.Column.Decorator',
+                            _isJSONSchemaObject: true,
+                            properties: {
+                              singleLineText: {
+                                version: '2.0',
+                                'x-component': 'CollectionField',
+                                'x-decorator': null,
+                                'x-read-pretty': true,
+                                'x-component-props': {
+                                  ellipsis: true,
+                                },
+                                'x-decorator-props': {
+                                  labelStyle: {
+                                    display: 'none',
+                                  },
+                                },
+                                'x-collection-field': 'general.singleLineText',
+                                _isJSONSchemaObject: true,
+                                'x-uid': 'pz3ant6upuh',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': 'mqcskx1978e',
+                            'x-async': false,
+                            'x-index': 2,
+                          },
+                          zqjtaq22fr3: {
+                            type: 'void',
+                            version: '2.0',
+                            'x-designer': 'TableV2.Column.Designer',
+                            'x-component': 'TableV2.Column',
+                            'x-decorator': 'TableV2.Column.Decorator',
+                            _isJSONSchemaObject: true,
+                            properties: {
+                              phone: {
+                                version: '2.0',
+                                'x-component': 'CollectionField',
+                                'x-decorator': null,
+                                'x-read-pretty': true,
+                                'x-component-props': {},
+                                'x-decorator-props': {
+                                  labelStyle: {
+                                    display: 'none',
+                                  },
+                                },
+                                'x-collection-field': 'general.phone',
+                                _isJSONSchemaObject: true,
+                                'x-uid': '4pbsi5uzc9a',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': '9oxsv4b5xk7',
+                            'x-async': false,
+                            'x-index': 3,
+                          },
+                          kzpyuff6bdk: {
+                            type: 'void',
+                            version: '2.0',
+                            'x-designer': 'TableV2.Column.Designer',
+                            'x-component': 'TableV2.Column',
+                            'x-decorator': 'TableV2.Column.Decorator',
+                            _isJSONSchemaObject: true,
+                            properties: {
+                              percent: {
+                                version: '2.0',
+                                'x-component': 'CollectionField',
+                                'x-decorator': null,
+                                'x-read-pretty': true,
+                                'x-component-props': {
+                                  style: {
+                                    width: '100%',
+                                  },
+                                },
+                                'x-decorator-props': {
+                                  labelStyle: {
+                                    display: 'none',
+                                  },
+                                },
+                                'x-collection-field': 'general.percent',
+                                _isJSONSchemaObject: true,
+                                'x-uid': 'lwmdipbwb75',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': '33zsiui4pmz',
+                            'x-async': false,
+                            'x-index': 4,
+                          },
+                        },
+                        'x-uid': 'cepnng5igm9',
+                        'x-async': false,
+                        'x-index': 2,
+                      },
+                    },
+                    'x-uid': 'u0p9ju6vqgd',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': 'tj8u02bi26r',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'hdi7wgdd8vf',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'vu5h1stjse5',
+        'x-async': false,
+        'x-index': 1,
+      },
+    },
+    'x-uid': 'q2frbwm5qpb',
+    'x-async': true,
+    'x-index': 1,
+  },
 };

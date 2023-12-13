@@ -2,7 +2,7 @@ import { expect, test, oneEmptyTableBlockWithActions } from '@nocobase/test/clie
 import { oneEmptyTableBlockWithExportAndImportAction } from './utils';
 
 test.describe('action acl check for view', () => {
-  test('view ', async ({ page, mockPage }) => {
+  test('global action permission for view ', async ({ page, mockPage }) => {
     await mockPage(oneEmptyTableBlockWithActions).goto();
     await page.getByTestId('user-center-button').hover();
     await page.getByRole('button', { name: 'switch-role' }).click();
@@ -143,9 +143,7 @@ test.describe('action acl check for export', () => {
     expect(postData.strategy.actions).toContainEqual('export');
     await page.getByLabel('drawer-Action.Drawer-roles-Configure permissions-mask').click();
     await page.goBack();
-    await page.getByTestId('user-center-button').hover();
-    await page.getByRole('button', { name: 'switch-role' }).click();
-    await page.getByRole('option', { name: 'Admin' }).click();
+    await page.reload();
     await expect(await page.getByLabel('action-Action-Export-export-general-table')).toBeVisible();
     await page.getByTestId('user-center-button').hover();
     await page.getByRole('button', { name: 'switch-role' }).click();
@@ -177,9 +175,7 @@ test.describe('action acl check for import', () => {
     expect(postData.strategy.actions).toContainEqual('importXlsx');
     await page.getByLabel('drawer-Action.Drawer-roles-Configure permissions-mask').click();
     await page.goBack();
-    await page.getByTestId('user-center-button').hover();
-    await page.getByRole('button', { name: 'switch-role' }).click();
-    await page.getByRole('option', { name: 'Admin' }).click();
+    await page.reload();
     await expect(await page.getByLabel('action-Action-Import-importXlsx-general-table')).toBeVisible();
     await page.getByTestId('user-center-button').hover();
     await page.getByRole('button', { name: 'switch-role' }).click();
