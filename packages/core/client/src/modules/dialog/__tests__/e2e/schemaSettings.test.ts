@@ -1,6 +1,6 @@
 import { NocoPage, Page, expect, oneEmptyTableBlockWithActions, test } from '@nocobase/test/client';
 
-test.describe('tabs settings', () => {
+test.describe('tabs schema settings', () => {
   let commonPage: NocoPage;
   let commonPageUrl: string;
 

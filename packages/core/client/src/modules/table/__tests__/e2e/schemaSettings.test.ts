@@ -11,7 +11,7 @@ import {
   twoTableWithSameCollection,
 } from '@nocobase/test/client';
 
-test.describe('block settings', () => {
+test.describe('table block schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {
     await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).goto();
 
@@ -140,7 +140,7 @@ test.describe('block settings', () => {
       await page.mouse.move(300, 0);
     }
 
-    test('constants', async ({ page, mockRecords, mockPage }) => {
+    test('use constants', async ({ page, mockRecords, mockPage }) => {
       const nocoPage = await mockPage(oneTableBlockWithActionsAndFormBlocks).waitForInit();
       await mockRecords('general', 3);
       await nocoPage.goto();
@@ -162,7 +162,7 @@ test.describe('block settings', () => {
       await expect(page.getByRole('cell', { name: '1', exact: true })).toBeVisible();
     });
 
-    test('variables: current user', async ({ page, mockPage, mockRecords }) => {
+    test('use variable called current user', async ({ page, mockPage, mockRecords }) => {
       const nocoPage = await mockPage(oneTableBlockWithActionsAndFormBlocks).waitForInit();
       // Super Admin 是当前的用户的名字
       await mockRecords('general', [{ singleLineText: 'Super Admin' }, {}, {}]);
@@ -219,7 +219,7 @@ test.describe('block settings', () => {
   });
 
   test.describe('connect data blocks', () => {
-    test('connections between same collections', async ({ page, mockPage, mockRecords }) => {
+    test('connecting two blocks of the same collection', async ({ page, mockPage, mockRecords }) => {
       const nocoPage = await mockPage(twoTableWithSameCollection).waitForInit();
       const records = await mockRecords('users', 3);
       await nocoPage.goto();
@@ -244,7 +244,7 @@ test.describe('block settings', () => {
       await expect(page.getByLabel('block-item-CardItem-users-table').nth(1).getByText('Super Admin')).toBeVisible();
     });
 
-    test('connecting via Relational Fields', async ({ page, mockPage, mockRecords }) => {
+    test('connecting two blocks connected by a relationship field', async ({ page, mockPage, mockRecords }) => {
       const nocoPage = await mockPage(twoTableWithAssociationFields).waitForInit();
       await mockRecords('users', 3);
       await nocoPage.goto();
@@ -277,11 +277,11 @@ test.describe('block settings', () => {
       await expect(page.getByLabel('block-item-CardItem-users-table').getByRole('row', { name: 'Root' })).toBeVisible();
     });
 
-    test('connection via foreign key', async ({ page, mockPage, mockRecords }) => {});
+    test('connecting two blocks connected by a foreign key', async ({ page, mockPage, mockRecords }) => {});
   });
 });
 
-test.describe('actions settings', () => {
+test.describe('actions schema settings', () => {
   test.describe('add new', () => {
     const showMenu = async (page: Page) => {
       await page.getByRole('button', { name: 'Add new' }).hover();
@@ -496,7 +496,7 @@ test.describe('actions settings', () => {
 
     test('linkage rules', async ({ page, mockPage, mockRecord }) => {
       const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-      const record = await mockRecord('general');
+      await mockRecord('general');
       await nocoPage.goto();
 
       const openLinkageRules = async () => {

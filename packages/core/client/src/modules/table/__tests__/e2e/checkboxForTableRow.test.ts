@@ -1,6 +1,6 @@
 import { checkboxForTableRow, expect, test } from '@nocobase/test/client';
 
-test('checkbox for table row', async ({ page, mockPage, mockRecords }) => {
+test('selects the checkbox of a table row and deletes the selected row', async ({ page, mockPage, mockRecords }) => {
   const nocoPage = await mockPage(checkboxForTableRow).waitForInit();
   const records = await mockRecords('t_fhdhd0nk7b9', 3);
   await nocoPage.goto();

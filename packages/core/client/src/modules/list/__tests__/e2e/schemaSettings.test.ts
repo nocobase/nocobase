@@ -1,6 +1,6 @@
 import { expectSettingsMenu, oneEmptyListBlock, test } from '@nocobase/test/client';
 
-test.describe('block settings', () => {
+test.describe('list block schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {
     await mockPage(oneEmptyListBlock).goto();
 
@@ -22,4 +22,4 @@ test.describe('block settings', () => {
   });
 });
 
-test.describe('actions settings', () => {});
+test.describe('actions schema settings', () => {});

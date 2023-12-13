@@ -1,6 +1,6 @@
 import { Page, PageConfig, expect, expectSettingsMenu, test } from '@nocobase/test/client';
 
-test.describe('group page menu', () => {
+test.describe('group page menus schema settings', () => {
   test('edit', async ({ page, mockPage }) => {
     await mockPage({ type: 'group', name: 'group page' }).goto();
     await showSettings(page, 'group page');
@@ -129,45 +129,45 @@ test.describe('group page menu', () => {
     await page.reload();
     await expect(page.getByLabel('group page')).not.toBeVisible();
   });
+});
 
-  test.describe('side menus of group page', () => {
-    test('group page', async ({ page, mockPage }) => {
-      await mockPage({ type: 'group', name: 'group page' }).goto();
-      await createSubPage({ page, type: 'group', name: 'group page in side' });
+test.describe('group page side menus schema settings', () => {
+  test('group page', async ({ page, mockPage }) => {
+    await mockPage({ type: 'group', name: 'group page' }).goto();
+    await createSubPage({ page, type: 'group', name: 'group page in side' });
 
-      await expectSettingsMenu({
-        page,
-        showMenu: () => showSettingsInSide(page, 'group page in side'),
-        supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Insert inner', 'Delete'],
-      });
+    await expectSettingsMenu({
+      page,
+      showMenu: () => showSettingsInSide(page, 'group page in side'),
+      supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Insert inner', 'Delete'],
     });
+  });
 
-    test('link  page', async ({ page, mockPage }) => {
-      await mockPage({ type: 'group', name: 'group page' }).goto();
-      await createSubPage({ page, type: 'link', name: 'link page in side' });
+  test('link page', async ({ page, mockPage }) => {
+    await mockPage({ type: 'group', name: 'group page' }).goto();
+    await createSubPage({ page, type: 'link', name: 'link page in side' });
 
-      await expectSettingsMenu({
-        page,
-        showMenu: () => showSettingsInSide(page, 'link page in side'),
-        supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Delete'],
-      });
+    await expectSettingsMenu({
+      page,
+      showMenu: () => showSettingsInSide(page, 'link page in side'),
+      supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Delete'],
     });
+  });
 
-    test('single page', async ({ page, mockPage }) => {
-      await mockPage({ type: 'group', name: 'group page' }).goto();
-      await createSubPage({ page, type: 'page', name: 'single page in side' });
+  test('single page', async ({ page, mockPage }) => {
+    await mockPage({ type: 'group', name: 'group page' }).goto();
+    await createSubPage({ page, type: 'page', name: 'single page in side' });
 
-      await expectSettingsMenu({
-        page,
-        showMenu: () => showSettingsInSide(page, 'single page in side'),
-        supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Delete'],
-      });
+    await expectSettingsMenu({
+      page,
+      showMenu: () => showSettingsInSide(page, 'single page in side'),
+      supportedOptions: ['Edit', 'Move to', 'Insert before', 'Insert after', 'Delete'],
     });
   });
 });
 
-test.describe('link page menu', () => {
-  test('options', async ({ page, mockPage }) => {
+test.describe('link page menu schema settings', () => {
+  test('supported options', async ({ page, mockPage }) => {
     await mockPage({ type: 'link', name: 'link page' }).goto();
 
     await expectSettingsMenu({
@@ -181,8 +181,8 @@ test.describe('link page menu', () => {
   });
 });
 
-test.describe('single page menu', () => {
-  test('options', async ({ page, mockPage }) => {
+test.describe('single page menu schema settings', () => {
+  test('supported options', async ({ page, mockPage }) => {
     await mockPage({ name: 'single page' }).goto();
 
     await expectSettingsMenu({

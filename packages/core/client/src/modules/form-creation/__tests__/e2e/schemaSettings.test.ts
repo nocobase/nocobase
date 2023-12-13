@@ -17,7 +17,7 @@ const clickOption = async (page: Page, optionName: string) => {
   await page.getByRole('menuitem', { name: optionName }).click();
 };
 
-test.describe('block settings', () => {
+test.describe('creation form block schema settings', () => {
   test('edit block title', async ({ page, mockPage }) => {
     await mockPage(oneTableBlockWithActionsAndFormBlocks).goto();
     await page.getByRole('button', { name: 'Add new' }).click();
@@ -1144,7 +1144,7 @@ test.describe('block settings', () => {
   });
 });
 
-test.describe('actions settings', () => {
+test.describe('actions schema settings', () => {
   test('submit', async ({ page, mockPage }) => {
     await mockPage(oneEmptyFormWithActions).goto();
 
@@ -1158,7 +1158,7 @@ test.describe('actions settings', () => {
     });
   });
 
-  test('save record', async ({ page, mockPage }) => {
+  test('customize: save record', async ({ page, mockPage }) => {
     await mockPage(oneEmptyFormWithActions).goto();
 
     await expectSettingsMenu({

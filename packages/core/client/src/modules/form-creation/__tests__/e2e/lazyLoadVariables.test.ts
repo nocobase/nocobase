@@ -1,6 +1,6 @@
 import { expect, formBlockDefaultValueTemplate, test } from '@nocobase/test/client';
 
-test.describe('default value: lazy load value of variables', () => {
+test.describe('variables with default value', () => {
   test('current form', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(formBlockDefaultValueTemplate).waitForInit();
     await mockRecord('general');

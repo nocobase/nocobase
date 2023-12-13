@@ -1,12 +1,12 @@
 import { Page, expect, test } from '@nocobase/test/client';
 
-test.describe('page settings', () => {
+test.describe('page schema settings', () => {
   const showMenu = async (page: Page) => {
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
     await page.getByLabel('designer-schema-settings-Page').hover();
   };
 
-  test('basic', async ({ page, mockPage }) => {
+  test('enable page header & display page title & edit page title & enable page tabs', async ({ page, mockPage }) => {
     await mockPage({ name: 'page' }).goto();
 
     // 选项：Enable page header ---------------------------------------------------------------------------------
@@ -61,7 +61,7 @@ test.describe('page settings', () => {
   });
 });
 
-test.describe('tabs settings', () => {
+test.describe('tabs schema settings', () => {
   async function showSettings(page: Page) {
     await page.getByText('Unnamed').hover();
     await page.getByRole('tab').getByLabel('designer-schema-settings-Page').hover();

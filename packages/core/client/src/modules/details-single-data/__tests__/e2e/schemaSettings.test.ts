@@ -1,6 +1,6 @@
 import { expectSettingsMenu, oneTableBlockWithAddNewAndViewAndEditAndBasicFields, test } from '@nocobase/test/client';
 
-test.describe('block settings', () => {
+test.describe('single details block schema settings', () => {
   test('supported options', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
     await mockRecord('general');
@@ -20,4 +20,6 @@ test.describe('block settings', () => {
   });
 });
 
-test.describe('actions settings', () => {});
+test.describe('actions schema settings', () => {});
+
+test.describe('fields schema settings', () => {});

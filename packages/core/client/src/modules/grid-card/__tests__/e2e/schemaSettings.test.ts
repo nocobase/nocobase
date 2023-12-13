@@ -1,6 +1,6 @@
 import { expect, expectSettingsMenu, oneEmptyGridCardBlock, test } from '@nocobase/test/client';
 
-test.describe('block settings', () => {
+test.describe('grid card block schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {
     await mockPage(oneEmptyGridCardBlock).goto();
 
@@ -48,4 +48,4 @@ test.describe('block settings', () => {
   });
 });
 
-test.describe('actions settings', () => {});
+test.describe('actions schema settings', () => {});

@@ -1,8 +1,8 @@
 import { Page, expect, test } from '@nocobase/test/client';
 import { createTable } from './utils';
 
-test.describe('many to one', () => {
-  test('create data selector', async ({ page, mockPage, mockRecord }) => {
+test.describe('where table data selector can be added', () => {
+  test('popup', async ({ page, mockPage, mockRecord }) => {
     await createTable({ page, mockPage, fieldName: 'manyToOne' });
 
     // 选中一行数据之后，弹窗自动关闭，且数据被填充到关联字段中
@@ -13,33 +13,10 @@ test.describe('many to one', () => {
         .getByTestId('select-data-picker'),
     ).toHaveText(`1`);
   });
+});
 
-  test('adjust column width', async ({ page, mockPage }) => {
-    await createTable({ page, mockPage, fieldName: 'manyToOne' });
-    await createActionColumn(page);
-
-    // 列宽度默认为 200
-    await expect(page.getByRole('columnheader', { name: 'Actions', exact: true })).toHaveJSProperty('offsetWidth', 200);
-
-    await page.getByText('Actions', { exact: true }).hover();
-    await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users').hover();
-    await page.getByRole('menuitem', { name: 'Column width' }).click();
-
-    await expect(page.getByRole('dialog').getByText('Column width')).toBeVisible();
-
-    // 修改列宽度为 400
-    await page.getByRole('dialog').getByRole('spinbutton').click();
-    await page.getByRole('dialog').getByRole('spinbutton').fill('400');
-    await page.getByTestId('modal-Action.Modal-users-Column width').getByRole('button', { name: 'Submit' }).click();
-
-    // 关闭 settings 设置的下拉列表，不然获取不到宽度值
-    await page.getByRole('menuitem', { name: 'Column width' }).hover();
-    await page.mouse.move(300, 0);
-
-    await expect(page.getByRole('columnheader', { name: 'Actions', exact: true })).toHaveJSProperty('offsetWidth', 400);
-  });
-
-  test('create action buttons', async ({ page, mockPage }) => {
+test.describe('configure actions', () => {
+  test('filter & add new & delete & refresh', async ({ page, mockPage }) => {
     await createTable({ page, mockPage, fieldName: 'manyToOne' });
 
     // add buttons
@@ -79,7 +56,7 @@ test.describe('many to one', () => {
     await expect(page.getByRole('button', { name: 'Refresh' })).not.toBeVisible();
   });
 
-  test('create custom action buttons', async ({ page, mockPage }) => {
+  test('customize: bulk update', async ({ page, mockPage }) => {
     await createTable({ page, mockPage, fieldName: 'manyToOne' });
 
     await page.getByLabel('schema-initializer-ActionBar-TableActionInitializers-users').hover();
@@ -88,6 +65,33 @@ test.describe('many to one', () => {
 
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Bulk update' })).toBeVisible();
+  });
+});
+
+test.describe('configure actions column', () => {
+  test('column width', async ({ page, mockPage }) => {
+    await createTable({ page, mockPage, fieldName: 'manyToOne' });
+    await createActionColumn(page);
+
+    // 列宽度默认为 200
+    await expect(page.getByRole('columnheader', { name: 'Actions', exact: true })).toHaveJSProperty('offsetWidth', 200);
+
+    await page.getByText('Actions', { exact: true }).hover();
+    await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users').hover();
+    await page.getByRole('menuitem', { name: 'Column width' }).click();
+
+    await expect(page.getByRole('dialog').getByText('Column width')).toBeVisible();
+
+    // 修改列宽度为 400
+    await page.getByRole('dialog').getByRole('spinbutton').click();
+    await page.getByRole('dialog').getByRole('spinbutton').fill('400');
+    await page.getByTestId('modal-Action.Modal-users-Column width').getByRole('button', { name: 'Submit' }).click();
+
+    // 关闭 settings 设置的下拉列表，不然获取不到宽度值
+    await page.getByRole('menuitem', { name: 'Column width' }).hover();
+    await page.mouse.move(300, 0);
+
+    await expect(page.getByRole('columnheader', { name: 'Actions', exact: true })).toHaveJSProperty('offsetWidth', 400);
   });
 });
 

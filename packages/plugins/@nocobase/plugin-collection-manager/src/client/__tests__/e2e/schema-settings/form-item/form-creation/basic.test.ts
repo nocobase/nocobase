@@ -1,37 +1,5 @@
-import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndBasicFields, test } from '@nocobase/test/client';
+import { expect, oneTableBlockWithAddNewAndViewAndEditAndBasicFields, test } from '@nocobase/test/client';
 import { commonTesting, testDefaultValue, testPattern, testSetValidationRules } from '../commonTesting';
-
-const gotoPage = async (mockPage) => {
-  const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-  await nocoPage.goto();
-};
-
-const openDialog = async (page: Page) => {
-  await page.getByRole('button', { name: 'Add new' }).click();
-};
-
-const showMenu = async (page: Page, fieldName: string) => {
-  await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-  await page
-    .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-    .hover();
-};
-
-const openDialogAndShowMenu = async ({
-  page,
-  mockPage,
-  mockRecord,
-  fieldName,
-}: {
-  page: Page;
-  mockPage;
-  mockRecord;
-  fieldName: string;
-}) => {
-  await gotoPage(mockPage);
-  await openDialog(page);
-  await showMenu(page, fieldName);
-};
 
 test.describe('color', () => {
   commonTesting({ openDialogAndShowMenu, fieldName: 'color' });
@@ -748,3 +716,35 @@ test.describe('URL', () => {
     });
   });
 });
+
+const gotoPage = async (mockPage) => {
+  const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
+  await nocoPage.goto();
+};
+
+const openDialog = async (page: Page) => {
+  await page.getByRole('button', { name: 'Add new' }).click();
+};
+
+const showMenu = async (page: Page, fieldName: string) => {
+  await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
+  await page
+    .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
+    .hover();
+};
+
+async function openDialogAndShowMenu({
+  page,
+  mockPage,
+  mockRecord,
+  fieldName,
+}: {
+  page: Page;
+  mockPage;
+  mockRecord;
+  fieldName: string;
+}) {
+  await gotoPage(mockPage);
+  await openDialog(page);
+  await showMenu(page, fieldName);
+}

@@ -1,6 +1,6 @@
 import { expect, expectSettingsMenu, oneEmptyMarkdown, test } from '@nocobase/test/client';
 
-test.describe('markdown block', () => {
+test.describe('markdown block schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {
     await mockPage(oneEmptyMarkdown).goto();
 

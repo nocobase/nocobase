@@ -1,6 +1,6 @@
 import { expect, tabPageEmpty, test } from '@nocobase/test/client';
 
-test('create tab page', async ({ page, mockPage }) => {
+test('add tab', async ({ page, mockPage }) => {
   await mockPage(tabPageEmpty).goto();
 
   // add tab page
