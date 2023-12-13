@@ -6,7 +6,8 @@ export default defineConfig({
   // Look for test files in the "tests" directory, relative to this configuration file.
   testDir: 'packages',
 
-  testMatch: /.*\/e2e\/.+\.test\.[tj]sx*$/,
+  // Match all test files in the e2e and __e2e__ directories.
+  testMatch: /(.*\/e2e\/|.*\/__e2e__\/).+\.test\.[tj]sx*$/,
 
   // Run all tests in parallel.
   fullyParallel: true,

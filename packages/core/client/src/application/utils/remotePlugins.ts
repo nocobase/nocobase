@@ -79,31 +79,27 @@ export async function getPlugins(options: GetPluginsOption): Promise<Array<[stri
   const { requirejs, pluginData, devDynamicImport } = options;
   if (pluginData.length === 0) return [];
 
-  if (process.env.NODE_ENV === 'development' && !process.env.USE_REMOTE_PLUGIN) {
-    const res: Array<[string, typeof Plugin]> = [];
+  const res: Array<[string, typeof Plugin]> = [];
 
-    const resolveDevPlugins: Record<string, typeof Plugin> = {};
-    if (devDynamicImport) {
-      for await (const plugin of pluginData) {
-        const pluginModule = await devDynamicImport(plugin.packageName);
-        if (pluginModule) {
-          res.push([plugin.name, pluginModule.default]);
-          resolveDevPlugins[plugin.packageName] = pluginModule.default;
-        }
+  const resolveDevPlugins: Record<string, typeof Plugin> = {};
+  if (devDynamicImport) {
+    for await (const plugin of pluginData) {
+      const pluginModule = await devDynamicImport(plugin.packageName);
+      if (pluginModule) {
+        res.push([plugin.name, pluginModule.default]);
+        resolveDevPlugins[plugin.packageName] = pluginModule.default;
       }
-      defineDevPlugins(resolveDevPlugins);
     }
+    defineDevPlugins(resolveDevPlugins);
+  }
 
-    const remotePlugins = pluginData.filter((item) => !resolveDevPlugins[item.packageName]);
+  const remotePlugins = pluginData.filter((item) => !resolveDevPlugins[item.packageName]);
 
-    if (remotePlugins.length === 0) {
-      return res;
-    }
-
-    const remotePluginList = await getRemotePlugins(requirejs, remotePlugins);
-    res.push(...remotePluginList);
+  if (remotePlugins.length === 0) {
     return res;
   }
 
-  return getRemotePlugins(requirejs, pluginData);
+  const remotePluginList = await getRemotePlugins(requirejs, remotePlugins);
+  res.push(...remotePluginList);
+  return res;
 }
