@@ -191,7 +191,7 @@ export async function downloadAndUnzipToTempDir(fileUrl: string, authToken?: str
     throw new Error(`decompress ${fileUrl} failed`);
   }
 
-  const packageJson = await requireNoCache(packageJsonPath);
+  const packageJson = await readJSONFileContent(packageJsonPath);
   const mainFile = path.join(tempPackageContentDir, packageJson.main);
   if (!fs.existsSync(mainFile)) {
     await removeTmpDir(tempFile, tempPackageContentDir);
@@ -337,16 +337,18 @@ export function removePluginPackage(packageName: string) {
  * @example
  * getPackageJson('dayjs') => { name: 'dayjs', version: '1.0.0', ... }
  */
-export function getPackageJson(pluginName: string) {
+export async function getPackageJson(pluginName: string) {
   const packageDir = getStoragePluginDir(pluginName);
-  return getPackageJsonByLocalPath(packageDir);
+  return await getPackageJsonByLocalPath(packageDir);
 }
 
-export function getPackageJsonByLocalPath(localPath: string) {
+export async function getPackageJsonByLocalPath(localPath: string) {
   if (!fs.existsSync(localPath)) {
     return null;
   } else {
-    return requireNoCache(path.join(localPath, 'package.json'));
+    const fullPath = path.join(localPath, 'package.json');
+    const data = await fs.promises.readFile(fullPath, { encoding: 'utf-8' });
+    return JSON.parse(data);
   }
 }
 
@@ -396,6 +398,11 @@ export function removeRequireCache(fileOrPackageName: string) {
 
 export async function requireNoCache(fileOrPackageName: string) {
   return await importModule(fileOrPackageName);
+}
+
+export async function readJSONFileContent(filePath: string) {
+  const data = await fs.promises.readFile(filePath, { encoding: 'utf-8' });
+  return JSON.parse(data);
 }
 
 export function requireModule(m: any) {
