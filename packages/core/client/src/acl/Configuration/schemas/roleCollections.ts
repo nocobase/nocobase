@@ -1,4 +1,5 @@
 import { ISchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import { useRoleResourceValues } from './useRoleResourceValues';
 import { useSaveRoleResourceAction } from './useSaveRoleResourceAction';
 
@@ -90,19 +91,30 @@ export const roleCollectionsSchema: ISchema = {
     },
   },
   properties: {
-    filter: {
+    [uid()]: {
       type: 'void',
-      title: '{{ t("Filter") }}',
-      default: {
-        $and: [{ title: { $includes: '' } }, { name: { $includes: '' } }],
-      },
-      'x-action': 'filter',
-      'x-component': 'Filter.Action',
+      'x-component': 'ActionBar',
       'x-component-props': {
-        icon: 'FilterOutlined',
-        useProps: '{{ cm.useFilterActionProps }}',
+        style: {
+          marginBottom: 16,
+        },
       },
-      'x-align': 'left',
+      properties: {
+        filter: {
+          type: 'void',
+          title: '{{ t("Filter") }}',
+          default: {
+            $and: [{ title: { $includes: '' } }, { name: { $includes: '' } }],
+          },
+          'x-action': 'filter',
+          'x-component': 'Filter.Action',
+          'x-component-props': {
+            icon: 'FilterOutlined',
+            useProps: '{{ cm.useFilterActionProps }}',
+          },
+          'x-align': 'left',
+        },
+      },
     },
     table1: {
       type: 'void',
