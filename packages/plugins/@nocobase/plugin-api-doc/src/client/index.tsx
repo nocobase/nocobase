@@ -26,7 +26,7 @@ const SCDocumentation = () => {
   return (
     <div className={styles}>
       <div className="open-tab">
-        <Tooltip title="open in new tab">
+        <Tooltip title="Preview">
           <a href={DOCUMENTATION_PATH} target="_blank" rel="noreferrer">
             <Button size="small" icon={<RightOutlined />} />
           </a>
