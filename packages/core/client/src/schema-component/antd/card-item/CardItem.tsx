@@ -18,7 +18,6 @@ export const CardItem = (props: Props) => {
   const fieldSchema = useFieldSchema();
   const templateKey = fieldSchema['x-template-key'];
   const { wrapSSR, componentCls, hashId } = useStyles();
-
   return wrapSSR(
     templateKey && !template ? null : (
       <BlockItem name={name} className={`${componentCls} ${hashId} noco-card-item`}>

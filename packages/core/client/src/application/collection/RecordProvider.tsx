@@ -6,15 +6,16 @@ RecordContextV2.displayName = 'RecordContextV2';
 
 export interface RecordProviderProps<DataType = {}, ParentDataType = {}> {
   children?: ReactNode;
+  isNew?: boolean;
   record?: RecordV2<DataType, ParentDataType> | DataType;
   parentRecord?: RecordV2<ParentDataType> | DataType;
 }
 
-export const RecordProviderV2: FC<RecordProviderProps> = ({ record, parentRecord, children }) => {
+export const RecordProviderV2: FC<RecordProviderProps> = ({ isNew, record, parentRecord, children }) => {
   const parentRecordValue = useMemo(() => {
     if (parentRecord) {
       if (parentRecord instanceof RecordV2) return parentRecord;
-      return new RecordV2(parentRecord);
+      return new RecordV2({ data: parentRecord });
     }
     if (record instanceof RecordV2) return record.parentRecord;
   }, [parentRecord, record]);
@@ -24,15 +25,16 @@ export const RecordProviderV2: FC<RecordProviderProps> = ({ record, parentRecord
     if (record) {
       if (record instanceof RecordV2) {
         res = record;
+        res.isNew = record.isNew || isNew;
       } else {
-        res = new RecordV2({ data: record });
+        res = new RecordV2({ data: record, isNew });
       }
     } else {
-      res = new RecordV2({});
+      res = new RecordV2({ isNew });
     }
     res.setParentRecord(parentRecordValue);
     return res;
-  }, [parentRecordValue, record]);
+  }, [parentRecordValue, record, isNew]);
 
   return <RecordContextV2.Provider value={currentRecordValue}>{children}</RecordContextV2.Provider>;
 };
@@ -49,17 +51,17 @@ export function useRecordV2<DataType = {}, ParentDataType = {}>(
   return context;
 }
 
-export function useRecordDataV2<DataType>(showError = true): DataType {
-  const record = useRecordV2<DataType>(showError);
+export function useRecordDataV2<DataType>(showErrorWhenNotExists = true): DataType {
+  const record = useRecordV2<DataType>(showErrorWhenNotExists);
   return record.data;
 }
 
-export function useParentRecordV2<ParentDataType>(showError = true): RecordV2<ParentDataType> {
-  const record = useRecordV2<any, ParentDataType>(showError);
+export function useParentRecordV2<ParentDataType>(showErrorWhenNotExists = true): RecordV2<ParentDataType> {
+  const record = useRecordV2<any, ParentDataType>(showErrorWhenNotExists);
   return record.parentRecord;
 }
 
-export function useParentRecordDataV2<ParentDataType>(showError = true): ParentDataType {
-  const record = useParentRecordV2<ParentDataType>(showError);
-  return record.data;
+export function useParentRecordDataV2<ParentDataType>(showErrorWhenNotExists = true): ParentDataType {
+  const record = useRecordV2<any, ParentDataType>(showErrorWhenNotExists);
+  return record.parentRecord?.data;
 }

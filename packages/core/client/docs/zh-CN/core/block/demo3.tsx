@@ -1,5 +1,5 @@
 import React, { FC } from 'react';
-import { SchemaComponent, useBlockResourceV2, withSchemaComponentProps } from '@nocobase/client';
+import { SchemaComponent, useDataBlockResourceV2, withSchemaComponentProps } from '@nocobase/client';
 import { createApp } from './createApp';
 import { Button, Form, Input, InputNumber } from 'antd';
 import { FormProps } from 'antd/lib';
@@ -37,7 +37,7 @@ const DemoForm: FC<DemoFormProps> = withSchemaComponentProps((props) => {
 });
 
 function useDemoFormProps(): DemoFormProps {
-  const resource = useBlockResourceV2();
+  const resource = useDataBlockResourceV2();
   return {
     onFinish: (values) => {
       resource.create({ values });

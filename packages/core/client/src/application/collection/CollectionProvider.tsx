@@ -1,4 +1,5 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
+
 import { CollectionOptions, useCollectionManager } from '../../collection-manager';
 
 export const CollectionContextV2 = createContext<CollectionOptions>({} as any);

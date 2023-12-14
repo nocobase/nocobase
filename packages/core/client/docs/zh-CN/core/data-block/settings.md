@@ -6,7 +6,7 @@
 
 ### useBlockSettingsV2()
 
-用于获取[DataBlockProvider 的属性](xxx)，通常配合 [SchemaSettings](xx) 使用。
+用于获取[DataBlockProvider 的属性](xxx)，通常配合 [SchemaSettings](/core/ui-schema/schema-settings) 使用。
 
 - 类型
 
@@ -39,6 +39,8 @@ const useBlockSettingsV2: <T extends {}>() => Result<T>
 
 ```tsx | pure
 const schema = {
+  type: 'void',
+  name: 'root',
   'x-decorator': 'DataBlockProvider',
   'x-decorator-props': {
     collection: 'users',
@@ -83,7 +85,7 @@ const MyTableSettings = new SchemaSettings({
 });
 ```
 
-可运行的 demo
+<code src="./demos/settings/demo1.tsx"></code>
 
 ### useBlockSettingsPropsV2()
 

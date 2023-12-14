@@ -2,28 +2,33 @@ import { useDeepCompareEffect } from 'ahooks';
 import React, { FC, createContext, useContext } from 'react';
 
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
-import { BlockSettingsContextProps, useBlockSettingsV2 } from './BlockSettingsProvider';
-import { RecordProviderV2 } from './RecordProvider';
-import { useBlockResourceV2 } from './BlockResourceProvider';
+import { useDataBlockResourceV2 } from './DataBlockResourceProvider';
+import { RecordProviderV2 } from '../collection';
+import { AllDataBlockProps, useDataBlockPropsV2 } from './DataBlockProvider';
 
 export const BlockRequestContextV2 = createContext<UseRequestResult<any>>(null);
 BlockRequestContextV2.displayName = 'BlockRequestContextV2';
 
-function useCurrentRequest<T>(options: Omit<BlockSettingsContextProps, 'type'>) {
-  const resource = useBlockResourceV2();
-  const { action, params = {}, record } = options;
+function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
+  const resource = useDataBlockResourceV2();
+  const { action, params = {}, record, requestService, requestOptions } = options;
   if (params.filterByTk === undefined) {
     delete params.filterByTk;
   }
   const request = useRequest<T>(
-    () => {
-      if (record) return Promise.resolve({ data: record });
-      if (!action) {
-        throw new Error(`[nocobase]: The 'action' parameter is missing in the 'BlockRequestProvider' component`);
-      }
-      return resource[action](params).then((res) => res.data);
-    },
+    requestService
+      ? requestService
+      : () => {
+          if (record) return Promise.resolve({ data: record });
+          if (!action) {
+            throw new Error(
+              `[nocobase]: The 'action' parameter is missing in the 'DataBlockRequestProvider' component`,
+            );
+          }
+          return resource[action](params).then((res) => res.data);
+        },
     {
+      ...requestOptions,
       manual: true,
     },
   );
@@ -36,7 +41,7 @@ function useCurrentRequest<T>(options: Omit<BlockSettingsContextProps, 'type'>) 
   return request;
 }
 
-function useParentRequest<T>(options: Omit<BlockSettingsContextProps, 'type'>) {
+function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const { sourceId, association, parentRecord } = options;
   const api = useAPIClient();
 
@@ -57,14 +62,27 @@ function useParentRequest<T>(options: Omit<BlockSettingsContextProps, 'type'>) {
 }
 
 export const BlockRequestProviderV2: FC = ({ children }) => {
-  const { props } = useBlockSettingsV2();
-  const { action, filterByTk, sourceId, params = {}, association, collection, record, parentRecord } = props;
+  const props = useDataBlockPropsV2();
+  const {
+    action,
+    filterByTk,
+    sourceId,
+    params = {},
+    association,
+    collection,
+    record,
+    parentRecord,
+    requestOptions,
+    requestService,
+  } = props;
   const currentRequest = useCurrentRequest<{ data: any }>({
     action,
     sourceId,
     record,
     association,
     collection,
+    requestOptions,
+    requestService,
     params: {
       ...params,
       filterByTk: filterByTk || params.filterByTk,
@@ -80,7 +98,11 @@ export const BlockRequestProviderV2: FC = ({ children }) => {
   return (
     <BlockRequestContextV2.Provider value={currentRequest}>
       {action !== 'list' ? (
-        <RecordProviderV2 record={currentRequest.data?.data} parentRecord={parentRequest.data?.data}>
+        <RecordProviderV2
+          isNew={action === undefined}
+          record={currentRequest.data?.data}
+          parentRecord={parentRequest.data?.data}
+        >
           {children}
         </RecordProviderV2>
       ) : (
@@ -90,16 +112,16 @@ export const BlockRequestProviderV2: FC = ({ children }) => {
   );
 };
 
-export const useBlockRequestV2 = <T extends {}>(): UseRequestResult<T> => {
+export const useBlockRequestV2 = <T extends {}>(): UseRequestResult<{ data: T }> => {
   const context = useContext(BlockRequestContextV2);
   if (!context) {
-    throw new Error('useBlockRequest() must be used within a BlockRequestProvider');
+    throw new Error('useBlockRequest() must be used within a DataBlockRequestProvider');
   }
 
   return context;
 };
 
-export const useBlockRequestDataV2 = <T extends {}>(): UseRequestResult<{ data: T }> => {
+export const useBlockRequestDataV2 = <T extends {}>(): UseRequestResult<{ data: T }>['data'] => {
   const context = useContext(BlockRequestContextV2);
   return context.data;
 };

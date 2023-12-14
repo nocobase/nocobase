@@ -1,1 +1,1 @@
-export * from './extendSchemaHook';
+export * from './withDynamicSchemaProps';

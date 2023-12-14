@@ -30,6 +30,8 @@ class RecordV2<DataType = {}, ParentDataType = {}> {
 ### 基本使用
 
 ```tsx | pure
+import { RecordV2 } from '@nocobase/client';
+
 const record = new RecordV2({
   data: {
     name: 'foo',

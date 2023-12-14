@@ -18,15 +18,14 @@ export type ResourceActionOptions<P = any> = {
   params?: P;
 };
 
+export type UseRequestService<P> = AxiosRequestConfig<P> | ResourceActionOptions<P> | FunctionService;
+export type UseRequestOptions = Options<any, any> & { uid?: string };
 export interface UseRequestResult<P> extends Result<P, any> {
   state: any;
   setState: SetState<{}>;
 }
 
-export function useRequest<P>(
-  service: AxiosRequestConfig<P> | ResourceActionOptions<P> | FunctionService,
-  options: Options<any, any> & { uid?: string } = {},
-): UseRequestResult<P> {
+export function useRequest<P>(service: UseRequestService<P>, options: UseRequestOptions = {}): UseRequestResult<P> {
   // 缓存用途
   const [state, setState] = useSetState({});
   const api = useAPIClient();

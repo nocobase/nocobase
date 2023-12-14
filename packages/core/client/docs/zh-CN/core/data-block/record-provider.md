@@ -15,35 +15,76 @@ interface RecordProviderProps<DataType = {}, ParentDataType = {}> {
 
 - 详解
 
-当数据为[关系字段](xx)时，其存在父子关系，此时可以通过 `parentRecord` 来指定父记录。
+当数据为[关系字段](https://docs.nocobase.com/development/server/collections/association-fields)时，其存在父子关系，此时可以通过 `parentRecord` 来指定父记录。
 
 `record` 和 `parentRecord` 即可以是普通的对象，也可以是 [RecordV2]() 实例，最终向子组件传递的数据为 `RecordV2` 实例，并通过 context 传递给子组件。
 
 - 示例
 
 ```tsx | pure
-const record = new RecordV2({ id: 1, name: 'foo' });
+import { RecordV2, RecordProviderV2 } from '@nocobase/client';
 
-<RecordProvider record={record} />
+const record = new RecordV2({ data: { id: 1, name: 'foo' } });
+
+<RecordProviderV2 record={record} />
 // 最终向子组件传递的数据为： props.record
 ```
+
+```tsx
+import { RecordV2, useRecordV2, RecordProviderV2 } from '@nocobase/client';
+
+const record = new RecordV2({ data: { id: 1, name: 'foo' } });
+
+const Demo = () => {
+  const record = useRecordV2();
+  return <pre>{JSON.stringify(record, null, 2)}</pre>;
+}
+
+export default () => <RecordProviderV2 record={record}><Demo /></RecordProviderV2>
+```
+
 
 ```tsx | pure
 <RecordProvider record={{ id: 1, name: 'foo' }} />
-// 最终向子组件传递的数据为： const record = new RecordV2({ id: 1, name: 'foo' });
+// 最终向子组件传递的数据为： const record = new RecordV2({ data: { id: 1, name: 'foo' } });
+```
+
+```tsx
+import { useRecordV2, RecordProviderV2 } from '@nocobase/client';
+
+const Demo = () => {
+  const record = useRecordV2();
+  return <pre>{JSON.stringify(record, null, 2)}</pre>;
+}
+
+export default () => <RecordProviderV2 record={{ id: 1, name: 'foo' }}><Demo /></RecordProviderV2>
 ```
 
 ```tsx | pure
-const parentRecord = new RecordV2({ id: 1, role: 'admin', });
-const record = new RecordV2({ id: 1, name: 'foo', parentRecord: parentRecord });
+const parentRecord = new RecordV2({ data: { id: 1, role: 'admin' } });
+const record = new RecordV2({ data: { id: 1, name: 'foo' }, parentRecord });
 
 <RecordProvider record={record} />
 // 最终向子组件传递的数据为： props.record
 ```
 
+```tsx
+import { RecordV2, useRecordV2, RecordProviderV2 } from '@nocobase/client';
+
+const parentRecord = new RecordV2({ data: { id: 1, role: 'admin' } });
+const record = new RecordV2({ data: { id: 1, name: 'foo' }, parentRecord });
+
+const Demo = () => {
+  const record = useRecordV2();
+  return <pre>{JSON.stringify(record, null, 2)}</pre>;
+}
+
+export default () => <RecordProviderV2 record={record}><Demo /></RecordProviderV2>
+```
+
 ```tsx | pure
-const parentRecord = new RecordV2({ id: 1, role: 'admin' });
-const record = new RecordV2({ id: 1, name: 'foo' });
+const parentRecord = new RecordV2({ data: { id: 1, role: 'admin' } });
+const record = new RecordV2({ data: { id: 1, name: 'foo' } });
 
 <RecordProvider record={record} parentRecord={parentRecord} />
 
@@ -51,13 +92,39 @@ const record = new RecordV2({ id: 1, name: 'foo' });
 // 最终向子组件传递的数据为：record（带有父记录）
 ```
 
+```tsx
+import { RecordV2, useRecordV2, RecordProviderV2 } from '@nocobase/client';
+
+const parentRecord = new RecordV2({ data: { id: 1, role: 'admin' } });
+const record = new RecordV2({ data: { id: 1, name: 'foo' } });
+
+const Demo = () => {
+  const record = useRecordV2();
+  return <pre>{JSON.stringify(record, null, 2)}</pre>;
+}
+
+export default () => <RecordProviderV2 record={record} parentRecord={parentRecord}><Demo /></RecordProviderV2>
+```
+
 ```tsx | pure
 <RecordProvider record={{ id: 1, name: 'foo' }} parentRecord={{ id: 1, role: 'admin' }} />
 
-// 首先实例化父记录：const parentRecord = new RecordV2({ id: 1, role: 'admin' });
-// 然后实例化记录：const record = new RecordV2({ id: 1, name: 'foo' });
+// 首先实例化父记录：const parentRecord = new RecordV2({ data: { id: 1, role: 'admin' } });
+// 然后实例化记录：const record = new RecordV2({ data: { id: 1, name: 'foo' } });
 // 最后设置父记录：record.setParentRecord(parentRecord);
 // 最终向子组件传递的数据为：record（带有父记录）
+```
+
+
+```tsx
+import { useRecordV2, RecordProviderV2 } from '@nocobase/client';
+
+const Demo = () => {
+  const record = useRecordV2();
+  return <pre>{JSON.stringify(record, null, 2)}</pre>;
+}
+
+export default () => <RecordProviderV2 record={{ id: 1, name: 'foo' }} parentRecord={{ id: 1, role: 'admin' }} ><Demo /></RecordProviderV2>
 ```
 
 ## Hooks
@@ -71,7 +138,23 @@ const record = new RecordV2({ id: 1, name: 'foo' });
 ```tsx | pure
 const record = useRecordV2();
 
-console.log(record, record.data, record.parentRecord);
+console.log(record, record.data, record.parentRecord, record.parentRecord.data);
+```
+
+```tsx
+import { useRecordV2, RecordProviderV2 } from '@nocobase/client';
+
+const Demo = () => {
+  const record = useRecordV2();
+  return <div>
+    <div>record: <pre>{JSON.stringify(record, null, 2)}</pre></div>
+    <div style={{ marginTop: 10 }}>record.data: <pre>{JSON.stringify(record.data, null, 2)}</pre></div>
+    <div style={{ marginTop: 10 }}>record.parentRecord: <pre>{JSON.stringify(record.parentRecord, null, 2)}</pre></div>
+    <div style={{ marginTop: 10 }}>record.parentRecord.data: <pre>{JSON.stringify(record.parentRecord.data, null, 2)}</pre></div>
+  </div>;
+}
+
+export default () => <RecordProviderV2 record={{ id: 1, name: 'foo' }} parentRecord={{ id: 1, role: 'admin' }} ><Demo /></RecordProviderV2>
 ```
 
 ### useRecordDataV2()
@@ -86,6 +169,22 @@ const record = useRecordV2();
 console.log(data === record.data);
 ```
 
+```tsx
+import { useRecordV2, useRecordDataV2, RecordProviderV2 } from '@nocobase/client';
+
+const Demo = () => {
+  const data = useRecordDataV2();
+  const record = useRecordV2();
+  return <div>
+    <div>data === record.data: { JSON.stringify(data === record.data) }</div>
+    <div style={{ marginTop: 10 }}>data: <pre>{JSON.stringify(data, null, 2)}</pre></div>
+    <div style={{ marginTop: 10 }}>record.data: <pre>{JSON.stringify(record.data, null, 2)}</pre></div>
+  </div>;
+}
+
+export default () => <RecordProviderV2 record={{ id: 1, name: 'foo' }} ><Demo /></RecordProviderV2>
+```
+
 ### useParentRecordV2()
 
 直接获取 Record 的数据 `parentRecord`，等同于 `useRecordV2().parentRecord`。
@@ -97,6 +196,23 @@ const parentRecord = useParentRecordV2();
 const record = useRecordV2();
 console.log(parentRecord === record.parentRecord);
 ```
+
+```tsx
+import { useRecordV2, useParentRecordV2, RecordProviderV2 } from '@nocobase/client';
+
+const Demo = () => {
+  const record = useRecordV2();
+  const parentRecord = useParentRecordV2();
+  return <div>
+    <div>parentRecord === record.parentRecord: { JSON.stringify(parentRecord === record.parentRecord) }</div>
+    <div style={{ marginTop: 10 }}>parentRecord: <pre>{JSON.stringify(parentRecord, null, 2)}</pre></div>
+    <div style={{ marginTop: 10 }}>record.parentRecord: <pre>{JSON.stringify(record.parentRecord, null, 2)}</pre></div>
+  </div>;
+}
+
+export default () => <RecordProviderV2 record={{ id: 1, name: 'foo' }} parentRecord={{ id: 1, role: 'admin' }} ><Demo /></RecordProviderV2>
+```
+
 
 ### useParentRecordDataV2()
 
@@ -110,6 +226,24 @@ const parentData = useParentRecordDataV2();
 const parentRecord = useParentRecordV2();
 console.log(parentData === parentRecord.data === record.parentRecord.data);
 ```
+
+```tsx
+import { useRecordV2, RecordProviderV2, useParentRecordDataV2, useParentRecordV2 } from '@nocobase/client';
+
+const Demo = () => {
+  const record = useRecordV2();
+  const parentData = useParentRecordDataV2();
+  const parentRecord = useParentRecordV2();
+  return <div>
+    <div style={{ marginTop: 10 }}>parentData: <pre>{JSON.stringify(parentData, null, 2)}</pre></div>
+    <div style={{ marginTop: 10 }}>parentRecord.data: <pre>{JSON.stringify(parentRecord.data, null, 2)}</pre></div>
+    <div style={{ marginTop: 10 }}>record.parentRecord.data: <pre>{JSON.stringify(record.parentRecord.data, null, 2)}</pre></div>
+  </div>;
+}
+
+export default () => <RecordProviderV2 record={{ id: 1, name: 'foo' }} parentRecord={{ id: 1, role: 'admin' }} ><Demo /></RecordProviderV2>
+```
+
 <!--
 ## 使用场景
 

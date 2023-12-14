@@ -15,7 +15,7 @@ import { PluginManager, PluginType } from './PluginManager';
 import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
-import { DataBlockProviderV2 } from './block';
+import { DataBlockProviderV2 } from './data-block';
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';

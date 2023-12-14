@@ -1,4 +1,5 @@
 export interface RecordOptions<DataType = {}, ParentDataType = {}> {
+  isNew?: boolean;
   data?: DataType;
   parentRecord?: RecordV2<ParentDataType>;
 }
@@ -6,8 +7,10 @@ export interface RecordOptions<DataType = {}, ParentDataType = {}> {
 export class RecordV2<DataType = {}, ParentDataType = {}> {
   public data?: DataType;
   public parentRecord?: RecordV2<ParentDataType>;
+  public isNew?: boolean;
   constructor(options: RecordOptions<DataType, ParentDataType>) {
-    const { data, parentRecord } = options;
+    const { data, parentRecord, isNew } = options;
+    this.isNew = isNew;
     this.data = data;
     this.parentRecord = parentRecord;
   }
