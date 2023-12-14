@@ -252,9 +252,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       return;
     }
 
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(resolve(__dirname, 'collections'));
 
     // this.db.addMigrations({
     //   namespace: 'multi-app-share-collection',

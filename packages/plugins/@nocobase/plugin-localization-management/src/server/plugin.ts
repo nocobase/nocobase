@@ -47,9 +47,7 @@ export class LocalizationManagementPlugin extends Plugin {
   beforeLoad() {}
 
   async load() {
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(resolve(__dirname, 'collections'));
 
     this.db.addMigrations({
       namespace: 'localization-management',

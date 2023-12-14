@@ -61,9 +61,7 @@ export async function getApp({
 
 export default class extends Plugin {
   async load() {
-    await this.db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, 'collections'));
 
     const workflow = this.app.getPlugin<any>('workflow');
 

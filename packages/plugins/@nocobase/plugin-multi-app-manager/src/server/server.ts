@@ -158,9 +158,7 @@ export class PluginMultiAppManager extends Plugin {
   }
 
   async load() {
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, 'collections'));
 
     // after application created
     this.db.on(

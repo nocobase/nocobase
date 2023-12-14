@@ -75,6 +75,7 @@ import { ViewCollection } from './view-collection';
 import { CollectionFactory } from './collection-factory';
 import chalk from 'chalk';
 import { checkDatabaseVersion } from './helpers';
+import { collection } from '@nocobase/client';
 
 export type MergeOptions = merge.Options;
 
@@ -193,7 +194,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   utils = new DatabaseUtils(this);
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
-  importedFrom = new Map<string, Array<string>>();
+  importedFrom = new Map<string, Set<string>>();
   modelHook: ModelHook;
   version: DatabaseVersion;
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
@@ -448,6 +449,15 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
       if (this.options.schema && !options.schema) {
         options.schema = this.options.schema;
+      }
+    });
+
+    this.on('afterDefineCollection', async (collection: Collection) => {
+      const options = collection.options;
+      if (options.origin) {
+        const existsSet = this.importedFrom.get(options.origin) || new Set();
+        existsSet.add(collection.name);
+        this.importedFrom.set(options.origin, existsSet);
       }
     });
 
@@ -906,10 +916,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
           ...module,
           origin: options.from,
         });
-
-        if (options.from) {
-          this.importedFrom.set(options.from, [...(this.importedFrom.get(options.from) || []), collection.name]);
-        }
 
         result.set(collection.name, collection);
       }

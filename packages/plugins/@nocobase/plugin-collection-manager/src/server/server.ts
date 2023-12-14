@@ -363,6 +363,7 @@ export class CollectionManagerPlugin extends Plugin {
       name: 'collectionCategory',
       namespace: 'collection-manager',
       duplicator: 'required',
+      origin: `plugin:${this.name}`,
     });
   }
 }

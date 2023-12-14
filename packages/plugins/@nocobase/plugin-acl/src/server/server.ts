@@ -896,6 +896,7 @@ export class PluginACL extends Plugin {
       name: 'rolesUischemas',
       namespace: 'acl.acl',
       duplicator: 'required',
+      origin: `plugin:${this.name}`,
     });
   }
 }

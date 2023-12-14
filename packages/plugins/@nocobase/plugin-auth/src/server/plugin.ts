@@ -24,9 +24,7 @@ export class AuthPlugin extends Plugin {
 
   async load() {
     // Set up database
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(resolve(__dirname, 'collections'));
     this.db.addMigrations({
       namespace: 'auth',
       directory: resolve(__dirname, 'migrations'),
