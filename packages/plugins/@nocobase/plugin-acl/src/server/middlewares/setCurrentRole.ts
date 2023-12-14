@@ -24,7 +24,7 @@ export async function setCurrentRole(ctx: Context, next) {
   if (!roles.length) {
     return ctx.throw(401, {
       code: 'USER_HAS_NO_ROLES_ERR',
-      message: ctx.t('The current user has no roles. Try another account.'),
+      message: ctx.t('The current user has no roles. Please try another account.', { ns: 'acl' }),
     });
   }
   ctx.state.currentUser.roles = roles;
@@ -42,7 +42,7 @@ export async function setCurrentRole(ctx: Context, next) {
   if (!ctx.state.currentRole) {
     return ctx.throw(401, {
       code: 'ROLE_NOT_FOUND_ERR',
-      message: ctx.t('The user role does not exist. Please try signing in again'),
+      message: ctx.t('The user role does not exist. Please try signing in again', { ns: 'acl' }),
     });
   }
 

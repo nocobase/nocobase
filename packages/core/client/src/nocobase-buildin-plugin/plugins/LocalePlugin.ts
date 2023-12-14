@@ -16,6 +16,9 @@ export class LocalePlugin extends Plugin {
         params: {
           locale,
         },
+        headers: {
+          'X-Role': 'anonymous',
+        },
       });
       const data = res?.data;
       this.locales = data?.data || {};

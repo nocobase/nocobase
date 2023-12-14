@@ -59,7 +59,7 @@ const useErrorProps = (app: Application, error: any) => {
           </Button>,
           subApp ? (
             <Button key="back" onClick={() => (window.location.href = '/admin')}>
-              Return to the main application
+              {app.i18n.t('Return to the main application')}
             </Button>
           ) : null,
         ],

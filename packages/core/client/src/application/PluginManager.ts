@@ -54,12 +54,7 @@ export class PluginManager {
         await this.add(pluginClass, { name });
       }
     } catch (error) {
-      if (401 === error?.response?.status) {
-        this.app.apiClient.auth.setRole(null);
-        window.location.reload();
-      } else {
-        throw error;
-      }
+      throw error;
     }
   }
 
