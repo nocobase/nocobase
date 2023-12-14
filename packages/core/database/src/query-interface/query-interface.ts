@@ -54,7 +54,7 @@ export default abstract class QueryInterface {
 
   abstract getAutoIncrementInfo(options: {
     tableInfo: TableInfo;
-    fieldName?: string;
+    fieldName: string;
   }): Promise<{ seqName?: string; currentVal: number }>;
 
   abstract setAutoIncrementVal(options: {

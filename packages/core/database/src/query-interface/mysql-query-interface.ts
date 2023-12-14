@@ -87,11 +87,11 @@ export default class MysqlQueryInterface extends QueryInterface {
     return results[0]['Create Table'];
   }
 
-  async getAutoIncrementInfo(options: { tableInfo: TableInfo; fieldName?: string }): Promise<{
+  async getAutoIncrementInfo(options: { tableInfo: TableInfo; fieldName: string }): Promise<{
     seqName?: string;
     currentVal: number;
   }> {
-    const { tableInfo } = options;
+    const { tableInfo, fieldName } = options;
 
     const sql = `SELECT AUTO_INCREMENT as currentVal
                  FROM information_schema.tables
@@ -100,8 +100,18 @@ export default class MysqlQueryInterface extends QueryInterface {
 
     const results = await this.db.sequelize.query(sql, { type: 'SELECT' });
 
+    let currentVal = results[0]['currentVal'] as number;
+
+    if (currentVal === null) {
+      // use max value of field instead
+      const maxSql = `SELECT MAX(${fieldName}) as currentVal
+                      FROM ${tableInfo.tableName};`;
+      const maxResults = await this.db.sequelize.query(maxSql, { type: 'SELECT' });
+      currentVal = maxResults[0]['currentVal'] as number;
+    }
+
     return {
-      currentVal: results[0]['currentVal'] as number,
+      currentVal,
     };
   }
 

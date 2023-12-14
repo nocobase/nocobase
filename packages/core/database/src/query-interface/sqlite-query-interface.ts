@@ -92,7 +92,7 @@ export default class SqliteQueryInterface extends QueryInterface {
     return Promise.resolve(undefined);
   }
 
-  async getAutoIncrementInfo(options: { tableInfo: TableInfo; fieldName?: string }): Promise<{
+  async getAutoIncrementInfo(options: { tableInfo: TableInfo; fieldName: string }): Promise<{
     seqName?: string;
     currentVal: number;
   }> {

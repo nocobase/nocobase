@@ -41,7 +41,7 @@ export default class PostgresQueryInterface extends QueryInterface {
 
   async getAutoIncrementInfo(options: {
     tableInfo: TableInfo;
-    fieldName?: string;
+    fieldName: string;
   }): Promise<{ seqName?: string; currentVal: number }> {
     const fieldName = options.fieldName || 'id';
     const tableInfo = options.tableInfo;
