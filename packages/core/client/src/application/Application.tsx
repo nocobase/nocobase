@@ -211,6 +211,7 @@ export class Application {
     } catch (error) {
       loadFailed = true;
       this.error = {
+        ...error,
         code: 'LOAD_ERROR',
         message: error.message,
       };

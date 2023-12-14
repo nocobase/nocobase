@@ -21,6 +21,12 @@ export async function setCurrentRole(ctx: Context, next) {
       raw: true,
     }),
   )) as Model[];
+  if (!roles.length) {
+    return ctx.throw(401, {
+      code: 'USER_HAS_NO_ROLES_ERR',
+      message: ctx.t('The current user has no roles. Try another account.'),
+    });
+  }
   ctx.state.currentUser.roles = roles;
 
   // 1. If the X-Role is set, use the specified role
@@ -34,7 +40,10 @@ export async function setCurrentRole(ctx: Context, next) {
   }
 
   if (!ctx.state.currentRole) {
-    return ctx.throw(401, { code: 'ROLE_NOT_FOUND_ERR', message: 'The user role does not exist.' });
+    return ctx.throw(401, {
+      code: 'ROLE_NOT_FOUND_ERR',
+      message: ctx.t('The user role does not exist. Please try signing in again'),
+    });
   }
 
   await next();

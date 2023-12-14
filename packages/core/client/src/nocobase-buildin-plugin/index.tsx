@@ -25,6 +25,8 @@ import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
 import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
 import { LocalePlugin } from './plugins/LocalePlugin';
+import { useAPIClient } from '../api-client';
+import { getSubAppName } from '@nocobase/sdk';
 
 const AppSpin = () => {
   return (
@@ -32,7 +34,43 @@ const AppSpin = () => {
   );
 };
 
+const useErrorProps = (app: Application, error: any) => {
+  const navigate = useNavigate();
+  const api = useAPIClient();
+  if (!error) {
+    return {};
+  }
+  const err = error?.response?.data?.errors?.[0] || error;
+  const subApp = getSubAppName();
+  switch (err.code) {
+    case 'USER_HAS_NO_ROLES_ERR':
+      return {
+        subTitle: err.message,
+        extra: [
+          <Button
+            type="primary"
+            key="try"
+            onClick={() => {
+              api.auth.setToken(null);
+              window.location.reload();
+            }}
+          >
+            {app.i18n.t('Sign in with another account')}
+          </Button>,
+          subApp ? (
+            <Button key="back" onClick={() => (window.location.href = '/admin')}>
+              Return to the main application
+            </Button>
+          ) : null,
+        ],
+      };
+    default:
+      return {};
+  }
+};
+
 const AppError: FC<{ error: Error; app: Application }> = observer(({ app, error }) => {
+  const props = useErrorProps(app, error);
   return (
     <div>
       <Result
@@ -50,6 +88,7 @@ const AppError: FC<{ error: Error; app: Application }> = observer(({ app, error 
             {app.i18n.t('Try again')}
           </Button>,
         ]}
+        {...props}
       />
     </div>
   );
