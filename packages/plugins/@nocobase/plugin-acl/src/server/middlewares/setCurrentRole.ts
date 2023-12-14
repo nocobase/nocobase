@@ -22,6 +22,7 @@ export async function setCurrentRole(ctx: Context, next) {
     }),
   )) as Model[];
   if (!roles.length) {
+    ctx.state.currentRole = undefined;
     return ctx.throw(401, {
       code: 'USER_HAS_NO_ROLES_ERR',
       message: ctx.t('The current user has no roles. Please try another account.', { ns: 'acl' }),
