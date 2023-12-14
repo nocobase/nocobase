@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { uid } from '@formily/shared';
-import { Page, test as base, request } from '@playwright/test';
+import { Page, test as base, expect, request } from '@playwright/test';
 import _ from 'lodash';
 
 export * from '@playwright/test';
@@ -125,18 +125,80 @@ interface CreatePageOptions {
   pageSchema?: any;
 }
 
+interface ExtendUtils {
+  /**
+   * 根据配置，生成一个 NocoBase 的页面
+   * @param pageConfig 页面配置
+   * @returns
+   */
+  mockPage: (pageConfig?: PageConfig) => NocoPage;
+  /**
+   * 根据配置，生成一个需要手动销毁的 NocoPage 页面
+   * @param pageConfig
+   * @returns
+   */
+  mockManualDestroyPage: (pageConfig?: PageConfig) => NocoPage;
+  /**
+   * 根据配置，生成多个 collections
+   * @param collectionSettings
+   * @returns 返回一个 destroy 方法，用于销毁创建的 collections
+   */
+  mockCollections: (collectionSettings: CollectionSetting[]) => Promise<any>;
+  /**
+   * 根据配置，生成一个 collection
+   * @param collectionSetting
+   * @returns 返回一个 destroy 方法，用于销毁创建的 collection
+   */
+  mockCollection: (collectionSetting: CollectionSetting) => Promise<any>;
+  /**
+   * 自动生成一条对应 collection 的数据
+   * @param collectionName 数据表名称
+   * @param data 自定义的数据，缺失时会生成随机数据
+   * @returns 返回一条生成的数据
+   */
+  mockRecord: <T = any>(collectionName: string, data?: any) => Promise<T>;
+  /**
+   * 自动生成多条对应 collection 的数据
+   */
+  mockRecords: {
+    /**
+     * @param collectionName - 数据表名称
+     * @param count - 生成的数据条数
+     */
+    <T = any>(collectionName: string, count?: number): Promise<T[]>;
+    /**
+     * @param collectionName - 数据表名称
+     * @param data - 指定生成的数据
+     */
+    <T = any>(collectionName: string, data?: any[]): Promise<T[]>;
+  };
+  /**
+   * 该方法已弃用，请使用 mockCollections
+   * @deprecated
+   * @param collectionSettings
+   * @returns
+   */
+  createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
+  /**
+   * 根据页面 title 删除对应的页面
+   * @param pageName 显示在页面菜单中的名称
+   * @returns
+   */
+  deletePage: (pageName: string) => Promise<void>;
+}
+
 const PORT = process.env.APP_PORT || 20000;
 const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
 
-class NocoPage {
+export class NocoPage {
   private url: string;
   private uid: string;
   private collectionsName: string[];
   private _waitForInit: Promise<void>;
 
   constructor(
-    private page: Page,
     private options?: PageConfig,
+    private page?: Page,
   ) {
     this._waitForInit = this.init();
   }
@@ -149,7 +211,7 @@ class NocoPage {
       await createCollections(collections);
     }
 
-    this.uid = await createPage(this.page, {
+    this.uid = await createPage({
       type: this.options?.type,
       name: this.options?.name,
       pageSchema: this.options?.pageSchema,
@@ -160,7 +222,12 @@ class NocoPage {
 
   async goto() {
     await this._waitForInit;
-    await this.page.goto(this.url);
+    await this.page?.goto(this.url);
+  }
+
+  async getUrl() {
+    await this._waitForInit;
+    return this.url;
   }
 
   async waitForInit(this: NocoPage) {
@@ -180,44 +247,14 @@ class NocoPage {
   }
 }
 
-const _test = base.extend<{
-  page: Page;
-  mockPage: (config?: PageConfig) => NocoPage;
-  mockCollections: <T = any>(collectionSettings: CollectionSetting[]) => Promise<T>;
-  mockCollection: <T = any>(collectionSetting: CollectionSetting) => Promise<T>;
-  mockRecord: <T = any>(collectionName: string, data?: any) => Promise<T>;
-  mockRecords: {
-    /**
-     * @param collectionName - 数据表名称
-     * @param count - 生成的数据条数
-     */
-    <T = any>(collectionName: string, count?: number): Promise<T[]>;
-    /**
-     * @param collectionName - 数据表名称
-     * @param data - 指定生成的数据
-     */
-    <T = any>(collectionName: string, data?: any[]): Promise<T[]>;
-  };
-  createCollections: (collectionSettings: CollectionSetting | CollectionSetting[]) => Promise<void>;
-  deletePage: (pageName: string) => Promise<void>;
-}>({
-  page: async ({ page: _page }, use) => {
-    const page: Page = Object.create(_page);
-    page.goto = async function goto(url: string, options?: any) {
-      const result = await _page.goto(url, options);
-      await enableToConfig(_page);
-      return result;
-    };
-
-    await use(page);
-  },
+const _test = base.extend<ExtendUtils>({
   mockPage: async ({ page }, use) => {
     // 保证每个测试运行时 faker 的随机值都是一样的
     faker.seed(1);
 
     const nocoPages: NocoPage[] = [];
     const mockPage = (config?: PageConfig) => {
-      const nocoPage = new NocoPage(page, config);
+      const nocoPage = new NocoPage(config, page);
       nocoPages.push(nocoPage);
       return nocoPage;
     };
@@ -228,6 +265,14 @@ const _test = base.extend<{
     for (const nocoPage of nocoPages) {
       await nocoPage.destroy();
     }
+  },
+  mockManualDestroyPage: async ({ browser }, use) => {
+    const mockManualDestroyPage = (config?: PageConfig) => {
+      const nocoPage = new NocoPage(config);
+      return nocoPage;
+    };
+
+    await use(mockManualDestroyPage);
   },
   createCollections: async ({ page }, use) => {
     let collectionsName = [];
@@ -248,6 +293,11 @@ const _test = base.extend<{
   },
   mockCollections: async ({ page }, use) => {
     let collectionsName = [];
+    const destroy = async () => {
+      if (collectionsName.length) {
+        await deleteCollections(collectionsName);
+      }
+    };
 
     const mockCollections = async (collectionSettings: CollectionSetting[]) => {
       collectionSettings = omitSomeFields(collectionSettings);
@@ -256,25 +306,24 @@ const _test = base.extend<{
     };
 
     await use(mockCollections);
-
-    if (collectionsName.length) {
-      await deleteCollections(collectionsName);
-    }
+    await destroy();
   },
   mockCollection: async ({ page }, use) => {
     let collectionsName = [];
+    const destroy = async () => {
+      if (collectionsName.length) {
+        await deleteCollections(collectionsName);
+      }
+    };
 
-    const mockCollection = async (collectionSetting: CollectionSetting) => {
+    const mockCollection = async (collectionSetting: CollectionSetting, options?: { manualDestroy: boolean }) => {
       const collectionSettings = omitSomeFields([collectionSetting]);
       collectionsName = collectionSettings.map((item) => item.name);
       return createCollections(collectionSettings);
     };
 
     await use(mockCollection);
-
-    if (collectionsName.length) {
-      await deleteCollections(collectionsName);
-    }
+    await destroy();
   },
   mockRecords: async ({ page }, use) => {
     const mockRecords = async (collectionName: string, count: any = 3, data?: any) => {
@@ -286,6 +335,13 @@ const _test = base.extend<{
     };
 
     await use(mockRecords);
+
+    // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
+    const deletePromises = [
+      deleteRecords('users', { id: { $ne: 1 } }),
+      deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
+    ];
+    await Promise.all(deletePromises);
   },
   mockRecord: async ({ page }, use) => {
     const mockRecord = async (collectionName: string, data?: any) => {
@@ -294,6 +350,13 @@ const _test = base.extend<{
     };
 
     await use(mockRecord);
+
+    // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
+    const deletePromises = [
+      deleteRecords('users', { id: { $ne: 1 } }),
+      deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
+    ];
+    await Promise.all(deletePromises);
   },
   deletePage: async ({ page }, use) => {
     const deletePage = async (pageName: string) => {
@@ -304,6 +367,13 @@ const _test = base.extend<{
     };
 
     await use(deletePage);
+
+    // 删除掉 id 不是 1 的 users 和 name 不是 root admin member 的 roles
+    const deletePromises = [
+      deleteRecords('users', { id: { $ne: 1 } }),
+      deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
+    ];
+    await Promise.all(deletePromises);
   },
 });
 
@@ -342,7 +412,7 @@ const updateUidOfPageSchema = (uiSchema: any) => {
 /**
  * 在 NocoBase 中创建一个页面
  */
-const createPage = async (page: Page, options?: CreatePageOptions) => {
+const createPage = async (options?: CreatePageOptions) => {
   const { type = 'page', url, name, pageSchema } = options || {};
   const api = await request.newContext({
     storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
@@ -426,9 +496,6 @@ const createPage = async (page: Page, options?: CreatePageOptions) => {
     throw new Error('systemSettings is not ok');
   }
 
-  // @ts-ignore
-  (page._currentPageUidList || (page._currentPageUidList = [])).push(pageUid);
-
   return pageUid;
 };
 
@@ -462,6 +529,28 @@ const deleteCollections = async (collectionNames: string[]) => {
   const params = collectionNames.map((name) => `filterByTk[]=${name}`).join('&');
 
   const result = await api.post(`/api/collections:destroy?${params}`, {
+    headers,
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+};
+
+/**
+ * 将数据表中 mock 出来的 records 删除掉
+ * @param collectionName
+ * @param records
+ */
+const deleteRecords = async (collectionName: string, filter: any) => {
+  const api = await request.newContext({
+    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+  });
+
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+
+  const result = await api.post(`/api/${collectionName}:destroy?filter=${JSON.stringify(filter)}`, {
     headers,
   });
 
@@ -594,23 +683,6 @@ const createRandomData = async (collectionName: string, count = 10, data?: any) 
   return (await result.json()).data;
 };
 
-/**
- * 使页面成为可配置态
- */
-export async function enableToConfig(page: Page) {
-  try {
-    // 根据是否有 style 判断是否已经是可配置态（因为配置状态的按钮样式是通过 style 属性设置的）
-    const style = await page.getByTestId('ui-editor-button').getAttribute('style', {
-      timeout: 2000,
-    });
-    if (!style) {
-      await page.getByTestId('ui-editor-button').click();
-    }
-  } catch (e) {
-    // ignore
-  }
-}
-
 function getHeaders(storageState: any) {
   const headers: any = {};
   const token = getStorageItem('NOCOBASE_TOKEN', storageState);
@@ -649,3 +721,50 @@ function getHeaders(storageState: any) {
 
   return headers;
 }
+
+/**
+ * 辅助断言 SchemaSettings 的菜单项是否存在
+ * @param param0
+ */
+export async function expectSettingsMenu({ showMenu, supportedOptions, page }) {
+  await showMenu();
+  for (const option of supportedOptions) {
+    await expect(page.getByRole('menuitem', { name: option })).toBeVisible();
+  }
+}
+
+/**
+ * 辅助断言 Initializer 的菜单项是否存在
+ * @param param0
+ */
+export async function expectInitializerMenu({ showMenu, supportedOptions, page }) {
+  await showMenu();
+  for (const option of supportedOptions) {
+    await expect(page.getByRole('menuitem', { name: option })).toBeVisible();
+  }
+}
+
+/**
+ * 用于辅助在 page 中创建区块
+ * @param page
+ * @param name
+ */
+export const createBlockInPage = async (page: Page, name: string) => {
+  await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
+
+  if (name === 'Form') {
+    await page.getByText('Form', { exact: true }).first().hover();
+  } else if (name === 'Filter form') {
+    await page.getByText('Form', { exact: true }).nth(1).hover();
+  } else {
+    await page.getByText(name, { exact: true }).hover();
+  }
+
+  if (name === 'Markdown') {
+    await page.getByRole('menuitem', { name: 'Markdown' }).click();
+  } else {
+    await page.getByRole('menuitem', { name: 'Users' }).click();
+  }
+
+  await page.mouse.move(300, 0);
+};

@@ -1,4 +1,4 @@
-import { moment2str } from '@nocobase/utils';
+import { moment2str } from '@nocobase/utils/client';
 import dayjs from 'dayjs';
 
 export const getOptionsSchema = () => {

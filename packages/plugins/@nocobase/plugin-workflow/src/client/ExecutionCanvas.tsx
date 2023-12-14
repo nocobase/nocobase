@@ -1,3 +1,7 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Breadcrumb, Dropdown, Result, Space, Spin, Tag } from 'antd';
+
 import {
   ActionContextProvider,
   cx,
@@ -6,17 +10,16 @@ import {
   useApp,
   useCompile,
   useDocumentTitle,
+  usePlugin,
   useResourceActionContext,
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
-import { Breadcrumb, Dropdown, Result, Space, Spin, Tag } from 'antd';
-import React, { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+
+import WorkflowPlugin from '.';
 import { CanvasContent } from './CanvasContent';
 import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
-import { instructions } from './nodes';
 import useStyles from './style';
 import { linkNodes } from './utils';
 import { DownOutlined } from '@ant-design/icons';
@@ -45,6 +48,7 @@ function attachJobs(nodes, jobs: any[] = []): void {
 }
 
 function JobModal() {
+  const { instructions } = usePlugin(WorkflowPlugin);
   const compile = useCompile();
   const { viewJob: job, setViewJob } = useFlowContext();
   const { styles } = useStyles();

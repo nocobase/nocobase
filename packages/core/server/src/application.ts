@@ -20,11 +20,19 @@ import { createCacheManager } from './cache';
 import { registerCli } from './commands';
 import { CronJobManager } from './cron/cron-job-manager';
 import { ApplicationNotInstall } from './errors/application-not-install';
-import { createAppProxy, createI18n, createResourcer, getCommandFullName, registerMiddlewares } from './helper';
+import {
+  createAppProxy,
+  createI18n,
+  createResourcer,
+  getCommandFullName,
+  registerMiddlewares,
+  enablePerfHooks,
+} from './helper';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import { RecordableHistogram, performance } from 'node:perf_hooks';
 
 const packageJson = require('../package.json');
 
@@ -50,6 +58,7 @@ export interface ApplicationOptions {
   pmSock?: string;
   name?: string;
   authManager?: AuthManagerOptions;
+  perfHooks?: boolean;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -115,6 +124,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     name: string;
   } = null;
   public running = false;
+  public perfHistograms = new Map<string, RecordableHistogram>();
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
   protected _started: boolean;
@@ -560,6 +570,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.log.error(e);
     }
 
+    if (this._cacheManager) {
+      await this._cacheManager.close();
+    }
+
     await this.emitAsync('afterStop', this, options);
 
     this.stopped = true;
@@ -728,6 +742,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     this._locales = new Locale(createAppProxy(this));
+
+    if (options.perfHooks) {
+      enablePerfHooks(this);
+    }
 
     registerMiddlewares(this, options);
 

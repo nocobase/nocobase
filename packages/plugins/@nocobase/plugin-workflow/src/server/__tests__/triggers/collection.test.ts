@@ -1,6 +1,6 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
-import { getApp, sleep } from '..';
+import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { EXECUTION_STATUS } from '../../constants';
 
 describe('workflow > triggers > collection', () => {
@@ -88,6 +88,7 @@ describe('workflow > triggers > collection', () => {
           storage: db.options.storage,
           database: db.options.database,
         },
+        cleanDb: false,
       });
 
       db = app.db;
