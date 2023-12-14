@@ -51,7 +51,8 @@
     "react-router": "^6.11.2",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "antd": "5.12.2"
+    "antd": "5.12.2",
+    "nwsapi": "2.2.7"
   },
   "config": {
     "ghooks": {
