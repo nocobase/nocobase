@@ -107,13 +107,7 @@ export const kanbanCardInitializers = new SchemaInitializer({
       type: 'itemGroup',
       title: '{{t("Display fields")}}',
       name: 'displayFields',
-      useChildren() {
-        const fields = useFormItemInitializerFields({
-          readPretty: true,
-          block: 'Kanban',
-        });
-        return fields;
-      },
+      useChildren: useFormItemInitializerFields,
     },
     {
       type: 'itemGroup',
@@ -122,7 +116,10 @@ export const kanbanCardInitializers = new SchemaInitializer({
       name: 'displayAssociationFields',
       checkChildrenLength: true,
       useChildren() {
-        const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Kanban' });
+        const associationFields = useAssociatedFormItemInitializerFields({
+          readPretty: true,
+          block: 'Kanban',
+        });
         return associationFields;
       },
     },
