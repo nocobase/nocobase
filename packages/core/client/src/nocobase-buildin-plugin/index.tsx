@@ -1,11 +1,13 @@
 import { DisconnectOutlined, LoadingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
+import { getSubAppName } from '@nocobase/sdk';
 import { Button, Modal, Result, Spin } from 'antd';
 import React, { FC } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
-import { Application, useApp } from '../application';
+import { useAPIClient } from '../api-client';
+import { Application } from '../application';
 import { Plugin } from '../application/Plugin';
 import { SigninPage, SigninPageExtensionPlugin, SignupPage } from '../auth';
 import { BlockSchemaComponentPlugin } from '../block-provider';
@@ -25,8 +27,6 @@ import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
 import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
 import { LocalePlugin } from './plugins/LocalePlugin';
-import { useAPIClient } from '../api-client';
-import { getSubAppName } from '@nocobase/sdk';
 
 const AppSpin = () => {
   return (
@@ -81,7 +81,7 @@ const AppError: FC<{ error: Error; app: Application }> = observer(({ app, error 
           transform: translate(0, -50%);
         `}
         status="error"
-        title={app.i18n.t('Failed to load plugin')}
+        title={app.i18n.t('App error')}
         subTitle={app.i18n.t(error?.message)}
         extra={[
           <Button type="primary" key="try" onClick={() => window.location.reload()}>
