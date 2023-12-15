@@ -105,16 +105,44 @@ export default defineConfig({
           ],
         },
         {
-          title: 'Record',
+          title: 'Collection',
           type: 'group',
           children: [
             {
+              title: 'CollectionManager',
+              link: '/core/collection/collection-manager',
+            },
+            {
+              title: 'CollectionManagerProvider',
+              link: '/core/collection/collection-manager-provider',
+            },
+            {
+              title: 'Collection',
+              link: '/core/collection/collection',
+            },
+            {
+              title: 'CollectionProvider',
+              link: '/core/collection/collection-provider',
+            },
+            {
+              title: 'CollectionField',
+              link: '/core/collection/collection-field',
+            },
+            {
+              title: 'CollectionFieldProvider',
+              link: '/core/collection/collection-field-provider',
+            },
+            {
+              title: 'AssociationProvider',
+              link: '/core/collection/association-provider',
+            },
+            {
               title: 'Record',
-              link: '/core/data-block/record',
+              link: '/core/collection/record',
             },
             {
               title: 'RecordProvider',
-              link: '/core/data-block/record-provider',
+              link: '/core/collection/record-provider',
             },
           ]
         },
@@ -124,27 +152,15 @@ export default defineConfig({
           children: [
             {
               title: 'DataBlockProvider',
-              link: '/core/data-block',
+              link: '/core/data-block/data-block-provider',
             },
             {
-              title: 'BlockSettingsProvider',
-              link: '/core/data-block/settings',
+              title: 'DataBlockResourceProvider',
+              link: '/core/data-block/data-block-resource-provider',
             },
             {
-              title: 'CollectionProvider',
-              link: '/core/data-block/collection',
-            },
-            {
-              title: 'AssociationProvider',
-              link: '/core/data-block/association',
-            },
-            {
-              title: 'BlockResourceProvider',
-              link: '/core/data-block/resource',
-            },
-            {
-              title: 'BlockRequestProvider',
-              link: '/core/data-block/request',
+              title: 'DataBlockRequestProvider',
+              link: '/core/data-block/data-block-request-provider',
             },
           ]
         }

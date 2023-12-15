@@ -8,7 +8,7 @@
 
 简单区块例如 Markdown 区块。
 
-![](./markdown-block.png)
+![](./images/markdown-block.png)
 
 它只有文本内容，没有其他更多复杂数据，且文本内容是存储在 `schema` 中的，没有存储在数据库中。
 
@@ -26,7 +26,7 @@
 
 数据区块是指区块的数据存储在服务端的数据表中，例如 Table 组件。
 
-![](./data-block.png)
+![](./images/data-block.png)
 
 Table 中的字段信息以及字段对应的数据列表，都是存储在数据库中的。
 

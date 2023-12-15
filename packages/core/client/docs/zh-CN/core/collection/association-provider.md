@@ -1,5 +1,5 @@
 # AssociationProvider
-
+<!--
 根据 schema 中的 `association` 字段，查询并提供当前数据区块的关联字段信息，其内置在 [DataBlockProvider](xx) 中。
 
 ```js {4} | pure
@@ -21,7 +21,9 @@
   <CollectionProviderV2>
   </CollectionProviderV2>
 </AssociationProvider>
-```
+``` -->
+
+TODO: 未完成
 
 ## Hooks
 
@@ -34,7 +36,3 @@ const association = useAssociationV2()
 
 console.log(association)
 ```
-
-## 使用场景
-
-?

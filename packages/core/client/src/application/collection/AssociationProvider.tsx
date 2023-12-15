@@ -1,45 +1,37 @@
-import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
+import React, { FC, ReactNode, useMemo } from 'react';
 
-import { CollectionFieldOptions, useCollectionManager } from '../../collection-manager';
+import { CollectionFieldOptions } from '../../collection-manager';
 import { CollectionProviderV2 } from './CollectionProvider';
+import { CollectionFieldProviderV2, useCollectionFieldDataV2 } from './CollectionFieldProvider';
+import type { CollectionFieldV2 } from './CollectionField';
 
-export const AssociationContextV2 = createContext<CollectionFieldOptions>({} as any);
-AssociationContextV2.displayName = 'AssociationContextV2';
-
-export interface AssociationProviderProps extends CollectionFieldOptions {
-  children?: ReactNode;
-}
-
-export const AssociationProviderV2: FC<AssociationProviderProps> = ({ children, name, association }) => {
-  const { getCollectionField } = useCollectionManager();
-  const associationValue = useMemo(() => {
-    if (association) return association;
-    const res = getCollectionField(name);
-    if (!res) {
-      console.error(`[nocobase]: ${name} association does not exist`);
-    }
-    return res;
-  }, [association, getCollectionField, name]);
-
+const AssociationTargetCollection: FC<{ children?: ReactNode }> = ({ children }) => {
+  const associationFieldData = useCollectionFieldDataV2();
   const collectionName = useMemo(() => {
-    if (!associationValue) return undefined;
-    return associationValue.target;
-  }, [associationValue]);
+    return associationFieldData.target;
+  }, [associationFieldData]);
 
-  if (!associationValue || !collectionName) return null;
+  if (!collectionName) return null;
 
-  return (
-    <AssociationContextV2.Provider value={association}>
-      <CollectionProviderV2 name={collectionName}>{children}</CollectionProviderV2>
-    </AssociationContextV2.Provider>
-  );
+  return <CollectionProviderV2 name={collectionName}>{children}</CollectionProviderV2>;
 };
 
-export const useAssociationV2 = () => {
-  const context = useContext(AssociationContextV2);
-  if (!context) {
-    throw new Error('useAssociation() must be used within a AssociationProvider');
-  }
+export type AssociationProviderProps = (
+  | { name: string }
+  | { associationField: CollectionFieldV2 | CollectionFieldOptions }
+) & {
+  children?: ReactNode;
+};
+export const AssociationProviderV2: FC<AssociationProviderProps> = (props) => {
+  const { name, associationField, children } = props as {
+    name: string;
+    associationField: CollectionFieldV2 | CollectionFieldOptions;
+    children?: ReactNode;
+  };
 
-  return context;
+  return (
+    <CollectionFieldProviderV2 name={name} collectionField={associationField}>
+      <AssociationTargetCollection>{children}</AssociationTargetCollection>
+    </CollectionFieldProviderV2>
+  );
 };

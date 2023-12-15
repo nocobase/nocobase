@@ -1,6 +1,6 @@
 # RecordProvider
 
-用于提供数据记录，通常情况下对应着后端数据表中的一条记录。
+用于提供 [Record](/core/collection/record) 实例。
 
 ## 组件
 
@@ -8,6 +8,7 @@
 
 ```tsx | pure
 interface RecordProviderProps<DataType = {}, ParentDataType = {}> {
+  isNew?: boolean;
   record?: RecordV2<DataType, ParentDataType> | DataType;
   parentRecord?: RecordV2<ParentDataType> | DataType;
 }
@@ -15,11 +16,13 @@ interface RecordProviderProps<DataType = {}, ParentDataType = {}> {
 
 - 详解
 
-当数据为[关系字段](https://docs.nocobase.com/development/server/collections/association-fields)时，其存在父子关系，此时可以通过 `parentRecord` 来指定父记录。
+参数的具体说明参见 [Record](/core/collection/record)。
 
-`record` 和 `parentRecord` 即可以是普通的对象，也可以是 [RecordV2]() 实例，最终向子组件传递的数据为 `RecordV2` 实例，并通过 context 传递给子组件。
+需要说明的是 `record` 和 `parentRecord` 即可以是普通的对象，也可以是 [Record](/core/collection/record) 实例，但最终会转为 `RecordV2` 实例，并通过 context 传递给子组件。
 
-- 示例
+## 示例
+
+- record 参数为 Record 实例
 
 ```tsx | pure
 import { RecordV2, RecordProviderV2 } from '@nocobase/client';
@@ -43,6 +46,7 @@ const Demo = () => {
 export default () => <RecordProviderV2 record={record}><Demo /></RecordProviderV2>
 ```
 
+- record 参数为普通对象
 
 ```tsx | pure
 <RecordProvider record={{ id: 1, name: 'foo' }} />
@@ -59,6 +63,8 @@ const Demo = () => {
 
 export default () => <RecordProviderV2 record={{ id: 1, name: 'foo' }}><Demo /></RecordProviderV2>
 ```
+
+- record 参数为 Record 实例且带有父记录
 
 ```tsx | pure
 const parentRecord = new RecordV2({ data: { id: 1, role: 'admin' } });
@@ -81,6 +87,8 @@ const Demo = () => {
 
 export default () => <RecordProviderV2 record={record}><Demo /></RecordProviderV2>
 ```
+
+- record 参数为 Record 实例，父记录通过 `parentRecord` 参数传递
 
 ```tsx | pure
 const parentRecord = new RecordV2({ data: { id: 1, role: 'admin' } });
@@ -105,6 +113,8 @@ const Demo = () => {
 
 export default () => <RecordProviderV2 record={record} parentRecord={parentRecord}><Demo /></RecordProviderV2>
 ```
+
+- record 参数为普通对象，父记录也是普通对象
 
 ```tsx | pure
 <RecordProvider record={{ id: 1, name: 'foo' }} parentRecord={{ id: 1, role: 'admin' }} />
@@ -243,57 +253,3 @@ const Demo = () => {
 
 export default () => <RecordProviderV2 record={{ id: 1, name: 'foo' }} parentRecord={{ id: 1, role: 'admin' }} ><Demo /></RecordProviderV2>
 ```
-
-<!--
-## 使用场景
-
-### 传递数据记录
-- `DataBlockProvider` 组件中的 [BlocRequestProvider]() 组件对于 `action: "get"` 类型的请求在获取数据后会 *自动* 向子组件传递数据记录，此时可以通过 `useRecordV2()` 来获取数据记录
-
-```tsx {5,13}| pure
-const schema = {
-  'x-decorator': 'DataBlockProvider',
-  'x-decorator-props': {
-    collection: 'users',
-    action: 'get',
-  },
-  "properties": {
-    "x-component": "MyForm",
-  }
-}
-
-const MyForm = () => {
-  const record = useRecordV2();
-  const [form] = useForm();
-  useEffect(() => {
-    form.setFieldsValue(record.data);
-  }, [record.data]);
-  return <Form form={form} />;
-}
-```
-
-- 对于 `action: "list"` 列表数据获取的是多条记录，则需要根据组件的使用自己使用 `<RecordProvider />` 向子组件传递数据记录。
-
-```tsx {5,13}| pure
-const schema = {
-  'x-decorator': 'DataBlockProvider',
-  'x-decorator-props': {
-    collection: 'users',
-    action: 'list',
-  },
-  "properties": {
-    "x-component": "MyTable",
-  }
-}
-
-const MyTable = () => {
-  const record = useRecordV2();
-  return <Form form={form} />;
-}
-```
-
-
-### 使用数据记录
-
-- 在子组件中使用 `useRecordV2()` 获取数据记录，然后通过 `record.data`、`record.parentRecord` 来获取数据记录的数据，用于组件的渲染。
-- 可以将获取到的 `useRecordV2()` 传递给祖先组件，以便在非子组件中使用数据记录，例如将 Table 组件点击单元格弹窗，其弹窗数据可以由单元格中的数据记录决定，并且弹窗组件可以放到 Table 组件外部。 -->
