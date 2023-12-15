@@ -9,7 +9,7 @@ const AppError: FC<{ error: Error }> = ({ error }) => (
   </div>
 );
 
-const AppNotFound: FC = () => <div>Not Found</div>;
+const AppNotFound: FC = () => <div></div>;
 
 export const defaultAppComponents = {
   AppMain: MainComponent,

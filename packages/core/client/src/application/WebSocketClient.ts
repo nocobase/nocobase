@@ -36,7 +36,7 @@ export class WebSocketClient {
   protected _reconnectTimes = 0;
   protected events = [];
   protected options: WebSocketClientOptions;
-  protected enabled: boolean;
+  enabled: boolean;
   connected = false;
   serverDown = false;
   lastMessage = {};
