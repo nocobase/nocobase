@@ -286,7 +286,15 @@ export class Restorer extends AppMigrator {
         JSON.parse(row)
           .map((val, index) => [columns[index], val])
           .reduce((carry, [column, val]) => {
-            const field = fieldAttributes[column];
+            let field = fieldAttributes[column];
+
+            if (!field) {
+              const attributeName = Object.entries(rawAttributes).find(([key, attr]) => attr.field === column)?.[0];
+
+              if (attributeName) {
+                field = fieldAttributes[attributeName];
+              }
+            }
 
             carry[column] = field ? FieldValueWriter.write(field, val) : val;
 
@@ -307,14 +315,16 @@ export class Restorer extends AppMigrator {
       return;
     }
 
+    const insertGeneratorAttributes = lodash.mapKeys(rawAttributes, (value, key) => {
+      return value.field;
+    });
+
     //@ts-ignore
     const sql = db.sequelize.queryInterface.queryGenerator.bulkInsertQuery(
       addSchemaTableName,
       rowsWithMeta,
       {},
-      lodash.mapKeys(rawAttributes, (value, key) => {
-        return value.field;
-      }),
+      insertGeneratorAttributes,
     );
 
     if (options.insert === false) {

@@ -9,9 +9,11 @@ export default defineCollection({
       const importedCollections = restorer.importedCollections;
 
       const sequenceFields = importedCollections
-        .map((collection) =>
-          [...app.db.getCollection(collection).fields.values()].filter((field) => field.type === 'sequence'),
-        )
+        .map((collection) => {
+          const collectionInstance = app.db.getCollection(collection);
+          if (!collectionInstance) return [];
+          return [...collectionInstance.fields.values()].filter((field) => field.type === 'sequence');
+        })
         .flat()
         .filter(Boolean);
 
