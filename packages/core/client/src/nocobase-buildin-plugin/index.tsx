@@ -35,7 +35,6 @@ const AppSpin = () => {
 };
 
 const useErrorProps = (app: Application, error: any) => {
-  const navigate = useNavigate();
   const api = useAPIClient();
   if (!error) {
     return {};
@@ -45,6 +44,7 @@ const useErrorProps = (app: Application, error: any) => {
   switch (err.code) {
     case 'USER_HAS_NO_ROLES_ERR':
       return {
+        title: app.i18n.t('Sign in failed'),
         subTitle: err.message,
         extra: [
           <Button
