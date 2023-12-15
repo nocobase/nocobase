@@ -338,8 +338,8 @@ const moveByX = (x: number, xStep: number, task: BarTask) => {
 };
 
 const dateByX = (x: number, taskX: number, taskDate: Date, xStep: number, timeStep: number) => {
-  let newDate = new Date(((x - taskX) / xStep) * timeStep + taskDate.getTime());
-  newDate = new Date(newDate.getTime() + (newDate.getTimezoneOffset() - taskDate.getTimezoneOffset()) * 60000);
+  let newDate = new Date(((x - taskX) / xStep) * timeStep + taskDate?.getTime?.());
+  newDate = new Date(newDate?.getTime?.() + (newDate?.getTimezoneOffset() - taskDate?.getTimezoneOffset()) * 60000);
   return newDate;
 };
 

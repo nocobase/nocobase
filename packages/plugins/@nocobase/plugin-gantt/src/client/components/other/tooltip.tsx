@@ -125,9 +125,9 @@ export const StandardTooltipContent: React.FC<{
       <b style={{ fontSize: fontSize }}>
         {task.name}: {getYmd(task.start)} ~ {getYmd(task.end)}
       </b>
-      {task.end.getTime() - task.start.getTime() !== 0 && (
+      {task.end?.getTime?.() - task.start?.getTime?.() !== 0 && (
         <p className="tooltipDefaultContainerParagraph">{`Duration: ${
-          Math.round(((task.end.getTime() - task.start.getTime()) / (1000 * 60 * 60 * 24)) * 10) / 10
+          Math.round(((task.end?.getTime?.() - task.start?.getTime?.()) / (1000 * 60 * 60 * 24)) * 10) / 10 || ''
         } day(s)`}</p>
       )}
 

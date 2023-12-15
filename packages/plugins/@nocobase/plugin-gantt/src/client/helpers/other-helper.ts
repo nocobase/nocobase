@@ -57,7 +57,8 @@ export const sortTasks = (taskA: Task, taskB: Task) => {
 };
 
 export const getYmd = (date: Date) => {
-  if (!isNaN(date.getTime())) {
+  if (!isNaN(date?.getTime?.())) {
     return date.getFullYear() + '/' + `${date.getMonth() + 1}` + '/' + date.getDate();
   }
+  return 0;
 };
