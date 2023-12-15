@@ -51,7 +51,11 @@ export default class extends Trigger {
   private async trigger(context) {
     const { triggerWorkflows = '', values } = context.action.params;
 
-    const { currentUser } = context.state;
+    const { currentUser, currentRole } = context.state;
+    const userInfo = {
+      user: toJSON(currentUser),
+      roleName: currentRole,
+    };
 
     const triggers = triggerWorkflows.split(',').map((trigger) => trigger.split('!'));
     const workflowRepo = this.plugin.db.getRepository('workflows');
@@ -91,13 +95,13 @@ export default class extends Trigger {
               appends,
             });
           }
-          this.plugin.trigger(workflow, { data: toJSON(payload), user: toJSON(currentUser) });
+          this.plugin.trigger(workflow, { data: toJSON(payload), ...userInfo });
         });
       } else {
         const data = trigger[1] ? get(values, trigger[1]) : values;
         this.plugin.trigger(workflow, {
           data,
-          user: currentUser,
+          ...userInfo,
         });
       }
     });

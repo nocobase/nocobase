@@ -36,7 +36,7 @@ function DynamicExpression({ value, onChange }) {
 export default class extends Instruction {
   title = `{{t("Dynamic Calculation", { ns: "${NAMESPACE}" })}}`;
   type = 'dynamic-calculation';
-  group = 'control';
+  group = 'extended';
   description = `{{t("Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     expression: {
