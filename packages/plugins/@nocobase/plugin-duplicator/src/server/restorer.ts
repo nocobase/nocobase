@@ -286,16 +286,7 @@ export class Restorer extends AppMigrator {
         JSON.parse(row)
           .map((val, index) => [columns[index], val])
           .reduce((carry, [column, val]) => {
-            let field = fieldAttributes[column];
-
-            if (!field) {
-              const attributeName = Object.entries(rawAttributes).find(([key, attr]) => attr.field === column)?.[0];
-
-              if (attributeName) {
-                field = fieldAttributes[attributeName];
-              }
-            }
-
+            const field = fieldAttributes[column];
             carry[column] = field ? FieldValueWriter.write(field, val) : val;
 
             return carry;
