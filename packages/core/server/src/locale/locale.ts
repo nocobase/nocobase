@@ -96,8 +96,7 @@ export class Locale {
     Object.keys(resources).forEach((name) => {
       this.app.i18n.addResources(lang, name, resources[name]);
     });
-    this.app.i18n.changeLanguage(lang);
-    console.log(lang, this.app.i18n.t('Username'));
+
     return resources;
   }
 
