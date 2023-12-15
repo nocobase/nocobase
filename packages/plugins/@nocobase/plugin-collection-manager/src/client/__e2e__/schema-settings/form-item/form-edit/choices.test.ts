@@ -98,7 +98,7 @@ test.describe('china region', () => {
       expectEditable: async () => {
         await page
           .getByLabel('block-item-CollectionField-general-form-general.chinaRegion-chinaRegion')
-          .getByRole('combobox', { name: 'Search' })
+          .locator('.ant-select')
           .click();
         await page.getByRole('menuitemcheckbox', { name: '北京市' }).click();
         await page.getByRole('menuitemcheckbox', { name: '市辖区' }).click();
@@ -108,14 +108,16 @@ test.describe('china region', () => {
         await expect(
           page
             .getByLabel('block-item-CollectionField-general-form-general.chinaRegion-chinaRegion')
-            .getByRole('combobox', { name: 'Search' }),
+            .locator('.ant-select')
+            .getByRole('combobox'),
         ).toBeDisabled();
       },
       expectEasyReading: async () => {
         await expect(
           page
             .getByLabel('block-item-CollectionField-general-form-general.chinaRegion-chinaRegion')
-            .getByRole('combobox', { name: 'Search' }),
+            .locator('.ant-select')
+            .getByRole('combobox'),
         ).not.toBeVisible();
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.chinaRegion-chinaRegion'),

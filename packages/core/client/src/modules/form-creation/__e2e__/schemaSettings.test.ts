@@ -359,7 +359,7 @@ test.describe('creation form block schema settings', () => {
 
       // 添加一个数据范围，条件是：ID = 2
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('select-filter-field').getByLabel('Search').click();
+      await page.getByTestId('select-filter-field').click();
       await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
       await page.getByLabel('Form data templates').getByRole('spinbutton').click();
       await page.getByLabel('Form data templates').getByRole('spinbutton').fill('2');
@@ -380,7 +380,7 @@ test.describe('creation form block schema settings', () => {
       // 选择一个模板
       await page.getByTestId('select-form-data-template').click();
       await page.getByRole('option', { name: 'Template name 1' }).click();
-      await page.getByTestId('select-object-undefined').click();
+      await page.getByTestId('select-object-single').click();
 
       // 因为添加了数据范围，所以只显示一个选项
       await expect(page.getByRole('option')).toHaveCount(1);
@@ -407,7 +407,7 @@ test.describe('creation form block schema settings', () => {
       // 重新选择一下数据，字段值才会被填充
       // TODO: 保存后，数据应该直接被填充上
       await page.getByLabel('icon-close-select').click();
-      await page.getByTestId('select-object-undefined').getByLabel('Search').click();
+      await page.getByTestId('select-object-single').click();
       await page.getByRole('option', { name: '2' }).click();
 
       await expect(
