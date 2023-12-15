@@ -211,9 +211,11 @@ export class Application {
       this.loading = true;
       await this.pm.load();
     } catch (error) {
-      await new Promise((resolve) => {
-        setTimeout(() => resolve(null), 1000);
-      });
+      if (this.ws.enabled) {
+        await new Promise((resolve) => {
+          setTimeout(() => resolve(null), 1000);
+        });
+      }
       loadFailed = true;
       this.error = {
         ...error,
