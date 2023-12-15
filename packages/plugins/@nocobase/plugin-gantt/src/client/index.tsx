@@ -13,7 +13,7 @@ import { Event } from './components/gantt/Event';
 import { GanttActionInitializers } from './GanttActionInitializers';
 import { GanttBlockInitializer } from './GanttBlockInitializer';
 import { GanttBlockProvider, useGanttBlockProps } from './GanttBlockProvider';
-import { ganttSettings } from './Gantt.Setting';
+import { ganttSettings } from './Gantt.Settings';
 
 Gantt.ActionBar = ActionBar;
 Gantt.ViewMode = ViewMode;
