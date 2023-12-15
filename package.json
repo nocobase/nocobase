@@ -51,7 +51,6 @@
     "react-router": "^6.11.2",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "antd": "5.12.2",
     "nwsapi": "2.2.7"
   },
   "config": {
@@ -73,7 +72,7 @@
     "@commitlint/config-conventional": "^16.0.0",
     "@commitlint/prompt-cli": "^16.1.0",
     "@faker-js/faker": "8.1.0",
-    "@playwright/test": "^1.37.1",
+    "@playwright/test": "^1.40.1",
     "@swc/core": "^1.3.92",
     "@swc/jest": "^0.2.29",
     "@testing-library/jest-dom": "^5.17.0",
