@@ -75,7 +75,6 @@ import { ViewCollection } from './view-collection';
 import { CollectionFactory } from './collection-factory';
 import chalk from 'chalk';
 import { checkDatabaseVersion } from './helpers';
-import { collection } from '@nocobase/client';
 
 export type MergeOptions = merge.Options;
 
