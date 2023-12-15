@@ -70,6 +70,8 @@ export default class extends Trigger {
     const langTriggerData = useLang('Trigger data');
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const langUserSubmittedForm = useLang('User submitted form');
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const langRoleSubmittedForm = useLang('Role of user submitted form');
     const rootFields = [
       {
         collectionName: config.collection,
@@ -87,6 +89,12 @@ export default class extends Trigger {
         target: 'users',
         uiSchema: {
           title: langUserSubmittedForm,
+        },
+      },
+      {
+        name: 'roleName',
+        uiSchema: {
+          title: langRoleSubmittedForm,
         },
       },
     ];
