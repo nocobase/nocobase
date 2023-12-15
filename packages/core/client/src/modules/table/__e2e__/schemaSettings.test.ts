@@ -537,7 +537,7 @@ test.describe('actions schema settings', () => {
 
       // 添加一个条件：ID 等于 1
       await page.getByRole('tabpanel').getByText('Add condition', { exact: true }).click();
-      await page.getByRole('button', { name: 'Search Select field' }).getByLabel('Search').click();
+      await page.getByRole('button', { name: 'Select field' }).getByLabel('Search').click();
       await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
       await page.getByRole('spinbutton').click();
       await page.getByRole('spinbutton').fill('1');
