@@ -812,6 +812,7 @@
   "Direct duplicate": "直接复制",
   "Copy into the form and continue to fill in": "复制到表单并继续填写",
   "Linkage with form fields": "从表单字段联动",
+  "App error": "应用错误",
   "Failed to load plugin": "插件加载失败",
   "Allow add new, update and delete actions": "允许增删改操作",
   "Date display format": "日期显示格式",
@@ -828,5 +829,8 @@
   "Execute": "执行",
   "Please use a valid SELECT or WITH AS statement": "请使用有效的 SELECT 或 WITH AS 语句",
   "Please confirm the SQL statement first": "请先确认 SQL 语句",
-  "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects": "自动删除依赖于该表的对象,以及依赖这些对象的对象"
+  "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects": "自动删除依赖于该表的对象,以及依赖这些对象的对象",
+  "Sign in with another account": "登录其他账号",
+  "Return to the main application": "返回主应用",
+  "Permission denied": "没有权限"
 }
