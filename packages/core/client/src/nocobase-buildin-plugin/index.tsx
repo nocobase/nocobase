@@ -44,7 +44,7 @@ const useErrorProps = (app: Application, error: any) => {
   switch (err.code) {
     case 'USER_HAS_NO_ROLES_ERR':
       return {
-        title: app.i18n.t('Sign in failed'),
+        title: app.i18n.t('Permission denied'),
         subTitle: err.message,
         extra: [
           <Button

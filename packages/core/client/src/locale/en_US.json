@@ -775,5 +775,5 @@
   "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects": "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects",
   "Sign in with another account": "Sign in with another account",
   "Return to the main application": "Return to the main application",
-  "Sign in failed": "Sign in failed"
+  "Permission deined": "Permission denied"
 }
