@@ -14,7 +14,6 @@ import {
 import { ModalProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useFieldSchema } from '@formily/react';
-import { useBulkEditTranslation } from './locale';
 
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
@@ -25,9 +24,10 @@ const MenuGroup = (props) => {
     <SchemaSettingsItemGroup title={`${t('Customize')} > ${actionTitle}`}>{props.children}</SchemaSettingsItemGroup>
   );
 };
+
 function UpdateMode() {
   const { dn } = useDesignable();
-  const { t } = useBulkEditTranslation();
+  const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
 
   return (

@@ -1,4 +1,0 @@
-export default {
-  "Bulk edit": "Bulk edit",
-  "Data will be updated": "Data will be updated",
-};

@@ -9,7 +9,7 @@ import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsSelectItem,
   SchemaSettingsDataScope,
-  SchemaSettingsFormItemTemplate,
+  SchemaSettingsTemplate,
 } from '@nocobase/client';
 import { useGanttTranslation, useOptions } from './utils';
 import { useGanttBlockContext } from './GanttBlockProvider';
@@ -227,8 +227,8 @@ export const ganttSettings = new SchemaSettings({
       type: 'divider',
     },
     {
-      name: 'formItemTemplate',
-      Component: SchemaSettingsFormItemTemplate,
+      name: 'template',
+      Component: SchemaSettingsTemplate,
       useComponentProps() {
         const { name } = useCollection();
         return {

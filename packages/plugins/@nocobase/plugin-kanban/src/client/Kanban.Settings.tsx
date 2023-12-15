@@ -8,7 +8,7 @@ import {
   FixedBlockDesignerItem,
   SchemaSettingsBlockTitleItem,
   removeNullCondition,
-  SchemaSettingsFormItemTemplate,
+  SchemaSettingsTemplate,
 } from '@nocobase/client';
 import { useKanbanBlockContext } from './KanbanBlockProvider';
 export const kanbanSettings = new SchemaSettings({
@@ -55,15 +55,12 @@ export const kanbanSettings = new SchemaSettings({
     },
     {
       name: 'template',
-      Component: SchemaSettingsFormItemTemplate,
+      Component: SchemaSettingsTemplate,
       useComponentProps() {
         const { name } = useCollection();
-        const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
         return {
-          componentName: 'Details',
+          componentName: 'Kanban',
           collectionName: name,
-          resourceName: defaultResource,
         };
       },
     },
