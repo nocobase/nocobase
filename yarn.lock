@@ -6691,11 +6691,6 @@
   dependencies:
     "@types/node" "*"
 
-"@types/requirejs@^2.1.34":
-  version "2.1.37"
-  resolved "https://registry.npmmirror.com/@types/requirejs/-/requirejs-2.1.37.tgz#7f17dce01afdc7b3a8b542b32661b0faecf1e1f9"
-  integrity sha512-jmFgr3mwN2NSmtRP6IpZ2nfRS7ufSXuDYQ6YyPFArN8x5dARQcD/DXzT0J6NYbvquVT4pg9K9HWdi6e6DZR9iQ==
-
 "@types/sax@^1.2.1":
   version "1.2.7"
   resolved "https://registry.npmmirror.com/@types/sax/-/sax-1.2.7.tgz#ba5fe7df9aa9c89b6dff7688a19023dd2963091d"
