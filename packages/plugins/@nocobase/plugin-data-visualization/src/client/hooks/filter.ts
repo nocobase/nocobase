@@ -8,7 +8,7 @@ import { ChartFilterContext } from '../filter/FilterProvider';
 import { useMemoizedFn } from 'ahooks';
 import { parse } from '@nocobase/utils/client';
 import lodash from 'lodash';
-import { getValuesByPath } from '../utils';
+import { getFormulaComponent, getValuesByPath } from '../utils';
 import deepmerge from 'deepmerge';
 
 export const useCustomFieldInterface = () => {
@@ -88,9 +88,10 @@ export const useChartFilter = () => {
         },
       };
       if (field.interface === 'formula') {
+        const component = getFormulaComponent(field.dataType) || 'Input';
         schema = {
           ...schema,
-          'x-component': 'InputNumber',
+          'x-component': component,
         };
       }
       if (['oho', 'o2m'].includes(field.interface)) {
