@@ -218,11 +218,11 @@ export class Application {
       }
       loadFailed = true;
       this.error = {
-        ...error,
         code: 'LOAD_ERROR',
         message: error.message,
+        ...error,
       };
-      console.error(error);
+      console.error(this.error);
     }
     this.loading = false;
   }
