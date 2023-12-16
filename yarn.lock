@@ -470,9 +470,10 @@
     csstype "^3.0.8"
     tslib "^2.0.3"
 
-"@antv/x6-common@^2.0.13":
-  version "2.0.14"
-  resolved "https://registry.npmmirror.com/@antv/x6-common/-/x6-common-2.0.14.tgz#ab89959df2f4bfb7626615ab60fc7203d339359a"
+"@antv/x6-common@^2.0.16":
+  version "2.0.16"
+  resolved "https://registry.yarnpkg.com/@antv/x6-common/-/x6-common-2.0.16.tgz#f5b12c3eb7afd5736deb1c9bd899c83de08d77f3"
+  integrity sha512-iT60SnTpzoXJwURH+ERYGsTQ8lOuXd7nBuDhgx135VdBG88TizgKrSknz35k8+6j6Qv7O8mRDCGmi2He9li8kg==
   dependencies:
     lodash-es "^4.17.15"
     utility-types "^3.10.0"
@@ -510,10 +511,11 @@
   resolved "https://registry.npmmirror.com/@antv/x6-react-shape/-/x6-react-shape-2.2.2.tgz#b0caf31219fa3219b4e7a4960583e2c3affb870c"
 
 "@antv/x6@^2.0.0":
-  version "2.13.1"
-  resolved "https://registry.npmmirror.com/@antv/x6/-/x6-2.13.1.tgz#c344eb797edc0e437ab1bed599099a8bd68a4ada"
+  version "2.16.1"
+  resolved "https://registry.yarnpkg.com/@antv/x6/-/x6-2.16.1.tgz#52051466629b1cbf4597ace00dca11866b3a2fe1"
+  integrity sha512-frH8gEa24dZGl/ca8tHVM2NWVETt3o8Cac7t55SyjzX1AKFifrV2SRqgp/Z4mrUt/SmfjUr6jUId5ZyQZJNRgQ==
   dependencies:
-    "@antv/x6-common" "^2.0.13"
+    "@antv/x6-common" "^2.0.16"
     "@antv/x6-geometry" "^2.0.5"
     utility-types "^3.10.0"
 
@@ -3105,7 +3107,7 @@
 
 "@formily/antd-v5@1.1.7", "@formily/antd-v5@1.x", "@formily/antd-v5@^1.1.7":
   version "1.1.7"
-  resolved "https://registry.npmmirror.com/@formily/antd-v5/-/antd-v5-1.1.7.tgz#5dc0d395510bcaf3ecd13bef24bed5a238d08a1b"
+  resolved "https://registry.yarnpkg.com/@formily/antd-v5/-/antd-v5-1.1.7.tgz#5dc0d395510bcaf3ecd13bef24bed5a238d08a1b"
   integrity sha512-AWKtn4w3+sSasWyypmuYjXW5RMxp3Lc9UKjAUUtyhjD928SvFlF7kJI0IhMODQDuZLR5tbRtFic/sYopJK3v7w==
   dependencies:
     "@ant-design/cssinjs" "^1.3.1"
@@ -4896,14 +4898,14 @@
   resolved "https://registry.npmmirror.com/@redis/time-series/-/time-series-1.0.5.tgz#a6d70ef7a0e71e083ea09b967df0a0ed742bc6ad"
   integrity sha512-IFjIgTusQym2B5IZJG3XKr5llka7ey84fw/NOYqESP5WUfQs9zz1ww/9+qoz4ka/S6KcGBodzlCeZ5UImKbscg==
 
+"@remix-run/router@1.14.0":
+  version "1.14.0"
+  resolved "https://registry.yarnpkg.com/@remix-run/router/-/router-1.14.0.tgz#9bc39a5a3a71b81bdb310eba6def5bc3966695b7"
+  integrity sha512-WOHih+ClN7N8oHk9N4JUiMxQJmRVaOxcg8w7F/oHUXzJt920ekASLI/7cYX8XkntDWRhLZtsk6LbGrkgOAvi5A==
+
 "@remix-run/router@1.7.1":
   version "1.7.1"
   resolved "https://registry.npmmirror.com/@remix-run/router/-/router-1.7.1.tgz#fea7ac35ae4014637c130011f59428f618730498"
-
-"@remix-run/router@1.8.0":
-  version "1.8.0"
-  resolved "https://registry.npmmirror.com/@remix-run/router/-/router-1.8.0.tgz#e848d2f669f601544df15ce2a313955e4bf0bafc"
-  integrity sha512-mrfKqIHnSZRyIzBcanNJmVQELTnX+qagEDlcKO90RgRBVOZGSGvZKeDihTRfWcqoDn5N/NkUcwWTccnpN18Tfg==
 
 "@restart/hooks@^0.4.7":
   version "0.4.9"
@@ -7457,7 +7459,8 @@ antd-token-previewer@2.0.0-alpha.8, antd-token-previewer@^2.0.0-alpha.6:
 
 antd@5.8.6, antd@5.x, antd@^5.4.2, antd@^5.5.1, antd@^5.8.6:
   version "5.8.6"
-  resolved "https://registry.npmmirror.com/antd/-/antd-5.8.6.tgz#48af8d4221098dbd1faa5e56f0a1344741e2a3dc"
+  resolved "https://registry.yarnpkg.com/antd/-/antd-5.8.6.tgz#48af8d4221098dbd1faa5e56f0a1344741e2a3dc"
+  integrity sha512-DQdHJSq7AH303NgAUZcMRrWqwRYLT9LjesrfhB9xwwi3ooWTMAnS0LrL2NIYHvXZQy1kV0C4mMSiSbBqEKatLA==
   dependencies:
     "@ant-design/colors" "^7.0.0"
     "@ant-design/cssinjs" "^1.16.0"
@@ -20412,11 +20415,11 @@ react-router-dom@6.3.0, react-router-dom@6.x, react-router-dom@^6.11.2:
     react-router "6.14.1"
 
 react-router@6.14.1, react-router@6.3.0, react-router@^6.11.2:
-  version "6.15.0"
-  resolved "https://registry.npmmirror.com/react-router/-/react-router-6.15.0.tgz#bf2cb5a4a7ed57f074d4ea88db0d95033f39cac8"
-  integrity sha512-NIytlzvzLwJkCQj2HLefmeakxxWHWAP+02EGqWEZy+DgfHHKQMUoBBjUQLOtFInBMhWtb3hiUy6MfFgwLjXhqg==
+  version "6.21.0"
+  resolved "https://registry.yarnpkg.com/react-router/-/react-router-6.21.0.tgz#6fe3e59877aca3dccceec1801d26991ddf42d12b"
+  integrity sha512-hGZ0HXbwz3zw52pLZV3j3+ec+m/PQ9cTpBvqjFQmy2XVUWGn5MD+31oXHb6dVTxYzmAeaiUBYjkoNz66n3RGCg==
   dependencies:
-    "@remix-run/router" "1.8.0"
+    "@remix-run/router" "1.14.0"
 
 react-side-effect@^2.1.0:
   version "2.1.2"
