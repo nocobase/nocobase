@@ -1,9 +1,9 @@
 import { Context, Next } from '@nocobase/actions';
 import { Database, Model, Op } from '@nocobase/database';
 import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
+import { NAMESPACE_COLLECTIONS, NAMESPACE_MENUS } from '../constans';
 import LocalizationManagementPlugin from '../plugin';
 import { getTextsFromDBRecord, getTextsFromUISchema } from '../utils';
-import { NAMESPACE_COLLECTIONS, NAMESPACE_MENUS } from '../constans';
 
 const getResourcesInstance = async (ctx: Context) => {
   const plugin = ctx.app.getPlugin('localization-management') as LocalizationManagementPlugin;
@@ -91,7 +91,7 @@ export const getTextsFromDB = async (db: Database) => {
 const getSchemaUid = async (db: Database) => {
   const systemSettings = await db.getRepository('systemSettings').findOne();
   const options = systemSettings?.options || {};
-  const { adminSchemaUid, mobileSchemaUid } = options;
+  const { adminSchemaUid = 'nocobase-admin-menu', mobileSchemaUid = 'nocobase-mobile-container' } = options;
   return { adminSchemaUid, mobileSchemaUid };
 };
 
