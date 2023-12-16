@@ -88,21 +88,24 @@ export const getTextsFromDB = async (db: Database) => {
   return result;
 };
 
-const getSchemaUid = async (db: Database) => {
-  const systemSettings = await db.getRepository('systemSettings').findOne();
-  const options = systemSettings?.options || {};
-  const { adminSchemaUid = 'nocobase-admin-menu', mobileSchemaUid = 'nocobase-mobile-container' } = options;
-  return { adminSchemaUid, mobileSchemaUid };
+const getSchemaUid = async (db: Database, migrate = false) => {
+  if (migrate) {
+    const systemSettings = await db.getRepository('systemSettings').findOne();
+    const options = systemSettings?.options || {};
+    const { adminSchemaUid, mobileSchemaUid } = options;
+    return { adminSchemaUid, mobileSchemaUid };
+  }
+  return { adminSchemaUid: 'nocobase-admin-menu', mobileSchemaUid: 'nocobase-mobile-container' };
 };
 
-export const getTextsFromMenu = async (db: Database) => {
+export const getTextsFromMenu = async (db: Database, migrate = false) => {
   const result = {};
-  const { adminSchemaUid, mobileSchemaUid } = await getSchemaUid(db);
+  const { adminSchemaUid, mobileSchemaUid } = await getSchemaUid(db, migrate);
   const repo = db.getRepository('uiSchemas') as UiSchemaRepository;
   if (adminSchemaUid) {
     const schema = await repo.getProperties(adminSchemaUid);
     const extractTitle = (schema: any) => {
-      if (schema.properties) {
+      if (schema?.properties) {
         Object.values(schema.properties).forEach((item: any) => {
           if (item.title) {
             result[item.title] = '';
@@ -115,7 +118,7 @@ export const getTextsFromMenu = async (db: Database) => {
   }
   if (mobileSchemaUid) {
     const schema = await repo.getProperties(mobileSchemaUid);
-    if (schema['properties']?.tabBar?.properties) {
+    if (schema?.['properties']?.tabBar?.properties) {
       Object.values(schema['properties']?.tabBar?.properties).forEach((item: any) => {
         const title = item['x-component-props']?.title;
         if (title) {

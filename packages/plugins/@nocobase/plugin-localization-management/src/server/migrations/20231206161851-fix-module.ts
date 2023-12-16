@@ -12,7 +12,7 @@ export default class FixModuleMigration extends Migration {
     }
 
     const resources = await this.app.localeManager.getCacheResources('zh-CN');
-    const menus = await getTextsFromMenu(this.context.db);
+    const menus = await getTextsFromMenu(this.context.db, true);
     const collections = await getTextsFromDB(this.context.db);
 
     const db = this.context.db;
