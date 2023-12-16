@@ -54,6 +54,12 @@
     "@nocobase/plugin-workflow-parallel": "0.17.0-alpha.7",
     "@nocobase/plugin-workflow-request": "0.17.0-alpha.7",
     "@nocobase/plugin-workflow-sql": "0.17.0-alpha.7",
+    "@nocobase/plugin-kanban": "0.17.0-alpha.7",
+    "@nocobase/plugin-gantt": "0.17.0-alpha.7",
+    "@nocobase/plugin-action-bulk-update": "0.17.0-alpha.7",
+    "@nocobase/plugin-action-bulk-edit": "0.17.0-alpha.7",
+    "@nocobase/plugin-action-duplicate": "0.17.0-alpha.7",
+    "@nocobase/plugin-action-print": "0.17.0-alpha.7",
     "@nocobase/server": "0.17.0-alpha.7",
     "cronstrue": "^2.11.0"
   },
