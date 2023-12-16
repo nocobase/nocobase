@@ -1,5 +1,5 @@
 import { MockServer, mockServer } from '@nocobase/test';
-import Migration from '../migrations/20231215215245-admin-menu-uid';
+import Migration from '../migrations/20231215215247-admin-menu-uid';
 
 // 每个插件的 app 最小化安装的插件都不一样，需要插件根据自己的情况添加必备插件
 async function createApp(options: any = {}) {

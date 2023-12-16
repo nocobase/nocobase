@@ -13,7 +13,7 @@ export default class extends Migration {
       return;
     }
     const UiSchemas = this.db.getModel('uiSchemas');
-    const r = await UiSchemas.update(
+    await UiSchemas.update(
       {
         'x-uid': 'nocobase-admin-menu',
       },
@@ -23,6 +23,26 @@ export default class extends Migration {
         },
       },
     );
-    console.log(instance?.options?.adminSchemaUid, r);
+    await this.db.getModel('uiSchemaTreePath').update(
+      {
+        ancestor: 'nocobase-admin-menu',
+      },
+      {
+        where: {
+          ancestor: instance?.options?.adminSchemaUid,
+        },
+      },
+    );
+    await this.db.getModel('uiSchemaTreePath').update(
+      {
+        descendant: 'nocobase-admin-menu',
+      },
+      {
+        where: {
+          descendant: instance?.options?.adminSchemaUid,
+        },
+      },
+    );
+    console.log(instance?.options?.adminSchemaUid);
   }
 }

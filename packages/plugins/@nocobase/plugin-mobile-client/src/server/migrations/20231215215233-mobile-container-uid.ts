@@ -23,5 +23,26 @@ export default class extends Migration {
         },
       },
     );
+    await this.db.getModel('uiSchemaTreePath').update(
+      {
+        ancestor: 'nocobase-mobile-container',
+      },
+      {
+        where: {
+          ancestor: instance?.options?.mobileSchemaUid,
+        },
+      },
+    );
+    await this.db.getModel('uiSchemaTreePath').update(
+      {
+        descendant: 'nocobase-mobile-container',
+      },
+      {
+        where: {
+          descendant: instance?.options?.mobileSchemaUid,
+        },
+      },
+    );
+    console.log(instance?.options?.mobileSchemaUid);
   }
 }
