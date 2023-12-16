@@ -5,3 +5,7 @@ updates:
     schedule:
       interval: "weekly" # Dependabot检查更新的频率，可以是"daily", "weekly", 或者 "monthly"
     open-pull-requests-limit: 10 # Dependabot同时打开的pull request的最大数量
+    ignore:
+      - dependency-name: "axios"
+      - dependency-name: "dotenv"
+
