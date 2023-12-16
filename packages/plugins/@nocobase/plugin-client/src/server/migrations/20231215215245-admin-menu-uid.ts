@@ -13,7 +13,7 @@ export default class extends Migration {
       return;
     }
     const UiSchemas = this.db.getModel('uiSchemas');
-    await UiSchemas.update(
+    const r = await UiSchemas.update(
       {
         'x-uid': 'nocobase-admin-menu',
       },
@@ -23,5 +23,6 @@ export default class extends Migration {
         },
       },
     );
+    console.log(instance?.options?.adminSchemaUid, r);
   }
 }
