@@ -13,36 +13,41 @@ export default class extends Migration {
       return;
     }
     const UiSchemas = this.db.getModel('uiSchemas');
-    await UiSchemas.update(
-      {
-        'x-uid': 'nocobase-admin-menu',
-      },
-      {
-        where: {
-          'x-uid': instance?.options?.adminSchemaUid,
+    await this.db.sequelize.transaction(async (transaction) => {
+      await UiSchemas.update(
+        {
+          'x-uid': 'nocobase-admin-menu',
         },
-      },
-    );
-    await this.db.getModel('uiSchemaTreePath').update(
-      {
-        ancestor: 'nocobase-admin-menu',
-      },
-      {
-        where: {
-          ancestor: instance?.options?.adminSchemaUid,
+        {
+          transaction,
+          where: {
+            'x-uid': instance?.options?.adminSchemaUid,
+          },
         },
-      },
-    );
-    await this.db.getModel('uiSchemaTreePath').update(
-      {
-        descendant: 'nocobase-admin-menu',
-      },
-      {
-        where: {
-          descendant: instance?.options?.adminSchemaUid,
+      );
+      await this.db.getModel('uiSchemaTreePath').update(
+        {
+          descendant: 'nocobase-admin-menu',
         },
-      },
-    );
+        {
+          transaction,
+          where: {
+            descendant: instance?.options?.adminSchemaUid,
+          },
+        },
+      );
+      await this.db.getModel('uiSchemaTreePath').update(
+        {
+          ancestor: 'nocobase-admin-menu',
+        },
+        {
+          transaction,
+          where: {
+            ancestor: instance?.options?.adminSchemaUid,
+          },
+        },
+      );
+    });
     console.log(instance?.options?.adminSchemaUid);
   }
 }

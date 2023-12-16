@@ -13,36 +13,41 @@ export default class extends Migration {
       return;
     }
     const UiSchemas = this.db.getModel('uiSchemas');
-    await UiSchemas.update(
-      {
-        'x-uid': 'nocobase-mobile-container',
-      },
-      {
-        where: {
-          'x-uid': instance?.options?.mobileSchemaUid,
+    await this.db.sequelize.transaction(async (transaction) => {
+      await UiSchemas.update(
+        {
+          'x-uid': 'nocobase-mobile-container',
         },
-      },
-    );
-    await this.db.getModel('uiSchemaTreePath').update(
-      {
-        ancestor: 'nocobase-mobile-container',
-      },
-      {
-        where: {
-          ancestor: instance?.options?.mobileSchemaUid,
+        {
+          transaction,
+          where: {
+            'x-uid': instance?.options?.mobileSchemaUid,
+          },
         },
-      },
-    );
-    await this.db.getModel('uiSchemaTreePath').update(
-      {
-        descendant: 'nocobase-mobile-container',
-      },
-      {
-        where: {
-          descendant: instance?.options?.mobileSchemaUid,
+      );
+      await this.db.getModel('uiSchemaTreePath').update(
+        {
+          descendant: 'nocobase-mobile-container',
         },
-      },
-    );
+        {
+          transaction,
+          where: {
+            descendant: instance?.options?.mobileSchemaUid,
+          },
+        },
+      );
+      await this.db.getModel('uiSchemaTreePath').update(
+        {
+          ancestor: 'nocobase-mobile-container',
+        },
+        {
+          transaction,
+          where: {
+            ancestor: instance?.options?.mobileSchemaUid,
+          },
+        },
+      );
+    });
     console.log(instance?.options?.mobileSchemaUid);
   }
 }

@@ -39,6 +39,7 @@ describe('nocobase-admin-menu', () => {
     const uiSchemas = app.db.getModel('uiSchemas');
     const systemSettings = app.db.getRepository('systemSettings');
     await uiSchemas.truncate();
+    await app.db.getModel('uiSchemaTreePath').truncate();
     await uiSchemas.create({
       'x-uid': 'abc',
       name: 'abc',
