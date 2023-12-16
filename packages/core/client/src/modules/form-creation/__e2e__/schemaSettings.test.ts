@@ -224,7 +224,7 @@ test.describe('creation form block schema settings', () => {
     });
   });
 
-  test('convert reference to duplicate & Save as block template', async ({ page, mockPage }) => {
+  test('Save as block template & convert reference to duplicate', async ({ page, mockPage }) => {
     await mockPage(oneTableBlockWithActionsAndFormBlocks).goto();
     await page.getByRole('button', { name: 'Add new' }).click();
 
@@ -248,6 +248,7 @@ test.describe('creation form block schema settings', () => {
 
     // Convert reference to duplicate
     await clickOption(page, 'Convert reference to duplicate');
+    // 点击之后下拉框不应该关闭，如果下拉框关闭了下面这行代码会报错
     await expect(page.getByRole('menuitem', { name: 'Save as block template' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Convert reference to duplicate' })).not.toBeVisible();
 
