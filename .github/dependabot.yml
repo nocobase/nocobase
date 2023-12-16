@@ -8,4 +8,8 @@ updates:
     ignore:
       - dependency-name: "axios"
       - dependency-name: "dotenv"
-
+registries:
+  npm-registry:
+    type: npm-registry
+    url: https://registry.npmmirror.com
+    replaces-base: true # 设置为true表示将这个镜像源作为基础的npm注册表（如https://registry.npmjs.org）
