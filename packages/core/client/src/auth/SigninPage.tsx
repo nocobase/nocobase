@@ -12,7 +12,7 @@ import React, {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAPIClient, useCurrentDocumentTitle, useCurrentUserContext, useRequest, useViewport } from '..';
+import { useAPIClient, useApp, useCurrentDocumentTitle, useCurrentUserContext, useRequest, useViewport } from '..';
 import { useSigninPageExtension } from './SigninPageExtension';
 
 const SigninPageContext = createContext<{
@@ -106,7 +106,7 @@ export const SigninPage = () => {
     setTabs(tabs);
   };
 
-  useRequest(
+  const { error } = useRequest(
     () =>
       api
         .resource('authenticators')
@@ -120,6 +120,10 @@ export const SigninPage = () => {
       },
     },
   );
+
+  if (error) {
+    throw error;
+  }
 
   if (!authenticators.length) {
     return <div style={{ color: '#ccc' }}>{t('Oops! No authentication methods available.')}</div>;

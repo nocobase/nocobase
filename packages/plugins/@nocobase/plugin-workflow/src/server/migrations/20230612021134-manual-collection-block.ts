@@ -106,6 +106,7 @@ export default class extends Migration {
     }
     const { db } = this.context;
     const NodeRepo = db.getRepository('flow_nodes');
+    await NodeRepo.collection.sync();
     await db.sequelize.transaction(async (transaction) => {
       const nodes = await NodeRepo.find({
         filter: {
