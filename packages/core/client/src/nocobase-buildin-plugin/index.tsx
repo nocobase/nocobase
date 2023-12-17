@@ -128,7 +128,7 @@ const getProps = (app: Application) => {
     };
   }
 
-  if (app.error.code === 'APP_ERROR') {
+  if (app.error.code === 'APP_ERROR' || app.error.code === 'LOAD_ERROR') {
     return {
       status: 'error',
       title: 'App error',
