@@ -1,8 +1,7 @@
 import React from 'react';
-import { CollectionProviderV2, useCollectionV2 } from '@nocobase/client';
+import { CollectionProviderV2, CollectionV2, useCollectionV2 } from '@nocobase/client';
 import { createApp } from '../createApp';
 import collections from '../collections.json';
-import { CollectionV2 } from 'packages/core/client/src/application/collection/Collection';
 
 const Demo = () => {
   const collection = useCollectionV2();

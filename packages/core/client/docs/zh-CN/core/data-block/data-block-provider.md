@@ -35,12 +35,11 @@ Table 中的字段信息以及字段对应的数据列表，都是存储在数�
 
 为了方便对数据区块的数据进行管理，我们提供了 `DataBlockProvider` 组件，其内部封装了：
 
-- [BlockSettingsProvider](xx): 区块属性信息
-- [CollectionProvider](xx): 区块 collection 表数据信息
-- [AssociationProvider](xx): 区块关联字段信息
-- [BlockResourceProvider](xx): 区块 [Resource](xx) API，用于区块数据的增删改查
-- [BlockRequestProvider](xx): 根据区块属性，自动调用 `resource.get()` 或 `resource.list()` 发起请求，得到数据
-  - [RecordProvider](xx): 对于 `get` 场景会通过 `RecordProvider` 提供数据记录，`list` 场景则需要自行根据组件 使用 `RecordProvider` 提供数据记录
+- [DataBlockProvider](xx): 区块属性信息
+  - [CollectionProvider / AssociationProvider](xx): 区块 collection 表数据信息和关联字段
+  - [BlockResourceProvider](xx): 区块 [Resource](xx) API，用于区块数据的增删改查
+  - [BlockRequestProvider](xx): 根据区块属性，自动调用 `resource.get()` 或 `resource.list()` 发起请求，得到数据
+    - [RecordProvider](xx): 对于 `get` 场景会通过 `RecordProvider` 提供数据记录，`list` 场景则需要自行根据组件 使用 `RecordProvider` 提供数据记录
 
 上述组件封装到 `DataBlockProvider` 的内部，只需要使用 `DataBlockProvider` 即可自行得到上述数据。
 
