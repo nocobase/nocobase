@@ -1,39 +1,9 @@
 import { css } from '@emotion/css';
-import { useForm } from '@formily/react';
 import { Space, Tabs } from 'antd';
-import React, {
-  FunctionComponent,
-  FunctionComponentElement,
-  createContext,
-  createElement,
-  useCallback,
-  useContext,
-  useState,
-} from 'react';
+import React, { ReactElement, createContext, createElement, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAPIClient, useApp, useCurrentDocumentTitle, useCurrentUserContext, useRequest, useViewport } from '..';
-import { useSigninPageExtension } from './SigninPageExtension';
-
-const SigninPageContext = createContext<{
-  [authType: string]: {
-    component: FunctionComponent;
-    tabTitle?: string;
-  };
-}>({});
-
-export const SigninPageProvider: React.FC<{
-  authType: string;
-  component: FunctionComponent<{ authenticator: Authenticator }>;
-  tabTitle?: string;
-}> = (props) => {
-  const components = useContext(SigninPageContext);
-  components[props.authType] = {
-    component: props.component,
-    tabTitle: props.tabTitle,
-  };
-  return <SigninPageContext.Provider value={components}>{props.children}</SigninPageContext.Provider>;
-};
+import { useAPIClient, useCurrentDocumentTitle, usePlugin, useRequest, useViewport } from '@nocobase/client';
+import AuthPlugin, { AuthPage } from '..';
 
 export type Authenticator = {
   name: string;
@@ -47,43 +17,56 @@ export type Authenticator = {
 
 export const AuthenticatorsContext = createContext<Authenticator[]>([]);
 
-export function useRedirect(next = '/admin') {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  return useCallback(() => {
-    navigate(searchParams.get('redirect') || '/admin', { replace: true });
-  }, [navigate, searchParams]);
-}
+export const useSignInPages = (): {
+  [authType: string]: AuthPage['signIn'];
+} => {
+  const plugin = usePlugin(AuthPlugin);
+  const pages = plugin.authPages.getEntities();
+  const signInPages = {};
+  for (const [authType, page] of pages) {
+    const signInPage = page.signIn;
+    if (signInPage.display !== 'form') {
+      continue;
+    }
+    signInPages[authType] = signInPage;
+  }
+  return signInPages;
+};
 
-export const useSignIn = (authenticator) => {
-  const form = useForm();
-  const api = useAPIClient();
-  const redirect = useRedirect();
-  const { refreshAsync } = useCurrentUserContext();
-  return {
-    async run() {
-      await form.submit();
-      await api.auth.signIn(form.values, authenticator);
-      await refreshAsync();
-      redirect();
-    },
-  };
+export const useCustomSignIn = (authenticators = []) => {
+  const plugin = usePlugin(AuthPlugin);
+  const pages = plugin.authPages.getEntities();
+  const customs = {};
+  for (const [authType, page] of pages) {
+    const signInPage = page.signIn;
+    if (signInPage.display !== 'custom') {
+      continue;
+    }
+    customs[authType] = signInPage;
+  }
+
+  const types = Object.keys(customs);
+  return authenticators
+    .filter((authenticator) => types.includes(authenticator.authType))
+    .map((authenticator, index) =>
+      React.createElement(customs[authenticator.authType].Component, { key: index, authenticator }),
+    );
 };
 
 export const SigninPage = () => {
   const { t } = useTranslation();
   useCurrentDocumentTitle('Signin');
   useViewport();
-  const signInPages = useContext(SigninPageContext);
+  const signInPages = useSignInPages();
   const api = useAPIClient();
   const [authenticators, setAuthenticators] = useState<Authenticator[]>([]);
   const [tabs, setTabs] = useState<
     (Authenticator & {
-      component: FunctionComponentElement<{ authenticator: Authenticator }>;
+      component: ReactElement<{ authenticator: Authenticator }>;
       tabTitle: string;
     })[]
   >([]);
-  const signinExtension = useSigninPageExtension(authenticators);
+  const customSignIn = useCustomSignIn(authenticators);
 
   const handleAuthenticators = (authenticators: Authenticator[]) => {
     const tabs = authenticators
@@ -95,7 +78,7 @@ export const SigninPage = () => {
         return {
           component: createElement<{
             authenticator: Authenticator;
-          }>(page.component, { authenticator }),
+          }>(page.Component, { authenticator }),
           tabTitle: authenticator.title || page.tabTitle || authenticator.name,
           ...authenticator,
         };
@@ -150,7 +133,7 @@ export const SigninPage = () => {
             display: flex;
           `}
         >
-          {signinExtension}
+          {customSignIn}
         </Space>
       </Space>
     </AuthenticatorsContext.Provider>

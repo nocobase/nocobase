@@ -1,8 +1,37 @@
-import { SchemaComponent, useSignup } from '@nocobase/client';
+import { SchemaComponent } from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import React from 'react';
 import { uid } from '@formily/shared';
 import { useAuthTranslation } from '../locale';
+import { useAPIClient } from '@nocobase/client';
+import { useForm } from '@formily/react';
+import { useNavigate } from 'react-router-dom';
+import { message } from 'antd';
+import { useTranslation } from 'react-i18next';
+
+export interface UseSignupProps {
+  authenticator?: string;
+  message?: {
+    success?: string;
+  };
+}
+
+export const useSignup = (props?: UseSignupProps) => {
+  const navigate = useNavigate();
+  const form = useForm();
+  const api = useAPIClient();
+  const { t } = useTranslation();
+  return {
+    async run() {
+      await form.submit();
+      await api.auth.signUp(form.values, props?.authenticator);
+      message.success(props?.message?.success || t('Sign up successfully, and automatically jump to the sign in page'));
+      setTimeout(() => {
+        navigate('/signin');
+      }, 2000);
+    },
+  };
+};
 
 const signupPageSchema: ISchema = {
   type: 'object',
@@ -84,7 +113,7 @@ const signupPageSchema: ISchema = {
   },
 };
 
-export default (props: { name: string }) => {
+export const BasicSignupPage = (props: { name: string }) => {
   const { t } = useAuthTranslation();
   const useBasicSignup = () => {
     return useSignup({ authenticator: props.name });

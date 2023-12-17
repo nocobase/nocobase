@@ -1,8 +1,7 @@
 import { css } from '@emotion/css';
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { PoweredBy } from '../../../powered-by';
-import { useSystemSettings } from '../../../system-settings';
+import { useSystemSettings, PoweredBy } from '@nocobase/client';
 
 export function AuthLayout(props: any) {
   const { data } = useSystemSettings();

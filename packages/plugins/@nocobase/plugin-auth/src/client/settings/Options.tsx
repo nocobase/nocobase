@@ -1,6 +1,8 @@
+import React from 'react';
 import { observer, useForm } from '@formily/react';
-import { useActionContext, useOptionsComponent, useRecord, useRequest } from '@nocobase/client';
+import { useActionContext, usePlugin, useRecord, useRequest } from '@nocobase/client';
 import { useEffect } from 'react';
+import AuthPlugin from '..';
 
 export const useValuesFromOptions = (options) => {
   const record = useRecord();
@@ -26,9 +28,15 @@ export const useValuesFromOptions = (options) => {
   return result;
 };
 
+export const useConfigForm = (authType: string) => {
+  const plugin = usePlugin(AuthPlugin);
+  const page = plugin.authPages.get(authType);
+  return page.configForm?.Component;
+};
+
 export const Options = observer(() => {
   const form = useForm();
   const record = useRecord();
-  const component = useOptionsComponent(form.values.authType || record.authType);
-  return component;
+  const Component = useConfigForm(form.values.authType || record.authType);
+  return Component ? <Component /> : null;
 });

@@ -1,7 +1,33 @@
 import { ISchema } from '@formily/react';
-import { Authenticator, SchemaComponent, SignupPageContext, useSignIn } from '@nocobase/client';
-import React, { useContext } from 'react';
+import { SchemaComponent, useAPIClient, useCurrentUserContext } from '@nocobase/client';
+import React, { useCallback } from 'react';
 import { useAuthTranslation } from '../locale';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useForm } from '@formily/react';
+import { Authenticator, useSignUpPages } from '../pages';
+
+export function useRedirect(next = '/admin') {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  return useCallback(() => {
+    navigate(searchParams.get('redirect') || '/admin', { replace: true });
+  }, [navigate, searchParams]);
+}
+
+export const useSignIn = (authenticator) => {
+  const form = useForm();
+  const api = useAPIClient();
+  const redirect = useRedirect();
+  const { refreshAsync } = useCurrentUserContext();
+  return {
+    async run() {
+      await form.submit();
+      await api.auth.signIn(form.values, authenticator);
+      await refreshAsync();
+      redirect();
+    },
+  };
+};
 
 const passwordForm: ISchema = {
   type: 'object',
@@ -62,11 +88,11 @@ const passwordForm: ISchema = {
     },
   },
 };
-export default (props: { authenticator: Authenticator }) => {
+export const BasicSigninPage = (props: { authenticator: Authenticator }) => {
   const { t } = useAuthTranslation();
   const authenticator = props.authenticator;
   const { authType, name, options } = authenticator;
-  const signupPages = useContext(SignupPageContext);
+  const signupPages = useSignUpPages();
   const allowSignUp = !!signupPages[authType] && options?.allowSignup;
   const signupLink = `/signup?authType=${authType}&name=${name}`;
 
