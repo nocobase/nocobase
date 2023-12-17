@@ -1,6 +1,6 @@
 import { useForm } from '@formily/react';
 import React, { useMemo } from 'react';
-import { SchemaComponent, useActionContext, useDesignable, useRecordIndex } from '../..';
+import { SchemaComponent, useActionContext, useDesignable, useRecord } from '../..';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { useGetAriaLabelOfSchemaInitializer } from '../hooks/useGetAriaLabelOfSchemaInitializer';
 
@@ -9,15 +9,15 @@ export const TabPaneInitializers = (props?: any) => {
   const { isCreate, isBulkEdit, options } = props;
   const { gridInitializer } = options;
   const { getAriaLabel } = useGetAriaLabelOfSchemaInitializer();
+  const record = useRecord();
 
   const useSubmitAction = () => {
     const form = useForm();
     const ctx = useActionContext();
-    const index = useRecordIndex();
     let initializer = gridInitializer;
     if (!initializer) {
       initializer = 'RecordBlockInitializers';
-      if (isCreate || index === null) {
+      if (isCreate || !record) {
         initializer = 'CreateFormBlockInitializers';
       } else if (isBulkEdit) {
         initializer = 'CreateFormBulkEditBlockInitializers';

@@ -1,7 +1,7 @@
-import { Migration } from '@nocobase/server';
-import { getTextsFromMenu, getTextsFromDB } from '../actions/localization';
-import { NAMESPACE_COLLECTIONS, NAMESPACE_MENUS } from '../constans';
 import { Op } from '@nocobase/database';
+import { Migration } from '@nocobase/server';
+import { getTextsFromDB, getTextsFromMenu } from '../actions/localization';
+import { NAMESPACE_COLLECTIONS, NAMESPACE_MENUS } from '../constans';
 
 export default class FixModuleMigration extends Migration {
   async up() {
@@ -12,10 +12,11 @@ export default class FixModuleMigration extends Migration {
     }
 
     const resources = await this.app.localeManager.getCacheResources('zh-CN');
-    const menus = await getTextsFromMenu(this.context.db);
+    const menus = await getTextsFromMenu(this.context.db, true);
     const collections = await getTextsFromDB(this.context.db);
 
     const db = this.context.db;
+    await db.getCollection('localizationTexts').sync();
     await db.sequelize.transaction(async (t) => {
       const menuTexts = Object.keys(menus);
       await db.getModel('localizationTexts').update(

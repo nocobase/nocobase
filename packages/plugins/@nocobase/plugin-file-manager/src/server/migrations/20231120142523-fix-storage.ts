@@ -10,6 +10,7 @@ export default class extends Migration {
     }
 
     const r = this.db.getRepository<Repository>('storages');
+    await r.collection.sync();
     const items = await r.find({
       filter: {
         type: 'local',
