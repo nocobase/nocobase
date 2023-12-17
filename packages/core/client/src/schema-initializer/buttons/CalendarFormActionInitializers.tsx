@@ -57,14 +57,6 @@ export const calendarFormActionInitializers = new SchemaInitializer({
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
-        {
-          name: 'print',
-          title: '{{t("Print")}}',
-          Component: 'PrintActionInitializer',
-          schema: {
-            'x-component': 'Action',
-          },
-        },
       ],
     },
     {

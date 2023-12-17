@@ -15,12 +15,7 @@ import { RemoteDocumentTitlePlugin } from '../document-title';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
-import {
-  AntdSchemaComponentPlugin,
-  KanbanPlugin,
-  SchemaComponentPlugin,
-  menuItemInitializer,
-} from '../schema-component';
+import { AntdSchemaComponentPlugin, SchemaComponentPlugin, menuItemInitializer } from '../schema-component';
 import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { AssociationFilterPlugin, SchemaInitializerPlugin } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
@@ -133,7 +128,7 @@ const getProps = (app: Application) => {
     };
   }
 
-  if (app.error.code === 'APP_ERROR') {
+  if (app.error.code === 'APP_ERROR' || app.error.code === 'LOAD_ERROR') {
     return {
       status: 'error',
       title: 'App error',
@@ -317,7 +312,6 @@ export class NocoBaseBuildInPlugin extends Plugin {
   }
   async addPlugins() {
     await this.app.pm.add(AssociationFilterPlugin);
-    await this.app.pm.add(KanbanPlugin);
     await this.app.pm.add(LocalePlugin, { name: 'builtin-locale' });
     await this.app.pm.add(AdminLayoutPlugin, { name: 'admin-layout' });
     await this.app.pm.add(SystemSettingsPlugin, { name: 'system-setting' });

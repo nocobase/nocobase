@@ -31,7 +31,7 @@ test.describe('many to many', () => {
   });
 
   test('enable link', async ({ page, mockPage, mockRecords }) => {
-    test.fail();
+    // test.fail();
     const record = await gotoPage(mockPage, mockRecords);
     await openDialog(page);
 
