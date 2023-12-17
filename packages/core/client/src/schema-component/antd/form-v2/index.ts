@@ -11,4 +11,6 @@ FormV2.ReadPrettyDesigner = ReadPrettyFormDesigner;
 FormV2.Templates = Templates;
 
 export * from './FormField';
+export * from './Templates';
+
 export { FormV2, DetailsDesigner };

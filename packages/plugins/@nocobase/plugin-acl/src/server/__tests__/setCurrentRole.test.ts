@@ -24,6 +24,7 @@ describe('role', () => {
       state: {
         currentRole: '',
       },
+      t: (key) => key,
     };
   });
 
@@ -69,7 +70,10 @@ describe('role', () => {
     const throwFn = vi.fn();
     ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
-    expect(throwFn).lastCalledWith(401, { code: 'ROLE_NOT_FOUND_ERR', message: 'The user role does not exist.' });
+    expect(throwFn).lastCalledWith(401, {
+      code: 'ROLE_NOT_FOUND_ERR',
+      message: 'The user role does not exist. Please try signing in again',
+    });
     expect(ctx.state.currentRole).not.toBeDefined();
   });
 
@@ -202,7 +206,10 @@ describe('role', () => {
     const throwFn = vi.fn();
     ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
-    expect(throwFn).lastCalledWith(401, { code: 'ROLE_NOT_FOUND_ERR', message: 'The user role does not exist.' });
+    expect(throwFn).lastCalledWith(401, {
+      code: 'USER_HAS_NO_ROLES_ERR',
+      message: 'The current user has no roles. Please try another account.',
+    });
     expect(ctx.state.currentRole).not.toBeDefined();
   });
 

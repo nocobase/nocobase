@@ -3,6 +3,10 @@ import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
   async up() {
+    const result = await this.app.version.satisfies('<0.14.0-alpha.1');
+    if (!result) {
+      return;
+    }
     await this.db.getCollection('systemSettings').sync({
       force: false,
       alter: {
@@ -15,10 +19,10 @@ export default class extends Migration {
       return;
     }
     const uiRoutes = this.db.getRepository('uiRoutes');
-    const routes = await uiRoutes.find();
     if (!uiRoutes) {
       return;
     }
+    const routes = await uiRoutes.find();
     for (const route of routes) {
       if (route.uiSchemaUid && route?.options?.component === 'AdminLayout') {
         const options = instance.options || {};

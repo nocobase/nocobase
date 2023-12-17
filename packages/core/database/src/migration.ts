@@ -1,4 +1,5 @@
 import { importModule } from '@nocobase/utils';
+import _ from 'lodash';
 import { QueryInterface, Sequelize } from 'sequelize';
 import Database from './database';
 
@@ -73,7 +74,10 @@ export class Migrations {
   callback() {
     return async (ctx) => {
       return await Promise.all(
-        this.items.map(async (item) => {
+        _.sortBy(this.items, (item) => {
+          const keys = item.name.split('/');
+          return keys.pop() || item.name;
+        }).map(async (item) => {
           if (typeof item.migration === 'string') {
             // use es module to import migration
             const Migration = await importModule(item.migration);

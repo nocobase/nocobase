@@ -26,7 +26,7 @@ export const OpenInNewTab = () => {
       `}
     >
       <Button type="dashed" onClick={onOpenInNewTab} icon={<LinkOutlined />}>
-        {t('Open in new tab')}
+        {t('Preview')}
       </Button>
     </div>
   );

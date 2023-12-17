@@ -192,9 +192,10 @@ export class Application {
         this.maintaining = true;
         this.error = data.payload;
       } else {
-        console.log('loadFailed', loadFailed);
+        // console.log('loadFailed', loadFailed);
         if (loadFailed) {
           window.location.reload();
+          return;
         }
         this.maintaining = false;
         this.maintained = true;
@@ -203,18 +204,25 @@ export class Application {
     });
     this.ws.on('serverDown', () => {
       this.maintaining = true;
+      this.maintained = false;
     });
     this.ws.connect();
     try {
       this.loading = true;
       await this.pm.load();
     } catch (error) {
+      if (this.ws.enabled) {
+        await new Promise((resolve) => {
+          setTimeout(() => resolve(null), 1000);
+        });
+      }
       loadFailed = true;
       this.error = {
         code: 'LOAD_ERROR',
         message: error.message,
+        ...error,
       };
-      console.error(error);
+      console.error(this.error);
     }
     this.loading = false;
   }

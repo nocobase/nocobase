@@ -1,6 +1,6 @@
 import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { observer } from '@formily/react';
+import { observer, useFieldSchema } from '@formily/react';
 import React, { useContext, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionContext, ActionContextProvider } from '../action/context';
@@ -16,6 +16,8 @@ export const InternaPopoverNester = observer(
     const { options } = useAssociationFieldContext();
     const [visible, setVisible] = useState(false);
     const { t } = useTranslation();
+    const schema = useFieldSchema();
+    schema['x-component-props'].enableLink = false;
     const ref = useRef();
     const nesterProps = {
       ...props,
@@ -37,10 +39,6 @@ export const InternaPopoverNester = observer(
         <InternalNester {...nesterProps} />
       </div>
     );
-    const titleProps = {
-      ...props,
-      enableLink: true,
-    };
     const getContainer = () => ref.current;
     const ctx = useContext(ActionContext);
     const modalProps = {
@@ -69,7 +67,7 @@ export const InternaPopoverNester = observer(
                 max-width: 95%;
               `}
             >
-              <ReadPrettyInternalViewer {...titleProps} />
+              <ReadPrettyInternalViewer {...props} />
             </div>
             <EditOutlined style={{ display: 'inline-flex', margin: '5px' }} />
           </span>

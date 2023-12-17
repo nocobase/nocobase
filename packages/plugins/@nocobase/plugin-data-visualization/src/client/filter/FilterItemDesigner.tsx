@@ -12,6 +12,7 @@ import {
   useCompile,
   useDesignable,
   SchemaSettingsSelectItem,
+  CollectionFieldOptions,
 } from '@nocobase/client';
 import { useChartsTranslation } from '../locale';
 import { Schema, useField, useFieldSchema } from '@formily/react';
@@ -22,6 +23,7 @@ import { getPropsSchemaByComponent, setDefaultValue } from './utils';
 import { ChartFilterVariableInput } from './FilterVariableInput';
 import { useChartFilter, useCollectionJoinFieldTitle } from '../hooks';
 import { Typography } from 'antd';
+import { getFormulaInterface } from '../utils';
 const { Text } = Typography;
 
 const EditTitle = () => {
@@ -76,9 +78,19 @@ const EditOperator = () => {
   const { dn } = useDesignable();
   const { setField } = useContext(ChartFilterContext);
   const { getInterface, getCollectionJoinField } = useCollectionManager();
+
+  const getOperators = (props: CollectionFieldOptions) => {
+    let fieldInterface = props?.interface;
+    if (fieldInterface === 'formula') {
+      fieldInterface = getFormulaInterface(props.dataType) || props.dataType;
+    }
+    const interfaceConfig = getInterface(fieldInterface);
+    const operatorList = interfaceConfig?.filterable?.operators || [];
+    return { operatorList, interfaceConfig };
+  };
+
   let props = getCollectionJoinField(fieldName);
-  let interfaceConfig = getInterface(props?.interface);
-  let operatorList = interfaceConfig?.filterable?.operators || [];
+  let { operatorList, interfaceConfig } = getOperators(props);
   if (!operatorList.length) {
     const names = fieldName.split('.');
     const name = names.pop();
@@ -86,7 +98,9 @@ const EditOperator = () => {
     if (!props) {
       return null;
     }
-    interfaceConfig = getInterface(props.interface);
+    const res = getOperators(props);
+    operatorList = res.operatorList;
+    interfaceConfig = res.interfaceConfig;
     if (!interfaceConfig) {
       return null;
     }

@@ -736,6 +736,7 @@
   "Enable link": "Enable link",
   "This is likely a NocoBase internals bug. Please open an issue at <1>here</1>": "This is likely a NocoBase internals bug. Please open an issue at <1>here</1>",
   "Render Failed": "Render Failed",
+  "App error": "App error",
   "Feedback": "Feedback",
   "Try again": "Try again",
   "Data template": "Data template",
@@ -772,5 +773,8 @@
   "Execute": "Execute",
   "Please use a valid SELECT or WITH AS statement": "Please use a valid SELECT or WITH AS statement",
   "Please confirm the SQL statement first": "Please confirm the SQL statement first",
-  "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects": "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects"
+  "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects": "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects",
+  "Sign in with another account": "Sign in with another account",
+  "Return to the main application": "Return to the main application",
+  "Permission deined": "Permission denied"
 }
