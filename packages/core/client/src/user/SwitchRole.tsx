@@ -27,7 +27,7 @@ export const useSwitchRole = () => {
 function SelectWithTitle({ t, roles, api }: { t; roles: any; api: APIClient }) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef<any>(null);
-
+  console.log(999);
   return (
     <div
       aria-label="switch-role"
@@ -58,6 +58,7 @@ function SelectWithTitle({ t, roles, api }: { t; roles: any; api: APIClient }) {
         value={api.auth.role}
         onChange={async (roleName) => {
           api.auth.setRole(roleName);
+          console.log(888);
           await api.resource('users').setDefaultRole({ values: { roleName } });
           location.reload();
           window.location.reload();
