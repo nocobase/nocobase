@@ -435,65 +435,54 @@ const createPage = async (options?: CreatePageOptions) => {
   };
   const state = await api.storageState();
   const headers = getHeaders(state);
-
-  const systemSettings = await api.get(`/api/systemSettings:get/1`, {
-    headers,
-  });
-
   const pageUid = uid();
   const gridName = uid();
 
-  if (systemSettings.ok()) {
-    const { data } = await systemSettings.json();
-
-    const result = await api.post(`/api/uiSchemas:insertAdjacent/${data.options.adminSchemaUid}?position=beforeEnd`, {
-      headers,
-      data: {
-        schema: {
-          _isJSONSchemaObject: true,
-          version: '2.0',
-          type: 'void',
-          title: name || pageUid,
-          ...typeToSchema[type],
-          'x-decorator': 'ACLMenuItemProvider',
-          'x-server-hooks': [
-            { type: 'onSelfCreate', method: 'bindMenuToRole' },
-            { type: 'onSelfSave', method: 'extractTextToLocale' },
-          ],
-          properties: {
-            page: updateUidOfPageSchema(pageSchema) || {
-              _isJSONSchemaObject: true,
-              version: '2.0',
-              type: 'void',
-              'x-component': 'Page',
-              'x-async': true,
-              properties: {
-                [gridName]: {
-                  _isJSONSchemaObject: true,
-                  version: '2.0',
-                  type: 'void',
-                  'x-component': 'Grid',
-                  'x-initializer': 'BlockInitializers',
-                  'x-uid': uid(),
-                  name: gridName,
-                },
+  const result = await api.post(`/api/uiSchemas:insertAdjacent/nocobase-admin-menu?position=beforeEnd`, {
+    headers,
+    data: {
+      schema: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        title: name || pageUid,
+        ...typeToSchema[type],
+        'x-decorator': 'ACLMenuItemProvider',
+        'x-server-hooks': [
+          { type: 'onSelfCreate', method: 'bindMenuToRole' },
+          { type: 'onSelfSave', method: 'extractTextToLocale' },
+        ],
+        properties: {
+          page: updateUidOfPageSchema(pageSchema) || {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Page',
+            'x-async': true,
+            properties: {
+              [gridName]: {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid',
+                'x-initializer': 'BlockInitializers',
+                'x-uid': uid(),
+                name: gridName,
               },
-              'x-uid': uid(),
-              name: 'page',
             },
+            'x-uid': uid(),
+            name: 'page',
           },
-          name: uid(),
-          'x-uid': pageUid,
         },
-        wrap: null,
+        name: uid(),
+        'x-uid': pageUid,
       },
-    });
+      wrap: null,
+    },
+  });
 
-    if (!result.ok()) {
-      throw new Error(await result.text());
-    }
-  } else {
-    throw new Error('systemSettings is not ok');
+  if (!result.ok()) {
+    throw new Error(await result.text());
   }
 
   return pageUid;
