@@ -25,9 +25,6 @@ test('general permission', async ({ page, mockPage, mockRole }) => {
   await page.reload();
   await page.getByTestId('user-center-button').hover();
   await expect(await page.getByLabel('action-Action.Link-Edit-update-users-table-0')).not.toBeVisible();
-  //   await page.evaluate((roleData) => {
-  //     window.localStorage.setItem('NOCOBASE_ROLE', 'root');
-  //   }, roleData);
 });
 test('individual collection permission', async ({ page, mockPage, mockRole, mockRecord }) => {
   await mockPage().goto();
@@ -51,7 +48,4 @@ test('individual collection permission', async ({ page, mockPage, mockRole, mock
   await mockPage(oneEmptyTableBlockWithActions).goto();
   await page.getByTestId('user-center-button').hover();
   await expect(await page.getByLabel('action-Action.Link-Edit-update-users-table-0')).not.toBeVisible();
-  //   await page.evaluate((roleData) => {
-  //     window.localStorage.setItem('NOCOBASE_ROLE', 'root');
-  //   }, roleData);
 });

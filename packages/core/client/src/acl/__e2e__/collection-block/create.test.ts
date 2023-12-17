@@ -25,9 +25,6 @@ test('general permission', async ({ page, mockPage, mockRole }) => {
   await page.reload();
   await page.getByTestId('user-center-button').hover();
   await expect(await page.getByLabel('action-Action-Add new-create-users-table')).not.toBeVisible();
-  //   await page.evaluate((roleData) => {
-  //     window.localStorage.setItem('NOCOBASE_ROLE', 'root');
-  //   }, roleData);
 });
 test('individual collection permission', async ({ page, mockPage, mockRole, mockRecord }) => {
   await mockPage(oneEmptyTableBlockWithActions).goto();
@@ -51,7 +48,4 @@ test('individual collection permission', async ({ page, mockPage, mockRole, mock
   await mockPage(oneEmptyTableBlockWithActions).goto();
   await page.reload();
   await expect(await page.getByLabel('action-Action-Delete-destroy-users-table')).not.toBeVisible();
-  //   await page.evaluate((roleData) => {
-  //     window.localStorage.setItem('NOCOBASE_ROLE', 'root');
-  //   }, roleData);
 });
