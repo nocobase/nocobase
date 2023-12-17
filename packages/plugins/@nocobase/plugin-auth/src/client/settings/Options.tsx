@@ -31,7 +31,7 @@ export const useValuesFromOptions = (options) => {
 export const useConfigForm = (authType: string) => {
   const plugin = usePlugin(AuthPlugin);
   const page = plugin.authPages.get(authType);
-  return page.configForm?.Component;
+  return page?.configForm?.Component;
 };
 
 export const Options = observer(() => {

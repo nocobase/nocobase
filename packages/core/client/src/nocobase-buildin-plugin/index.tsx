@@ -284,24 +284,10 @@ export class NocoBaseBuildInPlugin extends Plugin {
       path: '/admin/:name',
       Component: 'RouteSchemaComponent',
     });
-
-    this.router.add('auth', {
-      Component: 'AuthLayout',
-    });
-    this.router.add('auth.signin', {
-      path: '/signin',
-      Component: 'SigninPage',
-    });
-    this.router.add('auth.signup', {
-      path: '/signup',
-      Component: 'SignupPage',
-    });
   }
 
   addComponents() {
     this.app.addComponents({
-      SigninPage,
-      SignupPage,
       ErrorFallback,
       RouteSchemaComponent,
       BlockTemplatePage,

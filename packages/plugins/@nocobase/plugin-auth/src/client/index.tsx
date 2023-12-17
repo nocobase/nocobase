@@ -70,3 +70,5 @@ export class AuthPlugin extends Plugin {
 }
 
 export default AuthPlugin;
+export { useSignIn } from './basic';
+export type { Authenticator } from './pages';
