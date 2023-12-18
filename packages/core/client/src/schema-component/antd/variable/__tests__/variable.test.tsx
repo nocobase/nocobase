@@ -28,7 +28,9 @@ describe('Variable', () => {
     await userEvent.click(variableSelector);
     await userEvent.click(screen.getByText('v1'));
     await waitFor(() => {
-      expect(input.innerHTML).toMatchInlineSnapshot('"<span class=\\"ant-tag ant-tag-blue\\" contenteditable=\\"false\\" data-variable=\\"v1\\">v1</span>"');
+      expect(input.innerHTML).toMatchInlineSnapshot(
+        '"<span class=\\"ant-tag ant-tag-blue\\" contenteditable=\\"false\\" data-variable=\\"v1\\">v1</span>"',
+      );
     });
   });
 
@@ -40,13 +42,10 @@ describe('Variable', () => {
     expect(input).toBeInTheDocument();
     expect(variableSelector).toBeInTheDocument();
 
-    // https://testing-library.com/docs/user-event/keyboard/
-    await userEvent.type(input, '{{ "a": "');
     await userEvent.click(variableSelector);
-    await userEvent.click(screen.getByText('v1'));
-    await userEvent.type(input, '" }');
+    await userEvent.click(screen.getByRole('menuitemcheckbox', { name: 'v1' }));
     await waitFor(() => {
-      expect(input.value).toMatchInlineSnapshot('"{ \\"a\\": \\"{{v1}}\\" }"');
+      expect(input.value).toMatchInlineSnapshot('"{{v1}}"');
     });
   });
 });

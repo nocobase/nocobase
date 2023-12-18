@@ -100,7 +100,7 @@ test.describe('many to many', () => {
 
     // 配置
     await page.getByRole('button', { name: 'Add sort field' }).click();
-    await page.getByTestId('select-single').getByLabel('Search').click();
+    await page.getByTestId('select-single').click();
     await page.getByRole('option', { name: 'ID', exact: true }).click();
     await page.getByText('DESC', { exact: true }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -282,7 +282,7 @@ test.describe('many to one', () => {
     // 数据应该被过滤了
     await page
       .getByLabel('block-item-CollectionField-general-form-general.manyToOne-manyToOne')
-      .getByLabel('Search')
+      .getByTestId('select-object-single')
       .click();
     await expect(page.getByRole('option', { name: String(records[0].id), exact: true })).toBeVisible();
     await expect(page.getByRole('option')).toHaveCount(1);
@@ -486,7 +486,7 @@ test.describe('one to one (belongs to)', () => {
     // 数据应该被过滤了
     await page
       .getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo-oneToOneBelongsTo')
-      .getByLabel('Search')
+      .getByTestId('select-object-single')
       .click();
     await expect(page.getByRole('option', { name: String(records[0].id), exact: true })).toBeVisible();
     await expect(page.getByRole('option')).toHaveCount(1);
@@ -586,7 +586,7 @@ test.describe('one to one (has one)', () => {
     // 数据应该被过滤了
     await page
       .getByLabel('block-item-CollectionField-general-form-general.oneToOneHasOne-oneToOneHasOne')
-      .getByLabel('Search')
+      .getByTestId('select-object-single')
       .click();
     // 默认只显示 id 为 1 的数据，因为设置了只过滤 id 为 3 的数据，所以这里的下拉列表应该为空
     await expect(page.getByRole('option')).toHaveCount(0);

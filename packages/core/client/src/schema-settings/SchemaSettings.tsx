@@ -4,6 +4,7 @@ import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
+import type { DropdownProps } from 'antd';
 import {
   Alert,
   App,
@@ -157,11 +158,17 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
   const { Component, getMenuItems } = useMenuItem();
   const [, startTransition] = useReactTransition();
 
-  const changeMenu = (v: boolean) => {
-    // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
-    startTransition(() => {
-      setVisible(v);
-    });
+  const changeMenu: DropdownProps['onOpenChange'] = (nextOpen: boolean, info) => {
+    // 在 antd v5.8.6 版本中，点击菜单项不会触发菜单关闭，但是升级到 v5.12.2 后会触发关闭。查阅文档发现
+    // 在 v5.11.0 版本中增加了一个 info.source，可以通过这个来判断一下，如果是点击的是菜单项就不关闭菜单，
+    // 这样就可以和之前的行为保持一致了。
+    // 下面是模仿官方文档示例做的修改：https://ant.design/components/dropdown-cn
+    if (info.source === 'trigger' || nextOpen) {
+      // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
+      startTransition(() => {
+        setVisible(nextOpen);
+      });
+    }
   };
 
   const items = getMenuItems(() => props.children);
@@ -171,8 +178,8 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
       <Component />
       <Dropdown
         open={visible}
-        onOpenChange={(open) => {
-          changeMenu(open);
+        onOpenChange={(open, info) => {
+          changeMenu(open, info);
         }}
         overlayClassName={css`
           .ant-dropdown-menu-item-group-list {
