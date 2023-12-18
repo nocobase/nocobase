@@ -28,15 +28,15 @@ export const useValuesFromOptions = (options) => {
   return result;
 };
 
-export const useConfigForm = (authType: string) => {
+export const useAdminSettingsForm = (authType: string) => {
   const plugin = usePlugin(AuthPlugin);
-  const page = plugin.authPages.get(authType);
-  return page?.configForm?.Component;
+  const auth = plugin.authTypes.get(authType);
+  return auth?.components?.AdminSettingsForm;
 };
 
 export const Options = observer(() => {
   const form = useForm();
   const record = useRecord();
-  const Component = useConfigForm(form.values.authType || record.authType);
+  const Component = useAdminSettingsForm(form.values.authType || record.authType);
   return Component ? <Component /> : null;
 });

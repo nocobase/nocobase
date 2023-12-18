@@ -4,7 +4,7 @@ import React, { useCallback } from 'react';
 import { useAuthTranslation } from '../locale';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from '@formily/react';
-import { useSignUpPages } from '../pages';
+import { useSignUpForms } from '../pages';
 import { Authenticator } from '../authenticator';
 
 export function useRedirect(next = '/admin') {
@@ -93,7 +93,7 @@ export const BasicSignInPage = (props: { authenticator: Authenticator }) => {
   const { t } = useAuthTranslation();
   const authenticator = props.authenticator;
   const { authType, name, options } = authenticator;
-  const signUpPages = useSignUpPages();
+  const signUpPages = useSignUpForms();
   const allowSignUp = !!signUpPages[authType] && options?.allowSignUp;
   const signUpLink = `/signup?name=${name}`;
 
