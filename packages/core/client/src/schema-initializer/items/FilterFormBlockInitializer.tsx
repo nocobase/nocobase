@@ -1,21 +1,22 @@
 import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
+import { useSchemaInitializerItem } from '../../application';
 import { createFilterFormBlockSchema } from '../utils';
 import { FilterBlockInitializer } from './FilterBlockInitializer';
 
 export const FilterFormBlockInitializer = (props) => {
-  const { item } = props;
-  const items = item?.key === 'filterFormBlockInTableSelector' && [];
+  const itemConfig = useSchemaInitializerItem();
+  const items = itemConfig?.name === 'filterFormBlockInTableSelector' ? [] : undefined;
 
   return (
     <FilterBlockInitializer
-      {...props}
+      {...itemConfig}
       icon={<FormOutlined />}
       componentType={'FilterFormItem'}
       templateWrap={(templateSchema, { item }) => {
         const s = createFilterFormBlockSchema({
           template: templateSchema,
-          collection: item.name,
+          collection: item.collectionName,
         });
         if (item.template && item.mode === 'reference') {
           s['x-template-key'] = item.template.key;

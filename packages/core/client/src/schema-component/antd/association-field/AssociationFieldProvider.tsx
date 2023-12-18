@@ -64,7 +64,7 @@ export const AssociationFieldProvider = observer(
         setLoading(false);
         return;
       }
-      if (['Nester', 'PopoverNester'].includes(currentMode)) {
+      if (['Nester'].includes(currentMode)) {
         if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
           field.value = {};
         } else if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {

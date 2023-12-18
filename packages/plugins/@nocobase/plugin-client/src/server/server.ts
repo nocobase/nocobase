@@ -32,34 +32,31 @@ export class ClientPlugin extends Plugin {
         //
       }
     });
+  }
 
-    this.db.on('systemSettings.beforeCreate', async (instance, { transaction }) => {
-      const uiSchemas = this.db.getRepository<any>('uiSchemas');
-      const schema = await uiSchemas.insert(
-        {
-          type: 'void',
-          'x-component': 'Menu',
-          'x-designer': 'Menu.Designer',
-          'x-initializer': 'MenuItemInitializers',
-          'x-component-props': {
-            mode: 'mix',
-            theme: 'dark',
-            // defaultSelectedUid: 'u8',
-            onSelect: '{{ onSelect }}',
-            sideMenuRefScopeKey: 'sideMenuRef',
-          },
-          properties: {},
-        },
-        { transaction },
-      );
-      instance.set('options.adminSchemaUid', schema['x-uid']);
+  async install() {
+    const uiSchemas = this.db.getRepository<any>('uiSchemas');
+    await uiSchemas.insert({
+      type: 'void',
+      'x-uid': 'nocobase-admin-menu',
+      'x-component': 'Menu',
+      'x-designer': 'Menu.Designer',
+      'x-initializer': 'MenuItemInitializers',
+      'x-component-props': {
+        mode: 'mix',
+        theme: 'dark',
+        // defaultSelectedUid: 'u8',
+        onSelect: '{{ onSelect }}',
+        sideMenuRefScopeKey: 'sideMenuRef',
+      },
+      properties: {},
     });
   }
 
   async load() {
-    this.app.locales.setLocaleFn('antd', async (lang) => getAntdLocale(lang));
-    this.app.locales.setLocaleFn('cronstrue', async (lang) => getCronstrueLocale(lang));
-    this.app.locales.setLocaleFn('cron', async (lang) => getCronLocale(lang));
+    this.app.localeManager.setLocaleFn('antd', async (lang) => getAntdLocale(lang));
+    this.app.localeManager.setLocaleFn('cronstrue', async (lang) => getCronstrueLocale(lang));
+    this.app.localeManager.setLocaleFn('cron', async (lang) => getCronLocale(lang));
     this.db.addMigrations({
       namespace: 'client',
       directory: resolve(__dirname, './migrations'),
@@ -107,7 +104,7 @@ export class ClientPlugin extends Plugin {
         },
         async getLang(ctx, next) {
           const lang = await getLang(ctx);
-          const resources = await ctx.app.locales.get(lang);
+          const resources = await ctx.app.localeManager.get(lang);
           ctx.body = {
             lang,
             ...resources,

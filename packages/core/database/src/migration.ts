@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import { QueryInterface, Sequelize } from 'sequelize';
 import Database from './database';
 
@@ -70,7 +71,10 @@ export class Migrations {
 
   callback() {
     return async (ctx) => {
-      return this.items;
+      return _.sortBy(this.items, (item) => {
+        const keys = item.name.split('/');
+        return keys.pop() || item.name;
+      });
     };
   }
 }

@@ -1,11 +1,11 @@
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { isPortalInBody } from '@nocobase/utils/client';
-import { App, Button, Popover } from 'antd';
+import { App, Button } from 'antd';
 import classnames from 'classnames';
 import { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useActionContext } from '../..';
+import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
 import { RecordProvider, useRecord } from '../../../record-provider';
@@ -41,6 +41,7 @@ export const Action: ComposedAction = observer(
       onClick,
       style,
       openSize,
+      disabled: propsDisabled,
       ...others
     } = useProps(props);
     const { wrapSSR, componentCls, hashId } = useStyles();
@@ -56,7 +57,7 @@ export const Action: ComposedAction = observer(
     const record = useRecord();
     const designerProps = fieldSchema['x-designer-props'];
     const openMode = fieldSchema?.['x-component-props']?.['openMode'];
-    const disabled = form.disabled || field.disabled || field.data?.disabled || props.disabled;
+    const disabled = form.disabled || field.disabled || field.data?.disabled || propsDisabled;
     const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
@@ -64,7 +65,6 @@ export const Action: ComposedAction = observer(
     const variables = useVariables();
     const localVariables = useLocalVariables({ currentForm: { values: record } as any });
     const { getAriaLabel } = useGetAriaLabelOfAction(title);
-
     let actionTitle = title || compile(fieldSchema.title);
     actionTitle = lodash.isString(actionTitle) ? t(actionTitle) : actionTitle;
 
@@ -74,7 +74,7 @@ export const Action: ComposedAction = observer(
     );
 
     useEffect(() => {
-      field.linkageProperty = {};
+      field.stateOfLinkageRules = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {
@@ -105,9 +105,10 @@ export const Action: ComposedAction = observer(
             setVisible(true);
             run();
           };
-          if (confirm) {
+          if (confirm?.content) {
             modal.confirm({
-              ...confirm,
+              title: t(confirm.title, { title: actionTitle }),
+              content: t(confirm.content, { title: actionTitle }),
               onOk,
             });
           } else {
@@ -186,7 +187,7 @@ Action.Popover = observer(
   (props) => {
     const { button, visible, setVisible } = useActionContext();
     return (
-      <Popover
+      <StablePopover
         {...props}
         destroyTooltipOnHide
         open={visible}
@@ -196,7 +197,7 @@ Action.Popover = observer(
         content={props.children}
       >
         {button}
-      </Popover>
+      </StablePopover>
     );
   },
   { displayName: 'Action.Popover' },

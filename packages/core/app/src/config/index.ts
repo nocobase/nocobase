@@ -1,4 +1,4 @@
-import cache from './cache';
+import { cacheManager } from './cache';
 import { parseDatabaseOptions } from './database';
 import logger from './logger';
 import plugins from './plugins';
@@ -9,7 +9,8 @@ export async function getConfig() {
     database: await parseDatabaseOptions(),
     resourcer,
     plugins,
-    cache,
+    cacheManager,
     logger,
+    perfHooks: process.env.ENABLE_PERF_HOOKS ? true : false,
   };
 }

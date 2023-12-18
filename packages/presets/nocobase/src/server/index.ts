@@ -17,6 +17,15 @@ export class PresetNocoBase extends Plugin {
     'acl',
     'china-region',
     'workflow',
+    'workflow-aggregate',
+    'workflow-delay',
+    'workflow-dynamic-calculation',
+    'workflow-form-trigger',
+    'workflow-loop',
+    'workflow-manual',
+    'workflow-parallel',
+    'workflow-request',
+    'workflow-sql',
     'client',
     'export',
     'import',
@@ -28,6 +37,12 @@ export class PresetNocoBase extends Plugin {
     'sms-auth',
     'logger',
     'custom-request',
+    'action-bulk-update',
+    'action-bulk-edit',
+    'gantt',
+    'kanban',
+    'action-duplicate',
+    'action-print',
   ];
 
   localPlugins = [
@@ -98,6 +113,8 @@ export class PresetNocoBase extends Plugin {
   }
 
   async getPluginToBeUpgraded() {
+    const repository = this.app.db.getRepository<any>('applicationPlugins');
+    const items = (await repository.find()).map((item) => item.name);
     const plugins = this.getBuiltInPlugins().map((name) => {
       const packageName = PluginManager.getPackageName(name);
       const packageJson = PluginManager.getPackageJson(packageName);
@@ -105,7 +122,8 @@ export class PresetNocoBase extends Plugin {
     });
     for (const plugin of this.getLocalPlugins()) {
       if (plugin[1]) {
-        if (await this.app.version.satisfies(`>${plugin[1]}`)) {
+        // 不在插件列表，并且插件最低版本小于当前应用版本，跳过不处理
+        if (!items.includes(plugin[0]) && (await this.app.version.satisfies(`>${plugin[1]}`))) {
           continue;
         }
       }

@@ -20,11 +20,17 @@ const postgres = {
 
   json: ['json', 'array'],
   jsonb: ['json', 'array', 'jsonb'],
+
+  point: 'point',
+  path: 'lineString',
+  polygon: 'polygon',
+  circle: 'circle',
 };
 
 const mysql = {
   varchar: 'string',
   text: 'text',
+  longtext: 'text',
   int: 'integer',
   integer: 'integer',
   bigint: 'bigInt',
@@ -55,4 +61,4 @@ const sqlite = {
   json: ['json', 'array'],
 };
 
-export default { postgres, mysql, sqlite };
+export default { postgres, mysql, sqlite, mariadb: mysql };

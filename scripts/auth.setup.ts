@@ -5,9 +5,7 @@ import path from 'path';
 const adminFile = 'playwright/.auth/admin.json';
 
 // 加载变量
-if (!process.env.APP_BASE_URL) {
-  dotenv.config({ path: path.resolve(process.cwd(), '.env.e2e') });
-}
+dotenv.config({ path: path.resolve(process.cwd(), '.env.e2e') });
 
 // 保存登录状态，避免每次都要登录
 setup('admin', async ({ page }) => {
@@ -19,6 +17,11 @@ setup('admin', async ({ page }) => {
   await page.getByRole('button', { name: 'Sign in' }).click();
 
   await expect(page.getByTestId('user-center-button').getByText('Super Admin')).toBeVisible();
+
+  // 开启配置状态
+  await page.evaluate(() => {
+    localStorage.setItem('NOCOBASE_DESIGNABLE', 'true');
+  });
 
   // 保存登录状态
   await page.context().storageState({ path: adminFile });

@@ -7,7 +7,15 @@ import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollection, useSortFields } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsDataScope,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  SchemaSettingsTemplate,
+} from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { SchemaComponentOptions } from '../../core';
 import { useDesignable } from '../../hooks';
@@ -76,7 +84,7 @@ export const GridCardDesigner = () => {
     <RecordProvider parent={record} record={{}}>
       <GeneralSchemaDesigner template={template} title={title || name}>
         <SchemaComponentOptions components={{ Slider }}>
-          <SchemaSettings.ModalItem
+          <SchemaSettingsModalItem
             title={t('Set the count of columns displayed in a row')}
             initialValues={columnCount}
             schema={
@@ -97,7 +105,7 @@ export const GridCardDesigner = () => {
               });
             }}
           />
-          <SchemaSettings.DataScope
+          <SchemaSettingsDataScope
             collectionName={name}
             defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
             form={form}
@@ -113,7 +121,7 @@ export const GridCardDesigner = () => {
               });
             }}
           />
-          <SchemaSettings.ModalItem
+          <SchemaSettingsModalItem
             title={t('Set default sorting rules')}
             components={{ ArrayItems }}
             schema={
@@ -203,7 +211,7 @@ export const GridCardDesigner = () => {
               });
             }}
           />
-          <SchemaSettings.SelectItem
+          <SchemaSettingsSelectItem
             title={t('Records per page')}
             value={field.decoratorProps?.params?.pageSize || 20}
             options={pageSizeOptions.map((v) => ({ value: v }))}
@@ -218,9 +226,9 @@ export const GridCardDesigner = () => {
               });
             }}
           />
-          <SchemaSettings.Template componentName={'GridCard'} collectionName={name} resourceName={defaultResource} />
-          <SchemaSettings.Divider />
-          <SchemaSettings.Remove
+          <SchemaSettingsTemplate componentName={'GridCard'} collectionName={name} resourceName={defaultResource} />
+          <SchemaSettingsDivider />
+          <SchemaSettingsRemove
             removeParentsIfNoChildren
             breakRemoveOn={{
               'x-component': 'Grid',

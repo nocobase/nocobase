@@ -62,14 +62,13 @@ export class CollectionRepository extends Repository {
     // sort graph nodes
     const sortedNames = graphlib.alg.topsort(graph);
 
-    const lazyCollectionFields: {
-      [key: string]: Array<string>;
-    } = {};
+    const lazyCollectionFields = new Map<string, Array<string>>();
 
     for (const instanceName of sortedNames) {
       if (!nameMap[instanceName]) continue;
 
       // skip load collection field
+      // can be a true value or an array of field names
       const skipField = (() => {
         // skip load collection field if collection is view
         if (viewCollections.includes(instanceName)) {
@@ -88,7 +87,7 @@ export class CollectionRepository extends Repository {
       })();
 
       if (lodash.isArray(skipField) && skipField.length) {
-        lazyCollectionFields[instanceName] = skipField;
+        lazyCollectionFields.set(instanceName, skipField);
       }
       this.database.logger.debug(`load collection`, instanceName, {
         submodule: 'CollectionRepository',

@@ -22,7 +22,7 @@ export async function setDefaultRole(ctx: Context, next: Next) {
   await db.sequelize.transaction(async (transaction) => {
     await repository.update({
       filter: {
-        userId: currentUser.get('id'),
+        userId: currentUser.id,
       },
       values: {
         default: false,
@@ -31,7 +31,7 @@ export async function setDefaultRole(ctx: Context, next: Next) {
     });
     await repository.update({
       filter: {
-        userId: currentUser.get('id'),
+        userId: currentUser.id,
         roleName,
       },
       values: {

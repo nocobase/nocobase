@@ -13,6 +13,7 @@ module.exports = (cli) => {
   require('./dev')(cli);
   require('./start')(cli);
   require('./test')(cli);
+  require('./e2e')(cli);
   require('./clean')(cli);
   require('./doc')(cli);
   require('./umi')(cli);

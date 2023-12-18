@@ -2,14 +2,16 @@ import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
 
 import { useCollection } from '../../collection-manager';
-import { SchemaInitializer } from '../SchemaInitializer';
 import { createTableSelectorSchema } from '../utils';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const TableSelectorInitializer = (props) => {
-  const { onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+export const TableSelectorInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
+  const { insert } = useSchemaInitializer();
   const collection = useCollection();
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
       icon={<FormOutlined />}
       {...others}
       onClick={async ({ item }) => {

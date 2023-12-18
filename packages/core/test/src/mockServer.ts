@@ -1,4 +1,4 @@
-import { Database, mockDatabase } from '@nocobase/database';
+import { mockDatabase } from '@nocobase/database';
 import Application, { AppSupervisor, ApplicationOptions, Gateway, PluginManager } from '@nocobase/server';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
@@ -79,6 +79,14 @@ export class MockServer extends Application {
 
   async cleanDb() {
     await this.db.clean({ drop: true });
+  }
+
+  async quickstart(options: { clean?: boolean } = {}) {
+    const { clean } = options;
+    if (clean) {
+      await this.cleanDb();
+    }
+    await this.runCommand('start', '--quickstart');
   }
 
   protected createDatabase(options: ApplicationOptions) {

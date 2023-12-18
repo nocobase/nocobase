@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plugin } from '../application/Plugin';
 import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';
-import { SettingsCenterComponent } from './PluginSetting';
+import { AdminSettingsLayout } from './PluginSetting';
 import { PluginManager } from './PluginManager';
 import { ACLPane } from '../acl/ACLShortcut';
 import { CollectionManagerPane } from '../collection-manager';
@@ -27,28 +27,23 @@ export class PMPlugin extends Plugin {
       icon: 'LockOutlined',
       Component: ACLPane,
       aclSnippet: 'pm.acl.roles',
-      isBookmark: true,
     });
     this.app.pluginSettingsManager.add('ui-schema-storage', {
       title: '{{t("Block templates")}}',
       icon: 'LayoutOutlined',
       Component: BlockTemplatesPane,
-      isBookmark: true,
       aclSnippet: 'pm.ui-schema-storage.block-templates',
     });
     this.app.pluginSettingsManager.add('system-settings', {
       icon: 'SettingOutlined',
       title: '{{t("System settings")}}',
       Component: SystemSettingsPane,
-      isBookmark: true,
       aclSnippet: 'pm.system-settings.system-settings',
     });
 
     this.app.pluginSettingsManager.add('collection-manager', {
       icon: 'DatabaseOutlined',
       title: '{{t("Collection manager")}}',
-      Component: () => <Outlet />,
-      isBookmark: true,
     });
 
     this.app.pluginSettingsManager.add('collection-manager.collections', {
@@ -80,7 +75,7 @@ export class PMPlugin extends Plugin {
 
     this.app.router.add('admin.settings', {
       path: ADMIN_SETTINGS_PATH,
-      element: <SettingsCenterComponent />,
+      element: <AdminSettingsLayout />,
     });
   }
 }

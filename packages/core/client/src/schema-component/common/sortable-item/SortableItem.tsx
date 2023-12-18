@@ -100,9 +100,9 @@ export const DragHandler = (props) => {
     <div
       style={{
         display: 'inline-block',
-        width: 12,
-        height: 12,
-        lineHeight: '12px',
+        width: 14,
+        height: 14,
+        lineHeight: '14px',
         textAlign: 'left',
       }}
     >

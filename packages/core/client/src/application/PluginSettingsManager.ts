@@ -1,5 +1,6 @@
 import { set } from 'lodash';
 import { createElement } from 'react';
+import { Outlet } from 'react-router-dom';
 
 import { Icon } from '../icon';
 import type { Application } from './Application';
@@ -9,16 +10,18 @@ export const ADMIN_SETTINGS_KEY = 'admin.settings.';
 export const ADMIN_SETTINGS_PATH = '/admin/settings/';
 export const SNIPPET_PREFIX = 'pm.';
 
-export interface PluginSettingsManagerSettingOptionsType {
+export interface PluginSettingOptions {
   title: string;
-  Component: RouteType['Component'];
+  /**
+   * @default Outlet
+   */
+  Component?: RouteType['Component'];
   icon?: string;
   /**
    * sort, the smaller the number, the higher the priority
    * @default 0
    */
   sort?: number;
-  isBookmark?: boolean;
   aclSnippet?: string;
   [index: string]: any;
 }
@@ -31,18 +34,25 @@ export interface PluginSettingsPageType {
   path: string;
   sort?: number;
   name?: string;
-  pluginName?: string;
-  isBookmark?: boolean;
+  isAllow?: boolean;
+  topLevelName?: string;
+  aclSnippet: string;
   children?: PluginSettingsPageType[];
   [index: string]: any;
 }
 
 export class PluginSettingsManager {
-  protected settings: Record<string, PluginSettingsManagerSettingOptionsType> = {};
+  protected settings: Record<string, PluginSettingOptions> = {};
   protected aclSnippets: string[] = [];
 
-  constructor(protected app: Application) {
+  constructor(
+    _pluginSettings: Record<string, PluginSettingOptions>,
+    protected app: Application,
+  ) {
     this.app = app;
+    Object.entries(_pluginSettings || {}).forEach(([name, pluginSettingOptions]) => {
+      this.add(name, pluginSettingOptions);
+    });
   }
 
   setAclSnippets(aclSnippets: string[]) {
@@ -62,10 +72,10 @@ export class PluginSettingsManager {
     return `${ADMIN_SETTINGS_PATH}${name.replaceAll('.', '/')}`;
   }
 
-  add(name: string, options: PluginSettingsManagerSettingOptionsType) {
+  add(name: string, options: PluginSettingOptions) {
     const nameArr = name.split('.');
-    const pluginName = nameArr[0];
-    this.settings[name] = { ...options, name, pluginName };
+    const topLevelName = nameArr[0];
+    this.settings[name] = { Component: Outlet, ...options, name, topLevelName };
 
     // add children
     if (nameArr.length > 1) {
@@ -75,7 +85,7 @@ export class PluginSettingsManager {
     // add route
     this.app.router.add(this.getRouteName(name), {
       path: this.getRoutePath(name),
-      Component: options.Component,
+      Component: this.settings[name].Component,
     });
   }
 
@@ -127,8 +137,7 @@ export class PluginSettingsManager {
   }
 
   getList(filterAuth = true): PluginSettingsPageType[] {
-    return Object.keys(this.settings)
-      .filter((item) => !item.includes('.')) // top level
+    return Array.from(new Set(Object.values(this.settings).map((item) => item.topLevelName)))
       .sort((a, b) => a.localeCompare(b)) // sort by name
       .map((name) => this.get(name, filterAuth))
       .filter(Boolean)

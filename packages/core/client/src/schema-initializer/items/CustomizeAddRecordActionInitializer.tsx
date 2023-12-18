@@ -1,7 +1,8 @@
 import React from 'react';
 import { BlockInitializer } from './BlockInitializer';
+import { useSchemaInitializerItem } from '../../application';
 
-export const CustomizeAddRecordActionInitializer = (props) => {
+export const CustomizeAddRecordActionInitializer = () => {
   const schema = {
     type: 'void',
     title: '{{t("Add record")}}',
@@ -48,5 +49,7 @@ export const CustomizeAddRecordActionInitializer = (props) => {
       },
     },
   };
-  return <BlockInitializer {...props} schema={schema} />;
+  const itemConfig = useSchemaInitializerItem();
+
+  return <BlockInitializer {...itemConfig} schema={schema} item={itemConfig} />;
 };

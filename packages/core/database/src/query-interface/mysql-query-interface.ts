@@ -1,7 +1,7 @@
 import { Transactionable } from 'sequelize';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
-import QueryInterface from './query-interface';
+import QueryInterface, { TableInfo } from './query-interface';
 
 export default class MysqlQueryInterface extends QueryInterface {
   constructor(db) {
@@ -75,5 +75,15 @@ export default class MysqlQueryInterface extends QueryInterface {
     const match = createView.match(regex);
     const sql = match[0];
     return sql;
+  }
+
+  async showTableDefinition(tableInfo: TableInfo): Promise<any> {
+    const { tableName } = tableInfo;
+
+    const sql = `SHOW CREATE TABLE ${tableName}`;
+
+    const results = await this.db.sequelize.query(sql, { type: 'SELECT' });
+
+    return results[0]['Create Table'];
   }
 }

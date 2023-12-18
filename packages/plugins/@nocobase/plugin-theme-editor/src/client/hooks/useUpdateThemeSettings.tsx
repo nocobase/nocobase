@@ -37,33 +37,5 @@ export function useUpdateThemeSettings() {
     [api, currentUser],
   );
 
-  const updateSystemThemeSettings = useCallback(
-    async (themeId: number | null) => {
-      if (themeId === systemSettings.data.data.options?.themeId) {
-        return;
-      }
-      await api.request({
-        url: 'systemSettings:update/1',
-        method: 'post',
-        data: {
-          options: {
-            ...(systemSettings.data.data.options || {}),
-            themeId,
-          },
-        },
-      });
-      systemSettings.mutate({
-        data: {
-          ...systemSettings.data.data,
-          options: {
-            ...(systemSettings.data.data.options || {}),
-            themeId,
-          },
-        },
-      });
-    },
-    [api, systemSettings],
-  );
-
-  return { updateUserThemeSettings, updateSystemThemeSettings };
+  return { updateUserThemeSettings };
 }

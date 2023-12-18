@@ -7,10 +7,10 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
-import { useDuplicatefieldsContext } from '../../../schema-initializer/components';
 import { compatibleDataId } from '../../../schema-settings/DataTemplates/FormDataTemplates';
 import { useToken } from '../__builtins__';
 import { RemoteSelect } from '../remote-select';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 
 export interface ITemplate {
   config?: {
@@ -38,10 +38,11 @@ export interface ITemplate {
 const useDataTemplates = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const data = useDuplicatefieldsContext();
+  const { duplicateData } = useFormBlockContext();
   const { getCollectionJoinField } = useCollectionManager();
-  if (data) {
-    return data;
+  console.log(useFormBlockContext());
+  if (duplicateData) {
+    return duplicateData;
   }
   const { items = [], display = true } = findDataTemplates(fieldSchema);
   // 过滤掉已经被删除的字段
@@ -157,6 +158,9 @@ export const Templates = ({ style = {}, form }) => {
       <Space wrap>
         <label style={labelStyle}>{t('Data template')}: </label>
         <Select
+          // @ts-ignore
+          role="button"
+          data-testid="select-form-data-template"
           popupMatchSelectWidth={false}
           options={templateOptions}
           fieldNames={{ label: 'title', value: 'key' }}

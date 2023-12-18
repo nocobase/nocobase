@@ -1,12 +1,12 @@
 import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { observer } from '@formily/react';
+import { observer, useFieldSchema } from '@formily/react';
 import React, { useContext, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionContext, ActionContextProvider } from '../action/context';
 import { useGetAriaLabelOfPopover } from '../action/hooks/useGetAriaLabelOfPopover';
 import { useSetAriaLabelForPopover } from '../action/hooks/useSetAriaLabelForPopover';
-import { PopoverWithStopPropagation } from '../popover';
+import { StablePopover } from '../popover';
 import { InternalNester } from './InternalNester';
 import { ReadPrettyInternalViewer } from './InternalViewer';
 import { useAssociationFieldContext } from './hooks';
@@ -16,6 +16,8 @@ export const InternaPopoverNester = observer(
     const { options } = useAssociationFieldContext();
     const [visible, setVisible] = useState(false);
     const { t } = useTranslation();
+    const schema = useFieldSchema();
+    schema['x-component-props'].enableLink = false;
     const ref = useRef();
     const nesterProps = {
       ...props,
@@ -37,10 +39,6 @@ export const InternaPopoverNester = observer(
         <InternalNester {...nesterProps} />
       </div>
     );
-    const titleProps = {
-      ...props,
-      enableLink: true,
-    };
     const getContainer = () => ref.current;
     const ctx = useContext(ActionContext);
     const modalProps = {
@@ -54,7 +52,7 @@ export const InternaPopoverNester = observer(
 
     return (
       <ActionContextProvider value={{ ...ctx, modalProps }}>
-        <PopoverWithStopPropagation
+        <StablePopover
           overlayStyle={{ padding: '0px' }}
           content={content}
           trigger="click"
@@ -69,11 +67,11 @@ export const InternaPopoverNester = observer(
                 max-width: 95%;
               `}
             >
-              <ReadPrettyInternalViewer {...titleProps} />
+              <ReadPrettyInternalViewer {...props} />
             </div>
-            <EditOutlined style={{ display: 'inline-flex', marginLeft: '5px' }} />
+            <EditOutlined style={{ display: 'inline-flex', margin: '5px' }} />
           </span>
-        </PopoverWithStopPropagation>
+        </StablePopover>
         {visible && (
           <div
             role="button"

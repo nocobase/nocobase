@@ -1,11 +1,11 @@
 import React from 'react';
 
-import { Variable, useCompile } from '@nocobase/client';
+import { Variable, useCompile, usePlugin } from '@nocobase/client';
 
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE, lang } from './locale';
-import { instructions, useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
-import { triggers } from './triggers';
+import { useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
+import WorkflowPlugin from '.';
 
 export type VariableOption = {
   key?: string;
@@ -43,6 +43,7 @@ export const nodesOptions = {
   label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
   value: '$jobsMapByNodeKey',
   useOptions(options: OptionsOfUseVariableOptions) {
+    const { instructions } = usePlugin(WorkflowPlugin);
     const current = useNodeContext();
     const upstreams = useAvailableUpstreams(current);
     const result: VariableOption[] = [];
@@ -61,6 +62,7 @@ export const triggerOptions = {
   label: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
   value: '$context',
   useOptions(options: OptionsOfUseVariableOptions) {
+    const { triggers } = usePlugin(WorkflowPlugin);
     const { workflow } = useFlowContext();
     const trigger = triggers.get(workflow.type);
     return trigger?.useVariables?.(workflow.config, options) ?? null;
@@ -72,6 +74,7 @@ export const scopeOptions = {
   value: '$scopes',
   useOptions(options: OptionsOfUseVariableOptions) {
     const { fieldNames = defaultFieldNames, current } = options;
+    const { instructions } = usePlugin(WorkflowPlugin);
     const source = useNodeContext();
     const from = current ?? source;
     const scopes = useUpstreamScopes(from);

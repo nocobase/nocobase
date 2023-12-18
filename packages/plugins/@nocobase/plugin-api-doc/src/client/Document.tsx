@@ -16,6 +16,9 @@ const Documentation = () => {
   const { data: urls } = useRequest<{ data: { name: string; url: string }[] }>({ url: 'swagger:getUrls' });
   const requestInterceptor = (req) => {
     if (!req.headers['Authorization']) {
+      const match = location.pathname.match(/^\/apps\/([^/]*)\//);
+      // multi apps need to set X-App header
+      req.headers['X-App'] = match?.[1] || 'main';
       req.headers['Authorization'] = `Bearer ${apiClient.auth.getToken()}`;
     }
     return req;

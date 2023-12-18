@@ -1,8 +1,11 @@
+import { SchemaInitializerItemType } from '../../application';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
+
 // TODO(refactor): should be moved to workflow plugin
-const FormTriggerWorkflowActionInitializer = {
-  type: 'item',
+const formTriggerWorkflowActionInitializerV2: SchemaInitializerItemType = {
+  name: 'submitToWorkflow',
   title: '{{t("Submit to workflow", { ns: "workflow" })}}',
-  component: 'CustomizeActionInitializer',
+  Component: 'CustomizeActionInitializer',
   schema: {
     title: '{{t("Submit to workflow", { ns: "workflow" })}}',
     'x-component': 'Action',
@@ -25,18 +28,20 @@ const FormTriggerWorkflowActionInitializer = {
 };
 
 // 表单的操作配置
-export const FormActionInitializers = {
+export const formActionInitializers = new SchemaInitializer({
+  name: 'FormActionInitializers',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [
     {
       type: 'itemGroup',
+      name: 'enableActions',
       title: '{{t("Enable actions")}}',
       children: [
         {
-          type: 'item',
+          name: 'submit',
           title: '{{t("Submit")}}',
-          component: 'CreateSubmitActionInitializer',
+          Component: 'CreateSubmitActionInitializer',
           schema: {
             'x-action-settings': {},
           },
@@ -44,67 +49,18 @@ export const FormActionInitializers = {
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
+      name: 'custom',
       type: 'subMenu',
       title: '{{t("Customize")}}',
       children: [
-        // 表单区块内暂时屏蔽【打开弹窗】按钮
-        // {
-        //   type: 'item',
-        //   title: '{{t("Popup")}}',
-        //   component: 'CustomizeActionInitializer',
-        //   schema: {
-        //     type: 'void',
-        //     title: '{{ t("Popup") }}',
-        //     'x-action': 'customize:popup',
-        //     'x-designer': 'Action.Designer',
-        //     'x-component': 'Action',
-        //     'x-component-props': {
-        //       openMode: 'drawer',
-        //     },
-        //     properties: {
-        //       drawer: {
-        //         type: 'void',
-        //         title: '{{ t("Popup") }}',
-        //         'x-component': 'Action.Container',
-        //         'x-component-props': {
-        //           className: 'nb-action-popup',
-        //         },
-        //         properties: {
-        //           tabs: {
-        //             type: 'void',
-        //             'x-component': 'Tabs',
-        //             'x-component-props': {},
-        //             'x-initializer': 'TabPaneInitializers',
-        //             properties: {
-        //               tab1: {
-        //                 type: 'void',
-        //                 title: '{{t("Details")}}',
-        //                 'x-component': 'Tabs.TabPane',
-        //                 'x-designer': 'Tabs.Designer',
-        //                 'x-component-props': {},
-        //                 properties: {
-        //                   grid: {
-        //                     type: 'void',
-        //                     'x-component': 'Grid',
-        //                     'x-initializer': 'RecordBlockInitializers',
-        //                     properties: {},
-        //                   },
-        //                 },
-        //               },
-        //             },
-        //           },
-        //         },
-        //       },
-        //     },
-        //   },
-        // },
         {
-          type: 'item',
+          name: 'saveRecord',
           title: '{{t("Save record")}}',
-          component: 'CustomizeActionInitializer',
+          Component: 'CustomizeActionInitializer',
           schema: {
             title: '{{ t("Save record") }}',
             'x-action': 'customize:save',
@@ -129,29 +85,31 @@ export const FormActionInitializers = {
             },
           },
         },
-        FormTriggerWorkflowActionInitializer,
+        formTriggerWorkflowActionInitializerV2,
         {
-          type: 'item',
+          name: 'customRequest',
           title: '{{t("Custom request")}}',
-          component: 'CustomRequestInitializer',
+          Component: 'CustomRequestInitializer',
         },
       ],
     },
   ],
-};
+});
 
-export const CreateFormActionInitializers = {
+export const createFormActionInitializers = new SchemaInitializer({
+  name: 'CreateFormActionInitializers',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [
     {
       type: 'itemGroup',
       title: '{{t("Enable actions")}}',
+      name: 'enableActions',
       children: [
         {
-          type: 'item',
+          name: 'submit',
           title: '{{t("Submit")}}',
-          component: 'CreateSubmitActionInitializer',
+          Component: 'CreateSubmitActionInitializer',
           schema: {
             'x-action-settings': {},
           },
@@ -159,67 +117,18 @@ export const CreateFormActionInitializers = {
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
       type: 'subMenu',
       title: '{{t("Customize")}}',
+      name: 'customize',
       children: [
-        // 添加弹窗内暂时屏蔽【打开弹窗】按钮
-        // {
-        //   type: 'item',
-        //   title: '{{t("Popup")}}',
-        //   component: 'CustomizeActionInitializer',
-        //   schema: {
-        //     type: 'void',
-        //     title: '{{ t("Popup") }}',
-        //     'x-action': 'customize:popup',
-        //     'x-designer': 'Action.Designer',
-        //     'x-component': 'Action',
-        //     'x-component-props': {
-        //       openMode: 'drawer',
-        //     },
-        //     properties: {
-        //       drawer: {
-        //         type: 'void',
-        //         title: '{{ t("Popup") }}',
-        //         'x-component': 'Action.Container',
-        //         'x-component-props': {
-        //           className: 'nb-action-popup',
-        //         },
-        //         properties: {
-        //           tabs: {
-        //             type: 'void',
-        //             'x-component': 'Tabs',
-        //             'x-component-props': {},
-        //             'x-initializer': 'TabPaneInitializers',
-        //             properties: {
-        //               tab1: {
-        //                 type: 'void',
-        //                 title: '{{t("Details")}}',
-        //                 'x-component': 'Tabs.TabPane',
-        //                 'x-designer': 'Tabs.Designer',
-        //                 'x-component-props': {},
-        //                 properties: {
-        //                   grid: {
-        //                     type: 'void',
-        //                     'x-component': 'Grid',
-        //                     'x-initializer': 'RecordBlockInitializers',
-        //                     properties: {},
-        //                   },
-        //                 },
-        //               },
-        //             },
-        //           },
-        //         },
-        //       },
-        //     },
-        //   },
-        // },
         {
-          type: 'item',
+          name: 'saveRecord',
           title: '{{t("Save record")}}',
-          component: 'CustomizeActionInitializer',
+          Component: 'CustomizeActionInitializer',
           schema: {
             title: '{{ t("Save record") }}',
             'x-action': 'customize:save',
@@ -244,29 +153,31 @@ export const CreateFormActionInitializers = {
             },
           },
         },
-        FormTriggerWorkflowActionInitializer,
+        formTriggerWorkflowActionInitializerV2,
         {
-          type: 'item',
+          name: 'customRequest',
           title: '{{t("Custom request")}}',
-          component: 'CustomRequestInitializer',
+          Component: 'CustomRequestInitializer',
         },
       ],
     },
   ],
-};
+});
 
-export const UpdateFormActionInitializers = {
+export const updateFormActionInitializers = new SchemaInitializer({
+  name: 'UpdateFormActionInitializers',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [
     {
       type: 'itemGroup',
       title: '{{t("Enable actions")}}',
+      name: 'enableActions',
       children: [
         {
-          type: 'item',
+          name: 'submit',
           title: '{{t("Submit")}}',
-          component: 'UpdateSubmitActionInitializer',
+          Component: 'UpdateSubmitActionInitializer',
           schema: {
             'x-action-settings': {},
           },
@@ -274,16 +185,18 @@ export const UpdateFormActionInitializers = {
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
       type: 'subMenu',
       title: '{{t("Customize")}}',
+      name: 'customize',
       children: [
         {
-          type: 'item',
+          name: 'popup',
           title: '{{t("Popup")}}',
-          component: 'CustomizeActionInitializer',
+          Component: 'CustomizeActionInitializer',
           schema: {
             type: 'void',
             title: '{{ t("Popup") }}',
@@ -331,9 +244,9 @@ export const UpdateFormActionInitializers = {
           },
         },
         {
-          type: 'item',
+          name: 'saveRecord',
           title: '{{t("Save record")}}',
-          component: 'CustomizeActionInitializer',
+          Component: 'CustomizeActionInitializer',
           schema: {
             title: '{{ t("Save") }}',
             'x-component': 'Action',
@@ -358,29 +271,32 @@ export const UpdateFormActionInitializers = {
             },
           },
         },
-        FormTriggerWorkflowActionInitializer,
+        formTriggerWorkflowActionInitializerV2,
         {
           type: 'item',
+          name: 'customRequest',
           title: '{{t("Custom request")}}',
-          component: 'CustomRequestInitializer',
+          Component: 'CustomRequestInitializer',
         },
       ],
     },
   ],
-};
+});
 
-export const BulkEditFormActionInitializers = {
+export const bulkEditFormActionInitializers = new SchemaInitializer({
+  name: 'BulkEditFormActionInitializers',
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [
     {
       type: 'itemGroup',
       title: '{{t("Enable actions")}}',
+      name: 'enableActions',
       children: [
         {
-          type: 'item',
+          name: 'submit',
           title: '{{t("Submit")}}',
-          component: 'BulkEditSubmitActionInitializer',
+          Component: 'BulkEditSubmitActionInitializer',
           schema: {
             'x-action-settings': {},
           },
@@ -388,16 +304,18 @@ export const BulkEditFormActionInitializers = {
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
     },
     {
       type: 'subMenu',
       title: '{{t("Customize")}}',
+      name: 'customize',
       children: [
         {
-          type: 'item',
+          name: 'popup',
           title: '{{t("Popup")}}',
-          component: 'CustomizeActionInitializer',
+          Component: 'CustomizeActionInitializer',
           schema: {
             type: 'void',
             title: '{{ t("Popup") }}',
@@ -445,9 +363,9 @@ export const BulkEditFormActionInitializers = {
           },
         },
         {
-          type: 'item',
+          name: 'saveRecord',
           title: '{{t("Save record")}}',
-          component: 'CustomizeActionInitializer',
+          Component: 'CustomizeActionInitializer',
           schema: {
             title: '{{ t("Save") }}',
             'x-component': 'Action',
@@ -472,11 +390,11 @@ export const BulkEditFormActionInitializers = {
           },
         },
         {
-          type: 'item',
+          name: 'customRequest',
           title: '{{t("Custom request")}}',
-          component: 'CustomRequestInitializer',
+          Component: 'CustomRequestInitializer',
         },
       ],
     },
   ],
-};
+});

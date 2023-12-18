@@ -206,7 +206,9 @@ describe('query', () => {
       const cache = new MockCache();
       ctx = {
         app: {
-          getPlugin: () => ({ cache }),
+          cacheManager: {
+            getCache: () => cache,
+          },
         },
       };
     });
@@ -220,7 +222,7 @@ describe('query', () => {
           },
         },
       };
-      const cache = context.app.getPlugin().cache;
+      const cache = context.app.cacheManager.getCache();
       expect(cache.get(key)).toBeUndefined();
       await compose([cacheMiddleware, query])(context, async () => {});
       expect(query).toBeCalled();
@@ -242,7 +244,7 @@ describe('query', () => {
           },
         },
       };
-      const cache = context.app.getPlugin().cache;
+      const cache = context.app.cacheManager.getCache();
       cache.set(key, value);
       expect(cache.get(key)).toBeDefined();
       await compose([cacheMiddleware, query])(context, async () => {});
@@ -259,7 +261,7 @@ describe('query', () => {
           },
         },
       };
-      const cache = context.app.getPlugin().cache;
+      const cache = context.app.cacheManager.getCache();
       expect(cache.get(key)).toBeUndefined();
       await compose([cacheMiddleware, query])(context, async () => {});
       expect(query).toBeCalled();
