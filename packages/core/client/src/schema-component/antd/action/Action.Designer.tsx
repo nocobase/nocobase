@@ -1,5 +1,5 @@
 import { ArrayTable } from '@formily/antd-v5';
-import { onFieldValueChange } from '@formily/core';
+import { Field, onFieldValueChange } from '@formily/core';
 import { ISchema, connect, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Alert, Tree as AntdTree, ModalProps } from 'antd';
@@ -22,13 +22,11 @@ import {
   SchemaSettingsLinkageRules,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
-  SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings/SchemaSettings';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
-import { Field } from '@formily/core';
 
 const Tree = connect(
   AntdTree,
@@ -102,8 +100,8 @@ function ButtonEditor(props) {
               default: fieldSchema?.['x-component-props']?.danger
                 ? 'danger'
                 : fieldSchema?.['x-component-props']?.type === 'primary'
-                ? 'primary'
-                : 'default',
+                  ? 'primary'
+                  : 'default',
               enum: [
                 { value: 'default', label: '{{t("Default")}}' },
                 { value: 'primary', label: '{{t("Highlight")}}' },
@@ -694,17 +692,6 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
             openMode: isPopupAction,
             openSize: isPopupAction,
           };
-        },
-      },
-      {
-        name: 'updateMode',
-        Component: UpdateMode,
-        useVisible() {
-          const fieldSchema = useFieldSchema();
-          const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(
-            fieldSchema['x-action'],
-          );
-          return isUpdateModePopupAction;
         },
       },
       {
