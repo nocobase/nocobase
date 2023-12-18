@@ -27,13 +27,10 @@ test('general permission', async ({ page, mockPage, mockRole }) => {
   await expect(page.getByLabel('block-item-CardItem-users-table')).not.toBeVisible();
 });
 test('individual collection permission', async ({ page, mockPage, mockRole, mockRecord }) => {
-  await mockPage().goto();
+  await mockPage(oneEmptyTableBlockWithActions).goto();
   //新建角色并切换到新角色
   const roleData = await mockRole({
     snippets: ['!ui.*', '!pm', '!pm.*'],
-    strategy: {
-      actions: ['create', 'update', 'destroy', 'view'],
-    },
     resources: [
       {
         usingActionsConfig: true,
@@ -41,11 +38,11 @@ test('individual collection permission', async ({ page, mockPage, mockRole, mock
       },
     ],
   });
+  await mockPage(oneEmptyTableBlockWithActions).goto();
   await page.evaluate((roleData) => {
     window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
   }, roleData);
   await page.reload();
-  await mockPage(oneEmptyTableBlockWithActions).goto();
   await page.getByTestId('user-center-button').hover();
   await expect(page.getByLabel('block-item-CardItem-users-table')).not.toBeVisible();
 });
