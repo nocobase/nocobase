@@ -1,6 +1,7 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
-import { CollectionFieldOptions, useCollectionManager } from '../../collection-manager';
 import { CollectionFieldV2 } from './CollectionField';
+import { CollectionFieldOptions } from '../../collection-manager';
+import { useCollectionManagerV2 } from './CollectionManagerProvider';
 
 export const CollectionFieldContextV2 = createContext<CollectionFieldV2>(null);
 CollectionFieldContextV2.displayName = 'CollectionFieldContextV2';
@@ -9,17 +10,19 @@ export type CollectionFieldProviderProps = (
   | { name: string }
   | { collectionField: CollectionFieldV2 | CollectionFieldOptions }
 ) & {
+  ns?: string;
   children?: ReactNode;
 };
 
 export const CollectionFieldProviderV2: FC<CollectionFieldProviderProps> = (props) => {
-  const { name, collectionField, children } = props as {
+  const { name, collectionField, ns, children } = props as {
     name: string;
+    ns?: string;
     collectionField: CollectionFieldV2 | CollectionFieldOptions;
     children?: ReactNode;
   };
-  const { getCollectionField } = useCollectionManager();
 
+  const collectionManager = useCollectionManagerV2();
   const collectionFieldValue = useMemo(() => {
     if (collectionField instanceof CollectionFieldV2) {
       return collectionField;
@@ -27,12 +30,12 @@ export const CollectionFieldProviderV2: FC<CollectionFieldProviderProps> = (prop
     if (collectionField) {
       return new CollectionFieldV2(collectionField);
     }
-    const res = getCollectionField(name);
+    const res = collectionManager.getCollectionField(name);
     if (!res) {
       console.error(`[nocobase-CollectionFieldProvider]: "${name}" field does not exist`);
     }
     return new CollectionFieldV2(res);
-  }, [collectionField, getCollectionField, name]);
+  }, [collectionField, collectionManager, name]);
 
   if (!collectionFieldValue) return null;
 

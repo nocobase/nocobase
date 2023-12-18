@@ -1,18 +1,24 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
-import { CollectionOptions, useCollectionManager } from '../../collection-manager';
+import { CollectionOptions } from '../../collection-manager';
 import { CollectionV2 } from './Collection';
+import { useCollectionManagerV2 } from './CollectionManagerProvider';
 
 export const CollectionContextV2 = createContext<CollectionV2>(null);
 CollectionContextV2.displayName = 'CollectionContextV2';
 
 export type CollectionProviderProps = ({ name: string } | { collection: CollectionOptions | CollectionV2 }) & {
   children?: ReactNode;
+  ns?: string;
 };
 export const CollectionProviderV2: FC<CollectionProviderProps> = (props) => {
-  const { name, collection, children } = props as { name: string; collection: CollectionOptions; children?: ReactNode };
-  const { get } = useCollectionManager();
-
+  const { name, collection, ns, children } = props as {
+    name: string;
+    collection: CollectionOptions;
+    ns?: string;
+    children?: ReactNode;
+  };
+  const collectionManager = useCollectionManagerV2();
   const collectionValue = useMemo(() => {
     if (collection instanceof CollectionV2) {
       return collection;
@@ -20,13 +26,13 @@ export const CollectionProviderV2: FC<CollectionProviderProps> = (props) => {
     if (collection) {
       return new CollectionV2(collection);
     }
-    const res = name ? get(name) : undefined;
+    const res = name ? collectionManager.getCollection(name, { ns }) : undefined;
 
     if (!res) {
       console.error(`[nocobase]: ${name} collection does not exist`);
     }
     return new CollectionV2(res);
-  }, [collection, get, name]);
+  }, [collection, collectionManager, name, ns]);
 
   if (!collectionValue) return null;
 
