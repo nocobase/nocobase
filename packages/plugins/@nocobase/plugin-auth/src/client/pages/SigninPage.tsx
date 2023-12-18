@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useCurrentDocumentTitle, usePlugin, useViewport } from '@nocobase/client';
 import AuthPlugin, { AuthPage } from '..';
 import { Authenticator, AuthenticatorsContext } from '../authenticator';
+import { useAuthTranslation } from '../locale';
 
 export const useSignInPages = (): {
   [authType: string]: AuthPage['signIn'];
@@ -43,7 +44,7 @@ export const useCustomSignIn = (authenticators = []) => {
 };
 
 export const SigninPage = () => {
-  const { t } = useTranslation();
+  const { t } = useAuthTranslation();
   useCurrentDocumentTitle('Signin');
   useViewport();
   const signInPages = useSignInPages();
@@ -51,7 +52,7 @@ export const SigninPage = () => {
   const customSignIn = useCustomSignIn(authenticators);
 
   if (!authenticators.length) {
-    return <div style={{ color: '#ccc' }}>{t('Oops! No authentication methods available.')}</div>;
+    return <div style={{ color: '#ccc' }}>{t('No authentication methods available.')}</div>;
   }
 
   const tabs = authenticators
