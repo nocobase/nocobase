@@ -1,7 +1,6 @@
 import { css } from '@emotion/css';
 import { Space, Tabs } from 'antd';
 import React, { createElement, useContext } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useCurrentDocumentTitle, usePlugin, useViewport } from '@nocobase/client';
 import AuthPlugin, { AuthPage } from '..';
 import { Authenticator, AuthenticatorsContext } from '../authenticator';
@@ -43,7 +42,7 @@ export const useCustomSignIn = (authenticators = []) => {
     );
 };
 
-export const SigninPage = () => {
+export const SignInPage = () => {
   const { t } = useAuthTranslation();
   useCurrentDocumentTitle('Signin');
   useViewport();

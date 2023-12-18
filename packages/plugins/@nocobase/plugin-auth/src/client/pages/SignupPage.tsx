@@ -37,7 +37,7 @@ export const useSignUpPages = (): {
   return signUpPages;
 };
 
-export const SignupPage = () => {
+export const SignUpPage = () => {
   useViewport();
   useCurrentDocumentTitle('Signup');
   const signUpPages = useSignUpPages();

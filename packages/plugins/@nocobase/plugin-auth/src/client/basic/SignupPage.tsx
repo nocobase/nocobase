@@ -17,7 +17,7 @@ export interface UseSignupProps {
   };
 }
 
-export const useSignup = (props?: UseSignupProps) => {
+export const useSignUp = (props?: UseSignupProps) => {
   const navigate = useNavigate();
   const form = useForm();
   const api = useAPIClient();
@@ -93,7 +93,7 @@ const signupPageSchema: ISchema = {
             block: true,
             type: 'primary',
             htmlType: 'submit',
-            useAction: '{{ useBasicSignup }}',
+            useAction: '{{ useBasicSignUp }}',
             style: { width: '100%' },
           },
         },
@@ -114,15 +114,15 @@ const signupPageSchema: ISchema = {
   },
 };
 
-export const BasicSignupPage = ({ authenticatorName: name }: { authenticatorName: string }) => {
+export const BasicSignUpPage = ({ authenticatorName: name }: { authenticatorName: string }) => {
   const { t } = useAuthTranslation();
-  const useBasicSignup = () => {
-    return useSignup({ authenticator: name });
+  const useBasicSignUp = () => {
+    return useSignUp({ authenticator: name });
   };
   const authenticator = useAuthenticator(name);
   const { options } = authenticator;
-  if (!options?.allowSignup) {
+  if (!options?.allowSignUp) {
     return <Navigate to="/not-found" replace={true} />;
   }
-  return <SchemaComponent schema={signupPageSchema} scope={{ useBasicSignup, t }} />;
+  return <SchemaComponent schema={signupPageSchema} scope={{ useBasicSignUp, t }} />;
 };

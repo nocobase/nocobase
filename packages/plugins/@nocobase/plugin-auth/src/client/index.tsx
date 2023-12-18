@@ -2,11 +2,11 @@ import { Plugin } from '@nocobase/client';
 import { AuthProvider } from './AuthProvider';
 import { NAMESPACE } from './locale';
 import { Authenticator } from './settings/Authenticator';
-import { AuthLayout, SigninPage, SignupPage } from './pages';
+import { AuthLayout, SignInPage, SignUpPage } from './pages';
 import { ComponentType } from 'react';
 import { Registry } from '@nocobase/utils/client';
 import { presetAuthType } from '../preset';
-import { BasicSigninPage, BasicSignupPage, Options } from './basic';
+import { BasicSignInPage, BasicSignUpPage, Options } from './basic';
 import { Authenticator as AuthenticatorType } from './authenticator';
 
 export type AuthPage = {
@@ -43,17 +43,17 @@ export class AuthPlugin extends Plugin {
     });
     this.router.add('auth.signin', {
       path: '/signin',
-      Component: 'SigninPage',
+      Component: 'SignInPage',
     });
     this.router.add('auth.signup', {
       path: '/signup',
-      Component: 'SignupPage',
+      Component: 'SignUpPage',
     });
 
     this.app.addComponents({
       AuthLayout,
-      SigninPage,
-      SignupPage,
+      SignInPage,
+      SignUpPage,
     });
 
     this.app.providers.unshift([AuthProvider, {}]);
@@ -62,10 +62,10 @@ export class AuthPlugin extends Plugin {
       signIn: {
         display: 'form',
         tabTitle: this.app.i18n.t('Sign in via password', { ns: NAMESPACE }),
-        Component: BasicSigninPage,
+        Component: BasicSignInPage,
       },
       signUp: {
-        Component: BasicSignupPage,
+        Component: BasicSignUpPage,
       },
       configForm: {
         Component: Options,

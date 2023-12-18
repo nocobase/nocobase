@@ -78,27 +78,27 @@ const passwordForm: ISchema = {
         },
       },
     },
-    signup: {
+    signUp: {
       type: 'void',
       'x-component': 'Link',
       'x-component-props': {
-        to: '{{ signupLink }}',
+        to: '{{ signUpLink }}',
       },
       'x-content': '{{t("Create an account")}}',
       'x-visible': '{{ allowSignUp }}',
     },
   },
 };
-export const BasicSigninPage = (props: { authenticator: Authenticator }) => {
+export const BasicSignInPage = (props: { authenticator: Authenticator }) => {
   const { t } = useAuthTranslation();
   const authenticator = props.authenticator;
   const { authType, name, options } = authenticator;
-  const signupPages = useSignUpPages();
-  const allowSignUp = !!signupPages[authType] && options?.allowSignup;
-  const signupLink = `/signup?name=${name}`;
+  const signUpPages = useSignUpPages();
+  const allowSignUp = !!signUpPages[authType] && options?.allowSignUp;
+  const signUpLink = `/signup?name=${name}`;
 
   const useBasicSignIn = () => {
     return useSignIn(name);
   };
-  return <SchemaComponent schema={passwordForm} scope={{ useBasicSignIn, allowSignUp, signupLink, t }} />;
+  return <SchemaComponent schema={passwordForm} scope={{ useBasicSignIn, allowSignUp, signUpLink, t }} />;
 };
