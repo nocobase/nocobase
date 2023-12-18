@@ -11,5 +11,6 @@ export async function getConfig() {
     plugins,
     cacheManager,
     logger,
+    perfHooks: process.env.ENABLE_PERF_HOOKS ? true : false,
   };
 }

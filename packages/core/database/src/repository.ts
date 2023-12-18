@@ -479,7 +479,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     const instance = await this.findOne({ filter, transaction });
 
     if (instance) {
-      console.log(filter, instance.toJSON(), instance.get(this.collection.model.primaryKeyAttribute));
       return await this.update({
         filterByTk: instance.get(this.collection.filterTargetKey || this.collection.model.primaryKeyAttribute),
         values,

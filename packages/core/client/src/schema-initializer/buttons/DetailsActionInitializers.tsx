@@ -35,19 +35,6 @@ export const detailsActionInitializers = new SchemaInitializer({
             'x-decorator': 'ACLActionProvider',
           },
         },
-        {
-          name: 'duplicate',
-          title: '{{t("Duplicate")}}',
-          Component: 'DuplicateActionInitializer',
-          schema: {
-            'x-component': 'Action',
-            'x-action': 'duplicate',
-            'x-decorator': 'ACLActionProvider',
-            'x-component-props': {
-              type: 'primary',
-            },
-          },
-        },
       ],
     },
   ],

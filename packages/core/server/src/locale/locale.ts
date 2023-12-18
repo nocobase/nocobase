@@ -9,6 +9,7 @@ export class Locale {
   defaultLang = 'en-US';
   localeFn = new Map();
   resourceCached = new Map();
+  i18nInstances = new Map();
 
   constructor(app: Application) {
     this.app = app;
@@ -95,6 +96,19 @@ export class Locale {
     Object.keys(resources).forEach((name) => {
       this.app.i18n.addResources(lang, name, resources[name]);
     });
+
     return resources;
+  }
+
+  async getI18nInstance(lang: string) {
+    if (lang === '*' || !lang) {
+      return this.app.i18n.cloneInstance({ initImmediate: false });
+    }
+    let instance = this.i18nInstances.get(lang);
+    if (!instance) {
+      instance = this.app.i18n.cloneInstance({ initImmediate: false });
+      this.i18nInstances.set(lang, instance);
+    }
+    return instance;
   }
 }

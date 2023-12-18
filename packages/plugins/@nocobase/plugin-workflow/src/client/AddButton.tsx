@@ -1,10 +1,13 @@
-import { PlusOutlined } from '@ant-design/icons';
-import { css, useAPIClient, useCompile } from '@nocobase/client';
-import { Button, Dropdown, MenuProps } from 'antd';
 import React, { useCallback, useMemo } from 'react';
+import { Button, Dropdown, MenuProps } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+
+import { css, useAPIClient, useCompile, usePlugin } from '@nocobase/client';
+
+import WorkflowPlugin from '.';
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE } from './locale';
-import { Instruction, instructions } from './nodes';
+import { Instruction } from './nodes';
 import useStyles from './style';
 
 interface AddButtonProps {
@@ -15,6 +18,7 @@ interface AddButtonProps {
 
 export function AddButton(props: AddButtonProps) {
   const { upstream, branchIndex = null } = props;
+  const { instructions } = usePlugin(WorkflowPlugin);
   const compile = useCompile();
   const api = useAPIClient();
   const { workflow, refresh } = useFlowContext() ?? {};

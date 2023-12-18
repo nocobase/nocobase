@@ -67,6 +67,7 @@ export function createAppLogger(options: AppLoggerOptions = {}) {
       }
       info['req'] = pick(info['req'], requestWhitelist);
       info['res'] = pick(info['res'], responseWhitelist);
+
       ctx.logger.log(info);
     }
 

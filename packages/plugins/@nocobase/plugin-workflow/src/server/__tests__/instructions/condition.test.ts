@@ -1,7 +1,7 @@
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { getApp, sleep } from '..';
-import { BRANCH_INDEX, EXECUTION_STATUS } from '../../constants';
+import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 describe('workflow > instructions > condition', () => {
   let app: Application;
@@ -30,9 +30,42 @@ describe('workflow > instructions > condition', () => {
 
   afterEach(() => app.destroy());
 
-  describe('config.rejectOnFalse', () => {});
+  describe('config.rejectOnFalse', () => {
+    it('false to exit', async () => {
+      const n1 = await workflow.createNode({
+        type: 'condition',
+        config: {
+          engine: 'basic',
+          calculation: {
+            calculator: 'equal',
+            operands: [0, 1],
+          },
+          rejectOnFalse: true,
+        },
+      });
 
-  describe('single calculation', () => {
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+
+      await n1.setDownstream(n2);
+
+      const post = await PostRepo.create({ values: {} });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.FAILED);
+
+      const jobs = await execution.getJobs();
+      expect(jobs.length).toBe(1);
+      expect(jobs[0].status).toBe(JOB_STATUS.FAILED);
+      expect(jobs[0].result).toBe(false);
+    });
+  });
+
+  describe('branching', () => {
     it('calculation to true downstream', async () => {
       const n1 = await workflow.createNode({
         type: 'condition',
@@ -111,6 +144,72 @@ describe('workflow > instructions > condition', () => {
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(2);
       expect(jobs[1].result).toEqual(false);
+    });
+
+    it('branch false and branch false to continue', async () => {
+      await db.sequelize.transaction(async (transaction) => {
+        const n1 = await workflow.createNode(
+          {
+            type: 'condition',
+            config: {
+              engine: 'basic',
+              calculation: {
+                calculator: 'equal',
+                operands: [0, 1],
+              },
+            },
+          },
+          { transaction },
+        );
+
+        const n2 = await workflow.createNode(
+          {
+            type: 'condition',
+            config: {
+              engine: 'basic',
+              calculation: {
+                calculator: 'equal',
+                operands: [0, 1],
+              },
+            },
+            upstreamId: n1.id,
+            branchIndex: BRANCH_INDEX.ON_FALSE,
+          },
+          { transaction },
+        );
+
+        const n3 = await workflow.createNode(
+          {
+            type: 'echo',
+            upstreamId: n2.id,
+            branchIndex: BRANCH_INDEX.ON_TRUE,
+          },
+          { transaction },
+        );
+
+        const n4 = await workflow.createNode(
+          {
+            type: 'echo',
+            upstreamId: n1.id,
+          },
+          { transaction },
+        );
+
+        await n1.setDownstream(n4, { transaction });
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      console.log('------', jobs);
+      expect(jobs.length).toBe(3);
+      expect(jobs[0].result).toBe(false);
+      expect(jobs[1].result).toBe(false);
     });
   });
 

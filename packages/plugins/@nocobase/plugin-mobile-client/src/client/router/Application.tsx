@@ -1,12 +1,4 @@
-import {
-  ActionContextProvider,
-  AdminProvider,
-  css,
-  cx,
-  RemoteSchemaComponent,
-  useSystemSettings,
-  useViewport,
-} from '@nocobase/client';
+import { ActionContextProvider, AdminProvider, css, cx, RemoteSchemaComponent, useViewport } from '@nocobase/client';
 import { DrawerProps, ModalProps } from 'antd';
 import React, { useMemo } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
@@ -76,8 +68,7 @@ const modalProps = {
 };
 
 const useMobileSchemaUid = () => {
-  const ctx = useSystemSettings();
-  return ctx?.data?.data?.options?.mobileSchemaUid;
+  return 'nocobase-mobile-container';
 };
 
 const MApplication: React.FC = (props) => {

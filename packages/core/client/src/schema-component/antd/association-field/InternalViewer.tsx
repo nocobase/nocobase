@@ -44,7 +44,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const { designable } = useDesignable();
     const { snapshot } = useActionContext();
     const targetCollection = getCollection(collectionField?.target);
-    const isTreeCollection = targetCollection.template === 'tree';
+    const isTreeCollection = targetCollection?.template === 'tree';
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
@@ -67,7 +67,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
             <span>
               {snapshot ? (
                 text
-              ) : enableLink !== false && !props.enableLink ? (
+              ) : enableLink !== false ? (
                 <a
                   onClick={(e) => {
                     e.stopPropagation();

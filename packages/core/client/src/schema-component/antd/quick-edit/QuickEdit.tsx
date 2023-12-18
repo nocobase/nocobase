@@ -4,7 +4,7 @@ import { Field, createForm } from '@formily/core';
 import { FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import React, { useMemo, useRef } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
-import { PopoverWithStopPropagation } from '../popover';
+import { StablePopover } from '../popover';
 
 export const Editable = observer((props) => {
   const field: any = useField();
@@ -42,7 +42,7 @@ export const Editable = observer((props) => {
 
   return (
     <FormItem {...props} labelStyle={{ display: 'none' }}>
-      <PopoverWithStopPropagation
+      <StablePopover
         content={
           <div style={{ width: '100%', height: '100%', minWidth: 500 }}>
             <div ref={containerRef}>{modifiedChildren}</div>
@@ -62,7 +62,7 @@ export const Editable = observer((props) => {
             <RecursionField schema={schema} name={fieldSchema.name} />
           </FormContext.Provider>
         </div>
-      </PopoverWithStopPropagation>
+      </StablePopover>
     </FormItem>
   );
 });

@@ -1,11 +1,11 @@
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { isPortalInBody } from '@nocobase/utils/client';
-import { App, Button, Popover } from 'antd';
+import { App, Button } from 'antd';
 import classnames from 'classnames';
 import { default as lodash } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useActionContext } from '../..';
+import { StablePopover, useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
 import { RecordProvider, useRecord } from '../../../record-provider';
@@ -187,7 +187,7 @@ Action.Popover = observer(
   (props) => {
     const { button, visible, setVisible } = useActionContext();
     return (
-      <Popover
+      <StablePopover
         {...props}
         destroyTooltipOnHide
         open={visible}
@@ -197,7 +197,7 @@ Action.Popover = observer(
         content={props.children}
       >
         {button}
-      </Popover>
+      </StablePopover>
     );
   },
   { displayName: 'Action.Popover' },
