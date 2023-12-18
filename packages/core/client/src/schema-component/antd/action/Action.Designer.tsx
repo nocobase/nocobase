@@ -28,6 +28,7 @@ import {
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
+import { Field } from '@formily/core';
 
 const Tree = connect(
   AntdTree,
@@ -696,6 +697,33 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         },
       },
       {
+        name: 'updateMode',
+        Component: UpdateMode,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(
+            fieldSchema['x-action'],
+          );
+          return isUpdateModePopupAction;
+        },
+      },
+      {
+        name: 'secondConFirm',
+        Component: SecondConFirm,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          const isPopupAction = [
+            'create',
+            'update',
+            'view',
+            'customize:popup',
+            'duplicate',
+            'customize:create',
+          ].includes(fieldSchema['x-action'] || '');
+          return !isPopupAction;
+        },
+      },
+      {
         name: 'assignFieldValues',
         Component: AssignedFieldValues,
         useVisible() {
@@ -769,7 +797,42 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
     ],
   },
 ];
+function SecondConFirm() {
+  const { dn } = useDesignable();
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+  const field = useField<Field>();
 
+  return (
+    <SchemaSettingsSwitchItem
+      title={t('Second confirmation')}
+      checked={!!fieldSchema?.['x-component-props']?.confirm?.content}
+      onChange={(value) => {
+        if (!fieldSchema['x-component-props']) {
+          fieldSchema['x-component-props'] = {};
+        }
+        if (value) {
+          fieldSchema['x-component-props'].confirm = value
+            ? {
+                title: 'Perform the {{title}}',
+                content: 'Are you sure you want to perform the {{title}} action?',
+              }
+            : {};
+        } else {
+          fieldSchema['x-component-props'].confirm = {};
+        }
+        field.componentProps.confirm = { ...fieldSchema['x-component-props']?.confirm };
+
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': { ...fieldSchema['x-component-props'] },
+          },
+        });
+      }}
+    />
+  );
+}
 export const actionSettings = new SchemaSettings({
   name: 'ActionSettings',
   items: actionSettingsItems,
