@@ -23,7 +23,7 @@ export class LocalePlugin extends Plugin {
       const data = res?.data;
       this.locales = data?.data || {};
       this.app.use(ConfigProvider, { locale: this.locales.antd, popupMatchSelectWidth: false });
-      this.app.use(App);
+      this.app.use(App, { component: false });
       if (data?.data?.lang) {
         api.auth.setLocale(data?.data?.lang);
         this.app.i18n.changeLanguage(data?.data?.lang);

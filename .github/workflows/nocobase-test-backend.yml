@@ -6,6 +6,7 @@ on:
       - main
       - develop
     paths:
+      - 'package.json'
       - 'packages/core/acl/**'
       - 'packages/core/actions/**'
       - 'packages/core/database/**'
@@ -14,6 +15,7 @@ on:
       - '.github/workflows/nocobase-test-backend.yml'
   pull_request:
     paths:
+      - 'package.json'
       - 'packages/core/acl/**'
       - 'packages/core/actions/**'
       - 'packages/core/database/**'

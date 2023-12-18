@@ -603,6 +603,34 @@ describe('useVariables', () => {
     expect(result.current.getVariable('$local')).toBe(null);
   });
 
+  it('parse multiple variables concurrently using local variables', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    const promises = [];
+
+    await waitFor(() => {
+      for (let i = 0; i < 3; i++) {
+        promises.push(
+          result.current.parseVariable('{{ $user.nickname }}', [
+            {
+              name: `$local`,
+              ctx: {
+                name: `local variable ${i}`,
+              },
+            },
+          ]),
+        );
+      }
+    });
+
+    await Promise.all(promises);
+
+    // 并发多次解析之后，最终的全局变量不应该包含之前注册的局部变量
+    expect(result.current.getVariable('$local')).toBe(null);
+  });
+
   it('no id', async () => {
     const { result } = renderHook(() => useVariables(), {
       wrapper: Providers,

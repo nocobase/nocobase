@@ -17,7 +17,7 @@ test.describe('display association fields', () => {
     // 为关系字段选中一个值
     await page
       .getByLabel('block-item-CollectionField-general-form-general.m2oField0-m2oField0')
-      .getByLabel('Search')
+      .getByTestId('select-object-single')
       .click();
     await page.getByRole('option', { name: '1', exact: true }).click();
 
@@ -36,7 +36,7 @@ test.describe('display association fields', () => {
     // 为子表单中的关系字段选中一个值
     await page
       .getByLabel('block-item-CollectionField-m2oField1-form-m2oField1.m2oField1-m2oField1')
-      .getByLabel('Search')
+      .getByTestId('select-object-single')
       .click();
     await page.getByRole('option', { name: '1', exact: true }).click();
 
@@ -137,7 +137,10 @@ test.describe('display association fields', () => {
 
     // 1. 新增表单中应该显示关系字段的数据
     await page.getByRole('button', { name: 'Add new' }).click();
-    await page.getByLabel('block-item-CollectionField-T2615-form-T2615.m2o-m2o').getByLabel('Search').click();
+    await page
+      .getByLabel('block-item-CollectionField-T2615-form-T2615.m2o-m2o')
+      .getByTestId('select-object-single')
+      .click();
     await page.getByRole('option', { name: '1' }).click();
     await expect(page.getByLabel('block-item-CollectionField-T2615-form-T2615.m2o.m2oOfTarget1')).toHaveText(
       `m2oOfTarget1:1`,

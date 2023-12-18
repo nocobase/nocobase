@@ -1,4 +1,4 @@
-import { test, expect } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
 import { oneEmptyKanbanBlock } from './utils';
 
 //看板的区块参数配置
@@ -35,7 +35,7 @@ test.describe('configure setting', () => {
     await page.getByLabel('designer-schema-settings-CardItem-Kanban.Designer-general').hover();
     await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('select-filter-field').getByLabel('Search').click();
+    await page.getByTestId('select-filter-field').click();
     await page.getByTitle('ID').click();
     await page.getByRole('spinbutton').fill('1');
     const [request] = await Promise.all([

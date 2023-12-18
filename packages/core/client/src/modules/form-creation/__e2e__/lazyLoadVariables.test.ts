@@ -9,7 +9,7 @@ test.describe('variables with default value', () => {
     await page.getByRole('button', { name: 'Add new' }).click();
     await page
       .getByLabel('block-item-CollectionField-general-form-general.m2oField0-m2oField0')
-      .getByLabel('Search')
+      .getByTestId('select-object-single')
       .click();
     await page.getByRole('option', { name: '1', exact: true }).click();
 
