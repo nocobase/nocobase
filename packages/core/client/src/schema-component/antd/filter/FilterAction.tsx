@@ -9,7 +9,7 @@ import { FormProvider, SchemaComponent } from '../../core';
 import { useDesignable } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import { Action } from '../action';
-import { PopoverWithStopPropagation } from '../popover';
+import { StablePopover } from '../popover';
 
 export const FilterActionContext = createContext<any>(null);
 
@@ -28,7 +28,7 @@ export const FilterAction = observer(
 
     return (
       <FilterActionContext.Provider value={{ field, fieldSchema, designable, dn }}>
-        <PopoverWithStopPropagation
+        <StablePopover
           destroyTooltipOnHide
           placement={'bottomLeft'}
           open={visible}
@@ -89,7 +89,7 @@ export const FilterAction = observer(
           }
         >
           <Action {...others} title={field.title} />
-        </PopoverWithStopPropagation>
+        </StablePopover>
       </FilterActionContext.Provider>
     );
   },

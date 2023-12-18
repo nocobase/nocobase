@@ -132,7 +132,7 @@ test.describe('china region', () => {
       showMenu: () => showMenu(page, 'chinaRegion'),
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
       inputConstantValue: async () => {
-        await page.getByLabel('block-item-VariableInput-').getByLabel('Search').click();
+        await page.getByLabel('block-item-VariableInput-').click();
         await page.getByRole('menuitemcheckbox', { name: '北京市' }).click();
         await page.getByRole('menuitemcheckbox', { name: '市辖区' }).click();
         await page.getByRole('menuitemcheckbox', { name: '东城区' }).click();
@@ -154,7 +154,7 @@ test.describe('china region', () => {
       expectEditable: async () => {
         await page
           .getByLabel('block-item-CollectionField-general-form-general.chinaRegion-chinaRegion')
-          .getByRole('combobox', { name: 'Search' })
+          .locator('.ant-select')
           .click();
         await page.getByRole('menuitemcheckbox', { name: '北京市' }).click();
         await page.getByRole('menuitemcheckbox', { name: '市辖区' }).click();
@@ -164,14 +164,16 @@ test.describe('china region', () => {
         await expect(
           page
             .getByLabel('block-item-CollectionField-general-form-general.chinaRegion-chinaRegion')
-            .getByRole('combobox', { name: 'Search' }),
+            .locator('.ant-select')
+            .getByRole('combobox'),
         ).toBeDisabled();
       },
       expectEasyReading: async () => {
         await expect(
           page
             .getByLabel('block-item-CollectionField-general-form-general.chinaRegion-chinaRegion')
-            .getByRole('combobox', { name: 'Search' }),
+            .locator('.ant-select')
+            .getByRole('combobox'),
         ).not.toBeVisible();
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.chinaRegion-chinaRegion'),
@@ -311,7 +313,7 @@ test.describe('single select', () => {
       showMenu: () => showMenu(page, 'singleSelect'),
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
       inputConstantValue: async () => {
-        await page.getByLabel('block-item-VariableInput-').getByLabel('Search').click();
+        await page.getByLabel('block-item-VariableInput-').click();
         await page.getByRole('option', { name: 'Option1' }).click();
       },
       expectConstantValue: async () => {

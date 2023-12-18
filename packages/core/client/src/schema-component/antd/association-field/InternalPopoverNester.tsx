@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { ActionContext, ActionContextProvider } from '../action/context';
 import { useGetAriaLabelOfPopover } from '../action/hooks/useGetAriaLabelOfPopover';
 import { useSetAriaLabelForPopover } from '../action/hooks/useSetAriaLabelForPopover';
-import { PopoverWithStopPropagation } from '../popover';
+import { StablePopover } from '../popover';
 import { InternalNester } from './InternalNester';
 import { ReadPrettyInternalViewer } from './InternalViewer';
 import { useAssociationFieldContext } from './hooks';
@@ -52,7 +52,7 @@ export const InternaPopoverNester = observer(
 
     return (
       <ActionContextProvider value={{ ...ctx, modalProps }}>
-        <PopoverWithStopPropagation
+        <StablePopover
           overlayStyle={{ padding: '0px' }}
           content={content}
           trigger="click"
@@ -71,7 +71,7 @@ export const InternaPopoverNester = observer(
             </div>
             <EditOutlined style={{ display: 'inline-flex', margin: '5px' }} />
           </span>
-        </PopoverWithStopPropagation>
+        </StablePopover>
         {visible && (
           <div
             role="button"

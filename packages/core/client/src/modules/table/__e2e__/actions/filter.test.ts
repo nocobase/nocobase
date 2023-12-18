@@ -6,7 +6,7 @@ test('BUG: should save conditions', async ({ page, mockPage }) => {
   await mockPage(T2183).goto();
   await page.getByLabel('action-Filter.Action-Filter-filter-users-table').click();
   await page.getByText('Add condition', { exact: true }).click();
-  await page.getByTestId('select-filter-field').getByLabel('Search').click();
+  await page.getByTestId('select-filter-field').click();
   await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
   await page.getByRole('button', { name: 'Save conditions' }).click();
 
@@ -23,7 +23,7 @@ test('BUG: the input box displayed should correspond to the field type', async (
   await mockPage(T2186).goto();
 
   await page.getByLabel('action-Filter.Action-Filter-filter-users-table').click();
-  await page.getByTestId('select-filter-field').getByLabel('Search').click();
+  await page.getByTestId('select-filter-field').click();
   await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
 
   // 应该显示数字输入框

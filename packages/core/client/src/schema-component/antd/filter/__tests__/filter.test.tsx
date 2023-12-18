@@ -34,6 +34,11 @@ describe('Filter', () => {
     // 输入框中的默认值
     expect(inputs[0]).toHaveValue('aa');
     expect(inputs[1]).toHaveValue('aaa');
+
+    // 点击下拉框中的选项，Popover 不应该关闭。详见：https://nocobase.height.app/T-1508
+    await userEvent.click(screen.getByText(/any/i));
+    await userEvent.click(screen.getByText(/all/i));
+    expect(tooltip).toBeInTheDocument();
   });
 
   it('default value', () => {
@@ -95,6 +100,11 @@ describe('Filter', () => {
     // 输入框中的默认值
     expect(inputs[0]).toHaveValue('');
     expect(inputs[1]).toHaveValue('aaa');
+
+    // 点击下拉框中的选项，Popover 不应该关闭。详见：https://nocobase.height.app/T-1508
+    await userEvent.click(screen.getByText(/any/i));
+    await userEvent.click(screen.getByText(/all/i));
+    expect(tooltip).toBeInTheDocument();
   });
 
   it('dynamic options', async () => {
