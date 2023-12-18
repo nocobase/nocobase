@@ -343,7 +343,10 @@ const handelResetLayout = (isTemporaryLayout?) => {
   });
   targetGraph.positionCell(nodes[0], 'top-left', { padding: 100 });
   if (!isTemporaryLayout) {
-    targetGraph.updatePositionAction(updatePositionData, true);
+    targetGraph.updatePositionAction(
+      updatePositionData.filter((v) => v.id),
+      true,
+    );
   }
 };
 
