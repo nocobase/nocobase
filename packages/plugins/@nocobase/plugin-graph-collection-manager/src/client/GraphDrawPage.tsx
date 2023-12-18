@@ -23,8 +23,10 @@ import {
   useCompile,
   useCurrentAppInfo,
   useGlobalTheme,
+  useApp,
+  ApplicationContext,
 } from '@nocobase/client';
-import { App, Button, ConfigProvider, Layout, Spin, Switch, Tooltip } from 'antd';
+import { Button, ConfigProvider, Layout, Spin, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';
 import lodash from 'lodash';
 import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useState } from 'react';
@@ -360,6 +362,7 @@ export const GraphDrawPage = React.memo(() => {
   const [loading, setLoading] = useState(false);
   const { refreshCM, collections } = useCollectionManager();
   const currentAppInfo = useCurrentAppInfo();
+  const app = useApp();
   const {
     data: { database },
   } = currentAppInfo;
@@ -453,7 +456,6 @@ export const GraphDrawPage = React.memo(() => {
       },
       true,
     );
-
     register({
       shape: 'er-rect',
       width: NODE_WIDTH,
@@ -498,9 +500,9 @@ export const GraphDrawPage = React.memo(() => {
                     {/* TODO: 因为画布中的卡片是一次性注册进 Graph 的，这里的 theme 是存在闭包里的，因此当主题动态变更时，并不会触发卡片的重新渲染 */}
                     <ConfigProvider theme={theme}>
                       <div style={{ height: 'auto' }}>
-                        <App>
+                        <ApplicationContext.Provider value={app}>
                           <Entity {...props} setTargetNode={setTargetNode} targetGraph={targetGraph} />
-                        </App>
+                        </ApplicationContext.Provider>
                       </div>
                     </ConfigProvider>
                   </CollectionManagerProvider>
