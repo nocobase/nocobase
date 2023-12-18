@@ -521,7 +521,7 @@ test.describe('actions schema settings', () => {
       // action: 禁用按钮
       await page.getByText('Add property').click();
       await page.getByLabel('block-item-ArrayCollapse-general').click();
-      await page.getByTestId('select-linkage-properties').getByLabel('Search').click();
+      await page.getByTestId('select-linkage-properties').click();
       await page.getByRole('option', { name: 'Disabled' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
 
@@ -537,14 +537,14 @@ test.describe('actions schema settings', () => {
 
       // 添加一个条件：ID 等于 1
       await page.getByRole('tabpanel').getByText('Add condition', { exact: true }).click();
-      await page.getByRole('button', { name: 'Search Select field' }).getByLabel('Search').click();
+      await page.getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
       await page.getByRole('spinbutton').click();
       await page.getByRole('spinbutton').fill('1');
 
       // action: 使按钮可用
       await page.getByRole('tabpanel').getByText('Add property').click();
-      await page.getByRole('combobox', { name: 'Search' }).click();
+      await page.locator('.ant-select', { hasText: 'action' }).click();
       await page.getByRole('option', { name: 'Enabled' }).click();
       await page.getByRole('button', { name: 'OK', exact: true }).click();
 

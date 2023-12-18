@@ -33,7 +33,7 @@ test.describe('group page menus schema settings', () => {
     await showSettings(page, 'group page');
     await page.getByRole('menuitem', { name: 'Move to' }).click();
     await page.mouse.move(300, 0);
-    await page.getByRole('dialog').getByLabel('Search').click();
+    await page.getByLabel('block-item-TreeSelect-Target').locator('.ant-select').click();
     await page.locator('.ant-select-dropdown').getByText('anchor page').click();
     await page.getByLabel('Before').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -43,7 +43,7 @@ test.describe('group page menus schema settings', () => {
     await showSettings(page, 'group page');
     await page.getByRole('menuitem', { name: 'Move to' }).click();
     await page.mouse.move(300, 0);
-    await page.getByRole('dialog').getByLabel('Search').click();
+    await page.getByLabel('block-item-TreeSelect-Target').locator('.ant-select').click();
     await page.locator('.ant-select-dropdown').getByText('anchor page').click();
     await page.getByLabel('After').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -53,7 +53,7 @@ test.describe('group page menus schema settings', () => {
     await showSettings(page, 'group page');
     await page.getByRole('menuitem', { name: 'Move to' }).click();
     await page.mouse.move(300, 0);
-    await page.getByLabel('Search').click();
+    await page.getByLabel('block-item-TreeSelect-Target').locator('.ant-select').click();
     await page.locator('.ant-select-dropdown').getByText('anchor page').click();
     await page.getByLabel('Inner').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -67,7 +67,7 @@ test.describe('group page menus schema settings', () => {
     await showSettings(page, 'a other group page');
     await page.getByRole('menuitem', { name: 'Move to' }).click();
     await page.mouse.move(300, 0);
-    await page.getByRole('dialog').getByLabel('Search').click();
+    await page.getByLabel('block-item-TreeSelect-Target').locator('.ant-select').click();
     await page.getByLabel('caret-down').locator('svg').click();
     await page.locator('.ant-select-dropdown').getByText('group page', { exact: true }).click();
     await page.getByLabel('Before').click();

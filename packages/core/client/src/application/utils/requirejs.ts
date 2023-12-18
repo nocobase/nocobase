@@ -1,15 +1,7 @@
 // @ts-nocheck
 /* eslint-disable */
 /* prettier-ignore */
-/** vim: et:ts=4:sw=4:sts=4
- * @license RequireJS 2.3.6 Copyright jQuery Foundation and other contributors.
- * Released under MIT license, https://github.com/requirejs/requirejs/blob/master/LICENSE
- */
-//Not using strict: uneven strict support in browsers, #392, and causes
-//problems with requirejs.exec()/transpiler plugins that may not be strict.
-/*jslint regexp: true, nomen: true, sloppy: true */
-/*global window, navigator, document, importScripts, setTimeout, opera */
-/// <reference types="@types/requirejs" />
+import type { Require, RequireDefine } from './types'
 
 export interface RequireJS {
   require: Require
