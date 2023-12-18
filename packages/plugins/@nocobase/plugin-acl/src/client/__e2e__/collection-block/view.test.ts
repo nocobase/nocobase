@@ -35,6 +35,7 @@ test('individual collection permission', async ({ page, mockPage, mockRole, mock
       {
         usingActionsConfig: true,
         name: 'users',
+        actions: [{ name: 'view', fields: [] }],
       },
     ],
   });
@@ -44,5 +45,5 @@ test('individual collection permission', async ({ page, mockPage, mockRole, mock
   }, roleData);
   await page.reload();
   await page.getByTestId('user-center-button').hover();
-  await expect(page.getByLabel('block-item-CardItem-users-table')).not.toBeVisible();
+  await expect(page.getByLabel('block-item-CardItem-users-table')).toBeVisible();
 });
