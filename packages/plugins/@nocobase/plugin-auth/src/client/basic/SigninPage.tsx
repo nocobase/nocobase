@@ -4,7 +4,8 @@ import React, { useCallback } from 'react';
 import { useAuthTranslation } from '../locale';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from '@formily/react';
-import { Authenticator, useSignUpPages } from '../pages';
+import { useSignUpPages } from '../pages';
+import { Authenticator } from '../authenticator';
 
 export function useRedirect(next = '/admin') {
   const navigate = useNavigate();
