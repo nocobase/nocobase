@@ -89,7 +89,7 @@ const passwordForm: ISchema = {
     },
   },
 };
-export const BasicSignInPage = (props: { authenticator: Authenticator }) => {
+export const SignInForm = (props: { authenticator: Authenticator }) => {
   const { t } = useAuthTranslation();
   const authenticator = props.authenticator;
   const { authType, name, options } = authenticator;

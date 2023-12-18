@@ -1,3 +1,3 @@
-export * from './SignInPage';
-export * from './SignUpPage';
+export * from './SignInForm';
+export * from './SignUpForm';
 export * from './Options';

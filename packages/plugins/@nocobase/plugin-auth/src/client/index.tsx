@@ -6,7 +6,7 @@ import { AuthLayout, SignInPage, SignUpPage } from './pages';
 import { ComponentType } from 'react';
 import { Registry } from '@nocobase/utils/client';
 import { presetAuthType } from '../preset';
-import { BasicSignInPage, BasicSignUpPage, Options } from './basic';
+import { SignInForm, SignUpForm, Options } from './basic';
 import { Authenticator as AuthenticatorType } from './authenticator';
 
 export type AuthOptions = {
@@ -55,8 +55,8 @@ export class AuthPlugin extends Plugin {
 
     this.registerType(presetAuthType, {
       components: {
-        SignInForm: BasicSignInPage,
-        SignUpForm: BasicSignUpPage,
+        SignInForm: SignInForm,
+        SignUpForm: SignUpForm,
         AdminSettingsForm: Options,
       },
     });
