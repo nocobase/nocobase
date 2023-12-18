@@ -18,7 +18,6 @@ import {
   MenuProps,
   Modal,
   ModalFuncProps,
-  Select,
   Space,
   Switch,
 } from 'antd';
@@ -33,7 +32,6 @@ import React, {
   useMemo,
   // @ts-ignore
   useTransition as useReactTransition,
-  useRef,
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -77,6 +75,7 @@ import {
   useFormActiveFields,
 } from '../block-provider/hooks';
 import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks';
+import { SelectWithTitle, SelectWithTitleProps } from '../common/SelectWithTitle';
 import {
   FilterBlockType,
   getSupportFieldsByAssociation,
@@ -1975,45 +1974,6 @@ export const isSystemField = (collectionField: CollectionFieldOptions, getInterf
 export const isPatternDisabled = (fieldSchema: Schema) => {
   return fieldSchema?.['x-component-props']?.['pattern-disable'] == true;
 };
-
-interface SelectWithTitleProps {
-  title?: any;
-  defaultValue?: any;
-  options?: any;
-  onChange?: (...args: any[]) => void;
-}
-export function SelectWithTitle({ title, defaultValue, onChange, options }: SelectWithTitleProps) {
-  const [open, setOpen] = useState(false);
-  const timerRef = useRef<any>(null);
-  return (
-    <div
-      style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}
-      onClick={(e) => {
-        e.stopPropagation();
-        setOpen((v) => !v);
-      }}
-      onMouseLeave={() => {
-        timerRef.current = setTimeout(() => {
-          setOpen(false);
-        }, 200);
-      }}
-    >
-      {title}
-      <Select
-        open={open}
-        popupMatchSelectWidth={false}
-        bordered={false}
-        defaultValue={defaultValue}
-        onChange={onChange}
-        options={options}
-        style={{ textAlign: 'right', minWidth: 100 }}
-        onMouseEnter={() => {
-          clearTimeout(timerRef.current);
-        }}
-      />
-    </div>
-  );
-}
 
 function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
   const result = fieldSchema?.default ?? collectionField?.defaultValue;
