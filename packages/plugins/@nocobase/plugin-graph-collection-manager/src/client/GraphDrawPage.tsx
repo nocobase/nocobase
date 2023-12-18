@@ -23,6 +23,8 @@ import {
   useCompile,
   useCurrentAppInfo,
   useGlobalTheme,
+  useApp,
+  ApplicationContext,
 } from '@nocobase/client';
 import { App, Button, ConfigProvider, Layout, Spin, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';
@@ -341,7 +343,10 @@ const handelResetLayout = (isTemporaryLayout?) => {
   });
   targetGraph.positionCell(nodes[0], 'top-left', { padding: 100 });
   if (!isTemporaryLayout) {
-    targetGraph.updatePositionAction(updatePositionData, true);
+    targetGraph.updatePositionAction(
+      updatePositionData.filter((v) => v.id),
+      true,
+    );
   }
 };
 
@@ -360,6 +365,7 @@ export const GraphDrawPage = React.memo(() => {
   const [loading, setLoading] = useState(false);
   const { refreshCM, collections } = useCollectionManager();
   const currentAppInfo = useCurrentAppInfo();
+  const app = useApp();
   const {
     data: { database },
   } = currentAppInfo;
@@ -453,7 +459,6 @@ export const GraphDrawPage = React.memo(() => {
       },
       true,
     );
-
     register({
       shape: 'er-rect',
       width: NODE_WIDTH,
@@ -499,7 +504,9 @@ export const GraphDrawPage = React.memo(() => {
                     <ConfigProvider theme={theme}>
                       <div style={{ height: 'auto' }}>
                         <App>
-                          <Entity {...props} setTargetNode={setTargetNode} targetGraph={targetGraph} />
+                          <ApplicationContext.Provider value={app}>
+                            <Entity {...props} setTargetNode={setTargetNode} targetGraph={targetGraph} />
+                          </ApplicationContext.Provider>
                         </App>
                       </div>
                     </ConfigProvider>
