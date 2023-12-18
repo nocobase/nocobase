@@ -14,7 +14,7 @@ export function useRedirect(next = '/admin') {
   }, [navigate, searchParams]);
 }
 
-export const useSignIn = (authenticator) => {
+export const useSignIn = (authenticator: string) => {
   const form = useForm();
   const api = useAPIClient();
   const redirect = useRedirect();
@@ -94,7 +94,7 @@ export const BasicSigninPage = (props: { authenticator: Authenticator }) => {
   const { authType, name, options } = authenticator;
   const signupPages = useSignUpPages();
   const allowSignUp = !!signupPages[authType] && options?.allowSignup;
-  const signupLink = `/signup?authType=${authType}&name=${name}`;
+  const signupLink = `/signup?name=${name}`;
 
   const useBasicSignIn = () => {
     return useSignIn(name);

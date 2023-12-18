@@ -1,8 +1,8 @@
 import { useCurrentDocumentTitle, usePlugin, useViewport } from '@nocobase/client';
-import React, { useContext, createContext, FunctionComponent, createElement, ComponentType } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Link, useSearchParams } from 'react-router-dom';
+import React, { useContext, createContext, FunctionComponent, createElement } from 'react';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import AuthPlugin, { AuthPage } from '..';
+import { useAuthenticator } from '../authenticator';
 
 export const SignupPageContext = createContext<{
   [authType: string]: {
@@ -38,20 +38,15 @@ export const useSignUpPages = (): {
 };
 
 export const SignupPage = () => {
-  const { t } = useTranslation();
   useViewport();
   useCurrentDocumentTitle('Signup');
-  const [searchParams] = useSearchParams();
-  const authType = searchParams.get('authType');
-  const name = searchParams.get('name');
   const signUpPages = useSignUpPages();
+  const [searchParams] = useSearchParams();
+  const name = searchParams.get('name');
+  const authenticator = useAuthenticator(name);
+  const { authType } = authenticator || {};
   if (!signUpPages[authType]) {
-    return (
-      <div>
-        <div style={{ color: '#ccc' }}>{t('Oops! The authentication type does not allow sign-up.')}</div>
-        <Link to="/signin">{t('Return')}</Link>
-      </div>
-    );
+    return <Navigate to="/not-found" replace={true} />;
   }
   return createElement(signUpPages[authType].Component, { name });
 };

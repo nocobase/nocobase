@@ -5,9 +5,10 @@ import { uid } from '@formily/shared';
 import { useAuthTranslation } from '../locale';
 import { useAPIClient } from '@nocobase/client';
 import { useForm } from '@formily/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { useAuthenticator } from '../authenticator';
 
 export interface UseSignupProps {
   authenticator?: string;
@@ -113,10 +114,15 @@ const signupPageSchema: ISchema = {
   },
 };
 
-export const BasicSignupPage = (props: { name: string }) => {
+export const BasicSignupPage = ({ name }: { name: string }) => {
   const { t } = useAuthTranslation();
   const useBasicSignup = () => {
-    return useSignup({ authenticator: props.name });
+    return useSignup({ authenticator: name });
   };
+  const authenticator = useAuthenticator(name);
+  const { options } = authenticator;
+  if (!options?.allowSignup) {
+    return <Navigate to="/not-found" replace={true} />;
+  }
   return <SchemaComponent schema={signupPageSchema} scope={{ useBasicSignup, t }} />;
 };
