@@ -4,6 +4,8 @@ import tsConfigPaths from './tsconfig.paths.json';
 
 const paths = tsConfigPaths.compilerOptions.paths;
 
+const base = import.meta.url;
+
 const alias = Object.keys(paths).reduce<{ find: string; replacement: string }[]>((acc, key) => {
   if (key !== '@@/*') {
     const value = paths[key][0];
@@ -14,6 +16,15 @@ const alias = Object.keys(paths).reduce<{ find: string; replacement: string }[]>
   }
   return acc;
 }, []);
+
+alias.unshift({
+  find: 'packages/core/utils/src/plugin-symlink',
+  replacement: 'packages/core/utils/plugin-symlink.js',
+});
+
+const relativePathToAbsolute = (relativePath: string) => {
+  return new URL(relativePath, base).pathname;
+};
 
 export default defineConfig({
   plugins: [react()],
@@ -29,11 +40,16 @@ export default defineConfig({
     setupFiles: 'scripts/vitest.setup.ts',
     environment: 'jsdom',
     css: false,
-    threads: true,
+
     alias: [
-      { find: 'testUtils', replacement: 'testUtils.ts' },
+      { find: 'testUtils', replacement: relativePathToAbsolute('./testUtils.ts') },
       { find: /^~antd\/(.*)/, replacement: 'antd/$1' },
-      ...alias,
+      ...alias.map((item) => {
+        return {
+          ...item,
+          replacement: relativePathToAbsolute(item.replacement),
+        };
+      }),
     ],
     include: ['packages/**/{dumi-theme-nocobase,sdk,client,utils}/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
     exclude: [

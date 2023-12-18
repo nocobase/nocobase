@@ -37,6 +37,7 @@ test.describe('actions schema settings', () => {
     await page.getByRole('menuitem', { name: 'Edit' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+    await page.mouse.move(0, 300);
 
     // Edit button settings ---------------------------------------------------------------
     await expectSettingsMenu({

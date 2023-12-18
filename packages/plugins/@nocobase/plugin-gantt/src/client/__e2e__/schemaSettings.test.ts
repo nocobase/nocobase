@@ -1,6 +1,6 @@
 import { expect, test } from '@nocobase/test/client';
-import { oneEmptyGantt } from './utils';
 import { getYmd } from '../helpers/other-helper';
+import { oneEmptyGantt } from './utils';
 const mockData = {
   singleLineText: 'within apropos leaker whoever how',
   singleLineText2: 'the inasmuch unwelcome gah hm cleverly muscle worriedly lazily',
@@ -21,7 +21,7 @@ test.describe('configure params in gantt block', () => {
     await page.getByLabel('designer-schema-settings-CardItem-Gantt.Designer-general').hover();
     await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
     await page.getByText('Add condition', { exact: true }).click();
-    await page.getByTestId('select-filter-field').getByLabel('Search').click();
+    await page.getByTestId('select-filter-field').click();
     await page.getByTitle('ID').getByText('ID').click();
     await page.getByRole('spinbutton').fill('1');
     const [request] = await Promise.all([
