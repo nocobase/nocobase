@@ -114,7 +114,7 @@ const signupPageSchema: ISchema = {
   },
 };
 
-export const BasicSignupPage = ({ name }: { name: string }) => {
+export const BasicSignupPage = ({ authenticatorName: name }: { authenticatorName: string }) => {
   const { t } = useAuthTranslation();
   const useBasicSignup = () => {
     return useSignup({ authenticator: name });

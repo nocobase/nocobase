@@ -7,18 +7,23 @@ import { ComponentType } from 'react';
 import { Registry } from '@nocobase/utils/client';
 import { presetAuthType } from '../preset';
 import { BasicSigninPage, BasicSignupPage, Options } from './basic';
+import { Authenticator as AuthenticatorType } from './authenticator';
 
 export type AuthPage = {
   signIn: {
     display: 'form' | 'custom';
     tabTitle?: string;
-    Component: ComponentType<any>;
+    Component: ComponentType<{
+      authenticator: AuthenticatorType;
+    }>;
   };
   signUp?: {
-    Component: ComponentType<any>;
+    Component: ComponentType<{
+      authenticatorName: string;
+    }>;
   };
   configForm?: {
-    Component: ComponentType<any>;
+    Component: ComponentType;
   };
 };
 

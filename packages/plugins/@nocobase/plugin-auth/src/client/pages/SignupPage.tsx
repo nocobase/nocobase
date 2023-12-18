@@ -48,5 +48,5 @@ export const SignupPage = () => {
   if (!signUpPages[authType]) {
     return <Navigate to="/not-found" replace={true} />;
   }
-  return createElement(signUpPages[authType].Component, { name });
+  return createElement(signUpPages[authType].Component, { authenticatorName: name });
 };
