@@ -25,7 +25,7 @@ import { SchemaSettings, SchemaSettingsManager } from './schema-settings';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
-import { CollectionProviderV2, CollectionManagerProvider, CollectionManagerV2 } from './collection';
+import { CollectionManagerProviderV2, CollectionManagerV2 } from './collection';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
 import type { RequireJS } from './utils/requirejs';
@@ -138,7 +138,7 @@ export class Application {
       scope: this.scopes,
     });
     this.use(AntdAppProvider);
-    this.use(CollectionManagerProvider, { collectionManager: this.collectionManager });
+    this.use(CollectionManagerProviderV2, { collectionManager: this.collectionManager });
   }
 
   private addReactRouterComponents() {

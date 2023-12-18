@@ -10,7 +10,7 @@ export interface CollectionManagerProviderProps {
   inherit?: boolean;
 }
 
-export const CollectionManagerProvider: FC<CollectionManagerProviderProps> = ({
+export const CollectionManagerProviderV2: FC<CollectionManagerProviderProps> = ({
   children,
   inherit = true,
   collectionManager,

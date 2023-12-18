@@ -1,5 +1,5 @@
 import { CollectionTemplate } from '../CollectionTemplate';
-import { getConfigurableProperties } from '../../../collection-manager';
+import { getConfigurableProperties } from '../../../collection-manager/templates/properties';
 
 export const general = new CollectionTemplate({
   name: 'general',
