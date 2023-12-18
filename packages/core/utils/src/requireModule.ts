@@ -1,3 +1,6 @@
+import path from 'path';
+import { pathToFileURL } from 'url';
+
 export function requireModule(m: any) {
   if (typeof m === 'string') {
     m = require(m);
@@ -13,6 +16,10 @@ export function requireModule(m: any) {
 export default requireModule;
 
 export async function importModule(m: string) {
+  if (path.isAbsolute(m)) {
+    m = pathToFileURL(m).href;
+  }
+
   const r = (await import(m)).default;
   return r.__esModule ? r.default : r;
 }

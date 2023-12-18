@@ -2,7 +2,6 @@ import { importModule } from '@nocobase/utils';
 import _ from 'lodash';
 import { QueryInterface, Sequelize } from 'sequelize';
 import Database from './database';
-import { pathToFileURL } from 'url';
 
 export interface MigrationContext {
   db: Database;
@@ -81,8 +80,7 @@ export class Migrations {
         }).map(async (item) => {
           if (typeof item.migration === 'string') {
             // use es module to import migration
-            const fileHref = pathToFileURL(item.migration).href;
-            const Migration = await importModule(fileHref);
+            const Migration = await importModule(item.migration);
             const migration = new Migration({ ...this.context, ...item.context });
             migration.name = item.name;
             return migration;
