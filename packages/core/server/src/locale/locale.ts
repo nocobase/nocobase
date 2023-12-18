@@ -96,6 +96,7 @@ export class Locale {
     Object.keys(resources).forEach((name) => {
       this.app.i18n.addResources(lang, name, resources[name]);
     });
+
     return resources;
   }
 

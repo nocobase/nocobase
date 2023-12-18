@@ -1,11 +1,13 @@
 import { DisconnectOutlined, LoadingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
+import { getSubAppName } from '@nocobase/sdk';
 import { Button, Modal, Result, Spin } from 'antd';
 import React, { FC } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ACLPlugin } from '../acl';
-import { Application, useApp } from '../application';
+import { useAPIClient } from '../api-client';
+import { Application } from '../application';
 import { Plugin } from '../application/Plugin';
 import { SigninPage, SigninPageExtensionPlugin, SignupPage } from '../auth';
 import { BlockSchemaComponentPlugin } from '../block-provider';
@@ -13,12 +15,7 @@ import { RemoteDocumentTitlePlugin } from '../document-title';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
-import {
-  AntdSchemaComponentPlugin,
-  KanbanPlugin,
-  SchemaComponentPlugin,
-  menuItemInitializer,
-} from '../schema-component';
+import { AntdSchemaComponentPlugin, SchemaComponentPlugin, menuItemInitializer } from '../schema-component';
 import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { AssociationFilterPlugin, SchemaInitializerPlugin } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
@@ -32,7 +29,43 @@ const AppSpin = () => {
   );
 };
 
+const useErrorProps = (app: Application, error: any) => {
+  const api = useAPIClient();
+  if (!error) {
+    return {};
+  }
+  const err = error?.response?.data?.errors?.[0] || error;
+  const subApp = getSubAppName();
+  switch (err.code) {
+    case 'USER_HAS_NO_ROLES_ERR':
+      return {
+        title: app.i18n.t('Permission denied'),
+        subTitle: err.message,
+        extra: [
+          <Button
+            type="primary"
+            key="try"
+            onClick={() => {
+              api.auth.setToken(null);
+              window.location.reload();
+            }}
+          >
+            {app.i18n.t('Sign in with another account')}
+          </Button>,
+          subApp ? (
+            <Button key="back" onClick={() => (window.location.href = '/admin')}>
+              {app.i18n.t('Return to the main application')}
+            </Button>
+          ) : null,
+        ],
+      };
+    default:
+      return {};
+  }
+};
+
 const AppError: FC<{ error: Error; app: Application }> = observer(({ app, error }) => {
+  const props = useErrorProps(app, error);
   return (
     <div>
       <Result
@@ -43,13 +76,14 @@ const AppError: FC<{ error: Error; app: Application }> = observer(({ app, error 
           transform: translate(0, -50%);
         `}
         status="error"
-        title={app.i18n.t('Failed to load plugin')}
+        title={app.i18n.t('App error')}
         subTitle={app.i18n.t(error?.message)}
         extra={[
           <Button type="primary" key="try" onClick={() => window.location.reload()}>
             {app.i18n.t('Try again')}
           </Button>,
         ]}
+        {...props}
       />
     </div>
   );
@@ -94,7 +128,7 @@ const getProps = (app: Application) => {
     };
   }
 
-  if (app.error.code === 'APP_ERROR') {
+  if (app.error.code === 'APP_ERROR' || app.error.code === 'LOAD_ERROR') {
     return {
       status: 'error',
       title: 'App error',
@@ -278,7 +312,6 @@ export class NocoBaseBuildInPlugin extends Plugin {
   }
   async addPlugins() {
     await this.app.pm.add(AssociationFilterPlugin);
-    await this.app.pm.add(KanbanPlugin);
     await this.app.pm.add(LocalePlugin, { name: 'builtin-locale' });
     await this.app.pm.add(AdminLayoutPlugin, { name: 'admin-layout' });
     await this.app.pm.add(SystemSettingsPlugin, { name: 'system-setting' });

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-ratelimit",
-  "version": "0.17.0-alpha.6",
+  "version": "0.17.0-alpha.7",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "koa-ratelimit": "^5.0.1"
