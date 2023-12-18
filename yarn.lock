@@ -6560,9 +6560,9 @@
   integrity sha512-6UAa+t9eR3AZzRanZWGNUV8MoXwVpXQHMqCMdK8PNPwTy+G3kYHP+2KkTI+39vXETNb6krRijL+zWzmFrlfLjw==
 
 "@types/node@*", "@types/node@>=12", "@types/node@^20":
-  version "20.10.4"
-  resolved "https://registry.npmmirror.com/@types/node/-/node-20.10.4.tgz#b246fd84d55d5b1b71bf51f964bd514409347198"
-  integrity sha512-D08YG6rr8X90YB56tSIuBaddy/UXAA9RKJoFvrsnogAum/0pmjkgi4+2nx96A330FmioegBWmEYQ+syqCFaveg==
+  version "20.10.5"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.10.5.tgz#47ad460b514096b7ed63a1dae26fad0914ed3ab2"
+  integrity sha512-nNPsNE65wjMxEKI93yOP+NPGGBJz/PoN3kZsVLee0XMiJolxSekEVD8wRwBUBqkwc7UWop0edW50yrCQW4CyRw==
   dependencies:
     undici-types "~5.26.4"
 
@@ -19500,7 +19500,7 @@ number-is-nan@^1.0.0:
 
 nwsapi@2.2.7, nwsapi@^2.2.0:
   version "2.2.7"
-  resolved "https://registry.npmmirror.com/nwsapi/-/nwsapi-2.2.7.tgz#738e0707d3128cb750dddcfe90e4610482df0f30"
+  resolved "https://registry.yarnpkg.com/nwsapi/-/nwsapi-2.2.7.tgz#738e0707d3128cb750dddcfe90e4610482df0f30"
   integrity sha512-ub5E4+FBPKwAZx0UwIQOjYWGHTEq5sPqHQNRN8Z9e4A7u3Tj1weLJsL59yH9vmvqEtBHaOmT6cYQKIZOxp35FQ==
 
 oauth-sign@~0.9.0:
@@ -22259,7 +22259,7 @@ react-router-dom@6.3.0, react-router-dom@6.x, react-router-dom@^6.11.2:
 
 react-router@6.21.0, react-router@6.3.0, react-router@^6.11.2:
   version "6.21.0"
-  resolved "https://registry.npmmirror.com/react-router/-/react-router-6.21.0.tgz#6fe3e59877aca3dccceec1801d26991ddf42d12b"
+  resolved "https://registry.yarnpkg.com/react-router/-/react-router-6.21.0.tgz#6fe3e59877aca3dccceec1801d26991ddf42d12b"
   integrity sha512-hGZ0HXbwz3zw52pLZV3j3+ec+m/PQ9cTpBvqjFQmy2XVUWGn5MD+31oXHb6dVTxYzmAeaiUBYjkoNz66n3RGCg==
   dependencies:
     "@remix-run/router" "1.14.0"
