@@ -7,13 +7,10 @@ import { Options } from './Options';
 export class OidcPlugin extends Plugin {
   async load() {
     const auth = this.app.pm.get(AuthPlugin);
-    auth.authPages.register(authType, {
-      signIn: {
-        display: 'custom',
-        Component: OIDCButton,
-      },
-      configForm: {
-        Component: Options,
+    auth.registerType(authType, {
+      components: {
+        SignInButton: OIDCButton,
+        AdminSettingsForm: Options,
       },
     });
   }

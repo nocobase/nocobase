@@ -9,26 +9,21 @@ import { presetAuthType } from '../preset';
 import { BasicSignInPage, BasicSignUpPage, Options } from './basic';
 import { Authenticator as AuthenticatorType } from './authenticator';
 
-export type AuthPage = {
-  signIn: {
-    display: 'form' | 'custom';
-    tabTitle?: string;
-    Component: ComponentType<{
-      authenticator: AuthenticatorType;
-    }>;
-  };
-  signUp?: {
-    Component: ComponentType<{
-      authenticatorName: string;
-    }>;
-  };
-  configForm?: {
-    Component: ComponentType;
-  };
+export type AuthOptions = {
+  components: Partial<{
+    SignInForm: ComponentType<{ authenticator: AuthenticatorType }>;
+    SignInButton: ComponentType<{ authenticator: AuthenticatorType }>;
+    SignUpForm: ComponentType<{ authenticatorName: string }>;
+    AdminSettingsForm: ComponentType;
+  }>;
 };
 
 export class AuthPlugin extends Plugin {
-  authPages = new Registry<AuthPage>();
+  authTypes = new Registry<AuthOptions>();
+
+  registerType(authType: string, options: AuthOptions) {
+    this.authTypes.register(authType, options);
+  }
 
   async load() {
     this.app.pluginSettingsManager.add(NAMESPACE, {
@@ -58,17 +53,11 @@ export class AuthPlugin extends Plugin {
 
     this.app.providers.unshift([AuthProvider, {}]);
 
-    this.authPages.register(presetAuthType, {
-      signIn: {
-        display: 'form',
-        tabTitle: this.app.i18n.t('Sign in via password', { ns: NAMESPACE }),
-        Component: BasicSignInPage,
-      },
-      signUp: {
-        Component: BasicSignUpPage,
-      },
-      configForm: {
-        Component: Options,
+    this.registerType(presetAuthType, {
+      components: {
+        SignInForm: BasicSignInPage,
+        SignUpForm: BasicSignUpPage,
+        AdminSettingsForm: Options,
       },
     });
   }

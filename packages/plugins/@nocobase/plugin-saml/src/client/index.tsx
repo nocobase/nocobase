@@ -7,13 +7,10 @@ import { Options } from './Options';
 export class SamlPlugin extends Plugin {
   async load() {
     const auth = this.app.pm.get(AuthPlugin);
-    auth.authPages.register(authType, {
-      signIn: {
-        display: 'custom',
-        Component: SAMLButton,
-      },
-      configForm: {
-        Component: Options,
+    auth.registerType(authType, {
+      components: {
+        SignInButton: SAMLButton,
+        AdminSettingsForm: Options,
       },
     });
   }

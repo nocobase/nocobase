@@ -7,13 +7,10 @@ import AuthPlugin from '@nocobase/plugin-auth/client';
 export class SamlPlugin extends Plugin {
   async load() {
     const auth = this.app.pm.get(AuthPlugin);
-    auth.authPages.register(authType, {
-      signIn: {
-        display: 'custom',
-        Component: SigninPage,
-      },
-      configForm: {
-        Component: Options,
+    auth.registerType(authType, {
+      components: {
+        SignInForm: SigninPage,
+        AdminSettingsForm: Options,
       },
     });
   }

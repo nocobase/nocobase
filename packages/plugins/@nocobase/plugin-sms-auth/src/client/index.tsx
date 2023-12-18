@@ -7,13 +7,10 @@ import { authType } from '../constants';
 export class SmsAuthPlugin extends Plugin {
   async load() {
     const auth = this.app.pm.get(AuthPlugin);
-    auth.authPages.register(authType, {
-      signIn: {
-        display: 'form',
-        Component: SigninPage,
-      },
-      configForm: {
-        Component: Options,
+    auth.registerType(authType, {
+      components: {
+        SignInForm: SigninPage,
+        AdminSettingsForm: Options,
       },
     });
   }

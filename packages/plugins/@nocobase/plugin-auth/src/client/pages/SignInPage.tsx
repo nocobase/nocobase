@@ -2,36 +2,32 @@ import { css } from '@emotion/css';
 import { Space, Tabs } from 'antd';
 import React, { createElement, useContext } from 'react';
 import { useCurrentDocumentTitle, usePlugin, useViewport } from '@nocobase/client';
-import AuthPlugin, { AuthPage } from '..';
+import AuthPlugin, { AuthOptions } from '..';
 import { Authenticator, AuthenticatorsContext } from '../authenticator';
 import { useAuthTranslation } from '../locale';
 
-export const useSignInPages = (): {
-  [authType: string]: AuthPage['signIn'];
+export const useSignInForms = (): {
+  [authType: string]: AuthOptions['components']['SignInForm'];
 } => {
   const plugin = usePlugin(AuthPlugin);
-  const pages = plugin.authPages.getEntities();
-  const signInPages = {};
-  for (const [authType, page] of pages) {
-    const signInPage = page.signIn;
-    if (signInPage.display !== 'form') {
-      continue;
+  const authTypes = plugin.authTypes.getEntities();
+  const signInForms = {};
+  for (const [authType, options] of authTypes) {
+    if (options.components?.SignInForm) {
+      signInForms[authType] = options.components.SignInForm;
     }
-    signInPages[authType] = signInPage;
   }
-  return signInPages;
+  return signInForms;
 };
 
-export const useCustomSignIn = (authenticators = []) => {
+export const useSignInButtons = (authenticators = []) => {
   const plugin = usePlugin(AuthPlugin);
-  const pages = plugin.authPages.getEntities();
+  const authTypes = plugin.authTypes.getEntities();
   const customs = {};
-  for (const [authType, page] of pages) {
-    const signInPage = page.signIn;
-    if (signInPage.display !== 'custom') {
-      continue;
+  for (const [authType, options] of authTypes) {
+    if (options.components?.SignInButton) {
+      customs[authType] = options.components.SignInButton;
     }
-    customs[authType] = signInPage;
   }
 
   const types = Object.keys(customs);
@@ -46,9 +42,9 @@ export const SignInPage = () => {
   const { t } = useAuthTranslation();
   useCurrentDocumentTitle('Signin');
   useViewport();
-  const signInPages = useSignInPages();
+  const signInForms = useSignInForms();
   const authenticators = useContext(AuthenticatorsContext);
-  const customSignIn = useCustomSignIn(authenticators);
+  const signInButtons = useSignInButtons(authenticators);
 
   if (!authenticators.length) {
     return <div style={{ color: '#ccc' }}>{t('No authentication methods available.')}</div>;
@@ -56,15 +52,15 @@ export const SignInPage = () => {
 
   const tabs = authenticators
     .map((authenticator) => {
-      const page = signInPages[authenticator.authType];
-      if (!page) {
+      const C = signInForms[authenticator.authType];
+      if (!C) {
         return;
       }
       return {
         component: createElement<{
           authenticator: Authenticator;
-        }>(page.Component, { authenticator }),
-        tabTitle: authenticator.title || page.tabTitle || authenticator.name,
+        }>(C, { authenticator }),
+        tabTitle: authenticator.title || authenticator.name,
         ...authenticator,
       };
     })
@@ -90,7 +86,7 @@ export const SignInPage = () => {
           display: flex;
         `}
       >
-        {customSignIn}
+        {signInButtons}
       </Space>
     </Space>
   );
