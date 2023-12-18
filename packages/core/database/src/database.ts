@@ -458,7 +458,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.migrations.add(item);
   }
 
-  async addMigrations(options: AddMigrationsOptions) {
+  addMigrations(options: AddMigrationsOptions) {
     const { namespace, context, extensions = ['js', 'ts'], directory } = options;
     const patten = `${directory}/*.{${extensions.join(',')}}`;
     const files = glob.sync(patten, {
