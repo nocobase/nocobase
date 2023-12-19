@@ -1,3 +1,5 @@
 import { runNocoBase } from './utils';
 
-runNocoBase();
+runNocoBase({
+  force: true,
+});

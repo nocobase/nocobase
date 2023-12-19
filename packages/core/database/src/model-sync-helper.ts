@@ -46,6 +46,15 @@ export class ModelSyncHelper {
       return;
     }
 
+    // @ts-ignore
+    const collectionSyncOptions = this.database.collectionFactory.collectionTypes.get(this.collection.constructor)
+      ?.onSync;
+
+    if (collectionSyncOptions) {
+      await collectionSyncOptions(this.model, options);
+      return;
+    }
+
     if (this.snapshotManager.enabled() && !(await this.hasChangesSinceLastSnapshot())) {
       return;
     }

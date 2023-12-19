@@ -1,25 +1,30 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Breadcrumb, Dropdown, Result, Space, Spin, Tag } from 'antd';
+
 import {
   ActionContextProvider,
   cx,
   SchemaComponent,
   useAPIClient,
+  useApp,
   useCompile,
   useDocumentTitle,
+  usePlugin,
   useResourceActionContext,
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
-import { Breadcrumb, Dropdown, Space, Tag } from 'antd';
-import React, { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+
+import WorkflowPlugin from '.';
 import { CanvasContent } from './CanvasContent';
 import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
-import { instructions } from './nodes';
 import useStyles from './style';
 import { linkNodes } from './utils';
 import { DownOutlined } from '@ant-design/icons';
 import { StatusButton } from './components/StatusButton';
+import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './constant';
 
 function attachJobs(nodes, jobs: any[] = []): void {
   const nodesMap = new Map();
@@ -43,6 +48,7 @@ function attachJobs(nodes, jobs: any[] = []): void {
 }
 
 function JobModal() {
+  const { instructions } = usePlugin(WorkflowPlugin);
   const compile = useCompile();
   const { viewJob: job, setViewJob } = useFlowContext();
   const { styles } = useStyles();
@@ -56,7 +62,7 @@ function JobModal() {
         schema={{
           type: 'void',
           properties: {
-            [`${job?.id}-modal`]: {
+            [`${job?.id}-${job?.updatedAt}-modal`]: {
               type: 'void',
               'x-decorator': 'Form',
               'x-decorator-props': {
@@ -165,7 +171,7 @@ function ExecutionsDropdown(props) {
   const onClick = useCallback(
     ({ key }) => {
       if (key != execution.id) {
-        navigate(`/admin/settings/workflow/executions/${key}`);
+        navigate(getWorkflowExecutionsPath(key));
       }
     },
     [execution],
@@ -208,6 +214,7 @@ export function ExecutionCanvas() {
   const { data, loading } = useResourceActionContext();
   const { setTitle } = useDocumentTitle();
   const [viewJob, setViewJob] = useState(null);
+  const app = useApp();
   useEffect(() => {
     const { workflow } = data?.data ?? {};
     setTitle?.(`${workflow?.title ? `${workflow.title} - ` : ''}${lang('Execution history')}`);
@@ -215,10 +222,9 @@ export function ExecutionCanvas() {
 
   if (!data?.data) {
     if (loading) {
-      return <div>{lang('Loading')}</div>;
-    } else {
-      return <div>{lang('Load failed')}</div>;
+      return <Spin />;
     }
+    return <Result status="404" title="Not found" />;
   }
 
   const { jobs = [], workflow: { nodes = [], revisions = [], ...workflow } = {}, ...execution } = data?.data ?? {};
@@ -244,8 +250,8 @@ export function ExecutionCanvas() {
         <header>
           <Breadcrumb
             items={[
-              { title: <Link to={`/admin/settings/workflow/workflows`}>{lang('Workflow')}</Link> },
-              { title: <Link to={`/admin/settings/workflow/workflows/${workflow.id}`}>{workflow.title}</Link> },
+              { title: <Link to={app.pluginSettingsManager.getRoutePath('workflow')}>{lang('Workflow')}</Link> },
+              { title: <Link to={getWorkflowDetailPath(workflow.id)}>{workflow.title}</Link> },
               { title: <ExecutionsDropdown /> },
             ]}
           />

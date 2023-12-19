@@ -4,7 +4,7 @@ import { App, message } from 'antd';
 import _, { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
-import { ChangeEvent, useContext, useEffect } from 'react';
+import { ChangeEvent, useCallback, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
@@ -97,95 +97,119 @@ export function getFormValues({
   return form.values;
 }
 
+export function useCollectValuesToSubmit() {
+  const form = useForm();
+  const filterByTk = useFilterByTk();
+  const { field, resource } = useBlockRequestContext();
+  const { fields, getField, getTreeParentField, name } = useCollection();
+  const fieldNames = fields.map((field) => field.name);
+  const { fieldSchema } = useActionContext();
+  const { getActiveFieldsName } = useFormActiveFields() || {};
+  const variables = useVariables();
+  const localVariables = useLocalVariables({ currentForm: form });
+  const actionSchema = useFieldSchema();
+  const currentRecord = useRecord();
+
+  return useCallback(async () => {
+    const { assignedValues: originalAssignedValues = {}, overwriteValues } = actionSchema?.['x-action-settings'] ?? {};
+    const values = getFormValues({
+      filterByTk,
+      field,
+      form,
+      fieldNames,
+      getField,
+      resource,
+      actionFields: getActiveFieldsName?.('form') || [],
+    });
+
+    const assignedValues = {};
+    const waitList = Object.keys(originalAssignedValues).map(async (key) => {
+      const value = originalAssignedValues[key];
+      const collectionField = getField(key);
+
+      if (process.env.NODE_ENV !== 'production') {
+        if (!collectionField) {
+          throw new Error(`field "${key}" not found in collection "${name}"`);
+        }
+      }
+
+      if (isVariable(value)) {
+        const result = await variables?.parseVariable(value, localVariables);
+        if (result) {
+          assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
+        }
+      } else if (value != null && value !== '') {
+        assignedValues[key] = value;
+      }
+    });
+    await Promise.all(waitList);
+    // const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
+    const addChild = fieldSchema?.['x-component-props']?.addChild;
+    if (addChild) {
+      const treeParentField = getTreeParentField();
+      values[treeParentField?.name ?? 'parent'] = omit(currentRecord?.__parent, ['children']);
+      values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord?.__parent?.id;
+    }
+
+    return {
+      ...values,
+      ...overwriteValues,
+      ...assignedValues,
+    };
+  }, [
+    actionSchema,
+    currentRecord?.__parent,
+    field,
+    fieldNames,
+    fieldSchema,
+    filterByTk,
+    form,
+    getActiveFieldsName,
+    getField,
+    getTreeParentField,
+    localVariables,
+    name,
+    resource,
+    variables,
+  ]);
+}
+
 export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { setVisible, fieldSchema } = useActionContext();
+  const { setVisible } = useActionContext();
   const navigate = useNavigate();
   const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField, getTreeParentField, name } = useCollection();
   const compile = useCompile();
-  const filterByTk = useFilterByTk();
-  const currentRecord = useRecord();
   const { modal } = App.useApp();
-  const variables = useVariables();
-  const localVariables = useLocalVariables({ currentForm: form });
-  const { getActiveFieldsName } = useFormActiveFields() || {};
   const { t } = useTranslation();
+  const collectValues = useCollectValuesToSubmit();
   const action = actionField.componentProps.saveMode || 'create';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
   return {
     async onClick() {
-      const fieldNames = fields.map((field) => field.name);
-      const {
-        assignedValues: originalAssignedValues = {},
-        onSuccess,
-        overwriteValues,
-        skipValidator,
-        triggerWorkflows,
-      } = actionSchema?.['x-action-settings'] ?? {};
-      const addChild = fieldSchema?.['x-component-props']?.addChild;
-
-      const assignedValues = {};
-      const waitList = Object.keys(originalAssignedValues).map(async (key) => {
-        const value = originalAssignedValues[key];
-        const collectionField = getField(key);
-
-        if (process.env.NODE_ENV !== 'production') {
-          if (!collectionField) {
-            throw new Error(`useCreateActionProps: field "${key}" not found in collection "${name}"`);
-          }
-        }
-
-        if (isVariable(value)) {
-          const result = await variables?.parseVariable(value, localVariables);
-          if (result) {
-            assignedValues[key] = transformVariableValue(result, { targetCollectionField: collectionField });
-          }
-        } else if (value != null && value !== '') {
-          assignedValues[key] = value;
-        }
-      });
-      await Promise.all(waitList);
+      const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
 
       if (!skipValidator) {
         await form.submit();
       }
-      const values = getFormValues({
-        filterByTk,
-        field,
-        form,
-        fieldNames,
-        getField,
-        resource,
-        actionFields: getActiveFieldsName?.('form') || [],
-      });
-      // const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
-      if (addChild) {
-        const treeParentField = getTreeParentField();
-        values[treeParentField?.name ?? 'parent'] = currentRecord?.__parent;
-        values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord?.__parent?.id;
-      }
+      const values = await collectValues();
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
         const data = await resource[action]({
-          values: {
-            ...values,
-            ...overwriteValues,
-            ...assignedValues,
-          },
+          values,
           filterKeys: filterKeys,
           // TODO(refactor): should change to inject by plugin
           triggerWorkflows: triggerWorkflows?.length
             ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
             : undefined,
         });
+        setVisible?.(false);
         actionField.data.loading = false;
         actionField.data.data = data;
         __parent?.service?.refresh?.();
-        setVisible?.(false);
         if (!onSuccess?.successMessage) {
           message.success(t('Saved successfully'));
           await form.reset();
@@ -1278,10 +1302,10 @@ export const useAssociationNames = () => {
   const getAssociationAppends = (schema, str) => {
     schema.reduceProperties((pre, s) => {
       const prefix = pre || str;
-      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+      const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
       const isAssociationSubfield = s.name.includes('.');
       const isAssociationField =
-        collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type);
+        collectionField && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionField.type);
 
       // 根据联动规则中条件的字段获取一些 appends
       if (s['x-linkage-rules']) {
@@ -1301,8 +1325,8 @@ export const useAssociationNames = () => {
         });
       }
 
-      const isTreeCollection = isAssociationField && getCollection(collectionfield.target)?.template === 'tree';
-      if (collectionfield && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
+      const isTreeCollection = isAssociationField && getCollection(collectionField.target)?.template === 'tree';
+      if (collectionField && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
         const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
         const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
         if (isTreeCollection) {

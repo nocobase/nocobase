@@ -132,6 +132,8 @@ export const InternalPicker = observer(
         <Input.Group compact style={{ display: 'flex', lineHeight: '32px' }}>
           <div style={{ width: '100%' }}>
             <Select
+              role="button"
+              data-testid="select-data-picker"
               style={{ width: '100%' }}
               popupMatchSelectWidth={false}
               {...others}

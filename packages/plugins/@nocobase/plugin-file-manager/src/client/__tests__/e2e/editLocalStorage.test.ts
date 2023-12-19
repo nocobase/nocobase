@@ -10,7 +10,7 @@ test.describe('File manager', () => {
     let caseTitle = 'edit local storage title';
 
     // 1、前置条件：1.1已登录;1.2存在一个文件管理器
-    await page.goto('/admin/settings/file-manager/storages');
+    await page.goto('/admin/settings/file-manager');
     await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'plus Add new' }).hover();
     await page.getByRole('menuitem', { name: 'Local storage' }).click();
@@ -43,7 +43,7 @@ test.describe('File manager', () => {
 
     // 4、后置处理：删除文件管理器
     await page.getByLabel(`action-Action.Link-Delete-storages-${storageName}`).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByText(storageName)).toBeHidden();
   });
 });

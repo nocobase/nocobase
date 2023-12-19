@@ -72,41 +72,6 @@ function transaction(transactionAbleArgPosition?: number) {
 export class UiSchemaRepository extends Repository {
   cache: Cache;
 
-  // if you need to handle cache in repo method, so you must set cache first
-  setCache(cache: Cache) {
-    this.cache = cache;
-  }
-
-  /**
-   * clear cache with xUid which in uiSchemaTreePath's Path
-   * @param {string} xUid
-   * @param {Transaction} transaction
-   * @returns {Promise<void>}
-   */
-  async clearXUidPathCache(xUid: string, transaction: Transaction) {
-    if (!this.cache || !xUid) {
-      return;
-    }
-    // find all xUid node's parent nodes
-    const uiSchemaNodes = await this.database.getRepository('uiSchemaTreePath').find({
-      filter: {
-        descendant: xUid,
-      },
-      transaction: transaction,
-    });
-    for (const uiSchemaNode of uiSchemaNodes) {
-      await this.cache.del(`p_${uiSchemaNode['ancestor']}`);
-      await this.cache.del(`s_${uiSchemaNode['ancestor']}`);
-    }
-  }
-
-  tableNameAdapter(tableName) {
-    if (this.database.sequelize.getDialect() === 'postgres') {
-      return `"${this.database.options.schema || 'public'}"."${tableName}"`;
-    }
-    return tableName;
-  }
-
   get uiSchemasTableName() {
     return this.tableNameAdapter(this.model.tableName);
   }
@@ -114,14 +79,6 @@ export class UiSchemaRepository extends Repository {
   get uiSchemaTreePathTableName() {
     const model = this.database.getCollection('uiSchemaTreePath').model;
     return this.tableNameAdapter(model.tableName);
-  }
-
-  sqlAdapter(sql: string) {
-    if (this.database.sequelize.getDialect() === 'mysql') {
-      return lodash.replace(sql, /"/g, '`');
-    }
-
-    return sql;
   }
 
   static schemaToSingleNodes(schema: any, carry: SchemaNode[] = [], childOptions: ChildOptions = null): SchemaNode[] {
@@ -180,6 +137,49 @@ export class UiSchemaRepository extends Repository {
     return carry;
   }
 
+  // if you need to handle cache in repo method, so you must set cache first
+  setCache(cache: Cache) {
+    this.cache = cache;
+  }
+
+  /**
+   * clear cache with xUid which in uiSchemaTreePath's Path
+   * @param {string} xUid
+   * @param {Transaction} transaction
+   * @returns {Promise<void>}
+   */
+  async clearXUidPathCache(xUid: string, transaction: Transaction) {
+    if (!this.cache || !xUid) {
+      return;
+    }
+    // find all xUid node's parent nodes
+    const uiSchemaNodes = await this.database.getRepository('uiSchemaTreePath').find({
+      filter: {
+        descendant: xUid,
+      },
+      transaction: transaction,
+    });
+    for (const uiSchemaNode of uiSchemaNodes) {
+      await this.cache.del(`p_${uiSchemaNode['ancestor']}`);
+      await this.cache.del(`s_${uiSchemaNode['ancestor']}`);
+    }
+  }
+
+  tableNameAdapter(tableName) {
+    if (this.database.sequelize.getDialect() === 'postgres') {
+      return `"${this.database.options.schema || 'public'}"."${tableName}"`;
+    }
+    return tableName;
+  }
+
+  sqlAdapter(sql: string) {
+    if (this.database.isMySQLCompatibleDialect()) {
+      return lodash.replace(sql, /"/g, '`');
+    }
+
+    return sql;
+  }
+
   async getProperties(uid: string, options: GetPropertiesOptions = {}) {
     if (options?.readFromCache && this.cache) {
       return this.cache.wrap(`p_${uid}`, () => {
@@ -189,66 +189,6 @@ export class UiSchemaRepository extends Repository {
     return this.doGetProperties(uid, options);
   }
 
-  private async doGetProperties(uid: string, options: GetPropertiesOptions = {}) {
-    const { transaction } = options;
-
-    const db = this.database;
-
-    const rawSql = `
-        SELECT "SchemaTable"."x-uid" as "x-uid", "SchemaTable"."name" as "name", "SchemaTable"."schema" as "schema",
-               TreePath.depth as depth,
-               NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent, ParentPath.sort as sort
-        FROM ${this.uiSchemaTreePathTableName} as TreePath
-                 LEFT JOIN ${this.uiSchemasTableName} as "SchemaTable" ON "SchemaTable"."x-uid" =  TreePath.descendant
-                 LEFT JOIN ${this.uiSchemaTreePathTableName} as NodeInfo ON NodeInfo.descendant = "SchemaTable"."x-uid" and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
-                 LEFT JOIN ${this.uiSchemaTreePathTableName} as ParentPath ON (ParentPath.descendant = "SchemaTable"."x-uid" AND ParentPath.depth = 1)
-        WHERE TreePath.ancestor = :ancestor  AND (NodeInfo.async  = false or TreePath.depth = 1)`;
-
-    const nodes = await db.sequelize.query(this.sqlAdapter(rawSql), {
-      replacements: {
-        ancestor: uid,
-      },
-      transaction,
-    });
-
-    if (nodes[0].length == 0) {
-      return {};
-    }
-
-    const schema = this.nodesToSchema(nodes[0], uid);
-    return lodash.pick(schema, ['type', 'properties']);
-  }
-
-  private async doGetJsonSchema(uid: string, options?: GetJsonSchemaOptions) {
-    const db = this.database;
-
-    const treeTable = this.uiSchemaTreePathTableName;
-
-    const rawSql = `
-        SELECT "SchemaTable"."x-uid" as "x-uid", "SchemaTable"."name" as name, "SchemaTable"."schema" as "schema" ,
-               TreePath.depth as depth,
-               NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent, ParentPath.sort as sort
-        FROM ${treeTable} as TreePath
-                 LEFT JOIN ${this.uiSchemasTableName} as "SchemaTable" ON "SchemaTable"."x-uid" =  TreePath.descendant
-                 LEFT JOIN ${treeTable} as NodeInfo ON NodeInfo.descendant = "SchemaTable"."x-uid" and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
-                 LEFT JOIN ${treeTable} as ParentPath ON (ParentPath.descendant = "SchemaTable"."x-uid" AND ParentPath.depth = 1)
-        WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (NodeInfo.async != true )'}
-    `;
-
-    const nodes = await db.sequelize.query(this.sqlAdapter(rawSql), {
-      replacements: {
-        ancestor: uid,
-      },
-      transaction: options?.transaction,
-    });
-
-    if (nodes[0].length == 0) {
-      return {};
-    }
-
-    return this.nodesToSchema(nodes[0], uid);
-  }
-
   async getJsonSchema(uid: string, options?: GetJsonSchemaOptions): Promise<any> {
     if (options?.readFromCache && this.cache) {
       return this.cache.wrap(`s_${uid}`, () => {
@@ -256,10 +196,6 @@ export class UiSchemaRepository extends Repository {
       });
     }
     return this.doGetJsonSchema(uid, options);
-  }
-
-  private ignoreSchemaProperties(schemaProperties) {
-    return lodash.omit(schemaProperties, nodeKeys);
   }
 
   nodesToSchema(nodes, rootUid) {
@@ -374,104 +310,6 @@ export class UiSchemaRepository extends Repository {
     }
   }
 
-  protected async updateNode(uid: string, schema: any, transaction?: Transaction) {
-    const nodeModel = await this.findOne({
-      filter: {
-        'x-uid': uid,
-      },
-    });
-
-    await nodeModel.update(
-      {
-        schema: {
-          ...(nodeModel.get('schema') as any),
-          ...lodash.omit(schema, ['x-async', 'name', 'x-uid', 'properties']),
-        },
-      },
-      {
-        hooks: false,
-        transaction,
-      },
-    );
-
-    if (schema['x-server-hooks']) {
-      await this.database.emitAsync(`${this.collection.name}.afterSave`, nodeModel, { transaction });
-    }
-  }
-
-  protected async childrenCount(uid, transaction) {
-    const db = this.database;
-
-    const countResult = await db.sequelize.query(
-      `SELECT COUNT(*) as count FROM ${this.uiSchemaTreePathTableName} where ancestor = :ancestor and depth  = 1`,
-      {
-        replacements: {
-          ancestor: uid,
-        },
-        type: 'SELECT',
-        transaction,
-      },
-    );
-
-    return parseInt(countResult[0]['count']);
-  }
-
-  protected async isLeafNode(uid, transaction) {
-    const childrenCount = await this.childrenCount(uid, transaction);
-    return childrenCount === 0;
-  }
-
-  protected async findParentUid(uid, transaction?) {
-    const parent = await this.database.getRepository('uiSchemaTreePath').findOne({
-      filter: {
-        descendant: uid,
-        depth: 1,
-      },
-      transaction,
-    });
-
-    return parent ? (parent.get('ancestor') as string) : null;
-  }
-
-  protected async findNodeSchemaWithParent(uid, transaction) {
-    const schema = await this.database.getRepository('uiSchemas').findOne({
-      filter: {
-        'x-uid': uid,
-      },
-      transaction,
-    });
-
-    return {
-      parentUid: await this.findParentUid(uid, transaction),
-      schema,
-    };
-  }
-
-  protected async isSingleChild(uid, transaction) {
-    const db = this.database;
-
-    const parent = await this.findParentUid(uid, transaction);
-
-    if (!parent) {
-      return null;
-    }
-
-    const parentChildrenCount = await this.childrenCount(parent, transaction);
-
-    if (parentChildrenCount == 1) {
-      const schema = await db.getRepository('uiSchemas').findOne({
-        filter: {
-          'x-uid': parent,
-        },
-        transaction,
-      });
-
-      return schema;
-    }
-
-    return null;
-  }
-
   async removeEmptyParents(options: Transactionable & { uid: string; breakRemoveOn?: BreakRemoveOnType }) {
     const { transaction, uid, breakRemoveOn } = options;
 
@@ -488,22 +326,6 @@ export class UiSchemaRepository extends Repository {
     };
 
     await removeParent(uid);
-  }
-
-  private breakOnMatched(schemaInstance, breakRemoveOn: BreakRemoveOnType): boolean {
-    if (!breakRemoveOn) {
-      return false;
-    }
-
-    for (const key of Object.keys(breakRemoveOn)) {
-      const instanceValue = schemaInstance.get(key);
-      const breakRemoveOnValue = breakRemoveOn[key];
-      if (instanceValue !== breakRemoveOnValue) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   async recursivelyRemoveIfNoChildren(options: Transactionable & { uid: string; breakRemoveOn?: BreakRemoveOnType }) {
@@ -573,92 +395,6 @@ export class UiSchemaRepository extends Repository {
   }
 
   @transaction()
-  protected async insertBeside(
-    targetUid: string,
-    schema: any,
-    side: 'before' | 'after',
-    options?: InsertAdjacentOptions,
-  ) {
-    const { transaction } = options;
-    const targetParent = await this.findParentUid(targetUid, transaction);
-
-    const db = this.database;
-
-    const treeTable = this.uiSchemaTreePathTableName;
-
-    const typeQuery = await db.sequelize.query(`SELECT type from ${treeTable} WHERE ancestor = :uid AND depth = 0;`, {
-      type: 'SELECT',
-      replacements: {
-        uid: targetUid,
-      },
-      transaction,
-    });
-
-    const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
-
-    const rootNode = nodes[0];
-
-    rootNode.childOptions = {
-      parentUid: targetParent,
-      type: typeQuery[0]['type'],
-      position: {
-        type: side,
-        target: targetUid,
-      },
-    };
-
-    const insertedNodes = await this.insertNodes(nodes, options);
-    return await this.getJsonSchema(insertedNodes[0].get('x-uid'), {
-      transaction,
-    });
-  }
-
-  @transaction()
-  protected async insertInner(
-    targetUid: string,
-    schema: any,
-    position: 'first' | 'last',
-    options?: InsertAdjacentOptions,
-  ) {
-    const { transaction } = options;
-
-    const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
-    const rootNode = nodes[0];
-
-    rootNode.childOptions = {
-      parentUid: targetUid,
-      type: lodash.get(schema, 'x-node-type', 'properties'),
-      position,
-    };
-
-    const insertedNodes = await this.insertNodes(nodes, options);
-
-    return await this.getJsonSchema(insertedNodes[0].get('x-uid'), {
-      transaction,
-    });
-  }
-
-  private async schemaExists(schema: any, options?: Transactionable): Promise<boolean> {
-    if (lodash.isObject(schema) && !schema['x-uid']) {
-      return false;
-    }
-
-    const { transaction } = options;
-    const result = await this.database.sequelize.query(
-      this.sqlAdapter(`select "x-uid" from ${this.uiSchemasTableName} where "x-uid" = :uid`),
-      {
-        type: 'SELECT',
-        replacements: {
-          uid: lodash.isString(schema) ? schema : schema['x-uid'],
-        },
-        transaction,
-      },
-    );
-
-    return result.length > 0;
-  }
-
-  @transaction()
   async insertAdjacent(
     position: 'beforeBegin' | 'afterBegin' | 'beforeEnd' | 'afterEnd',
     target: string,
@@ -704,51 +440,6 @@ export class UiSchemaRepository extends Repository {
     // clear target schema path cache
     await this.clearXUidPathCache(result['x-uid'], transaction);
     return result;
-  }
-
-  @transaction()
-  protected async insertAfterBegin(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
-    return await this.insertInner(targetUid, schema, 'first', options);
-  }
-
-  @transaction()
-  protected async insertBeforeEnd(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
-    return await this.insertInner(targetUid, schema, 'last', options);
-  }
-
-  @transaction()
-  protected async insertBeforeBegin(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
-    return await this.insertBeside(targetUid, schema, 'before', options);
-  }
-
-  @transaction()
-  protected async insertAfterEnd(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
-    return await this.insertBeside(targetUid, schema, 'after', options);
-  }
-
-  @transaction()
-  protected async insertNodes(nodes: SchemaNode[], options?: Transactionable) {
-    const { transaction } = options;
-
-    const insertedNodes = [];
-
-    for (const node of nodes) {
-      insertedNodes.push(
-        await this.insertSingleNode(node, {
-          ...options,
-          transaction,
-        }),
-      );
-    }
-
-    return insertedNodes;
-  }
-
-  private regenerateUid(s: any) {
-    s['x-uid'] = uid();
-    Object.keys(s.properties || {}).forEach((key) => {
-      this.regenerateUid(s.properties[key]);
-    });
   }
 
   @transaction()
@@ -840,39 +531,6 @@ export class UiSchemaRepository extends Repository {
     });
     await this.clearXUidPathCache(result['x-uid'], transaction);
     return result;
-  }
-
-  private async insertSchemaRecord(name, uid, schema, transaction) {
-    const serverHooks = schema['x-server-hooks'] || [];
-
-    const node = await this.create({
-      values: {
-        name,
-        ['x-uid']: uid,
-        schema,
-        serverHooks,
-      },
-      transaction,
-      context: {
-        disableInsertHook: true,
-      },
-    });
-
-    return node;
-  }
-
-  private prepareSingleNodeForInsert(schema: SchemaNode) {
-    const uid = schema['x-uid'];
-    const name = schema['name'];
-    const async = lodash.get(schema, 'x-async', false);
-    const childOptions = schema['childOptions'];
-
-    delete schema['x-uid'];
-    delete schema['x-async'];
-    delete schema['name'];
-    delete schema['childOptions'];
-
-    return { uid, name, async, childOptions };
   }
 
   async insertSingleNode(schema: SchemaNode, options: Transactionable & removeParentOptions) {
@@ -1001,7 +659,7 @@ export class UiSchemaRepository extends Repository {
                 AND TreeTable.depth = 1 AND TreeTable.ancestor = :ancestor and NodeInfo.type = :type`;
 
         // Compatible with mysql
-        if (this.database.sequelize.getDialect() === 'mysql') {
+        if (this.database.isMySQLCompatibleDialect()) {
           updateSql = `UPDATE ${treeTable} as TreeTable
           JOIN ${treeTable} as NodeInfo ON (NodeInfo.descendant = TreeTable.descendant and NodeInfo.depth = 0)
           SET TreeTable.sort = TreeTable.sort + 1
@@ -1074,7 +732,7 @@ export class UiSchemaRepository extends Repository {
                            and TreeTable.sort >= :sort
                            and NodeInfo.type = :type`;
 
-        if (this.database.sequelize.getDialect() === 'mysql') {
+        if (this.database.isMySQLCompatibleDialect()) {
           updateSql = `UPDATE  ${treeTable} as TreeTable
 JOIN ${treeTable} as NodeInfo ON (NodeInfo.descendant = TreeTable.descendant and NodeInfo.depth = 0)
 SET TreeTable.sort = TreeTable.sort + 1
@@ -1135,6 +793,348 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     }
     await this.clearXUidPathCache(uid, transaction);
     return savedNode;
+  }
+
+  protected async updateNode(uid: string, schema: any, transaction?: Transaction) {
+    const nodeModel = await this.findOne({
+      filter: {
+        'x-uid': uid,
+      },
+    });
+
+    await nodeModel.update(
+      {
+        schema: {
+          ...(nodeModel.get('schema') as any),
+          ...lodash.omit(schema, ['x-async', 'name', 'x-uid', 'properties']),
+        },
+      },
+      {
+        hooks: false,
+        transaction,
+      },
+    );
+
+    if (schema['x-server-hooks']) {
+      await this.database.emitAsync(`${this.collection.name}.afterSave`, nodeModel, { transaction });
+    }
+  }
+
+  protected async childrenCount(uid, transaction) {
+    const db = this.database;
+
+    const countResult = await db.sequelize.query(
+      `SELECT COUNT(*) as count FROM ${this.uiSchemaTreePathTableName} where ancestor = :ancestor and depth  = 1`,
+      {
+        replacements: {
+          ancestor: uid,
+        },
+        type: 'SELECT',
+        transaction,
+      },
+    );
+
+    return parseInt(countResult[0]['count']);
+  }
+
+  protected async isLeafNode(uid, transaction) {
+    const childrenCount = await this.childrenCount(uid, transaction);
+    return childrenCount === 0;
+  }
+
+  protected async findParentUid(uid, transaction?) {
+    const parent = await this.database.getRepository('uiSchemaTreePath').findOne({
+      filter: {
+        descendant: uid,
+        depth: 1,
+      },
+      transaction,
+    });
+
+    return parent ? (parent.get('ancestor') as string) : null;
+  }
+
+  protected async findNodeSchemaWithParent(uid, transaction) {
+    const schema = await this.database.getRepository('uiSchemas').findOne({
+      filter: {
+        'x-uid': uid,
+      },
+      transaction,
+    });
+
+    return {
+      parentUid: await this.findParentUid(uid, transaction),
+      schema,
+    };
+  }
+
+  protected async isSingleChild(uid, transaction) {
+    const db = this.database;
+
+    const parent = await this.findParentUid(uid, transaction);
+
+    if (!parent) {
+      return null;
+    }
+
+    const parentChildrenCount = await this.childrenCount(parent, transaction);
+
+    if (parentChildrenCount == 1) {
+      const schema = await db.getRepository('uiSchemas').findOne({
+        filter: {
+          'x-uid': parent,
+        },
+        transaction,
+      });
+
+      return schema;
+    }
+
+    return null;
+  }
+
+  @transaction()
+  protected async insertBeside(
+    targetUid: string,
+    schema: any,
+    side: 'before' | 'after',
+    options?: InsertAdjacentOptions,
+  ) {
+    const { transaction } = options;
+    const targetParent = await this.findParentUid(targetUid, transaction);
+
+    const db = this.database;
+
+    const treeTable = this.uiSchemaTreePathTableName;
+
+    const typeQuery = await db.sequelize.query(`SELECT type from ${treeTable} WHERE ancestor = :uid AND depth = 0;`, {
+      type: 'SELECT',
+      replacements: {
+        uid: targetUid,
+      },
+      transaction,
+    });
+
+    const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
+
+    const rootNode = nodes[0];
+
+    rootNode.childOptions = {
+      parentUid: targetParent,
+      type: typeQuery[0]['type'],
+      position: {
+        type: side,
+        target: targetUid,
+      },
+    };
+
+    const insertedNodes = await this.insertNodes(nodes, options);
+    return await this.getJsonSchema(insertedNodes[0].get('x-uid'), {
+      transaction,
+    });
+  }
+
+  @transaction()
+  protected async insertInner(
+    targetUid: string,
+    schema: any,
+    position: 'first' | 'last',
+    options?: InsertAdjacentOptions,
+  ) {
+    const { transaction } = options;
+
+    const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
+    const rootNode = nodes[0];
+
+    rootNode.childOptions = {
+      parentUid: targetUid,
+      type: lodash.get(schema, 'x-node-type', 'properties'),
+      position,
+    };
+
+    const insertedNodes = await this.insertNodes(nodes, options);
+
+    return await this.getJsonSchema(insertedNodes[0].get('x-uid'), {
+      transaction,
+    });
+  }
+
+  @transaction()
+  protected async insertAfterBegin(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
+    return await this.insertInner(targetUid, schema, 'first', options);
+  }
+
+  @transaction()
+  protected async insertBeforeEnd(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
+    return await this.insertInner(targetUid, schema, 'last', options);
+  }
+
+  @transaction()
+  protected async insertBeforeBegin(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
+    return await this.insertBeside(targetUid, schema, 'before', options);
+  }
+
+  @transaction()
+  protected async insertAfterEnd(targetUid: string, schema: any, options?: InsertAdjacentOptions) {
+    return await this.insertBeside(targetUid, schema, 'after', options);
+  }
+
+  @transaction()
+  protected async insertNodes(nodes: SchemaNode[], options?: Transactionable) {
+    const { transaction } = options;
+
+    const insertedNodes = [];
+
+    for (const node of nodes) {
+      insertedNodes.push(
+        await this.insertSingleNode(node, {
+          ...options,
+          transaction,
+        }),
+      );
+    }
+
+    return insertedNodes;
+  }
+
+  private async doGetProperties(uid: string, options: GetPropertiesOptions = {}) {
+    const { transaction } = options;
+
+    const db = this.database;
+
+    const rawSql = `
+        SELECT "SchemaTable"."x-uid" as "x-uid", "SchemaTable"."name" as "name", "SchemaTable"."schema" as "schema",
+               TreePath.depth as depth,
+               NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent, ParentPath.sort as sort
+        FROM ${this.uiSchemaTreePathTableName} as TreePath
+                 LEFT JOIN ${this.uiSchemasTableName} as "SchemaTable" ON "SchemaTable"."x-uid" =  TreePath.descendant
+                 LEFT JOIN ${this.uiSchemaTreePathTableName} as NodeInfo ON NodeInfo.descendant = "SchemaTable"."x-uid" and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
+                 LEFT JOIN ${this.uiSchemaTreePathTableName} as ParentPath ON (ParentPath.descendant = "SchemaTable"."x-uid" AND ParentPath.depth = 1)
+        WHERE TreePath.ancestor = :ancestor  AND (NodeInfo.async  = false or TreePath.depth = 1)`;
+
+    const nodes = await db.sequelize.query(this.sqlAdapter(rawSql), {
+      replacements: {
+        ancestor: uid,
+      },
+      transaction,
+    });
+
+    if (nodes[0].length == 0) {
+      return {};
+    }
+
+    const schema = this.nodesToSchema(nodes[0], uid);
+    return lodash.pick(schema, ['type', 'properties']);
+  }
+
+  private async doGetJsonSchema(uid: string, options?: GetJsonSchemaOptions) {
+    const db = this.database;
+
+    const treeTable = this.uiSchemaTreePathTableName;
+
+    const rawSql = `
+        SELECT "SchemaTable"."x-uid" as "x-uid", "SchemaTable"."name" as name, "SchemaTable"."schema" as "schema" ,
+               TreePath.depth as depth,
+               NodeInfo.type as type, NodeInfo.async as async,  ParentPath.ancestor as parent, ParentPath.sort as sort
+        FROM ${treeTable} as TreePath
+                 LEFT JOIN ${this.uiSchemasTableName} as "SchemaTable" ON "SchemaTable"."x-uid" =  TreePath.descendant
+                 LEFT JOIN ${treeTable} as NodeInfo ON NodeInfo.descendant = "SchemaTable"."x-uid" and NodeInfo.descendant = NodeInfo.ancestor and NodeInfo.depth = 0
+                 LEFT JOIN ${treeTable} as ParentPath ON (ParentPath.descendant = "SchemaTable"."x-uid" AND ParentPath.depth = 1)
+        WHERE TreePath.ancestor = :ancestor  ${options?.includeAsyncNode ? '' : 'AND (NodeInfo.async != true )'}
+    `;
+
+    const nodes = await db.sequelize.query(this.sqlAdapter(rawSql), {
+      replacements: {
+        ancestor: uid,
+      },
+      transaction: options?.transaction,
+    });
+
+    if (nodes[0].length == 0) {
+      return {};
+    }
+
+    return this.nodesToSchema(nodes[0], uid);
+  }
+
+  private ignoreSchemaProperties(schemaProperties) {
+    return lodash.omit(schemaProperties, nodeKeys);
+  }
+
+  private breakOnMatched(schemaInstance, breakRemoveOn: BreakRemoveOnType): boolean {
+    if (!breakRemoveOn) {
+      return false;
+    }
+
+    for (const key of Object.keys(breakRemoveOn)) {
+      const instanceValue = schemaInstance.get(key);
+      const breakRemoveOnValue = breakRemoveOn[key];
+      if (instanceValue !== breakRemoveOnValue) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private async schemaExists(schema: any, options?: Transactionable): Promise<boolean> {
+    if (lodash.isObject(schema) && !schema['x-uid']) {
+      return false;
+    }
+
+    const { transaction } = options;
+    const result = await this.database.sequelize.query(
+      this.sqlAdapter(`select "x-uid" from ${this.uiSchemasTableName} where "x-uid" = :uid`),
+      {
+        type: 'SELECT',
+        replacements: {
+          uid: lodash.isString(schema) ? schema : schema['x-uid'],
+        },
+        transaction,
+      },
+    );
+
+    return result.length > 0;
+  }
+
+  private regenerateUid(s: any) {
+    s['x-uid'] = uid();
+    Object.keys(s.properties || {}).forEach((key) => {
+      this.regenerateUid(s.properties[key]);
+    });
+  }
+
+  private async insertSchemaRecord(name, uid, schema, transaction) {
+    const serverHooks = schema['x-server-hooks'] || [];
+
+    const node = await this.create({
+      values: {
+        name,
+        ['x-uid']: uid,
+        schema,
+        serverHooks,
+      },
+      transaction,
+      context: {
+        disableInsertHook: true,
+      },
+    });
+
+    return node;
+  }
+
+  private prepareSingleNodeForInsert(schema: SchemaNode) {
+    const uid = schema['x-uid'];
+    const name = schema['name'];
+    const async = lodash.get(schema, 'x-async', false);
+    const childOptions = schema['childOptions'];
+
+    delete schema['x-uid'];
+    delete schema['x-async'];
+    delete schema['name'];
+    delete schema['childOptions'];
+
+    return { uid, name, async, childOptions };
   }
 }
 

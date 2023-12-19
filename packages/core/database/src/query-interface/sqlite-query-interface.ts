@@ -1,6 +1,6 @@
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser';
-import QueryInterface from './query-interface';
+import QueryInterface, { TableInfo } from './query-interface';
 
 export default class SqliteQueryInterface extends QueryInterface {
   constructor(db) {
@@ -85,5 +85,9 @@ export default class SqliteQueryInterface extends QueryInterface {
     const sql = match[0];
 
     return sql;
+  }
+
+  showTableDefinition(tableInfo: TableInfo): Promise<any> {
+    return Promise.resolve(undefined);
   }
 }

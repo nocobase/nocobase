@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { DeleteOutlined, ReadOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { useAPIClient } from '../api-client';
+import { useApp } from '../application';
 import { PluginDetail } from './PluginDetail';
 import { PluginUpgradeModal } from './PluginForm/modal/PluginUpgradeModal';
 import { useStyles } from './style';
@@ -18,6 +19,7 @@ interface IPluginInfo extends IPluginCard {
 
 function PluginInfo(props: IPluginInfo) {
   const { data, onClick } = props;
+  const app = useApp();
   const { name, displayName, isCompatible, packageName, updatable, builtIn, enabled, description, type, error } = data;
   const { styles, theme } = useStyles();
   const navigate = useNavigate();
@@ -28,7 +30,6 @@ function PluginInfo(props: IPluginInfo) {
   const [enabledVal, setEnabledVal] = useState(enabled);
   const reload = () => window.location.reload();
   const title = displayName || name || packageName;
-
   return (
     <>
       {showUploadForm && (
@@ -92,14 +93,16 @@ function PluginInfo(props: IPluginInfo) {
               </a>
             )}
             {enabled ? (
-              <a
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/admin/settings/${name}`);
-                }}
-              >
-                <SettingOutlined /> {t('Setting')}
-              </a>
+              app.pluginSettingsManager.has(name) && (
+                <a
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(app.pluginSettingsManager.getRoutePath(name));
+                  }}
+                >
+                  <SettingOutlined /> {t('Settings')}
+                </a>
+              )
             ) : (
               <Popconfirm
                 key={'delete'}

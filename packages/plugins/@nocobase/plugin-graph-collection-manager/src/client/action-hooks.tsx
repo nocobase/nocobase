@@ -169,10 +169,13 @@ export const useUpdateCollectionActionAndRefreshCM = () => {
 
 const useDestroyAction = (name) => {
   const api = useAPIClient();
+  const form = useForm();
+  const { cascade } = form?.values || {};
   return {
     async run() {
       await api.resource('collections').destroy({
         filterByTk: name,
+        cascade,
       });
       await api.resource('graphPositions').destroy({
         filter: { collectionName: name },

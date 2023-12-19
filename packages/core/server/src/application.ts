@@ -1,7 +1,7 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
-import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
+import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
@@ -16,13 +16,23 @@ import lodash from 'lodash';
 import { createACL } from './acl';
 import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
+import { createCacheManager } from './cache';
 import { registerCli } from './commands';
+import { CronJobManager } from './cron/cron-job-manager';
 import { ApplicationNotInstall } from './errors/application-not-install';
-import { createAppProxy, createI18n, createResourcer, getCommandFullName, registerMiddlewares } from './helper';
+import {
+  createAppProxy,
+  createI18n,
+  createResourcer,
+  getCommandFullName,
+  registerMiddlewares,
+  enablePerfHooks,
+} from './helper';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import { RecordableHistogram, performance } from 'node:perf_hooks';
 import path from 'path';
 import { CronJobManager } from './cron/cron-job-manager';
 
@@ -37,7 +47,7 @@ export interface ResourcerOptions {
 
 export interface ApplicationOptions {
   database?: IDatabaseOptions | Database;
-  cache?: ICacheConfig | ICacheConfig[];
+  cacheManager?: CacheManagerOptions;
   resourcer?: ResourcerOptions;
   bodyParser?: any;
   cors?: any;
@@ -50,6 +60,7 @@ export interface ApplicationOptions {
   pmSock?: string;
   name?: string;
   authManager?: AuthManagerOptions;
+  perfHooks?: boolean;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -115,6 +126,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     name: string;
   } = null;
   public running = false;
+  public perfHistograms = new Map<string, RecordableHistogram>();
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
   protected _started: boolean;
@@ -168,7 +180,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._resourcer;
   }
 
+  protected _cacheManager: CacheManager;
+
+  get cacheManager() {
+    return this._cacheManager;
+  }
+
   protected _cache: Cache;
+
+  set cache(cache: Cache) {
+    this._cache = cache;
+  }
 
   get cache() {
     return this._cache;
@@ -207,6 +229,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected _locales: Locale;
 
   get locales() {
+    return this._locales;
+  }
+
+  get localeManager() {
     return this._locales;
   }
 
@@ -318,7 +344,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       if (!oldDb.closed()) {
         await oldDb.close();
       }
+      if (this._cacheManager) {
+        await this._cacheManager.close();
+      }
     }
+
+    this._cacheManager = await createCacheManager(this, this.options.cacheManager);
 
     this.setMaintainingMessage('init plugins');
     await this.pm.initPlugins();
@@ -367,7 +398,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
     this._authenticated = true;
     await this.db.auth();
-    await this.dbVersionCheck({ exit: true });
+    await this.db.checkVersion();
     await this.db.prepare();
   }
 
@@ -541,6 +572,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.log.error(e);
     }
 
+    if (this._cacheManager) {
+      await this._cacheManager.close();
+    }
+
     await this.emitAsync('afterStop', this, options);
 
     this.stopped = true;
@@ -558,37 +593,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterDestroy', this, options);
 
     this.logger.debug('finish destroy app');
-  }
-
-  async dbVersionCheck(options?: { exit?: boolean }) {
-    const r = await this.db.version.satisfies({
-      mysql: '>=8.0.17',
-      sqlite: '3.x',
-      postgres: '>=10',
-    });
-
-    if (!r) {
-      console.log(chalk.red('The database only supports MySQL 8.0.17 and above, SQLite 3.x and PostgreSQL 10+'));
-      if (options?.exit) {
-        process.exit();
-      }
-      return false;
-    }
-
-    if (this.db.inDialect('mysql')) {
-      const result = await this.db.sequelize.query(`SHOW VARIABLES LIKE 'lower_case_table_names'`, { plain: true });
-      if (result?.Value === '1' && !this.db.options.underscored) {
-        console.log(
-          `Your database lower_case_table_names=1, please add ${chalk.yellow('DB_UNDERSCORED=true')} to the .env file`,
-        );
-        if (options?.exit) {
-          process.exit();
-        }
-        return false;
-      }
-    }
-
-    return true;
   }
 
   async isInstalled() {
@@ -633,6 +637,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async upgrade(options: any = {}) {
     await this.emitAsync('beforeUpgrade', this, options);
+    const force = false;
 
     await measureExecutionTime(async () => {
       await this.db.migrator.up();
@@ -640,9 +645,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await measureExecutionTime(async () => {
       await this.db.sync({
-        force: false,
+        force,
         alter: {
-          drop: false,
+          drop: force,
         },
       });
     }, 'Sync');
@@ -708,10 +713,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._resourcer = createResourcer(options);
     this._cli = this.createCli();
     this._i18n = createI18n(options);
-    this._cache = createCache(options.cache);
     this.context.db = this._db;
     this.context.logger = this._logger;
     this.context.resourcer = this._resourcer;
+    this.context.cacheManager = this._cacheManager;
     this.context.cache = this._cache;
 
     const plugins = this._pm ? this._pm.options.plugins : options.plugins;
@@ -739,6 +744,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     this._locales = new Locale(createAppProxy(this));
+
+    if (options.perfHooks) {
+      enablePerfHooks(this);
+    }
 
     registerMiddlewares(this, options);
 

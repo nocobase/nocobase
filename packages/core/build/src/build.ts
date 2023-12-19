@@ -24,7 +24,13 @@ export async function build(pkgs: string[]) {
 
   const packages = getPackages(pkgs);
   if (packages.length === 0) {
-    console.error(chalk.red(`[@nocobase/build]: '${pkgs.join(', ')}' not match any packages.`));
+    let msg = '';
+    if (pkgs.length) {
+      msg = `'${pkgs.join(', ')}' did not match any packages`
+    } else {
+      msg = 'No package matched'
+    }
+    console.warn(chalk.yellow(`[@nocobase/build]: ${msg}`));
     return;
   }
 

@@ -1,7 +1,14 @@
 import { ArrayItems } from '@formily/antd-v5';
 import type { ISchema } from '@formily/react';
 import { useField, useFieldSchema } from '@formily/react';
-import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '@nocobase/client';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettingsActionModalItem,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  useDesignable,
+} from '@nocobase/client';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShared } from './useShared';
@@ -20,7 +27,7 @@ export const ExportDesigner = () => {
 
   return (
     <GeneralSchemaDesigner disableInitializer>
-      <SchemaSettings.ModalItem
+      <SchemaSettingsModalItem
         title={t('Edit button')}
         schema={
           {
@@ -50,8 +57,8 @@ export const ExportDesigner = () => {
                 default: fieldSchema?.['x-component-props']?.danger
                   ? 'danger'
                   : fieldSchema?.['x-component-props']?.type === 'primary'
-                  ? 'primary'
-                  : 'default',
+                    ? 'primary'
+                    : 'default',
                 enum: [
                   { value: 'default', label: '{{t("Default")}}' },
                   { value: 'primary', label: '{{t("Highlight")}}' },
@@ -83,7 +90,7 @@ export const ExportDesigner = () => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.ActionModalItem
+      <SchemaSettingsActionModalItem
         title={t('Exportable fields')}
         schema={schema}
         initialValues={{ exportSettings: fieldSchema?.['x-action-settings']?.exportSettings }}
@@ -105,8 +112,8 @@ export const ExportDesigner = () => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={(s) => {
           return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');

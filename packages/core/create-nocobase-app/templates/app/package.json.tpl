@@ -2,10 +2,11 @@
   "name": "{{{name}}}",
   "private": true,
   "workspaces": [
-    "packages/*/*"
+    "packages/*/*",
+    "packages/*/*/*"
   ],
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18"
   },
   "scripts": {
     "nocobase": "nocobase",

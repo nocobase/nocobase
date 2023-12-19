@@ -1,8 +1,11 @@
-import { useCompile } from '@nocobase/client';
+import React from 'react';
+
+import { Variable, useCompile, usePlugin } from '@nocobase/client';
+
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE, lang } from './locale';
-import { instructions, useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
-import { triggers } from './triggers';
+import { useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
+import WorkflowPlugin from '.';
 
 export type VariableOption = {
   key?: string;
@@ -31,6 +34,7 @@ export type OptionsOfUseVariableOptions = {
   };
   appends?: string[] | null;
   depth?: number;
+  current?: any;
 };
 
 export const defaultFieldNames = { label: 'label', value: 'value', children: 'children' } as const;
@@ -39,6 +43,7 @@ export const nodesOptions = {
   label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
   value: '$jobsMapByNodeKey',
   useOptions(options: OptionsOfUseVariableOptions) {
+    const { instructions } = usePlugin(WorkflowPlugin);
     const current = useNodeContext();
     const upstreams = useAvailableUpstreams(current);
     const result: VariableOption[] = [];
@@ -57,6 +62,7 @@ export const triggerOptions = {
   label: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
   value: '$context',
   useOptions(options: OptionsOfUseVariableOptions) {
+    const { triggers } = usePlugin(WorkflowPlugin);
     const { workflow } = useFlowContext();
     const trigger = triggers.get(workflow.type);
     return trigger?.useVariables?.(workflow.config, options) ?? null;
@@ -67,9 +73,11 @@ export const scopeOptions = {
   label: `{{t("Scope variables", { ns: "${NAMESPACE}" })}}`,
   value: '$scopes',
   useOptions(options: OptionsOfUseVariableOptions) {
-    const { fieldNames = defaultFieldNames } = options;
-    const current = useNodeContext();
-    const scopes = useUpstreamScopes(current);
+    const { fieldNames = defaultFieldNames, current } = options;
+    const { instructions } = usePlugin(WorkflowPlugin);
+    const source = useNodeContext();
+    const from = current ?? source;
+    const scopes = useUpstreamScopes(from);
     const result: VariableOption[] = [];
     scopes.forEach((node) => {
       const instruction = instructions.get(node.type);
@@ -211,20 +219,29 @@ function filterTypedFields({ fields, types, appends, depth = 1, compile, getColl
   });
 }
 
+function useOptions(scope, opts) {
+  const compile = useCompile();
+  const children = scope.useOptions?.(opts)?.filter(Boolean);
+  const { fieldNames } = opts;
+  return {
+    [fieldNames.label]: compile(scope.label),
+    [fieldNames.value]: scope.value,
+    key: scope[fieldNames.value],
+    [fieldNames.children]: children,
+    disabled: !children || !children.length,
+  };
+}
+
 export function useWorkflowVariableOptions(options: OptionsOfUseVariableOptions = {}) {
   const fieldNames = Object.assign({}, defaultFieldNames, options.fieldNames ?? {});
   const opts = Object.assign(options, { fieldNames });
-  const compile = useCompile();
-  const result = [scopeOptions, nodesOptions, triggerOptions, systemOptions].map((item: any) => {
-    const children = item.useOptions?.(opts)?.filter(Boolean);
-    return {
-      [fieldNames.label]: compile(item.label),
-      [fieldNames.value]: item.value,
-      key: item[fieldNames.value],
-      [fieldNames.children]: children,
-      disabled: !children || !children.length,
-    };
-  });
+  const result = [
+    useOptions(scopeOptions, opts),
+    useOptions(nodesOptions, opts),
+    useOptions(triggerOptions, opts),
+    useOptions(systemOptions, opts),
+  ];
+  // const cache = useMemo(() => result, [result]);
 
   return result;
 }
@@ -348,4 +365,24 @@ export function getCollectionFieldOptions(options): VariableOption[] {
   });
 
   return result;
+}
+
+export function WorkflowVariableInput({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.Input scope={scope} {...props} />;
+}
+
+export function WorkflowVariableTextArea({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.TextArea scope={scope} {...props} />;
+}
+
+export function WorkflowVariableRawTextArea({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.RawTextArea scope={scope} {...props} />;
+}
+
+export function WorkflowVariableJSON({ variableOptions, ...props }): JSX.Element {
+  const scope = useWorkflowVariableOptions(variableOptions);
+  return <Variable.JSON scope={scope} {...props} />;
 }

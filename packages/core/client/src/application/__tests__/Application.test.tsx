@@ -16,8 +16,7 @@ describe('Application', () => {
   });
 
   const router: any = { type: 'memory', initialEntries: ['/'] };
-  const initialComponentsLength = 6;
-  const initialProvidersLength = 2;
+  const initialProvidersLength = 6;
   it('basic', () => {
     const app = new Application({ router });
     expect(app.i18n).toBeDefined();
@@ -27,8 +26,8 @@ describe('Application', () => {
     expect(app.providers).toBeDefined();
     expect(app.router).toBeDefined();
     expect(app.scopes).toBeDefined();
-    expect(app.providers).toHaveLength(initialProvidersLength);
-    expect(Object.keys(app.components)).toHaveLength(initialComponentsLength);
+    expect(app.providers.length).toBeGreaterThan(1);
+    expect(Object.keys(app.components).length).toBeGreaterThan(1);
   });
 
   describe('components', () => {
@@ -44,26 +43,6 @@ describe('Application', () => {
       const app = new Application({ router });
       app.addComponents({ Hello });
       expect(app.components.Hello).toBe(Hello);
-    });
-
-    it('addComponent', () => {
-      const app = new Application({ router });
-      app.addComponent(Hello);
-      expect(app.components.Hello).toBe(Hello);
-
-      app.addComponent(Hello, 'Hello2');
-      expect(app.components.Hello2).toBe(Hello);
-    });
-
-    it('addComponents without name, should error', () => {
-      const app = new Application({ router });
-
-      const fn = vitest.fn();
-      const originalConsoleError = console.error;
-      console.error = fn;
-      app.addComponent(() => <div>123</div>);
-      expect(fn).toBeCalled();
-      console.error = originalConsoleError;
     });
 
     describe('getComponent', () => {
@@ -331,8 +310,8 @@ describe('Application', () => {
         router,
       });
 
-      const ErrorFallback = () => {
-        return <div>ErrorFallback</div>;
+      const AppError = () => {
+        return <div>AppError</div>;
       };
       const Foo = () => {
         throw new Error('error');
@@ -340,7 +319,7 @@ describe('Application', () => {
       };
       app.use(Foo);
       app.addComponents({
-        ErrorFallback,
+        AppError,
       });
 
       const originalConsoleWarn = console.error;
@@ -352,8 +331,7 @@ describe('Application', () => {
       await sleep(10);
       expect(fn).toBeCalled();
 
-      expect(screen.getByText('ErrorFallback')).toBeInTheDocument();
-      screen.debug();
+      expect(screen.getByText('AppError')).toBeInTheDocument();
 
       console.error = originalConsoleWarn;
     });

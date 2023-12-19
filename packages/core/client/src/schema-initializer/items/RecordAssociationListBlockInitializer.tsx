@@ -3,19 +3,21 @@ import { TableOutlined } from '@ant-design/icons';
 
 import { useCollectionManager } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { SchemaInitializer } from '../SchemaInitializer';
 import { createListBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
-export const RecordAssociationListBlockInitializer = (props) => {
-  const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
+export const RecordAssociationListBlockInitializer = () => {
+  const itemConfig = useSchemaInitializerItem();
+  const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
+  const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { getCollection } = useCollectionManager();
-  const field = item.field;
+  const field = itemConfig.field;
   const collection = getCollection(field.target);
   const resource = `${field.collectionName}.${field.name}`;
 
   return (
-    <SchemaInitializer.Item
+    <SchemaInitializerItem
       icon={<TableOutlined />}
       {...others}
       onClick={async ({ item }) => {
@@ -33,7 +35,7 @@ export const RecordAssociationListBlockInitializer = (props) => {
           );
         }
       }}
-      items={useRecordCollectionDataSourceItems('List', item, field.target, resource)}
+      items={useRecordCollectionDataSourceItems('List', itemConfig, field.target, resource)}
     />
   );
 };

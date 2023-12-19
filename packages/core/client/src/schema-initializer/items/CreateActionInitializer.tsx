@@ -1,7 +1,8 @@
 import React from 'react';
 import { ActionInitializer } from './ActionInitializer';
+import { useSchemaInitializerItem } from '../../application';
 
-export const CreateActionInitializer = (props) => {
+export const CreateActionInitializer = () => {
   const schema = {
     type: 'void',
     'x-action': 'create',
@@ -52,5 +53,6 @@ export const CreateActionInitializer = (props) => {
       },
     },
   };
-  return <ActionInitializer {...props} schema={schema} />;
+  const itemConfig = useSchemaInitializerItem();
+  return <ActionInitializer {...itemConfig} item={itemConfig} schema={schema} />;
 };

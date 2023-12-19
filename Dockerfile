@@ -1,4 +1,4 @@
-FROM node:16 as builder
+FROM node:18-bullseye as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
@@ -17,12 +17,12 @@ RUN cd /tmp && \
         && jq ".version = \"${NEWVERSION}\"" lerna.json > "$tmp" && mv "$tmp" lerna.json
 RUN  yarn install && yarn build --no-dts
 
-RUN git checkout -b release \
-    && yarn version:alpha -y  \
-    && git config user.email "test@mail.com"  \
+RUN git checkout -b release-$(date +'%Y%m%d%H%M%S') \
+    && yarn version:alpha -y
+RUN git config user.email "test@mail.com"  \
     && git config user.name "test" && git add .  \
-    && git commit -m "chore(versions): test publish packages xxx" \
-    && yarn release:force --registry $VERDACCIO_URL
+    && git commit -m "chore(versions): test publish packages"
+RUN yarn release:force --registry $VERDACCIO_URL
 
 RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
@@ -41,7 +41,7 @@ RUN cd /app \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
 
-FROM node:16.20-bullseye-slim
+FROM node:18-bullseye-slim
 RUN apt-get update && apt-get install -y nginx
 RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf

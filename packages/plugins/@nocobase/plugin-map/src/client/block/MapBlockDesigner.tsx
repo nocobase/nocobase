@@ -3,7 +3,16 @@ import {
   FilterBlockType,
   FixedBlockDesignerItem,
   GeneralSchemaDesigner,
-  SchemaSettings,
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsCascaderItem,
+  SchemaSettingsConnectDataBlocks,
+  SchemaSettingsDataScope,
+  SchemaSettingsDefaultSortingRules,
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  SchemaSettingsTemplate,
   mergeFilter,
   useCollection,
   useCollectionManager,
@@ -41,9 +50,9 @@ export const MapBlockDesigner = () => {
 
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
-      <SchemaSettings.BlockTitleItem />
+      <SchemaSettingsBlockTitleItem />
       <FixedBlockDesignerItem />
-      <SchemaSettings.CascaderItem
+      <SchemaSettingsCascaderItem
         title={t('Map field')}
         value={fieldNames.field}
         options={mapFieldOptions}
@@ -64,7 +73,7 @@ export const MapBlockDesigner = () => {
         }}
       />
       {isPointField ? (
-        <SchemaSettings.SelectItem
+        <SchemaSettingsSelectItem
           title={t('Marker field')}
           value={fieldNames.marker}
           options={markerFieldOptions}
@@ -84,8 +93,8 @@ export const MapBlockDesigner = () => {
           }}
         />
       ) : null}
-      <SchemaSettings.DefaultSortingRules path="x-component-props.lineSort" title={t('Concatenation order field')} />
-      <SchemaSettings.ModalItem
+      <SchemaSettingsDefaultSortingRules path="x-component-props.lineSort" title={t('Concatenation order field')} />
+      <SchemaSettingsModalItem
         title={t('The default zoom level of the map')}
         schema={
           {
@@ -115,8 +124,8 @@ export const MapBlockDesigner = () => {
           });
           dn.refresh();
         }}
-      ></SchemaSettings.ModalItem>
-      <SchemaSettings.DataScope
+      ></SchemaSettingsModalItem>
+      <SchemaSettingsDataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
         form={form}
@@ -138,11 +147,11 @@ export const MapBlockDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Template componentName={'Map'} collectionName={name} resourceName={defaultResource} />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Remove
+      <SchemaSettingsConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
+      <SchemaSettingsDivider />
+      <SchemaSettingsTemplate componentName={'Map'} collectionName={name} resourceName={defaultResource} />
+      <SchemaSettingsDivider />
+      <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{
           'x-component': 'Grid',

@@ -75,35 +75,33 @@ export const linkageAction = async ({
   operator,
   field,
   condition,
-  values,
   variables,
   localVariables,
 }: {
   operator;
   field;
   condition;
-  values;
   variables: VariablesContextType;
   localVariables: VariableOption[];
 }) => {
-  const disableResult = field?.linkageProperty?.disabled || [false];
-  const displayResult = field?.linkageProperty?.display || ['visible'];
+  const disableResult = field?.stateOfLinkageRules?.disabled || [false];
+  const displayResult = field?.stateOfLinkageRules?.display || ['visible'];
 
   switch (operator) {
     case ActionType.Visible:
-      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         displayResult.push(operator);
         field.data = field.data || {};
         field.data.hidden = false;
       }
-      field.linkageProperty = {
-        ...field.linkageProperty,
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
         display: displayResult,
       };
       field.display = last(displayResult);
       break;
     case ActionType.Hidden:
-      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         field.data = field.data || {};
         field.data.hidden = true;
       } else {
@@ -112,24 +110,22 @@ export const linkageAction = async ({
       }
       break;
     case ActionType.Disabled:
-      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         disableResult.push(true);
       }
-      field.linkageProperty = {
-        ...field.linkageProperty,
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
         disabled: disableResult,
       };
       field.disabled = last(disableResult);
       field.componentProps['disabled'] = last(disableResult);
       break;
     case ActionType.Active:
-      if (await conditionAnalyses({ rules: condition, formValues: values, variables, localVariables })) {
+      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
         disableResult.push(false);
-      } else {
-        disableResult.push(true);
       }
-      field.linkageProperty = {
-        ...field.linkageProperty,
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
         disabled: disableResult,
       };
       field.disabled = last(disableResult);

@@ -1,52 +1,27 @@
 import { FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
+import { createStyles } from 'antd-style';
 import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../..';
+import { SchemaInitializerItem, useSchemaInitializer } from '../../../../application';
+import { SchemaInitializer } from '../../../../application/schema-initializer/SchemaInitializer';
 import { useGlobalTheme } from '../../../../global-theme';
-import { SchemaInitializer } from '../../../../schema-initializer';
 
-export const MenuItemInitializers = (props: any) => {
-  const { t } = useTranslation();
-  return (
-    <SchemaInitializer.Button
-      role="button"
-      insertPosition={'beforeEnd'}
-      icon={'PlusOutlined'}
-      insert={props.insert}
-      style={props.style}
-      {...props}
-      items={[
-        {
-          type: 'item',
-          title: t('Group'),
-          component: GroupItem,
-        },
-        {
-          type: 'item',
-          title: t('Page'),
-          component: PageMenuItem,
-        },
-        {
-          type: 'item',
-          title: t('Link'),
-          component: LinkMenuItem,
-        },
-      ]}
-    >
-      {t('Add menu item')}
-    </SchemaInitializer.Button>
-  );
-};
+const useStyles = createStyles(({ token }) => ({
+  menuItem: {
+    paddingLeft: `${token.padding}px !important`,
+    paddingRight: `${token.padding}px !important`,
+  },
+}));
 
-const itemWrap = SchemaInitializer.itemWrap;
-
-export const GroupItem = itemWrap((props) => {
-  const { insert } = props;
+export const GroupItem = () => {
+  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
+  const { styles } = useStyles();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -100,16 +75,16 @@ export const GroupItem = itemWrap((props) => {
         },
       ],
     });
-  }, [theme]);
+  }, [insert, options.components, options.scope, t, theme]);
+  return <SchemaInitializerItem title={t('Group')} onClick={handleClick} className={styles.menuItem} />;
+};
 
-  return <SchemaInitializer.Item {...props} onClick={handleClick} />;
-});
-
-export const PageMenuItem = itemWrap((props) => {
-  const { insert } = props;
+export const PageMenuItem = () => {
+  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
+  const { styles } = useStyles();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -178,16 +153,16 @@ export const PageMenuItem = itemWrap((props) => {
         },
       },
     });
-  }, [theme]);
+  }, [insert, options.components, options.scope, t, theme]);
+  return <SchemaInitializerItem title={t('Page')} onClick={handleClick} className={styles.menuItem} />;
+};
 
-  return <SchemaInitializer.Item {...props} onClick={handleClick} />;
-});
-
-export const LinkMenuItem = itemWrap((props) => {
-  const { insert } = props;
+export const LinkMenuItem = () => {
+  const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
+  const { styles } = useStyles();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -247,7 +222,28 @@ export const LinkMenuItem = itemWrap((props) => {
         },
       ],
     });
-  }, [theme]);
+  }, [insert, options.components, options.scope, t, theme]);
 
-  return <SchemaInitializer.Item {...props} onClick={handleClick} />;
+  return <SchemaInitializerItem title={t('Link')} onClick={handleClick} className={styles.menuItem} />;
+};
+
+export const menuItemInitializer = new SchemaInitializer({
+  name: 'MenuItemInitializers',
+  insertPosition: 'beforeEnd',
+  icon: 'PlusOutlined',
+  title: '{{t("Add menu item")}}',
+  items: [
+    {
+      name: 'group',
+      Component: GroupItem,
+    },
+    {
+      name: 'page',
+      Component: PageMenuItem,
+    },
+    {
+      name: 'link',
+      Component: LinkMenuItem,
+    },
+  ],
 });

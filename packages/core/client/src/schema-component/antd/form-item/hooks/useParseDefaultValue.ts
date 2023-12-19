@@ -70,7 +70,7 @@ const useParseDefaultValue = () => {
 
         if (process.env.NODE_ENV !== 'production') {
           if (!collectionField) {
-            throw new Error(`useParseDefaultValue: can not find field ${fieldSchema.name}`);
+            console.error(`useParseDefaultValue: can not find field ${fieldSchema.name}`);
           }
         }
 
@@ -104,33 +104,32 @@ const useParseDefaultValue = () => {
     // 使用防抖，提高性能和用户体验
     const run = _.debounce(_run, DEBOUNCE_WAIT);
 
-    _run();
-
     if (isVariable(fieldSchema.default)) {
       const variableName = getVariableName(fieldSchema.default);
       const variable = findVariable(variableName);
 
-      if (process.env.NODE_ENV !== 'production' && !variable) {
-        throw new Error(`useParseDefaultValue: can not find variable ${variableName}`);
+      if (!variable) {
+        return console.error(`useParseDefaultValue: can not find variable ${variableName}`);
       }
 
-      if (variable) {
-        // 实现联动的效果，当依赖的变量变化时（如 `$nForm` 变量），重新解析默认值
-        const dispose = reaction(() => {
-          const obj = { [variableName]: variable?.ctx || {} };
-          const path = getPath(fieldSchema.default);
+      _run();
 
-          // fix https://nocobase.height.app/T-2212
-          if (getValuesByPath(obj, path) === undefined) {
-            // 返回一个随机值，确保能触发 run 函数
-            return Math.random();
-          }
+      // 实现联动的效果，当依赖的变量变化时（如 `$nForm` 变量），重新解析默认值
+      const dispose = reaction(() => {
+        const obj = { [variableName]: variable?.ctx || {} };
+        const path = getPath(fieldSchema.default);
+        const value = getValuesByPath(obj, path);
 
-          return getValuesByPath(obj, path);
-        }, run);
+        // fix https://nocobase.height.app/T-2212
+        if (value === undefined) {
+          // 返回一个随机值，确保能触发 run 函数
+          return Math.random();
+        }
 
-        return dispose;
-      }
+        return value;
+      }, run);
+
+      return dispose;
     }
   }, [fieldSchema.default]);
 };

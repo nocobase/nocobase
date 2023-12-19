@@ -12,7 +12,7 @@ test.describe('file manager', () => {
     // 1、前置条件：已登录
 
     // 2、测试步骤：进入“文件管理器”-“新建”按钮，填写表单，点击“确定”按钮
-    await page.goto('/admin/settings/file-manager/storages');
+    await page.goto('/admin/settings/file-manager');
     await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'plus Add new' }).hover();
     await page.getByRole('menuitem', { name: 'Local storage' }).click();
@@ -33,7 +33,7 @@ test.describe('file manager', () => {
 
     // 4、后置处理：删除新建的文件管理器
     await page.getByLabel(`action-Action.Link-Delete-storages-${storageName}`).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByText(storageName)).toBeHidden();
   });
 });

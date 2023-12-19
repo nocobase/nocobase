@@ -43,10 +43,6 @@ function EnsureAtomicity(target: any, propertyKey: string, descriptor: PropertyD
 
       const afterRawAttributes = Object.keys(model.rawAttributes);
       const createdRawAttributes = lodash.difference(afterRawAttributes, beforeRawAttributes);
-      console.log({
-        beforeRawAttributes,
-        afterRawAttributes,
-      });
       for (const key of createdRawAttributes) {
         delete this.model.rawAttributes[key];
       }
@@ -303,16 +299,16 @@ export class Collection<
         this.db.logger.warn(
           `source collection "${sourceCollectionName}" not found for field "${name}" at collection "${this.name}"`,
         );
-      }
-
-      const sourceField = sourceCollection.fields.get(sourceFieldName);
-
-      if (!sourceField) {
-        this.db.logger.warn(
-          `source field "${sourceFieldName}" not found for field "${name}" at collection "${this.name}"`,
-        );
       } else {
-        options = { ...lodash.omit(sourceField.options, 'name'), ...options };
+        const sourceField = sourceCollection.fields.get(sourceFieldName);
+
+        if (!sourceField) {
+          this.db.logger.warn(
+            `source field "${sourceFieldName}" not found for field "${name}" at collection "${this.name}"`,
+          );
+        } else {
+          options = { ...lodash.omit(sourceField.options, ['name', 'primaryKey']), ...options };
+        }
       }
     }
 
@@ -384,7 +380,7 @@ export class Collection<
   }
 
   remove() {
-    this.context.database.removeCollection(this.name);
+    return this.context.database.removeCollection(this.name);
   }
 
   async removeFromDb(options?: QueryInterfaceDropTableOptions) {
@@ -397,7 +393,8 @@ export class Collection<
       const queryInterface = this.db.sequelize.getQueryInterface();
       await queryInterface.dropTable(this.getTableNameWithSchema(), options);
     }
-    this.remove();
+
+    return this.remove();
   }
 
   async existsInDb(options?: Transactionable) {
@@ -614,12 +611,14 @@ export class Collection<
     });
 
     for (const model of models) {
-      await model.sync(syncOptions || {
-        force: false,
-        alter: {
-          drop: false,
+      await model.sync(
+        syncOptions || {
+          force: false,
+          alter: {
+            drop: false,
+          },
         },
-      });
+      );
     }
   }
 
@@ -705,6 +704,17 @@ export class Collection<
     };
   }
 
+  protected bindFieldEventListener() {
+    this.on('field.afterAdd', (field: Field) => {
+      field.bind();
+    });
+
+    this.on('field.afterRemove', (field: Field) => {
+      field.unbind();
+      this.db.emit('field.afterRemove', field);
+    });
+  }
+
   private checkOptions(options: CollectionOptions) {
     checkIdentifier(options.name);
     this.checkTableName();
@@ -721,16 +731,5 @@ export class Collection<
         throw new Error(`collection ${collection.name} and ${this.name} have same tableName "${tableName}"`);
       }
     }
-  }
-
-  private bindFieldEventListener() {
-    this.on('field.afterAdd', (field: Field) => {
-      field.bind();
-    });
-
-    this.on('field.afterRemove', (field: Field) => {
-      field.unbind();
-      this.db.emit('field.afterRemove', field);
-    });
   }
 }

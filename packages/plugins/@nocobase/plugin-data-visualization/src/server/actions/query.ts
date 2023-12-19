@@ -1,9 +1,9 @@
 import { Context, Next } from '@nocobase/actions';
 import { Field, FilterParser, snakeCase } from '@nocobase/database';
-import ChartsV2Plugin from '../plugin';
 import { formatter } from './formatter';
 import compose from 'koa-compose';
 import { parseFilter, getDateVars } from '@nocobase/utils';
+import { Cache } from '@nocobase/cache';
 
 type MeasureProps = {
   field: string | string[];
@@ -168,7 +168,6 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
   const { collection: collectionName, measures, dimensions, orders, filter } = ctx.action.params.values as QueryParams;
   const collection = ctx.db.getCollection(collectionName);
   const fields = collection.fields;
-  const underscored = collection.options.underscored;
   const models: {
     [target: string]: {
       type: string;
@@ -184,7 +183,8 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
     } else if (selected.field.length > 1) {
       [target, name] = selected.field;
     }
-    let field = underscored ? snakeCase(name) : name;
+    const rawAttributes = collection.model.getAttributes();
+    let field = rawAttributes[name]?.field || name;
     let fieldType = fields.get(name)?.type;
     if (target) {
       const targetField = fields.get(target) as Field;
@@ -291,8 +291,7 @@ export const parseVariables = async (ctx: Context, next: Next) => {
 
 export const cacheMiddleware = async (ctx: Context, next: Next) => {
   const { uid, cache: cacheConfig, refresh } = ctx.action.params.values as QueryParams;
-  const plugin = ctx.app.getPlugin('data-visualization') as ChartsV2Plugin;
-  const cache = plugin.cache;
+  const cache = ctx.app.cacheManager.getCache('data-visualization') as Cache;
   const useCache = cacheConfig?.enabled && uid;
 
   if (useCache && !refresh) {
@@ -304,7 +303,7 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
   }
   await next();
   if (useCache) {
-    await cache.set(uid, ctx.body, cacheConfig?.ttl || 30);
+    await cache.set(uid, ctx.body, cacheConfig?.ttl * 1000);
   }
 };
 

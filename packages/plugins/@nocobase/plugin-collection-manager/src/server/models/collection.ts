@@ -1,7 +1,7 @@
 import Database, { Collection, MagicAttributeModel, SyncOptions, Transactionable } from '@nocobase/database';
 import lodash from 'lodash';
 import { FieldModel } from './field';
-import { async } from 'fast-glob';
+import { QueryInterfaceDropTableOptions } from 'sequelize';
 
 interface LoadOptions extends Transactionable {
   // TODO
@@ -25,6 +25,7 @@ export class CollectionModel extends MagicAttributeModel {
       ...this.get(),
       fields: [],
     };
+
     if (this.db.hasCollection(name)) {
       collection = this.db.getCollection(name);
 
@@ -77,6 +78,18 @@ export class CollectionModel extends MagicAttributeModel {
       fields = fields.filter((field) => options.includeFields.includes(field.name));
     }
 
+    if (this.options.view && fields.find((f) => f.name == 'id')) {
+      // set id field to primary key, other primary key to false
+      fields = fields.map((field) => {
+        if (field.name == 'id') {
+          field.set('primaryKey', true);
+        } else {
+          field.set('primaryKey', false);
+        }
+        return field;
+      });
+    }
+
     // @ts-ignore
     const instances: FieldModel[] = fields;
 
@@ -85,7 +98,7 @@ export class CollectionModel extends MagicAttributeModel {
     }
   }
 
-  async remove(options?: any) {
+  async remove(options?: Transactionable & QueryInterfaceDropTableOptions) {
     const { transaction } = options || {};
     const name = this.get('name');
     const collection = this.db.getCollection(name);
@@ -109,9 +122,7 @@ export class CollectionModel extends MagicAttributeModel {
       }
     }
 
-    await collection.removeFromDb({
-      transaction,
-    });
+    await collection.removeFromDb(options);
   }
 
   async migrate(options?: SyncOptions & Transactionable) {

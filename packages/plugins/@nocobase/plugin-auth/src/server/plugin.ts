@@ -8,8 +8,12 @@ import { BasicAuth } from './basic-auth';
 import { enUS, zhCN } from './locale';
 import { AuthModel } from './model/authenticator';
 import { TokenBlacklistService } from './token-blacklist';
+import { Cache } from '@nocobase/cache';
+import { Storer } from './storer';
 
 export class AuthPlugin extends Plugin {
+  cache: Cache;
+
   afterAdd() {}
   async beforeLoad() {
     this.app.i18n.addResources('zh-CN', namespace, zhCN);
@@ -30,15 +34,18 @@ export class AuthPlugin extends Plugin {
         plugin: this,
       },
     });
-    // Set up auth manager and register preset auth type
-    this.app.authManager.setStorer({
-      get: async (name: string) => {
-        const repo = this.db.getRepository('authenticators');
-        const authenticators = await repo.find({ filter: { enabled: true } });
-        const authenticator = authenticators.find((authenticator: Model) => authenticator.name === name);
-        return authenticator || authenticators[0];
-      },
+    this.cache = await this.app.cacheManager.createCache({
+      name: 'auth',
+      prefix: 'auth',
+      store: 'memory',
     });
+
+    // Set up auth manager and register preset auth type
+    const storer = new Storer({
+      db: this.db,
+      cache: this.cache,
+    });
+    this.app.authManager.setStorer(storer);
 
     if (!this.app.authManager.jwt.blacklist) {
       // If blacklist service is not set, should configure default blacklist service
@@ -63,6 +70,16 @@ export class AuthPlugin extends Plugin {
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.authenticators`,
       actions: ['authenticators:*'],
+    });
+
+    // Change cache when user changed
+    this.app.db.on('users.afterSave', async (user: Model) => {
+      const cache = this.app.cache as Cache;
+      await cache.set(`auth:${user.id}`, user.toJSON());
+    });
+    this.app.db.on('users.afterDestroy', async (user: Model) => {
+      const cache = this.app.cache as Cache;
+      await cache.del(`auth:${user.id}`);
     });
   }
 

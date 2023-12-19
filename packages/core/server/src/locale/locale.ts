@@ -1,4 +1,4 @@
-import { Cache, createCache } from '@nocobase/cache';
+import { Cache } from '@nocobase/cache';
 import { lodash } from '@nocobase/utils';
 import Application from '../application';
 import { getResource } from './resource';
@@ -8,11 +8,11 @@ export class Locale {
   cache: Cache;
   defaultLang = 'en-US';
   localeFn = new Map();
+  resourceCached = new Map();
+  i18nInstances = new Map();
 
   constructor(app: Application) {
     this.app = app;
-    this.cache = createCache();
-
     this.app.on('afterLoad', async () => {
       this.app.log.debug('load locale resource');
       this.app.setMaintainingMessage('load locale resource');
@@ -23,6 +23,12 @@ export class Locale {
   }
 
   async load() {
+    this.cache = await this.app.cacheManager.createCache({
+      name: 'locale',
+      prefix: 'locale',
+      store: 'memory',
+    });
+
     await this.get(this.defaultLang);
   }
 
@@ -36,7 +42,7 @@ export class Locale {
     };
     for (const [name, fn] of this.localeFn) {
       // this.app.log.debug(`load [${name}] locale resource `);
-      const result = await this.wrapCache(`locale:${name}:${lang}`, async () => await fn(lang));
+      const result = await this.wrapCache(`${name}:${lang}`, async () => await fn(lang));
       if (result) {
         defaults[name] = result;
       }
@@ -45,20 +51,23 @@ export class Locale {
   }
 
   async wrapCache(key: string, fn: () => any) {
-    const result = await this.cache.get(key);
-    if (result) {
-      return result;
+    return await this.cache.wrapWithCondition(key, fn, {
+      isCacheable: (val: any) => !lodash.isEmpty(val),
+    });
+  }
+
+  async loadResourcesByLang(lang: string) {
+    if (!this.cache) {
+      return;
     }
-    const value = await fn();
-    if (lodash.isEmpty(value)) {
-      return value;
+    if (!this.resourceCached.has(lang)) {
+      await this.getCacheResources(lang);
     }
-    await this.cache.set(key, value);
-    return value;
   }
 
   async getCacheResources(lang: string) {
-    return await this.wrapCache(`locale:resources:${lang}`, () => this.getResources(lang));
+    this.resourceCached.set(lang, true);
+    return await this.wrapCache(`resources:${lang}`, () => this.getResources(lang));
   }
 
   getResources(lang: string) {
@@ -84,6 +93,22 @@ export class Locale {
         // empty
       }
     }
+    Object.keys(resources).forEach((name) => {
+      this.app.i18n.addResources(lang, name, resources[name]);
+    });
+
     return resources;
+  }
+
+  async getI18nInstance(lang: string) {
+    if (lang === '*' || !lang) {
+      return this.app.i18n.cloneInstance({ initImmediate: false });
+    }
+    let instance = this.i18nInstances.get(lang);
+    if (!instance) {
+      instance = this.app.i18n.cloneInstance({ initImmediate: false });
+      this.i18nInstances.set(lang, instance);
+    }
+    return instance;
   }
 }

@@ -60,7 +60,8 @@
   "overrides": [
     {
       "files": [
-        "**/e2e/**/*.{ts,js,tsx,jsx}"
+        "**/e2e/**/*.{ts,js,tsx,jsx}",
+        "**/__e2e__/**/*.{ts,js,tsx,jsx}"
       ],
       "rules": {
         "@typescript-eslint/no-floating-promises": "error"

@@ -166,7 +166,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
       const formData = new Set([]);
       const selectFields = new Set([]);
       const getAssociationAppends = (schema, str) => {
-        schema.reduceProperties((pre, s) => {
+        schema?.reduceProperties?.((pre, s) => {
           const prefix = pre || str;
           const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
           const isAssociationSubfield = s.name.includes('.');

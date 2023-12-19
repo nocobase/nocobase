@@ -1,14 +1,15 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
+  Application,
   CardItem,
   Grid,
   Markdown,
+  Plugin,
   MarkdownBlockInitializer,
   SchemaComponent,
   SchemaComponentProvider,
   SchemaInitializer,
-  SchemaInitializerProvider,
 } from '@nocobase/client';
 import React from 'react';
 
@@ -28,32 +29,25 @@ const gridRowColWrap = (schema) => {
   };
 };
 
-export const AddBlockButton = (props: any) => {
-  const { insertPosition, component } = props;
-  return (
-    <SchemaInitializer.Button
-      insertPosition={insertPosition}
-      wrap={gridRowColWrap}
-      items={[
+export const addBlockButton = new SchemaInitializer({
+  name: 'AddBlockButton',
+  title: 'Add block',
+  wrap: gridRowColWrap,
+  items: [
+    {
+      name: 'media',
+      type: 'itemGroup',
+      title: 'Other blocks',
+      children: [
         {
-          key: 'media',
-          type: 'itemGroup',
-          title: 'Other blocks',
-          children: [
-            {
-              key: 'markdown',
-              type: 'item',
-              title: 'Markdown',
-              component: 'MarkdownBlockInitializer',
-            },
-          ],
+          name: 'markdown',
+          title: 'Markdown',
+          Component: 'MarkdownBlockInitializer',
         },
-      ]}
-      component={component}
-      title={component ? undefined : 'Add block'}
-    />
-  );
-};
+      ],
+    },
+  ],
+});
 
 const schema: ISchema = {
   type: 'object',
@@ -68,12 +62,32 @@ const schema: ISchema = {
   },
 };
 
-export default function App() {
+function Root() {
   return (
-    <SchemaComponentProvider components={{ Grid, CardItem, Markdown }}>
-      <SchemaInitializerProvider initializers={{ AddBlockButton }} components={{ MarkdownBlockInitializer }}>
-        <SchemaComponent schema={schema} />
-      </SchemaInitializerProvider>
+    <SchemaComponentProvider components={{ Grid, CardItem, Markdown, MarkdownBlockInitializer }}>
+      <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );
 }
+
+class MyPlugin extends Plugin {
+  async load() {
+    // 注册路由
+    this.app.router.add('root', {
+      path: '/',
+      Component: Root,
+    });
+
+    this.app.schemaInitializerManager.add(addBlockButton);
+  }
+}
+
+const app = new Application({
+  router: {
+    type: 'memory',
+    initialEntries: ['/'],
+  },
+  plugins: [MyPlugin],
+});
+
+export default app.getRootComponent();

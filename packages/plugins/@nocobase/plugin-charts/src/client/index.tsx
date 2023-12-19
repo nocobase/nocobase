@@ -1,19 +1,12 @@
 import { registerValidateRules } from '@formily/core';
-import {
-  BlockSchemaComponentPlugin,
-  Plugin,
-  SchemaComponentOptions,
-  SchemaInitializerContext,
-  SettingsCenterProvider,
-  useAPIClient,
-} from '@nocobase/client';
+import { BlockSchemaComponentPlugin, Plugin, SchemaComponentOptions, useAPIClient } from '@nocobase/client';
 import JSON5 from 'json5';
-import React, { useContext } from 'react';
+import React from 'react';
 import { ChartBlockEngine } from './ChartBlockEngine';
 import { ChartBlockInitializer } from './ChartBlockInitializer';
 import { ChartQueryMetadataProvider } from './ChartQueryMetadataProvider';
 import './Icons';
-import { lang } from './locale';
+import { lang, NAMESPACE } from './locale';
 import { CustomSelect } from './select';
 import { QueriesTable } from './settings/QueriesTable';
 
@@ -43,21 +36,6 @@ registerValidateRules({
 
 const ChartsProvider = React.memo((props) => {
   const api = useAPIClient();
-  const items = useContext<any>(SchemaInitializerContext);
-  const children = items.BlockInitializers.items[0].children;
-
-  if (children) {
-    const hasChartItem = children.some((child) => child?.component === 'ChartBlockInitializer');
-    if (!hasChartItem) {
-      children.push({
-        key: 'chart',
-        type: 'item',
-        icon: 'PieChartOutlined',
-        title: '{{t("Chart (Old)",{ns:"charts"})}}',
-        component: 'ChartBlockInitializer',
-      });
-    }
-  }
   const validateSQL = (sql) => {
     return new Promise((resolve) => {
       api
@@ -78,27 +56,12 @@ const ChartsProvider = React.memo((props) => {
   };
   return (
     <ChartQueryMetadataProvider>
-      <SettingsCenterProvider
-        settings={{
-          charts: {
-            title: '{{t("Charts", {ns:"charts"})}}',
-            icon: 'PieChartOutlined',
-            tabs: {
-              queries: {
-                title: '{{t("Queries", {ns:"charts"})}}',
-                component: QueriesTable,
-              },
-            },
-          },
-        }}
+      <SchemaComponentOptions
+        scope={{ validateSQL }}
+        components={{ CustomSelect, ChartBlockInitializer, ChartBlockEngine }}
       >
-        <SchemaComponentOptions
-          scope={{ validateSQL }}
-          components={{ CustomSelect, ChartBlockInitializer, ChartBlockEngine }}
-        >
-          <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
-        </SchemaComponentOptions>
-      </SettingsCenterProvider>
+        {props.children}
+      </SchemaComponentOptions>
     </ChartQueryMetadataProvider>
   );
 });
@@ -109,7 +72,20 @@ export class ChartsPlugin extends Plugin {
     this.app.pm.add(BlockSchemaComponentPlugin);
   }
   async load() {
+    // Chart (Old) 老的不需要了
+    // const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
+    // blockInitializers?.add('data-blocks.chart-old', {
+    //   icon: 'PieChartOutlined',
+    //   title: '{{t("Chart (Old)",{ns:"charts"})}}',
+    //   Component: 'ChartBlockInitializer',
+    // });
     this.app.use(ChartsProvider);
+    this.app.pluginSettingsManager.add(NAMESPACE, {
+      title: `{{t("Charts", { ns: "${NAMESPACE}" })}}`,
+      icon: 'PieChartOutlined',
+      Component: QueriesTable,
+      aclSnippet: 'pm.charts.queries',
+    });
   }
 }
 

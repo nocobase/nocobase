@@ -5,10 +5,10 @@ import { uid } from '@formily/shared';
 import {
   CollectionCategroriesContext,
   CollectionProvider,
-  PopoverWithStopPropagation,
   SchemaComponent,
   SchemaComponentProvider,
   Select,
+  StablePopover,
   collection,
   useCollectionManager,
   useCompile,
@@ -33,6 +33,7 @@ import { CollectionNodeProvder } from './CollectionNodeProvder';
 import { ConnectAssociationAction } from './ConnectAssociationAction';
 import { ConnectChildAction } from './ConnectChildAction';
 import { ConnectParentAction } from './ConnectParentAction';
+import { DeleteCollectionAction } from './DeleteCollectionAction';
 import { EditCollectionAction } from './EditCollectionAction';
 import { EditFieldAction } from './EditFieldAction';
 import { FieldSummary } from './FieldSummary';
@@ -256,7 +257,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
         }}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <PopoverWithStopPropagation
+        <StablePopover
           content={CollectionConten(property)}
           getPopupContainer={getPopupContainer}
           mouseLeaveDelay={0}
@@ -275,7 +276,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
             <Badge color={typeColor(property)} />
             {compile(property.uiSchema?.title)}
           </div>
-        </PopoverWithStopPropagation>
+        </StablePopover>
         <div className={`type  field_type`}>{compile(getInterface(property.interface)?.title)}</div>
         {isHovered && <OperationButton property={property} {...operatioBtnProps} />}
       </div>
@@ -436,6 +437,7 @@ const Entity: React.FC<{
                   components={{
                     EditOutlined,
                     EditCollectionAction,
+                    DeleteCollectionAction,
                     ConnectChildAction,
                     ConnectParentAction,
                     ...options.components,
@@ -475,17 +477,14 @@ const Entity: React.FC<{
                       delete: {
                         type: 'void',
                         'x-action': 'destroy',
-                        'x-component': 'Action',
+                        'x-component': 'DeleteCollectionAction',
                         'x-component-props': {
-                          component: DeleteOutlined,
-                          icon: 'DeleteOutlined',
                           className: 'btn-del',
-                          confirm: {
-                            title: "{{t('Delete record')}}",
-                            getContainer: getPopupContainer,
-                            collectionConten: "{{t('Are you sure you want to delete it?')}}",
+                          getContainer: getPopupContainer,
+                          item: collectionData.current,
+                          useAction: () => {
+                            return useDestroyActionAndRefreshCM({ name, id });
                           },
-                          useAction: () => useDestroyActionAndRefreshCM({ name, id }),
                         },
                       },
                     },

@@ -2,6 +2,11 @@ import { QueryInterface as SequelizeQueryInterface, Transactionable } from 'sequ
 import { Collection } from '../collection';
 import Database from '../database';
 
+export type TableInfo = {
+  tableName: string;
+  schema?: string;
+};
+
 export default abstract class QueryInterface {
   sequelizeQueryInterface: SequelizeQueryInterface;
 
@@ -24,6 +29,8 @@ export default abstract class QueryInterface {
   }>;
 
   abstract parseSQL(sql: string): any;
+
+  abstract showTableDefinition(tableInfo: TableInfo): Promise<any>;
 
   async dropAll(options) {
     if (options.drop !== true) return;

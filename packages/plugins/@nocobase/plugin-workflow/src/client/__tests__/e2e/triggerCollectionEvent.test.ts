@@ -24,7 +24,7 @@ test.describe('trigger collection events', () => {
 
     const newPage = mockPage(appendJsonCollectionName(e2e_GeneralFormsTable, appendText));
     //配置工作流
-    await page.goto('/admin/settings/workflow/workflows');
+    await page.goto('/admin/settings/workflow');
     await page.waitForLoadState('networkidle');
     await page.getByLabel('action-Action-Add new-workflows').click();
     const createWorkFlow = new CreateWorkFlow(page);
@@ -38,9 +38,9 @@ test.describe('trigger collection events', () => {
     //配置工作流触发器
     await page.getByLabel(`action-WorkflowLink-Configure-workflows-${workFlowName}`).click();
     await page.getByRole('button', { name: 'Configure' }).click();
-    await page.getByTestId('select-collection').getByLabel('Search').click();
+    await page.getByTestId('select-collection').click();
     await page.getByText(collectionDisplayName).click();
-    await page.getByTestId('select-single').getByLabel('Search').click();
+    await page.getByTestId('select-single').click();
     await page.getByText('After record added', { exact: true }).click();
     await page.getByLabel('action-Action-Submit-workflows').click();
     await page.getByRole('link', { name: 'Workflow' }).click();
@@ -51,8 +51,8 @@ test.describe('trigger collection events', () => {
     //配置录入数据区块
     await newPage.goto();
     await page.getByLabel('schema-initializer-Grid-BlockInitializers').hover();
-    await page.getByLabel('dataBlocks-table', { exact: true }).hover();
-    await page.getByLabel(`dataBlocks-table-${collectionDisplayName}`).click();
+    await page.getByRole('menuitem', { name: 'table Table' }).hover();
+    await page.getByRole('menuitem', { name: collectionDisplayName }).click();
 
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
@@ -60,20 +60,20 @@ test.describe('trigger collection events', () => {
     await page.getByText('Configure columns').hover();
     await page.getByText(fieldDisplayName).click();
     await page.getByText('Configure actions').hover();
-    await page.getByLabel('Enable actions-Add new').click();
-    await expect(page.getByLabel('Enable actions-Add new').getByRole('switch')).toBeEnabled();
+    await page.getByRole('menuitem', { name: 'Add new' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Add new' }).getByRole('switch')).toBeEnabled();
 
     await page.getByLabel(`action-Action-Add new-create-tt_amt_org${appendText}-table`).click();
     await page.getByLabel(`schema-initializer-Grid-CreateFormBlockInitializers-tt_amt_org${appendText}`).hover();
-    await page.getByLabel('Data blocks-Form').click();
+    await page.getByRole('menuitem', { name: 'form Form' }).click();
 
     // 移开鼠标，关闭菜单
     await page.mouse.move(300, 0);
 
     await page.getByLabel(`schema-initializer-ActionBar-CreateFormActionInitializers-tt_amt_org${appendText}`).hover();
-    await page.getByLabel('Enable actions-Submit').click();
+    await page.getByRole('menuitem', { name: 'Submit' }).click();
     await page.getByLabel(`schema-initializer-Grid-FormItemInitializers-tt_amt_org${appendText}`).hover();
-    await page.getByRole('button', { name: `Display collection fields-${fieldDisplayName}` }).click();
+    await page.getByRole('menuitem', { name: fieldDisplayName }).click();
 
     await page.mouse.move(300, 0);
 
@@ -85,7 +85,7 @@ test.describe('trigger collection events', () => {
 
     // 3、预期结果：数据添加成功，工作流成功触发
     await expect(page.getByText(fieldData)).toBeVisible();
-    await page.goto('/admin/settings/workflow/workflows');
+    await page.goto('/admin/settings/workflow');
     await expect(page.getByRole('table').locator('a').filter({ hasText: '1' })).toBeVisible();
 
     // 4、后置处理：删除工作流
@@ -93,7 +93,7 @@ test.describe('trigger collection events', () => {
     await page.getByRole('textbox').fill(workFlowName);
     await page.getByRole('button', { name: 'Submit' }).click();
     await page.getByLabel(`action-Action.Link-Delete-workflows-${workFlowName}`).click();
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByText(workFlowName)).toBeHidden();
   });
 });

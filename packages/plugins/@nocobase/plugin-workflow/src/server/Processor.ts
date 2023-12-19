@@ -2,7 +2,7 @@ import { Model, Transaction, Transactionable } from '@nocobase/database';
 import { appendArrayColumn } from '@nocobase/evaluators';
 import { Logger } from '@nocobase/logger';
 import { parse } from '@nocobase/utils';
-import Plugin from '.';
+import type Plugin from './Plugin';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 import { Runner } from './instructions';
 import type { ExecutionModel, FlowNodeModel, JobModel } from './types';
@@ -213,7 +213,9 @@ export default class Processor {
     const { instructions } = this.options.plugin;
     const instruction = instructions.get(node.type);
     if (typeof instruction.resume !== 'function') {
-      return Promise.reject(new Error('`resume` should be implemented'));
+      return Promise.reject(
+        new Error(`"resume" method should be implemented for [${node.type}] instruction of node (#${node.id})`),
+      );
     }
 
     return this.exec(instruction.resume.bind(instruction), node, job);

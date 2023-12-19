@@ -97,7 +97,7 @@ export const CreateRecordAction = observer(
     const localVariables = useLocalVariables({ currentForm: { values } as any });
 
     useEffect(() => {
-      field.linkageProperty = {};
+      field.stateOfLinkageRules = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {
@@ -106,13 +106,12 @@ export const CreateRecordAction = observer(
               operator: h.operator,
               field,
               condition: v.condition,
-              values,
               variables,
               localVariables,
             });
           });
         });
-    }, [JSON.stringify(linkageRules), values]);
+    }, [field, linkageRules, localVariables, variables]);
     return (
       <div className={actionDesignerCss}>
         <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
@@ -202,7 +201,7 @@ export const CreateAction = observer(
     }, [menuItems]);
 
     useEffect(() => {
-      field.linkageProperty = {};
+      field.stateOfLinkageRules = {};
       linkageRules
         .filter((k) => !k.disabled)
         .forEach((v) => {
@@ -211,13 +210,12 @@ export const CreateAction = observer(
               operator: h.operator,
               field,
               condition: v.condition,
-              values,
               variables,
               localVariables,
             });
           });
         });
-    }, [JSON.stringify(linkageRules), values]);
+    }, [field, linkageRules, localVariables, variables]);
     return (
       <div className={actionDesignerCss}>
         <FinallyButton

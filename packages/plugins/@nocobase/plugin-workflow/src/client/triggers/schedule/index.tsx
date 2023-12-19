@@ -1,35 +1,33 @@
-import {
-  SchemaInitializerItemOptions,
-  useCollectionDataSource,
-  useCollectionManager,
-  useCompile,
-} from '@nocobase/client';
+import { SchemaInitializerItemType, useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
 import { NAMESPACE, lang } from '../../locale';
 import { getCollectionFieldOptions } from '../../variable';
+import { Trigger } from '..';
 import { ScheduleConfig } from './ScheduleConfig';
 import { SCHEDULE_MODE } from './constants';
 
-export default {
-  title: `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`,
-  type: 'schedule',
-  description: `{{t("Event will be scheduled and triggered base on time conditions.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Trigger {
+  title = `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`;
+  type = 'schedule';
+  description = `{{t("Event will be scheduled and triggered base on time conditions.", { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     config: {
       type: 'void',
       'x-component': 'ScheduleConfig',
       'x-component-props': {},
     },
-  },
-  scope: {
+  };
+  scope = {
     useCollectionDataSource,
-  },
-  components: {
+  };
+  components = {
     ScheduleConfig,
-  },
+  };
   useVariables(config, opts) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { getCollectionFields } = useCollectionManager();
     const options: any[] = [];
     if (!opts?.types || opts.types.includes('date')) {
@@ -64,19 +62,19 @@ export default {
       }
     }
     return options;
-  },
-  useInitializers(config): SchemaInitializerItemOptions | null {
+  }
+  useInitializers(config): SchemaInitializerItemType | null {
     if (!config.collection) {
       return null;
     }
 
     return {
+      name: 'triggerData',
       type: 'item',
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
-      component: CollectionBlockInitializer,
+      Component: CollectionBlockInitializer,
       collection: config.collection,
       dataSource: '{{$context.data}}',
     };
-  },
-  initializers: {},
-};
+  }
+}

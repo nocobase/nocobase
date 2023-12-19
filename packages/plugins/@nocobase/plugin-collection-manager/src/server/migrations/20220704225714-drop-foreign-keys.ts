@@ -8,11 +8,11 @@ export default class DropForeignKeysMigration extends Migration {
     }
     const transaction = await this.db.sequelize.transaction();
     try {
-      if (this.db.inDialect('mysql')) {
+      if (this.db.isMySQLCompatibleDialect()) {
         const [results]: any = await this.db.sequelize.query(
           `
-            SELECT CONCAT('ALTER TABLE ',TABLE_SCHEMA,'.',TABLE_NAME,' DROP FOREIGN KEY ',CONSTRAINT_NAME,' ;') as q 
-            FROM information_schema.TABLE_CONSTRAINTS c 
+            SELECT CONCAT('ALTER TABLE ',TABLE_SCHEMA,'.',TABLE_NAME,' DROP FOREIGN KEY ',CONSTRAINT_NAME,' ;') as q
+            FROM information_schema.TABLE_CONSTRAINTS c
             WHERE c.TABLE_SCHEMA='${this.db.options.database}' AND c.CONSTRAINT_TYPE='FOREIGN KEY';
           `,
           { transaction },

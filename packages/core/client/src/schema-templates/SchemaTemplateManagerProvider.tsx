@@ -84,6 +84,7 @@ export const useSchemaTemplateManager = () => {
       return { key };
     },
     getTemplateBySchema(schema) {
+      if (!schema) return;
       const templateKey = schema['x-template-key'];
       if (templateKey) {
         return templates?.find((template) => template.key === templateKey);

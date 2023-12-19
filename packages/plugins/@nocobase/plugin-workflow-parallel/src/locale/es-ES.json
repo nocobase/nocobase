@@ -1,0 +1,10 @@
+{
+  "Parallel branch": "Rama paralela",
+  "Add branch": "Añadir rama",
+  "All succeeded": "Todo correcto",
+  "Any succeeded": "Cualquiera con éxito",
+  "Any succeeded or failed": "Cualquiera tuvo éxito o falló",
+  "Continue after all branches succeeded": "Continuar después que todas las ramas han tenido éxito",
+  "Continue after any branch succeeded": "Continuar después que cualquier rama tenga éxito",
+  "Continue after any branch succeeded, or exit after any branch failed": "Continuar después de que cualquier rama tenga éxito, o salir después de que cualquier rama falle"
+}

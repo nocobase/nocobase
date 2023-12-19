@@ -115,8 +115,8 @@ export class MockServer extends Koa {
               {
                 get(target, method: string, receiver) {
                   return (params: ActionParams = {}) => {
-                    const { values = {}, file, ...restParams } = params;
                     let { filterByTk } = params;
+                    const { values = {}, file, ...restParams } = params;
                     if (params.associatedIndex) {
                       resourceOf = params.associatedIndex;
                     }

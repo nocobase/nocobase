@@ -1,5 +1,5 @@
 import { mockDatabase } from '@nocobase/database';
-import Application, { ApplicationOptions, AppSupervisor, Gateway, PluginManager } from '@nocobase/server';
+import Application, { AppSupervisor, ApplicationOptions, Gateway, PluginManager } from '@nocobase/server';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
@@ -82,6 +82,25 @@ export class MockServer extends Application {
     if (process.env['COLLECTION_MANAGER_SCHEMA'] !== process.env['DB_SCHEMA']) {
       await this.db.clean({ drop: true, schema: process.env['COLLECTION_MANAGER_SCHEMA'] });
     }
+  }
+
+  async quickstart(options: { clean?: boolean } = {}) {
+    const { clean } = options;
+    if (clean) {
+      await this.cleanDb();
+    }
+    await this.runCommand('start', '--quickstart');
+  }
+
+  protected createDatabase(options: ApplicationOptions) {
+    const oldDatabase = this._db;
+
+    const databaseOptions = oldDatabase ? oldDatabase.options : <any>options?.database || {};
+    const database = mockDatabase(databaseOptions);
+    database.setLogger(this._logger);
+    database.setContext({ app: this });
+
+    return database;
   }
 
   async destroy(options: any = {}): Promise<void> {
@@ -171,18 +190,6 @@ export class MockServer extends Application {
       },
     });
     return proxy as any;
-  }
-
-  protected createDatabase(options: ApplicationOptions) {
-    const oldDatabase = this._db;
-
-    const databaseOptions = oldDatabase ? oldDatabase.options : <any>options?.database || {};
-    const database = mockDatabase(databaseOptions);
-
-    database.setLogger(this._logger);
-    database.setContext({ app: this });
-
-    return database;
   }
 }
 

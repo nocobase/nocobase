@@ -2,25 +2,26 @@ import { ArrayItems } from '@formily/antd-v5';
 
 import {
   SchemaComponentContext,
-  SchemaInitializerItemOptions,
+  SchemaInitializerItemType,
   useCollectionDataSource,
   useCollectionManager,
   useCompile,
 } from '@nocobase/client';
 
-import { appends, collection, filter, pagination, sort } from '../schemas/collection';
-import { NAMESPACE } from '../locale';
+import { useForm } from '@formily/react';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
-import { getCollectionFieldOptions, useWorkflowVariableOptions } from '../variable';
-import { useForm } from '@formily/react';
+import { NAMESPACE } from '../locale';
+import { appends, collection, filter, pagination, sort } from '../schemas/collection';
+import { WorkflowVariableInput, getCollectionFieldOptions } from '../variable';
+import { Instruction } from '.';
 
-export default {
-  title: `{{t("Query record", { ns: "${NAMESPACE}" })}}`,
-  type: 'query',
-  group: 'collection',
-  description: `{{t("Query records from a collection. You can use variables from upstream nodes as query conditions.", { ns: "${NAMESPACE}" })}}`,
-  fieldset: {
+export default class extends Instruction {
+  title = `{{t("Query record", { ns: "${NAMESPACE}" })}}`;
+  type = 'query';
+  group = 'collection';
+  description = `{{t("Query records from a collection. You can use variables from upstream nodes as query conditions.", { ns: "${NAMESPACE}" })}}`;
+  fieldset = {
     collection,
     multiple: {
       type: 'boolean',
@@ -55,11 +56,9 @@ export default {
       'x-component': 'Checkbox',
       'x-content': `{{t("Exit when query result is null", { ns: "${NAMESPACE}" })}}`,
     },
-  },
-  view: {},
-  scope: {
+  };
+  scope = {
     useCollectionDataSource,
-    useWorkflowVariableOptions,
     useSortableFields() {
       const compile = useCompile();
       const { getCollectionFields, getInterface } = useCollectionManager();
@@ -83,14 +82,17 @@ export default {
           };
         });
     },
-  },
-  components: {
+  };
+  components = {
     ArrayItems,
     FilterDynamicComponent,
     SchemaComponentContext,
-  },
+    WorkflowVariableInput,
+  };
   useVariables({ key: name, title, config }, options) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const { getCollectionFields } = useCollectionManager();
     // const depth = config?.params?.appends?.length
     //   ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1)
@@ -116,19 +118,19 @@ export default {
     });
 
     return result;
-  },
-  useInitializers(node): SchemaInitializerItemOptions | null {
+  }
+  useInitializers(node): SchemaInitializerItemType | null {
     if (!node.config.collection || node.config.multiple) {
       return null;
     }
 
     return {
+      name: node.title ?? `#${node.id}`,
       type: 'item',
       title: node.title ?? `#${node.id}`,
-      component: CollectionBlockInitializer,
+      Component: CollectionBlockInitializer,
       collection: node.config.collection,
       dataSource: `{{$jobsMapByNodeKey.${node.key}}}`,
     };
-  },
-  initializers: {},
-};
+  }
+}
