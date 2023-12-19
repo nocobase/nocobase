@@ -2,8 +2,8 @@ import { Authenticator } from '@nocobase/auth';
 import { Database, Model } from '@nocobase/database';
 
 export class AuthModel extends Model implements Authenticator {
-  authType: string;
-  options: any;
+  declare authType: string;
+  declare options: any;
 
   async findUser(uuid: string) {
     let user: Model;
