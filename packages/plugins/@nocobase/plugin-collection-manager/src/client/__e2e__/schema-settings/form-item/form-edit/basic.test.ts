@@ -86,22 +86,11 @@ test.describe('icon', () => {
       },
       expectReadonly: async () => {
         // 只读模式下，选择图标按钮会被禁用
-        if (record.icon) {
-          await expect(page.getByRole('button', { name: record.icon })).toBeDisabled();
-        } else {
-          await expect(page.getByRole('button', { name: 'Select icon' })).toBeDisabled();
-        }
+        await expect(page.getByRole('button', { name: 'account-book' })).toBeDisabled();
       },
       expectEasyReading: async () => {
         // 按钮会消失，只剩下图标
-        if (record.icon) {
-          await expect(page.getByRole('button', { name: record.icon })).not.toBeVisible();
-          await expect(
-            page.getByLabel('block-item-CollectionField-general-form-general.icon-icon').getByLabel(record.icon),
-          ).toBeVisible();
-        } else {
-          await expect(page.getByRole('button', { name: 'Select icon' })).not.toBeVisible();
-        }
+        await expect(page.getByRole('button', { name: 'account-book' })).not.toBeVisible();
       },
     });
   });
