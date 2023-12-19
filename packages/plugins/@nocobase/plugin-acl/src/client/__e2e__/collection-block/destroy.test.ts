@@ -29,16 +29,20 @@ test('individual collection permission', async ({ page, mockPage, mockRole, mock
   await mockPage().goto();
   //新建角色并切换到新角色
   const roleData = await mockRole({
-    snippets: ['!ui.*', '!pm', '!pm.*'],
     default: true,
     allowNewMenu: true,
-    strategy: {
-      actions: ['create', 'update', 'destroy', 'view'],
-    },
     resources: [
       {
         usingActionsConfig: true,
         name: 'users',
+        actions: [
+          { name: 'view' },
+          {
+            name: 'destroy',
+            fields: ['id'],
+            scope: null,
+          },
+        ],
       },
     ],
   });

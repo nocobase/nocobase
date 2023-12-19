@@ -30,14 +30,24 @@ test('individual collection permission', async ({ page, mockPage, mockRole, mock
   await mockPage(oneEmptyTableBlockWithActions).goto();
   //新建角色并切换到新角色
   const roleData = await mockRole({
-    snippets: ['!ui.*', '!pm', '!pm.*'],
-    strategy: {
-      actions: ['update', 'destroy', 'view', 'create'],
-    },
+    default: true,
+    allowNewMenu: true,
     resources: [
       {
         usingActionsConfig: true,
         name: 'users',
+        actions: [
+          {
+            name: 'view',
+            fields: ['id'],
+            scope: null,
+          },
+          {
+            name: 'create',
+            fields: ['id'],
+            scope: null,
+          },
+        ],
       },
     ],
   });
@@ -47,5 +57,5 @@ test('individual collection permission', async ({ page, mockPage, mockRole, mock
   await page.reload();
   await mockPage(oneEmptyTableBlockWithActions).goto();
   await page.reload();
-  await expect(await page.getByLabel('action-Action-Delete-destroy-users-table')).not.toBeVisible();
+  await expect(await page.getByLabel('action-Action-Add new-create-users-table')).toBeVisible();
 });

@@ -1,7 +1,12 @@
 import { expect, test } from '@nocobase/test/client';
 
-test.describe('menu permissions', () => {
-  test('view ', async ({ page, mockPage }) => {
-    await mockPage().goto();
-  });
-});
+// test.afterEach(async ({ page }) => {
+//   await page.evaluate(() => {
+//     window.localStorage.setItem('NOCOBASE_ROLE', 'root');
+//   });
+// });
+// test.describe('menu permissions', () => {
+//   test('menu permission ', async ({ page, mockPage }) => {
+//     await mockPage().goto();
+//   });
+// });

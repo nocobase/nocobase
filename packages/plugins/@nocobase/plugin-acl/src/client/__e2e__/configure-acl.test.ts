@@ -81,9 +81,12 @@ test('new menu items allow to be asscessed by default ', async ({ page, mockPage
   await mockPage().goto();
   //新建角色并切换到新角色
   const roleData = await mockRole({
-    snippets: ['ui.*'],
-    default: true,
+    // default: true,
     allowNewMenu: true,
+    snippets: ['pm', 'pm.*', 'ui.*'],
+    strategy: {
+      actions: ['create', 'update', 'destroy', 'view'],
+    },
   });
   await page.evaluate((roleData) => {
     window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
@@ -91,4 +94,7 @@ test('new menu items allow to be asscessed by default ', async ({ page, mockPage
   await page.reload();
   await mockPage({ ...oneEmptyTableBlockWithActions, name: 'new page' }).goto();
   await expect(page.getByLabel('new page')).toBeVisible();
+  await page.evaluate(() => {
+    window.localStorage.setItem('NOCOBASE_ROLE', 'root');
+  });
 });
