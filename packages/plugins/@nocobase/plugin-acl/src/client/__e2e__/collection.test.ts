@@ -23,7 +23,7 @@ test.describe('view', () => {
     await page.getByTestId('user-center-button').hover();
     await expect(page.getByLabel('block-item-CardItem-general-table')).not.toBeVisible();
   });
-  test('individual collection permission', async ({ page, mockPage, mockRole, mockRecord }) => {
+  test('individual collection permission', async ({ page, mockPage, mockRole }) => {
     await mockPage(oneTableBlock).goto();
     //新建角色并切换到新角色
     const roleData = await mockRole({
@@ -44,6 +44,30 @@ test.describe('view', () => {
     await page.reload();
     await page.getByTestId('user-center-button').hover();
     await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
+  });
+  test('field permission in view action', async ({ page, mockPage, mockRole }) => {
+    await mockPage(oneTableBlock).goto();
+    //新建角色并切换到新角色
+    const roleData = await mockRole({
+      default: true,
+      allowNewMenu: true,
+      resources: [
+        {
+          usingActionsConfig: true,
+          name: 'general',
+          actions: [{ name: 'view', fields: ['singleLineText'] }],
+        },
+      ],
+    });
+    await mockPage(oneTableBlock).goto();
+    await page.evaluate((roleData) => {
+      window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
+    }, roleData);
+    await page.reload();
+    await page.getByTestId('user-center-button').hover();
+    await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'singleLineText' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'phone' })).not.toBeVisible();
   });
 });
 
