@@ -525,34 +525,40 @@ export const EditOperator = () => {
           ['x-uid']: uid,
           ['x-filter-operators']: storedOperators,
         };
+        let componentProps = {};
 
         // 根据操作符的配置，设置组件的属性
         if (operator?.schema?.['x-component']) {
           _.set(fieldSchema, 'x-component-props.component', operator.schema['x-component']);
           _.set(field, 'componentProps.component', operator.schema['x-component']);
           field.reset();
+          componentProps = {
+            component: operator.schema['x-component'],
+            ...operator.schema['x-component-props'],
+          };
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
-              ['x-component-props']: {
-                component: operator.schema['x-component'],
-              },
+              ['x-component-props']: componentProps,
             },
           });
         } else if (fieldSchema['x-component-props']?.component) {
           _.set(fieldSchema, 'x-component-props.component', null);
           _.set(field, 'componentProps.component', null);
           field.reset();
+          componentProps = {
+            component: null,
+            ...operator.schema['x-component-props'],
+          };
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
-              ['x-component-props']: {
-                component: null,
-              },
+              ['x-component-props']: componentProps,
             },
           });
         }
 
+        field.componentProps = componentProps;
         dn.emit('patch', {
           schema,
         });
