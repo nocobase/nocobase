@@ -4,9 +4,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import {
   SchemaInitializerItem,
+  SchemaInitializerMenu,
   useSchemaInitializer,
   useSchemaInitializerMenuItems,
-  SchemaInitializerMenu,
 } from '../../application';
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
@@ -48,7 +48,7 @@ export const SearchCollections = ({ value: outValue, onChange }) => {
       <Input
         ref={inputRef}
         allowClear
-        style={{ padding: '0 4px 6px' }}
+        style={{ padding: '0 4px 6px', boxShadow: 'none' }}
         bordered={false}
         placeholder={t('Search and select collection')}
         value={value}

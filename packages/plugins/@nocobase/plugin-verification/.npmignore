@@ -1,2 +1,4 @@
 /node_modules
 /src
+/dist/node_modules/tencentcloud-sdk-nodejs/src
+/dist/node_modules/tencentcloud-sdk-nodejs/test

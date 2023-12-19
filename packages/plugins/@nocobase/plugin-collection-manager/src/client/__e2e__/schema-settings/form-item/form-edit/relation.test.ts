@@ -78,7 +78,7 @@ test.describe('many to many', () => {
 
     // 配置
     await page.getByRole('button', { name: 'Add sort field' }).click();
-    await page.getByTestId('select-single').getByLabel('Search').click();
+    await page.getByTestId('select-single').click();
     await page.getByRole('option', { name: 'ID', exact: true }).click();
     await page.getByText('DESC', { exact: true }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
