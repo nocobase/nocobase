@@ -1,11 +1,15 @@
-import '@testing-library/jest-dom';
+import { vi, expect } from 'vitest';
+
+// 提供类似于 toBeInTheDocument 函数的功能
+import * as matchers from 'vitest-dom/matchers';
+expect.extend(matchers);
+
 /**
  * 解决 TypeError: URL.createObjectURL is not a function
  * 解决 ReferenceError: Worker is not defined
  */
 import 'jsdom-worker';
 
-import { vi } from 'vitest';
 import '../packages/core/client/src/i18n';
 import dotenv from 'dotenv';
 import path from 'path';

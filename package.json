@@ -73,7 +73,6 @@
     "@commitlint/prompt-cli": "^16.1.0",
     "@faker-js/faker": "8.1.0",
     "@playwright/test": "^1.40.1",
-    "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^14.0.0",
     "@testing-library/user-event": "^14.4.3",
     "@types/react": "^17.0.0",
@@ -95,7 +94,8 @@
     "tsx": "^4.6.2",
     "typescript": "5.1.3",
     "vite": "^5.0.0",
-    "vitest": "^1.0.0"
+    "vitest": "^1.0.0",
+    "vitest-dom": "^0.1.1"
   },
   "volta": {
     "node": "18.14.2",
