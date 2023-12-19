@@ -36,7 +36,7 @@ export abstract class Auth implements IAuth {
   }
 
   // The abstract methods are required to be implemented by all authentications.
-  abstract check();
+  abstract check(): Promise<Model>;
   // The following methods are mainly designed for user authentications.
   async signIn(): Promise<any> {}
   async signUp(): Promise<any> {}
