@@ -29,7 +29,7 @@ describe('Variable', () => {
     await userEvent.click(screen.getByText('v1'));
     await waitFor(() => {
       expect(input.innerHTML).toMatchInlineSnapshot(
-        '"<span class=\\"ant-tag ant-tag-blue\\" contenteditable=\\"false\\" data-variable=\\"v1\\">v1</span>"',
+        `"<span class="ant-tag ant-tag-blue" contenteditable="false" data-variable="v1">v1</span>"`,
       );
     });
   });
