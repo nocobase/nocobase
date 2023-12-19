@@ -27,6 +27,9 @@ export const CustomizeAddRecordActionInitializer = () => {
             'x-component': 'Tabs',
             'x-component-props': {},
             'x-initializer': 'TabPaneInitializersForCreateFormBlock',
+            'x-initializer-props': {
+              gridInitializer: 'CusomeizeCreateFormBlockInitializers',
+            },
             properties: {
               tab1: {
                 type: 'void',
