@@ -17,6 +17,7 @@
     "declaration": true,
     "experimentalDecorators": true,
     "downlevelIteration": true,
+    "types": ["vitest/globals"],
     "baseUrl": "."
   },
   "ts-node": {
@@ -25,13 +26,13 @@
     }
   },
   "include": [
-    "packages/**/*",
     ".dumi/**/*",
     ".dumirc.ts",
-    "scripts/*",
+    "packages/**/*",
     "playwright.config.ts",
-    "vitest.config.ts",
-    "jest.setupAfterEnv.ts"
+    "scripts/*",
+    "vitest.config.mts",
+    "vitest-node.config.mts"
   ],
   "exclude": [
     "packages/**/node_modules",
