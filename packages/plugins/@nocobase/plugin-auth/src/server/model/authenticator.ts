@@ -1,6 +1,14 @@
 import { Database, Model } from '@nocobase/database';
 
 export class AuthModel extends Model {
+  get authType() {
+    return this.get('authType');
+  }
+
+  get options() {
+    return this.get('options');
+  }
+
   async findUser(uuid: string) {
     let user: Model;
     const users = await this.getUsers({
