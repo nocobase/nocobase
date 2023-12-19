@@ -2,7 +2,7 @@ import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import uniq from 'lodash/uniq';
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   useACLRoleContext,
   useCollection,
@@ -135,15 +135,17 @@ const useDisableCardDrag = () => {
 export const useKanbanBlockProps = () => {
   const field = useField<ArrayField>();
   const ctx = useKanbanBlockContext();
+  const [dataSource, setDataSource] = useState([]);
   useEffect(() => {
     if (!ctx?.service?.loading) {
-      setTimeout(() => {
-        field.value = toColumns(ctx.groupField, ctx?.service?.data?.data);
-      });
+      field.value = toColumns(ctx.groupField, ctx?.service?.data?.data);
+      setDataSource(toColumns(ctx.groupField, ctx?.service?.data?.data));
     }
     // field.loading = ctx?.service?.loading;
   }, [ctx?.service?.loading]);
   return {
+    setDataSource,
+    dataSource,
     groupField: ctx.groupField,
     disableCardDrag: useDisableCardDrag(),
     async onCardDragEnd({ columns, groupField }, { fromColumnId, fromPosition }, { toColumnId, toPosition }) {
