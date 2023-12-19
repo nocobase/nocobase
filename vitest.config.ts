@@ -62,7 +62,6 @@ export default defineConfig({
       '**/{vitest,commitlint}.config.*',
     ],
     testTimeout: 300000,
-    bail: 1,
     // 在 GitHub Actions 中不输出日志
     silent: !!process.env.GITHUB_ACTIONS,
     server: {
