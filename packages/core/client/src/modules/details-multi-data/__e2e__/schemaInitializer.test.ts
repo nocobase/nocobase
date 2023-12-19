@@ -17,35 +17,37 @@ test.describe('configure fields', () => {
 
     // add fields
     await formItemInitializer.hover();
-    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
-    await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).toBeChecked();
+    await page.getByRole('menuitem', { name: 'Single select', exact: true }).click();
+    await expect(page.getByRole('menuitem', { name: 'Single select', exact: true }).getByRole('switch')).toBeChecked();
 
     // add association fields
     await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
-
-    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).toBeChecked();
 
     await page.mouse.move(300, 0);
-    await expect(page.getByLabel('block-item-CollectionField-general-details-general.id-ID')).toBeVisible();
+    await expect(
+      page.getByLabel('block-item-CollectionField-general-details-general.singleSelect-Single select'),
+    ).toBeVisible();
     await expect(
       page.getByLabel('block-item-CollectionField-general-details-general.manyToOne.nickname'),
     ).toBeVisible();
 
     // delete fields
     await formItemInitializer.hover();
-    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
-    await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).not.toBeChecked();
+    await page.getByRole('menuitem', { name: 'Single select', exact: true }).click();
+    await expect(
+      page.getByRole('menuitem', { name: 'Single select', exact: true }).getByRole('switch'),
+    ).not.toBeChecked();
 
     await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
-
-    await page.getByRole('menuitem', { name: 'Many to one' }).nth(1).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).not.toBeChecked();
 
     await page.mouse.move(300, 0);
-    await expect(page.getByLabel('block-item-CollectionField-general-details-general.id-ID')).not.toBeVisible();
+    await expect(
+      page.getByLabel('block-item-CollectionField-general-details-general.singleSelect-Single select'),
+    ).not.toBeVisible();
     await expect(
       page.getByLabel('block-item-CollectionField-general-details-general.manyToOne.nickname'),
     ).not.toBeVisible();

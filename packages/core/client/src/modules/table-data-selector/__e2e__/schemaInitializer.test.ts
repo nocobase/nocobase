@@ -73,8 +73,15 @@ test.describe('configure actions column', () => {
     await createTable({ page, mockPage, fieldName: 'manyToOne' });
     await createActionColumn(page);
 
+    const expectActionsColumnWidth = async (width: number) => {
+      // 移动鼠标，防止悬浮到 Actions 列，不然会导致 page.getByRole('columnheader', { name: 'Actions', exact: true }) 无效
+      await page.mouse.move(0, 300);
+      const box = await page.getByRole('columnheader', { name: 'Actions', exact: true }).boundingBox();
+      expect(Math.floor(box.width)).toBe(width);
+    };
+
     // 列宽度默认为 200
-    await expect(page.getByRole('columnheader', { name: 'Actions', exact: true })).toHaveJSProperty('offsetWidth', 200);
+    await expectActionsColumnWidth(200);
 
     await page.getByText('Actions', { exact: true }).hover();
     await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-users').hover();
@@ -87,11 +94,7 @@ test.describe('configure actions column', () => {
     await page.getByRole('dialog').getByRole('spinbutton').fill('400');
     await page.getByTestId('modal-Action.Modal-users-Column width').getByRole('button', { name: 'Submit' }).click();
 
-    // 关闭 settings 设置的下拉列表，不然获取不到宽度值
-    await page.getByRole('menuitem', { name: 'Column width' }).hover();
-    await page.mouse.move(300, 0);
-
-    await expect(page.getByRole('columnheader', { name: 'Actions', exact: true })).toHaveJSProperty('offsetWidth', 400);
+    await expectActionsColumnWidth(400);
   });
 });
 

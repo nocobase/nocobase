@@ -18,11 +18,11 @@ RUN cd /tmp && \
 RUN  yarn install && yarn build --no-dts
 
 RUN git checkout -b release-$(date +'%Y%m%d%H%M%S') \
-    && yarn version:alpha -y  \
-    && git config user.email "test@mail.com"  \
+    && yarn version:alpha -y
+RUN git config user.email "test@mail.com"  \
     && git config user.name "test" && git add .  \
-    && git commit -m "chore(versions): test publish packages xxx" \
-    && yarn release:force --registry $VERDACCIO_URL
+    && git commit -m "chore(versions): test publish packages"
+RUN yarn release:force --registry $VERDACCIO_URL
 
 RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
