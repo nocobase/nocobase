@@ -10,14 +10,9 @@ describe('Filter', () => {
   it('Filter & Action', async () => {
     render(<App3 />);
 
-    await waitFor(
-      async () => {
-        await userEvent.click(screen.getByText(/open/i));
-      },
-      {
-        timeout: 2000,
-      },
-    );
+    await waitFor(async () => {
+      await userEvent.click(screen.getByText(/open/i));
+    });
     const tooltip = screen.getByRole('tooltip');
     expect(tooltip).toBeInTheDocument();
 

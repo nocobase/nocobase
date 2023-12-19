@@ -1,19 +1,15 @@
-import { vi, expect } from 'vitest';
-
-// 提供类似于 toBeInTheDocument 函数的功能
-import * as matchers from 'vitest-dom/matchers';
-expect.extend(matchers);
-
+import { configure } from '@testing-library/react';
+import dotenv from 'dotenv';
+import { vi } from 'vitest';
+import 'vitest-dom/extend-expect';
 /**
  * 解决 TypeError: URL.createObjectURL is not a function
  * 解决 ReferenceError: Worker is not defined
  */
 import 'jsdom-worker';
-
-import '../packages/core/client/src/i18n';
-import dotenv from 'dotenv';
 import path from 'path';
 
+configure({ asyncUtilTimeout: 30000 });
 dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
 
 // 解决 TypeError: window.matchMedia is not a function
