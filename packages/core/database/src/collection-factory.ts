@@ -4,7 +4,8 @@ import { Model } from './model';
 
 type CollectionTypeOptions = {
   condition: (options: CollectionOptions) => boolean;
-  onSync?: (model: typeof Model, options: any) => Promise<void>;
+  onSync?: (model: Model, options: any) => Promise<void>;
+  onDestroyField?: (model: Model, options: any) => Promise<void>;
 };
 
 export class CollectionFactory {
