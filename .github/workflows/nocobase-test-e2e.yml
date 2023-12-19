@@ -6,13 +6,13 @@ on:
       - 'main'
       - 'develop'
     paths:
-      - '.github/workflows/nocobase-build-test.yml'
+      - '.github/workflows/nocobase-test-e2e.yml'
       - 'packages/**'
   pull_request:
     branches:
       - '**'
     paths:
-      - '.github/workflows/nocobase-build-test.yml'
+      - '.github/workflows/nocobase-test-e2e.yml'
       - 'packages/**'
 
 jobs:
