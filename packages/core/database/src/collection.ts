@@ -420,7 +420,7 @@ export class Collection<
         timestampsFields = timestampsFields.map((fieldName) => snakeCase(fieldName));
       }
       if (timestampsFields.includes(field.columnName())) {
-        this.fields.delete(this.name);
+        this.fields.delete(name);
         return;
       }
     }
