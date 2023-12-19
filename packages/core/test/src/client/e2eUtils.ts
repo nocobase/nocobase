@@ -298,6 +298,7 @@ const _test = base.extend<ExtendUtils>({
     // 测试运行完自动销毁页面
     for (const nocoPage of nocoPages) {
       await nocoPage.destroy();
+      await setDefaultRole('root');
     }
   },
   mockManualDestroyPage: async ({ browser }, use) => {
@@ -654,11 +655,21 @@ const createRole = async (roleSetting: AclRoleSetting) => {
     throw new Error(await result.text());
   }
   const roleData = (await result.json()).data;
-  const data = await api.post(`/api/users:setDefaultRole`, {
+  await setDefaultRole(name);
+  return roleData;
+};
+
+const setDefaultRole = async (name) => {
+  const api = await request.newContext({
+    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+
+  await api.post(`/api/users:setDefaultRole`, {
     headers,
     data: { roleName: name },
   });
-  return roleData;
 };
 
 /**

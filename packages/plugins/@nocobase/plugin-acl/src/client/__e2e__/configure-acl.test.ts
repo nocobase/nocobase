@@ -1,5 +1,5 @@
 import { expect, test } from '@nocobase/test/client';
-import { oneEmptyTableBlockWithActions } from './utils';
+import { oneTableBlock } from './utils';
 
 test.afterEach(async ({ page }) => {
   await page.evaluate(() => {
@@ -92,7 +92,7 @@ test('new menu items allow to be asscessed by default ', async ({ page, mockPage
     window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
   }, roleData);
   await page.reload();
-  await mockPage({ ...oneEmptyTableBlockWithActions, name: 'new page' }).goto();
+  await mockPage({ ...oneTableBlock, name: 'new page' }).goto();
   await expect(page.getByLabel('new page')).toBeVisible();
   await page.evaluate(() => {
     window.localStorage.setItem('NOCOBASE_ROLE', 'root');
