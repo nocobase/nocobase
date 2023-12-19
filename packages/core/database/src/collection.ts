@@ -389,7 +389,7 @@ export class Collection<
       return;
     }
 
-    const attribute = this.model.rawAttributes[this.name];
+    const attribute = this.model.rawAttributes[name];
 
     if (!attribute) {
       field.remove();
