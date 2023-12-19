@@ -155,32 +155,32 @@ test.describe('creation form block schema settings', () => {
       await page.locator('.ant-collapse-header').nth(1).getByRole('img', { name: 'right' }).click();
 
       await page.getByLabel('Linkage rules').getByRole('tabpanel').getByText('Add condition', { exact: true }).click();
-      await page.getByRole('button', { name: 'Search Select field' }).click();
+      await page.getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('menuitemcheckbox', { name: 'number' }).click();
       await page.getByLabel('Linkage rules').getByRole('spinbutton').click();
       await page.getByLabel('Linkage rules').getByRole('spinbutton').fill('123');
 
       // action：使 longText 字段可编辑
       await page.getByLabel('Linkage rules').getByRole('tabpanel').getByText('Add property').click();
-      await page.getByRole('button', { name: 'Search Select field' }).click();
+      await page.getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('tree').getByText('longText').click();
-      await page.getByRole('button', { name: 'Search action' }).click();
+      await page.getByRole('button', { name: 'action', exact: true }).click();
       await page.getByRole('option', { name: 'Editable' }).click();
 
       // action: 为 longText 字段赋上常量值
       await page.getByLabel('Linkage rules').getByRole('tabpanel').getByText('Add property').click();
-      await page.getByRole('button', { name: 'Search Select field' }).click();
+      await page.getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('tree').getByText('longText').click();
-      await page.getByRole('button', { name: 'Search action' }).click();
+      await page.getByRole('button', { name: 'action', exact: true }).click();
       await page.getByRole('option', { name: 'Value', exact: true }).click();
       await page.getByLabel('dynamic-component-linkage-rules').getByRole('textbox').fill('456');
 
       // action: 为 integer 字段附上一个表达式，使其值等于 number 字段的值
       await page.getByLabel('Linkage rules').getByRole('tabpanel').getByText('Add property').click();
 
-      await page.getByRole('button', { name: 'Search Select field' }).click();
+      await page.getByRole('button', { name: 'Select field' }).click();
       await page.getByRole('tree').getByText('integer').click();
-      await page.getByRole('button', { name: 'Search action' }).click();
+      await page.getByRole('button', { name: 'action', exact: true }).click();
       await page.getByRole('option', { name: 'Value', exact: true }).click();
       await page.getByTestId('select-linkage-value-type').nth(1).click();
       await page.getByText('Expression').click();
@@ -224,7 +224,7 @@ test.describe('creation form block schema settings', () => {
     });
   });
 
-  test('convert reference to duplicate & Save as block template', async ({ page, mockPage }) => {
+  test('Save as block template & convert reference to duplicate', async ({ page, mockPage }) => {
     await mockPage(oneTableBlockWithActionsAndFormBlocks).goto();
     await page.getByRole('button', { name: 'Add new' }).click();
 
@@ -248,6 +248,7 @@ test.describe('creation form block schema settings', () => {
 
     // Convert reference to duplicate
     await clickOption(page, 'Convert reference to duplicate');
+    // 点击之后下拉框不应该关闭，如果下拉框关闭了下面这行代码会报错
     await expect(page.getByRole('menuitem', { name: 'Save as block template' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Convert reference to duplicate' })).not.toBeVisible();
 
@@ -359,7 +360,7 @@ test.describe('creation form block schema settings', () => {
 
       // 添加一个数据范围，条件是：ID = 2
       await page.getByText('Add condition', { exact: true }).click();
-      await page.getByTestId('select-filter-field').getByLabel('Search').click();
+      await page.getByTestId('select-filter-field').click();
       await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
       await page.getByLabel('Form data templates').getByRole('spinbutton').click();
       await page.getByLabel('Form data templates').getByRole('spinbutton').fill('2');
@@ -380,7 +381,7 @@ test.describe('creation form block schema settings', () => {
       // 选择一个模板
       await page.getByTestId('select-form-data-template').click();
       await page.getByRole('option', { name: 'Template name 1' }).click();
-      await page.getByTestId('select-object-undefined').click();
+      await page.getByTestId('select-object-single').click();
 
       // 因为添加了数据范围，所以只显示一个选项
       await expect(page.getByRole('option')).toHaveCount(1);
@@ -407,7 +408,7 @@ test.describe('creation form block schema settings', () => {
       // 重新选择一下数据，字段值才会被填充
       // TODO: 保存后，数据应该直接被填充上
       await page.getByLabel('icon-close-select').click();
-      await page.getByTestId('select-object-undefined').getByLabel('Search').click();
+      await page.getByTestId('select-object-single').click();
       await page.getByRole('option', { name: '2' }).click();
 
       await expect(

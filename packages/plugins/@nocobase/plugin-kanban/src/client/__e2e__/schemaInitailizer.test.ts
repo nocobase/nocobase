@@ -1,4 +1,4 @@
-import { test, expect } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/client';
 import { generalWithSingleSelect, oneEmptyKanbanBlock } from './utils';
 
 //在页面中可以创建看板区块
@@ -11,7 +11,7 @@ test.describe('blockInitializers should add kanban block', () => {
     await expect(page.getByRole('menuitem', { name: 'form Kanban right' })).toBeVisible();
     await page.getByRole('menuitem', { name: 'form Kanban right' }).click();
     await page.getByRole('menuitem', { name: 'General' }).click();
-    await page.getByLabel('block-item-Select-Grouping field').getByLabel('Search').click();
+    await page.getByLabel('block-item-Select-Grouping field').locator('.ant-select').click();
     await page.getByRole('option', { name: 'Single select' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
     await expect(page.getByLabel('block-item-CardItem-general-kanban')).toBeVisible();
@@ -102,7 +102,7 @@ test.describe('configure actions', () => {
     await page.mouse.move(300, 0);
     await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').click();
     await page.getByRole('menuitem', { name: 'Single Select' }).click();
-    await page.getByLabel('Search').click();
+    await page.getByLabel('block-item-CollectionField-').locator('.ant-select').click();
     await page.getByRole('option', { name: 'option1' }).click();
     await page.getByLabel('schema-initializer-ActionBar-CreateFormActionInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
