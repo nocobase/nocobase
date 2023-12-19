@@ -344,6 +344,38 @@ describe('belongs to many', () => {
     await db.close();
   });
 
+  it('should create associations with associations', async () => {
+    const p1 = await Post.repository.create({
+      values: {
+        title: 'p1',
+      },
+    });
+
+    const postTagsRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
+
+    await postTagsRepository.create({
+      values: {
+        name: 't1',
+        colors: [
+          {
+            name: 'red',
+          },
+        ],
+      },
+    });
+
+    const t1 = await postTagsRepository.findOne({
+      filter: {
+        name: 't1',
+      },
+      appends: ['colors'],
+    });
+
+    expect(t1.name).toEqual('t1');
+    expect(t1.colors.length).toEqual(1);
+    expect(t1.colors[0].name).toEqual('red');
+  });
+
   test('create with through values', async () => {
     const p1 = await Post.repository.create({
       values: {
