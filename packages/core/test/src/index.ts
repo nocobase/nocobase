@@ -1,10 +1,11 @@
+import { describe } from 'vitest';
 import ws from 'ws';
 
 export { mockDatabase } from '@nocobase/database';
 export { default as supertest } from 'supertest';
 export * from './mockServer';
 
-export const pgOnly: () => jest.Describe = () => (process.env.DB_DIALECT == 'postgres' ? describe : describe.skip);
+export const pgOnly: () => any = () => (process.env.DB_DIALECT == 'postgres' ? describe : describe.skip);
 
 export function randomStr() {
   // create random string

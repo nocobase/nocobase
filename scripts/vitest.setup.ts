@@ -1,8 +1,5 @@
-import { vi, expect } from 'vitest';
-
 // 提供类似于 toBeInTheDocument 函数的功能
-import * as matchers from 'vitest-dom/matchers';
-expect.extend(matchers);
+import 'vitest-dom/extend-expect';
 
 /**
  * 解决 TypeError: URL.createObjectURL is not a function
@@ -10,6 +7,7 @@ expect.extend(matchers);
  */
 import 'jsdom-worker';
 
+import { vi } from 'vitest';
 import '../packages/core/client/src/i18n';
 import dotenv from 'dotenv';
 import path from 'path';
