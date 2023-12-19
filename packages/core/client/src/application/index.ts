@@ -11,3 +11,4 @@ export * from './PluginSettingsManager';
 export * from './data-block';
 export * from './hoc';
 export * from './collection';
+export { ApplicationContext } from './context';
