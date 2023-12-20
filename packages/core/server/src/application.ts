@@ -33,7 +33,6 @@ import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import { randomUUID } from 'crypto';
-import { CronJobManager } from './cron/cron-job-manager';
 import { RecordableHistogram, performance } from 'node:perf_hooks';
 
 const packageJson = require('../package.json');
