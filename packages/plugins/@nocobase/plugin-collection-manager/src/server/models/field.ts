@@ -98,16 +98,12 @@ export class FieldModel extends MagicAttributeModel {
 
   async remove(options?: any) {
     const collection = this.getFieldCollection();
+
     if (!collection) {
       return;
     }
 
-    const field = collection.getField(this.get('name'));
-    if (!field) {
-      return;
-    }
-
-    return field.removeFromDb({
+    return collection.removeFieldFromDb(this.get('name'), {
       transaction: options.transaction,
     });
   }
