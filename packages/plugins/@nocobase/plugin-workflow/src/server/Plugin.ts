@@ -25,9 +25,11 @@ import UpdateInstruction from './instructions/UpdateInstruction';
 
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 
+type ID = number | string;
+
 type Pending = [ExecutionModel, JobModel?];
 
-type ID = number | string;
+type CachedEvent = [WorkflowModel, any, { context?: any }];
 
 export default class WorkflowPlugin extends Plugin {
   instructions: Registry<Instruction> = new Registry();
@@ -37,7 +39,7 @@ export default class WorkflowPlugin extends Plugin {
   private ready = false;
   private executing: Promise<void> | null = null;
   private pending: Pending[] = [];
-  private events: [WorkflowModel, any, { context?: any }][] = [];
+  private events: CachedEvent[] = [];
 
   private loggerCache: LRUCache<string, Logger>;
 
@@ -221,7 +223,9 @@ export default class WorkflowPlugin extends Plugin {
       });
 
       this.ready = false;
-      await this.prepare();
+      if (this.events.length) {
+        await this.prepare();
+      }
       if (this.executing) {
         await this.executing;
       }
@@ -244,15 +248,22 @@ export default class WorkflowPlugin extends Plugin {
   }
 
   public trigger(workflow: WorkflowModel, context: object, options: { context?: any } = {}): void {
+    const logger = this.getLogger(workflow.id);
+    if (!this.ready) {
+      logger.warn(`app is not ready, event of workflow ${workflow.id} will be ignored`);
+      logger.debug(`ignored event data:`, { data: context });
+      return;
+    }
     // `null` means not to trigger
-    if (!this.ready || context == null) {
+    if (context == null) {
+      logger.warn(`workflow ${workflow.id} event data context is null, event will be ignored`);
       return;
     }
 
     this.events.push([workflow, context, options]);
 
-    this.getLogger(workflow.id).info(`new event triggered, now events: ${this.events.length}`);
-    this.getLogger(workflow.id).debug(`event data:`, {
+    logger.info(`new event triggered, now events: ${this.events.length}`);
+    logger.debug(`event data:`, {
       data: context,
     });
 
@@ -268,7 +279,9 @@ export default class WorkflowPlugin extends Plugin {
     if (!job.execution) {
       job.execution = await job.getExecution();
     }
-
+    this.getLogger(job.execution.workflowId).info(
+      `execution (${job.execution.id}) resuming from job (${job.id}) added to pending list`,
+    );
     this.pending.push([job.execution, job]);
     this.dispatch();
   }
@@ -277,14 +290,9 @@ export default class WorkflowPlugin extends Plugin {
     return new Processor(execution, { ...options, plugin: this });
   }
 
-  private prepare = async () => {
-    const [event] = this.events;
-    if (!event) {
-      return;
-    }
+  private async createExecution(event: CachedEvent): Promise<ExecutionModel | null> {
     const [workflow, context, options] = event;
 
-    let valid = true;
     if (options.context?.executionId) {
       // NOTE: no transaction here for read-uncommitted execution
       const existed = await workflow.countExecutions({
@@ -298,55 +306,69 @@ export default class WorkflowPlugin extends Plugin {
           `workflow ${workflow.id} has already been triggered in same execution (${options.context.executionId}), and newly triggering will be skipped.`,
         );
 
-        valid = false;
+        return null;
       }
     }
 
-    if (valid) {
-      const execution = await this.db.sequelize.transaction(async (transaction) => {
-        const execution = await workflow.createExecution(
-          {
-            context,
+    const execution = await this.db.sequelize.transaction(async (transaction) => {
+      const execution = await workflow.createExecution(
+        {
+          context,
+          key: workflow.key,
+          status: EXECUTION_STATUS.QUEUEING,
+        },
+        { transaction },
+      );
+
+      await workflow.increment(['executed', 'allExecuted'], { transaction });
+      // NOTE: https://sequelize.org/api/v6/class/src/model.js~model#instance-method-increment
+      if (this.db.options.dialect !== 'postgres') {
+        await workflow.reload({ transaction });
+      }
+
+      await (<typeof WorkflowModel>workflow.constructor).update(
+        {
+          allExecuted: workflow.allExecuted,
+        },
+        {
+          where: {
             key: workflow.key,
-            status: EXECUTION_STATUS.QUEUEING,
           },
-          { transaction },
-        );
+          transaction,
+        },
+      );
 
-        await workflow.increment(['executed', 'allExecuted'], { transaction });
-        // NOTE: https://sequelize.org/api/v6/class/src/model.js~model#instance-method-increment
-        if (this.db.options.dialect !== 'postgres') {
-          await workflow.reload({ transaction });
-        }
+      execution.workflow = workflow;
 
-        await (<typeof WorkflowModel>workflow.constructor).update(
-          {
-            allExecuted: workflow.allExecuted,
-          },
-          {
-            where: {
-              key: workflow.key,
-            },
-            transaction,
-          },
-        );
+      return execution;
+    });
 
-        execution.workflow = workflow;
+    this.getLogger(workflow.id).info(`execution of workflow ${workflow.id} created as ${execution.id}`);
 
-        return execution;
-      });
-
-      this.getLogger(workflow.id).debug(`execution of workflow ${workflow.id} created as ${execution.id}`, {
-        data: execution.context,
-      });
-
-      // NOTE: cache first execution for most cases
-      if (!this.executing && !this.pending.length) {
-        this.pending.push([execution]);
-      }
+    // NOTE: cache first execution for most cases
+    if (!this.executing && !this.pending.length) {
+      this.pending.push([execution]);
     }
 
-    this.events.shift();
+    return execution;
+  }
+
+  private prepare = async () => {
+    const event = this.events.shift();
+    if (!event) {
+      this.getLogger('dispatcher').warn(`events queue is empty, no need to prepare`);
+      return;
+    }
+
+    const logger = this.getLogger(event[0].id);
+    logger.info(`preparing execution for event`);
+
+    try {
+      await this.createExecution(event);
+    } catch (err) {
+      logger.error(`failed to create execution: ${err.message}`, err);
+      // this.events.push(event); // NOTE: retry will cause infinite loop
+    }
 
     if (this.events.length) {
       await this.prepare();
@@ -356,7 +378,13 @@ export default class WorkflowPlugin extends Plugin {
   };
 
   private dispatch() {
-    if (!this.ready || this.executing) {
+    if (!this.ready) {
+      this.getLogger('dispatcher').warn(`app is not ready, new dispatching will be ignored`);
+      return;
+    }
+
+    if (this.executing) {
+      this.getLogger('dispatcher').warn(`workflow executing is not finished, new dispatching will be ignored`);
       return;
     }
 
