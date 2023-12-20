@@ -1,7 +1,7 @@
 import { Spin } from 'antd';
 import React, { createContext, useContext } from 'react';
 import { useRequest } from '../../api-client';
-import { SchemaComponent } from '../../schema-component';
+import { SchemaComponent, SchemaComponentContext } from '../../schema-component';
 import { MenuItemsProvider } from '../Configuration/MenuItemsProvider';
 import { PermissionProvider, SettingCenterPermissionProvider } from '../Configuration/PermisionProvider';
 import { roleSchema } from './schemas/roles';
@@ -28,12 +28,14 @@ export const useAvailableActions = () => {
 export const RoleTable = () => {
   return (
     <div>
-      <AvailableActionsProver>
-        <SchemaComponent
-          schema={roleSchema}
-          components={{ MenuItemsProvider, SettingCenterPermissionProvider, PermissionProvider }}
-        />
-      </AvailableActionsProver>
+      <SchemaComponentContext.Provider value={{ designable: false }}>
+        <AvailableActionsProver>
+          <SchemaComponent
+            schema={roleSchema}
+            components={{ MenuItemsProvider, SettingCenterPermissionProvider, PermissionProvider }}
+          />
+        </AvailableActionsProver>
+      </SchemaComponentContext.Provider>
     </div>
   );
 };
