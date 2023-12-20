@@ -34,6 +34,7 @@
     "tec": "yarn test:e2e:codegen",
     "tes": "yarn test:e2e:server",
     "doc": "nocobase doc",
+    "doc:cn": "nocobase doc --lang=zh-CN",
     "postinstall": "nocobase postinstall",
     "lint": "eslint .",
     "clean": "nocobase clean",

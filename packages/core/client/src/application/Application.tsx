@@ -25,7 +25,7 @@ import { SchemaSettings, SchemaSettingsManager } from './schema-settings';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
-import { CollectionManagerProviderV2, CollectionManagerV2 } from './collection';
+import { CollectionManagerOptions, CollectionManagerProviderV2, CollectionManagerV2 } from './collection';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
 import type { RequireJS } from './utils/requirejs';
@@ -54,7 +54,7 @@ export interface ApplicationOptions {
   designable?: boolean;
   loadRemotePlugins?: boolean;
   devDynamicImport?: DevDynamicImport;
-  collectionManager?: CollectionManagerV2;
+  collectionManager?: CollectionManagerV2 | CollectionManagerOptions;
 }
 
 export class Application {
@@ -109,7 +109,10 @@ export class Application {
     this.schemaSettingsManager = new SchemaSettingsManager(options.schemaSettings, this);
     this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
-    this.collectionManager = options.collectionManager || new CollectionManagerV2();
+    this.collectionManager =
+      options.collectionManager instanceof CollectionManagerV2
+        ? options.collectionManager
+        : new CollectionManagerV2(options.collectionManager);
 
     this.addDefaultProviders();
     this.addReactRouterComponents();

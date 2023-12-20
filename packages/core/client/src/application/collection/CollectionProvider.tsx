@@ -1,42 +1,36 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
-import { CollectionOptions } from '../../collection-manager';
 import { CollectionV2 } from './Collection';
 import { useCollectionManagerV2 } from './CollectionManagerProvider';
+import { DEFAULT_COLLECTION_NAMESPACE_NAME } from './CollectionManager';
 
 export const CollectionContextV2 = createContext<CollectionV2>(null);
 CollectionContextV2.displayName = 'CollectionContextV2';
 
-export type CollectionProviderProps = ({ name: string } | { collection: CollectionOptions | CollectionV2 }) & {
-  children?: ReactNode;
+export interface CollectionProviderProps {
+  name: string;
   ns?: string;
-};
+  children?: ReactNode;
+}
+
 export const CollectionProviderV2: FC<CollectionProviderProps> = (props) => {
-  const { name, collection, ns, children } = props as {
-    name: string;
-    collection: CollectionOptions;
-    ns?: string;
-    children?: ReactNode;
-  };
+  const { name, ns, children } = props;
   const collectionManager = useCollectionManagerV2();
-  const collectionValue = useMemo(() => {
-    if (collection instanceof CollectionV2) {
-      return collection;
-    }
-    if (collection) {
-      return new CollectionV2(collection);
-    }
-    const res = name ? collectionManager.getCollection(name, { ns }) : undefined;
-
+  const collection = useMemo(() => {
+    const res = collectionManager.getCollection(name, { ns });
     if (!res) {
-      console.error(`[nocobase]: ${name} collection does not exist`);
+      throw new Error(
+        `[@nocobase/client]: Collection "${name}" does not exist in namespace "${
+          ns || DEFAULT_COLLECTION_NAMESPACE_NAME
+        }"`,
+      );
     }
-    return new CollectionV2(res);
-  }, [collection, collectionManager, name, ns]);
+    return res;
+  }, [collectionManager, name, ns]);
 
-  if (!collectionValue) return null;
+  if (!collection) return null;
 
-  return <CollectionContextV2.Provider value={collectionValue}>{children}</CollectionContextV2.Provider>;
+  return <CollectionContextV2.Provider value={collection}>{children}</CollectionContextV2.Provider>;
 };
 
 export const useCollectionV2 = () => {
@@ -46,9 +40,4 @@ export const useCollectionV2 = () => {
   }
 
   return context;
-};
-
-export const useCollectionDataV2 = () => {
-  const context = useCollectionV2();
-  return context.data;
 };

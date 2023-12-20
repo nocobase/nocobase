@@ -1,13 +1,18 @@
+import { cloneDeep } from 'lodash';
 import { IField } from '../../collection-manager';
 
-export class CollectionFieldInterface {
-  public fieldInterface: IField;
+export class CollectionFieldInterfaceV2 {
+  public options: IField;
 
-  constructor(fieldInterface: IField) {
-    this.fieldInterface = fieldInterface;
+  constructor(options: IField) {
+    this.options = options;
   }
 
   get name() {
-    return this.fieldInterface.name;
+    return this.options.name;
+  }
+
+  getOptions() {
+    return cloneDeep(this.options);
   }
 }

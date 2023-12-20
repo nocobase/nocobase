@@ -1,110 +1,173 @@
-import { clone } from 'lodash';
-import { CollectionOptions } from '../../collection-manager';
-import { CollectionFieldInterface } from './CollectionFieldInterface';
-import { CollectionTemplate } from './CollectionTemplate';
-import { general } from './collectionTemplates';
+import { filter } from 'lodash';
 
-const DEFAULT_NS_TITLE = '{{t("main")}}';
-const DEFAULT_NS_NAME = 'main';
-const DEFAULT_NS = {
-  title: DEFAULT_NS_TITLE,
-  name: DEFAULT_NS_NAME,
-};
+import { CollectionOptions, IField } from '../../collection-manager';
+import { CollectionFieldInterfaceV2 } from './CollectionFieldInterface';
+import { CollectionTemplateOptions, CollectionTemplateV2 } from './CollectionTemplate';
+import { CollectionV2 } from './Collection';
 
-interface CollectionNamespace {
-  title: string;
-  name: string;
-}
+import { generalTemplate } from './templates';
+
+export const DEFAULT_COLLECTION_NAMESPACE_TITLE = '{{t("main")}}';
+export const DEFAULT_COLLECTION_NAMESPACE_NAME = 'main';
 
 interface GetCollectionOptions {
   ns?: string;
 }
 
+export interface CollectionManagerOptions {
+  collections?: Record<string, CollectionV2[] | CollectionOptions[]> | CollectionV2[] | CollectionOptions[];
+  collectionTemplates?: (CollectionTemplateV2 | CollectionTemplateOptions)[];
+  collectionFieldInterfaces?: (CollectionFieldInterfaceV2 | IField)[];
+  collectionNamespaces?: Record<string, string>;
+}
+
 export class CollectionManagerV2 {
-  protected collections: Record<string, CollectionOptions[]> = {};
-  protected templates: CollectionTemplate[] = [general];
-  protected fieldInterfaces: CollectionFieldInterface[] = [];
-  protected namespaces: CollectionNamespace[] = [DEFAULT_NS];
+  protected collections: Record<string, Record<string, CollectionV2>> = {};
+  protected collectionTemplates: Record<string, CollectionTemplateV2> = {
+    [generalTemplate.name]: generalTemplate,
+  };
+  protected collectionFieldInterfaces: Record<string, CollectionFieldInterfaceV2> = {};
+  protected collectionNamespaces: Record<string, string> = {
+    [DEFAULT_COLLECTION_NAMESPACE_NAME]: DEFAULT_COLLECTION_NAMESPACE_TITLE,
+  };
+
+  constructor(options: CollectionManagerOptions = {}) {
+    if (Array.isArray(options.collections)) {
+      this.addCollections(options.collections);
+    } else {
+      Object.keys(options.collections || {}).forEach((ns) => {
+        this.addCollections(options.collections[ns], { ns });
+      });
+    }
+    this.addCollectionTemplates(options.collectionTemplates || []);
+    this.addFieldInterfaces(options.collectionFieldInterfaces || []);
+    this.addNamespaces(options.collectionNamespaces || {});
+  }
 
   private checkNamespace(ns: string) {
-    const namespacesNames = this.namespaces.map((item) => item.name);
-    if (!namespacesNames.includes(ns)) {
+    if (!this.collectionNamespaces[ns]) {
       throw new Error(
-        `[nocobase CollectionManager]: "${DEFAULT_NS_NAME}" does not exist in namespace, you should first call collectionManager.addNamespaces() to add it`,
+        `[@nocobase/client]: CollectionManager "${ns}" does not exist in namespace, you should call collectionManager.addNamespaces() to add it`,
       );
     }
   }
 
   // collections
-  addCollections(collections: CollectionOptions[], options: GetCollectionOptions = {}) {
-    const { ns = DEFAULT_NS_NAME } = options;
+  addCollections(collections: (CollectionOptions | CollectionV2)[], options: GetCollectionOptions = {}) {
+    const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
     this.checkNamespace(ns);
-    this.collections[ns] = [...this.collections[ns], ...collections];
+    collections
+      .map((collection) => {
+        if (collection instanceof CollectionV2) {
+          return collection;
+        }
+        const collectionTemplateInstance = this.getCollectionTemplate(collection.template) || generalTemplate;
+        return new collectionTemplateInstance.Collection(collection);
+      })
+      .forEach((collectionInstance) => {
+        if (!this.collections[ns]) {
+          this.collections[ns] = {};
+        }
+        this.collections[ns][collectionInstance.name] = collectionInstance;
+      });
   }
   getAllCollections() {
     return this.collections;
   }
-  getCollections(ns: string = DEFAULT_NS_NAME) {
-    return this.collections[ns] || [];
+  getCollections(ns: string = DEFAULT_COLLECTION_NAMESPACE_NAME, predicate?: (collection: CollectionV2) => boolean) {
+    return filter(Object.values(this.collections[ns]), predicate);
   }
-  getCollection(name: string, options: GetCollectionOptions = {}) {
-    const { ns = DEFAULT_NS_NAME } = options;
+  /**
+   * 获取数据表
+   * @example
+   * getCollection('users'); // 获取 users 表
+   * getCollection('users.profile'); // 获取 users 表的 profile 字段的关联表
+   * getCollection('a.b.c'); // 获取 a 表的 b 字段的关联表，然后 b.target 表对应的 c 字段的关联表
+   */
+  getCollection(path: string, options: GetCollectionOptions = {}) {
+    const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
     this.checkNamespace(ns);
-    const collections = this.getCollections(ns);
+    if (path.split('.').length > 1) {
+      // 获取到关联字段
+      const associationField = this.getCollectionField(path);
 
-    // association: users.roles
-    if (name.split('.').length > 1) {
-      const associationField = this.getCollectionField(name);
       return this.getCollection(associationField.target, { ns });
     }
-    return collections.find((collection) => collection.name === name);
+    return this.collections[ns]?.[path];
   }
+  getCollectionName(path: string, options: GetCollectionOptions = {}) {
+    return this.getCollection(path, options)?.name;
+  }
+  /**
+   * 获取数据表字段
+   * @example
+   * getCollection('users.username'); // 获取 users 表的 username 字段
+   * getCollection('a.b.c'); // 获取 a 表的 b 字段的关联表，然后 b.target 表对应的 c 字段
+   */
   getCollectionField(path: string, options: GetCollectionOptions = {}) {
-    const [collectionName, fieldName] = path.split('.');
-    if (!fieldName) {
+    const arr = path.split('.');
+    if (arr.length < 2) {
       return;
     }
-    const { ns = DEFAULT_NS_NAME } = options || {};
+    const [collectionName, fieldName, ...otherFieldNames] = path.split('.');
+    const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options || {};
     this.checkNamespace(ns);
     const collection = this.getCollection(collectionName, { ns });
     if (!collection) {
       return;
     }
-    return collection.find((field) => field.name === fieldName);
+    const field = collection.getField(fieldName);
+    if (otherFieldNames.length === 0) {
+      return field;
+    }
+    return this.getCollectionField(`${field.target}.${otherFieldNames.join('.')}`, { ns });
   }
 
-  // namespaces
-  addNamespaces(namespaces: CollectionNamespace[]) {
-    const names = namespaces.map((item) => item.name);
-    this.namespaces = [...this.namespaces.filter((item) => !names.includes(item.name)), ...namespaces];
+  // collectionNamespaces
+  addNamespaces(collectionNamespaces: Record<string, string>) {
+    Object.assign(this.collectionNamespaces, collectionNamespaces);
   }
   getNamespaces() {
-    return this.namespaces;
+    return this.collectionNamespaces;
   }
 
-  // templates
-  addCollectionTemplates(templates: CollectionTemplate[]) {
-    const names = templates.map((item) => item.name);
-    this.templates = [...this.templates.filter((item) => !names.includes(item.name)), ...templates];
+  // CollectionTemplates
+  addCollectionTemplates(templates: (CollectionTemplateV2 | CollectionTemplateOptions)[]) {
+    templates
+      .map((template) => {
+        if (template instanceof CollectionTemplateV2) {
+          return template;
+        }
+        return new CollectionTemplateV2(template);
+      })
+      .forEach((template) => {
+        this.collectionTemplates[template.name] = template;
+      });
   }
   getCollectionTemplates() {
-    return this.templates;
+    return Object.values(this.collectionTemplates);
   }
-  getCollectionTemplate(name = general.name) {
-    const template = this.templates.find((template) => template.name === name);
-    return clone(template);
+  getCollectionTemplate(name: string = generalTemplate.name) {
+    return this.collectionTemplates[name];
   }
 
   // field interface
-  addFieldInterfaces(interfaces: CollectionFieldInterface[]) {
-    const names = interfaces.map((item) => item.name);
-    this.fieldInterfaces = [...this.fieldInterfaces.filter((item) => !names.includes(item.name)), ...interfaces];
+  addFieldInterfaces(interfaces: (CollectionFieldInterfaceV2 | IField)[]) {
+    interfaces
+      .map((fieldInterface) => {
+        if (fieldInterface instanceof CollectionFieldInterfaceV2) {
+          return fieldInterface;
+        }
+        return new CollectionFieldInterfaceV2(fieldInterface);
+      })
+      .forEach((fieldInterface) => {
+        this.collectionFieldInterfaces[fieldInterface.name] = fieldInterface;
+      });
   }
   getFieldInterfaces() {
-    return this.fieldInterfaces;
+    return Object.values(this.collectionFieldInterfaces);
   }
   getFieldInterface(name: string) {
-    const fieldInterface = this.fieldInterfaces.find((fieldInterface) => fieldInterface.name === name);
-    return clone(fieldInterface);
+    return this.collectionFieldInterfaces[name];
   }
 }

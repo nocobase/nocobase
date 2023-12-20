@@ -14,5 +14,5 @@ export * from './CollectionTemplate';
 export * from './CollectionManager';
 export * from './CollectionManagerProvider';
 
-export * from './collectionTemplates';
+export * from './templates';
 // export * from './fieldInterfaces';

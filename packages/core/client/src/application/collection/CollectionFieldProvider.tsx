@@ -1,45 +1,28 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
-import { CollectionFieldV2 } from './CollectionField';
 import { CollectionFieldOptions } from '../../collection-manager';
-import { useCollectionManagerV2 } from './CollectionManagerProvider';
+import { SchemaKey } from '@formily/react';
+import { useCollectionV2 } from './CollectionProvider';
 
-export const CollectionFieldContextV2 = createContext<CollectionFieldV2>(null);
+export const CollectionFieldContextV2 = createContext<CollectionFieldOptions>(null);
 CollectionFieldContextV2.displayName = 'CollectionFieldContextV2';
 
-export type CollectionFieldProviderProps = (
-  | { name: string }
-  | { collectionField: CollectionFieldV2 | CollectionFieldOptions }
-) & {
-  ns?: string;
+export type CollectionFieldProviderProps = {
+  name?: SchemaKey;
   children?: ReactNode;
+  fallback?: React.ReactElement;
 };
 
 export const CollectionFieldProviderV2: FC<CollectionFieldProviderProps> = (props) => {
-  const { name, collectionField, ns, children } = props as {
-    name: string;
-    ns?: string;
-    collectionField: CollectionFieldV2 | CollectionFieldOptions;
-    children?: ReactNode;
-  };
+  const { name, fallback = null, children } = props;
 
-  const collectionManager = useCollectionManagerV2();
-  const collectionFieldValue = useMemo(() => {
-    if (collectionField instanceof CollectionFieldV2) {
-      return collectionField;
-    }
-    if (collectionField) {
-      return new CollectionFieldV2(collectionField);
-    }
-    const res = collectionManager.getCollectionField(name);
-    if (!res) {
-      console.error(`[nocobase-CollectionFieldProvider]: "${name}" field does not exist`);
-    }
-    return new CollectionFieldV2(res);
-  }, [collectionField, collectionManager, name]);
+  const collection = useCollectionV2();
+  const field = useMemo(() => collection.getField(name), [collection, name]);
 
-  if (!collectionFieldValue) return null;
+  if (!field) {
+    return fallback;
+  }
 
-  return <CollectionFieldContextV2.Provider value={collectionFieldValue}>{children}</CollectionFieldContextV2.Provider>;
+  return <CollectionFieldContextV2.Provider value={field}>{children}</CollectionFieldContextV2.Provider>;
 };
 
 export const useCollectionFieldV2 = () => {
@@ -49,9 +32,4 @@ export const useCollectionFieldV2 = () => {
   }
 
   return context;
-};
-
-export const useCollectionFieldDataV2 = () => {
-  const context = useCollectionFieldV2();
-  return context.data;
 };
