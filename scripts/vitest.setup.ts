@@ -1,7 +1,3 @@
-import { configure } from '@testing-library/react';
-import dotenv from 'dotenv';
-import { vi } from 'vitest';
-import 'vitest-dom/extend-expect';
 declare global {
   const suite: (typeof import('vitest'))['suite'];
   const test: (typeof import('vitest'))['test'];
@@ -18,6 +14,11 @@ declare global {
   const beforeEach: (typeof import('vitest'))['beforeEach'];
   const afterEach: (typeof import('vitest'))['afterEach'];
 }
+
+import { configure } from '@testing-library/react';
+import dotenv from 'dotenv';
+import { vi } from 'vitest';
+import 'vitest-dom/extend-expect';
 
 /**
  * 解决 TypeError: URL.createObjectURL is not a function
