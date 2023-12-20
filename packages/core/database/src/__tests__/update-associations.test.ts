@@ -214,6 +214,7 @@ describe('update associations', () => {
     let Post: Collection;
     beforeEach(async () => {
       db = mockDatabase();
+      await db.clean({ drop: true });
       User = db.collection({
         name: 'users',
         fields: [

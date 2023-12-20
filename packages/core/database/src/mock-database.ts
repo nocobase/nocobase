@@ -1,9 +1,9 @@
-import { merge, uid } from '@nocobase/utils';
-import { resolve } from 'path';
+import { merge } from '@nocobase/utils';
+import path, { resolve } from 'path';
 import { Database, IDatabaseOptions } from './database';
 import fetch from 'node-fetch';
-import path from 'path';
 import { customAlphabet } from 'nanoid';
+
 export class MockDatabase extends Database {
   constructor(options: IDatabaseOptions) {
     super({
