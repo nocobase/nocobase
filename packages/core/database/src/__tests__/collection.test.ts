@@ -97,7 +97,7 @@ describe('collection', () => {
     const field = collection.getField('name');
     const r1 = await field.existsInDb();
     expect(r1).toBe(true);
-    await field.removeFromDb();
+    await collection.removeFieldFromDb('name');
     const r2 = await field.existsInDb();
     expect(r2).toBe(false);
 
