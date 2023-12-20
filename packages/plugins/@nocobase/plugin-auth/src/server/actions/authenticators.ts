@@ -38,7 +38,7 @@ export default {
       return {
         name: authenticator.name,
         authType: authenticator.authType,
-        authTypeTitle: authType.title,
+        authTypeTitle: authType?.title || '',
         title: authenticator.title,
         options: authenticator.options?.public || {},
       };
