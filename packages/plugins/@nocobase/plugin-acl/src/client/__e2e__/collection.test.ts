@@ -6,23 +6,22 @@ test.describe('view', () => {
     await mockPage(oneTableBlock).goto();
     //新建角色并切换到新角色
     const roleData = await mockRole({
-      snippets: ['pm', 'pm.*', 'ui.*'],
-      default: true,
       allowNewMenu: true,
+      strategy: {
+        actions: ['view'],
+      },
     });
     await mockPage(oneTableBlock).goto();
     await page.evaluate((roleData) => {
       window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
     }, roleData);
     await page.reload();
-    await page.getByTestId('user-center-button').hover();
-    await expect(page.getByLabel('block-item-CardItem-general-table')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
   });
   test('individual collection permission', async ({ page, mockPage, mockRole }) => {
     await mockPage(oneTableBlock).goto();
     //新建角色并切换到新角色
     const roleData = await mockRole({
-      default: true,
       allowNewMenu: true,
       resources: [
         {
@@ -37,14 +36,12 @@ test.describe('view', () => {
       window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
     }, roleData);
     await page.reload();
-    await page.getByTestId('user-center-button').hover();
     await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
   });
   test('field permission in view action', async ({ page, mockPage, mockRole }) => {
     await mockPage(oneTableBlock).goto();
     //新建角色并切换到新角色
     const roleData = await mockRole({
-      default: true,
       allowNewMenu: true,
       resources: [
         {
@@ -59,7 +56,6 @@ test.describe('view', () => {
       window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
     }, roleData);
     await page.reload();
-    await page.getByTestId('user-center-button').hover();
     await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
     await expect(page.getByRole('button', { name: 'singleLineText' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'phone' })).not.toBeVisible();
@@ -71,11 +67,9 @@ test.describe('create', () => {
     await mockPage(oneTableBlock).goto();
     //新建角色并切换到新角色
     const roleData = await mockRole({
-      snippets: ['pm', 'pm.*', 'ui.*'],
       strategy: {
-        actions: ['update', 'destroy', 'view'],
+        actions: ['view', 'create'],
       },
-      default: true,
       allowNewMenu: true,
     });
     await mockPage(oneTableBlock).goto();
@@ -83,8 +77,7 @@ test.describe('create', () => {
       window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
     }, roleData);
     await page.reload();
-    await page.getByTestId('user-center-button').hover();
-    await expect(await page.getByLabel('action-Action-Add new-create-general-table')).not.toBeVisible();
+    await expect(await page.getByLabel('action-Action-Add new-create-general-table')).toBeVisible();
   });
   test('individual collection permission', async ({ page, mockPage, mockRole, mockRecord }) => {
     await mockPage(oneTableBlock).goto();
@@ -99,12 +92,12 @@ test.describe('create', () => {
           actions: [
             {
               name: 'view',
-              fields: ['id'],
+              fields: ['id', 'singleLineText'],
               scope: null,
             },
             {
               name: 'create',
-              fields: ['id'],
+              fields: ['singleLineText'],
               scope: null,
             },
           ],
@@ -116,7 +109,6 @@ test.describe('create', () => {
     }, roleData);
     await page.reload();
     await mockPage(oneTableBlock).goto();
-    await page.reload();
     await expect(await page.getByLabel('action-Action-Add new-create-general-table')).toBeVisible();
   });
 });
@@ -127,11 +119,9 @@ test.describe('update', () => {
     await mockRecord('general');
     //新建角色并切换到新角色
     const roleData = await mockRole({
-      snippets: ['pm', 'pm.*', 'ui.*'],
       strategy: {
-        actions: ['create', 'destroy', 'view'],
+        actions: ['update', 'view'],
       },
-      default: true,
       allowNewMenu: true,
     });
     await mockPage(oneTableBlock).goto();
@@ -139,15 +129,13 @@ test.describe('update', () => {
       window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
     }, roleData);
     await page.reload();
-    await page.getByTestId('user-center-button').hover();
-    await expect(await page.getByLabel('action-Action.Link-Edit-update-general-general-0')).not.toBeVisible();
+    await expect(await page.getByLabel('action-Action.Link-Edit')).toBeVisible();
   });
   test('individual collection permission', async ({ page, mockPage, mockRole, mockRecord }) => {
     await mockPage(oneTableBlock).goto();
     await mockRecord('general');
     //新建角色并切换到新角色
     const roleData = await mockRole({
-      default: true,
       allowNewMenu: true,
       resources: [
         {
@@ -162,8 +150,7 @@ test.describe('update', () => {
     }, roleData);
     await page.reload();
     await mockPage(oneTableBlock).goto();
-    await page.getByTestId('user-center-button').hover();
-    await expect(await page.getByLabel('action-Action.Link-Edit-update-general-table-0')).toBeVisible();
+    await expect(await page.getByLabel('action-Action.Link-Edit')).toBeVisible();
   });
 });
 
@@ -172,11 +159,9 @@ test.describe('destroy', () => {
     await mockPage(oneTableBlock).goto();
     //新建角色并切换到新角色
     const roleData = await mockRole({
-      snippets: ['pm', 'pm.*', 'ui.*'],
       strategy: {
-        actions: ['create', 'update', 'view'],
+        actions: ['destroy', 'view'],
       },
-      default: true,
       allowNewMenu: true,
     });
     await mockPage(oneTableBlock).goto();
@@ -184,14 +169,12 @@ test.describe('destroy', () => {
       window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
     }, roleData);
     await page.reload();
-    await page.getByTestId('user-center-button').hover();
-    await expect(await page.getByLabel('action-Action-Delete-destroy-general-table')).not.toBeVisible();
+    await expect(await page.getByLabel('action-Action-Delete-destroy-general-table')).toBeVisible();
   });
   test('individual collection permission', async ({ page, mockPage, mockRole, mockRecord }) => {
     await mockPage().goto();
     //新建角色并切换到新角色
     const roleData = await mockRole({
-      default: true,
       allowNewMenu: true,
       resources: [
         {
