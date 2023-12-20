@@ -1,8 +1,8 @@
+import { Repository } from '@nocobase/database';
 import { vi } from 'vitest';
 import { Collection } from '../collection';
 import { Database } from '../database';
 import { mockDatabase } from './';
-import { Repository } from '@nocobase/database';
 
 describe('repository', () => {
   test('value to filter', async () => {
@@ -280,7 +280,9 @@ describe('repository create with belongs to many', () => {
     await db.clean({ drop: true });
   });
 
-  afterEach(async () => [await db.close()]);
+  afterEach(async () => {
+    await db.close();
+  });
 
   it('should save value at through table', async () => {
     const Product = db.collection({

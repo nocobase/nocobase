@@ -4,6 +4,39 @@
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./lib/index.d.ts",
+        "default": "./lib/index.js"
+      },
+      "import": {
+        "types": "./lib/index.d.ts",
+        "default": "./lib/index.js"
+      }
+    },
+    "./client": {
+      "require": {
+        "types": "./lib/client/index.d.ts",
+        "default": "./lib/client/index.js"
+      },
+      "import": {
+        "types": "./lib/client/index.d.ts",
+        "default": "./lib/client/index.js"
+      }
+    },
+    "./e2e": {
+      "require": {
+        "types": "./lib/e2e/index.d.ts",
+        "default": "./lib/e2e/index.js"
+      },
+      "import": {
+        "types": "./lib/e2e/index.d.ts",
+        "default": "./lib/e2e/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
   "dependencies": {
     "@nocobase/server": "0.17.0-alpha.7",
     "@types/supertest": "^2.0.11",

@@ -198,6 +198,9 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
     paths[`${packageJsonName}/client`] = [`${relativePath}/src/client`];
     paths[`${packageJsonName}/package.json`] = [`${relativePath}/package.json`];
     paths[packageJsonName] = [`${relativePath}/src`];
+    if (packageJsonName === '@nocobase/test') {
+      paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];
+    }
   });
 
   const tsConfigJsonPath = join(cwd, './tsconfig.paths.json');
