@@ -199,6 +199,7 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
     paths[`${packageJsonName}/package.json`] = [`${relativePath}/package.json`];
     paths[packageJsonName] = [`${relativePath}/src`];
     if (packageJsonName === '@nocobase/test') {
+      paths[`${packageJsonName}/server`] = [`${relativePath}/src/server`];
       paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];
     }
   });
