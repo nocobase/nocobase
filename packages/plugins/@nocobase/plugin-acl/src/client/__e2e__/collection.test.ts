@@ -1,11 +1,6 @@
 import { expect, test } from '@nocobase/test/client';
 import { oneTableBlock } from './utils';
 
-test.afterEach(async ({ page }) => {
-  await page.evaluate(() => {
-    window.localStorage.setItem('NOCOBASE_ROLE', 'root');
-  });
-});
 test.describe('view', () => {
   test('general permission', async ({ page, mockPage, mockRole }) => {
     await mockPage(oneTableBlock).goto();
