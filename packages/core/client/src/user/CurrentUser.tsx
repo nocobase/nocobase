@@ -76,7 +76,6 @@ export const SettingsMenu: React.FC<{
 
     return [
       {
-        role: 'button',
         key: 'cache',
         label: t('Clear cache'),
         onClick: async () => {
@@ -85,7 +84,6 @@ export const SettingsMenu: React.FC<{
         },
       },
       {
-        role: 'button',
         key: 'reboot',
         label: t('Restart application'),
         onClick: async () => {
@@ -129,7 +127,6 @@ export const SettingsMenu: React.FC<{
       },
       ...controlApp,
       {
-        role: 'button',
         key: 'signout',
         label: t('Sign out'),
         onClick: async () => {
