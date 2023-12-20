@@ -17,7 +17,6 @@
     "declaration": true,
     "experimentalDecorators": true,
     "downlevelIteration": true,
-    "types": ["vitest/globals"],
     "baseUrl": "."
   },
   "ts-node": {
@@ -39,6 +38,7 @@
     "packages/**/dist",
     "packages/**/public",
     "packages/core/build/bin",
+    "packages/core/cli/**/*",
     "packages/**/lib",
     "packages/**/es"
   ]

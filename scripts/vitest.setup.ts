@@ -2,6 +2,8 @@ import { configure } from '@testing-library/react';
 import dotenv from 'dotenv';
 import { vi } from 'vitest';
 import 'vitest-dom/extend-expect';
+import 'vitest/globals';
+
 /**
  * 解决 TypeError: URL.createObjectURL is not a function
  * 解决 ReferenceError: Worker is not defined
