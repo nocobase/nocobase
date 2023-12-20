@@ -179,6 +179,17 @@ exports.generateAppDir = function generateAppDir() {
 };
 
 exports.genTsConfigPaths = function genTsConfigPaths() {
+  try {
+    fs.unlinkSync(resolve(process.cwd(), 'node_modules/.bin/tsx'));
+    fs.symlinkSync(
+      resolve(process.cwd(), 'node_modules/tsx/dist/cli.mjs'),
+      resolve(process.cwd(), 'node_modules/.bin/tsx'),
+      'file',
+    );
+  } catch (error) {
+    //
+  }
+
   const cwd = process.cwd();
   const cwdLength = cwd.length;
   const paths = {

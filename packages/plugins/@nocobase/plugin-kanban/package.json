@@ -7,7 +7,6 @@
   "displayName.zh-CN": "看板",
   "description": "Provides kanban blocks",
   "description.zh-CN": "提供看板区块",
-  "dependencies": {},
   "peerDependencies": {
     "@nocobase/client": "0.x",
     "@nocobase/server": "0.x",
