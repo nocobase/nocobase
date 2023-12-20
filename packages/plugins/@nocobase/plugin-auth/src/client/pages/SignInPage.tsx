@@ -54,11 +54,12 @@ export const SignInPage = () => {
       if (!C) {
         return;
       }
+      const defaultTabTitle = `${t('Sign-in')} (${t(authenticator.authTypeTitle || authenticator.authType)})`;
       return {
         component: createElement<{
           authenticator: Authenticator;
         }>(C, { authenticator }),
-        tabTitle: authenticator.title || t('Sign in'),
+        tabTitle: authenticator.title || defaultTabTitle,
         ...authenticator,
       };
     })

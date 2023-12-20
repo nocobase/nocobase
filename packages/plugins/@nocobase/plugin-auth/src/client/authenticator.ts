@@ -3,6 +3,7 @@ import { createContext, useContext } from 'react';
 export type Authenticator = {
   name: string;
   authType: string;
+  authTypeTitle: string;
   title?: string;
   options?: {
     [key: string]: any;
