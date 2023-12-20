@@ -53,7 +53,7 @@ export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
 export const Kanban: any = observer(
   (props: any) => {
     const { styles } = useStyles();
-    const { groupField, onCardDragEnd, ...restProps } = useProps(props);
+    const { groupField, onCardDragEnd, dataSource, setDataSource, ...restProps } = useProps(props);
     const field = useField<ArrayField>();
     const fieldSchema = useFieldSchema();
     const [disableCardDrag, setDisableCardDrag] = useState(false);
@@ -77,11 +77,13 @@ export const Kanban: any = observer(
     const handleCardRemove = (card, column) => {
       const updatedBoard = Board.removeCard({ columns: field.value }, column, card);
       field.value = updatedBoard.columns;
+      setDataSource(updatedBoard.columns);
     };
     const handleCardDragEnd = (card, fromColumn, toColumn) => {
       onCardDragEnd?.({ columns: field.value, groupField }, fromColumn, toColumn);
       const updatedBoard = Board.moveCard({ columns: field.value }, fromColumn, toColumn);
       field.value = updatedBoard.columns;
+      setDataSource(updatedBoard.columns);
     };
     return (
       <Spin wrapperClassName={styles.nbKanban} spinning={field.loading || false}>
@@ -99,7 +101,7 @@ export const Kanban: any = observer(
             </div>
           )}
           renderCard={(card, { column, dragging }) => {
-            const columnIndex = field.value?.indexOf(column);
+            const columnIndex = dataSource?.indexOf(column);
             const cardIndex = column?.cards?.indexOf(card);
             return (
               schemas.card && (
@@ -136,7 +138,7 @@ export const Kanban: any = observer(
           }}
         >
           {{
-            columns: field.value || [],
+            columns: dataSource || [],
           }}
         </Board>
       </Spin>

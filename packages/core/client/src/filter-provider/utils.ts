@@ -84,7 +84,19 @@ export const transformToFilter = (
   values = flatten(values, {
     breakOn({ value, path }) {
       // 下面操作符的值是一个数组，需要特殊处理
-      if (['$dateBetween', '$in'].includes(operators[path])) {
+      if (
+        [
+          '$match',
+          '$notMatch',
+          '$anyOf',
+          '$noneOf',
+          '$childIn',
+          '$childNotIn',
+          '$dateBetween',
+          '$in',
+          '$notIn',
+        ].includes(operators[path])
+      ) {
         return true;
       }
 
