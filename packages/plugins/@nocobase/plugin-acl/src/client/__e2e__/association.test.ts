@@ -8,7 +8,6 @@ test.describe('view', () => {
     await mockRecord('general');
     //新建角色并切换到新角色
     const roleData = await mockRole({
-      //   default: true,
       allowNewMenu: true,
       resources: [
         {
@@ -129,10 +128,7 @@ test.describe('update', () => {
         {
           usingActionsConfig: true,
           name: 'users',
-          actions: [
-            { name: 'view', fields: ['email'] },
-            { name: 'update', fields: ['email'] },
-          ],
+          actions: [{ name: 'view' }, { name: 'update', fields: ['email'] }],
         },
         {
           usingActionsConfig: true,
@@ -216,10 +212,7 @@ test.describe('create', () => {
         {
           usingActionsConfig: true,
           name: 'users',
-          actions: [
-            { name: 'view', fields: ['email'] },
-            { name: 'create', fields: ['email'] },
-          ],
+          actions: [{ name: 'view' }, { name: 'create', fields: ['email'] }],
         },
         {
           usingActionsConfig: true,
