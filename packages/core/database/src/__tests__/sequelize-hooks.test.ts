@@ -8,6 +8,7 @@ describe('sequelize-hooks', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     await db.sync();
   });
 

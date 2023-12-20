@@ -19,6 +19,7 @@ describe('ui_schema repository', () => {
     app = mockServer({
       registerActions: true,
     });
+    await app.cleanDb();
 
     db = app.db;
 
