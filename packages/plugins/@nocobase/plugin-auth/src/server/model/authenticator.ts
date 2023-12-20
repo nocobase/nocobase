@@ -18,13 +18,13 @@ export class AuthModel extends Model implements Authenticator {
     }
   }
 
-  async newUser(uuid: string, values?: any) {
+  async newUser(uuid: string, userValues?: any) {
     let user: Model;
     const db: Database = (this.constructor as any).database;
     await this.sequelize.transaction(async (transaction) => {
       // Create a new user if not exists
       user = await this.createUser(
-        values || {
+        userValues || {
           nickname: uuid,
         },
         {

@@ -33,9 +33,7 @@ export const useSignInButtons = (authenticators = []) => {
   const types = Object.keys(customs);
   return authenticators
     .filter((authenticator) => types.includes(authenticator.authType))
-    .map((authenticator, index) =>
-      React.createElement(customs[authenticator.authType].Component, { key: index, authenticator }),
-    );
+    .map((authenticator, index) => React.createElement(customs[authenticator.authType], { key: index, authenticator }));
 };
 
 export const SignInPage = () => {
@@ -60,7 +58,7 @@ export const SignInPage = () => {
         component: createElement<{
           authenticator: Authenticator;
         }>(C, { authenticator }),
-        tabTitle: authenticator.title || authenticator.name,
+        tabTitle: authenticator.title || t('Sign in'),
         ...authenticator,
       };
     })
@@ -74,7 +72,7 @@ export const SignInPage = () => {
       `}
     >
       {tabs.length > 1 ? (
-        <Tabs items={tabs.map((tab) => ({ label: t(tab.tabTitle), key: tab.name, children: tab.component }))} />
+        <Tabs items={tabs.map((tab) => ({ label: tab.tabTitle, key: tab.name, children: tab.component }))} />
       ) : tabs.length ? (
         <div>{tabs[0].component}</div>
       ) : (
