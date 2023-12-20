@@ -1,4 +1,4 @@
-import { NocoPage, Page, expect, oneEmptyTableBlockWithActions, test } from '@nocobase/test/client';
+import { NocoPage, Page, expect, oneEmptyTableBlockWithActions, test } from '@nocobase/test/e2e';
 
 test.describe('tabs schema settings', () => {
   let commonPage: NocoPage;

@@ -221,6 +221,19 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
   return content;
 };
 
+function generatePlaywrightPath(clean = false) {
+  const playwright = resolve(process.cwd(), 'storage/playwright/tests');
+  if (clean && fs.existsSync(playwright)) {
+    fs.rmSync(dirname(playwright), { force: true, recursive: true });
+  }
+  if (!fs.existsSync(playwright)) {
+    const testPkg = require.resolve('@nocobase/test/package.json');
+    fs.cpSync(resolve(dirname(testPkg), 'playwright/tests'), playwright, { recursive: true });
+  }
+}
+
+exports.generatePlaywrightPath = generatePlaywrightPath;
+
 exports.initEnv = function initEnv() {
   const env = {
     APP_ENV: 'development',
@@ -238,9 +251,14 @@ exports.initEnv = function initEnv() {
     PM2_HOME: resolve(process.cwd(), './storage/.pm2'),
     PLUGIN_PACKAGE_PREFIX: '@nocobase/plugin-,@nocobase/plugin-sample-,@nocobase/preset-',
     SERVER_TSCONFIG_PATH: './tsconfig.server.json',
+    PLAYWRIGHT_AUTH_FILE: resolve(process.cwd(), 'storage/playwright/.auth/admin.json'),
   };
 
-  if (!process.env.APP_ENV_PATH && process.argv[2] && process.argv[2] === 'test') {
+  if (
+    !process.env.APP_ENV_PATH &&
+    process.argv[2] &&
+    ['test', 'test:client', 'test:server'].includes(process.argv[2])
+  ) {
     if (fs.existsSync(resolve(process.cwd(), '.env.test'))) {
       process.env.APP_ENV_PATH = '.env.test';
     }
@@ -248,9 +266,7 @@ exports.initEnv = function initEnv() {
 
   if (process.argv[2] === 'e2e') {
     // 用于存放 playwright 自动生成的相关的文件
-    if (!fs.existsSync('playwright')) {
-      fs.mkdirSync('playwright');
-    }
+    generatePlaywrightPath();
     if (!fs.existsSync('.env.e2e') && fs.existsSync('.env.e2e.example')) {
       const env = fs.readFileSync('.env.e2e.example');
       fs.writeFileSync('.env.e2e', env);
@@ -261,13 +277,13 @@ exports.initEnv = function initEnv() {
     process.env.APP_ENV_PATH = '.env.e2e';
   }
 
-  if (process.argv[2] === 'e2e' && !process.env.APP_BASE_URL) {
-    process.env.APP_BASE_URL = `http://127.0.0.1:${process.env.APP_PORT}`;
-  }
-
   dotenv.config({
     path: resolve(process.cwd(), process.env.APP_ENV_PATH || '.env'),
   });
+
+  if (process.argv[2] === 'e2e' && !process.env.APP_BASE_URL) {
+    process.env.APP_BASE_URL = `http://127.0.0.1:${process.env.APP_PORT}`;
+  }
 
   for (const key in env) {
     if (!process.env[key]) {

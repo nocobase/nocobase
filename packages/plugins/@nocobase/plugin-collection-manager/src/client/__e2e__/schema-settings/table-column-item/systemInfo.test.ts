@@ -1,4 +1,4 @@
-import { oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields, test } from '@nocobase/test/client';
+import { oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields, test } from '@nocobase/test/e2e';
 import { testSupportedOptions } from './utils';
 
 test.describe('created at', () => {

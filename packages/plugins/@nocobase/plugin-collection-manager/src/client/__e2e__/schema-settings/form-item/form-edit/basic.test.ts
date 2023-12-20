@@ -1,4 +1,4 @@
-import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndBasicFields, test } from '@nocobase/test/client';
+import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndBasicFields, test } from '@nocobase/test/e2e';
 import { commonTesting, testPattern, testSetValidationRules } from '../commonTesting';
 
 test.describe('color', () => {

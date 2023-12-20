@@ -2,8 +2,11 @@ import { faker } from '@faker-js/faker';
 import { uid } from '@formily/shared';
 import { Page, test as base, expect, request } from '@playwright/test';
 import _ from 'lodash';
+import { defineConfig } from './defineConfig';
 
 export * from '@playwright/test';
+
+export { defineConfig };
 
 export interface CollectionSetting {
   name: string;
@@ -415,7 +418,7 @@ const updateUidOfPageSchema = (uiSchema: any) => {
 const createPage = async (options?: CreatePageOptions) => {
   const { type = 'page', url, name, pageSchema } = options || {};
   const api = await request.newContext({
-    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
   const typeToSchema = {
     group: {
@@ -493,7 +496,7 @@ const createPage = async (options?: CreatePageOptions) => {
  */
 const deletePage = async (pageUid: string) => {
   const api = await request.newContext({
-    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
 
   const state = await api.storageState();
@@ -510,7 +513,7 @@ const deletePage = async (pageUid: string) => {
 
 const deleteCollections = async (collectionNames: string[]) => {
   const api = await request.newContext({
-    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
 
   const state = await api.storageState();
@@ -533,7 +536,7 @@ const deleteCollections = async (collectionNames: string[]) => {
  */
 const deleteRecords = async (collectionName: string, filter: any) => {
   const api = await request.newContext({
-    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
 
   const state = await api.storageState();
@@ -570,7 +573,7 @@ export const omitSomeFields = (collectionSettings: CollectionSetting[]): any[] =
  */
 const createCollections = async (collectionSettings: CollectionSetting | CollectionSetting[]) => {
   const api = await request.newContext({
-    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
 
   const state = await api.storageState();
@@ -633,7 +636,7 @@ const generateFakerData = (collectionSetting: CollectionSetting) => {
  */
 const createFakerData = async (collectionSettings: CollectionSetting[]) => {
   const api = await request.newContext({
-    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
 
   const state = await api.storageState();
@@ -654,7 +657,7 @@ const createFakerData = async (collectionSettings: CollectionSetting[]) => {
 
 const createRandomData = async (collectionName: string, count = 10, data?: any) => {
   const api = await request.newContext({
-    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
 
   const state = await api.storageState();

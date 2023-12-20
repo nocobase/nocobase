@@ -1,4 +1,4 @@
-import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndMediaFields, test } from '@nocobase/test/client';
+import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndMediaFields, test } from '@nocobase/test/e2e';
 import { commonTesting, testDefaultValue, testPattern, testSetValidationRules } from '../commonTesting';
 
 test.describe('markdown', () => {

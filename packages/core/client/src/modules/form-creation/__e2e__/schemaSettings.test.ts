@@ -8,7 +8,7 @@ import {
   oneTableBlockWithAddNewAndViewAndEditAndAssociationFields,
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
   test,
-} from '@nocobase/test/client';
+} from '@nocobase/test/e2e';
 import { T2165, T2174 } from './templatesOfBug';
 
 const clickOption = async (page: Page, optionName: string) => {

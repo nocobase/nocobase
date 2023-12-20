@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 
 test('single page', async ({ page, mockPage }) => {
   const pageTitle1 = 'page1';

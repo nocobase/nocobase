@@ -1,4 +1,4 @@
-import { omitSomeFields } from '../e2eUtils';
+import { omitSomeFields } from '../e2e/e2eUtils';
 
 describe('omitSomeFields', () => {
   test('should omit key & collectionName', () => {

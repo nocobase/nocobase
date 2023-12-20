@@ -1,4 +1,4 @@
-import { createBlockInPage, expect, oneEmptyGridCardBlock, test } from '@nocobase/test/client';
+import { createBlockInPage, expect, oneEmptyGridCardBlock, test } from '@nocobase/test/e2e';
 
 test.describe('where grid card block can be added', () => {
   test('page', async ({ page, mockPage }) => {

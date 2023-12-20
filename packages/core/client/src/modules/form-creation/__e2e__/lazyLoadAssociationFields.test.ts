@@ -5,7 +5,7 @@ import {
   oneTableSubformWithMultiLevelAssociationFields,
   oneTableSubtableWithMultiLevelAssociationFields,
   test,
-} from '@nocobase/test/client';
+} from '@nocobase/test/e2e';
 import { T2200, T2614, T2615 } from './templatesOfBug';
 
 test.describe('display association fields', () => {

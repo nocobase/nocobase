@@ -30,8 +30,7 @@
     "packages/**/*",
     "playwright.config.ts",
     "scripts/*",
-    "vitest.config.mts",
-    "vitest-node.config.mts"
+    "vitest.config.mts"
   ],
   "exclude": [
     "packages/**/node_modules",

@@ -1,4 +1,4 @@
-import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndChoicesFields, test } from '@nocobase/test/client';
+import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndChoicesFields, test } from '@nocobase/test/e2e';
 import { commonTesting, testPattern } from '../commonTesting';
 
 test.describe('checkbox', () => {

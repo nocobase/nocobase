@@ -1,4 +1,4 @@
-import { createBlockInPage, expect, oneEmptyFilterFormBlock, test } from '@nocobase/test/client';
+import { createBlockInPage, expect, oneEmptyFilterFormBlock, test } from '@nocobase/test/e2e';
 
 test.describe('where filter form block can be added', () => {
   test('page', async ({ page, mockPage }) => {

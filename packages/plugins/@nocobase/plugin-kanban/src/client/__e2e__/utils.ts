@@ -1,4 +1,4 @@
-import { CollectionSetting, PageConfig } from '@nocobase/test/client';
+import { CollectionSetting, PageConfig } from '@nocobase/test/e2e';
 
 /**
  * 1. 创建一个名为 general 的 collection，其包含 single select 类型的字段

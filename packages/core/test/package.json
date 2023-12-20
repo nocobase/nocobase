@@ -2,6 +2,7 @@
   "name": "@nocobase/test",
   "version": "0.17.0-alpha.7",
   "main": "lib/index.js",
+  "module": "./src/index.ts",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
   "exports": {
@@ -11,8 +12,8 @@
         "default": "./lib/index.js"
       },
       "import": {
-        "types": "./lib/index.d.ts",
-        "default": "./lib/index.js"
+        "types": "./vitest.d.ts",
+        "default": "./vitest.mjs"
       }
     },
     "./client": {
