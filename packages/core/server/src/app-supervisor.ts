@@ -178,7 +178,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       throw new Error(`app ${app.name} already exists`);
     }
 
-    app.logger.info(`add app ${app.name} into supervisor`, { submodule: 'supervisor', function: 'addApp' });
+    app.logger.info(`add app ${app.name} into supervisor`, { submodule: 'supervisor', method: 'addApp' });
 
     this.bindAppEvents(app);
 

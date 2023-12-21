@@ -3,7 +3,7 @@ import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
-import { AppLoggerOptions, createLogger, logger, Logger, systemLogger } from '@nocobase/logger';
+import { AppLoggerOptions, createLogger, Logger, createAppLogger } from '@nocobase/logger';
 import { Resourcer, ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, measureExecutionTime, Toposort, ToposortOptions } from '@nocobase/utils';
 import chalk from 'chalk';
@@ -285,7 +285,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   plugin<O = any>(pluginClass: any, options?: O) {
-    this.log.debug(`add plugin`, { function: 'plugin', meta: pluginClass.name });
+    this.log.debug(`add plugin`, { method: 'plugin', name: pluginClass.name });
     this.pm.addPreset(pluginClass, options);
   }
 
@@ -338,7 +338,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (options?.reload) {
       this.setMaintainingMessage('app reload');
-      this.log.info(`app.reload()`, { function: 'load' });
+      this.log.info(`app.reload()`, { method: 'load' });
       const oldDb = this._db;
       this.init();
       if (!oldDb.closed()) {
@@ -367,7 +367,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async reload(options?: any) {
-    this.log.debug(`start reload`, { function: 'reload' });
+    this.log.debug(`start reload`, { method: 'reload' });
 
     this._loaded = false;
 
@@ -378,10 +378,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       reload: true,
     });
 
-    this.log.debug('emit afterReload', { function: 'reload' });
+    this.log.debug('emit afterReload', { method: 'reload' });
     this.setMaintainingMessage('emit afterReload');
     await this.emitAsync('afterReload', this, options);
-    this.log.debug(`finish reload`, { function: 'reload' });
+    this.log.debug(`finish reload`, { method: 'reload' });
   }
 
   getPlugin<P extends Plugin>(name: string | typeof Plugin) {
@@ -554,11 +554,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async stop(options: any = {}) {
-    this.log.debug('stop app...', { function: 'stop' });
+    this.log.debug('stop app...', { method: 'stop' });
     this.setMaintainingMessage('stopping app...');
 
     if (this.stopped) {
-      this.log.warn(`Application ${this.name} already stopped`, { function: 'stop' });
+      this.log.warn(`Application ${this.name} already stopped`, { method: 'stop' });
       return;
     }
 
@@ -568,11 +568,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       // close database connection
       // silent if database already closed
       if (!this.db.closed()) {
-        this.log.info(`close db`, { function: 'stop' });
+        this.log.info(`close db`, { method: 'stop' });
         await this.db.close();
       }
     } catch (e) {
-      this.log.error(e.message, { function: 'stop', meta: e.stack });
+      this.log.error(e.message, { method: 'stop', err: e.stack });
     }
 
     if (this._cacheManager) {
@@ -582,20 +582,20 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterStop', this, options);
 
     this.stopped = true;
-    this.log.info(`${this.name} is stopped`, { function: 'stop' });
+    this.log.info(`${this.name} is stopped`, { method: 'stop' });
     this._started = false;
   }
 
   async destroy(options: any = {}) {
-    this.log.debug('start destroy app', { function: 'destory' });
+    this.log.debug('start destroy app', { method: 'destory' });
     this.setMaintainingMessage('destroying app...');
     await this.emitAsync('beforeDestroy', this, options);
     await this.stop(options);
 
-    this.log.debug('emit afterDestroy', { function: 'destory' });
+    this.log.debug('emit afterDestroy', { method: 'destory' });
     await this.emitAsync('afterDestroy', this, options);
 
-    this.log.debug('finish destroy app', { function: 'destory' });
+    this.log.debug('finish destroy app', { method: 'destory' });
   }
 
   async isInstalled() {
@@ -606,26 +606,26 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async install(options: InstallOptions = {}) {
     this.setMaintainingMessage('installing app...');
-    this.log.debug('Database dialect: ' + this.db.sequelize.getDialect(), { function: 'install' });
+    this.log.debug('Database dialect: ' + this.db.sequelize.getDialect(), { method: 'install' });
 
     if (options?.clean || options?.sync?.force) {
-      this.log.debug('truncate database', { function: 'install' });
+      this.log.debug('truncate database', { method: 'install' });
       await this.db.clean({ drop: true });
-      this.log.debug('app reloading', { function: 'install' });
+      this.log.debug('app reloading', { method: 'install' });
       await this.reload();
     } else if (await this.isInstalled()) {
-      this.log.warn('app is installed', { function: 'install' });
+      this.log.warn('app is installed', { method: 'install' });
       return;
     }
 
-    this.log.debug('emit beforeInstall', { function: 'install' });
+    this.log.debug('emit beforeInstall', { method: 'install' });
     this.setMaintainingMessage('call beforeInstall hook...');
     await this.emitAsync('beforeInstall', this, options);
-    this.log.debug('start install plugins', { function: 'install' });
+    this.log.debug('start install plugins', { method: 'install' });
     await this.pm.install(options);
-    this.log.debug('update version', { function: 'install' });
+    this.log.debug('update version', { method: 'install' });
     await this.version.update();
-    this.log.debug('emit afterInstall', { function: 'install' });
+    this.log.debug('emit afterInstall', { method: 'install' });
     this.setMaintainingMessage('call afterInstall hook...');
     await this.emitAsync('afterInstall', this, options);
 
@@ -687,7 +687,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected init() {
     const options = this.options;
 
-    this._logger = systemLogger({
+    this._logger = createAppLogger({
       app: this.name,
       ...(options.logger?.system || {}),
     }).child({

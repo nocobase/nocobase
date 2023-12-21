@@ -4,7 +4,6 @@ import { resolve } from 'path';
 import { Application } from './application';
 import { InstallOptions, getExposeChangelogUrl, getExposeReadmeUrl } from './plugin-manager';
 import { checkAndGetCompatible } from './plugin-manager/utils';
-import { systemLogger } from '@nocobase/logger';
 
 export interface PluginInterface {
   beforeLoad?: () => void;

@@ -763,13 +763,13 @@ export class Database extends EventEmitter implements AsyncEmitter {
     const authenticate = async () => {
       try {
         await this.sequelize.authenticate(others);
-        this.logger.info('Connection has been established successfully.', { function: 'auth' });
+        this.logger.info('Connection has been established successfully.', { method: 'auth' });
       } catch (error) {
         this.logger.warn(`Attempt ${attemptNumber}/${retry}: Unable to connect to the database: ${error.message}`, {
-          function: 'auth',
+          method: 'auth',
         });
         const nextDelay = startingDelay * Math.pow(timeMultiple, attemptNumber - 1);
-        this.logger.warn(`Will retry in ${nextDelay}ms...`, { function: 'auth' });
+        this.logger.warn(`Will retry in ${nextDelay}ms...`, { method: 'auth' });
         attemptNumber++;
         throw error; // Re-throw the error so that backoff can catch and handle it
       }

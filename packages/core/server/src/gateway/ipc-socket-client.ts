@@ -1,6 +1,6 @@
 import net from 'net';
 import * as events from 'events';
-import { Logger, simpleLogger } from '@nocobase/logger';
+import { Logger, createConsoleLogger } from '@nocobase/logger';
 
 export const writeJSON = (socket: net.Socket, data: object) => {
   socket.write(JSON.stringify(data) + '\n', 'utf8');
@@ -12,7 +12,7 @@ export class IPCSocketClient extends events.EventEmitter {
 
   constructor(client: net.Socket) {
     super();
-    this.logger = simpleLogger();
+    this.logger = createConsoleLogger();
 
     this.client = client;
 

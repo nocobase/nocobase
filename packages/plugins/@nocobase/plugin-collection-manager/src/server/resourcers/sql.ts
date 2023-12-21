@@ -55,7 +55,7 @@ export default {
       try {
         fields = model.inferFields();
       } catch (err) {
-        ctx.logger.warn('resource: sql-collection, action: execute, error: ', err);
+        ctx.logger.warn(`resource: sql-collection, action: execute, error: ${err}`);
         fields = {};
       }
       const sources = Array.from(new Set(Object.values(fields).map((field) => field.collection)));

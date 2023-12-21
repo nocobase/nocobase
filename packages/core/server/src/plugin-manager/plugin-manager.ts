@@ -227,7 +227,7 @@ export class PluginManager {
       console.error(error);
       // empty
     }
-    this.app.log.debug(`adding plugin...`, options.name, { function: 'add', submodule: 'plugin-manager' });
+    this.app.log.debug(`adding plugin...`, { method: 'add', submodule: 'plugin-manager', name: options.name });
     let P: any;
     try {
       P = PluginManager.resolvePlugin(options.packageName || plugin, isUpgrade, !!options.packageName);
@@ -274,7 +274,7 @@ export class PluginManager {
       if (!plugin.enabled) {
         continue;
       }
-      this.app.logger.debug(`before load plugin...`, name, { submodule: 'plugin-manager', function: 'load' });
+      this.app.logger.debug(`before load plugin...`, { submodule: 'plugin-manager', method: 'load', name });
       await plugin.beforeLoad();
     }
 
@@ -293,11 +293,11 @@ export class PluginManager {
       }
 
       await this.app.emitAsync('beforeLoadPlugin', plugin, options);
-      this.app.logger.debug(`loading plugin...`, name, { submodule: 'plugin-manager', function: 'load' });
+      this.app.logger.debug(`loading plugin...`, { submodule: 'plugin-manager', method: 'load', name });
       await plugin.load();
       plugin.state.loaded = true;
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
-      this.app.logger.debug(`after load plugin...`, name, { submodule: 'plugin-manager', function: 'load' });
+      this.app.logger.debug(`after load plugin...`, { submodule: 'plugin-manager', method: 'load', name });
     }
 
     this.app.setMaintainingMessage('loaded plugins');
@@ -528,11 +528,11 @@ export class PluginManager {
     await plugin.beforeLoad();
 
     await this.app.emitAsync('beforeLoadPlugin', plugin, {});
-    this.app.logger.debug(`loading plugin...`, name, { submodule: 'plugin-manager', function: 'loadOne' });
+    this.app.logger.debug(`loading plugin...`, name, { submodule: 'plugin-manager', method: 'loadOne' });
     await plugin.load();
     plugin.state.loaded = true;
     await this.app.emitAsync('afterLoadPlugin', plugin, {});
-    this.app.logger.debug(`after load plugin...`, name, { submodule: 'plugin-manager', function: 'loadOne' });
+    this.app.logger.debug(`after load plugin...`, name, { submodule: 'plugin-manager', method: 'loadOne' });
 
     this.app.setMaintainingMessage(`loaded plugin ${plugin.name}`);
   }

@@ -30,44 +30,27 @@ class SystemLoggerTransport extends Transport {
     }
   }
 
-  parseMessage(args: any[]) {
-    if (args.length === 1) {
-      const arg = args[0];
-      if (typeof arg === 'object' && (arg.module || arg.submodule || arg.function || arg.meta)) {
-        return arg;
-      }
-      return { meta: arg };
-    } else if (args.length === 2) {
-      let result = { meta: args[0] };
-      if (typeof args[1] === 'object') {
-        result = { ...result, ...args[1] };
-      }
-      return result;
-    }
-    return {};
-  }
-
   log(info: any, callback: any) {
-    const { level, message, reqId, module, submodule, [SPLAT]: args } = info;
+    const { level, message, reqId, [SPLAT]: args } = info;
     const logger = level === 'error' && this.errorLogger ? this.errorLogger : this.logger;
-    const extra = args ? this.parseMessage(args) : {};
+    const { module, submodule, method, ...meta } = args[0];
     logger.log({
       level,
       reqId,
       message,
-      module: extra['module'] || module,
-      submodule: extra['submodule'] || submodule,
-      function: extra['function'],
-      meta: extra['meta'],
+      module: module || info['module'] || '',
+      submodule: submodule || info['submodule'] || '',
+      method: method || '',
+      meta,
     });
     callback(null, true);
   }
 }
 
-export const logger = (options: SystemLoggerOptions) =>
+export const createSystemLogger = (options: SystemLoggerOptions) =>
   winston.createLogger({
     transports: [new SystemLoggerTransport(options)],
   });
 
-export const systemLogger = ({ app, ...options }: SystemLoggerOptions & { app?: string }) =>
-  logger({ filename: `${app}_system`, seperateError: true, ...options });
+export const createAppLogger = ({ app, ...options }: SystemLoggerOptions & { app?: string }) =>
+  createSystemLogger({ filename: `${app}_system`, seperateError: true, ...options });

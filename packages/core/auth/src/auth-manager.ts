@@ -102,7 +102,7 @@ export class AuthManager {
         ctx.auth = authenticator;
       } catch (err) {
         ctx.auth = {} as Auth;
-        ctx.logger.warn(err.message, { function: 'check', meta: { authenticator: name } });
+        ctx.logger.warn(err.message, { method: 'check', authenticator: name });
         return next();
       }
       if (authenticator) {

@@ -58,7 +58,7 @@ export default {
           }
           return fileTree;
         } catch (err) {
-          ctx.log.error('readDir error', err, { meta: { path } });
+          ctx.log.error('readDir error', { err, path });
           return [];
         }
       };
@@ -82,7 +82,7 @@ export default {
         ctx.attachment('logs.tar.gz');
         ctx.body = await tarFiles(files);
       } catch (err) {
-        ctx.log.error(`download error: ${err.message}`, { meta: { files, err: err.stack } });
+        ctx.log.error(`download error: ${err.message}`, { files, err: err.stack });
         ctx.throw(500, ctx.t('Download logs failed.'));
       }
       await next();
