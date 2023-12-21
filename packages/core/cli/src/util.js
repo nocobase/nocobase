@@ -222,13 +222,17 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
 };
 
 function generatePlaywrightPath(clean = false) {
-  const playwright = resolve(process.cwd(), 'storage/playwright/tests');
-  if (clean && fs.existsSync(playwright)) {
-    fs.rmSync(dirname(playwright), { force: true, recursive: true });
-  }
-  if (!fs.existsSync(playwright)) {
-    const testPkg = require.resolve('@nocobase/test/package.json');
-    fs.cpSync(resolve(dirname(testPkg), 'playwright/tests'), playwright, { recursive: true });
+  try {
+    const playwright = resolve(process.cwd(), 'storage/playwright/tests');
+    if (clean && fs.existsSync(playwright)) {
+      fs.rmSync(dirname(playwright), { force: true, recursive: true });
+    }
+    if (!fs.existsSync(playwright)) {
+      const testPkg = require.resolve('@nocobase/test/package.json');
+      fs.cpSync(resolve(dirname(testPkg), 'playwright/tests'), playwright, { recursive: true });
+    }
+  } catch (error) {
+    // empty
   }
 }
 
