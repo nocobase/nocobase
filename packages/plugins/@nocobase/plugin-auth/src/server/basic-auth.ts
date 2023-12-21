@@ -51,11 +51,14 @@ export class BasicAuth extends BaseAuth {
     }
     const User = ctx.db.getRepository('users');
     const { values } = ctx.action.params;
-    const { username } = values;
+    const { username, password, confirm_password } = values;
     if (!/^[^@.<>"'/]{2,16}$/.test(username)) {
       ctx.throw(400, ctx.t('Please enter a valid username', { ns: namespace }));
     }
-    const user = await User.create({ values });
+    if (password !== confirm_password) {
+      ctx.throw(400, ctx.t('The password is inconsistent, please re-enter', { ns: namespace }));
+    }
+    const user = await User.create({ values: { username, password } });
     return user;
   }
 
