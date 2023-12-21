@@ -27,7 +27,7 @@ export const requestLogger = (appName: string, options?: AppLoggerOptions) => {
       reqId,
       message: 'request',
       ...requestInfo,
-      req: pick(ctx.request.toJSON(), options.request?.requestWhitelist || defaultRequestWhitelist),
+      req: pick(ctx.request.toJSON(), options?.request?.requestWhitelist || defaultRequestWhitelist),
       action: ctx.action?.toJSON?.(),
     });
     let error: Error;
@@ -42,7 +42,7 @@ export const requestLogger = (appName: string, options?: AppLoggerOptions) => {
         reqId,
         message: 'response',
         ...requestInfo,
-        res: pick(ctx.response.toJSON(), options.request?.responseWhitelist || defaultResponseWhitelist),
+        res: pick(ctx.response.toJSON(), options?.request?.responseWhitelist || defaultResponseWhitelist),
         action: ctx.action?.toJSON?.(),
         userId: ctx.auth?.user?.id,
         status: ctx.status,
