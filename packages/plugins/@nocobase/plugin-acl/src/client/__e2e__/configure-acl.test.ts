@@ -11,7 +11,6 @@ test('allows to configure interface', async ({ page, mockPage, mockRole }) => {
     window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
   }, roleData);
   await page.reload();
-  await page.getByTestId('user-center-button').hover();
   await expect(await page.getByTestId('ui-editor-button')).toBeVisible();
   await expect(await page.getByTestId('schema-initializer-Menu-header')).toBeVisible();
 });
@@ -26,7 +25,6 @@ test('allows to install ,install,disabled plugins ', async ({ page, mockPage, mo
     window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
   }, roleData);
   await page.reload();
-  await page.getByTestId('user-center-button').hover();
   await expect(await page.getByTestId('plugin-manager-button')).toBeVisible();
   await page.getByTestId('plugin-manager-button').click();
   await expect(await page.url()).toContain('/pm/list/local');
@@ -48,7 +46,6 @@ test('allows to confgiure plugins ', async ({ page, mockPage, mockRole }) => {
     window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
   }, roleData);
   await page.reload();
-  await page.getByTestId('user-center-button').hover();
   await page.getByTestId('plugin-settings-button').click();
   await page.getByLabel('acl').click();
   await page.getByLabel(`action-Action.Link-Configure-roles-${roleData.name}`).click();
