@@ -96,12 +96,6 @@ interface AclResourcesSetting {
   usingActionsConfig: boolean; //是否开启单独配置
   actions?: AclActionsSetting[];
 }
-
-interface menuUiSchemasSetting {
-  'x-uid': any;
-  title?: string;
-  'x-index'?: number;
-}
 interface AclRoleSetting {
   name?: string;
   title?: string;
@@ -121,7 +115,7 @@ interface AclRoleSetting {
   default?: boolean;
   key?: string;
   //菜单权限配置
-  menuUiSchemas?: menuUiSchemasSetting[];
+  menuUiSchemas?: string[];
 }
 
 export interface PageConfig {
