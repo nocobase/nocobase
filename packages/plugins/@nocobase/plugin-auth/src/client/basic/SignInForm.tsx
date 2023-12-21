@@ -1,7 +1,34 @@
 import { ISchema } from '@formily/react';
-import { Authenticator, SchemaComponent, SignupPageContext, useSignIn } from '@nocobase/client';
-import React, { useContext } from 'react';
+import { SchemaComponent, useAPIClient, useCurrentUserContext } from '@nocobase/client';
+import React, { useCallback } from 'react';
 import { useAuthTranslation } from '../locale';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useForm } from '@formily/react';
+import { useSignUpForms } from '../pages';
+import { Authenticator } from '../authenticator';
+
+export function useRedirect(next = '/admin') {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  return useCallback(() => {
+    navigate(searchParams.get('redirect') || '/admin', { replace: true });
+  }, [navigate, searchParams]);
+}
+
+export const useSignIn = (authenticator: string) => {
+  const form = useForm();
+  const api = useAPIClient();
+  const redirect = useRedirect();
+  const { refreshAsync } = useCurrentUserContext();
+  return {
+    async run() {
+      await form.submit();
+      await api.auth.signIn(form.values, authenticator);
+      await refreshAsync();
+      redirect();
+    },
+  };
+};
 
 const passwordForm: ISchema = {
   type: 'object',
@@ -51,27 +78,27 @@ const passwordForm: ISchema = {
         },
       },
     },
-    signup: {
+    signUp: {
       type: 'void',
       'x-component': 'Link',
       'x-component-props': {
-        to: '{{ signupLink }}',
+        to: '{{ signUpLink }}',
       },
       'x-content': '{{t("Create an account")}}',
       'x-visible': '{{ allowSignUp }}',
     },
   },
 };
-export default (props: { authenticator: Authenticator }) => {
+export const SignInForm = (props: { authenticator: Authenticator }) => {
   const { t } = useAuthTranslation();
   const authenticator = props.authenticator;
   const { authType, name, options } = authenticator;
-  const signupPages = useContext(SignupPageContext);
-  const allowSignUp = !!signupPages[authType] && options?.allowSignup;
-  const signupLink = `/signup?authType=${authType}&name=${name}`;
+  const signUpPages = useSignUpForms();
+  const allowSignUp = !!signUpPages[authType] && options?.allowSignUp;
+  const signUpLink = `/signup?name=${name}`;
 
   const useBasicSignIn = () => {
     return useSignIn(name);
   };
-  return <SchemaComponent schema={passwordForm} scope={{ useBasicSignIn, allowSignUp, signupLink, t }} />;
+  return <SchemaComponent schema={passwordForm} scope={{ useBasicSignIn, allowSignUp, signUpLink, t }} />;
 };

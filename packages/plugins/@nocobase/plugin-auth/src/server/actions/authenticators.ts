@@ -1,6 +1,7 @@
 import { Context, Next } from '@nocobase/actions';
 import { Model, Repository } from '@nocobase/database';
 import { namespace } from '../../preset';
+import { AuthManager } from '@nocobase/auth';
 
 async function checkCount(repository: Repository, id: number[]) {
   // TODO(yangqia): This is a temporary solution, may cause concurrency problem.
@@ -24,6 +25,7 @@ export default {
   },
   publicList: async (ctx: Context, next: Next) => {
     const repo = ctx.db.getRepository('authenticators');
+    const authManager = ctx.app.authManager as AuthManager;
     const authenticators = await repo.find({
       fields: ['name', 'authType', 'title', 'options', 'sort'],
       filter: {
@@ -31,12 +33,16 @@ export default {
       },
       sort: 'sort',
     });
-    ctx.body = authenticators.map((authenticator: Model) => ({
-      name: authenticator.name,
-      authType: authenticator.authType,
-      title: authenticator.title,
-      options: authenticator.options?.public || {},
-    }));
+    ctx.body = authenticators.map((authenticator: Model) => {
+      const authType = authManager.getAuthConfig(authenticator.authType);
+      return {
+        name: authenticator.name,
+        authType: authenticator.authType,
+        authTypeTitle: authType?.title || '',
+        title: authenticator.title,
+        options: authenticator.options?.public || {},
+      };
+    });
     await next();
   },
   destroy: async (ctx: Context, next: Next) => {

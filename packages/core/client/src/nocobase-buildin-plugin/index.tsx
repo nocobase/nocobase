@@ -9,12 +9,11 @@ import { ACLPlugin } from '../acl';
 import { useAPIClient } from '../api-client';
 import { Application } from '../application';
 import { Plugin } from '../application/Plugin';
-import { SigninPage, SigninPageExtensionPlugin, SignupPage } from '../auth';
 import { BlockSchemaComponentPlugin } from '../block-provider';
 import { RemoteDocumentTitlePlugin } from '../document-title';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
-import { AdminLayoutPlugin, AuthLayout, RouteSchemaComponent } from '../route-switch';
+import { AdminLayoutPlugin, RouteSchemaComponent } from '../route-switch';
 import { AntdSchemaComponentPlugin, SchemaComponentPlugin, menuItemInitializer } from '../schema-component';
 import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { AssociationFilterPlugin, SchemaInitializerPlugin } from '../schema-initializer';
@@ -285,25 +284,10 @@ export class NocoBaseBuildInPlugin extends Plugin {
       path: '/admin/:name',
       Component: 'RouteSchemaComponent',
     });
-
-    this.router.add('auth', {
-      Component: 'AuthLayout',
-    });
-    this.router.add('auth.signin', {
-      path: '/signin',
-      Component: 'SigninPage',
-    });
-    this.router.add('auth.signup', {
-      path: '/signup',
-      Component: 'SignupPage',
-    });
   }
 
   addComponents() {
     this.app.addComponents({
-      AuthLayout,
-      SigninPage,
-      SignupPage,
       ErrorFallback,
       RouteSchemaComponent,
       BlockTemplatePage,
@@ -329,7 +313,6 @@ export class NocoBaseBuildInPlugin extends Plugin {
     await this.app.pm.add(SchemaInitializerPlugin, { name: 'schema-initializer' });
     await this.app.pm.add(BlockSchemaComponentPlugin, { name: 'block-schema-component' });
     await this.app.pm.add(AntdSchemaComponentPlugin, { name: 'antd-schema-component' });
-    await this.app.pm.add(SigninPageExtensionPlugin, { name: 'signin-page-extension' });
     await this.app.pm.add(ACLPlugin, { name: 'builtin-acl' });
     await this.app.pm.add(RemoteDocumentTitlePlugin, { name: 'remote-document-title' });
     await this.app.pm.add(PMPlugin, { name: 'builtin-pm' });
