@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { Database } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
 import OIDCPlugin from '../index';
@@ -41,7 +42,7 @@ describe('oidc', () => {
   });
 
   afterEach(async () => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     await db.getRepository('users').destroy({
       truncate: true,
     });
@@ -49,7 +50,7 @@ describe('oidc', () => {
 
   it('should get auth url', async () => {
     agent = app.agent();
-    jest.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
+    vi.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
       authorizationUrl: ({ state }) => state,
     } as any);
     const res = await agent.set('X-Authenticator', 'oidc-auth').resource('oidc').getAuthUrl();
@@ -71,7 +72,7 @@ describe('oidc', () => {
       },
     });
     agent = app.agent();
-    jest.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
+    vi.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
       callback: (uri, { code }) => ({
         access_token: 'access_token',
       }),
@@ -97,7 +98,7 @@ describe('oidc', () => {
       },
     });
     agent = app.agent();
-    jest.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
+    vi.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
       callback: (uri, { code }) => ({
         access_token: 'access_token',
       }),
@@ -133,7 +134,7 @@ describe('oidc', () => {
       },
     });
     agent = app.agent();
-    jest.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
+    vi.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
       callback: (uri, { code }) => ({
         access_token: 'access_token',
       }),
@@ -171,7 +172,7 @@ describe('oidc', () => {
       },
     });
     agent = app.agent();
-    jest.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
+    vi.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
       callback: (uri, { code }) => ({
         access_token: 'access_token',
       }),

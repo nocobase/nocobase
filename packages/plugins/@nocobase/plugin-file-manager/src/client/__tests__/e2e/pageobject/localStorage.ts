@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@nocobase/test/client';
+import type { Locator, Page } from '@nocobase/test/e2e';
 
 export class CreateLocalStorage {
   readonly page: Page;

@@ -847,10 +847,6 @@ describe('workflow > instructions > manual', () => {
     });
   });
 
-  describe('mode: (0,1) (multiple record, all to percent)', () => {});
-
-  describe('mode: (-1,0) (multiple record, any to percent)', () => {});
-
   describe('use result of submitted form in manual node', () => {
     it('result should be available and correct', async () => {
       const n1 = await workflow.createNode({

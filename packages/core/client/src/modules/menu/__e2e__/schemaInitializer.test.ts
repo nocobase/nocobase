@@ -1,4 +1,4 @@
-import { expect, groupPageEmpty, test } from '@nocobase/test/client';
+import { expect, groupPageEmpty, test } from '@nocobase/test/e2e';
 
 test.describe('add menu item', () => {
   test('header', async ({ page, deletePage }) => {

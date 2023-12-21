@@ -1,4 +1,4 @@
-import { expect, oneTableBlockWithAddNewAndViewAndEditAndBasicFields, test } from '@nocobase/test/client';
+import { expect, oneTableBlockWithAddNewAndViewAndEditAndBasicFields, test } from '@nocobase/test/e2e';
 import { createColumnItem, showSettingsMenu, testSupportedOptions } from './utils';
 
 test.describe('single line text', () => {

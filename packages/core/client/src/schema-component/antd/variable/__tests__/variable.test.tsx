@@ -1,5 +1,5 @@
+import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import React from 'react';
-import { render, screen, userEvent, waitFor } from 'testUtils';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 import App3 from '../demos/demo3';
@@ -20,8 +20,8 @@ describe('Variable', () => {
   it('Variable.TextArea', async () => {
     render(<App2 />);
 
-    const input = document.querySelector('.ant-input') as HTMLElement;
-    const variableSelector = document.querySelector('.ant-select-selector') as HTMLElement;
+    const input = document.querySelector('.ant-input');
+    const variableSelector = document.querySelector('.ant-select-selector');
     expect(input).toBeInTheDocument();
     expect(variableSelector).toBeInTheDocument();
 
@@ -29,7 +29,7 @@ describe('Variable', () => {
     await userEvent.click(screen.getByText('v1'));
     await waitFor(() => {
       expect(input.innerHTML).toMatchInlineSnapshot(
-        '"<span class=\\"ant-tag ant-tag-blue\\" contenteditable=\\"false\\" data-variable=\\"v1\\">v1</span>"',
+        `"<span class="ant-tag ant-tag-blue" contenteditable="false" data-variable="v1">v1</span>"`,
       );
     });
   });
@@ -37,8 +37,8 @@ describe('Variable', () => {
   it('Variable.JSON', async () => {
     render(<App3 />);
 
-    const input = document.querySelector('.ant-input') as HTMLTextAreaElement;
-    const variableSelector = document.querySelector('.ant-select-selector') as HTMLElement;
+    const input = document.querySelector<HTMLTextAreaElement>('.ant-input');
+    const variableSelector = document.querySelector('.ant-select-selector');
     expect(input).toBeInTheDocument();
     expect(variableSelector).toBeInTheDocument();
 

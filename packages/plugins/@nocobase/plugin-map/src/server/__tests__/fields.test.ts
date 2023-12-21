@@ -1,6 +1,6 @@
 import Database from '@nocobase/database';
 import { mockDatabase } from '@nocobase/test';
-import { PointField, CircleField, PolygonField, LineStringField } from '../fields';
+import { CircleField, LineStringField, PointField, PolygonField } from '../fields';
 
 const data = {
   polygon: [
@@ -24,6 +24,7 @@ describe('fields', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     db.registerFieldTypes({
       point: PointField,
       circle: CircleField,

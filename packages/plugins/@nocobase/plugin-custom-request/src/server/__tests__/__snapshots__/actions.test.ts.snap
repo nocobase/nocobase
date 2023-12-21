@@ -1,4 +1,12 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`actions > send > basic 1`] = `undefined`;
+
+exports[`actions > send > currentRecord.data 1`] = `
+{
+  "username": "testname",
+}
+`;
 
 exports[`actions send basic 1`] = `undefined`;
 

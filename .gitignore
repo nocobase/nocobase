@@ -34,7 +34,8 @@ storage/app.watch.ts
 storage/logs-e2e
 storage/uploads-e2e
 tsconfig.paths.json
-playwright
+/playwright
+/storage/playwright
 .swc
 ncc-cache/
 yarn--**
