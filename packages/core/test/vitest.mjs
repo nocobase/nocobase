@@ -1,7 +1,10 @@
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path, { resolve } from 'path';
+import { URL } from 'url';
 import { defineConfig as vitestConfig } from 'vitest/config';
+
+const __dirname = new URL('.', import.meta.url).pathname;
 
 const relativePathToAbsolute = (relativePath) => {
   return path.resolve(process.cwd(), relativePath);
