@@ -1,6 +1,6 @@
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
-import path from 'path';
+import path, { resolve } from 'path';
 import { defineConfig as vitestConfig } from 'vitest/config';
 
 const relativePathToAbsolute = (relativePath) => {
@@ -45,7 +45,7 @@ export const defineConfig = (config = {}) => {
           },
           test: {
             globals: true,
-            setupFiles: 'scripts/vitest-node.setup.ts',
+            setupFiles: resolve(__dirname, './setup/server.ts'),
             alias: tsConfigPathsToAlias(),
             include: ['packages/**/__tests__/**/*.test.ts'],
             exclude: [
@@ -79,7 +79,7 @@ export const defineConfig = (config = {}) => {
           },
           test: {
             globals: true,
-            setupFiles: 'scripts/vitest.setup.ts',
+            setupFiles: resolve(__dirname, './setup/client.ts'),
             environment: 'jsdom',
             css: false,
             alias: tsConfigPathsToAlias(),

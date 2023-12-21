@@ -1,1 +1,2 @@
-export * from '../vitest.mjs';
+// @ts-ignore
+export * from '../vitest';
