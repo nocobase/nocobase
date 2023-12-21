@@ -25,8 +25,10 @@ test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
   await page.getByLabel(`action-Action.Link-Configure-roles-${roleData.name}`).click();
   await page.getByRole('tab').getByText('Menu permissions').click();
   await page.waitForSelector('.ant-table');
-  await expect(await page.getByRole('row', { name: 'page1' }).locator('.ant-checkbox-input').isChecked()).toBe(true);
-  await expect(await page.getByRole('row', { name: 'page2' }).locator('.ant-checkbox-input').isChecked()).toBe(false);
+  const page1Menu = await page.getByRole('row', { name: 'page1' }).locator('.ant-checkbox-input');
+  const page2Menu = await page.getByRole('row', { name: 'page2' }).locator('.ant-checkbox-input');
+  await expect(await page1Menu.isChecked()).toBe(true);
+  await expect(await page2Menu.isChecked()).toBe(false);
   //修改菜单权限，page1无权限,page2有权限
   await updateRole({ name: roleData.name, menuUiSchemas: [uid2] });
   await page.reload();
@@ -37,8 +39,8 @@ test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
   await page.getByLabel(`action-Action.Link-Configure-roles-${roleData.name}`).click();
   await page.getByRole('tab').getByText('Menu permissions').click();
   await page.waitForSelector('.ant-table');
-  await expect(await page.getByRole('row', { name: 'page1' }).locator('.ant-checkbox-input').isChecked()).toBe(false);
-  await expect(await page.getByRole('row', { name: 'page2' }).locator('.ant-checkbox-input').isChecked()).toBe(true);
+  await expect(await page1Menu.isChecked()).toBe(false);
+  await expect(await page2Menu.isChecked()).toBe(true);
   //通过路由访问无权限的菜单,跳到有权限的第一个菜单
   await page.goto(`/admin/${uid1}`);
   await page.waitForSelector('.nb-page-wrapper');
