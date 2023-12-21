@@ -30,6 +30,22 @@ describe('dumper', () => {
     });
   });
 
+  it('should write sql content', async () => {
+    const dumper = new Dumper(app);
+
+    const result = await dumper.dump({
+      dataTypes: new Set(['meta']),
+    });
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: result.filePath,
+    });
+
+    await restorer.restore({
+      dataTypes: new Set(['meta']),
+    });
+  });
+
   it('should dump and restore date field', async () => {
     await db.getRepository('collections').create({
       values: {

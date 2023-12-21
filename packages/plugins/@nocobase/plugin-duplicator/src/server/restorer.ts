@@ -347,16 +347,21 @@ export class Restorer extends AppMigrator {
   }
 
   async importDb() {
-    const sqlFilePath = path.resolve(this.workDir, 'db.sql');
+    const sqlContentPath = path.resolve(this.workDir, 'sql-content.json');
+
     // if db.sql file not exists, skip import
-    if (!fs.existsSync(sqlFilePath)) {
+    if (!fs.existsSync(sqlContentPath)) {
       return;
     }
 
     // read file content from db.sql
-    const queriesContent = await fsPromises.readFile(sqlFilePath, 'utf8');
+    const sqlContent = await fsPromises.readFile(sqlContentPath, 'utf8');
 
-    const queries = JSON.parse(queriesContent);
+    const queries = Object.values(
+      JSON.parse(sqlContent) as {
+        [key: string]: string;
+      },
+    );
 
     for (const sql of queries) {
       try {

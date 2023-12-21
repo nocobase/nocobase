@@ -324,26 +324,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this._instanceId;
   }
 
-  registerCollectionType() {
-    this.collectionFactory.registerCollectionType(InheritedCollection, {
-      condition: (options) => {
-        return options.inherits && lodash.castArray(options.inherits).length > 0;
-      },
-    });
-
-    this.collectionFactory.registerCollectionType(ViewCollection, {
-      condition: (options) => {
-        return options.viewName || options.view;
-      },
-    });
-
-    this.collectionFactory.registerCollectionType(SqlCollection, {
-      condition: (options) => {
-        return options.sql;
-      },
-    });
-  }
-
   setContext(context: any) {
     this.context = context;
   }
@@ -921,6 +901,26 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     return result;
+  }
+
+  private registerCollectionType() {
+    this.collectionFactory.registerCollectionType(InheritedCollection, {
+      condition: (options) => {
+        return options.inherits && lodash.castArray(options.inherits).length > 0;
+      },
+    });
+
+    this.collectionFactory.registerCollectionType(ViewCollection, {
+      condition: (options) => {
+        return options.viewName || options.view;
+      },
+    });
+
+    this.collectionFactory.registerCollectionType(SqlCollection, {
+      condition: (options) => {
+        return options.sql;
+      },
+    });
   }
 }
 

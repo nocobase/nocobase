@@ -1,4 +1,4 @@
-import { CollectionGroupManager as DBCollectionGroupManager, DumpDataType } from '@nocobase/database';
+import { Collection, CollectionGroupManager as DBCollectionGroupManager, DumpDataType } from '@nocobase/database';
 import archiver from 'archiver';
 import dayjs from 'dayjs';
 import fs from 'fs';
@@ -38,6 +38,8 @@ export class Dumper extends AppMigrator {
   static dumpTasks: Map<string, Promise<any>> = new Map();
 
   direction = 'dump' as const;
+
+  sqlContent = {};
 
   static getTaskPromise(taskId: string): Promise<any> | undefined {
     return this.dumpTasks.get(taskId);
@@ -83,6 +85,14 @@ export class Dumper extends AppMigrator {
 
   static generateFileName() {
     return `backup_${dayjs().format(`YYYYMMDD_HHmmss_${Math.floor(1000 + Math.random() * 9000)}`)}.${DUMPED_EXTENSION}`;
+  }
+
+  writeSQLContent(key: string, sql: string) {
+    this.sqlContent[key] = sql;
+  }
+
+  getSQLContent(key: string) {
+    return this.sqlContent[key];
   }
 
   async getCollectionsByDataTypes(dataTypes: Set<DumpDataType>): Promise<string[]> {
@@ -274,68 +284,14 @@ export class Dumper extends AppMigrator {
   }
 
   async dumpDb() {
-    const db = this.app.db;
-    const dialect = db.sequelize.getDialect();
-    const sqlContent = [];
-
-    if (dialect === 'postgres') {
-      // get user defined functions in postgres
-      const functions = await db.sequelize.query(
-        `SELECT n.nspname                 AS function_schema,
-                p.proname                 AS function_name,
-                pg_get_functiondef(p.oid) AS def
-         FROM pg_proc p
-                LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
-         WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')
-         ORDER BY function_schema,
-                  function_name;`,
-        {
-          type: 'SELECT',
-        },
-      );
-
-      for (const f of functions) {
-        sqlContent.push(f['def']);
-      }
-
-      // get user defined triggers in postgres
-      const triggers = await db.sequelize.query(
-        `select pg_get_triggerdef(oid)
-         from pg_trigger`,
-        {
-          type: 'SELECT',
-        },
-      );
-
-      for (const t of triggers) {
-        sqlContent.push(t['pg_get_triggerdef']);
-      }
-
-      // get user defined views in postgres
-      const views = await db.sequelize.query(
-        `SELECT n.nspname    AS schema_name,
-                v.viewname   AS view_name,
-                v.definition AS view_definition
-         FROM pg_views v
-                JOIN
-              pg_namespace n ON v.schemaname = n.nspname
-         WHERE n.nspname NOT IN ('information_schema', 'pg_catalog')
-         ORDER BY schema_name,
-                  view_name;`,
-        {
-          type: 'SELECT',
-        },
-      );
-
-      for (const v of views) {
-        sqlContent.push(`CREATE OR REPLACE VIEW ${v['view_name']} AS ${v['view_definition']}`);
-      }
+    if (this.hasSqlContent()) {
+      const dbDumpPath = path.resolve(this.workDir, 'sql-content.json');
+      await fsPromises.writeFile(dbDumpPath, JSON.stringify(this.sqlContent), 'utf8');
     }
+  }
 
-    if (sqlContent.length > 0) {
-      const dbDumpPath = path.resolve(this.workDir, 'db.sql');
-      await fsPromises.writeFile(dbDumpPath, JSON.stringify(sqlContent), 'utf8');
-    }
+  hasSqlContent() {
+    return Object.keys(this.sqlContent).length > 0;
   }
 
   async dumpMeta(additionalMeta: object = {}) {
@@ -357,6 +313,10 @@ export class Dumper extends AppMigrator {
       }
     }
 
+    if (this.hasSqlContent()) {
+      metaObj['dialectOnly'] = true;
+    }
+
     await fsPromises.writeFile(metaPath, JSON.stringify(metaObj), 'utf8');
   }
 
@@ -374,8 +334,11 @@ export class Dumper extends AppMigrator {
       return;
     }
 
-    if (collection.isView()) {
-      this.app.log.warn(`collection ${collectionName} is a view`);
+    const collectionOnDumpOption = this.app.db.collectionFactory.collectionTypes.get(
+      collection.constructor as typeof Collection,
+    )?.onDump;
+
+    if (collectionOnDumpOption) {
       return;
     }
 
