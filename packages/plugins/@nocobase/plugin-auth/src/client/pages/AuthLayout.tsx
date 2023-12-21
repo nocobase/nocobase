@@ -1,11 +1,25 @@
 import { css } from '@emotion/css';
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { PoweredBy } from '../../../powered-by';
-import { useSystemSettings } from '../../../system-settings';
+import { useSystemSettings, PoweredBy, useRequest, useAPIClient } from '@nocobase/client';
+import { AuthenticatorsContext } from '../authenticator';
 
 export function AuthLayout(props: any) {
   const { data } = useSystemSettings();
+  const api = useAPIClient();
+  const { data: authenticators = [], error } = useRequest(() =>
+    api
+      .resource('authenticators')
+      .publicList()
+      .then((res) => {
+        return res?.data?.data || [];
+      }),
+  );
+
+  if (error) {
+    throw error;
+  }
+
   return (
     <div
       style={{
@@ -15,7 +29,9 @@ export function AuthLayout(props: any) {
       }}
     >
       <h1>{data?.data?.title}</h1>
-      <Outlet />
+      <AuthenticatorsContext.Provider value={authenticators as any}>
+        <Outlet />
+      </AuthenticatorsContext.Provider>
       <div
         className={css`
           position: absolute;

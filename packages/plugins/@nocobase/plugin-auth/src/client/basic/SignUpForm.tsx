@@ -1,8 +1,38 @@
-import { SchemaComponent, useSignup } from '@nocobase/client';
+import { SchemaComponent } from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import React from 'react';
 import { uid } from '@formily/shared';
 import { useAuthTranslation } from '../locale';
+import { useAPIClient } from '@nocobase/client';
+import { useForm } from '@formily/react';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { message } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useAuthenticator } from '../authenticator';
+
+export interface UseSignupProps {
+  authenticator?: string;
+  message?: {
+    success?: string;
+  };
+}
+
+export const useSignUp = (props?: UseSignupProps) => {
+  const navigate = useNavigate();
+  const form = useForm();
+  const api = useAPIClient();
+  const { t } = useTranslation();
+  return {
+    async run() {
+      await form.submit();
+      await api.auth.signUp(form.values, props?.authenticator);
+      message.success(props?.message?.success || t('Sign up successfully, and automatically jump to the sign in page'));
+      setTimeout(() => {
+        navigate('/signin');
+      }, 2000);
+    },
+  };
+};
 
 const signupPageSchema: ISchema = {
   type: 'object',
@@ -63,7 +93,7 @@ const signupPageSchema: ISchema = {
             block: true,
             type: 'primary',
             htmlType: 'submit',
-            useAction: '{{ useBasicSignup }}',
+            useAction: '{{ useBasicSignUp }}',
             style: { width: '100%' },
           },
         },
@@ -84,10 +114,15 @@ const signupPageSchema: ISchema = {
   },
 };
 
-export default (props: { name: string }) => {
+export const SignUpForm = ({ authenticatorName: name }: { authenticatorName: string }) => {
   const { t } = useAuthTranslation();
-  const useBasicSignup = () => {
-    return useSignup({ authenticator: props.name });
+  const useBasicSignUp = () => {
+    return useSignUp({ authenticator: name });
   };
-  return <SchemaComponent schema={signupPageSchema} scope={{ useBasicSignup, t }} />;
+  const authenticator = useAuthenticator(name);
+  const { options } = authenticator;
+  if (!options?.allowSignUp) {
+    return <Navigate to="/not-found" replace={true} />;
+  }
+  return <SchemaComponent schema={signupPageSchema} scope={{ useBasicSignUp, t }} />;
 };
