@@ -111,7 +111,7 @@ export class CollectionRepository extends Repository {
     }
 
     // load lazy collection field
-    for (const [collectionName, skipField] of Object.entries(lazyCollectionFields)) {
+    for (const [collectionName, skipField] of lazyCollectionFields) {
       this.database.logger.debug(`load collection fields`, {
         submodule: 'CollectionRepository',
         method: 'load',
