@@ -32,10 +32,10 @@ describe('on dump', () => {
       },
 
       async onDump(dumper: Dumper, collection) {
-        dumper.writeSQLContent(
-          'onDumpCollection',
-          `CREATE TABLE ${collection.getTableNameWithSchemaAsString()} (id int);`,
-        );
+        dumper.writeSQLContent('onDumpCollection', {
+          sql: `CREATE TABLE ${collection.getTableNameWithSchemaAsString()} (id int);`,
+          type: 'meta',
+        });
       },
     });
 
@@ -51,19 +51,21 @@ describe('on dump', () => {
     const dumper = new Dumper(app);
 
     const result = await dumper.dump({
-      dataTypes: new Set(['meta', 'business']),
+      dataTypes: new Set(['meta']),
     });
 
     const restorer = new Restorer(app, {
       backUpFilePath: result.filePath,
     });
 
+    await restorer.parseBackupFile();
+
     const sqlContentPath = path.resolve(restorer.workDir, 'sql-content.json');
     const sqlContent = JSON.parse(await fs.promises.readFile(sqlContentPath, 'utf8'));
 
-    console.log(sqlContent);
-    // await restorer.restore({
-    //   dataTypes: new Set(['meta']),
-    // });
+    expect(sqlContent).toBeDefined();
+    await restorer.restore({
+      dataTypes: new Set(['meta']),
+    });
   });
 });

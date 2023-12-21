@@ -10,6 +10,7 @@ import lodash, { isPlainObject } from 'lodash';
 import { FieldValueWriter } from './field-value-writer';
 import * as Topo from '@hapi/topo';
 import { RestoreCheckError } from './errors/restore-check-error';
+import { filter } from 'mathjs';
 
 type RestoreOptions = {
   dataTypes: Set<DumpDataType>;
@@ -77,7 +78,7 @@ export class Restorer extends AppMigrator {
     await this.decompressBackup(this.backUpFilePath);
     await this.checkMeta();
     await this.importCollections(options);
-    await this.importDb();
+    await this.importDb(options);
     await this.upgradeApp();
     await this.clearWorkDir();
   }
@@ -346,7 +347,7 @@ export class Restorer extends AppMigrator {
     this.importedCollections.push(collectionName);
   }
 
-  async importDb() {
+  async importDb(options: RestoreOptions) {
     const sqlContentPath = path.resolve(this.workDir, 'sql-content.json');
 
     // if db.sql file not exists, skip import
@@ -355,18 +356,28 @@ export class Restorer extends AppMigrator {
     }
 
     // read file content from db.sql
-    const sqlContent = await fsPromises.readFile(sqlContentPath, 'utf8');
+    const sqlData = JSON.parse(await fsPromises.readFile(sqlContentPath, 'utf8'));
+
+    const sqlContent = Object.keys(sqlData)
+      .filter((key) => options.dataTypes.has(sqlData[key].type))
+      .reduce((acc, key) => {
+        acc[key] = sqlData[key];
+        return acc;
+      }, {});
 
     const queries = Object.values(
-      JSON.parse(sqlContent) as {
-        [key: string]: string;
+      sqlContent as {
+        [key: string]: {
+          sql: string;
+          type: DumpDataType;
+        };
       },
     );
 
-    for (const sql of queries) {
+    for (const sqlData of queries) {
       try {
-        this.app.log.info(`import sql: ${sql}`);
-        await this.app.db.sequelize.query(sql);
+        this.app.log.info(`import sql: ${sqlData.sql}`);
+        await this.app.db.sequelize.query(sqlData.sql);
       } catch (e) {
         if (e.name === 'SequelizeDatabaseError') {
           this.app.logger.error(e.message);

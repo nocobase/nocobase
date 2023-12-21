@@ -39,7 +39,12 @@ export class Dumper extends AppMigrator {
 
   direction = 'dump' as const;
 
-  sqlContent = {};
+  sqlContent: {
+    [key: string]: {
+      sql: string;
+      type: DumpDataType;
+    };
+  } = {};
 
   static getTaskPromise(taskId: string): Promise<any> | undefined {
     return this.dumpTasks.get(taskId);
@@ -87,8 +92,14 @@ export class Dumper extends AppMigrator {
     return `backup_${dayjs().format(`YYYYMMDD_HHmmss_${Math.floor(1000 + Math.random() * 9000)}`)}.${DUMPED_EXTENSION}`;
   }
 
-  writeSQLContent(key: string, sql: string) {
-    this.sqlContent[key] = sql;
+  writeSQLContent(
+    key: string,
+    data: {
+      sql: string;
+      type: DumpDataType;
+    },
+  ) {
+    this.sqlContent[key] = data;
   }
 
   getSQLContent(key: string) {
@@ -275,7 +286,7 @@ export class Dumper extends AppMigrator {
       delayCollections: [...delayCollections],
     });
 
-    await this.dumpDb();
+    await this.dumpDb(options);
 
     const backupFileName = options.fileName || Dumper.generateFileName();
     const filePath = await this.packDumpedDir(backupFileName);
@@ -283,10 +294,32 @@ export class Dumper extends AppMigrator {
     return filePath;
   }
 
-  async dumpDb() {
+  async dumpDb(options: DumpOptions) {
+    for (const collection of this.app.db.collections.values()) {
+      const collectionOnDumpOption = this.app.db.collectionFactory.collectionTypes.get(
+        collection.constructor as typeof Collection,
+      )?.onDump;
+
+      if (collectionOnDumpOption) {
+        await collectionOnDumpOption(this, collection);
+      }
+    }
+
     if (this.hasSqlContent()) {
       const dbDumpPath = path.resolve(this.workDir, 'sql-content.json');
-      await fsPromises.writeFile(dbDumpPath, JSON.stringify(this.sqlContent), 'utf8');
+
+      await fsPromises.writeFile(
+        dbDumpPath,
+        JSON.stringify(
+          Object.keys(this.sqlContent)
+            .filter((key) => options.dataTypes.has(this.sqlContent[key].type))
+            .reduce((acc, key) => {
+              acc[key] = this.sqlContent[key];
+              return acc;
+            }, {}),
+        ),
+        'utf8',
+      );
     }
   }
 
