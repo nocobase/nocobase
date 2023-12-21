@@ -1,4 +1,4 @@
-import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndAssociationFields, test } from '@nocobase/test/client';
+import { Page, expect, oneTableBlockWithAddNewAndViewAndEditAndAssociationFields, test } from '@nocobase/test/e2e';
 import { commonTesting, testDefaultValue, testPattern } from '../commonTesting';
 
 test.describe('many to many', () => {

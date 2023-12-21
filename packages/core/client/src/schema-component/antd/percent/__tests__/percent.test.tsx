@@ -1,5 +1,5 @@
+import { fireEvent, render } from '@nocobase/test/client';
 import React from 'react';
-import { fireEvent, render, screen } from 'testUtils';
 import App from '../demos/percent';
 
 describe('Percent', () => {

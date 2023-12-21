@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 import { getYmd } from '../helpers/other-helper';
 import { oneEmptyGantt } from './utils';
 const mockData = {

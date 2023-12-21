@@ -1,4 +1,4 @@
-import { oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields, test } from '@nocobase/test/client';
+import { oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields, test } from '@nocobase/test/e2e';
 import { testSupportedOptions } from './utils';
 
 test.describe('collection', () => {

@@ -1,4 +1,4 @@
-import { Page, expect, test } from '@nocobase/test/client';
+import { Page, expect, test } from '@nocobase/test/e2e';
 
 test.describe('page schema settings', () => {
   const showMenu = async (page: Page) => {

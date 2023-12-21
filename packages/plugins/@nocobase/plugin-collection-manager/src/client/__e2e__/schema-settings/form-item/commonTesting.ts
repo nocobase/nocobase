@@ -1,4 +1,4 @@
-import { Page, expect, test } from '@nocobase/test/client';
+import { Page, expect, test } from '@nocobase/test/e2e';
 
 export async function testEditFieldTitle(page: Page) {
   await page.getByRole('menuitem', { name: 'Edit field title' }).click();

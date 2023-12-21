@@ -1,4 +1,4 @@
-import { expectSettingsMenu, test } from '@nocobase/test/client';
+import { expectSettingsMenu, test } from '@nocobase/test/e2e';
 import { createTable } from './utils';
 
 test.describe('table data selector schema settings', () => {

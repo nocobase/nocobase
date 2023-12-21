@@ -1,4 +1,4 @@
-import { oneTableBlockWithAddNewAndViewAndEditAndMediaFields, test } from '@nocobase/test/client';
+import { oneTableBlockWithAddNewAndViewAndEditAndMediaFields, test } from '@nocobase/test/e2e';
 import { testSupportedOptions } from './utils';
 
 test.describe('markdown', () => {

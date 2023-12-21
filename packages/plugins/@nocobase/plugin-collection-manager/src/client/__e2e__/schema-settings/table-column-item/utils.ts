@@ -1,4 +1,4 @@
-import { Page, PageConfig, expectSettingsMenu, test } from '@nocobase/test/client';
+import { Page, PageConfig, expectSettingsMenu, test } from '@nocobase/test/e2e';
 
 export function testSupportedOptions({
   name,

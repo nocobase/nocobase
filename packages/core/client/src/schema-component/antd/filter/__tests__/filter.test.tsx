@@ -1,5 +1,5 @@
+import { render, screen, userEvent, waitFor, within } from '@nocobase/test/client';
 import React from 'react';
-import { render, screen, userEvent, waitFor, within } from 'testUtils';
 import App2 from '../demos/demo2';
 import App3 from '../demos/demo3';
 import App4 from '../demos/demo4';
@@ -10,14 +10,9 @@ describe('Filter', () => {
   it('Filter & Action', async () => {
     render(<App3 />);
 
-    await waitFor(
-      async () => {
-        await userEvent.click(screen.getByText(/open/i));
-      },
-      {
-        timeout: 2000,
-      },
-    );
+    await waitFor(async () => {
+      await userEvent.click(screen.getByText(/open/i));
+    });
     const tooltip = screen.getByRole('tooltip');
     expect(tooltip).toBeInTheDocument();
 
