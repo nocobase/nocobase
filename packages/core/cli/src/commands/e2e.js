@@ -196,4 +196,8 @@ module.exports = (cli) => {
   e2e.command('reinstall-app').action(async (options) => {
     await run('nocobase', ['install', '-f'], options);
   });
+
+  e2e.command('install-deps').action(async () => {
+    await run('npx', ['playwright', 'install', '--with-deps']);
+  });
 };
