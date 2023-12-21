@@ -216,9 +216,13 @@ interface ExtendUtils {
    */
   deletePage: (pageName: string) => Promise<void>;
   /**
-   * 生成一个新的角色，并和admin关联上，且切换到新的角色
+   * 生成一个新的角色，并和admin关联上
    */
   mockRole: <T = any>(roleSetting: AclRoleSetting) => Promise<T>;
+  /**
+   * 更新角色权限配置
+   */
+  updateRole: <T = any>(roleSetting: AclRoleSetting) => Promise<T>;
 }
 
 const PORT = process.env.APP_PORT || 20000;
@@ -416,6 +420,13 @@ const _test = base.extend<ExtendUtils>({
     };
 
     await use(mockRole);
+  },
+  updateRole: async ({ page }, use) => {
+    const mockRole = async (roleSetting: AclRoleSetting) => {
+      return updateRole(roleSetting);
+    };
+
+    await use(updateRole);
   },
 });
 
@@ -659,6 +670,36 @@ const createRole = async (roleSetting: AclRoleSetting) => {
   return roleData;
 };
 
+/**
+ * 根据配置更新角色权限
+ * @param page 运行测试的 page 实例
+ * @param AclRoleSetting
+ * @returns
+ */
+const updateRole = async (roleSetting: AclRoleSetting) => {
+  const api = await request.newContext({
+    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const name = roleSetting.name;
+
+  const result = await api.post(`/api/users/1/roles:update?filterByTk=${name}`, {
+    headers,
+    data: { ...roleSetting },
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  const roleData = (await result.json()).data;
+  return roleData;
+};
+
+/**
+ * 设置默认角色
+ * @param name
+ */
 const setDefaultRole = async (name) => {
   const api = await request.newContext({
     storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
