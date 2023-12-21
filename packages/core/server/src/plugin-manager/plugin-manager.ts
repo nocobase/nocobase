@@ -528,11 +528,11 @@ export class PluginManager {
     await plugin.beforeLoad();
 
     await this.app.emitAsync('beforeLoadPlugin', plugin, {});
-    this.app.logger.debug(`loading plugin...`, name, { submodule: 'plugin-manager', method: 'loadOne' });
+    this.app.logger.debug(`loading plugin...`, { submodule: 'plugin-manager', method: 'loadOne', name });
     await plugin.load();
     plugin.state.loaded = true;
     await this.app.emitAsync('afterLoadPlugin', plugin, {});
-    this.app.logger.debug(`after load plugin...`, name, { submodule: 'plugin-manager', method: 'loadOne' });
+    this.app.logger.debug(`after load plugin...`, { submodule: 'plugin-manager', method: 'loadOne', name });
 
     this.app.setMaintainingMessage(`loaded plugin ${plugin.name}`);
   }

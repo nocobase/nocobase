@@ -49,7 +49,12 @@ const getTransports = (options: LoggerOptions) => {
     console: () =>
       Transports.console({
         format: format(
-          winston.format((info) => ({ logfile: filename, level: info.level, timestamp: info.timestamp, ...info }))(),
+          winston.format((info) => ({
+            logfile: filename || 'console',
+            level: info.level,
+            timestamp: info.timestamp,
+            ...info,
+          }))(),
           true,
         ),
       }),

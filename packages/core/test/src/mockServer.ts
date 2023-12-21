@@ -93,7 +93,7 @@ export class MockServer extends Application {
     const oldDatabase = this._db;
 
     const databaseOptions = oldDatabase ? oldDatabase.options : <any>options?.database || {};
-    const database = mockDatabase({ ...databaseOptions, logger: this._logger.child({ module: 'database' }) });
+    const database = mockDatabase(databaseOptions);
     database.setContext({ app: this });
 
     return database;
