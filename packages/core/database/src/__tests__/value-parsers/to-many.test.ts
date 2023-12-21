@@ -88,7 +88,7 @@ describe('number value parser', () => {
   });
 });
 
-describe.only('china region', () => {
+describe('china region', () => {
   let parser: ToManyValueParser;
   let db: Database;
 
