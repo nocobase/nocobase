@@ -85,8 +85,7 @@ export const createLogger = (options: LoggerOptions) => {
     transports: getTransports(options),
     format: winston.format.combine(
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      options.format || winston.format.simple(),
-      winston.format.json({ deterministic: false }),
+      options.format || winston.format.combine(winston.format.simple(), winston.format.json({ deterministic: false })),
     ),
   };
   return winston.createLogger(winstonOptions);
