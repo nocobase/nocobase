@@ -3,6 +3,13 @@ import winston from 'winston';
 
 const DEFAULT_DELIMITER = '|';
 
+const colorize = {
+  errors: chalk.red,
+  module: chalk.cyan,
+  reqId: chalk.gray,
+  request: chalk.green,
+};
+
 // https://brandur.org/logfmt
 export const logfmtFormat: winston.Logform.Format = winston.format.printf((info) =>
   Object.entries(info)
@@ -25,7 +32,7 @@ export const logfmtFormatWithColor = winston.format.combine(
     Object.entries(info)
       .map(([k, v]) => {
         if (k === 'message' && info['level'].includes('error')) {
-          v = chalk.red(v);
+          v = colorize.errors(v);
         }
         if (typeof v === 'object') {
           try {
@@ -35,13 +42,13 @@ export const logfmtFormatWithColor = winston.format.combine(
           }
         }
         if (k === 'reqId' && v) {
-          v = chalk.gray(v);
+          v = colorize.reqId(v);
         }
         if ((k === 'module' || k === 'submodule') && v) {
-          v = chalk.cyan(v);
+          v = colorize.module(v);
         }
         if (v === 'request' || v === 'response') {
-          v = chalk.green(v);
+          v = colorize.request(v);
         }
         return `${k}=${v}`;
       })
@@ -70,7 +77,7 @@ export const delimiterFormatWithColor = winston.format.combine(
     Object.entries(info)
       .map(([k, v]) => {
         if (k === 'message' && info['level'].includes('error')) {
-          return chalk.red(v);
+          return colorize.errors(v);
         }
         if (typeof v === 'object') {
           try {
@@ -80,13 +87,13 @@ export const delimiterFormatWithColor = winston.format.combine(
           }
         }
         if (k === 'reqId' && v) {
-          return chalk.gray(v);
+          return colorize.reqId(v);
         }
         if ((k === 'module' || k === 'submodule') && v) {
-          return chalk.cyan(v);
+          return colorize.module(v);
         }
         if (v === 'request' || v === 'response') {
-          return chalk.green(v);
+          return colorize.request(v);
         }
         return v;
       })

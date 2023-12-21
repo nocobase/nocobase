@@ -1,4 +1,4 @@
-import { Logger, LoggerOptions, createLogger, simpleLogger } from '@nocobase/logger';
+import { Logger, LoggerOptions, createConsoleLogger, createLogger } from '@nocobase/logger';
 import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
@@ -226,7 +226,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         this.logger = createLogger(options.logger);
       }
     } else {
-      this.logger = simpleLogger();
+      this.logger = createConsoleLogger();
     }
 
     if (!options.instanceId) {
