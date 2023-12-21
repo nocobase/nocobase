@@ -4,9 +4,9 @@ import { afterCreate, afterDestroy, afterUpdate } from './hooks';
 
 export default class PluginActionLogs extends Plugin {
   async beforeLoad() {
-    this.db.on('afterCreate', afterCreate(this.app));
-    this.db.on('afterUpdate', afterUpdate(this.app));
-    this.db.on('afterDestroy', afterDestroy(this.app));
+    this.db.on('afterCreate', afterCreate);
+    this.db.on('afterUpdate', afterUpdate);
+    this.db.on('afterDestroy', afterDestroy);
   }
 
   async load() {

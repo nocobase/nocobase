@@ -11,7 +11,6 @@ export const useLanguageSettings = () => {
   const enabledLanguages: string[] = useMemo(() => data?.data?.enabledLanguages || [], [data?.data?.enabledLanguages]);
   const result = useMemo<MenuProps['items'][0]>(() => {
     return {
-      role: 'button',
       key: 'language',
       eventKey: 'LanguageSettings',
       label: (

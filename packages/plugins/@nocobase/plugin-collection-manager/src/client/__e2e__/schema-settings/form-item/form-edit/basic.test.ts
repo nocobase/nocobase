@@ -86,22 +86,11 @@ test.describe('icon', () => {
       },
       expectReadonly: async () => {
         // 只读模式下，选择图标按钮会被禁用
-        if (record.icon) {
-          await expect(page.getByRole('button', { name: record.icon })).toBeDisabled();
-        } else {
-          await expect(page.getByRole('button', { name: 'Select icon' })).toBeDisabled();
-        }
+        await expect(page.getByRole('button', { name: 'account-book' })).toBeDisabled();
       },
       expectEasyReading: async () => {
         // 按钮会消失，只剩下图标
-        if (record.icon) {
-          await expect(page.getByRole('button', { name: record.icon })).not.toBeVisible();
-          await expect(
-            page.getByLabel('block-item-CollectionField-general-form-general.icon-icon').getByLabel(record.icon),
-          ).toBeVisible();
-        } else {
-          await expect(page.getByRole('button', { name: 'Select icon' })).not.toBeVisible();
-        }
+        await expect(page.getByRole('button', { name: 'account-book' })).not.toBeVisible();
       },
     });
   });
@@ -298,7 +287,7 @@ test.describe('password', () => {
           page.getByLabel('block-item-CollectionField-general-form-general.password-password').getByRole('textbox'),
         ).not.toBeVisible();
         await expect(page.getByLabel('block-item-CollectionField-general-form-general.password-password')).toHaveText(
-          'password:',
+          'password:********',
         );
       },
     });
@@ -407,7 +396,7 @@ test.describe('phone', () => {
           page.getByLabel('block-item-CollectionField-general-form-general.phone-phone').getByRole('textbox'),
         ).not.toBeVisible();
         await expect(page.getByLabel('block-item-CollectionField-general-form-general.phone-phone')).toHaveText(
-          'phone:',
+          'phone:17777777777',
         );
       },
     });
@@ -453,7 +442,7 @@ test.describe('long text', () => {
           page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').getByRole('textbox'),
         ).not.toBeVisible();
         await expect(page.getByLabel('block-item-CollectionField-general-form-general.longText-longText')).toHaveText(
-          `longText:${record.longText}`.replaceAll('\n', ''),
+          `longText:test long text`,
         );
       },
     });
@@ -496,11 +485,12 @@ test.describe('URL', () => {
         ).toBeDisabled();
       },
       expectEasyReading: async () => {
-        // url 类型数据不会被 mock，所以这里不会显示值
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.url-url').getByRole('textbox'),
         ).not.toBeVisible();
-        await expect(page.getByLabel('block-item-CollectionField-general-form-general.url-url')).toHaveText('url:');
+        await expect(page.getByLabel('block-item-CollectionField-general-form-general.url-url')).toHaveText(
+          'url:https://nocobase.com',
+        );
       },
     });
   });

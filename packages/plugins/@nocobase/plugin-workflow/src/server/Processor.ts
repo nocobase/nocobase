@@ -104,7 +104,7 @@ export default class Processor {
   public async start() {
     const { execution } = this;
     if (execution.status !== EXECUTION_STATUS.STARTED) {
-      throw new Error(`execution was ended with status ${execution.status}`);
+      throw new Error(`execution was ended with status ${execution.status} before, could not be started again`);
     }
     await this.prepare();
     if (this.nodes.length) {
@@ -118,7 +118,7 @@ export default class Processor {
   public async resume(job: JobModel) {
     const { execution } = this;
     if (execution.status !== EXECUTION_STATUS.STARTED) {
-      throw new Error(`execution was ended with status ${execution.status}`);
+      throw new Error(`execution was ended with status ${execution.status} before, could not be resumed`);
     }
     await this.prepare();
     const node = this.nodesMap.get(job.nodeId);
