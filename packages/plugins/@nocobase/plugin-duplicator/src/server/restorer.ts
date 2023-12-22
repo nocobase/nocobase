@@ -161,8 +161,6 @@ export class Restorer extends AppMigrator {
 
     await (this.app.db.getRepository('collections') as any).load();
 
-    await this.app.db.sync();
-
     for (const collectionName of delayCollections) {
       const delayRestore = this.app.db.getCollection(collectionName).options.duplicator['delayRestore'];
       await delayRestore(this);

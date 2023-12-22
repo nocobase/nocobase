@@ -456,8 +456,6 @@ describe('dumper', () => {
       dataTypes: new Set(['meta', 'business']),
     });
 
-    await sequenceCollection.removeFromDb();
-
     const restorer = new Restorer(app, {
       backUpFilePath: result.filePath,
     });
