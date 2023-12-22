@@ -1,10 +1,10 @@
 {
   "name": "@nocobase/plugin-calendar",
-  "version": "0.17.0-alpha.3",
+  "version": "0.18.0-alpha.1",
   "displayName": "Calendar",
   "displayName.zh-CN": "日历",
-  "description": "Provide calendar block",
-  "description.zh-CN": "提供日历区块",
+  "description": "Provide calendar template and block",
+  "description.zh-CN": "提供日历模板和区块",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "types": "./dist/server/index.d.ts",
