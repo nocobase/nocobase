@@ -1,3 +1,4 @@
+import { importModule } from '@nocobase/utils';
 import _ from 'lodash';
 import { QueryInterface, Sequelize } from 'sequelize';
 import Database from './database';
@@ -40,7 +41,7 @@ export class Migration {
 
 export interface MigrationItem {
   name: string;
-  migration?: typeof Migration;
+  migration?: typeof Migration | string;
   context?: any;
   up?: any;
   down?: any;
@@ -60,7 +61,8 @@ export class Migrations {
 
   add(item: MigrationItem) {
     const Migration = item.migration;
-    if (Migration) {
+
+    if (Migration && typeof Migration === 'function') {
       const migration = new Migration({ ...this.context, ...item.context });
       migration.name = item.name;
       this.items.push(migration);
@@ -71,10 +73,22 @@ export class Migrations {
 
   callback() {
     return async (ctx) => {
-      return _.sortBy(this.items, (item) => {
-        const keys = item.name.split('/');
-        return keys.pop() || item.name;
-      });
+      return await Promise.all(
+        _.sortBy(this.items, (item) => {
+          const keys = item.name.split('/');
+          return keys.pop() || item.name;
+        }).map(async (item) => {
+          if (typeof item.migration === 'string') {
+            // use es module to import migration
+            const Migration = await importModule(item.migration);
+            const migration = new Migration({ ...this.context, ...item.context });
+            migration.name = item.name;
+            return migration;
+          }
+
+          return item;
+        }),
+      );
     };
   }
 }

@@ -11,6 +11,7 @@ describe('has many with target key', function () {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
   });
 
   test('target key with filterTargetKey', async () => {
@@ -133,6 +134,7 @@ describe('has many repository', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     User = db.collection({
       name: 'users',
       fields: [

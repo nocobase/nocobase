@@ -1,4 +1,4 @@
-import { expectSettingsMenu, oneTableBlockWithAddNewAndViewAndEditAndBasicFields, test } from '@nocobase/test/client';
+import { expectSettingsMenu, oneTableBlockWithAddNewAndViewAndEditAndBasicFields, test } from '@nocobase/test/e2e';
 
 test.describe('single details block schema settings', () => {
   test('supported options', async ({ page, mockPage, mockRecord }) => {

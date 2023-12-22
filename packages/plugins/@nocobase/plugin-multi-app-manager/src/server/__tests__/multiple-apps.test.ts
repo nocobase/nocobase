@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { Database } from '@nocobase/database';
 import { AppSupervisor, Gateway } from '@nocobase/server';
 import { MockServer, mockServer } from '@nocobase/test';
@@ -25,7 +26,7 @@ describe('multiple apps', () => {
   });
 
   it('should register db creator', async () => {
-    const fn = jest.fn();
+    const fn = vi.fn();
 
     const appPlugin = app.getPlugin<PluginMultiAppManager>(PluginMultiAppManager);
     const defaultDbCreator = appPlugin.appDbCreator;
@@ -214,7 +215,7 @@ describe('multiple apps', () => {
 
     await AppSupervisor.getInstance().removeApp(subAppName);
 
-    const jestFn = jest.fn();
+    const jestFn = vi.fn();
 
     AppSupervisor.getInstance().on('afterAppAdded', (subApp) => {
       subApp.on('afterUpgrade', () => {

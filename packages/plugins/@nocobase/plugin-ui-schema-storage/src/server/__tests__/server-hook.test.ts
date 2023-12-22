@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { Database } from '@nocobase/database';
 import PluginCollectionManager from '@nocobase/plugin-collection-manager';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
@@ -93,7 +94,7 @@ describe('server hooks', () => {
     await PostModel.migrate();
 
     const serverHooks = uiSchemaPlugin.serverHooks;
-    const hookFn = jest.fn();
+    const hookFn = vi.fn();
 
     serverHooks.register('onCollectionFieldDestroy', 'onFieldDestroy', hookFn);
 
@@ -128,7 +129,7 @@ describe('server hooks', () => {
 
     const serverHooks = uiSchemaPlugin.serverHooks;
 
-    const hookFn = jest.fn();
+    const hookFn = vi.fn();
 
     serverHooks.register('onCollectionDestroy', 'onCollectionDestroy', hookFn);
 
@@ -155,7 +156,7 @@ describe('server hooks', () => {
     };
 
     const serverHooks = uiSchemaPlugin.serverHooks;
-    const hookFn = jest.fn();
+    const hookFn = vi.fn();
 
     serverHooks.register('onSelfCreate', 'afterCreateMenu', hookFn);
 
@@ -196,7 +197,7 @@ describe('server hooks', () => {
     await PostModel.migrate();
 
     const serverHooks = uiSchemaPlugin.serverHooks;
-    const hookFn = jest.fn();
+    const hookFn = vi.fn();
 
     serverHooks.register('onAnyCollectionFieldDestroy', 'test1', hookFn);
 
@@ -250,7 +251,7 @@ describe('server hooks', () => {
 
     const serverHooks = uiSchemaPlugin.serverHooks;
 
-    const jestFn = jest.fn();
+    const jestFn = vi.fn();
 
     serverHooks.register('onCollectionFieldDestroy', 'preventDestroy', async ({ options }) => {
       await options.transaction.rollback();
@@ -266,7 +267,9 @@ describe('server hooks', () => {
         },
         individualHooks: true,
       });
-    } catch (e) {}
+    } catch (e) {
+      console.log(e);
+    }
 
     expect(jestFn).toHaveBeenCalled();
     expect(
@@ -310,7 +313,7 @@ describe('server hooks', () => {
 
     const serverHooks = uiSchemaPlugin.serverHooks;
 
-    const jestFn = jest.fn();
+    const jestFn = vi.fn();
 
     serverHooks.register('onSelfMove', 'testOnSelfMove', async ({ options }) => {
       jestFn();

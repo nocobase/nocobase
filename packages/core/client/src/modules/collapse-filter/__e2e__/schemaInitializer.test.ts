@@ -1,4 +1,4 @@
-import { createBlockInPage, expect, oneEmptyFilterCollapseBlock, test } from '@nocobase/test/client';
+import { createBlockInPage, expect, oneEmptyFilterCollapseBlock, test } from '@nocobase/test/e2e';
 
 test.describe('where collapse block can be added', () => {
   test('page', async ({ page, mockPage }) => {

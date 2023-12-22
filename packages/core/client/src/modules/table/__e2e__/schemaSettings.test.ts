@@ -9,7 +9,7 @@ import {
   test,
   twoTableWithAssociationFields,
   twoTableWithSameCollection,
-} from '@nocobase/test/client';
+} from '@nocobase/test/e2e';
 
 test.describe('table block schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {

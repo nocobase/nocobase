@@ -1,9 +1,9 @@
+import { render, sleep } from '@nocobase/test/client';
 import React from 'react';
-import { render, sleep } from 'testUtils';
 import { describe } from 'vitest';
-import { Plugin } from '../Plugin'
 import { Application } from '../Application';
-import { useApp, useRouter, usePlugin } from '../hooks';
+import { Plugin } from '../Plugin';
+import { useApp, usePlugin, useRouter } from '../hooks';
 
 describe('Application Hooks', () => {
   describe('useApp', () => {

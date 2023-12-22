@@ -24,20 +24,13 @@
       "module": "commonjs"
     }
   },
-  "include": [
-    "packages/**/*",
-    ".dumi/**/*",
-    ".dumirc.ts",
-    "scripts/*",
-    "playwright.config.ts",
-    "vitest.config.ts",
-    "jest.setupAfterEnv.ts"
-  ],
+  "include": [".dumi/**/*", ".dumirc.ts", "packages/**/*", "playwright.config.ts", "vitest.config.mts"],
   "exclude": [
     "packages/**/node_modules",
     "packages/**/dist",
     "packages/**/public",
     "packages/core/build/bin",
+    "packages/core/cli/**/*",
     "packages/**/lib",
     "packages/**/es"
   ]

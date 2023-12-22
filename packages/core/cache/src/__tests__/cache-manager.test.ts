@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { Cache } from '../cache';
 import { CacheManager } from '../cache-manager';
 
@@ -29,7 +30,7 @@ describe('cache-manager', () => {
   });
 
   it('should close store', async () => {
-    const close = jest.fn();
+    const close = vi.fn();
     cacheManager.registerStore({
       name: 'memory',
       store: 'memory',

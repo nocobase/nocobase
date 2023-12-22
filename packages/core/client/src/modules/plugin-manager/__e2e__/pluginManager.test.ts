@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 
 async function waitForModalToBeHidden(page) {
   await page.waitForFunction(() => {
