@@ -79,7 +79,7 @@ class MyPlugin extends Plugin {
 
 在创建数据表后，Collection 会有 [template 字段](/core/collection/collection#collectionoptions)，用于标识该数据表是由哪个模板创建的。
 
-当通过 `collectionManager.addCollections()` 添加数据表时，会先读取 `collection.template` 字段，然后通过 `collectionManager.getCollectionTemplate(collection.template)` 获取到 `collectionTemplate`。
+当通过 `collectionManager.addCollections()` 添加数据表对象时，会先读取 `collection.template` 字段，然后通过 `collectionManager.getCollectionTemplate(collection.template)` 获取到 `collectionTemplate`。
 
 读取 `collectionTemplate.Collection` 字段，并通过 `new collectionTemplate.Collection(collection)` 创建对应的实例。
 

@@ -4,7 +4,7 @@ import {
   SchemaInitializer,
   SchemaInitializerItem,
   SchemaSettings,
-  useBlockRequestV2,
+  useDataBlockRequestV2,
   useCollectionManagerV2,
   useCollectionV2,
   useCompile,
@@ -31,7 +31,7 @@ const MyTable = withDynamicSchemaProps(Table);
 
 function useTableProps(): TableProps<any> {
   const { tableProps } = useDataBlockPropsV2();
-  const { data, loading } = useBlockRequestV2<any[]>();
+  const { data, loading } = useDataBlockRequestV2<any[]>();
   const compile = useCompile();
   const collection = useCollectionV2();
   const columns = useMemo(() => {

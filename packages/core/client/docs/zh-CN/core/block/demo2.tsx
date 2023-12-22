@@ -2,7 +2,7 @@ import React, { FC, useEffect, useState } from 'react';
 import {
   RecordProviderV2,
   SchemaComponent,
-  useBlockRequestV2,
+  useDataBlockRequestV2,
   withSchemaComponentProps,
   UseDataBlockProps,
   useRecordDataV2,

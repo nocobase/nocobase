@@ -1,5 +1,5 @@
 import React from 'react';
-import { SchemaComponent, useBlockRequestV2, withDynamicSchemaProps } from '@nocobase/client';
+import { SchemaComponent, useDataBlockRequestV2, withDynamicSchemaProps } from '@nocobase/client';
 
 import { createApp } from '../createApp';
 import { Table, TableProps } from 'antd';
@@ -26,7 +26,7 @@ const schema: ISchema = {
 const MyTable = withDynamicSchemaProps(Table);
 
 function useTableProps(): TableProps<any> {
-  const { data, loading } = useBlockRequestV2<any[]>();
+  const { data, loading } = useDataBlockRequestV2<any[]>();
   return {
     loading,
     dataSource: data?.data || [],

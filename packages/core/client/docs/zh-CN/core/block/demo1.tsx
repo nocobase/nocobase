@@ -1,7 +1,7 @@
 import React, { FC } from 'react';
 import {
   SchemaComponent,
-  useBlockRequestV2,
+  useDataBlockRequestV2,
   useBlockSettingsV2,
   withSchemaComponentProps,
   UseDataBlockProps,
@@ -34,7 +34,7 @@ const DemoTable: FC<DemoTableProps> = withSchemaComponentProps((props) => {
 });
 
 function useDemoTableProps(): DemoTableProps {
-  const { data, loading } = useBlockRequestV2<{ data: DemoTableRecordType[]; total: number }>();
+  const { data, loading } = useDataBlockRequestV2<{ data: DemoTableRecordType[]; total: number }>();
   const { props, changeSchemaProps } = useBlockSettingsV2<{
     rowKey?: string;
     params?: Record<string, any>;

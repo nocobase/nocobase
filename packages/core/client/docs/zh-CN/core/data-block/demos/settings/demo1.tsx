@@ -2,7 +2,7 @@ import React from 'react';
 import {
   SchemaComponent,
   SchemaSettings,
-  useBlockRequestV2,
+  useDataBlockRequestV2,
   useDataBlockV2,
   withDynamicSchemaProps,
 } from '@nocobase/client';
@@ -40,7 +40,7 @@ function useTableProps(): TableProps<any> {
   // 获取
   const { props } = useDataBlockV2();
   const { bordered } = props;
-  const { data, loading } = useBlockRequestV2<any[]>();
+  const { data, loading } = useDataBlockRequestV2<any[]>();
   return {
     bordered,
     loading,
