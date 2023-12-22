@@ -711,14 +711,31 @@ function getHeaders(storageState: any) {
   return headers;
 }
 
+interface ExpectSettingsMenuParams {
+  showMenu: () => Promise<void>;
+  supportedOptions: string[];
+  page: Page;
+  unsupportedOptions?: string[];
+}
+
 /**
  * 辅助断言 SchemaSettings 的菜单项是否存在
  * @param param0
  */
-export async function expectSettingsMenu({ showMenu, supportedOptions, page }) {
+export async function expectSettingsMenu({
+  showMenu,
+  supportedOptions,
+  page,
+  unsupportedOptions,
+}: ExpectSettingsMenuParams) {
   await showMenu();
   for (const option of supportedOptions) {
     await expect(page.getByRole('menuitem', { name: option })).toBeVisible();
+  }
+  if (unsupportedOptions) {
+    for (const option of unsupportedOptions) {
+      await expect(page.getByRole('menuitem', { name: option })).not.toBeVisible();
+    }
   }
 }
 
