@@ -10,7 +10,6 @@ import lodash, { isPlainObject } from 'lodash';
 import { FieldValueWriter } from './field-value-writer';
 import * as Topo from '@hapi/topo';
 import { RestoreCheckError } from './errors/restore-check-error';
-import { filter } from 'mathjs';
 
 type RestoreOptions = {
   dataTypes: Set<DumpDataType>;
@@ -121,6 +120,9 @@ export class Restorer extends AppMigrator {
     // import plugins
     await importCollection('applicationPlugins');
     await this.app.reload();
+
+    // sync new plugins from backup file
+    await this.app.db.sync();
 
     // import meta collections
     const metaCollections = dumpableCollectionsGroupByDataTypes.meta;
