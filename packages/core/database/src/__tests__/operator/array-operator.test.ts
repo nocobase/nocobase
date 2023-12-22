@@ -1,5 +1,5 @@
-import { mockDatabase } from '../index';
 import Database from '../../database';
+import { mockDatabase } from '../index';
 
 describe('array field operator', function () {
   let db: Database;
@@ -188,6 +188,17 @@ describe('array field operator', function () {
     const filter3 = await Test.repository.find({
       filter: {
         'selected.$anyOf': ['aa'],
+      },
+    });
+
+    expect(filter3.length).toEqual(1);
+    expect(filter3[0].get('name')).toEqual(t2.get('name'));
+  });
+
+  test('$anyOf with string', async () => {
+    const filter3 = await Test.repository.find({
+      filter: {
+        'selected.$anyOf': 'aa',
       },
     });
 
