@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 import { oneTableBlock } from './utils';
 
 test('allows to configure interface', async ({ page, mockPage, mockRole, updateRole }) => {

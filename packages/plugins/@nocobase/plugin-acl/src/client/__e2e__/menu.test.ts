@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 
 test('menu permission ', async ({ page, mockPage, mockRole, updateRole }) => {
   const page2 = await mockPage({ name: 'page2' });
