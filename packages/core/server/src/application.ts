@@ -18,7 +18,6 @@ import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
 import { createCacheManager } from './cache';
 import { registerCli } from './commands';
-import { CronJobManager } from './cron/cron-job-manager';
 import { ApplicationNotInstall } from './errors/application-not-install';
 import {
   createAppProxy,
