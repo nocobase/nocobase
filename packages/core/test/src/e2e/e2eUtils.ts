@@ -709,17 +709,21 @@ const updateRole = async (roleSetting: AclRoleSetting) => {
  * @param name
  */
 const setDefaultRole = async (name) => {
-  const api = await request.newContext({
-    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
-  });
-  const state = await api.storageState();
-  const role = getStorageItem('NOCOBASE_ROLE', state);
-  if (role !== 'root') {
-    const headers = getHeaders(state);
-    await api.post(`/api/users:setDefaultRole`, {
-      headers,
-      data: { roleName: name },
+  try {
+    const api = await request.newContext({
+      storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
     });
+    const state = await api.storageState();
+    const role = getStorageItem('NOCOBASE_ROLE', state);
+    if (role !== 'root') {
+      const headers = getHeaders(state);
+      await api.post(`/api/users:setDefaultRole`, {
+        headers,
+        data: { roleName: name },
+      });
+    }
+  } catch (error) {
+    console.log(error);
   }
 };
 
