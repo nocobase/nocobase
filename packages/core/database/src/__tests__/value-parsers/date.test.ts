@@ -6,8 +6,9 @@ describe('number value parser', () => {
   let parser: DateValueParser;
   let db: Database;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     db.collection({
       name: 'tests',
       fields: [

@@ -8,6 +8,8 @@ NocoBase is in early stage of development and is subject to frequent changes, pl
 
 ## Recent major updates
 
+- [v0.18: Establish a sound testing system](https://blog.nocobase.com/posts/release-v018/)
+- [v0.17: New SchemaInitializer and SchemaSettings](https://blog.nocobase.com/posts/release-v017/)
 - [v0.16: New cache manager - 2023/11/20](https://blog.nocobase.com/posts/release-v016/)
 - [v0.15: New plugin settings manager - 2023/11/13](https://blog.nocobase.com/posts/release-v015/)
 - [v0.14: New plugin manager, supports adding plugins through UI - 2023/09/11](https://blog.nocobase.com/posts/release-v014/)

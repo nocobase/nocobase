@@ -1,8 +1,8 @@
+import { render, screen, sleep, userEvent, waitFor } from '@nocobase/test/client';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import React, { Component } from 'react';
 import { Link, Outlet } from 'react-router-dom';
-import { render, screen, sleep, userEvent, waitFor } from 'testUtils';
 import { describe } from 'vitest';
 import { Application } from '../Application';
 import { Plugin } from '../Plugin';

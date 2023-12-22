@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import Database from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
@@ -66,7 +67,7 @@ describe('role', () => {
         return 'abc';
       }
     };
-    const throwFn = jest.fn();
+    const throwFn = vi.fn();
     ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
     expect(throwFn).lastCalledWith(401, {
@@ -202,7 +203,7 @@ describe('role', () => {
     });
     roles = await ctx.cache.get(`roles:${ctx.state.currentUser.id}`);
     expect(roles).toBeUndefined();
-    const throwFn = jest.fn();
+    const throwFn = vi.fn();
     ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
     expect(throwFn).lastCalledWith(401, {

@@ -66,6 +66,8 @@ jobs:
         run: yarn e2e test -x --skip-reporter
         env:
           __E2E__: true
+          APP_BASE_URL: http://127.0.0.1:13000
+          APP_PORT: 13000
           APP_ENV: production
           LOGGER_LEVEL: error
           DB_DIALECT: postgres

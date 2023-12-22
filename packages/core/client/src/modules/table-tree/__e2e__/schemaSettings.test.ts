@@ -1,4 +1,4 @@
-import { Page, expect, expectSettingsMenu, oneEmptyTableWithTreeCollection, test } from '@nocobase/test/client';
+import { Page, expect, expectSettingsMenu, oneEmptyTableWithTreeCollection, test } from '@nocobase/test/e2e';
 
 test.describe('tree table block schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {

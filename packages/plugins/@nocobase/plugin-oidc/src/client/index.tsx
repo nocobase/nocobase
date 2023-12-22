@@ -1,9 +1,18 @@
 import { Plugin } from '@nocobase/client';
-import { OidcProvider } from './OidcProvider';
+import AuthPlugin from '@nocobase/plugin-auth/client';
+import { authType } from '../constants';
+import { OIDCButton } from './OIDCButton';
+import { Options } from './Options';
 
 export class OidcPlugin extends Plugin {
   async load() {
-    this.app.use(OidcProvider);
+    const auth = this.app.pm.get(AuthPlugin);
+    auth.registerType(authType, {
+      components: {
+        SignInButton: OIDCButton,
+        AdminSettingsForm: Options,
+      },
+    });
   }
 }
 

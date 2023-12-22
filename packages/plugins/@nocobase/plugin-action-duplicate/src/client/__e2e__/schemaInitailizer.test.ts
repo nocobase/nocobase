@@ -1,10 +1,10 @@
 import {
   expect,
-  test,
   oneEmptyDetailsBlock,
-  oneEmptyTableBlockWithCustomizeActions,
   oneEmptyTableBlockWithActions,
-} from '@nocobase/test/client';
+  oneEmptyTableBlockWithCustomizeActions,
+  test,
+} from '@nocobase/test/e2e';
 
 test.describe('TableActionColumnInitializers & DetailsActionInitializers & ReadPrettyFormActionInitializers should add duplication action', () => {
   test('duplication action in TableActionColumnInitializers', async ({ page, mockPage, mockRecords }) => {

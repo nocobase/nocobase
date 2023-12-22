@@ -5,7 +5,7 @@ import {
   oneEmptyFormWithActions,
   oneTableBlockWithActionsAndFormBlocks,
   test,
-} from '@nocobase/test/client';
+} from '@nocobase/test/e2e';
 
 const clickOption = async (page: Page, optionName: string) => {
   await page.getByLabel('block-item-CardItem-general-form').hover();

@@ -1,4 +1,4 @@
-import { Page, expect, expectSettingsMenu, oneEmptyTableBlockWithActions, test } from '@nocobase/test/client';
+import { Page, expect, expectSettingsMenu, oneEmptyTableBlockWithActions, test } from '@nocobase/test/e2e';
 
 test.describe('where single data details block can be added', () => {
   test('popup', async ({ page, mockPage, mockRecord }) => {

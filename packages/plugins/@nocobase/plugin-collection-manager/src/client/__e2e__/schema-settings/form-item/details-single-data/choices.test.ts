@@ -1,4 +1,4 @@
-import { Page, oneTableBlockWithAddNewAndViewAndEditAndChoicesFields, test } from '@nocobase/test/client';
+import { Page, oneTableBlockWithAddNewAndViewAndEditAndChoicesFields, test } from '@nocobase/test/e2e';
 import { commonTesting } from '../commonTesting';
 
 test.describe('checkbox', () => {

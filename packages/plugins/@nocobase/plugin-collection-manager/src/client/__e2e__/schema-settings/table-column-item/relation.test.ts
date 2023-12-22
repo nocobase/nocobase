@@ -1,4 +1,4 @@
-import { expect, oneTableBlockWithAddNewAndViewAndEditAndAssociationFields, test } from '@nocobase/test/client';
+import { expect, oneTableBlockWithAddNewAndViewAndEditAndAssociationFields, test } from '@nocobase/test/e2e';
 import { createColumnItem, showSettingsMenu, testSupportedOptions } from './utils';
 
 test.describe('many to one', () => {

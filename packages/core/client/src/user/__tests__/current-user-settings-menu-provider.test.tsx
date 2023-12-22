@@ -1,8 +1,11 @@
+import { render } from '@nocobase/test/client';
 import React from 'react';
-import { render } from 'testUtils';
-import AppContextProvider from '../../testUtils/AppContextProvider';
 import { SettingsMenu } from '../CurrentUser';
 import { useCurrentUserSettingsMenu } from '../CurrentUserSettingsMenuProvider';
+
+const AppContextProvider = (props) => {
+  return <div></div>;
+};
 
 // TODO: AppContextProvider 没有提供足够的上下文环境
 describe.skip('CurrentUserSettingsMenuProvider', () => {
