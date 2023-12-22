@@ -121,9 +121,6 @@ export class Restorer extends AppMigrator {
     await importCollection('applicationPlugins');
     await this.app.reload();
 
-    // sync new plugins from backup file
-    await this.app.db.sync();
-
     // import meta collections
     const metaCollections = dumpableCollectionsGroupByDataTypes.meta;
 
@@ -162,6 +159,9 @@ export class Restorer extends AppMigrator {
     await this.app.reload();
 
     await (this.app.db.getRepository('collections') as any).load();
+
+    // sync new plugins and new collections from backup file
+    await this.app.db.sync();
 
     for (const collectionName of delayCollections) {
       const delayRestore = this.app.db.getCollection(collectionName).options.duplicator['delayRestore'];
