@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import supertest from 'supertest';
 import { Application } from '../application';
 import { Plugin } from '../plugin';
@@ -19,7 +20,6 @@ describe('application', () => {
     app = new Application({
       database: {
         dialect: 'sqlite',
-        dialectModule: require('sqlite3'),
         storage: ':memory:',
         logging: false,
       },
@@ -146,13 +146,13 @@ describe('application', () => {
 
   it('should call application with command', async () => {
     await app.runCommand('start');
-    const jestFn = jest.fn();
+    const jestFn = vi.fn();
 
     app.on('beforeInstall', async () => {
       jestFn();
     });
 
-    const runningJest = jest.fn();
+    const runningJest = vi.fn();
 
     app.on('maintaining', ({ status }) => {
       if (status === 'command_running') {

@@ -1,5 +1,5 @@
+import { renderHook } from '@nocobase/test/client';
 import React from 'react';
-import { renderHook } from 'testUtils';
 import { FlagProvider } from '../FlagProvider';
 import { useFlag } from '../hooks/useFlag';
 

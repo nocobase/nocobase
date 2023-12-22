@@ -20,7 +20,7 @@ import {
   TableV2,
 } from '@nocobase/client';
 import React from 'react';
-import { mainCollections, mockAPIClient } from '../../../../testUtils';
+import { mockAPIClient } from '../../../../testUtils';
 import data from './mockData';
 
 const { apiClient, mockRequest } = mockAPIClient();
@@ -178,7 +178,7 @@ const Root = () => {
   return (
     <APIClientProvider apiClient={apiClient}>
       <CurrentUserProvider>
-        <CollectionManagerProvider collections={mainCollections}>
+        <CollectionManagerProvider collections={[]}>
           <SchemaComponentProvider components={components}>
             <SchemaComponent schema={schema} />
           </SchemaComponentProvider>

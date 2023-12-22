@@ -3,11 +3,11 @@ import { Form, createForm } from '@formily/core';
 import { Field, useField, useForm } from '@formily/react';
 import {
   FormProvider,
-  Select,
   Input,
-  PopoverWithStopPropagation,
   Radio,
   SchemaComponent,
+  Select,
+  StablePopover,
   locale,
   useAPIClient,
   useActionContext,
@@ -15,9 +15,9 @@ import {
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
+import { useMemoizedFn } from 'ahooks';
 import { Input as AntdInput, Button, Card, Checkbox, Col, Divider, Row, Tag, Typography, message } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useMemoizedFn } from 'ahooks';
 import { useLocalTranslation } from './locale';
 import { localizationSchema } from './schemas/localization';
 const { Text } = Typography;
@@ -117,7 +117,7 @@ const Sync = () => {
   };
 
   return (
-    <PopoverWithStopPropagation
+    <StablePopover
       placement="bottomRight"
       content={
         <>
@@ -160,7 +160,7 @@ const Sync = () => {
       >
         {t('Sync')}
       </Button>
-    </PopoverWithStopPropagation>
+    </StablePopover>
   );
 };
 

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { Database } from '../database';
 import { mockDatabase } from './index';
 
@@ -7,6 +8,7 @@ describe('sequelize-hooks', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     await db.sync();
   });
 
@@ -41,7 +43,7 @@ describe('sequelize-hooks', () => {
       const collection = db.collection({
         name: 't_test',
       });
-      const spy = jest.fn();
+      const spy = vi.fn();
       db.on('t_test.afterSync', () => {
         spy('afterSync');
       });
@@ -53,7 +55,7 @@ describe('sequelize-hooks', () => {
       const collection = db.collection({
         name: 't_tests',
       });
-      const spy = jest.fn();
+      const spy = vi.fn();
       db.on('t_tests.afterSync', () => {
         spy('afterSync');
       });

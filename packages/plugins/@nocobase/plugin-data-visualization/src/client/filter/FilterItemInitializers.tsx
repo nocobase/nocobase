@@ -20,16 +20,29 @@ import { useMemoizedFn } from 'ahooks';
 import { FormLayout, FormItem } from '@formily/antd-v5';
 import { uid } from '@formily/shared';
 import { useChartData, useChartFilter, useChartFilterSourceFields, useFieldComponents } from '../hooks/filter';
-import { Alert } from 'antd';
+import { Alert, Typography } from 'antd';
 import { getPropsSchemaByComponent } from './utils';
 import { Field, onFieldValueChange } from '@formily/core';
 import { css, cx } from '@emotion/css';
+import { ConfigProvider } from 'antd';
+import { ErrorBoundary } from 'react-error-boundary';
+const { Paragraph, Text } = Typography;
 
 const FieldComponentProps: React.FC = observer((props) => {
   const form = useForm();
   const schema = getPropsSchemaByComponent(form.values.component);
   return schema ? <SchemaComponent schema={schema} {...props} /> : null;
 });
+
+const ErrorFallback = ({ error }) => {
+  return (
+    <Paragraph copyable>
+      <Text type="danger" style={{ whiteSpace: 'pre-line', textAlign: 'center', padding: '5px' }}>
+        {error.message}
+      </Text>
+    </Paragraph>
+  );
+};
 
 export const ChartFilterFormItem = observer(
   (props: any) => {
@@ -67,7 +80,9 @@ export const ChartFilterFormItem = observer(
     return (
       <ACLCollectionFieldProvider>
         <BlockItem className={'nb-form-item'}>
-          <FormItem className={className} {...props} extra={extra} />
+          <ErrorBoundary onError={(err) => console.log(err)} FallbackComponent={ErrorFallback}>
+            <FormItem className={className} {...props} extra={extra} />
+          </ErrorBoundary>
         </BlockItem>
       </ACLCollectionFieldProvider>
     );
@@ -78,6 +93,7 @@ export const ChartFilterFormItem = observer(
 export const ChartFilterCustomItemInitializer: React.FC<{
   insert?: any;
 }> = (props) => {
+  const { locale } = useContext(ConfigProvider.ConfigContext);
   const { t: lang } = useChartsTranslation();
   const t = useMemoizedFn(lang);
   const { scope, components } = useContext(SchemaOptionsContext);
@@ -101,44 +117,46 @@ export const ChartFilterCustomItemInitializer: React.FC<{
               message={t('To filter with custom fields, use "Current filter" variables in the chart configuration.')}
               style={{ marginBottom: 16 }}
             />
-            <SchemaComponent
-              schema={{
-                properties: {
-                  name: {
-                    type: 'string',
-                    required: true,
+            <ConfigProvider locale={locale}>
+              <SchemaComponent
+                schema={{
+                  properties: {
+                    name: {
+                      type: 'string',
+                      required: true,
+                    },
+                    title: {
+                      type: 'string',
+                      title: t('Field title'),
+                      'x-component': 'Input',
+                      'x-decorator': 'FormItem',
+                      required: true,
+                    },
+                    source: {
+                      type: 'string',
+                      title: t('Field source'),
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Cascader',
+                      enum: sourceFields,
+                      description: t('Select a source field to use metadata of the field'),
+                    },
+                    component: {
+                      type: 'string',
+                      title: t('Field component'),
+                      'x-component': 'Select',
+                      'x-decorator': 'FormItem',
+                      required: true,
+                      enum: fieldComponents,
+                    },
+                    props: {
+                      type: 'object',
+                      title: t('Component properties'),
+                      'x-component': 'FieldComponentProps',
+                    },
                   },
-                  title: {
-                    type: 'string',
-                    title: t('Field title'),
-                    'x-component': 'Input',
-                    'x-decorator': 'FormItem',
-                    required: true,
-                  },
-                  source: {
-                    type: 'string',
-                    title: t('Field source'),
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Cascader',
-                    enum: sourceFields,
-                    description: t('Select a source field to use metadata of the field'),
-                  },
-                  component: {
-                    type: 'string',
-                    title: t('Field component'),
-                    'x-component': 'Select',
-                    'x-decorator': 'FormItem',
-                    required: true,
-                    enum: fieldComponents,
-                  },
-                  props: {
-                    type: 'object',
-                    title: t('Component properties'),
-                    'x-component': 'FieldComponentProps',
-                  },
-                },
-              }}
-            />
+                }}
+              />
+            </ConfigProvider>
           </FormLayout>
         </SchemaComponentOptions>
       ),

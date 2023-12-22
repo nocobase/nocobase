@@ -1,6 +1,6 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { Icon, PopoverWithStopPropagation, css } from '@nocobase/client';
+import { Icon, StablePopover, css } from '@nocobase/client';
 import type { SelectProps } from 'antd';
 import { Select as AntdSelect } from 'antd';
 import React from 'react';
@@ -33,7 +33,7 @@ const InternalSelect = connect(
         <OptGroup label={lang('Basic charts')}>
           {group1.map((option) => (
             <Option key={option.key} value={option.key} label={lang(option.title)}>
-              <PopoverWithStopPropagation
+              <StablePopover
                 placement={'right'}
                 zIndex={99999999999}
                 content={() => (
@@ -57,14 +57,14 @@ const InternalSelect = connect(
                     {lang(option.title)}
                   </span>
                 </div>
-              </PopoverWithStopPropagation>
+              </StablePopover>
             </Option>
           ))}
         </OptGroup>
         <OptGroup label={lang('More charts')}>
           {group2.map((option) => (
             <Option key={option.key} value={option.key} label={lang(option.title)}>
-              <PopoverWithStopPropagation
+              <StablePopover
                 placement={'right'}
                 zIndex={99999999999}
                 content={() => (
@@ -88,7 +88,7 @@ const InternalSelect = connect(
                     {lang(option.title)}
                   </span>
                 </div>
-              </PopoverWithStopPropagation>
+              </StablePopover>
             </Option>
           ))}
         </OptGroup>

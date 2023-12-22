@@ -1,0 +1,15 @@
+{
+  "name": "@nocobase/plugin-kanban",
+  "version": "0.18.0-alpha.1",
+  "main": "dist/server/index.js",
+  "license": "AGPL-3.0",
+  "displayName": "Kanban",
+  "displayName.zh-CN": "看板",
+  "description": "Provides kanban blocks",
+  "description.zh-CN": "提供看板区块",
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x"
+  }
+}

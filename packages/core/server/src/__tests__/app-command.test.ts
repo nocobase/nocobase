@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { DataTypes, mockDatabase } from '@nocobase/database';
 import Application, { ApplicationOptions } from '../application';
 
@@ -42,7 +43,7 @@ describe('app command', () => {
   });
 
   it('should correctly parse the command multiple times with varying parameters', async () => {
-    const fn = jest.fn();
+    const fn = vi.fn();
 
     app
       .command('test1')

@@ -8,3 +8,4 @@ export * from './schema-initializer';
 export * from './schema-settings';
 export * from './schema-toolbar';
 export * from './PluginSettingsManager';
+export { ApplicationContext } from './context';

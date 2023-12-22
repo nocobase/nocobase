@@ -1,4 +1,5 @@
 import { faker } from '@faker-js/faker';
+import { uid } from '@nocobase/utils';
 
 export const email = {
   options: () => ({
@@ -11,5 +12,5 @@ export const email = {
       'x-validator': 'email',
     },
   }),
-  mock: () => faker.internet.email(),
+  mock: () => faker.internet.email({ lastName: uid() }),
 };

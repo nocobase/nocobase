@@ -108,29 +108,28 @@ const useParseDefaultValue = () => {
       const variableName = getVariableName(fieldSchema.default);
       const variable = findVariable(variableName);
 
-      if (process.env.NODE_ENV !== 'production' && !variable) {
-        console.error(`useParseDefaultValue: can not find variable ${variableName}`);
+      if (!variable) {
+        return console.error(`useParseDefaultValue: can not find variable ${variableName}`);
       }
 
-      if (variable) {
-        _run();
+      _run();
 
-        // 实现联动的效果，当依赖的变量变化时（如 `$nForm` 变量），重新解析默认值
-        const dispose = reaction(() => {
-          const obj = { [variableName]: variable?.ctx || {} };
-          const path = getPath(fieldSchema.default);
+      // 实现联动的效果，当依赖的变量变化时（如 `$nForm` 变量），重新解析默认值
+      const dispose = reaction(() => {
+        const obj = { [variableName]: variable?.ctx || {} };
+        const path = getPath(fieldSchema.default);
+        const value = getValuesByPath(obj, path);
 
-          // fix https://nocobase.height.app/T-2212
-          if (getValuesByPath(obj, path) === undefined) {
-            // 返回一个随机值，确保能触发 run 函数
-            return Math.random();
-          }
+        // fix https://nocobase.height.app/T-2212
+        if (value === undefined) {
+          // 返回一个随机值，确保能触发 run 函数
+          return Math.random();
+        }
 
-          return getValuesByPath(obj, path);
-        }, run);
+        return value;
+      }, run);
 
-        return dispose;
-      }
+      return dispose;
     }
   }, [fieldSchema.default]);
 };

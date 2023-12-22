@@ -2,7 +2,7 @@ import { Model, Transaction, Transactionable } from '@nocobase/database';
 import { appendArrayColumn } from '@nocobase/evaluators';
 import { Logger } from '@nocobase/logger';
 import { parse } from '@nocobase/utils';
-import Plugin from '.';
+import type Plugin from './Plugin';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 import { Runner } from './instructions';
 import type { ExecutionModel, FlowNodeModel, JobModel } from './types';
@@ -104,7 +104,7 @@ export default class Processor {
   public async start() {
     const { execution } = this;
     if (execution.status !== EXECUTION_STATUS.STARTED) {
-      throw new Error(`execution was ended with status ${execution.status}`);
+      throw new Error(`execution was ended with status ${execution.status} before, could not be started again`);
     }
     await this.prepare();
     if (this.nodes.length) {
@@ -118,7 +118,7 @@ export default class Processor {
   public async resume(job: JobModel) {
     const { execution } = this;
     if (execution.status !== EXECUTION_STATUS.STARTED) {
-      throw new Error(`execution was ended with status ${execution.status}`);
+      throw new Error(`execution was ended with status ${execution.status} before, could not be resumed`);
     }
     await this.prepare();
     const node = this.nodesMap.get(job.nodeId);

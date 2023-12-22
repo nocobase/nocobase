@@ -34,3 +34,12 @@ export function isValidFilter(condition) {
     return true;
   });
 }
+
+export function traverseSchema(schema, fn) {
+  fn(schema);
+  if (schema.properties) {
+    Object.keys(schema.properties).forEach((key) => {
+      traverseSchema(schema.properties[key], fn);
+    });
+  }
+}

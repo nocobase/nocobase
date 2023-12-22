@@ -6,7 +6,6 @@ import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/databas
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, measureExecutionTime, Toposort, ToposortOptions } from '@nocobase/utils';
-import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { IncomingMessage, Server, ServerResponse } from 'http';
 import { i18n, InitOptions } from 'i18next';
@@ -20,13 +19,21 @@ import { createCacheManager } from './cache';
 import { registerCli } from './commands';
 import { CronJobManager } from './cron/cron-job-manager';
 import { ApplicationNotInstall } from './errors/application-not-install';
-import { createAppProxy, createI18n, createResourcer, getCommandFullName, registerMiddlewares } from './helper';
+import {
+  createAppProxy,
+  createI18n,
+  createResourcer,
+  getCommandFullName,
+  registerMiddlewares,
+  enablePerfHooks,
+} from './helper';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-
-const packageJson = require('../package.json');
+import packageJson from '../package.json';
+import chalk from 'chalk';
+import { RecordableHistogram, performance } from 'node:perf_hooks';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -50,6 +57,7 @@ export interface ApplicationOptions {
   pmSock?: string;
   name?: string;
   authManager?: AuthManagerOptions;
+  perfHooks?: boolean;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -115,6 +123,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     name: string;
   } = null;
   public running = false;
+  public perfHistograms = new Map<string, RecordableHistogram>();
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
   protected _started: boolean;
@@ -176,12 +185,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected _cache: Cache;
 
-  set cache(cache: Cache) {
-    this._cache = cache;
-  }
-
   get cache() {
     return this._cache;
+  }
+
+  set cache(cache: Cache) {
+    this._cache = cache;
   }
 
   protected _cli: AppCommand;
@@ -560,6 +569,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.log.error(e);
     }
 
+    if (this._cacheManager) {
+      await this._cacheManager.close();
+    }
+
     await this.emitAsync('afterStop', this, options);
 
     this.stopped = true;
@@ -728,6 +741,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     this._locales = new Locale(createAppProxy(this));
+
+    if (options.perfHooks) {
+      enablePerfHooks(this);
+    }
 
     registerMiddlewares(this, options);
 

@@ -42,28 +42,6 @@ export const readPrettyFormActionInitializers = new SchemaInitializer({
           },
           useVisible: useVisibleCollection,
         },
-        {
-          title: '{{t("Duplicate")}}',
-          name: 'duplicate',
-          Component: 'DuplicateActionInitializer',
-          schema: {
-            'x-component': 'Action',
-            'x-action': 'duplicate',
-            'x-decorator': 'ACLActionProvider',
-            'x-component-props': {
-              type: 'primary',
-            },
-          },
-          useVisible: useVisibleCollection,
-        },
-        {
-          title: '{{t("Print")}}',
-          name: 'print',
-          Component: 'PrintActionInitializer',
-          schema: {
-            'x-component': 'Action',
-          },
-        },
       ],
     },
     {

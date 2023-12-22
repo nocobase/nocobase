@@ -19,5 +19,8 @@
   "SMS": "SMS",
   "Username/Email": "Username/Email",
   "Auth UID": "Auth UID",
-  "The authentication allows users to sign in via username or email.": "The authentication allows users to sign in via username or email."
+  "The authentication allows users to sign in via username or email.": "The authentication allows users to sign in via username or email.",
+  "No authentication methods available.": "No authentication methods available.",
+  "The password is inconsistent, please re-enter": "The password is inconsistent, please re-enter",
+  "Sign-in": "Sign-in"
 }
