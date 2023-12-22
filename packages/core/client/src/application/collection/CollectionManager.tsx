@@ -1,7 +1,7 @@
 import { filter } from 'lodash';
 
-import { CollectionOptions, IField } from '../../collection-manager';
-import { CollectionFieldInterfaceV2 } from './CollectionFieldInterface';
+import { CollectionFieldOptions, CollectionOptions } from '../../collection-manager';
+import { CollectionFieldInterfaceOptions, CollectionFieldInterfaceV2 } from './CollectionFieldInterface';
 import { CollectionTemplateOptions, CollectionTemplateV2 } from './CollectionTemplate';
 import { CollectionV2 } from './Collection';
 
@@ -14,10 +14,10 @@ interface GetCollectionOptions {
   ns?: string;
 }
 
-export interface CollectionManagerOptions {
+export interface CollectionManagerOptionsV2 {
   collections?: Record<string, CollectionV2[] | CollectionOptions[]> | CollectionV2[] | CollectionOptions[];
-  collectionTemplates?: (CollectionTemplateV2 | CollectionTemplateOptions)[];
-  collectionFieldInterfaces?: (CollectionFieldInterfaceV2 | IField)[];
+  collectionTemplates?: CollectionTemplateV2[] | CollectionTemplateOptions[];
+  collectionFieldInterfaces?: CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[];
   collectionNamespaces?: Record<string, string>;
 }
 
@@ -31,7 +31,7 @@ export class CollectionManagerV2 {
     [DEFAULT_COLLECTION_NAMESPACE_NAME]: DEFAULT_COLLECTION_NAMESPACE_TITLE,
   };
 
-  constructor(options: CollectionManagerOptions = {}) {
+  constructor(options: CollectionManagerOptionsV2 = {}) {
     if (Array.isArray(options.collections)) {
       this.addCollections(options.collections);
     } else {
@@ -40,8 +40,8 @@ export class CollectionManagerV2 {
       });
     }
     this.addCollectionTemplates(options.collectionTemplates || []);
-    this.addFieldInterfaces(options.collectionFieldInterfaces || []);
-    this.addNamespaces(options.collectionNamespaces || {});
+    this.addCollectionFieldInterfaces(options.collectionFieldInterfaces || []);
+    this.addCollectionNamespaces(options.collectionNamespaces || {});
   }
 
   private checkNamespace(ns: string) {
@@ -61,7 +61,9 @@ export class CollectionManagerV2 {
         if (collection instanceof CollectionV2) {
           return collection;
         }
-        const collectionTemplateInstance = this.getCollectionTemplate(collection.template) || generalTemplate;
+        const collectionTemplateInstance = collection.template
+          ? this.getCollectionTemplate(collection.template)
+          : generalTemplate;
         return new collectionTemplateInstance.Collection(collection);
       })
       .forEach((collectionInstance) => {
@@ -84,7 +86,7 @@ export class CollectionManagerV2 {
    * getCollection('users.profile'); // 获取 users 表的 profile 字段的关联表
    * getCollection('a.b.c'); // 获取 a 表的 b 字段的关联表，然后 b.target 表对应的 c 字段的关联表
    */
-  getCollection(path: string, options: GetCollectionOptions = {}) {
+  getCollection(path: string, options: GetCollectionOptions = {}): CollectionV2 | undefined {
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
     this.checkNamespace(ns);
     if (path.split('.').length > 1) {
@@ -104,7 +106,7 @@ export class CollectionManagerV2 {
    * getCollection('users.username'); // 获取 users 表的 username 字段
    * getCollection('a.b.c'); // 获取 a 表的 b 字段的关联表，然后 b.target 表对应的 c 字段
    */
-  getCollectionField(path: string, options: GetCollectionOptions = {}) {
+  getCollectionField(path: string, options: GetCollectionOptions = {}): CollectionFieldOptions | undefined {
     const arr = path.split('.');
     if (arr.length < 2) {
       return;
@@ -124,15 +126,15 @@ export class CollectionManagerV2 {
   }
 
   // collectionNamespaces
-  addNamespaces(collectionNamespaces: Record<string, string>) {
+  addCollectionNamespaces(collectionNamespaces: Record<string, string>) {
     Object.assign(this.collectionNamespaces, collectionNamespaces);
   }
-  getNamespaces() {
-    return this.collectionNamespaces;
+  getCollectionNamespaces() {
+    return Object.entries(this.collectionNamespaces).map(([name, title]) => ({ name, title }));
   }
 
   // CollectionTemplates
-  addCollectionTemplates(templates: (CollectionTemplateV2 | CollectionTemplateOptions)[]) {
+  addCollectionTemplates(templates: CollectionTemplateV2[] | CollectionTemplateOptions[]) {
     templates
       .map((template) => {
         if (template instanceof CollectionTemplateV2) {
@@ -152,7 +154,7 @@ export class CollectionManagerV2 {
   }
 
   // field interface
-  addFieldInterfaces(interfaces: (CollectionFieldInterfaceV2 | IField)[]) {
+  addCollectionFieldInterfaces(interfaces: CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[]) {
     interfaces
       .map((fieldInterface) => {
         if (fieldInterface instanceof CollectionFieldInterfaceV2) {
@@ -164,10 +166,10 @@ export class CollectionManagerV2 {
         this.collectionFieldInterfaces[fieldInterface.name] = fieldInterface;
       });
   }
-  getFieldInterfaces() {
+  getCollectionFieldInterfaces() {
     return Object.values(this.collectionFieldInterfaces);
   }
-  getFieldInterface(name: string) {
+  getCollectionFieldInterface(name: string) {
     return this.collectionFieldInterfaces[name];
   }
 }

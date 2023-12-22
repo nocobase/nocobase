@@ -117,6 +117,10 @@ export default defineConfig({
               link: '/core/collection/collection-manager-provider',
             },
             {
+              title: 'CollectionTemplate',
+              link: '/core/collection/collection-template',
+            },
+            {
               title: 'Collection',
               link: '/core/collection/collection',
             },
@@ -129,8 +133,8 @@ export default defineConfig({
               link: '/core/collection/collection-field',
             },
             {
-              title: 'CollectionFieldProvider',
-              link: '/core/collection/collection-field-provider',
+              title: 'CollectionFieldInterface',
+              link: '/core/collection/collection-field-interface',
             },
             {
               title: 'AssociationProvider',

@@ -112,16 +112,11 @@ export const BlockRequestProviderV2: FC = ({ children }) => {
   );
 };
 
-export const useBlockRequestV2 = <T extends {}>(): UseRequestResult<{ data: T }> => {
+export const useDataBlockRequestV2 = <T extends {}>(): UseRequestResult<{ data: T }> => {
   const context = useContext(BlockRequestContextV2);
   if (!context) {
     throw new Error('useBlockRequest() must be used within a DataBlockRequestProvider');
   }
 
   return context;
-};
-
-export const useBlockRequestDataV2 = <T extends {}>(): UseRequestResult<{ data: T }>['data'] => {
-  const context = useContext(BlockRequestContextV2);
-  return context.data;
 };

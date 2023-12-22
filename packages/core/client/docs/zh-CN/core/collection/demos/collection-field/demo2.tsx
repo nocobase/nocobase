@@ -1,19 +1,89 @@
+import { ISchema, observer } from '@formily/react';
+import {
+  Application,
+  CollectionProviderV2,
+  Form,
+  FormItem,
+  Input,
+  SchemaComponent,
+  SchemaSettings,
+  useCollectionFieldV2,
+  useDesignable,
+} from '@nocobase/client';
 import React from 'react';
-import { CollectionFieldProviderV2, useCollectionFieldV2 } from '@nocobase/client';
-import { createApp } from '../createApp';
-import collections from '../collections.json';
 
-const Demo = () => {
-  const collectionField = useCollectionFieldV2();
-  return <div>collectionField.data.name: {collectionField.data.name}</div>;
+const collection = {
+  name: 'tests',
+  fields: [
+    {
+      type: 'string',
+      name: 'title1',
+      interface: 'input',
+      uiSchema: {
+        title: 'Title1',
+        type: 'string',
+        'x-component': 'Input',
+        required: true,
+        description: 'description1',
+      } as ISchema,
+    },
+  ],
 };
 
-const Root = () => {
+const Root = observer(() => {
+  const schema: ISchema = {
+    type: 'object',
+    properties: {
+      form1: {
+        type: 'void',
+        'x-component': 'Form',
+        properties: {
+          title1: {
+            'x-component': 'CollectionFieldV2',
+            'x-decorator': 'FormItem',
+            'x-settings': 'FormItemSettings',
+          },
+        },
+      },
+    },
+  };
+
   return (
-    <CollectionFieldProviderV2 collectionField={collections[0].fields[5] as any}>
-      <Demo />
-    </CollectionFieldProviderV2>
+    <CollectionProviderV2 name="tests">
+      <SchemaComponent schema={schema} />
+    </CollectionProviderV2>
   );
-};
+});
 
-export default createApp(Root);
+const formSettings = new SchemaSettings({
+  name: 'FormItemSettings',
+  items: [
+    {
+      name: 'required',
+      type: 'switch',
+      useComponentProps() {
+        // const { uiSchema } = useCollectionFieldV2(); // 报错
+        return {
+          checked: true,
+          // checked: !!uiSchema?.required,
+          title: 'Required',
+          onChange(v) {
+            // ?
+          },
+        };
+      },
+    },
+  ],
+});
+
+const app = new Application({
+  providers: [Root],
+  components: { Form, Input, FormItem },
+  collectionManager: {
+    collections: [collection],
+  },
+  schemaSettings: [formSettings],
+  designable: true,
+});
+
+export default app.getRootComponent();

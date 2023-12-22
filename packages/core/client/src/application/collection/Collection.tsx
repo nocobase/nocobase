@@ -16,21 +16,21 @@ export class CollectionV2 {
   get name() {
     return this.options.name;
   }
-  get primaryKey() {
+  get primaryKey(): string {
     if (this.options.targetKey) {
       return this.options.targetKey;
     }
     const field = this.getFields('primaryKey')[0];
     return field ? field.name : 'id';
   }
-  get titleField() {
+  get titleFieldName() {
     return this.hasField(this.options.titleField) ? this.options.titleField : this.primaryKey;
   }
-  getOption(key: keyof CollectionOptions) {
-    return this.options[key];
+  getOptions() {
+    return this.options;
   }
-  hasField(name: SchemaKey) {
-    return !!this.getField(name);
+  getOption<K extends keyof CollectionOptions>(key: K): CollectionOptions[K] {
+    return this.options[key];
   }
   /**
    * Get fields
@@ -51,5 +51,8 @@ export class CollectionV2 {
   }
   getField(name: SchemaKey) {
     return this.fields[name];
+  }
+  hasField(name: SchemaKey) {
+    return !!this.getField(name);
   }
 }

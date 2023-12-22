@@ -108,12 +108,10 @@ const DeletedField = () => {
 
 export const CollectionFieldV2 = connect((props) => {
   const fieldSchema = useFieldSchema();
-  const field = fieldSchema?.['x-component-props']?.['field'];
   const { snapshot } = useActionContext();
   return (
     <CollectionFieldProviderV2
       name={fieldSchema.name}
-      field={field}
       fallback={snapshot ? <InternalFallbackField /> : <DeletedField />}
     >
       <InternalField {...props} />

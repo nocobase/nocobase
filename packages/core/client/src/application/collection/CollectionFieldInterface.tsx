@@ -1,10 +1,12 @@
 import { cloneDeep } from 'lodash';
 import { IField } from '../../collection-manager';
 
-export class CollectionFieldInterfaceV2 {
-  public options: IField;
+export type CollectionFieldInterfaceOptions = IField;
 
-  constructor(options: IField) {
+export class CollectionFieldInterfaceV2 {
+  public options: CollectionFieldInterfaceOptions;
+
+  constructor(options: CollectionFieldInterfaceOptions) {
     this.options = options;
   }
 
@@ -12,7 +14,11 @@ export class CollectionFieldInterfaceV2 {
     return this.options.name;
   }
 
-  getOptions() {
+  getOption<K extends keyof CollectionFieldInterfaceOptions>(key: K): CollectionFieldInterfaceOptions[K] {
+    return this.options[key];
+  }
+
+  getOptions(): CollectionFieldInterfaceOptions {
     return cloneDeep(this.options);
   }
 }

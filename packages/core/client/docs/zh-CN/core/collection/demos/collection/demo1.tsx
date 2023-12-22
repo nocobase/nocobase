@@ -4,7 +4,7 @@ import { createApp } from '../createApp';
 
 const Demo = () => {
   const collection = useCollectionV2();
-  return <div>collection.data.name: {collection.data.name}</div>;
+  return <pre>{JSON.stringify(collection.getField('username'), null, 2)}</pre>;
 };
 
 const Root = () => {

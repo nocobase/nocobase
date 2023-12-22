@@ -38,8 +38,24 @@ Table 中的字段信息及列表数据，都是存储在数据库中的。
 - `DataBlockProvider`：封装了下面的所有组件，并提供了区块属性
   - [CollectionProvider](/core/collection/collection-provider) / [AssociationProvider](/core/collection/association-provider): 根据 `DataBlockProvider` 提供的上下文信息，查询对应数据表数据及关联字段信息并传递
   - [BlockResourceProvider](/core/data-block/data-block-resource-provider): 根据 `DataBlockProvider` 提供的上下文信息，构建区块 [Resource](https://docs.nocobase.com/api/sdk#resource-action) API，用于区块数据的增删改查
-  - [BlockRequestProvider](/core/data-block/data-block-request-provider): 根据 `DataBlockProvider` 提供的上下文信息，自动调用 `resource.get()` 或 `resource.list()` 发起请求，得到区块数据，并传递
+  - [BlockRequestProvider](/core/data-block/data-block-request-provider): 根据 `DataBlockProvider` 提供的上下文信息，自动调用 `BlockResourceProvider` 提供的 `resource.get()` 或 `resource.list()` 发起请求，得到区块数据，并传递
     - [RecordProvider](/core/collection/record-provider): 对于 `resource.get()` 场景，会自动嵌套 `RecordProvider` 并将 `resource.get()` 请求结果传递下去，`resource.list()` 场景则需要自行使用 `RecordProvider` 提供数据记录
+
+```tsx | pure
+const DataBlockProvider = (props) => {
+  return <DataBlock.Provider value={props}>
+    <CollectionProvider> / <AssociationProvider>
+        <BlockResourceProvider>
+          <BlockRequestProvider>
+            {action !== 'list' && <RecordProvider record={blocRequest.data}>
+              {props.children}
+            </Record>}
+          </BlockRequestProvider>
+        </BlockResourceProvider>  / </AssociationProvider>
+      </CollectionProvider>
+  </DataBlock.Provider>
+}
+```
 
 上述组件封装到 `DataBlockProvider` 的内部，只需要使用 `DataBlockProvider` 即可自行得到上述数据。
 
@@ -86,19 +102,37 @@ interface AllDataBlockProps {
   sourceId?: string | number;
   record?: RecordV2;
   action?: 'list' | 'get';
+  filterByTk?: string;
   params?: Record<string, any>;
   parentRecord?: RecordV2;
   [index: string]: any;
 }
 ```
 
-- collection：区块的 collection 表名，用于获取区块的字段信息和区块数据，一般存在于静态属性 `x-decorator-props` 中
-- association：区块的关联字段名，用于获取区块的关联字段信息和关联字段数据，一般存在于静态属性 `x-decorator-props` 中
-- sourceId：区块的 sourceId，配合 `association` 使用，用于获取区块的关联字段数据，一般存在于动态属性 `x-use-decorator-props` 中
-- action：区块的请求类型，`list` 或 `get`，一般存在于 `x-decorator-props` 中
-- params：区块的请求参数，同时存在于 `x-decorator-props` 和 `x-use-decorator-props` 中
-- record：当提供 `record` 时，会使用 `record` 作为区块的数据，不发起请求，一般存在于动态属性 `x-use-decorator-props` 中
-- parentRecord：当提供 `parentRecord` 时，会使用 `parentRecord` 作为关联字段的表数据，不发起请求，一般存在于动态属性 `x-use-decorator-props` 中
+- collection（`x-decorator-props`）：区块的 collection 表名，用于获取区块的字段信息和区块数据
+- association（`x-decorator-props`）：区块的关联字段名，用于获取区块的关联字段信息和关联字段数据
+- action（`x-decorator-props`）：区块的请求类型，`list` 或 `get`
+- params（`x-decorator-props` 和 `x-use-decorator-props`）：区块的请求参数，同时存在于
+- filterByTk（`x-use-decorator-props`）：相当于 `params.filterByTk`，可理解为 `id`，用于获取单条数据
+- sourceId（`x-use-decorator-props`）：区块的 sourceId，配合 `association` 使用，用于获取区块的关联字段数据
+- record（`x-use-decorator-props`）：当提供 `record` 时，会使用 `record` 作为区块的数据，不发起请求
+- parentRecord（`x-use-decorator-props`）：当提供 `parentRecord` 时，会使用 `parentRecord` 作为关联字段的表数据，不发起请求
+
+```tsx | pure
+const DataBlockProvider = (props) => {
+  return <DataBlock.Provider value={props}>
+    <CollectionProvider name={props.collection}> / <CollectionProvider name={props.association}>
+        <BlockResourceProvider {...props}>
+          <BlockRequestProvider resource={resource}>
+            {action !== 'list' && <RecordProvider record={blocRequest.data}>
+              {props.children}
+            </Record>}
+          </BlockRequestProvider>
+        </BlockResourceProvider>
+      </CollectionProvider>
+  </DataBlock.Provider>
+}
+```
 
 ### 属性组合和场景
 

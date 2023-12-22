@@ -25,7 +25,12 @@ import { SchemaSettings, SchemaSettingsManager } from './schema-settings';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
-import { CollectionManagerOptions, CollectionManagerProviderV2, CollectionManagerV2 } from './collection';
+import {
+  CollectionFieldV2,
+  CollectionManagerOptionsV2,
+  CollectionManagerProviderV2,
+  CollectionManagerV2,
+} from './collection';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
 import type { RequireJS } from './utils/requirejs';
@@ -54,7 +59,7 @@ export interface ApplicationOptions {
   designable?: boolean;
   loadRemotePlugins?: boolean;
   devDynamicImport?: DevDynamicImport;
-  collectionManager?: CollectionManagerV2 | CollectionManagerOptions;
+  collectionManager?: CollectionManagerV2 | CollectionManagerOptionsV2;
 }
 
 export class Application {
@@ -68,6 +73,7 @@ export class Application {
     DataBlockProviderV2,
     ...defaultAppComponents,
     ...schemaInitializerComponents,
+    CollectionFieldV2,
   };
   public pluginManager: PluginManager;
   public pluginSettingsManager: PluginSettingsManager;

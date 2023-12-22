@@ -1,23 +1,66 @@
-import { Application, ApplicationOptions, CollectionManagerProvider } from '@nocobase/client';
+import { Application, ApplicationOptions, CardItem, CollectionOptions, DataBlockProviderV2 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
-import React, { ComponentType } from 'react';
+import { ComponentType } from 'react';
 import collections from './collections.json';
 
-export function createApp(Demo: ComponentType<any>, options: ApplicationOptions = {}, mocks: Record<string, any> = {}) {
-  const Provider = () => {
-    return (
-      <CollectionManagerProvider collections={collections as any}>
-        <Demo />
-      </CollectionManagerProvider>
-    );
-  };
+const defaultMocks = {
+  'users:list': {
+    data: [
+      {
+        id: '1',
+        username: 'jack',
+        nickname: 'Jack Ma',
+        email: 'test@gmail.com',
+      },
+      {
+        id: '2',
+        username: 'jim',
+        nickname: 'Jim Green',
+      },
+      {
+        id: '3',
+        username: 'tom',
+        nickname: 'Tom Cat',
+        email: 'tom@gmail.com',
+      },
+    ],
+  },
+  'roles:list': {
+    data: [
+      {
+        name: 'root',
+        title: 'Root',
+        description: 'Root',
+      },
+      {
+        name: 'admin',
+        title: 'Admin',
+        description: 'Admin description',
+      },
+    ],
+  },
+};
 
+export function createApp(
+  Demo: ComponentType<any>,
+  options: ApplicationOptions = {},
+  mocks: Record<string, any> = defaultMocks,
+) {
   const app = new Application({
     apiClient: {
       baseURL: 'http://localhost:8000',
     },
-    providers: [Provider],
+    providers: [Demo],
+    collectionManager: {
+      collections: collections as CollectionOptions[],
+    },
     ...options,
+    components: {
+      ...options.components,
+      DataBlockProviderV2,
+      CardItem,
+    },
+    designable: true,
   });
 
   const mock = new MockAdapter(app.apiClient.axios);

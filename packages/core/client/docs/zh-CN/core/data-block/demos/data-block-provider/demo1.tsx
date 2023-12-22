@@ -30,7 +30,7 @@ const schema: ISchema = {
 const MyTable = withDynamicSchemaProps(Table);
 
 function useTableProps(): TableProps<any> {
-  const { bordered } = useDataBlockPropsV2();
+  const { tableProps } = useDataBlockPropsV2();
   const { data, loading } = useBlockRequestV2<any[]>();
   const compile = useCompile();
   const collection = useCollectionV2();
@@ -43,7 +43,7 @@ function useTableProps(): TableProps<any> {
     });
   }, [collection, compile]);
   return {
-    bordered,
+    ...tableProps,
     loading,
     dataSource: data?.data || [],
     columns,

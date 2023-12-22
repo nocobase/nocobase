@@ -28,7 +28,7 @@ export const CollectionFieldProviderV2: FC<CollectionFieldProviderProps> = (prop
 export const useCollectionFieldV2 = () => {
   const context = useContext(CollectionFieldContextV2);
   if (!context) {
-    throw new Error('useCollectionFieldV2() must be used within a AssociationProvider');
+    throw new Error('useCollectionFieldV2() must be used within a CollectionFieldProviderV2');
   }
 
   return context;
