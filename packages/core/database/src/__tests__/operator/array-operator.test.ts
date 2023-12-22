@@ -195,6 +195,7 @@ describe('array field operator', function () {
     expect(filter3[0].get('name')).toEqual(t2.get('name'));
   });
 
+  // fix https://nocobase.height.app/T-2803
   test('$anyOf with string', async () => {
     const filter3 = await Test.repository.find({
       filter: {
@@ -220,6 +221,18 @@ describe('array field operator', function () {
     const filter = await Test.repository.find({
       filter: {
         'selected.$noneOf': ['aa'],
+      },
+    });
+
+    expect(filter.length).toEqual(1);
+    expect(filter[0].get('name')).toEqual(t1.get('name'));
+  });
+
+  // fix https://nocobase.height.app/T-2803
+  test('$noneOf with string', async () => {
+    const filter = await Test.repository.find({
+      filter: {
+        'selected.$noneOf': 'aa',
       },
     });
 
