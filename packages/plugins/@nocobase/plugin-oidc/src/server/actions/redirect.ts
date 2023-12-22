@@ -6,7 +6,7 @@ export const redirect = async (ctx: Context, next: Next) => {
   const {
     params: { state },
   } = ctx.action;
-  const search = new URLSearchParams(state);
+  const search = new URLSearchParams(decodeURIComponent(state));
   const authenticator = search.get('name');
   const appName = search.get('app');
   let prefix = '';

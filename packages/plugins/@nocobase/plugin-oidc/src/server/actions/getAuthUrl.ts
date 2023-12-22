@@ -17,7 +17,7 @@ export const getAuthUrl = async (ctx: Context, next: Next) => {
     response_type: 'code',
     scope: scope || 'openid email profile',
     redirect_uri: auth.getRedirectUri(),
-    state: `token=${token}&name=${ctx.headers['x-authenticator']}&app=${app}`,
+    state: encodeURIComponent(`token=${token}&name=${ctx.headers['x-authenticator']}&app=${app}`),
   });
 
   return next();

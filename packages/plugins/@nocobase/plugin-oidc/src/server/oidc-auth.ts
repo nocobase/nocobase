@@ -52,7 +52,7 @@ export class OIDCAuth extends BaseAuth {
     const ctx = this.ctx;
     const { params: values } = ctx.action;
     const token = ctx.cookies.get(cookieName);
-    const search = new URLSearchParams(values.state);
+    const search = new URLSearchParams(decodeURIComponent(values.state));
     if (search.get('token') !== token) {
       ctx.app.logger.warn('odic-auth: state mismatch');
       return null;
