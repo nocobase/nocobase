@@ -41,7 +41,7 @@ export class Dumper extends AppMigrator {
 
   sqlContent: {
     [key: string]: {
-      sql: string;
+      sql: string | string[];
       type: DumpDataType;
     };
   } = {};
@@ -95,7 +95,7 @@ export class Dumper extends AppMigrator {
   writeSQLContent(
     key: string,
     data: {
-      sql: string;
+      sql: string | string[];
       type: DumpDataType;
     },
   ) {

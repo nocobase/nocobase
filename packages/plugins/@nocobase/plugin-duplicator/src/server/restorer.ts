@@ -368,7 +368,7 @@ export class Restorer extends AppMigrator {
     const queries = Object.values(
       sqlContent as {
         [key: string]: {
-          sql: string;
+          sql: string | string[];
           type: DumpDataType;
         };
       },
@@ -377,7 +377,9 @@ export class Restorer extends AppMigrator {
     for (const sqlData of queries) {
       try {
         this.app.log.info(`import sql: ${sqlData.sql}`);
-        await this.app.db.sequelize.query(sqlData.sql);
+        for (const sql of lodash.castArray(sqlData.sql)) {
+          await this.app.db.sequelize.query(sql);
+        }
       } catch (e) {
         if (e.name === 'SequelizeDatabaseError') {
           this.app.logger.error(e.message);

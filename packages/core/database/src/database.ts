@@ -914,6 +914,24 @@ export class Database extends EventEmitter implements AsyncEmitter {
       condition: (options) => {
         return options.viewName || options.view;
       },
+
+      async onSync() {
+        return;
+      },
+
+      async onDump(dumper, collection: Collection) {
+        const viewDef = await collection.db.queryInterface.viewDef(collection.getTableNameWithSchemaAsString());
+
+        dumper.writeSQLContent(`view-${collection.name}`, {
+          sql: [
+            `DROP VIEW IF EXISTS ${collection.getTableNameWithSchemaAsString()}`,
+            `CREATE VIEW ${collection.getTableNameWithSchemaAsString()} AS ${viewDef}`,
+          ],
+          type: 'meta',
+        });
+
+        return;
+      },
     });
 
     this.collectionFactory.registerCollectionType(SqlCollection, {
