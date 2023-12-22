@@ -52,7 +52,7 @@ jobs:
       - name: Install project dependencies
         run: yarn --prefer-offline
       - name: Test with Sqlite
-        run: node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
+        run: yarn test --server --single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: sqlite
@@ -109,7 +109,7 @@ jobs:
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
+          yarn test --server --single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: postgres
@@ -162,7 +162,7 @@ jobs:
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
+          yarn test --server --single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: mysql
@@ -212,7 +212,7 @@ jobs:
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          node --max_old_space_size=4096 ./node_modules/.bin/jest --maxWorkers=100% --workerIdleMemoryLimit=3000MB
+          yarn test --server --single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: mariadb

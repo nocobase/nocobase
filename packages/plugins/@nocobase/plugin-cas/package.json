@@ -4,13 +4,14 @@
   "displayName.zh-CN": "CAS 认证 - SSO 登录",
   "description": "CAS authentication for NocoBase",
   "description.zh-CN": "NocoBase 的 CAS 身份验证",
-  "version": "0.17.0-alpha.7",
+  "version": "0.18.0-alpha.1",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "peerDependencies": {
     "@nocobase/actions": "0.x",
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
+    "@nocobase/plugin-auth": ">=0.17.0-alpha.7",
     "@nocobase/sdk": "0.x",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"

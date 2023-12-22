@@ -1,4 +1,4 @@
-import { Page, oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields, test } from '@nocobase/test/client';
+import { Page, oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields, test } from '@nocobase/test/e2e';
 import { commonTesting } from '../commonTesting';
 
 test.describe('collection', () => {

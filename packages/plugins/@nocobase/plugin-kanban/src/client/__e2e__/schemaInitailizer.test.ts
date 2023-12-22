@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 import { generalWithSingleSelect, oneEmptyKanbanBlock } from './utils';
 
 //在页面中可以创建看板区块

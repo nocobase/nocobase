@@ -1,4 +1,4 @@
-import { createBlockInPage, expect, oneEmptyDetailsBlock, test } from '@nocobase/test/client';
+import { createBlockInPage, expect, oneEmptyDetailsBlock, test } from '@nocobase/test/e2e';
 
 test.describe('where multi data details block can be added', () => {
   test('page', async ({ page, mockPage }) => {

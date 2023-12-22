@@ -5,10 +5,12 @@ const fg = require('fast-glob');
 const { dirname, join, resolve, sep } = require('path');
 const { readFile, writeFile } = require('fs').promises;
 const { existsSync, mkdirSync, cpSync, writeFileSync } = require('fs');
+const dotenv = require('dotenv');
+const fs = require('fs');
 
-exports.isPackageValid = (package) => {
+exports.isPackageValid = (pkg) => {
   try {
-    require.resolve(package);
+    require.resolve(pkg);
     return true;
   } catch (error) {
     return false;
@@ -177,6 +179,17 @@ exports.generateAppDir = function generateAppDir() {
 };
 
 exports.genTsConfigPaths = function genTsConfigPaths() {
+  try {
+    fs.unlinkSync(resolve(process.cwd(), 'node_modules/.bin/tsx'));
+    fs.symlinkSync(
+      resolve(process.cwd(), 'node_modules/tsx/dist/cli.mjs'),
+      resolve(process.cwd(), 'node_modules/.bin/tsx'),
+      'file',
+    );
+  } catch (error) {
+    //
+  }
+
   const cwd = process.cwd();
   const cwdLength = cwd.length;
   const paths = {
@@ -193,12 +206,92 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
       .slice(cwdLength + 1)
       .split(sep)
       .join('/');
-    paths[packageJsonName] = [`${relativePath}/src`];
     paths[`${packageJsonName}/client`] = [`${relativePath}/src/client`];
+    paths[`${packageJsonName}/package.json`] = [`${relativePath}/package.json`];
+    paths[packageJsonName] = [`${relativePath}/src`];
+    if (packageJsonName === '@nocobase/test') {
+      paths[`${packageJsonName}/server`] = [`${relativePath}/src/server`];
+      paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];
+    }
   });
 
   const tsConfigJsonPath = join(cwd, './tsconfig.paths.json');
   const content = { compilerOptions: { paths } };
   writeFileSync(tsConfigJsonPath, JSON.stringify(content, null, 2), 'utf-8');
   return content;
+};
+
+function generatePlaywrightPath(clean = false) {
+  try {
+    const playwright = resolve(process.cwd(), 'storage/playwright/tests');
+    if (clean && fs.existsSync(playwright)) {
+      fs.rmSync(dirname(playwright), { force: true, recursive: true });
+    }
+    if (!fs.existsSync(playwright)) {
+      const testPkg = require.resolve('@nocobase/test/package.json');
+      fs.cpSync(resolve(dirname(testPkg), 'playwright/tests'), playwright, { recursive: true });
+    }
+  } catch (error) {
+    // empty
+  }
+}
+
+exports.generatePlaywrightPath = generatePlaywrightPath;
+
+exports.initEnv = function initEnv() {
+  const env = {
+    APP_ENV: 'development',
+    APP_KEY: 'test-jwt-secret',
+    APP_PORT: 13000,
+    API_BASE_PATH: '/api/',
+    DB_DIALECT: 'sqlite',
+    DB_STORAGE: 'storage/db/nocobase.sqlite',
+    DB_TIMEZONE: '+00:00',
+    DEFAULT_STORAGE_TYPE: 'local',
+    LOCAL_STORAGE_DEST: 'storage/uploads',
+    PLUGIN_STORAGE_PATH: resolve(process.cwd(), 'storage/plugins'),
+    MFSU_AD: 'none',
+    NODE_MODULES_PATH: resolve(process.cwd(), 'node_modules'),
+    PM2_HOME: resolve(process.cwd(), './storage/.pm2'),
+    PLUGIN_PACKAGE_PREFIX: '@nocobase/plugin-,@nocobase/plugin-sample-,@nocobase/preset-',
+    SERVER_TSCONFIG_PATH: './tsconfig.server.json',
+    PLAYWRIGHT_AUTH_FILE: resolve(process.cwd(), 'storage/playwright/.auth/admin.json'),
+  };
+
+  if (
+    !process.env.APP_ENV_PATH &&
+    process.argv[2] &&
+    ['test', 'test:client', 'test:server'].includes(process.argv[2])
+  ) {
+    if (fs.existsSync(resolve(process.cwd(), '.env.test'))) {
+      process.env.APP_ENV_PATH = '.env.test';
+    }
+  }
+
+  if (process.argv[2] === 'e2e') {
+    // 用于存放 playwright 自动生成的相关的文件
+    generatePlaywrightPath();
+    if (!fs.existsSync('.env.e2e') && fs.existsSync('.env.e2e.example')) {
+      const env = fs.readFileSync('.env.e2e.example');
+      fs.writeFileSync('.env.e2e', env);
+    }
+    if (!fs.existsSync('.env.e2e')) {
+      throw new Error('Please create .env.e2e file first!');
+    }
+    process.env.APP_ENV_PATH = '.env.e2e';
+  }
+
+  dotenv.config({
+    path: resolve(process.cwd(), process.env.APP_ENV_PATH || '.env'),
+  });
+
+  if (process.argv[2] === 'e2e' && !process.env.APP_BASE_URL) {
+    process.env.APP_BASE_URL = `http://127.0.0.1:${process.env.APP_PORT}`;
+  }
+
+  for (const key in env) {
+    if (!process.env[key]) {
+      process.env[key] = env[key];
+    }
+  }
 };

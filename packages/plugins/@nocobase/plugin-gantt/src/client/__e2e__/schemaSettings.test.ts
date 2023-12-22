@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 import { getYmd } from '../helpers/other-helper';
 import { oneEmptyGantt } from './utils';
 const mockData = {
@@ -26,7 +26,7 @@ test.describe('configure params in gantt block', () => {
     await page.getByRole('spinbutton').fill('1');
     const [request] = await Promise.all([
       page.waitForRequest((request) => request.url().includes('api/general:list')),
-      page.getByRole('button', { name: 'OK' }).click(),
+      page.getByRole('button', { name: 'OK', exact: true }).click(),
     ]);
     const requestUrl = request.url();
     const queryParams = new URLSearchParams(new URL(requestUrl).search);

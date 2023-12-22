@@ -26,6 +26,7 @@ describe('nocobase-admin-menu', () => {
 
   beforeEach(async () => {
     app = await startApp();
+    await app.version.update('0.17.0-alpha.7');
   });
 
   afterEach(async () => {

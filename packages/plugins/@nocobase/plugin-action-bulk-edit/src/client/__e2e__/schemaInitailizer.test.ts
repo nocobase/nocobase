@@ -1,4 +1,4 @@
-import { expect, test, oneEmptyTableBlockWithActions } from '@nocobase/test/client';
+import { expect, oneEmptyTableBlockWithActions, test } from '@nocobase/test/e2e';
 import { oneEmptyGantt } from './utils';
 
 test.describe('TableActionInitializers & GanttActionInitializers & MapActionInitializers should add bulk edit action', () => {

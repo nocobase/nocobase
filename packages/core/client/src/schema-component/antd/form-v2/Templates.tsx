@@ -6,11 +6,11 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollectionManager } from '../../../collection-manager';
 import { compatibleDataId } from '../../../schema-settings/DataTemplates/FormDataTemplates';
 import { useToken } from '../__builtins__';
 import { RemoteSelect } from '../remote-select';
-import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 
 export interface ITemplate {
   config?: {
@@ -40,7 +40,6 @@ const useDataTemplates = () => {
   const { t } = useTranslation();
   const { duplicateData } = useFormBlockContext();
   const { getCollectionJoinField } = useCollectionManager();
-  console.log(useFormBlockContext());
   if (duplicateData) {
     return duplicateData;
   }
@@ -139,6 +138,7 @@ export const Templates = ({ style = {}, form }) => {
           forEach(data, (value, key) => {
             if (value) {
               form.values[key] = value;
+              form?.setInitialValuesIn?.(key, value);
             }
           });
         }

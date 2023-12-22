@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 import { oneEmptyTableBlockWithCustomizeActions } from './utils';
 
 test.describe('bulk edit action setting', () => {
