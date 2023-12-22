@@ -713,12 +713,14 @@ const setDefaultRole = async (name) => {
     storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
   });
   const state = await api.storageState();
-  const headers = getHeaders(state);
-
-  await api.post(`/api/users:setDefaultRole`, {
-    headers,
-    data: { roleName: name },
-  });
+  const role = getStorageItem('NOCOBASE_ROLE', state);
+  if (role !== 'root') {
+    const headers = getHeaders(state);
+    await api.post(`/api/users:setDefaultRole`, {
+      headers,
+      data: { roleName: name },
+    });
+  }
 };
 
 /**
