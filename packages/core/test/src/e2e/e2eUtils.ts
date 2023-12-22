@@ -658,7 +658,7 @@ const createCollections = async (collectionSettings: CollectionSetting | Collect
  */
 const createRole = async (roleSetting: AclRoleSetting) => {
   const api = await request.newContext({
-    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
 
   const state = await api.storageState();
@@ -686,7 +686,7 @@ const createRole = async (roleSetting: AclRoleSetting) => {
  */
 const updateRole = async (roleSetting: AclRoleSetting) => {
   const api = await request.newContext({
-    storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
   const state = await api.storageState();
   const headers = getHeaders(state);
@@ -709,21 +709,17 @@ const updateRole = async (roleSetting: AclRoleSetting) => {
  * @param name
  */
 const setDefaultRole = async (name) => {
-  try {
-    const api = await request.newContext({
-      storageState: require.resolve('../../../../../playwright/.auth/admin.json'),
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const role = getStorageItem('NOCOBASE_ROLE', state);
+  if (role !== 'root') {
+    const headers = getHeaders(state);
+    await api.post(`/api/users:setDefaultRole`, {
+      headers,
+      data: { roleName: name },
     });
-    const state = await api.storageState();
-    const role = getStorageItem('NOCOBASE_ROLE', state);
-    if (role !== 'root') {
-      const headers = getHeaders(state);
-      await api.post(`/api/users:setDefaultRole`, {
-        headers,
-        data: { roleName: name },
-      });
-    }
-  } catch (error) {
-    console.log(error);
   }
 };
 
