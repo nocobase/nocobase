@@ -15,14 +15,11 @@ export default class extends Plugin {
   // You can get and modify the app instance here
   async load() {
     this.app.addProvider(Provider);
-    const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
-    const dynamicCalculation = new DynamicCalculation();
-    workflow.instructions.register(dynamicCalculation.type, dynamicCalculation);
-  }
-
-  addComponents() {
     this.app.addComponents({
       DynamicExpression,
     });
+    const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
+    const dynamicCalculation = new DynamicCalculation();
+    workflow.instructions.register(dynamicCalculation.type, dynamicCalculation);
   }
 }
