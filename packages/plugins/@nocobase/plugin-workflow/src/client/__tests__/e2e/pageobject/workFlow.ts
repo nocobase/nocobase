@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@nocobase/test/client';
+import type { Locator, Page } from '@nocobase/test/e2e';
 
 export class CreateWorkFlow {
   readonly page: Page;
@@ -10,7 +10,7 @@ export class CreateWorkFlow {
   constructor(page: Page) {
     this.page = page;
     this.name = page.getByLabel('block-item-CollectionField-workflows-Name').getByRole('textbox');
-    this.triggerType = page.getByTestId('select-single').getByLabel('Search');
+    this.triggerType = page.getByTestId('select-single');
     this.description = page.getByTestId('description-item').getByRole('textbox');
     this.autoDeleteHistory = page.getByTestId('select-multiple');
   }

@@ -133,3 +133,27 @@ export const getValuesByPath = (values: any, path: string) => {
   }
   return result;
 };
+
+export const getFormulaComponent = (type: string) => {
+  return {
+    boolean: 'Checkbox',
+    integer: 'InputNumber',
+    bigInt: 'InputNumber',
+    double: 'InputNumber',
+    decimal: 'InputNumber',
+    date: 'DatePicker',
+    string: 'Input',
+  }[type];
+};
+
+export const getFormulaInterface = (type: string) => {
+  return {
+    boolean: 'boolean',
+    integer: 'integer',
+    bigInt: 'integer',
+    double: 'number',
+    decimal: 'number',
+    date: 'datetime',
+    string: 'input',
+  }[type];
+};

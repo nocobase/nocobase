@@ -70,6 +70,7 @@ export default {
       });
 
       const collection = db.getCollection(filterByTk);
+
       await collection.sync({
         force: false,
         alter: {

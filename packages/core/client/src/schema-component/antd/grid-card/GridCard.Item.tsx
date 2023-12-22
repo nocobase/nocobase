@@ -18,6 +18,8 @@ export const GridCardItem = (props) => {
   const field = useField<ObjectField>();
   return (
     <Card
+      role="button"
+      aria-label="grid-card-item"
       className={css`
         height: 100%;
         > .ant-card-body {

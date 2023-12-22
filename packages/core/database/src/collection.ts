@@ -5,6 +5,7 @@ import {
   ModelOptions,
   ModelStatic,
   QueryInterfaceDropTableOptions,
+  QueryInterfaceOptions,
   SyncOptions,
   Transactionable,
   Utils,
@@ -410,6 +411,84 @@ export class Collection<
     return this.context.database.removeCollection(this.name);
   }
 
+  async removeFieldFromDb(name: string, options?: QueryInterfaceOptions) {
+    const field = this.getField(name);
+    if (!field) {
+      return;
+    }
+
+    const attribute = this.model.rawAttributes[name];
+
+    if (!attribute) {
+      field.remove();
+      // console.log('field is not attribute');
+      return;
+    }
+
+    // @ts-ignore
+    if (this.isInherited() && this.parentFields().has(name)) {
+      return;
+    }
+
+    if ((this.model as any)._virtualAttributes.has(this.name)) {
+      field.remove();
+      // console.log('field is virtual attribute');
+      return;
+    }
+
+    if (this.model.primaryKeyAttributes.includes(this.name)) {
+      // 主键不能删除
+      return;
+    }
+
+    if (this.model.options.timestamps !== false) {
+      // timestamps 相关字段不删除
+      let timestampsFields = ['createdAt', 'updatedAt', 'deletedAt'];
+      if (this.db.options.underscored) {
+        timestampsFields = timestampsFields.map((fieldName) => snakeCase(fieldName));
+      }
+      if (timestampsFields.includes(field.columnName())) {
+        this.fields.delete(name);
+        return;
+      }
+    }
+
+    // 排序字段通过 sortable 控制
+    const sortable = this.options.sortable;
+    if (sortable) {
+      let sortField: any;
+      if (sortable === true) {
+        sortField = 'sort';
+      } else if (typeof sortable === 'string') {
+        sortField = sortable;
+      } else if (sortable.name) {
+        sortField = sortable.name || 'sort';
+      }
+      if (field.name === sortField) {
+        return;
+      }
+    }
+
+    if (this.isView()) {
+      field.remove();
+      return;
+    }
+
+    const columnReferencesCount = _.filter(this.model.rawAttributes, (attr) => attr.field == field.columnName()).length;
+
+    if (
+      (await field.existsInDb({
+        transaction: options?.transaction,
+      })) &&
+      columnReferencesCount == 1
+    ) {
+      const queryInterface = this.db.sequelize.getQueryInterface();
+      await queryInterface.removeColumn(this.getTableNameWithSchema(), field.columnName(), options);
+    }
+
+    field.remove();
+  }
+
   async removeFromDb(options?: QueryInterfaceDropTableOptions) {
     if (
       !this.isView() &&
@@ -736,6 +815,17 @@ export class Collection<
     };
   }
 
+  protected bindFieldEventListener() {
+    this.on('field.afterAdd', (field: Field) => {
+      field.bind();
+    });
+
+    this.on('field.afterRemove', (field: Field) => {
+      field.unbind();
+      this.db.emit('field.afterRemove', field);
+    });
+  }
+
   private checkOptions(options: CollectionOptions) {
     checkIdentifier(options.name);
     this.checkTableName();
@@ -752,16 +842,5 @@ export class Collection<
         throw new Error(`collection ${collection.name} and ${this.name} have same tableName "${tableName}"`);
       }
     }
-  }
-
-  private bindFieldEventListener() {
-    this.on('field.afterAdd', (field: Field) => {
-      field.bind();
-    });
-
-    this.on('field.afterRemove', (field: Field) => {
-      field.unbind();
-      this.db.emit('field.afterRemove', field);
-    });
   }
 }

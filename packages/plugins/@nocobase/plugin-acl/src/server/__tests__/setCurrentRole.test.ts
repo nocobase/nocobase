@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import Database from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
@@ -23,6 +24,7 @@ describe('role', () => {
       state: {
         currentRole: '',
       },
+      t: (key) => key,
     };
   });
 
@@ -65,10 +67,13 @@ describe('role', () => {
         return 'abc';
       }
     };
-    const throwFn = jest.fn();
+    const throwFn = vi.fn();
     ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
-    expect(throwFn).lastCalledWith(401, { code: 'ROLE_NOT_FOUND_ERR', message: 'The user role does not exist.' });
+    expect(throwFn).lastCalledWith(401, {
+      code: 'ROLE_NOT_FOUND_ERR',
+      message: 'The user role does not exist. Please try signing in again',
+    });
     expect(ctx.state.currentRole).not.toBeDefined();
   });
 
@@ -198,10 +203,13 @@ describe('role', () => {
     });
     roles = await ctx.cache.get(`roles:${ctx.state.currentUser.id}`);
     expect(roles).toBeUndefined();
-    const throwFn = jest.fn();
+    const throwFn = vi.fn();
     ctx.throw = throwFn;
     await setCurrentRole(ctx, () => {});
-    expect(throwFn).lastCalledWith(401, { code: 'ROLE_NOT_FOUND_ERR', message: 'The user role does not exist.' });
+    expect(throwFn).lastCalledWith(401, {
+      code: 'USER_HAS_NO_ROLES_ERR',
+      message: 'The current user has no roles. Please try another account.',
+    });
     expect(ctx.state.currentRole).not.toBeDefined();
   });
 

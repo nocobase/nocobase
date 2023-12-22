@@ -25,7 +25,6 @@ describe('fields', () => {
   beforeEach(async () => {
     db = mockDatabase();
     await db.clean({ drop: true });
-
     db.registerFieldTypes({
       point: PointField,
       circle: CircleField,

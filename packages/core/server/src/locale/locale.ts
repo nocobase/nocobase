@@ -87,7 +87,10 @@ export class Locale {
         // this.app.setMaintainingMessage(`load [${packageName}] locale resource `);
         const res = getResource(packageName, lang);
         if (res) {
-          resources[name] = { ...res };
+          resources[packageName] = { ...res };
+          if (name !== packageName) {
+            resources[name] = { ...res };
+          }
         }
       } catch (err) {
         // empty
@@ -96,6 +99,7 @@ export class Locale {
     Object.keys(resources).forEach((name) => {
       this.app.i18n.addResources(lang, name, resources[name]);
     });
+
     return resources;
   }
 

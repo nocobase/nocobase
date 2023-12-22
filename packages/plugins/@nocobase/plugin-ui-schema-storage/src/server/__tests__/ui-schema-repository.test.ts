@@ -19,6 +19,7 @@ describe('ui_schema repository', () => {
     app = mockServer({
       registerActions: true,
     });
+    await app.cleanDb();
 
     db = app.db;
 
@@ -1142,7 +1143,7 @@ describe('ui_schema repository', () => {
   });
 
   it('should insert big schema', async () => {
-    const schema = require('./fixtures/data').default;
+    const schema = (await import('./fixtures/data')).default;
 
     console.time('test');
     await repository.insertNewSchema(schema);
@@ -1221,7 +1222,7 @@ describe('ui_schema repository', () => {
       },
     };
     await repository.insert(tree);
-    const schema = require('./fixtures/data').default;
+    const schema = (await import('./fixtures/data')).default;
 
     await repository.insertAdjacent('afterEnd', 'A', schema);
     const rootUid = schema['x-uid'];

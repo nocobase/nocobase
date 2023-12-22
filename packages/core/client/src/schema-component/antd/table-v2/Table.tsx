@@ -538,6 +538,7 @@ export const Table: any = observer(
             ref={tableSizeRefCallback}
             rowKey={rowKey ?? defaultRowKey}
             dataSource={dataSource}
+            tableLayout="auto"
             {...others}
             {...restProps}
             pagination={paginationProps}
@@ -547,7 +548,6 @@ export const Table: any = observer(
             }}
             onRow={onRow}
             rowClassName={(record) => (selectedRow.includes(record[rowKey]) ? highlightRow : '')}
-            tableLayout={'auto'}
             scroll={scroll}
             columns={columns}
             expandable={{

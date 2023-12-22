@@ -1,9 +1,10 @@
 import { LoginOutlined } from '@ant-design/icons';
-import { Authenticator, css, useAPIClient } from '@nocobase/client';
+import { css, useAPIClient } from '@nocobase/client';
 import { Button, Space, message } from 'antd';
 import React, { useEffect } from 'react';
 import { useOidcTranslation } from './locale';
 import { useLocation } from 'react-router-dom';
+import { Authenticator } from '@nocobase/plugin-auth/client';
 
 export interface OIDCProvider {
   clientId: string;

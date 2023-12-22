@@ -6,13 +6,13 @@ on:
       - 'main'
       - 'develop'
     paths:
-      - '.github/workflows/nocobase-build-test.yml'
+      - '.github/workflows/nocobase-test-e2e.yml'
       - 'packages/**'
   pull_request:
     branches:
       - '**'
     paths:
-      - '.github/workflows/nocobase-build-test.yml'
+      - '.github/workflows/nocobase-test-e2e.yml'
       - 'packages/**'
 
 jobs:
@@ -43,6 +43,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node_version }}
+          cache: 'yarn'
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn cache dir)"
@@ -60,11 +61,13 @@ jobs:
         run: yarn build
         env:
           __E2E__: true
-      - run: npx playwright install --with-deps
+      - run: npx playwright install chromium --with-deps
       - name: Test with postgres
         run: yarn e2e test -x --skip-reporter
         env:
           __E2E__: true
+          APP_BASE_URL: http://127.0.0.1:13000
+          APP_PORT: 13000
           APP_ENV: production
           LOGGER_LEVEL: error
           DB_DIALECT: postgres
@@ -73,7 +76,4 @@ jobs:
           DB_USER: nocobase
           DB_PASSWORD: password
           DB_DATABASE: nocobase
-          DB_UNDERSCORED: ${{ matrix.underscored }}
-          DB_SCHEMA: ${{ matrix.schema }}
-          COLLECTION_MANAGER_SCHEMA: ${{ matrix.collection_schema }}
-    timeout-minutes: 60
+    timeout-minutes: 90

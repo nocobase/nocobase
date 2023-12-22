@@ -2,7 +2,8 @@ import { FormItem } from '@formily/antd-v5';
 import { CollectionManagerProvider, CollectionSelect, FormProvider, SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { collections } from '../../../../testUtils';
+
+const collections = [];
 
 const schema = {
   type: 'object',

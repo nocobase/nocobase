@@ -1,9 +1,14 @@
-import MockAdapter from 'axios-mock-adapter';
 import { APIClient } from '../api-client';
 
-export const mockAPIClient = () => {
-  const apiClient = new APIClient();
-  const mockRequest = new MockAdapter(apiClient.axios);
+class MockAPIClient extends APIClient {
+  mockAdapter() {
+    const MockAdapter = require('axios-mock-adapter');
+    return new MockAdapter(this.axios);
+  }
+}
 
+export const mockAPIClient = () => {
+  const apiClient = new MockAPIClient();
+  const mockRequest = apiClient.mockAdapter();
   return { apiClient, mockRequest };
 };

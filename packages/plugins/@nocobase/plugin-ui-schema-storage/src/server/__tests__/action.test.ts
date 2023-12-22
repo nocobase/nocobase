@@ -269,7 +269,7 @@ describe('action test', () => {
   });
 
   test('insert adjacent with bit schema', async () => {
-    const schema = require('./fixtures/data').default;
+    const schema = (await import('./fixtures/data')).default;
 
     await app
       .agent()

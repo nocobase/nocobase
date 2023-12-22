@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
 import { CreateWorkFlow } from './pageobject/workFlow';
 

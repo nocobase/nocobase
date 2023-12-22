@@ -4,7 +4,7 @@
   "displayName.zh-CN": "短信认证",
   "description": "SMS authentication for NocoBase",
   "description.zh-CN": "SMS authentication for NocoBase",
-  "version": "0.17.0-alpha.5",
+  "version": "0.18.0-alpha.1",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@formily/react": "2.x",
@@ -17,7 +17,7 @@
     "@nocobase/auth": "0.x",
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
-    "@nocobase/plugin-auth": "0.x",
+    "@nocobase/plugin-auth": ">=0.17.0-alpha.7",
     "@nocobase/plugin-verification": "0.x",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"

@@ -6,7 +6,7 @@ export default async function createApp() {
   });
 
   await app.cleanDb();
-  app.plugin(require('../server').default, { name: 'duplicator' });
+  app.plugin((await import('../server')).default, { name: 'duplicator' });
 
   await app.loadAndInstall({ clean: true });
 

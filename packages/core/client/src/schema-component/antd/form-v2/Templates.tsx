@@ -6,8 +6,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollectionManager } from '../../../collection-manager';
-import { useDuplicatefieldsContext } from '../../../schema-initializer/components';
 import { compatibleDataId } from '../../../schema-settings/DataTemplates/FormDataTemplates';
 import { useToken } from '../__builtins__';
 import { RemoteSelect } from '../remote-select';
@@ -38,10 +38,10 @@ export interface ITemplate {
 const useDataTemplates = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const data = useDuplicatefieldsContext();
+  const { duplicateData } = useFormBlockContext();
   const { getCollectionJoinField } = useCollectionManager();
-  if (data) {
-    return data;
+  if (duplicateData) {
+    return duplicateData;
   }
   const { items = [], display = true } = findDataTemplates(fieldSchema);
   // 过滤掉已经被删除的字段
@@ -138,6 +138,7 @@ export const Templates = ({ style = {}, form }) => {
           forEach(data, (value, key) => {
             if (value) {
               form.values[key] = value;
+              form?.setInitialValuesIn?.(key, value);
             }
           });
         }

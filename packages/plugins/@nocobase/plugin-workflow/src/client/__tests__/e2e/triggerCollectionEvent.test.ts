@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
 import { appendJsonCollectionName, e2e_GeneralFormsTable, generateRandomLetters } from './pageobject/e2eTemplateJson';
 import { CreateWorkFlow } from './pageobject/workFlow';
@@ -38,9 +38,9 @@ test.describe('trigger collection events', () => {
     //配置工作流触发器
     await page.getByLabel(`action-WorkflowLink-Configure-workflows-${workFlowName}`).click();
     await page.getByRole('button', { name: 'Configure' }).click();
-    await page.getByTestId('select-collection').getByLabel('Search').click();
+    await page.getByTestId('select-collection').click();
     await page.getByText(collectionDisplayName).click();
-    await page.getByTestId('select-single').getByLabel('Search').click();
+    await page.getByTestId('select-single').click();
     await page.getByText('After record added', { exact: true }).click();
     await page.getByLabel('action-Action-Submit-workflows').click();
     await page.getByRole('link', { name: 'Workflow' }).click();
