@@ -713,14 +713,11 @@ const setDefaultRole = async (name) => {
     storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
   const state = await api.storageState();
-  const role = getStorageItem('NOCOBASE_ROLE', state);
-  if (role !== 'root') {
-    const headers = getHeaders(state);
-    await api.post(`/api/users:setDefaultRole`, {
-      headers,
-      data: { roleName: name },
-    });
-  }
+  const headers = getHeaders(state);
+  await api.post(`/api/users:setDefaultRole`, {
+    headers,
+    data: { roleName: name },
+  });
 };
 
 /**
