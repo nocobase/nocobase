@@ -1,4 +1,4 @@
-import { general, PageConfig } from '@nocobase/test/client';
+import { general, PageConfig } from '@nocobase/test/e2e';
 /**
  * 页面中有一个空的 Table 区块，并且配有字段:普通字段和关系字段
  */
