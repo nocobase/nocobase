@@ -4,7 +4,6 @@ export * from './association-field';
 export * from './association-select';
 export * from './auto-complete';
 export * from './block-item';
-export * from './calendar';
 export * from './card-item';
 export * from './cascader';
 export * from './checkbox';
@@ -49,5 +48,6 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 export * from './variable';
+export { genStyleHook } from './__builtins__';
 
 import './index.less';

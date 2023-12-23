@@ -2,22 +2,20 @@ import React from 'react';
 import { Plugin } from '../application/Plugin';
 import { SchemaComponentOptions } from '../schema-component';
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
-import { CalendarBlockProvider, useCalendarBlockProps } from './CalendarBlockProvider';
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';
 import { FilterFormBlockProvider } from './FilterFormBlockProvider';
 import { FormBlockProvider, useFormBlockProps } from './FormBlockProvider';
 import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
-import * as bp from './hooks';
 import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
+import * as bp from './hooks';
 
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`
 export const BlockSchemaComponentProvider: React.FC = (props) => {
   return (
     <SchemaComponentOptions
       components={{
-        CalendarBlockProvider,
         TableFieldProvider,
         TableBlockProvider,
         TableSelectorProvider,
@@ -32,7 +30,6 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useSourceIdFromRecord,
         useSourceIdFromParentRecord,
         useParamsFromRecord,
-        useCalendarBlockProps,
         useFormBlockProps,
         useFormFieldProps,
         useDetailsBlockProps,
@@ -54,7 +51,6 @@ export class BlockSchemaComponentPlugin extends Plugin {
 
   addComponents() {
     this.app.addComponents({
-      CalendarBlockProvider,
       TableFieldProvider,
       TableBlockProvider,
       TableSelectorProvider,
@@ -72,7 +68,6 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useSourceIdFromRecord,
       useSourceIdFromParentRecord,
       useParamsFromRecord,
-      useCalendarBlockProps,
       useFormBlockProps,
       useFormFieldProps,
       useDetailsBlockProps,
