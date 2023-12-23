@@ -14,6 +14,7 @@
     "@nocobase/plugin-api-keys": "0.18.0-alpha.1",
     "@nocobase/plugin-audit-logs": "0.18.0-alpha.1",
     "@nocobase/plugin-auth": "0.18.0-alpha.1",
+    "@nocobase/plugin-calendar": "0.18.0-alpha.1",
     "@nocobase/plugin-cas": "0.18.0-alpha.1",
     "@nocobase/plugin-charts": "0.18.0-alpha.1",
     "@nocobase/plugin-china-region": "0.18.0-alpha.1",
