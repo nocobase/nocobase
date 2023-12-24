@@ -1,4 +1,4 @@
-import { test } from '@nocobase/test/client';
+import { test } from '@nocobase/test/e2e';
 
 test('form item & create form', async ({ page, mockPage }) => {});
 

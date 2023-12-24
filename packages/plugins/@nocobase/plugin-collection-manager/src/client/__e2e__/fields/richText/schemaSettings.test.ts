@@ -1,10 +1,10 @@
 import {
-  Page,
-  expect,
-  expectSettingsMenu,
-  oneTableBlockWithAddNewAndViewAndEditAndMediaFields,
-  test,
-} from '@nocobase/test/client';
+    Page,
+    expect,
+    expectSettingsMenu,
+    oneTableBlockWithAddNewAndViewAndEditAndMediaFields,
+    test,
+} from '@nocobase/test/e2e';
 import { createColumnItem, showSettingsMenu, testDefaultValue, testPattern, testSetValidationRules } from '../../utils';
 
 test.describe('form item & create form', () => {

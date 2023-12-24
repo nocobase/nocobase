@@ -1,12 +1,52 @@
 {
   "name": "@nocobase/test",
-  "version": "0.17.0-alpha.7",
+  "version": "0.18.0-alpha.1",
   "main": "lib/index.js",
+  "module": "./src/index.ts",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./lib/index.d.ts",
+        "default": "./lib/index.js"
+      },
+      "import": {
+        "types": "./vitest.d.ts",
+        "default": "./vitest.mjs"
+      }
+    },
+    "./client": {
+      "require": {
+        "types": "./lib/client/index.d.ts",
+        "default": "./lib/client/index.js"
+      },
+      "import": {
+        "types": "./lib/client/index.d.ts",
+        "default": "./lib/client/index.js"
+      }
+    },
+    "./e2e": {
+      "require": {
+        "types": "./lib/e2e/index.d.ts",
+        "default": "./lib/e2e/index.js"
+      },
+      "import": {
+        "types": "./lib/e2e/index.d.ts",
+        "default": "./lib/e2e/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
   "dependencies": {
-    "@nocobase/server": "0.17.0-alpha.7",
+    "@faker-js/faker": "8.1.0",
+    "@nocobase/server": "0.18.0-alpha.1",
+    "@playwright/test": "^1.40.1",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/user-event": "^14.4.3",
     "@types/supertest": "^2.0.11",
+    "@vitejs/plugin-react": "^4.0.0",
+    "jsdom-worker": "^0.3.0",
     "mariadb": "^2.5.6",
     "mockjs": "^1.1.0",
     "mysql2": "^2.3.3",
@@ -14,6 +54,9 @@
     "pg-hstore": "^2.3.4",
     "sqlite3": "^5.0.8",
     "supertest": "^6.1.6",
+    "vite": "^5.0.0",
+    "vitest": "^1.0.0",
+    "vitest-dom": "^0.1.1",
     "ws": "^8.13.0"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"

@@ -4,8 +4,6 @@ import nodemailerMock from 'nodemailer-mock';
 import { Notification, NotificationService } from '../models';
 import plugin from '../server';
 
-jest.setTimeout(300000);
-
 describe('notifications', () => {
   let db: Database;
 

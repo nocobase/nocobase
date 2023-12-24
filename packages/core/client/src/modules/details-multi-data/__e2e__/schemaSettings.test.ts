@@ -3,7 +3,7 @@ import {
   oneDetailBlockWithM2oFieldToGeneral,
   oneEmptyDetailsBlock,
   test,
-} from '@nocobase/test/client';
+} from '@nocobase/test/e2e';
 
 test.describe('multi data details block schema settings', () => {
   test('supported options', async ({ page, mockPage, mockRecord }) => {

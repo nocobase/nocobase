@@ -47,33 +47,32 @@ describe('PluginSettingsManager', () => {
       key: name,
       children: undefined,
     };
-    expect(app.pluginSettingsManager.getSetting('test')).toContain(settingRes);
-    expect(app.pluginSettingsManager.get('test')).toContain(getRes);
+    expect(app.pluginSettingsManager.getSetting('test')).toMatchObject(settingRes);
+    expect(app.pluginSettingsManager.get('test')).toMatchObject(getRes);
     expect(app.pluginSettingsManager.hasAuth('test')).toBeTruthy();
     const list = app.pluginSettingsManager.getList();
     expect(list.length).toBe(1);
-    expect(list[0]).toContain(getRes);
+    expect(list[0]).toMatchObject(getRes);
   });
 
   it('multi', () => {
     app.pluginSettingsManager.add('test1', test1);
     app.pluginSettingsManager.add('test2', test2);
-    expect(app.pluginSettingsManager.get('test1')).toContain(test1);
-    expect(app.pluginSettingsManager.get('test2')).toContain(test2);
-
+    expect(app.pluginSettingsManager.get('test1')).toMatchObject(test1);
+    expect(app.pluginSettingsManager.get('test2')).toMatchObject(test2);
     const list = app.pluginSettingsManager.getList();
     expect(list.length).toBe(2);
-    expect(list[0]).toContain(test1);
-    expect(list[1]).toContain(test2);
+    expect(list[0]).toMatchObject(test1);
+    expect(list[1]).toMatchObject(test2);
   });
 
   it('nested', () => {
     app.pluginSettingsManager.add('test1', test1);
     app.pluginSettingsManager.add('test1.test2', test2);
-    expect(app.pluginSettingsManager.get('test1')).toContain(test1);
-    expect(app.pluginSettingsManager.get('test1.test2')).toContain(test2);
+    expect(app.pluginSettingsManager.get('test1')).toMatchObject(test1);
+    expect(app.pluginSettingsManager.get('test1.test2')).toMatchObject(test2);
     expect(app.pluginSettingsManager.get('test1').children.length).toBe(1);
-    expect(app.pluginSettingsManager.get('test1').children[0]).toContain(test2);
+    expect(app.pluginSettingsManager.get('test1').children[0]).toMatchObject(test2);
   });
 
   it('remove', () => {
@@ -91,11 +90,15 @@ describe('PluginSettingsManager', () => {
     app.pluginSettingsManager.add('test', test);
     expect(app.pluginSettingsManager.get('test')).toBeFalsy();
     expect(app.pluginSettingsManager.hasAuth('test')).toBeFalsy();
-    expect(app.pluginSettingsManager.get('test', false)).toContain({ ...test, isAllow: false });
-
-    expect(app.pluginSettingsManager.getList().length).toBe(0);
+    expect(app.pluginSettingsManager.get('test', false)).toMatchObject({
+      ...test,
+      isAllow: false,
+    });
     expect(app.pluginSettingsManager.getList(false).length).toBe(1);
-    expect(app.pluginSettingsManager.getList(false)[0]).toContain({ ...test, isAllow: false });
+    expect(app.pluginSettingsManager.getList(false)[0]).toMatchObject({
+      ...test,
+      isAllow: false,
+    });
   });
 
   it('has', () => {

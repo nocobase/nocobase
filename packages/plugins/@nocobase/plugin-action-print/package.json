@@ -1,13 +1,12 @@
 {
   "name": "@nocobase/plugin-action-print",
-  "version": "0.17.0-alpha.7",
+  "version": "0.18.0-alpha.1",
   "main": "dist/server/index.js",
   "displayName": "Print",
   "displayName.zh-CN": "打印操作",
   "description": "Provides print action",
   "description.zh-CN": "提供打印操作",
   "license": "AGPL-3.0",
-  "dependencies": {},
   "peerDependencies": {
     "@nocobase/client": "0.x",
     "@nocobase/server": "0.x",

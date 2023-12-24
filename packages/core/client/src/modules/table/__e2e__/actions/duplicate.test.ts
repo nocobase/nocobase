@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 import { T2187 } from '../templatesOfBug';
 
 // fix https://nocobase.height.app/T-2187

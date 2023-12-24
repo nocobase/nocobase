@@ -32,7 +32,7 @@ describe('actions', () => {
     await app.destroy();
   });
 
-  it.only('associations save', async () => {
+  it('associations save', async () => {
     const agent = app.agent();
 
     await agent.resource('collections').create({

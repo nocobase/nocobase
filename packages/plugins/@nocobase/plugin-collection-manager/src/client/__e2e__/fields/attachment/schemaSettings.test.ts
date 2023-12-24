@@ -4,7 +4,7 @@ import {
   expectSettingsMenu,
   oneTableBlockWithAddNewAndViewAndEditAndMediaFields,
   test,
-} from '@nocobase/test/client';
+} from '@nocobase/test/e2e';
 import { createColumnItem, showSettingsMenu, testPattern } from '../../utils';
 
 test.describe('form item & create form', () => {

@@ -76,7 +76,7 @@ const schema = {
           'x-component-props': {
             style: {
               width: '15%',
-              'min-width': '100px',
+              minWidth: '100px',
             },
           },
         },

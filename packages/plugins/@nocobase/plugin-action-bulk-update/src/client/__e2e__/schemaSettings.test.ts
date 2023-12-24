@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 import { oneEmptyTableBlockWithCustomizeUpdate } from './utils';
 
 test.describe('data will be updated && Assign field values && after successful submission', () => {

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import Database from '../database';
 import { mockDatabase } from './index';
 import { Collection } from '../collection';
@@ -43,7 +44,7 @@ describe('collection factory', function () {
       static type = 'child';
     }
 
-    const fn = jest.fn();
+    const fn = vi.fn();
 
     db.collectionFactory.registerCollectionType(ChildCollection, {
       condition: (options) => options.child,

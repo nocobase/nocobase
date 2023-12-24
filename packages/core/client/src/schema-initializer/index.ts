@@ -1,6 +1,36 @@
+import { Plugin } from '../application/Plugin';
+import {
+  blockInitializers,
+  bulkEditFormActionInitializers,
+  createFormActionInitializers,
+  createFormBlockInitializers,
+  cusomeizeCreateFormBlockInitializers,
+  customFormItemInitializers,
+  detailsActionInitializers,
+  filterFormActionInitializers,
+  filterFormItemInitializers,
+  formActionInitializers,
+  formItemInitializers,
+  gridCardActionInitializers,
+  gridCardItemActionInitializers,
+  listActionInitializers,
+  listItemActionInitializers,
+  readPrettyFormActionInitializers,
+  readPrettyFormItemInitializers,
+  recordBlockInitializers,
+  recordFormBlockInitializers,
+  subTableActionInitializers,
+  tabPaneInitializers,
+  tabPaneInitializersForBulkEditFormBlock,
+  tabPaneInitializersForRecordBlock,
+  tableActionColumnInitializers,
+  tableActionInitializers,
+  tableColumnInitializers,
+  tableSelectorInitializers,
+  updateFormActionInitializers,
+} from './buttons';
 import * as initializerComponents from './components';
 import * as items from './items';
-export { useCurrentSchema } from './utils';
 export * from './buttons';
 export * from './items';
 export {
@@ -10,50 +40,17 @@ export {
   createTableBlockSchema,
   gridRowColWrap,
   itemsMerge,
-  useCollectionDataSourceItemsV2,
+  useAssociatedFormItemInitializerFields,
   useAssociatedTableColumnInitializerFields,
   useCollectionDataSourceItems,
+  useCollectionDataSourceItemsV2,
+  useCurrentSchema,
+  useFormItemInitializerFields,
   useInheritsTableColumnInitializerFields,
   useRecordCollectionDataSourceItems,
-  useTableColumnInitializerFields,
   useRemoveGridFormItem,
-  useAssociatedFormItemInitializerFields,
-  useFormItemInitializerFields,
+  useTableColumnInitializerFields
 } from './utils';
-
-import { Plugin } from '../application/Plugin';
-import {
-  calendarActionInitializers,
-  calendarFormActionInitializers,
-  createFormBlockInitializers,
-  cusomeizeCreateFormBlockInitializers,
-  customFormItemInitializers,
-  filterFormActionInitializers,
-  createFormActionInitializers,
-  updateFormActionInitializers,
-  bulkEditFormActionInitializers,
-  filterFormItemInitializers,
-  gridCardActionInitializers,
-  gridCardItemActionInitializers,
-  listActionInitializers,
-  listItemActionInitializers,
-  recordBlockInitializers,
-  recordFormBlockInitializers,
-  subTableActionInitializers,
-  tableSelectorInitializers,
-  tabPaneInitializers,
-  tabPaneInitializersForRecordBlock,
-  tabPaneInitializersForBulkEditFormBlock,
-  blockInitializers,
-  tableActionColumnInitializers,
-  tableActionInitializers,
-  tableColumnInitializers,
-  formItemInitializers,
-  formActionInitializers,
-  readPrettyFormItemInitializers,
-  detailsActionInitializers,
-  readPrettyFormActionInitializers,
-} from './buttons';
 
 export class SchemaInitializerPlugin extends Plugin {
   async load() {
@@ -71,8 +68,6 @@ export class SchemaInitializerPlugin extends Plugin {
     this.app.schemaInitializerManager.add(detailsActionInitializers);
     this.app.schemaInitializerManager.add(readPrettyFormItemInitializers);
     this.app.schemaInitializerManager.add(readPrettyFormActionInitializers);
-    this.app.schemaInitializerManager.add(calendarActionInitializers);
-    this.app.schemaInitializerManager.add(calendarFormActionInitializers);
     this.app.schemaInitializerManager.add(createFormBlockInitializers);
     this.app.schemaInitializerManager.add(cusomeizeCreateFormBlockInitializers);
     this.app.schemaInitializerManager.add(customFormItemInitializers);

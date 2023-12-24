@@ -1,4 +1,4 @@
-import { expect, oneEmptyTableBlockBasedOnUsers, test } from '@nocobase/test/client';
+import { expect, oneEmptyTableBlockBasedOnUsers, test } from '@nocobase/test/e2e';
 
 test('actions', async ({ page, mockPage }) => {
   await mockPage(oneEmptyTableBlockBasedOnUsers).goto();

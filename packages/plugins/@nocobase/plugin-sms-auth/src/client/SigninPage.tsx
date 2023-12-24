@@ -1,7 +1,8 @@
-import { Authenticator, SchemaComponent, useSignIn } from '@nocobase/client';
+import { SchemaComponent } from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import React from 'react';
 import VerificationCode from './VerificationCode';
+import { Authenticator, useSignIn } from '@nocobase/plugin-auth/client';
 
 const phoneForm: ISchema = {
   type: 'object',

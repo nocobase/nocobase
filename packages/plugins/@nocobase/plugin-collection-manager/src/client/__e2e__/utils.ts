@@ -1,4 +1,4 @@
-import { Page } from '@nocobase/test/client';
+import { Page } from '@nocobase/test/e2e';
 
 export async function showSettingsMenu(page: Page, fieldName: string) {
   await page.getByRole('columnheader', { name: fieldName, exact: true }).hover();

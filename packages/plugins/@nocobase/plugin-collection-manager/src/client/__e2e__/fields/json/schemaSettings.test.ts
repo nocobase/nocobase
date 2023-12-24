@@ -1,8 +1,4 @@
-import {
-  expectSettingsMenu,
-  oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields,
-  test,
-} from '@nocobase/test/client';
+import { expectSettingsMenu, oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields, test } from '@nocobase/test/e2e';
 import { createColumnItem, showSettingsMenu } from '../../utils';
 
 test.describe('form item & create form', () => {
