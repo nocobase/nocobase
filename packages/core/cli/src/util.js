@@ -57,6 +57,9 @@ exports.nodeCheck = () => {
 };
 
 exports.run = (command, args, options = {}) => {
+  if (command === 'tsx') {
+    command = resolve(process.cwd(), './node_modules/tsx/dist/cli.mjs');
+  }
   return execa(command, args, {
     shell: true,
     stdio: 'inherit',

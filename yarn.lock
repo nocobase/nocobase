@@ -10211,13 +10211,6 @@ cron-parser@4.4.0:
   dependencies:
     luxon "^1.28.0"
 
-cron-parser@^4.6.0:
-  version "4.9.0"
-  resolved "https://registry.npmmirror.com/cron-parser/-/cron-parser-4.9.0.tgz#0340694af3e46a0894978c6f52a6dbb5c0f11ad5"
-  integrity sha512-p0SaNjrHOnQeR8/VnfGbmg9te2kfyYSQ7Sc/j/6DtPL3JQvKxmjO9TSjNFpujqV3vEYYBvNNvXSxzyksBWAx1Q==
-  dependencies:
-    luxon "^3.2.1"
-
 cron@*:
   version "3.1.6"
   resolved "https://registry.npmmirror.com/cron/-/cron-3.1.6.tgz#e7e1798a468e017c8d31459ecd7c2d088f97346c"
