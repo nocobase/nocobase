@@ -87,7 +87,6 @@ export class PluginManager {
         await import(`${prefix}${name}`);
         return `${prefix}${name}`;
       } catch (error) {
-        // console.log(error);
         continue;
       }
     }
