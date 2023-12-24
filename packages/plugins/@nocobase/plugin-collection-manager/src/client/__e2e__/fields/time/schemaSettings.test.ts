@@ -1,9 +1,9 @@
 import {
-    Page,
-    expect,
-    expectSettingsMenu,
-    oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields,
-    test,
+  Page,
+  expect,
+  expectSettingsMenu,
+  oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields,
+  test,
 } from '@nocobase/test/e2e';
 import dayjs from 'dayjs';
 import { createColumnItem, showSettingsMenu, testDefaultValue, testPattern } from '../../utils';

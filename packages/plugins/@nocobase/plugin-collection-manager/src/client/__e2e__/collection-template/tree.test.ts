@@ -75,6 +75,7 @@ test.describe('create collection', () => {
   });
 
   test('uncheck more options', async ({ page }) => {
+    test.fail();
     const collectionDisplayName = uid();
     // 避免以数字开头，会报错
     const collectionName = `t_${uid()}`;

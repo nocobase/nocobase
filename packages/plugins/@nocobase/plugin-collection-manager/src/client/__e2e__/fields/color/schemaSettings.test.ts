@@ -1,19 +1,19 @@
 import {
-    Page,
-    expect,
-    expectSettingsMenu,
-    oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
-    test,
+  Page,
+  expect,
+  expectSettingsMenu,
+  oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
+  test,
 } from '@nocobase/test/e2e';
 import {
-    clickDeleteAndOk,
-    createColumnItem,
-    showSettingsMenu,
-    testDisplayTitle,
-    testEditDescription,
-    testEditFieldTitle,
-    testPattern,
-    testRequired,
+  clickDeleteAndOk,
+  createColumnItem,
+  showSettingsMenu,
+  testDisplayTitle,
+  testEditDescription,
+  testEditFieldTitle,
+  testPattern,
+  testRequired,
 } from '../../utils';
 
 test.describe('form item & create form', () => {

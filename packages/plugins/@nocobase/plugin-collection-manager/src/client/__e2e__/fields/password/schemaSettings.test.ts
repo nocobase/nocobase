@@ -1,9 +1,9 @@
 import {
-    Page,
-    expect,
-    expectSettingsMenu,
-    oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
-    test,
+  Page,
+  expect,
+  expectSettingsMenu,
+  oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
+  test,
 } from '@nocobase/test/e2e';
 import { createColumnItem, showSettingsMenu, testDefaultValue, testPattern, testSetValidationRules } from '../../utils';
 

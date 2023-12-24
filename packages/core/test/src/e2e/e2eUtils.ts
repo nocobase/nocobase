@@ -195,8 +195,8 @@ const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
 
 export class NocoPage {
   private url: string;
-  private uid: string;
-  private collectionsName: string[];
+  private uid: string | undefined;
+  private collectionsName: string[] | undefined;
   private _waitForInit: Promise<void>;
 
   constructor(
@@ -278,7 +278,7 @@ const _test = base.extend<ExtendUtils>({
     await use(mockManualDestroyPage);
   },
   createCollections: async ({ page }, use) => {
-    let collectionsName = [];
+    let collectionsName: string[] = [];
 
     const _createCollections = async (collectionSettings: CollectionSetting | CollectionSetting[]) => {
       collectionSettings = omitSomeFields(
@@ -295,7 +295,7 @@ const _test = base.extend<ExtendUtils>({
     }
   },
   mockCollections: async ({ page }, use) => {
-    let collectionsName = [];
+    let collectionsName: string[] = [];
     const destroy = async () => {
       if (collectionsName.length) {
         await deleteCollections(collectionsName);
@@ -312,7 +312,7 @@ const _test = base.extend<ExtendUtils>({
     await destroy();
   },
   mockCollection: async ({ page }, use) => {
-    let collectionsName = [];
+    let collectionsName: string[] = [];
     const destroy = async () => {
       if (collectionsName.length) {
         await deleteCollections(collectionsName);
@@ -618,41 +618,17 @@ const generateFakerData = (collectionSetting: CollectionSetting) => {
   };
   const result = {};
 
-  collectionSetting.fields.forEach((field) => {
-    if (excludeField.includes(field.name)) {
+  collectionSetting.fields?.forEach((field) => {
+    if (field.name && excludeField.includes(field.name)) {
       return;
     }
 
-    if (basicInterfaceToData[field.interface]) {
+    if (basicInterfaceToData[field.interface] && field.name) {
       result[field.name] = basicInterfaceToData[field.interface]();
     }
   });
 
   return result;
-};
-
-/**
- * 使用 Faker 为 collection 创建数据
- */
-const createFakerData = async (collectionSettings: CollectionSetting[]) => {
-  const api = await request.newContext({
-    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-  });
-
-  const state = await api.storageState();
-  const headers = getHeaders(state);
-
-  for (const item of collectionSettings) {
-    const data = generateFakerData(item);
-    const result = await api.post(`/api/${item.name}:create`, {
-      headers,
-      form: data,
-    });
-
-    if (!result.ok()) {
-      throw new Error(await result.text());
-    }
-  }
 };
 
 const createRandomData = async (collectionName: string, count = 10, data?: any) => {

@@ -1,9 +1,9 @@
 import {
-    Page,
-    expect,
-    expectSettingsMenu,
-    oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields,
-    test,
+  Page,
+  expect,
+  expectSettingsMenu,
+  oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields,
+  test,
 } from '@nocobase/test/e2e';
 import { createColumnItem, showSettingsMenu } from '../../utils';
 
@@ -29,9 +29,9 @@ test.describe('form item & create form', () => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields).waitForInit();
     await nocoPage.goto();
     await page.getByRole('button', { name: 'Add new' }).click();
-    await page.getByLabel(`block-item-CollectionField-general-form-general.'tableoid'-`).hover();
+    await page.getByLabel(`block-item-CollectionField-general-form-general.tableoid-`).hover();
     await page
-      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.'tableoid'`)
+      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.tableoid`)
       .hover();
     await expect(page.getByRole('menuitem', { name: 'Edit tooltip' })).toBeVisible();
   });

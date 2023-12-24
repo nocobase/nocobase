@@ -1,9 +1,9 @@
 import {
-    Page,
-    expect,
-    expectSettingsMenu,
-    oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields,
-    test,
+  Page,
+  expect,
+  expectSettingsMenu,
+  oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields,
+  test,
 } from '@nocobase/test/e2e';
 import { createColumnItem, showSettingsMenu } from '../../utils';
 
@@ -36,9 +36,9 @@ test.describe('form item & create form', () => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields).waitForInit();
     await nocoPage.goto();
     await page.getByRole('button', { name: 'Add new' }).click();
-    await page.getByLabel(`block-item-CollectionField-general-form-general.'createdAt'-`).hover();
+    await page.getByLabel(`block-item-CollectionField-general-form-general.createdAt-`).hover();
     await page
-      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.'createdAt'`)
+      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.createdAt`)
       .hover();
     await expect(page.getByRole('menuitem', { name: 'Edit tooltip' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Date display format' })).toBeVisible();

@@ -36,10 +36,10 @@ test.describe('form item & create form', () => {
       },
       showMenu: async () => {
         await page
-          .getByLabel(`block-item-CollectionField-general-form-general.'attachment'-'attachment'`, { exact: true })
+          .getByLabel(`block-item-CollectionField-general-form-general.attachment-attachment`, { exact: true })
           .hover();
         await page
-          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.'attachment'`, {
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.attachment`, {
             exact: true,
           })
           .hover();

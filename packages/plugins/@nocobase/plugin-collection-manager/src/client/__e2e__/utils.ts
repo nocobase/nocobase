@@ -1,4 +1,4 @@
-import { Page } from '@nocobase/test/e2e';
+import { Page, expect } from '@nocobase/test/e2e';
 
 export async function showSettingsMenu(page: Page, fieldName: string) {
   await page.getByRole('columnheader', { name: fieldName, exact: true }).hover();
@@ -97,7 +97,7 @@ export async function testDefaultValue({
     // 关闭弹窗，然后再次打开后，应该显示刚才设置的默认值
     await closeDialog();
     await openDialog();
-    await expectConstantValue();
+    await expectConstantValue?.();
   }
 
   if (variableValue) {
@@ -115,7 +115,7 @@ export async function testDefaultValue({
 
     await closeDialog();
     await openDialog();
-    await expectVariableValue();
+    await expectVariableValue?.();
   }
 }
 

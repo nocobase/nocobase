@@ -1,9 +1,9 @@
 import {
-    Page,
-    expect,
-    expectSettingsMenu,
-    oneTableBlockWithAddNewAndViewAndEditAndMediaFields,
-    test,
+  Page,
+  expect,
+  expectSettingsMenu,
+  oneTableBlockWithAddNewAndViewAndEditAndMediaFields,
+  test,
 } from '@nocobase/test/e2e';
 import { createColumnItem, showSettingsMenu, testDefaultValue, testPattern, testSetValidationRules } from '../../utils';
 
@@ -46,10 +46,10 @@ test.describe('form item & create form', () => {
       closeDialog: () => page.getByLabel('drawer-Action.Container-general-Add record-mask').click(),
       showMenu: async () => {
         await page
-          .getByLabel(`block-item-CollectionField-general-form-general.'richText'-'richText'`, { exact: true })
+          .getByLabel(`block-item-CollectionField-general-form-general.richText-richText`, { exact: true })
           .hover();
         await page
-          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.'richText'`, {
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.richText`, {
             exact: true,
           })
           .hover();
@@ -78,10 +78,10 @@ test.describe('form item & create form', () => {
       },
       showMenu: async () => {
         await page
-          .getByLabel(`block-item-CollectionField-general-form-general.'richText'-'richText'`, { exact: true })
+          .getByLabel(`block-item-CollectionField-general-form-general.richText-richText`, { exact: true })
           .hover();
         await page
-          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.'richText'`, {
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.richText`, {
             exact: true,
           })
           .hover();
@@ -120,10 +120,10 @@ test.describe('form item & create form', () => {
       },
       showMenu: async () => {
         await page
-          .getByLabel(`block-item-CollectionField-general-form-general.'markdown'-'markdown'`, { exact: true })
+          .getByLabel(`block-item-CollectionField-general-form-general.markdown-markdown`, { exact: true })
           .hover();
         await page
-          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.'markdown'`, {
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.markdown`, {
             exact: true,
           })
           .hover();
