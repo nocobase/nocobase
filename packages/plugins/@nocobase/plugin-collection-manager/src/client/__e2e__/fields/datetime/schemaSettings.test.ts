@@ -6,7 +6,7 @@ import {
   test,
 } from '@nocobase/test/client';
 import dayjs from 'dayjs';
-import { createColumnItem, showSettingsMenu, testDefaultValue, testPattern } from '../utils';
+import { createColumnItem, showSettingsMenu, testDefaultValue, testPattern } from '../../utils';
 
 test.describe('form item & create form', () => {
   test('supported options', async ({ page, mockPage }) => {

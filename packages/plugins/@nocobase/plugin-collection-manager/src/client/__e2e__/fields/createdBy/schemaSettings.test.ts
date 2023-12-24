@@ -5,7 +5,7 @@ import {
   oneTableBlockWithAddNewAndViewAndEditAndSystemInfoFields,
   test,
 } from '@nocobase/test/client';
-import { createColumnItem, showSettingsMenu } from '../utils';
+import { createColumnItem, showSettingsMenu } from '../../utils';
 
 test.describe('form item & create form', () => {
   test('supported options', async ({ page, mockPage }) => {

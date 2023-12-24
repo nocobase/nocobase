@@ -14,7 +14,7 @@ import {
   testEditFieldTitle,
   testPattern,
   testRequired,
-} from '../utils';
+} from '../../utils';
 
 test.describe('form item & create form', () => {
   test('set default value', async ({ page, mockPage, mockRecord }) => {
