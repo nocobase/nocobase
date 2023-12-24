@@ -127,52 +127,36 @@ test.describe('form item & edit form', () => {
   });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
-    let record = null;
+    let record: any = null;
     await testPattern({
       page,
       gotoPage: async () => {
-        record = await (async (mockPage, mockRecord) => {
-          const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-          const record = await mockRecord('general');
-          await nocoPage.goto();
-
-          return record;
-        })(mockPage, mockRecord);
+        const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
+        record = await mockRecord('general');
+        await nocoPage.goto();
       },
-      openDialog: () =>
-        (async (page: Page) => {
-          await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
-        })(page),
-      showMenu: () =>
-        (async (page: Page, fieldName: string) => {
-          await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-          await page
-            .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-            .hover();
-        })(page, 'icon'),
+      openDialog: async () => {
+        await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
+      },
+      showMenu: async () => {
+        await page.getByLabel(`block-item-CollectionField-general-form-general.icon-icon`).hover();
+        await page
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.icon`)
+          .hover();
+      },
       expectEditable: async () => {
         // 默认情况下可以编辑图标
         await page.getByRole('button', { name: 'Select icon' }).click();
         await page.getByLabel('account-book').locator('svg').click();
       },
       expectReadonly: async () => {
-        // 只读模式下，选择图标按钮会被禁用
-        if (record.icon) {
-          await expect(page.getByRole('button', { name: record.icon })).toBeDisabled();
-        } else {
-          await expect(page.getByRole('button', { name: 'Select icon' })).toBeDisabled();
-        }
+        await expect(page.getByRole('button', { name: 'account-book' })).toBeDisabled();
       },
       expectEasyReading: async () => {
-        // 按钮会消失，只剩下图标
-        if (record.icon) {
-          await expect(page.getByRole('button', { name: record.icon })).not.toBeVisible();
-          await expect(
-            page.getByLabel('block-item-CollectionField-general-form-general.icon-icon').getByLabel(record.icon),
-          ).toBeVisible();
-        } else {
-          await expect(page.getByRole('button', { name: 'Select icon' })).not.toBeVisible();
-        }
+        await expect(page.getByRole('button', { name: 'account-book' })).not.toBeVisible();
+        await expect(
+          page.getByLabel('block-item-CollectionField-general-form-general.icon-icon').getByLabel('account-book'),
+        ).toBeVisible();
       },
     });
   });

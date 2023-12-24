@@ -81,7 +81,7 @@ test.describe('form item & edit form', () => {
   });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
-    let record = null;
+    let record: any = null;
     await testPattern({
       page,
       gotoPage: async () => {
@@ -154,9 +154,15 @@ test.describe('form item & view form', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
-        await page.getByLabel(`block-item-CollectionField-general-form-general.attachment-attachment`).hover();
+        // 这里是为了等弹窗中的内容渲染稳定后，再去 hover，防止错位导致测试报错
+        await page.waitForTimeout(1000);
         await page
-          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.attachment`)
+          .getByLabel(`block-item-CollectionField-general-form-general.attachment-attachment`, { exact: true })
+          .hover();
+        await page
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.attachment`, {
+            exact: true,
+          })
           .hover();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Delete', 'Edit tooltip', 'Size'],
@@ -172,9 +178,7 @@ test.describe('form item & view form', () => {
 
       return record;
     })(mockPage, mockRecord);
-    await (async (page: Page) => {
-      await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
-    })(page);
+    await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
 
     // 默认尺寸
     // 这里的尺寸不稳定，所以用 try catch 来处理
@@ -205,18 +209,16 @@ test.describe('form item & view form', () => {
           .first(),
       ).toHaveJSProperty('offsetWidth', value, { timeout: 1000 });
     };
-    await (async (page: Page, fieldName: string) => {
-      // 这里是为了等弹窗中的内容渲染稳定后，再去 hover，防止错位导致测试报错
-      await page.waitForTimeout(1000);
-      await page
-        .getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`, { exact: true })
-        .hover();
-      await page
-        .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`, {
-          exact: true,
-        })
-        .hover();
-    })(page, 'attachment');
+    // 这里是为了等弹窗中的内容渲染稳定后，再去 hover，防止错位导致测试报错
+    await page.waitForTimeout(1000);
+    await page
+      .getByLabel(`block-item-CollectionField-general-form-general.attachment-attachment`, { exact: true })
+      .hover();
+    await page
+      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.attachment`, {
+        exact: true,
+      })
+      .hover();
     await page.getByRole('menuitem', { name: 'Size' }).click();
     await page.getByRole('option', { name: 'Large' }).click();
     try {

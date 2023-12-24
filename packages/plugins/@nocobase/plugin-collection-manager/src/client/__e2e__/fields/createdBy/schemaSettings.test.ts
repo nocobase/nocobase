@@ -21,14 +21,7 @@ test.describe('form item & create form', () => {
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.createdBy`)
           .hover();
       },
-      supportedOptions: [
-        'Edit field title',
-        'Display title',
-        'Edit tooltip',
-        'Pattern',
-        'Date display format',
-        'Delete',
-      ],
+      supportedOptions: ['Edit field title', 'Display title', 'Edit tooltip', 'Enable link', 'Pattern', 'Delete'],
     });
   });
 

@@ -142,25 +142,19 @@ test.describe('form item & edit form', () => {
     await testPattern({
       page,
       gotoPage: async () => {
-        record = await (async (mockPage, mockRecord) => {
-          const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-          const record = await mockRecord('general');
-          await nocoPage.goto();
-
-          return record;
-        })(mockPage, mockRecord);
+        const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
+        record = await mockRecord('general');
+        await nocoPage.goto();
       },
-      openDialog: () =>
-        (async (page: Page) => {
-          await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
-        })(page),
-      showMenu: () =>
-        (async (page: Page, fieldName: string) => {
-          await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-          await page
-            .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-            .hover();
-        })(page, 'phone'),
+      openDialog: async () => {
+        await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
+      },
+      showMenu: async () => {
+        await page.getByLabel(`block-item-CollectionField-general-form-general.phone-phone`).hover();
+        await page
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.phone`)
+          .hover();
+      },
       expectEditable: async () => {
         // 默认情况下可以编辑
         await page
@@ -184,7 +178,7 @@ test.describe('form item & edit form', () => {
           page.getByLabel('block-item-CollectionField-general-form-general.phone-phone').getByRole('textbox'),
         ).not.toBeVisible();
         await expect(page.getByLabel('block-item-CollectionField-general-form-general.phone-phone')).toHaveText(
-          'phone:',
+          'phone:17777777777',
         );
       },
     });

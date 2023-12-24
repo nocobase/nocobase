@@ -18,7 +18,9 @@ test.describe('form item & create form', () => {
         await page.getByRole('button', { name: 'Add new' }).click();
         await page.getByLabel(`block-item-CollectionField-general-form-general.checkbox-checkbox`).hover();
         await page
-          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.checkbox`)
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.checkbox`, {
+            exact: true,
+          })
           .hover();
       },
       supportedOptions: [
@@ -145,7 +147,7 @@ test.describe('form item & edit form', () => {
   });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
-    let record = null;
+    let record: any = null;
     await testPattern({
       page,
       gotoPage: async () => {
@@ -210,7 +212,9 @@ test.describe('form item & view form', () => {
         await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
         await page.getByLabel(`block-item-CollectionField-general-form-general.checkbox-checkbox`).hover();
         await page
-          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.checkbox`)
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.checkbox`, {
+            exact: true,
+          })
           .hover();
       },
       supportedOptions: ['Edit field title', 'Display title', 'Delete', 'Edit tooltip'],

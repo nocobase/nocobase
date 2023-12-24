@@ -250,6 +250,8 @@ test.describe('form item & view form', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
+        // 等待页面稳定
+        await page.waitForTimeout(1000);
         await page.getByLabel(`block-item-CollectionField-general-form-general.richText-richText`).hover();
         await page
           .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.richText`)

@@ -171,29 +171,23 @@ test.describe('form item & edit form', () => {
   });
 
   test('pattern', async ({ page, mockPage, mockRecord }) => {
-    let record = null;
+    let record: any = null;
     await testPattern({
       page,
       gotoPage: async () => {
-        record = await (async (mockPage, mockRecord) => {
-          const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-          const record = await mockRecord('general');
-          await nocoPage.goto();
-
-          return record;
-        })(mockPage, mockRecord);
+        const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
+        record = await mockRecord('general');
+        await nocoPage.goto();
       },
-      openDialog: () =>
-        (async (page: Page) => {
-          await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
-        })(page),
-      showMenu: () =>
-        (async (page: Page, fieldName: string) => {
-          await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-          await page
-            .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-            .hover();
-        })(page, 'longText'),
+      openDialog: async () => {
+        await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
+      },
+      showMenu: async () => {
+        await page.getByLabel(`block-item-CollectionField-general-form-general.longText-longText`).hover();
+        await page
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.longText`)
+          .hover();
+      },
       expectEditable: async () => {
         // 应该显示 record 中的值
         await expect(
@@ -221,7 +215,7 @@ test.describe('form item & edit form', () => {
           page.getByLabel('block-item-CollectionField-general-form-general.longText-longText').getByRole('textbox'),
         ).not.toBeVisible();
         await expect(page.getByLabel('block-item-CollectionField-general-form-general.longText-longText')).toHaveText(
-          `longText:${record.longText}`.replaceAll('\n', ''),
+          `longText:test long text`,
         );
       },
     });
