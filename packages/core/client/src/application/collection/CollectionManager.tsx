@@ -99,7 +99,7 @@ export class CollectionManagerV2 {
     this.checkNamespace(ns);
     if (path.split('.').length > 1) {
       // 获取到关联字段
-      const associationField = this.getCollectionField(path);
+      const associationField = await this.getCollectionField(path);
 
       return this.getCollection(associationField.target, { ns });
     }
@@ -109,12 +109,12 @@ export class CollectionManagerV2 {
     const res = await this.getCollection(path, options);
     return res?.name;
   }
-  removeCollection(path: string, options: GetCollectionOptions = {}) {
+  async removeCollection(path: string, options: GetCollectionOptions = {}) {
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
     this.checkNamespace(ns);
     if (path.split('.').length > 1) {
       // 获取到关联字段
-      const associationField = this.getCollectionField(path);
+      const associationField = await this.getCollectionField(path);
 
       return this.removeCollection(associationField.target, { ns });
     }
@@ -127,7 +127,10 @@ export class CollectionManagerV2 {
    * getCollection('users.username'); // 获取 users 表的 username 字段
    * getCollection('a.b.c'); // 获取 a 表的 b 字段的关联表，然后 b.target 表对应的 c 字段
    */
-  getCollectionField(path: string, options: GetCollectionOptions = {}): CollectionFieldOptions | undefined {
+  async getCollectionField(
+    path: string,
+    options: GetCollectionOptions = {},
+  ): Promise<CollectionFieldOptions | undefined> {
     const arr = path.split('.');
     if (arr.length < 2) {
       throw new Error(`[@nocobase/client]: CollectionManager.getCollectionField() path "${path}" is invalid`);
@@ -135,7 +138,7 @@ export class CollectionManagerV2 {
     const [collectionName, fieldName, ...otherFieldNames] = path.split('.');
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options || {};
     this.checkNamespace(ns);
-    const collection = this.getCollection(collectionName, { ns });
+    const collection = await this.getCollection(collectionName, { ns });
     if (!collection) {
       return;
     }

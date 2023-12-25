@@ -34,8 +34,8 @@ class CollectionManagerV2 {
   getCollections(ns?: string, predicate?: (collection: CollectionV2) => boolean): CollectionV2[]
   async getCollection(path: string, options?: GetCollectionOptions): Promise<CollectionV2 | undefined>
   async getCollectionName(path: string, options?: GetCollectionOptions): Promise<string | undefined>;
-  removeCollection(path: string, options?: GetCollectionOptions): void;
-  getCollectionField(path: string, options?: GetCollectionOptions): CollectionFieldOptions | undefined;
+  async removeCollection(path: string, options?: GetCollectionOptions): void;
+  async getCollectionField(path: string, options?: GetCollectionOptions): Promise<CollectionFieldOptions | undefined>;
 
   addCollectionFieldInterfaces(interfaces:CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[]): void;
   getCollectionFieldInterfaces(): CollectionFieldInterfaceV2[]
@@ -461,7 +461,7 @@ collectionManager.getCollectionName('users.profileId'); // 'profiles'
 
 ```tsx | pure
 class CollectionManagerV2 {
-  removeCollection(path: string, options?: GetCollectionOptions): void;
+  async removeCollection(path: string, options?: GetCollectionOptions): void;
 }
 ```
 
@@ -479,7 +479,7 @@ collectionManager.removeCollection('users');
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollectionField(path: string, options?: GetCollectionOptions): CollectionFieldOptions | undefined;
+  async getCollectionField(path: string, options?: GetCollectionOptions): CollectionFieldOptions | undefined;
 }
 ```
 
