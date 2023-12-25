@@ -28,3 +28,6 @@ packages/app/client/src/.plugins
 docker
 storage
 benchmark
+packages/*/*/plugin-workflow*/src/client/__tests__/*
+packages/*/*/plugin-workflow*/src/client/__e2e__/*
+packages/*/*/plugin-workflow*/src/client/e2eUtils.ts

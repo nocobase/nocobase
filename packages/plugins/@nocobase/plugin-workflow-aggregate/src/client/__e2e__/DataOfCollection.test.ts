@@ -79,7 +79,7 @@ test('Collection event add data trigger, aggregated data table, no filtering, no
     await aggregateRecordNode.collectionDropDown.click();
     await page.getByText(aggregateNodeCollectionDisplayName).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
-    page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
+    await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.submitButton.click();
 
     // 2、测试步骤：添加数据触发工作流
@@ -151,7 +151,7 @@ test('Collection event add data trigger, aggregated data table, no filtering, no
     await aggregateRecordNode.collectionDropDown.click();
     await page.getByText(aggregateNodeCollectionDisplayName).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
-    page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
+    await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.submitButton.click();
 
     // 2、测试步骤：添加数据触发工作流
@@ -226,7 +226,7 @@ test('Collection event add data trigger, aggregated data table, no filtering, no
     await aggregateRecordNode.collectionDropDown.click();
     await page.getByText(aggregateNodeCollectionDisplayName).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
-    page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
+    await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.submitButton.click();
 
     // 2、测试步骤：添加数据触发工作流
@@ -302,7 +302,7 @@ test('Collection event add data trigger, aggregated data table, no filtering, no
     await aggregateRecordNode.collectionDropDown.click();
     await page.getByText(aggregateNodeCollectionDisplayName).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
-    page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
+    await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.submitButton.click();
 
     // 2、测试步骤：添加数据触发工作流
@@ -378,7 +378,7 @@ test('Collection event add data trigger, aggregated data table, no filtering, no
     await aggregateRecordNode.collectionDropDown.click();
     await page.getByText(aggregateNodeCollectionDisplayName).click();
     await aggregateRecordNode.aggregatedFieldDropDown.click();
-    page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
+    await page.getByRole('option', { name: aggregateNodeFieldDisplayName }).click();
     await aggregateRecordNode.submitButton.click();
 
     // 2、测试步骤：添加数据触发工作流
