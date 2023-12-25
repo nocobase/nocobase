@@ -1,38 +1,7 @@
-import { apiCreateWorkflow } from '@nocobase/plugin-workflow-test/client';
-import { apiUpdateWorkflow } from '@nocobase/plugin-workflow-test/client';
-import { apiDeleteWorkflow } from '@nocobase/plugin-workflow-test/client';
-import { apiGetWorkflow } from '@nocobase/plugin-workflow-test/client';
-import { apiUpdateWorkflowTrigger } from '@nocobase/plugin-workflow-test/client';
-import { apiGetWorkflowNodeExecutions } from '@nocobase/plugin-workflow-test/client';
-import { apiCreateWorkflowNode } from '@nocobase/plugin-workflow-test/client';
-import { apiUpdateWorkflowNode } from '@nocobase/plugin-workflow-test/client';
-import { apiGetWorkflowNode } from '@nocobase/plugin-workflow-test/client';
-import { apiUpdateRecord } from '@nocobase/plugin-workflow-test/client';
-import { apiGetRecord } from '@nocobase/plugin-workflow-test/client';
-import { apiGetList } from '@nocobase/plugin-workflow-test/client';
-import { CreateWorkFlow } from '@nocobase/plugin-workflow-test/client';
-import { EditWorkFlow } from '@nocobase/plugin-workflow-test/client';
-import { WorkflowManagement } from '@nocobase/plugin-workflow-test/client';
-import { WorkflowListRecords } from '@nocobase/plugin-workflow-test/client';
-import { ApprovalTriggerNode } from '@nocobase/plugin-workflow-test/client';
-import { ApprovalNode } from '@nocobase/plugin-workflow-test/client';
-import { ScheduleTriggerNode } from '@nocobase/plugin-workflow-test/client';
-import { CollectionTriggerNode } from '@nocobase/plugin-workflow-test/client';
-import { FormEventTriggerNode } from '@nocobase/plugin-workflow-test/client';
-import { ClculationNode } from '@nocobase/plugin-workflow-test/client';
-import { QueryRecordNode } from '@nocobase/plugin-workflow-test/client';
-import { CreateRecordNode } from '@nocobase/plugin-workflow-test/client';
-import { UpdateRecordNode } from '@nocobase/plugin-workflow-test/client';
-import { DeleteRecordNode } from '@nocobase/plugin-workflow-test/client';
-import { AggregateNode } from '@nocobase/plugin-workflow-test/client';
-import { ManualNode } from '@nocobase/plugin-workflow-test/client';
-import { ConditionYesNode } from '@nocobase/plugin-workflow-test/client';
-import { ConditionBranchNode } from '@nocobase/plugin-workflow-test/client';
-import { generalWithNoRelationalFields } from '@nocobase/plugin-workflow-test/client';
-import { appendJsonCollectionName } from '@nocobase/plugin-workflow-test/client';
+import { faker } from '@faker-js/faker';
+import { CreateWorkFlow, EditWorkFlow, ScheduleTriggerNode, WorkflowListRecords, apiCreateWorkflow, apiDeleteWorkflow, apiGetWorkflow, apiUpdateWorkflowTrigger, appendJsonCollectionName, generalWithNoRelationalFields } from '@nocobase/plugin-workflow-test/e2e';
 import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
-import { faker } from '@faker-js/faker';
 
 test.describe('Filter', () => {
     test('filter workflow name', async ({ page }) => {

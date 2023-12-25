@@ -5,13 +5,13 @@ const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
 
 // 创建工作流
 export const apiCreateWorkflow = async (data: any) => {
-    const api = await request.newContext({
-        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-    });
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
 
-    const state = await api.storageState();
-    const headers = getHeaders(state);
-    /*
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  /*
     {
         "current": true,
         "options": {
@@ -21,15 +21,15 @@ export const apiCreateWorkflow = async (data: any) => {
         "type": "collection"
     }
     */
-    const result = await api.post(`/api/workflows:create`, {
-        headers,
-        data,
-    });
+  const result = await api.post(`/api/workflows:create`, {
+    headers,
+    data,
+  });
 
-    if (!result.ok()) {
-        throw new Error(await result.text());
-    }
-    /*
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
         {
             "data": {
                 "id": 74,
@@ -51,18 +51,18 @@ export const apiCreateWorkflow = async (data: any) => {
             }
         }
     */
-    return (await result.json()).data;
-}
+  return (await result.json()).data;
+};
 
 // 更新工作流
 export const apiUpdateWorkflow = async (id: number, data: any) => {
-    const api = await request.newContext({
-        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-    });
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
 
-    const state = await api.storageState();
-    const headers = getHeaders(state);
-    /*
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  /*
         {
             "id": 74,
             "key": "il2nu3ovj53",
@@ -81,15 +81,15 @@ export const apiUpdateWorkflow = async (id: number, data: any) => {
             "useTransaction": true
         }
     */
-    const result = await api.post(`/api/workflows:update?filterByTk=${id}`, {
-        headers,
-        data,
-    });
+  const result = await api.post(`/api/workflows:update?filterByTk=${id}`, {
+    headers,
+    data,
+  });
 
-    if (!result.ok()) {
-        throw new Error(await result.text());
-    }
-    /*{
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*{
         "data": [
             {
                 "id": 72,
@@ -111,46 +111,46 @@ export const apiUpdateWorkflow = async (id: number, data: any) => {
             }
         ]
     }*/
-    return (await result.json()).data;
-}
+  return (await result.json()).data;
+};
 
 // 删除工作流
 export const apiDeleteWorkflow = async (id: number) => {
-    const api = await request.newContext({
-        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-    });
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
 
-    const state = await api.storageState();
-    const headers = getHeaders(state);
+  const state = await api.storageState();
+  const headers = getHeaders(state);
 
-    const result = await api.post(`/api/workflows:destroy?filterByTk=${id}`, {
-        headers,
-    });
+  const result = await api.post(`/api/workflows:destroy?filterByTk=${id}`, {
+    headers,
+  });
 
-    if (!result.ok()) {
-        throw new Error(await result.text());
-    }
-    // {"data":1}
-    return (await result.json()).data;
-}
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  // {"data":1}
+  return (await result.json()).data;
+};
 
 // 查询工作流
 export const apiGetWorkflow = async (id: number) => {
-    const api = await request.newContext({
-        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-    });
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
 
-    const state = await api.storageState();
-    const headers = getHeaders(state);
+  const state = await api.storageState();
+  const headers = getHeaders(state);
 
-    const result = await api.get(`/api/workflows:get?filterByTk=${id}`, {
-        headers,
-    });
+  const result = await api.get(`/api/workflows:get?filterByTk=${id}`, {
+    headers,
+  });
 
-    if (!result.ok()) {
-        throw new Error(await result.text());
-    }
-    /*
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
     {
         "data": {
             "id": 73,
@@ -170,18 +170,18 @@ export const apiGetWorkflow = async (id: number) => {
         }
     }
     */
-    return (await result.json()).data;
-}
+  return (await result.json()).data;
+};
 
 // 更新工作流触发器节点
 export const apiUpdateWorkflowTrigger = async (id: number, data: any) => {
-    const api = await request.newContext({
-        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-    });
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
 
-    const state = await api.storageState();
-    const headers = getHeaders(state);
-    /*
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  /*
     {
         "config": {
             "appends": [
@@ -202,15 +202,15 @@ export const apiUpdateWorkflowTrigger = async (id: number, data: any) => {
         }
     }
     */
-    const result = await api.post(`/api/workflows:update?filterByTk=${id}`, {
-        headers,
-        data,
-    });
+  const result = await api.post(`/api/workflows:update?filterByTk=${id}`, {
+    headers,
+    data,
+  });
 
-    if (!result.ok()) {
-        throw new Error(await result.text());
-    }
-    /*
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
     {
         "data": [
             {
@@ -248,18 +248,18 @@ export const apiUpdateWorkflowTrigger = async (id: number, data: any) => {
         ]
     }
     */
-    return (await result.json()).data;
-}
+  return (await result.json()).data;
+};
 
 // 添加工作流节点
 export const apiCreateWorkflowNode = async (workflowId: number, data: any) => {
-    const api = await request.newContext({
-        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-    });
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
 
-    const state = await api.storageState();
-    const headers = getHeaders(state);
-    /*upstreamId前置节点id ,null代表再触发器节点后面增加节点
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  /*upstreamId前置节点id ,null代表再触发器节点后面增加节点
         {
         "type": "calculation",
         "upstreamId": 263,
@@ -268,15 +268,15 @@ export const apiCreateWorkflowNode = async (workflowId: number, data: any) => {
         "config": {}
         }
     */
-    const result = await api.post(`/api/workflows/${workflowId}/nodes:create`, {
-        headers,
-        data,
-    });
+  const result = await api.post(`/api/workflows/${workflowId}/nodes:create`, {
+    headers,
+    data,
+  });
 
-    if (!result.ok()) {
-        throw new Error(await result.text());
-    }
-    /*
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
     {
         "data": {
             "id": 265,
@@ -293,26 +293,26 @@ export const apiCreateWorkflowNode = async (workflowId: number, data: any) => {
         }
     }
     */
-    return (await result.json()).data;
-}
+  return (await result.json()).data;
+};
 
 // 查询工作流节点
 export const apiGetWorkflowNode = async (id: number) => {
-    const api = await request.newContext({
-        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-    });
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
 
-    const state = await api.storageState();
-    const headers = getHeaders(state);
+  const state = await api.storageState();
+  const headers = getHeaders(state);
 
-    const result = await api.get(`/api/flow_nodes:get?filterByTk=${id}`, {
-        headers,
-    });
+  const result = await api.get(`/api/flow_nodes:get?filterByTk=${id}`, {
+    headers,
+  });
 
-    if (!result.ok()) {
-        throw new Error(await result.text());
-    }
-    /*
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
     {
         "data": {
             "id": 267,
@@ -346,18 +346,18 @@ export const apiGetWorkflowNode = async (id: number) => {
         }
     }
     */
-    return (await result.json()).data;
-}
+  return (await result.json()).data;
+};
 
 // 更新工作流节点配置
 export const apiUpdateWorkflowNode = async (id: number, data: any) => {
-    const api = await request.newContext({
-        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-    });
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
 
-    const state = await api.storageState();
-    const headers = getHeaders(state);
-    /*
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  /*
     {
     "config": {
         "engine": "math.js",
@@ -365,15 +365,15 @@ export const apiUpdateWorkflowNode = async (id: number, data: any) => {
         }
     }
      */
-    const result = await api.post(`/api/flow_nodes:update?filterByTk=${id}`, {
-        headers,
-        data,
-    });
+  const result = await api.post(`/api/flow_nodes:update?filterByTk=${id}`, {
+    headers,
+    data,
+  });
 
-    if (!result.ok()) {
-        throw new Error(await result.text());
-    }
-    /*
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
     {
         "data": [
             {
@@ -395,26 +395,26 @@ export const apiUpdateWorkflowNode = async (id: number, data: any) => {
         ]
     }
     */
-    return (await result.json()).data;
-}
+  return (await result.json()).data;
+};
 
 // 查询节点执行历史
 export const apiGetWorkflowNodeExecutions = async (id: number) => {
-    const api = await request.newContext({
-        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-    });
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
 
-    const state = await api.storageState();
-    const headers = getHeaders(state);
-    const url = `/api/executions:list?appends[]=jobs&filter[workflowId]=${id}&fields=id,createdAt,updatedAt,key,useTransaction,status,workflowId,jobs`;
-    const result = await api.get(url, {
-        headers,
-    });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const url = `/api/executions:list?appends[]=jobs&filter[workflowId]=${id}&fields=id,createdAt,updatedAt,key,useTransaction,status,workflowId,jobs`;
+  const result = await api.get(url, {
+    headers,
+  });
 
-    if (!result.ok()) {
-        throw new Error(await result.text());
-    }
-    /*
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
         {
             "data": [
                 {
@@ -488,25 +488,25 @@ export const apiGetWorkflowNodeExecutions = async (id: number) => {
             }
         }
     */
-    return (await result.json()).data;
-}
+  return (await result.json()).data;
+};
 
 // 更新业务表单条数据
 export const apiUpdateRecord = async (collectionName: string, id: number, data: any) => {
-    const api = await request.newContext({
-        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-    });
-    const state = await api.storageState();
-    const headers = getHeaders(state);
-    const result = await api.post(`/api/${collectionName}:update?filterByTk=${id}`, {
-        headers,
-        data,
-    });
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const result = await api.post(`/api/${collectionName}:update?filterByTk=${id}`, {
+    headers,
+    data,
+  });
 
-    if (!result.ok()) {
-        throw new Error(await result.text());
-    }
-    /*
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
         {
             "data": [
                 {
@@ -521,24 +521,24 @@ export const apiUpdateRecord = async (collectionName: string, id: number, data: 
             ]
         }
     */
-    return (await result.json()).data;
-}
+  return (await result.json()).data;
+};
 
 // 查询业务表单条数据
 export const apiGetRecord = async (collectionName: string, id: number) => {
-    const api = await request.newContext({
-        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-    });
-    const state = await api.storageState();
-    const headers = getHeaders(state);
-    const result = await api.get(`/api/${collectionName}:get?filterByTk=${id}`, {
-        headers,
-    });
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const result = await api.get(`/api/${collectionName}:get?filterByTk=${id}`, {
+    headers,
+  });
 
-    if (!result.ok()) {
-        throw new Error(await result.text());
-    }
-    /*
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
         {
             "data": {
                 "id": 1,
@@ -564,24 +564,24 @@ export const apiGetRecord = async (collectionName: string, id: number) => {
             }
         }
     */
-    return (await result.json()).data;
-}
+  return (await result.json()).data;
+};
 
 // 查询业务表list
 export const apiGetList = async (collectionName: string) => {
-    const api = await request.newContext({
-        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-    });
-    const state = await api.storageState();
-    const headers = getHeaders(state);
-    const result = await api.get(`/api/${collectionName}:list`, {
-        headers,
-    });
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const result = await api.get(`/api/${collectionName}:list`, {
+    headers,
+  });
 
-    if (!result.ok()) {
-        throw new Error(await result.text());
-    }
-    /*
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
         {
             "data": [
                 {
@@ -602,32 +602,32 @@ export const apiGetList = async (collectionName: string) => {
             }
         }
     */
-    return (await result.json());
-}
+  return await result.json();
+};
 
 // 添加业务表单条数据触发工作流表单事件,triggerWorkflows=key1!field,key2,key3!field.subfield
-export const apiCreateRecordTriggerFormEvent = async (collectionName: string,triggerWorkflows:string, data: any) => {
-    const api = await request.newContext({
-        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-    });
-    const state = await api.storageState();
-    const headers = getHeaders(state);
-    /*
+export const apiCreateRecordTriggerFormEvent = async (collectionName: string, triggerWorkflows: string, data: any) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  /*
     {
         "title": "a11",
         "enabled": true,
         "description": null
     }
     */
-    const result = await api.post(`/api/${collectionName}:create?triggerWorkflows=${triggerWorkflows}`, {
-        headers,
-        data,
-    });
+  const result = await api.post(`/api/${collectionName}:create?triggerWorkflows=${triggerWorkflows}`, {
+    headers,
+    data,
+  });
 
-    if (!result.ok()) {
-        throw new Error(await result.text());
-    }
-    /*
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
         {
             "data": {
                 "id": 1,
@@ -653,95 +653,95 @@ export const apiCreateRecordTriggerFormEvent = async (collectionName: string,tri
             }
         }
     */
-    return (await result.json()).data;
-}
+  return (await result.json()).data;
+};
 
 // 提交至工作流触发工作流表单事件
-export const apiSubmitRecordTriggerFormEvent = async (triggerWorkflows:string, data: any) => {
-    const api = await request.newContext({
-        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-    });
-    const state = await api.storageState();
-    const headers = getHeaders(state);
-    /*
+export const apiSubmitRecordTriggerFormEvent = async (triggerWorkflows: string, data: any) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  /*
     {
         "title": "a11",
         "enabled": true,
         "description": null
     }
     */
-    const result = await api.post(`/api/workflows:trigger?triggerWorkflows=${triggerWorkflows}`, {
-        headers,
-        data,
-    });
+  const result = await api.post(`/api/workflows:trigger?triggerWorkflows=${triggerWorkflows}`, {
+    headers,
+    data,
+  });
 
-    if (!result.ok()) {
-        throw new Error(await result.text());
-    }
-    /*
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
     {}
     */
-    return (await result.json());
-}
+  return await result.json();
+};
 
 const getStorageItem = (key: string, storageState: any) => {
-    return storageState.origins
-        .find((item) => item.origin === APP_BASE_URL)
-        ?.localStorage.find((item) => item.name === key)?.value;
+  return storageState.origins
+    .find((item) => item.origin === APP_BASE_URL)
+    ?.localStorage.find((item) => item.name === key)?.value;
 };
 
 function getHeaders(storageState: any) {
-    const headers: any = {};
-    const token = getStorageItem('NOCOBASE_TOKEN', storageState);
-    const auth = getStorageItem('NOCOBASE_AUTH', storageState);
-    const subAppName = new URL(APP_BASE_URL).pathname.match(/^\/apps\/([^/]*)\/*/)?.[1];
-    const hostName = new URL(APP_BASE_URL).host;
-    const locale = getStorageItem('NOCOBASE_LOCALE', storageState);
-    const timezone = '+08:00';
-    const withAclMeta = 'true';
-    const role = getStorageItem('NOCOBASE_ROLE', storageState);
+  const headers: any = {};
+  const token = getStorageItem('NOCOBASE_TOKEN', storageState);
+  const auth = getStorageItem('NOCOBASE_AUTH', storageState);
+  const subAppName = new URL(APP_BASE_URL).pathname.match(/^\/apps\/([^/]*)\/*/)?.[1];
+  const hostName = new URL(APP_BASE_URL).host;
+  const locale = getStorageItem('NOCOBASE_LOCALE', storageState);
+  const timezone = '+08:00';
+  const withAclMeta = 'true';
+  const role = getStorageItem('NOCOBASE_ROLE', storageState);
 
-    if (token) {
-        headers.Authorization = `Bearer ${token}`;
-    }
-    if (auth) {
-        headers['X-Authenticator'] = auth;
-    }
-    if (subAppName) {
-        headers['X-App'] = subAppName;
-    }
-    if (hostName) {
-        headers['X-Hostname'] = hostName;
-    }
-    if (locale) {
-        headers['X-Locale'] = locale;
-    }
-    if (timezone) {
-        headers['X-Timezone'] = timezone;
-    }
-    if (withAclMeta) {
-        headers['X-With-Acl-Meta'] = withAclMeta;
-    }
-    if (role) {
-        headers['X-Role'] = role;
-    }
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  if (auth) {
+    headers['X-Authenticator'] = auth;
+  }
+  if (subAppName) {
+    headers['X-App'] = subAppName;
+  }
+  if (hostName) {
+    headers['X-Hostname'] = hostName;
+  }
+  if (locale) {
+    headers['X-Locale'] = locale;
+  }
+  if (timezone) {
+    headers['X-Timezone'] = timezone;
+  }
+  if (withAclMeta) {
+    headers['X-With-Acl-Meta'] = withAclMeta;
+  }
+  if (role) {
+    headers['X-Role'] = role;
+  }
 
-    return headers;
+  return headers;
 }
 
 export default module.exports = {
-    apiCreateWorkflow,
-    apiUpdateWorkflow,
-    apiDeleteWorkflow,
-    apiGetWorkflow,
-    apiUpdateWorkflowTrigger,
-    apiGetWorkflowNodeExecutions,
-    apiCreateWorkflowNode,
-    apiUpdateWorkflowNode,
-    apiGetWorkflowNode,
-    apiUpdateRecord,
-    apiGetRecord,
-    apiGetList,
-    apiCreateRecordTriggerFormEvent,
-    apiSubmitRecordTriggerFormEvent
+  apiCreateWorkflow,
+  apiUpdateWorkflow,
+  apiDeleteWorkflow,
+  apiGetWorkflow,
+  apiUpdateWorkflowTrigger,
+  apiGetWorkflowNodeExecutions,
+  apiCreateWorkflowNode,
+  apiUpdateWorkflowNode,
+  apiGetWorkflowNode,
+  apiUpdateRecord,
+  apiGetRecord,
+  apiGetList,
+  apiCreateRecordTriggerFormEvent,
+  apiSubmitRecordTriggerFormEvent,
 };
