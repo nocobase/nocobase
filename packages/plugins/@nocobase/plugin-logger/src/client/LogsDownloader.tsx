@@ -18,15 +18,16 @@ const Tips = React.memo(() => {
   return (
     <Typography>
       <Paragraph>
-        <Text code>*_request_*.log</Text> - {t('API request and response logs')}
+        <Text code>[app]/request_*.log</Text> - {t('API request and response logs')}
       </Paragraph>
       <Paragraph>
-        <Text code>*_system_*.log</Text> -{' '}
+        <Text code>[app]/system_*.log</Text> -{' '}
         {t('Application, database, plugins and other system logs, the error level logs will be sent to')}{' '}
-        <Text code>*_system_error_*.log</Text>
+        <Text code>[app]/system_error_*.log</Text>
       </Paragraph>
       <Paragraph>
-        <Text code>*_sql_*.log</Text> - {t('SQL execution logs, printed by Sequelize when the db logging is enabled')}
+        <Text code>[app]/sql_*.log</Text> -{' '}
+        {t('SQL execution logs, printed by Sequelize when the db logging is enabled')}
       </Paragraph>
     </Typography>
   );
@@ -136,7 +137,6 @@ export const LogsDownloader = React.memo((props) => {
     };
     return match(defaultTree);
   }, [searchValue, defaultTree, token.colorPrimary]);
-  console.log(tree);
 
   const Download = () => {
     const getValues = (data: DataNode[], parent: string) => {
