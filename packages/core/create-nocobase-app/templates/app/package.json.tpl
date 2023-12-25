@@ -16,6 +16,7 @@
     "clean": "nocobase clean",
     "build": "nocobase build",
     "test": "nocobase test",
+    "e2e": "nocobase e2e",
     "postinstall": "nocobase postinstall",
     "lint": "eslint ."
   },

@@ -84,7 +84,7 @@ describe('actions', () => {
     let db: Database;
     let agent;
 
-    beforeAll(async () => {
+    beforeEach(async () => {
       app = mockServer();
       process.env.INIT_ROOT_EMAIL = 'test@nocobase.com';
       process.env.INT_ROOT_USERNAME = 'test';
@@ -97,8 +97,8 @@ describe('actions', () => {
       agent = app.agent();
     });
 
-    afterAll(async () => {
-      await db.close();
+    afterEach(async () => {
+      await app.destroy();
     });
 
     it('should sign in with password', async () => {
@@ -125,6 +125,7 @@ describe('actions', () => {
       let res = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
         username: 'new',
         password: 'new',
+        confirm_password: 'new',
       });
       expect(res.statusCode).toEqual(200);
 
@@ -198,6 +199,15 @@ describe('actions', () => {
         confirmPassword: '123456',
       });
       expect(res2.statusCode).toEqual(200);
+    });
+
+    it('should check confirm password', async () => {
+      const res = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        username: 'new',
+        password: 'new',
+        confirm_password: 'new1',
+      });
+      expect(res.statusCode).toEqual(400);
     });
   });
 });

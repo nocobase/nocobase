@@ -3,10 +3,9 @@ import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
-import { AppLoggerOptions, createLogger, Logger, createAppLogger, AppLogger } from '@nocobase/logger';
+import { AppLoggerOptions, createLogger, createAppLogger, AppLogger } from '@nocobase/logger';
 import { Resourcer, ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, measureExecutionTime, Toposort, ToposortOptions } from '@nocobase/utils';
-import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { IncomingMessage, Server, ServerResponse } from 'http';
 import { i18n, InitOptions } from 'i18next';
@@ -33,9 +32,9 @@ import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import { randomUUID } from 'crypto';
+import packageJson from '../package.json';
+import chalk from 'chalk';
 import { RecordableHistogram, performance } from 'node:perf_hooks';
-
-const packageJson = require('../package.json');
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -188,12 +187,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected _cache: Cache;
 
-  set cache(cache: Cache) {
-    this._cache = cache;
-  }
-
   get cache() {
     return this._cache;
+  }
+
+  set cache(cache: Cache) {
+    this._cache = cache;
   }
 
   protected _cli: AppCommand;

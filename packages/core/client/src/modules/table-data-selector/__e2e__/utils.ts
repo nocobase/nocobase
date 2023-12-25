@@ -1,4 +1,4 @@
-import { NocoPage, Page, PageConfig, oneFormBlockWithAllAssociationFieldsAndSelectorMode } from '@nocobase/test/client';
+import { NocoPage, Page, PageConfig, oneFormBlockWithAllAssociationFieldsAndSelectorMode } from '@nocobase/test/e2e';
 
 export async function createTable({
   page,

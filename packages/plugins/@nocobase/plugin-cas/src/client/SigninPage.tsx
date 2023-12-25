@@ -1,9 +1,9 @@
-import { Authenticator } from '@nocobase/client';
 import React, { useEffect } from 'react';
 import { LoginOutlined } from '@ant-design/icons';
 import { Button, Space, message } from 'antd';
 import { useLocation } from 'react-router-dom';
 import { getSubAppName } from '@nocobase/sdk';
+import { Authenticator } from '@nocobase/plugin-auth/client';
 
 export const SigninPage = (props: { authenticator: Authenticator }) => {
   const location = useLocation();

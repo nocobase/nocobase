@@ -1,5 +1,5 @@
 import { Gateway, IncomingRequest } from '../gateway';
-import WebSocket from 'ws';
+import WebSocket, { WebSocketServer } from 'ws';
 import { nanoid } from 'nanoid';
 import { IncomingMessage } from 'http';
 import { AppSupervisor } from '../app-supervisor';
@@ -30,7 +30,7 @@ export class WSServer {
   logger: Logger;
 
   constructor() {
-    this.wss = new WebSocket.Server({ noServer: true });
+    this.wss = new WebSocketServer({ noServer: true });
 
     this.wss.on('connection', (ws: WebSocketWithId, request: IncomingMessage) => {
       const client = this.addNewConnection(ws, request);

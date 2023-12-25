@@ -1,12 +1,17 @@
 import { Context, Next } from '@nocobase/actions';
-import { Model } from '@nocobase/database';
 import { Registry } from '@nocobase/utils';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
 
+export interface Authenticator {
+  authType: string;
+  options: Record<string, any>;
+  [key: string]: any;
+}
+
 export interface Storer {
-  get: (name: string) => Promise<Model>;
+  get: (name: string) => Promise<Authenticator>;
 }
 
 export type AuthManagerOptions = {

@@ -1,4 +1,4 @@
-import { CollectionSetting, PageConfig, generalWithM2oSingleSelect } from '@nocobase/test/client';
+import { CollectionSetting, PageConfig, generalWithM2oSingleSelect } from '@nocobase/test/e2e';
 
 /**
  * 1. 创建一个名为 general 的 collection，其包含 时间、Percent 类型的字段

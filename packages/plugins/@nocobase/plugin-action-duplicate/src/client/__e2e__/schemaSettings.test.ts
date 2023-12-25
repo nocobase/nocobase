@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 import { oneEmptyTableBlockWithDuplicateActions } from './utils';
 
 test.describe('direct duplicate & copy into the form and continue to fill in', () => {

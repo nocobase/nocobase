@@ -1,5 +1,5 @@
 import { Logger, LoggerOptions, createConsoleLogger, createLogger } from '@nocobase/logger';
-import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { backOff } from 'exponential-backoff';
@@ -472,12 +472,14 @@ export class Database extends EventEmitter implements AsyncEmitter {
     const files = glob.sync(patten, {
       ignore: ['**/*.d.ts'],
     });
+
     for (const file of files) {
       let filename = basename(file);
       filename = filename.substring(0, filename.lastIndexOf('.')) || filename;
+
       this.migrations.add({
         name: namespace ? `${namespace}/${filename}` : filename,
-        migration: requireModule(file),
+        migration: file,
         context,
       });
     }

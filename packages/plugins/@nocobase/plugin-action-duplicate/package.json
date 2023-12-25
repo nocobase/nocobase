@@ -1,13 +1,12 @@
 {
   "name": "@nocobase/plugin-action-duplicate",
-  "version": "0.17.0-alpha.7",
+  "version": "0.18.0-alpha.1",
   "main": "dist/server/index.js",
   "displayName": "Data duplicate",
   "displayName.zh-CN": "数据复制",
   "description": "Provides deplicate action",
   "description.zh-CN": "提供复制数据操作",
   "license": "AGPL-3.0",
-  "dependencies": {},
   "peerDependencies": {
     "@nocobase/client": "0.x",
     "@nocobase/server": "0.x",

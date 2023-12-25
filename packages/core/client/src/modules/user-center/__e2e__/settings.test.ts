@@ -1,4 +1,4 @@
-import { test } from '@nocobase/test/client';
+import { test } from '@nocobase/test/e2e';
 
 test('switch role', async ({ page, mockPage }) => {
   await mockPage().goto();

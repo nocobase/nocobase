@@ -1,4 +1,4 @@
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 import { oneCalenderWithViewAction, oneTableWithViewAction } from './utils';
 
 test.describe('ReadPrettyFormActionInitializers & CalendarFormActionInitializers should add print action', () => {

@@ -1,4 +1,4 @@
-import { expect, formBlockDefaultValueTemplate, test } from '@nocobase/test/client';
+import { expect, formBlockDefaultValueTemplate, test } from '@nocobase/test/e2e';
 
 test.describe('variables with default value', () => {
   test('current form', async ({ page, mockPage, mockRecord }) => {
