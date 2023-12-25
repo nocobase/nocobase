@@ -2,6 +2,11 @@ import { faker } from '@faker-js/faker';
 import { uid } from '@formily/shared';
 import { Page, test as base, expect, request } from '@playwright/test';
 import _ from 'lodash';
+import { defineConfig } from './defineConfig';
+
+export * from '@playwright/test';
+
+export { defineConfig };
 
 export interface CollectionSetting {
   name: string;
@@ -375,7 +380,7 @@ const _test = base.extend<ExtendUtils>({
   },
 });
 
-export const test2 = Object.assign(_test, {
+export const test = Object.assign(_test, {
   /** 只运行在 postgres 数据库中 */
   pgOnly: process.env.DB_DIALECT == 'postgres' ? _test : _test.skip,
 });
