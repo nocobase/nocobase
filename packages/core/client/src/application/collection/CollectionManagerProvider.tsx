@@ -1,5 +1,6 @@
-import React, { FC, ReactNode, createContext, useContext } from 'react';
-import { CollectionManagerV2 } from './CollectionManager';
+import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
+import type { CollectionManagerV2, GetCollectionOptions } from './CollectionManager';
+import type { CollectionV2 } from './Collection';
 
 export const CollectionManagerContextV2 = createContext<CollectionManagerV2>(null);
 CollectionManagerContextV2.displayName = 'CollectionManagerContextV2';
@@ -18,4 +19,19 @@ export const CollectionManagerProviderV2: FC<CollectionManagerProviderProps> = (
 export const useCollectionManagerV2 = () => {
   const context = useContext(CollectionManagerContextV2);
   return context;
+};
+
+export const useCollectionsV2 = (ns?: string, predicate?: (collection: CollectionV2) => boolean) => {
+  const collectionManager = useCollectionManagerV2();
+  const collections = useMemo(
+    () => collectionManager.getCollections(ns, predicate),
+    [collectionManager, ns, predicate],
+  );
+  return collections;
+};
+
+export const useCollectionFieldByPathV2 = (path: string, options?: GetCollectionOptions) => {
+  const collectionManager = useCollectionManagerV2();
+  const field = useMemo(() => collectionManager.getCollectionField(path, options), [collectionManager, path, options]);
+  return field;
 };

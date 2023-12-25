@@ -1,17 +1,23 @@
 import { SchemaKey } from '@formily/react';
-import { CollectionFieldOptions, CollectionOptions } from '../../collection-manager';
 import { filter } from 'lodash';
+
+import type { CollectionManagerV2 } from './CollectionManager';
+import { CollectionFieldOptions, CollectionOptions } from '../../collection-manager';
+
+export type GetCollectionFieldPredicate =
+  | ((collection: CollectionFieldOptions) => boolean)
+  | CollectionFieldOptions
+  | keyof CollectionFieldOptions;
 
 export class CollectionV2 {
   protected options: CollectionOptions;
-  protected fields: Record<string, CollectionFieldOptions>;
+  protected fields: Record<string, CollectionFieldOptions> = {};
+  public collectionManager: CollectionManagerV2;
 
-  constructor(options: CollectionOptions) {
+  constructor(options: CollectionOptions, collectionManager: CollectionManagerV2) {
     this.options = options;
-    this.fields = (options.fields || []).reduce((memo, field) => {
-      memo[field.name] = field;
-      return memo;
-    }, {});
+    this.setFields(options.fields || []);
+    this.collectionManager = collectionManager;
   }
   get name() {
     return this.options.name;
@@ -26,11 +32,21 @@ export class CollectionV2 {
   get titleFieldName() {
     return this.hasField(this.options.titleField) ? this.options.titleField : this.primaryKey;
   }
+  private setFields(fields: CollectionFieldOptions[]) {
+    this.fields = fields.reduce((memo, field) => {
+      memo[field.name] = field;
+      return memo;
+    }, {});
+  }
   getOptions() {
     return this.options;
   }
   getOption<K extends keyof CollectionOptions>(key: K): CollectionOptions[K] {
     return this.options[key];
+  }
+  setOptions<CollectionOptions>(options: CollectionOptions) {
+    Object.assign(this.options, options);
+    this.setFields(this.options.fields || []);
   }
   /**
    * Get fields
@@ -41,12 +57,7 @@ export class CollectionV2 {
    * getFields('primaryKey') // 获取 primaryKey: true 字段
    * getFields((field) => field.name === 'nickname') // 获取 name: 'nickname' 字段
    */
-  getFields(
-    predicate?:
-      | ((collection: CollectionFieldOptions) => boolean)
-      | CollectionFieldOptions
-      | keyof CollectionFieldOptions,
-  ) {
+  getFields(predicate?: GetCollectionFieldPredicate) {
     return filter(this.options.fields || [], predicate);
   }
   getField(name: SchemaKey) {

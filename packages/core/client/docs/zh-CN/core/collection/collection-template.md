@@ -9,8 +9,10 @@ class CollectionTemplateV2 {
   constructor(options: CollectionTemplateOptions) {}
   name: string;
   Collection: typeof CollectionV2;
+  transform(collection: CollectionV2): void
 
-  getOptions(): Omit<CollectionTemplateOptions, 'Collection'>
+  getOptions(): CollectionTemplateOptions
+  setOptions(options: CollectionTemplateOptions): void
   getOption<K extends keyof CollectionTemplateOptions>(key: K): CollectionTemplateOptions[K]
 }
 ```
@@ -150,6 +152,10 @@ const sqlCollectionTemplate = new CollectionTemplateV2({
 
 ## 实例方法
 
+### collectionTemplate.transform(collection)
+
+collection 创建后，会调用该方法，用于对 collection 进行转换。
+
 ### collectionTemplate.getOptions()
 
 获取所有配置项。
@@ -165,6 +171,34 @@ const Demo = () => {
   }, [collectionManager]);
 
   return <pre>{ JSON.stringify(options, null, 2) }</pre>
+}
+```
+
+### collectionTemplate.setOptions(options)
+
+设置配置项，会和原 options 深度合并。
+
+```tsx | pure
+import { Plugin } from '@nocobase/client';
+
+class MyPlugin extends Plugin {
+  load() {
+    const collectionManager = this.app.collectionManager.getCollectionManager();
+    const sqlCollectionTemplate = collectionManager.getCollectionTemplate('sql');
+
+    // deep merge
+    sqlCollectionTemplate.setOptions({
+      configurableProperties: {
+        title: {
+          type: 'string',
+          title: '{{ t("Collection display name") }}',
+          required: true,
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        }
+      },
+    });
+  }
 }
 ```
 

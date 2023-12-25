@@ -14,11 +14,13 @@ interface CollectionOptions {
 
 class CollectionV2 {
   constructor(options: CollectionOptions) {}
+  collectionManager: CollectionManagerV2;
   name: string;
   primaryKey: string;
   titleField: string;
 
   getOptions(): CollectionOptions;
+  setOptions(options: CollectionOptions): void;
   getOption<K extends keyof CollectionOptions>(key: K): CollectionOptions[K];
 
   getFields(predicate?: CollectionFieldOptions | ((collection: CollectionFieldOptions) => boolean) | keyof CollectionFieldOptions): any[]
@@ -127,6 +129,10 @@ interface CollectionOptions {
 
 collection 的标识。
 
+### collection.collectionManager
+
+[CollectionManager](/core/collection/collection-manager) 的实例。
+
 ### collection.primaryKey
 
 主键字段的 name 属性。
@@ -161,6 +167,30 @@ const usersCollection = new CollectionV2({
 });
 
 console.log(usersCollection.getOptions()); // { name: 'users', title: 'Users', fields: [ ] }
+```
+
+### collection.setOptions(options)
+
+设置 collection 的配置项，最终会和默认配置项进行合并。
+
+- 类型
+
+```tsx | pure
+class CollectionV2 {
+  setOptions(options: CollectionOptions): void;
+}
+```
+
+- 示例
+
+```tsx | pure
+collection.setOptions({
+  name: 'users',
+  title: 'Users',
+  fields: [
+    // ...
+  ],
+});
 ```
 
 ### collection.getOption(key)

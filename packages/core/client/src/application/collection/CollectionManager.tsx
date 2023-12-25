@@ -4,13 +4,12 @@ import { CollectionFieldOptions, CollectionOptions } from '../../collection-mana
 import { CollectionFieldInterfaceOptions, CollectionFieldInterfaceV2 } from './CollectionFieldInterface';
 import { CollectionTemplateOptions, CollectionTemplateV2 } from './CollectionTemplate';
 import { CollectionV2 } from './Collection';
-
-import { generalTemplate } from './templates';
+import type { Application } from '../Application';
 
 export const DEFAULT_COLLECTION_NAMESPACE_TITLE = '{{t("main")}}';
 export const DEFAULT_COLLECTION_NAMESPACE_NAME = 'main';
 
-interface GetCollectionOptions {
+export interface GetCollectionOptions {
   ns?: string;
 }
 
@@ -22,16 +21,16 @@ export interface CollectionManagerOptionsV2 {
 }
 
 export class CollectionManagerV2 {
+  public app: Application;
   protected collections: Record<string, Record<string, CollectionV2>> = {};
-  protected collectionTemplates: Record<string, CollectionTemplateV2> = {
-    [generalTemplate.name]: generalTemplate,
-  };
+  protected collectionTemplates: Record<string, CollectionTemplateV2> = {};
   protected collectionFieldInterfaces: Record<string, CollectionFieldInterfaceV2> = {};
   protected collectionNamespaces: Record<string, string> = {
     [DEFAULT_COLLECTION_NAMESPACE_NAME]: DEFAULT_COLLECTION_NAMESPACE_TITLE,
   };
 
-  constructor(options: CollectionManagerOptionsV2 = {}) {
+  constructor(options: CollectionManagerOptionsV2 = {}, app: Application) {
+    this.app = app;
     if (Array.isArray(options.collections)) {
       this.addCollections(options.collections);
     } else {
@@ -61,10 +60,13 @@ export class CollectionManagerV2 {
         if (collection instanceof CollectionV2) {
           return collection;
         }
-        const collectionTemplateInstance = collection.template
-          ? this.getCollectionTemplate(collection.template)
-          : generalTemplate;
-        return new collectionTemplateInstance.Collection(collection);
+        const collectionTemplateInstance = this.getCollectionTemplate(collection.template);
+        const Cls = collectionTemplateInstance?.Collection || CollectionV2;
+        const ins = new Cls(collection, this);
+        if (collectionTemplateInstance && collectionTemplateInstance.transform) {
+          collectionTemplateInstance.transform(ins);
+        }
+        return ins;
       })
       .forEach((collectionInstance) => {
         if (!this.collections[ns]) {
@@ -72,6 +74,12 @@ export class CollectionManagerV2 {
         }
         this.collections[ns][collectionInstance.name] = collectionInstance;
       });
+  }
+  setCollections(collections: (CollectionOptions | CollectionV2)[], options: GetCollectionOptions = {}) {
+    const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
+    this.checkNamespace(ns);
+    this.collections[ns] = {};
+    this.addCollections(collections, options);
   }
   getAllCollections() {
     return this.collections;
@@ -86,7 +94,7 @@ export class CollectionManagerV2 {
    * getCollection('users.profile'); // 获取 users 表的 profile 字段的关联表
    * getCollection('a.b.c'); // 获取 a 表的 b 字段的关联表，然后 b.target 表对应的 c 字段的关联表
    */
-  getCollection(path: string, options: GetCollectionOptions = {}): CollectionV2 | undefined {
+  async getCollection(path: string, options: GetCollectionOptions = {}): Promise<CollectionV2 | undefined> {
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
     this.checkNamespace(ns);
     if (path.split('.').length > 1) {
@@ -97,9 +105,22 @@ export class CollectionManagerV2 {
     }
     return this.collections[ns]?.[path];
   }
-  getCollectionName(path: string, options: GetCollectionOptions = {}) {
-    return this.getCollection(path, options)?.name;
+  async getCollectionName(path: string, options: GetCollectionOptions = {}): Promise<string | undefined> {
+    const res = await this.getCollection(path, options);
+    return res?.name;
   }
+  removeCollection(path: string, options: GetCollectionOptions = {}) {
+    const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
+    this.checkNamespace(ns);
+    if (path.split('.').length > 1) {
+      // 获取到关联字段
+      const associationField = this.getCollectionField(path);
+
+      return this.removeCollection(associationField.target, { ns });
+    }
+    delete this.collections[ns]?.[path];
+  }
+
   /**
    * 获取数据表字段
    * @example
@@ -109,7 +130,7 @@ export class CollectionManagerV2 {
   getCollectionField(path: string, options: GetCollectionOptions = {}): CollectionFieldOptions | undefined {
     const arr = path.split('.');
     if (arr.length < 2) {
-      return;
+      throw new Error(`[@nocobase/client]: CollectionManager.getCollectionField() path "${path}" is invalid`);
     }
     const [collectionName, fieldName, ...otherFieldNames] = path.split('.');
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options || {};
@@ -149,7 +170,7 @@ export class CollectionManagerV2 {
   getCollectionTemplates() {
     return Object.values(this.collectionTemplates);
   }
-  getCollectionTemplate(name: string = generalTemplate.name) {
+  getCollectionTemplate(name: string) {
     return this.collectionTemplates[name];
   }
 
@@ -168,6 +189,23 @@ export class CollectionManagerV2 {
   }
   getCollectionFieldInterfaces() {
     return Object.values(this.collectionFieldInterfaces);
+  }
+  getCollectionFieldInterfaceGroups(): { name: string; children: CollectionFieldInterfaceV2[] }[] {
+    return Object.values(
+      Object.values(this.collectionFieldInterfaces).reduce<
+        Record<string, { name: string; children: CollectionFieldInterfaceV2[] }>
+      >((memo, fieldInterface) => {
+        const group = fieldInterface.group || 'basic';
+        if (!memo[group]) {
+          memo[group] = {
+            name: group,
+            children: [],
+          };
+        }
+        memo[group].children.push(fieldInterface);
+        return memo;
+      }, {}),
+    );
   }
   getCollectionFieldInterface(name: string) {
     return this.collectionFieldInterfaces[name];

@@ -81,7 +81,7 @@ interface CollectionFieldOptions {
 }
 ```
 
-关联字段的示例如下：
+关系字段的示例如下：
 
 ```json
 {
@@ -115,7 +115,7 @@ interface CollectionFieldOptions {
 }
 ```
 
-相对于普通字段，关联字段多了以下属性：
+相对于普通字段，关系字段多了以下属性：
 
 - xx
 - xx
@@ -124,7 +124,7 @@ interface CollectionFieldOptions {
 
 - `name`：字段名称
 - `collectionName`：数据表名称
-- `sourceKey`：当字段为关联字段时，对应的关联字段名称。
+- `sourceKey`：当字段为关系字段时，对应的关系字段名称。
 
 TODO：补全
 

@@ -118,7 +118,7 @@ export class Application {
     this.collectionManager =
       options.collectionManager instanceof CollectionManagerV2
         ? options.collectionManager
-        : new CollectionManagerV2(options.collectionManager);
+        : new CollectionManagerV2(options.collectionManager, this);
 
     this.addDefaultProviders();
     this.addReactRouterComponents();

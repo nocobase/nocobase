@@ -8,9 +8,12 @@
 class CollectionFieldInterfaceV2 {
   constructor(options: CollectionFieldInterfaceOptions): {}
   name: SchemaKey;
+  group: string;
+  title: string;
 
   getOption<K extends keyof IField>(key: K): CollectionFieldInterfaceOptions[K]
-  getOptions(): CollectionFieldInterfaceOptions
+  getOptions(): CollectionFieldInterfaceOptions;
+  setOptions(options: CollectionFieldInterfaceOptions): void;
 }
 ```
 
@@ -76,6 +79,14 @@ TODO：类型不完整且含义不清楚，需要补充。
 
 唯一标识符。
 
+### group
+
+分组。
+
+### title
+
+标题。
+
 ## 实例方法
 
 ### collectionFieldInterface.getOptions()
@@ -93,6 +104,43 @@ const Demo = () => {
   }, [collectionManager]);
 
   return <pre>{ JSON.stringify(options, null, 2) }</pre>
+}
+```
+
+### collectionFieldInterface.setOptions(options)
+
+设置配置项，会和原 options 深度合并。
+
+- 类型
+
+```tsx | pure
+class CollectionFieldInterfaceV2 {
+  setOptions(options: CollectionFieldInterfaceOptions): void;
+}
+```
+
+- 示例
+
+```tsx | pure
+import { Plugin } from '@nocobase/client';
+
+class MyPlugin extends Plugin {
+  load() {
+    const collectionManager = this.app.collectionManager.getCollectionManager();
+    const email = collectionManager.getCollectionFieldInterface('email');
+
+    // deep merge
+    email.setOptions({
+      properties: {
+        unique: {
+          type: 'boolean',
+          'x-content': '{{t("Unique")}}',
+          'x-decorator': 'FormItem',
+          'x-component': 'Checkbox',
+        }
+      }
+    });
+  }
 }
 ```
 

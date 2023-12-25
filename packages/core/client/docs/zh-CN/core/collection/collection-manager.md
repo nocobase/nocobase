@@ -17,7 +17,9 @@ interface GetCollectionOptions {
 }
 
 class CollectionManagerV2 {
-  constructor(options: CollectionManagerOptionsV2 = {});
+  public app: Application;
+
+  constructor(options: CollectionManagerOptionsV2 = {}, app: Application);
 
   addCollectionNamespaces(collectionNamespaces: Record<string, string>): void;
   getCollectionNamespaces(): { name: string; title: string }[];
@@ -27,14 +29,17 @@ class CollectionManagerV2 {
   getCollectionTemplate(name?: string): CollectionTemplateV2
 
   addCollections(collections: (CollectionOptions | CollectionV2)[], options?: GetCollectionOptions): void
+  setCollections(collections: (CollectionOptions | CollectionV2)[], options?: GetCollectionOptions): void
   getAllCollections(): Record<string, Record<string, CollectionV2>>
   getCollections(ns?: string, predicate?: (collection: CollectionV2) => boolean): CollectionV2[]
-  getCollection(path: string, options?: GetCollectionOptions): CollectionV2 | undefined
-  getCollectionName(path: string, options?: GetCollectionOptions): string;
+  async getCollection(path: string, options?: GetCollectionOptions): Promise<CollectionV2 | undefined>
+  async getCollectionName(path: string, options?: GetCollectionOptions): Promise<string | undefined>;
+  removeCollection(path: string, options?: GetCollectionOptions): void;
   getCollectionField(path: string, options?: GetCollectionOptions): CollectionFieldOptions | undefined;
 
   addCollectionFieldInterfaces(interfaces:CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[]): void;
   getCollectionFieldInterfaces(): CollectionFieldInterfaceV2[]
+  getCollectionFieldInterfaceGroups(): { name: string; children: CollectionFieldInterfaceV2[] }[]
   getCollectionFieldInterface(name: string): CollectionFieldInterfaceV2
 }
 ```
@@ -285,7 +290,7 @@ class CollectionManagerV2 {
 collectionManager.getCollectionTemplates(); // [ treeCollectionTemplate, sqlCollectionTemplate ]
 ```
 
-### cm.getCollectionTemplate(name?)
+### cm.getCollectionTemplate(name)
 
 获取数据表模板。
 
@@ -293,7 +298,7 @@ collectionManager.getCollectionTemplates(); // [ treeCollectionTemplate, sqlColl
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollectionTemplate(name?: string): CollectionTemplateV2
+  getCollectionTemplate(name: string): CollectionTemplateV2
 }
 ```
 
@@ -387,6 +392,18 @@ collectionManager.getCollections('db2'); // [ postCollection ]
 collectionManager.getCollections('db2', collection => collection.name === 'posts'); // [ postCollection ]
 ```
 
+### cm.setCollections(collections, options?)
+
+重置数据表，会先移除所有数据表，然后再调用 `cm.addCollections()` 添加数据表。
+
+- 类型
+
+```tsx | pure
+class CollectionManagerV2 {
+  setCollections(collections: (CollectionOptions | CollectionV2)[], options?: GetCollectionOptions): void
+}
+```
+
 ### cm.getCollection(path, options?)
 
 获取数据表。
@@ -395,12 +412,12 @@ collectionManager.getCollections('db2', collection => collection.name === 'posts
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollection(path: string, options?: GetCollectionOptions): CollectionV2 | undefined
+  async getCollection(path: string, options?: GetCollectionOptions): Promise<CollectionV2 | undefined>
 }
 ```
 
 - 详细解释
-  - `path` 参数可以是数据表名称，也可以是[关联字段](xx)路径
+  - `path` 参数可以是数据表名称，也可以是[关系字段](https://docs.nocobase.com/development/server/collections/association-fields)路径。
     - `path: 'users'`: 获取 `users` 数据表
     - `path: 'users.posts'`: 获取 `users` 数据表的 `posts` 关联字段对应的数据表，即 `postCollection`
   - 如果不传递 `options` 参数，则返回默认命名空间的数据表，如果传递 `options` 参数，则返回指定命名空间的数据表。
@@ -424,7 +441,7 @@ collectionManager.getCollection('users', { ns: 'db2' }); // userCollection
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollectionName(path: string, options?: GetCollectionOptions): string;
+  async getCollectionName(path: string, options?: GetCollectionOptions): Promise<string | undefined>;
 }
 ```
 
@@ -434,6 +451,24 @@ class CollectionManagerV2 {
 collectionManager.getCollectionName('users'); // 'users'
 
 collectionManager.getCollectionName('users.profileId'); // 'profiles'
+```
+
+### cm.removeCollection(path, options?)
+
+移除数据表。
+
+- 类型
+
+```tsx | pure
+class CollectionManagerV2 {
+  removeCollection(path: string, options?: GetCollectionOptions): void;
+}
+```
+
+- 示例
+
+```tsx | pure
+collectionManager.removeCollection('users');
 ```
 
 ### cm.getCollectionField(path, options?)
@@ -501,6 +536,24 @@ class CollectionManagerV2 {
 
 ```tsx | pure
 collectionManager.getCollectionFieldInterfaces(); // [ checkboxCollectionFieldInterface ]
+```
+
+### cm.getCollectionFieldInterfaceGroups()
+
+获取数据表字段接口分组。
+
+- 类型
+
+```tsx | pure
+class CollectionManagerV2 {
+  getCollectionFieldInterfaceGroups(): { name: string; children: CollectionFieldInterfaceV2[] }[]
+}
+```
+
+- 示例
+
+```tsx | pure
+collectionManager.getCollectionFieldInterfaceGroups(); // [ { name: '基础', children: [ checkboxCollectionFieldInterface ] } ]
 ```
 
 ### cm.getCollectionFieldInterface(name)

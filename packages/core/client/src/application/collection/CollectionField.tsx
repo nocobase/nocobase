@@ -3,11 +3,9 @@ import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { CollectionFieldProviderV2, useCollectionFieldV2 } from './CollectionFieldProvider';
-import { useActionContext, useCompile, useComponent } from '../../schema-component';
+import { useCompile, useComponent } from '../../schema-component';
 import { useFormBlockContext } from '../../block-provider';
-import { useRecordV2 } from './RecordProvider';
 
 type Props = {
   component: any;
@@ -74,46 +72,10 @@ const InternalField: React.FC = (props: Props) => {
   return <Component {...props} />;
 };
 
-const InternalFallbackField = () => {
-  const { uiSchema } = useCollectionFieldV2();
-  const field = useField<Field>();
-  const fieldSchema = useFieldSchema();
-  const record = useRecordV2();
-
-  const displayKey = fieldSchema['x-component-props']?.fieldNames?.label ?? 'id';
-
-  const value = record[fieldSchema.name];
-
-  useEffect(() => {
-    field.title = fieldSchema.title ?? fieldSchema.name;
-  }, [uiSchema?.title]);
-
-  let displayText = value;
-
-  if (Array.isArray(value) || typeof value === 'object') {
-    displayText = []
-      .concat(value)
-      .map((i) => i[displayKey])
-      .join(', ');
-  }
-
-  return <div>{displayText}</div>;
-};
-
-// 当字段被删除时，显示一个提示占位符
-const DeletedField = () => {
-  const { t } = useTranslation();
-  return <div style={{ color: '#ccc' }}>{t('The field has been deleted')}</div>;
-};
-
 export const CollectionFieldV2 = connect((props) => {
   const fieldSchema = useFieldSchema();
-  const { snapshot } = useActionContext();
   return (
-    <CollectionFieldProviderV2
-      name={fieldSchema.name}
-      fallback={snapshot ? <InternalFallbackField /> : <DeletedField />}
-    >
+    <CollectionFieldProviderV2 name={fieldSchema.name}>
       <InternalField {...props} />
     </CollectionFieldProviderV2>
   );

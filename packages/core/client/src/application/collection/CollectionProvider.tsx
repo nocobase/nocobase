@@ -1,8 +1,9 @@
-import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
+import React, { FC, ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { Spin } from 'antd';
 
-import { CollectionV2 } from './Collection';
 import { useCollectionManagerV2 } from './CollectionManagerProvider';
-import { DEFAULT_COLLECTION_NAMESPACE_NAME } from './CollectionManager';
+import { DeletedPlaceholder } from './DeletedPlaceholder';
+import type { CollectionV2, GetCollectionFieldPredicate } from './Collection';
 
 export const CollectionContextV2 = createContext<CollectionV2>(null);
 CollectionContextV2.displayName = 'CollectionContextV2';
@@ -16,19 +17,27 @@ export interface CollectionProviderProps {
 export const CollectionProviderV2: FC<CollectionProviderProps> = (props) => {
   const { name, ns, children } = props;
   const collectionManager = useCollectionManagerV2();
-  const collection = useMemo(() => {
-    const res = collectionManager.getCollection(name, { ns });
-    if (!res) {
-      throw new Error(
-        `[@nocobase/client]: Collection "${name}" does not exist in namespace "${
-          ns || DEFAULT_COLLECTION_NAMESPACE_NAME
-        }"`,
-      );
-    }
-    return res;
+  const [loading, setLoading] = useState(false);
+  const [collection, setCollection] = useState<CollectionV2>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await collectionManager.getCollection(name, { ns });
+        setCollection(res);
+        setLoading(false);
+      } catch (error) {
+        console.error(error);
+        setLoading(false);
+      }
+    };
+    load();
   }, [collectionManager, name, ns]);
 
-  if (!collection) return null;
+  if (loading) return <Spin />;
+
+  if (!collection) return <DeletedPlaceholder />;
 
   return <CollectionContextV2.Provider value={collection}>{children}</CollectionContextV2.Provider>;
 };
@@ -40,4 +49,10 @@ export const useCollectionV2 = () => {
   }
 
   return context;
+};
+
+export const useCollectionFieldsV2 = (predicate?: GetCollectionFieldPredicate) => {
+  const collection = useCollectionV2();
+  const fields = useMemo(() => collection.getFields(predicate), [collection, predicate]);
+  return fields;
 };
