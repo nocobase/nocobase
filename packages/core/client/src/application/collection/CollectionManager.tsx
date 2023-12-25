@@ -1,9 +1,8 @@
 import { filter } from 'lodash';
 
-import { CollectionFieldOptions, CollectionOptions } from '../../collection-manager';
 import { CollectionFieldInterfaceOptions, CollectionFieldInterfaceV2 } from './CollectionFieldInterface';
-import { CollectionTemplateOptions, CollectionTemplateV2 } from './CollectionTemplate';
-import { CollectionV2 } from './Collection';
+import { CollectionTemplateOptionsV2, CollectionTemplateV2 } from './CollectionTemplate';
+import { CollectionFieldOptionsV2, CollectionOptionsV2, CollectionV2 } from './Collection';
 import type { Application } from '../Application';
 
 export const DEFAULT_COLLECTION_NAMESPACE_TITLE = '{{t("main")}}';
@@ -14,8 +13,8 @@ export interface GetCollectionOptions {
 }
 
 export interface CollectionManagerOptionsV2 {
-  collections?: Record<string, CollectionV2[] | CollectionOptions[]> | CollectionV2[] | CollectionOptions[];
-  collectionTemplates?: CollectionTemplateV2[] | CollectionTemplateOptions[];
+  collections?: Record<string, CollectionV2[] | CollectionOptionsV2[]> | CollectionV2[] | CollectionOptionsV2[];
+  collectionTemplates?: CollectionTemplateV2[] | CollectionTemplateOptionsV2[];
   collectionFieldInterfaces?: CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[];
   collectionNamespaces?: Record<string, string>;
 }
@@ -52,7 +51,7 @@ export class CollectionManagerV2 {
   }
 
   // collections
-  addCollections(collections: (CollectionOptions | CollectionV2)[], options: GetCollectionOptions = {}) {
+  addCollections(collections: (CollectionOptionsV2 | CollectionV2)[], options: GetCollectionOptions = {}) {
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
     this.checkNamespace(ns);
     collections
@@ -75,7 +74,7 @@ export class CollectionManagerV2 {
         this.collections[ns][collectionInstance.name] = collectionInstance;
       });
   }
-  setCollections(collections: (CollectionOptions | CollectionV2)[], options: GetCollectionOptions = {}) {
+  setCollections(collections: (CollectionOptionsV2 | CollectionV2)[], options: GetCollectionOptions = {}) {
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
     this.checkNamespace(ns);
     this.collections[ns] = {};
@@ -130,7 +129,7 @@ export class CollectionManagerV2 {
   async getCollectionField(
     path: string,
     options: GetCollectionOptions = {},
-  ): Promise<CollectionFieldOptions | undefined> {
+  ): Promise<CollectionFieldOptionsV2 | undefined> {
     const arr = path.split('.');
     if (arr.length < 2) {
       throw new Error(`[@nocobase/client]: CollectionManager.getCollectionField() path "${path}" is invalid`);
@@ -158,7 +157,7 @@ export class CollectionManagerV2 {
   }
 
   // CollectionTemplates
-  addCollectionTemplates(templates: CollectionTemplateV2[] | CollectionTemplateOptions[]) {
+  addCollectionTemplates(templates: CollectionTemplateV2[] | CollectionTemplateOptionsV2[]) {
     templates
       .map((template) => {
         if (template instanceof CollectionTemplateV2) {

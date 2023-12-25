@@ -1,7 +1,6 @@
 import React, { FC, ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { CollectionManagerV2, GetCollectionOptions } from './CollectionManager';
-import type { CollectionV2 } from './Collection';
-import { CollectionFieldOptions } from '../../collection-manager';
+import type { CollectionFieldOptionsV2, CollectionV2 } from './Collection';
 
 export const CollectionManagerContextV2 = createContext<CollectionManagerV2>(null);
 CollectionManagerContextV2.displayName = 'CollectionManagerContextV2';
@@ -33,7 +32,7 @@ export const useCollectionsV2 = (ns?: string, predicate?: (collection: Collectio
 
 export const useCollectionFieldByPathV2 = (path: string, options?: GetCollectionOptions) => {
   const collectionManager = useCollectionManagerV2();
-  const [field, setField] = useState<CollectionFieldOptions>();
+  const [field, setField] = useState<CollectionFieldOptionsV2>();
   useEffect(() => {
     async function load() {
       const field = await collectionManager.getCollectionField(path, options);

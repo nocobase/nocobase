@@ -1,20 +1,78 @@
-import { SchemaKey } from '@formily/react';
+import { ISchema, SchemaKey } from '@formily/react';
 import { filter } from 'lodash';
 
 import type { CollectionManagerV2 } from './CollectionManager';
-import { CollectionFieldOptions, CollectionOptions } from '../../collection-manager';
+
+type dumpable = 'required' | 'optional' | 'skip';
+type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
+
+export interface CollectionFieldOptionsV2 {
+  name?: any;
+  collectionName?: string;
+  sourceKey?: string; // association field
+  uiSchema?: ISchema;
+  target?: string;
+
+  [key: string]: any;
+}
+
+export interface CollectionOptionsV2 {
+  name: string;
+  title?: string;
+  namespace?: string;
+  /**
+   * Used for @nocobase/plugin-duplicator
+   * @see packages/core/database/src/collection-group-manager.tss
+   *
+   * @prop {'required' | 'optional' | 'skip'} dumpable - Determine whether the collection is dumped
+   * @prop {string[] | string} [with] - Collections dumped with this collection
+   * @prop {any} [delayRestore] - A function to execute after all collections are restored
+   */
+  duplicator?:
+    | dumpable
+    | {
+        dumpable: dumpable;
+        with?: string[] | string;
+        delayRestore?: any;
+      };
+
+  tableName?: string;
+  inherits?: string[] | string;
+  viewName?: string;
+  writableView?: boolean;
+
+  filterTargetKey?: string;
+  fields?: CollectionFieldOptionsV2[];
+  model?: any;
+  repository?: any;
+  sortable?: CollectionSortable;
+  /**
+   * @default true
+   */
+  autoGenId?: boolean;
+  /**
+   * @default 'options'
+   */
+  magicAttribute?: string;
+
+  tree?: string;
+
+  template?: string;
+
+  [key: string]: any;
+}
 
 export type GetCollectionFieldPredicate =
-  | ((collection: CollectionFieldOptions) => boolean)
-  | CollectionFieldOptions
-  | keyof CollectionFieldOptions;
+  | ((collection: CollectionFieldOptionsV2) => boolean)
+  | CollectionFieldOptionsV2
+  | keyof CollectionFieldOptionsV2;
 
 export class CollectionV2 {
-  protected options: CollectionOptions;
-  protected fields: Record<string, CollectionFieldOptions> = {};
+  protected options: CollectionOptionsV2;
+  protected fields: Record<string, CollectionFieldOptionsV2> = {};
   public collectionManager: CollectionManagerV2;
 
-  constructor(options: CollectionOptions, collectionManager: CollectionManagerV2) {
+  constructor(options: CollectionOptionsV2, collectionManager: CollectionManagerV2) {
     this.options = options;
     this.setFields(options.fields || []);
     this.collectionManager = collectionManager;
@@ -32,7 +90,7 @@ export class CollectionV2 {
   get titleFieldName() {
     return this.hasField(this.options.titleField) ? this.options.titleField : this.primaryKey;
   }
-  private setFields(fields: CollectionFieldOptions[]) {
+  private setFields(fields: CollectionFieldOptionsV2[]) {
     this.fields = fields.reduce((memo, field) => {
       memo[field.name] = field;
       return memo;
@@ -41,10 +99,10 @@ export class CollectionV2 {
   getOptions() {
     return this.options;
   }
-  getOption<K extends keyof CollectionOptions>(key: K): CollectionOptions[K] {
+  getOption<K extends keyof CollectionOptionsV2>(key: K): CollectionOptionsV2[K] {
     return this.options[key];
   }
-  setOptions<CollectionOptions>(options: CollectionOptions) {
+  setOptions<CollectionOptionsV2>(options: CollectionOptionsV2) {
     Object.assign(this.options, options);
     this.setFields(this.options.fields || []);
   }

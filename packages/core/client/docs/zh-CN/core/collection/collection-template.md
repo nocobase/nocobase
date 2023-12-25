@@ -220,3 +220,44 @@ const Demo = () => {
   return <pre>{compile(title)}</pre>
 }
 ```
+
+## Utils
+
+### getConfigurableProperties()
+
+用于获取内置的配置项字段。
+
+- 类型
+
+```tsx | pure
+export type DefaultConfigurableKeys =
+  | 'name'
+  | 'title'
+  | 'inherits'
+  | 'category'
+  | 'autoGenId'
+  | 'createdBy'
+  | 'updatedBy'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'sortable'
+  | 'description'
+  | 'moreOptions';
+
+const getConfigurableProperties: (...keys: DefaultConfigurableKeys[]) => Record<DefaultConfigurableKeys, any>
+```
+
+- 示例
+
+```tsx | pure
+import { getConfigurableProperties } from '@nocobase/client';
+
+const sqlCollectionTemplate = new CollectionTemplateV2({
+  name: 'sql',
+  // ...
+  configurableProperties: {
+    ...getConfigurableProperties('name', 'title', 'description'),
+    // ...
+  },
+});
+```

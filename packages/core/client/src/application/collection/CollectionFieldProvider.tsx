@@ -1,10 +1,10 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
-import { CollectionFieldOptions } from '../../collection-manager';
 import { SchemaKey } from '@formily/react';
 import { useCollectionV2 } from './CollectionProvider';
 import { DeletedPlaceholder } from './DeletedPlaceholder';
+import type { CollectionFieldOptionsV2 } from './Collection';
 
-export const CollectionFieldContextV2 = createContext<CollectionFieldOptions>(null);
+export const CollectionFieldContextV2 = createContext<CollectionFieldOptionsV2>(null);
 CollectionFieldContextV2.displayName = 'CollectionFieldContextV2';
 
 export type CollectionFieldProviderProps = {

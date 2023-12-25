@@ -1,10 +1,10 @@
-import React, { FC, ReactNode, useEffect, useState } from 'react';
+import React, { FC, ReactNode } from 'react';
 
 import { CollectionProviderV2 } from './CollectionProvider';
 import { CollectionFieldProviderV2 } from './CollectionFieldProvider';
 import { useCollectionManagerV2 } from './CollectionManagerProvider';
 import { Spin } from 'antd';
-import { CollectionV2 } from './Collection';
+import { useRequest } from '../../api-client';
 
 export interface AssociationProviderProps {
   ns?: string;
@@ -16,23 +16,12 @@ export const AssociationProviderV2: FC<AssociationProviderProps> = (props) => {
   const { name, ns, children } = props;
 
   const collectionManager = useCollectionManagerV2();
-  const [loading, setLoading] = useState(false);
-  const [collectionName, setCollectionName] = useState<string>();
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await collectionManager.getCollectionName(name, { ns });
-        setCollectionName(res);
-        setLoading(false);
-      } catch (error) {
-        console.error(error);
-        setLoading(false);
-      }
-    };
-    load();
-  }, [collectionManager, name, ns]);
+  const { loading, data: collectionName } = useRequest<string>(
+    () => collectionManager.getCollectionName(name, { ns }),
+    {
+      refreshDeps: [name, ns],
+    },
+  );
 
   if (loading) return <Spin />;
 

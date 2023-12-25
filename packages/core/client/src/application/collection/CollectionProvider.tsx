@@ -1,9 +1,10 @@
-import React, { FC, ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 import { Spin } from 'antd';
 
 import { useCollectionManagerV2 } from './CollectionManagerProvider';
 import { DeletedPlaceholder } from './DeletedPlaceholder';
 import type { CollectionV2, GetCollectionFieldPredicate } from './Collection';
+import { useRequest } from '../../api-client';
 
 export const CollectionContextV2 = createContext<CollectionV2>(null);
 CollectionContextV2.displayName = 'CollectionContextV2';
@@ -17,23 +18,9 @@ export interface CollectionProviderProps {
 export const CollectionProviderV2: FC<CollectionProviderProps> = (props) => {
   const { name, ns, children } = props;
   const collectionManager = useCollectionManagerV2();
-  const [loading, setLoading] = useState(false);
-  const [collection, setCollection] = useState<CollectionV2>(null);
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await collectionManager.getCollection(name, { ns });
-        setCollection(res);
-        setLoading(false);
-      } catch (error) {
-        console.error(error);
-        setLoading(false);
-      }
-    };
-    load();
-  }, [collectionManager, name, ns]);
+  const { loading, data: collection } = useRequest<CollectionV2>(() => collectionManager.getCollection(name, { ns }), {
+    refreshDeps: [name, ns],
+  });
 
   if (loading) return <Spin />;
 

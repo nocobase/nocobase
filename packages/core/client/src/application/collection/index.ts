@@ -13,6 +13,3 @@ export * from './CollectionTemplate';
 
 export * from './CollectionManager';
 export * from './CollectionManagerProvider';
-
-export * from './templates';
-// export * from './fieldInterfaces';
