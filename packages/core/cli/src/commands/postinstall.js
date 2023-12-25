@@ -1,5 +1,5 @@
 const { Command } = require('commander');
-const { run, isDev, isPackageValid } = require('../util');
+const { run, isDev, isPackageValid, generatePlaywrightPath } = require('../util');
 const { resolve } = require('path');
 const { existsSync } = require('fs');
 const { readFile, writeFile } = require('fs').promises;
@@ -14,6 +14,7 @@ module.exports = (cli) => {
     .command('postinstall')
     .allowUnknownOption()
     .action(async () => {
+      generatePlaywrightPath(true);
       await createStoragePluginsSymlink();
       if (!isDev()) {
         return;

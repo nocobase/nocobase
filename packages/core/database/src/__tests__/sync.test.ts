@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { Database, mockDatabase } from '@nocobase/database';
 
 describe('sync', () => {
@@ -30,7 +31,7 @@ describe('sync', () => {
       ],
     });
 
-    const fn = jest.fn();
+    const fn = vi.fn();
 
     const Child = db.collection({
       name: 'child',

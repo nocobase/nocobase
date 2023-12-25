@@ -1,4 +1,4 @@
-import { expectSettingsMenu, oneEmptyListBlock, test } from '@nocobase/test/client';
+import { expectSettingsMenu, oneEmptyListBlock, test } from '@nocobase/test/e2e';
 
 test.describe('list block schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {

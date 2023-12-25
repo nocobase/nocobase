@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { Context } from '@nocobase/actions';
 import { ACL } from '..';
 
@@ -357,7 +358,7 @@ describe('acl', () => {
   });
 
   it('should clone can result deeply', () => {
-    jest.spyOn(acl, 'can').mockReturnValue({
+    vi.spyOn(acl, 'can').mockReturnValue({
       role: 'root',
       resource: 'Test',
       action: 'test',

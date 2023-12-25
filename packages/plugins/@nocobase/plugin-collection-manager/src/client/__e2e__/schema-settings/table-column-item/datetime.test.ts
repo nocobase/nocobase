@@ -1,4 +1,4 @@
-import { expect, oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields, test } from '@nocobase/test/client';
+import { expect, oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields, test } from '@nocobase/test/e2e';
 import dayjs from 'dayjs';
 import { createColumnItem, showSettingsMenu, testSupportedOptions } from './utils';
 

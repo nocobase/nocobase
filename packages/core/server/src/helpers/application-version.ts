@@ -31,14 +31,14 @@ export class ApplicationVersion {
     return null;
   }
 
-  async update() {
+  async update(version?: string) {
     await this.collection.sync();
     await this.collection.model.destroy({
       truncate: true,
     });
 
     await this.collection.model.create({
-      value: this.app.getVersion(),
+      value: version || this.app.getVersion(),
     });
   }
 

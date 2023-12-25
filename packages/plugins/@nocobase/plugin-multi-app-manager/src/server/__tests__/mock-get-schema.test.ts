@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { AppSupervisor, Plugin, PluginManager } from '@nocobase/server';
 import { mockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
@@ -5,8 +6,8 @@ import { PluginMultiAppManager } from '../server';
 
 describe('test with start', () => {
   it('should load subApp on create', async () => {
-    const loadFn = jest.fn();
-    const installFn = jest.fn();
+    const loadFn = vi.fn();
+    const installFn = vi.fn();
 
     class TestPlugin extends Plugin {
       getName(): string {

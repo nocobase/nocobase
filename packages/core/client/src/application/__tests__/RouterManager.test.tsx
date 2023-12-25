@@ -1,8 +1,8 @@
+import { render, screen, userEvent } from '@nocobase/test/client';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import React, { FC } from 'react';
 import { Link, Outlet } from 'react-router-dom';
-import { render, screen, userEvent } from 'testUtils';
 import { beforeAll } from 'vitest';
 import { Application } from '../Application';
 import { RouteType, RouterManager } from '../RouterManager';

@@ -1,6 +1,6 @@
 import { SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
+import { act, renderHook, waitFor } from '@nocobase/test/client';
 import React from 'react';
-import { act, renderHook, waitFor } from 'testUtils';
 import { APIClientProvider } from '../../api-client';
 import { mockAPIClient } from '../../testUtils';
 import { CurrentUserProvider } from '../../user';

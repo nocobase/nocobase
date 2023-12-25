@@ -4,7 +4,7 @@ import {
   oneCollapseAndOneTableWithSameCollection,
   oneEmptyFilterCollapseBlock,
   test,
-} from '@nocobase/test/client';
+} from '@nocobase/test/e2e';
 
 test.describe('collapse schema settings', () => {
   test('supported options', async ({ page, mockPage }) => {

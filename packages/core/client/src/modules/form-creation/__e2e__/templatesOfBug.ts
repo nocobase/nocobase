@@ -1,4 +1,4 @@
-import { PageConfig } from '@nocobase/test/client';
+import { PageConfig } from '@nocobase/test/e2e';
 
 export const T2165 = {
   pageSchema: {

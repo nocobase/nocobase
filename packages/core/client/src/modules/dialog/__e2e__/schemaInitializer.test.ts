@@ -5,7 +5,7 @@ import {
   oneEmptyTableBlockWithCustomizeActions,
   oneFormBlockWithRolesFieldBasedUsers,
   test,
-} from '@nocobase/test/client';
+} from '@nocobase/test/e2e';
 
 test.describe('where to open a popup and what can be added to it', () => {
   test('add new', async ({ page, mockPage }) => {

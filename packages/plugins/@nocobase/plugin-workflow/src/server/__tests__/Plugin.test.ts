@@ -356,10 +356,8 @@ describe('workflow > Plugin', () => {
       const p1 = await PostRepo.create({ values: { title: 't1' } });
 
       const ExecutionModel = db.getCollection('executions').model;
-      const e1 = await ExecutionModel.create({
-        workflowId: w1.id,
+      const e1 = await w1.createExecution({
         key: w1.key,
-        useTransaction: w1.useTransaction,
         context: {
           data: p1.get(),
         },
@@ -378,10 +376,25 @@ describe('workflow > Plugin', () => {
 
       await db.reconnect();
 
-      const e2 = await ExecutionModel.create({
-        workflowId: w1.id,
+      const e2 = await w1.createExecution({
         key: w1.key,
-        useTransaction: w1.useTransaction,
+        context: {
+          data: p1.get(),
+        },
+        createdAt: p1.createdAt,
+      });
+
+      const w2 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const e3 = await w2.createExecution({
+        key: w2.key,
         context: {
           data: p1.get(),
         },
@@ -393,6 +406,10 @@ describe('workflow > Plugin', () => {
 
       await e2.reload();
       expect(e2.status).toBe(EXECUTION_STATUS.QUEUEING);
+
+      // queueing execution of disabled workflow should not effect other executions
+      await e3.reload();
+      expect(e3.status).toBe(EXECUTION_STATUS.RESOLVED);
     });
   });
 
