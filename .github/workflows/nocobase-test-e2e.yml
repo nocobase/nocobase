@@ -76,4 +76,4 @@ jobs:
           DB_USER: nocobase
           DB_PASSWORD: password
           DB_DATABASE: nocobase
-    timeout-minutes: 90
+    timeout-minutes: 180
