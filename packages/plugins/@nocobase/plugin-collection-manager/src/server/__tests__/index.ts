@@ -23,7 +23,8 @@ export async function createApp(
     await options.beforeInstall(app);
   }
 
-  await app.install({ clean: true });
+  await app.cleanDb();
+  await app.install();
   await app.start();
   return app;
 }

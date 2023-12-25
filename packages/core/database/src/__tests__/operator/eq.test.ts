@@ -9,6 +9,7 @@ describe('eq operator', () => {
     db = mockDatabase({});
     await db.clean({ drop: true });
 
+    await db.clean({ drop: true });
     Test = db.collection({
       name: 'tests',
       fields: [{ type: 'string', name: 'name' }],

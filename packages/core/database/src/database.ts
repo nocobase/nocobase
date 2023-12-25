@@ -75,6 +75,7 @@ import { ViewCollection } from './view-collection';
 import { CollectionFactory } from './collection-factory';
 import chalk from 'chalk';
 import { checkDatabaseVersion } from './helpers';
+import { CollectionSnapshotManager } from './collection-snapshot/manager';
 
 export type MergeOptions = merge.Options;
 
@@ -92,6 +93,7 @@ export interface IDatabaseOptions extends Options {
   migrator?: any;
   usingBigIntForId?: boolean;
   underscored?: boolean;
+  collectionSnapshotDir?: string;
   customHooks?: any;
   instanceId?: string;
 }
@@ -107,6 +109,7 @@ interface RegisterOperatorsContext {
 
 export interface CleanOptions extends QueryInterfaceDropAllTablesOptions {
   drop?: boolean;
+  schema?: string;
 }
 
 export type AddMigrationsOptions = {
@@ -201,6 +204,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   collectionGroupManager = new CollectionGroupManager(this);
 
   collectionFactory: CollectionFactory = new CollectionFactory(this);
+  collectionSnapshotManager = new CollectionSnapshotManager(this);
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
   constructor(options: DatabaseOptions) {
@@ -709,13 +713,30 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   async clean(options: CleanOptions) {
     const { drop, ...others } = options || {};
+
     if (drop !== true) {
       return;
     }
 
-    if (this.options.schema) {
-      const tableNames = (await this.sequelize.getQueryInterface().showAllTables()).map((table) => {
-        return `"${this.options.schema}"."${table}"`;
+    await this.collectionSnapshotManager.clean();
+
+    const schema = options.schema || this.options.schema;
+
+    if (schema) {
+      const tableNames = (
+        await this.sequelize.query(
+          `SELECT table_name
+           FROM information_schema.tables
+           WHERE table_schema = '${schema}'
+             AND table_type LIKE '%TABLE'
+             AND table_name != 'spatial_ref_sys';`,
+          {
+            raw: true,
+            type: 'SHOWTABLES',
+          },
+        )
+      ).map((item: any) => {
+        return `"${schema}"."${item[0]}"`;
       });
 
       const skip = options.skip || [];

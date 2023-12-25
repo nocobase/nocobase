@@ -508,8 +508,8 @@ function useFormBlockProps() {
       ? 'readPretty'
       : 'disabled'
     : user?.data?.id !== userJob.userId
-    ? 'disabled'
-    : 'editable';
+      ? 'disabled'
+      : 'editable';
 
   useEffect(() => {
     form?.setPattern(pattern);

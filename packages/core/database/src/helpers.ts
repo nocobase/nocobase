@@ -1,5 +1,6 @@
 import { Database, IDatabaseOptions } from './database';
 import fs from 'fs';
+import path from 'path';
 import semver from 'semver';
 
 function getEnvValue(key, defaultValue?) {
@@ -73,6 +74,8 @@ export async function parseDatabaseOptionsFromEnv(): Promise<IDatabaseOptions> {
     tablePrefix: process.env.DB_TABLE_PREFIX,
     schema: process.env.DB_SCHEMA,
     underscored: process.env.DB_UNDERSCORED === 'true',
+    collectionSnapshotDir:
+      process.env.COLLECTION_SNAPSHOT_DIR || path.resolve(process.cwd(), 'storage', 'collection-snapshots'),
   };
 
   const sslOptions = await extractSSLOptionsFromEnv();

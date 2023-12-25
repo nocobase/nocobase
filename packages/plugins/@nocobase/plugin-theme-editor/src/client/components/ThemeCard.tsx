@@ -259,18 +259,18 @@ const ThemeCard = (props: Props) => {
       item.id === currentThemeId
         ? t('Current')
         : item.id === defaultThemeId
-        ? t('Default')
-        : item.optional
-        ? t('Optional')
-        : t('Non-optional');
+          ? t('Default')
+          : item.optional
+            ? t('Optional')
+            : t('Non-optional');
     const color =
       item.id === currentThemeId
         ? 'processing'
         : item.id === defaultThemeId
-        ? 'default'
-        : item.optional
-        ? 'success'
-        : 'error';
+          ? 'default'
+          : item.optional
+            ? 'success'
+            : 'error';
 
     return (
       <Tag style={{ marginRight: 0 }} color={color}>

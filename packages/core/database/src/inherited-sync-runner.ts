@@ -1,7 +1,7 @@
 import { InheritedCollection } from './inherited-collection';
 import lodash from 'lodash';
 
-export class SyncRunner {
+export class InheritedSyncRunner {
   static async syncInheritModel(model: any, options: any) {
     const { transaction } = options;
 

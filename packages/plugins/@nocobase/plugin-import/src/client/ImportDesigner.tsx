@@ -57,8 +57,8 @@ export const ImportDesigner = () => {
                 default: fieldSchema?.['x-component-props']?.danger
                   ? 'danger'
                   : fieldSchema?.['x-component-props']?.type === 'primary'
-                  ? 'primary'
-                  : 'default',
+                    ? 'primary'
+                    : 'default',
                 enum: [
                   { value: 'default', label: '{{t("Default")}}' },
                   { value: 'primary', label: '{{t("Highlight")}}' },

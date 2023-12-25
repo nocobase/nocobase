@@ -24,7 +24,8 @@
     "semver": "^7.3.7",
     "sequelize": "^6.26.0",
     "umzug": "^3.1.1",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "node-object-hash": "v3.0.0"
   },
   "devDependencies": {
     "@types/glob": "^7.2.0",

@@ -1,6 +1,5 @@
 import Database, { CollectionOptions, DatabaseOptions, mockDatabase } from '@nocobase/database';
 import { Handlers, ResourceOptions, Resourcer } from '@nocobase/resourcer';
-import merge from 'deepmerge';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import qs from 'qs';

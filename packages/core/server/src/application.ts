@@ -17,7 +17,6 @@ import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
 import { createCacheManager } from './cache';
 import { registerCli } from './commands';
-import { CronJobManager } from './cron/cron-job-manager';
 import { ApplicationNotInstall } from './errors/application-not-install';
 import {
   createAppProxy,
@@ -34,6 +33,8 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 import packageJson from '../package.json';
 import chalk from 'chalk';
 import { RecordableHistogram, performance } from 'node:perf_hooks';
+import path from 'path';
+import { CronJobManager } from './cron/cron-job-manager';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -758,12 +759,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   protected createDatabase(options: ApplicationOptions) {
-    const db = new Database({
+    const config = {
       ...(options.database instanceof Database ? options.database.options : options.database),
       migrator: {
         context: { app: this },
       },
-    });
+    };
+
+    if (config.collectionSnapshotDir) {
+      config.collectionSnapshotDir = path.resolve(config.collectionSnapshotDir, this.name);
+    }
+
+    const db = new Database(config);
 
     db.setLogger(this._logger);
 

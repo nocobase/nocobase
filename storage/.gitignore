@@ -1,3 +1,4 @@
 .pm2
+collection-snapshots
 tmp
 app.watch.ts

@@ -8,18 +8,11 @@ export default class extends Migration {
     if (!collection) {
       return;
     }
-    const tableNameWithSchema = collection.getTableNameWithSchema();
     const field = collection.getField('packageName');
     if (await field.existsInDb()) {
       return;
     }
-    await this.db.sequelize.getQueryInterface().addColumn(tableNameWithSchema, field.columnName(), {
-      type: DataTypes.STRING,
-    });
-    await this.db.sequelize.getQueryInterface().addConstraint(tableNameWithSchema, {
-      type: 'unique',
-      fields: [field.columnName()],
-    });
+
     const repository = this.db.getRepository<any>('applicationPlugins');
     const plugins = await repository.find();
     for (const plugin of plugins) {
