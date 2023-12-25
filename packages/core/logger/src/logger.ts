@@ -14,6 +14,7 @@ import {
 } from './format';
 
 interface LoggerOptions extends Omit<winston.LoggerOptions, 'transports'> {
+  appName?: string;
   path?: string;
   filename?: string;
   transports?: (string | winston.transport)[];
@@ -23,7 +24,7 @@ const getTransports = (options: LoggerOptions) => {
   const { filename } = options;
   let { transports: configTransports, path: dirname } = options;
   configTransports = configTransports || getLoggerTransport();
-  dirname = dirname || getLoggerFilePath();
+  dirname = dirname || path.resolve(getLoggerFilePath(), options.appName || '');
   if (!path.isAbsolute(dirname)) {
     dirname = path.resolve(process.cwd(), dirname);
   }

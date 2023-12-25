@@ -15,11 +15,12 @@ export class CustomRequestPlugin extends Plugin {
 
   getLogger(): Logger {
     const logger = createLogger({
+      appName: this.app.name,
       transports: [
         'console',
         Transports.dailyRotateFile({
           dirname: getLoggerFilePath('custom-request'),
-          filename: this.app.name + '-%DATE%.log',
+          filename: '%DATE%.log',
         }),
       ],
     } as LoggerOptions);

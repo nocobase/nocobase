@@ -52,6 +52,7 @@ export default class WorkflowPlugin extends Plugin {
     }
 
     const logger = createLogger({
+      appName: this.app.name,
       transports: [
         ...(process.env.NODE_ENV !== 'production' ? ['console'] : []),
         new winston.transports.File({

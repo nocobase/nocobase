@@ -13,7 +13,7 @@ const defaultResponseWhitelist = ['status'];
 export const requestLogger = (appName: string, options?: AppLoggerOptions) => {
   return async (ctx, next) => {
     const reqId = ctx.reqId;
-    const requestLogger = createLogger({ filename: `${appName}_request`, ...(options?.request || {}) });
+    const requestLogger = createLogger({ appName, filename: 'request', ...(options?.request || {}) });
     const path = /^\/api\/(.+):(.+)/.exec(ctx.path);
     const contextLogger = ctx.app.log.child({ reqId, module: path?.[1], submodule: path?.[2] });
     // ctx.reqId = reqId;

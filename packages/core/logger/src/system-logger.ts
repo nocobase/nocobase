@@ -51,6 +51,3 @@ export const createSystemLogger = (options: SystemLoggerOptions) =>
   winston.createLogger({
     transports: [new SystemLoggerTransport(options)],
   });
-
-export const createAppLogger = ({ app, ...options }: SystemLoggerOptions & { app?: string }) =>
-  createSystemLogger({ filename: `${app}_system`, seperateError: true, ...options });
