@@ -6,7 +6,7 @@ const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
 // 创建工作流
 export const apiCreateWorkflow = async (data: any) => {
     const api = await request.newContext({
-        storageState: require.resolve('../../../../../../playwright/.auth/admin.json'),
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
     });
 
     const state = await api.storageState();
@@ -57,7 +57,7 @@ export const apiCreateWorkflow = async (data: any) => {
 // 更新工作流
 export const apiUpdateWorkflow = async (id: number, data: any) => {
     const api = await request.newContext({
-        storageState: require.resolve('../../../../../../playwright/.auth/admin.json'),
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
     });
 
     const state = await api.storageState();
@@ -117,7 +117,7 @@ export const apiUpdateWorkflow = async (id: number, data: any) => {
 // 删除工作流
 export const apiDeleteWorkflow = async (id: number) => {
     const api = await request.newContext({
-        storageState: require.resolve('../../../../../../playwright/.auth/admin.json'),
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
     });
 
     const state = await api.storageState();
@@ -137,7 +137,7 @@ export const apiDeleteWorkflow = async (id: number) => {
 // 查询工作流
 export const apiGetWorkflow = async (id: number) => {
     const api = await request.newContext({
-        storageState: require.resolve('../../../../../../playwright/.auth/admin.json'),
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
     });
 
     const state = await api.storageState();
@@ -176,7 +176,7 @@ export const apiGetWorkflow = async (id: number) => {
 // 更新工作流触发器节点
 export const apiUpdateWorkflowTrigger = async (id: number, data: any) => {
     const api = await request.newContext({
-        storageState: require.resolve('../../../../../../playwright/.auth/admin.json'),
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
     });
 
     const state = await api.storageState();
@@ -254,7 +254,7 @@ export const apiUpdateWorkflowTrigger = async (id: number, data: any) => {
 // 添加工作流节点
 export const apiCreateWorkflowNode = async (workflowId: number, data: any) => {
     const api = await request.newContext({
-        storageState: require.resolve('../../../../../../playwright/.auth/admin.json'),
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
     });
 
     const state = await api.storageState();
@@ -299,7 +299,7 @@ export const apiCreateWorkflowNode = async (workflowId: number, data: any) => {
 // 查询工作流节点
 export const apiGetWorkflowNode = async (id: number) => {
     const api = await request.newContext({
-        storageState: require.resolve('../../../../../../playwright/.auth/admin.json'),
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
     });
 
     const state = await api.storageState();
@@ -352,7 +352,7 @@ export const apiGetWorkflowNode = async (id: number) => {
 // 更新工作流节点配置
 export const apiUpdateWorkflowNode = async (id: number, data: any) => {
     const api = await request.newContext({
-        storageState: require.resolve('../../../../../../playwright/.auth/admin.json'),
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
     });
 
     const state = await api.storageState();
@@ -401,7 +401,7 @@ export const apiUpdateWorkflowNode = async (id: number, data: any) => {
 // 查询节点执行历史
 export const apiGetWorkflowNodeExecutions = async (id: number) => {
     const api = await request.newContext({
-        storageState: require.resolve('../../../../../../playwright/.auth/admin.json'),
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
     });
 
     const state = await api.storageState();
@@ -494,7 +494,7 @@ export const apiGetWorkflowNodeExecutions = async (id: number) => {
 // 更新业务表单条数据
 export const apiUpdateRecord = async (collectionName: string, id: number, data: any) => {
     const api = await request.newContext({
-        storageState: require.resolve('../../../../../../playwright/.auth/admin.json'),
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
     });
     const state = await api.storageState();
     const headers = getHeaders(state);
@@ -527,7 +527,7 @@ export const apiUpdateRecord = async (collectionName: string, id: number, data: 
 // 查询业务表单条数据
 export const apiGetRecord = async (collectionName: string, id: number) => {
     const api = await request.newContext({
-        storageState: require.resolve('../../../../../../playwright/.auth/admin.json'),
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
     });
     const state = await api.storageState();
     const headers = getHeaders(state);
@@ -570,7 +570,7 @@ export const apiGetRecord = async (collectionName: string, id: number) => {
 // 查询业务表list
 export const apiGetList = async (collectionName: string) => {
     const api = await request.newContext({
-        storageState: require.resolve('../../../../../../playwright/.auth/admin.json'),
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
     });
     const state = await api.storageState();
     const headers = getHeaders(state);
@@ -608,7 +608,7 @@ export const apiGetList = async (collectionName: string) => {
 // 添加业务表单条数据触发工作流表单事件,triggerWorkflows=key1!field,key2,key3!field.subfield
 export const apiCreateRecordTriggerFormEvent = async (collectionName: string,triggerWorkflows:string, data: any) => {
     const api = await request.newContext({
-        storageState: require.resolve('../../../../../../playwright/.auth/admin.json'),
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
     });
     const state = await api.storageState();
     const headers = getHeaders(state);
@@ -659,7 +659,7 @@ export const apiCreateRecordTriggerFormEvent = async (collectionName: string,tri
 // 提交至工作流触发工作流表单事件
 export const apiSubmitRecordTriggerFormEvent = async (triggerWorkflows:string, data: any) => {
     const api = await request.newContext({
-        storageState: require.resolve('../../../../../../playwright/.auth/admin.json'),
+        storageState: process.env.PLAYWRIGHT_AUTH_FILE,
     });
     const state = await api.storageState();
     const headers = getHeaders(state);
