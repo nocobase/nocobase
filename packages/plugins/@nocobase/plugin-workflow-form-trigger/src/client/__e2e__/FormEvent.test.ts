@@ -32,7 +32,7 @@ import { generalWithNoRelationalFields } from '@nocobase/plugin-workflow-test/cl
 import { appendJsonCollectionName } from '@nocobase/plugin-workflow-test/client';
 import { apiCreateRecordTriggerFormEvent } from '@nocobase/plugin-workflow-test/client';
 import { apiSubmitRecordTriggerFormEvent } from '@nocobase/plugin-workflow-test/client';
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
 import { faker } from '@faker-js/faker';
 

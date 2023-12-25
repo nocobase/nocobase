@@ -1,4 +1,4 @@
-import { request } from '@playwright/test';
+import { request } from '@nocobase/test/e2e';
 
 const PORT = process.env.APP_PORT || 20000;
 const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;

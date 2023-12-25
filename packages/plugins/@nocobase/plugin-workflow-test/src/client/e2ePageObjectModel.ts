@@ -1,4 +1,4 @@
-import { Locator, Page } from '@playwright/test';
+import { Locator, Page } from '@nocobase/test/e2e';
 export class CreateWorkFlow {
   readonly page: Page;
   name: Locator;
