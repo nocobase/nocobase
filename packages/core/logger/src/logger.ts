@@ -1,92 +1,30 @@
 import winston, { Logger } from 'winston';
-import path from 'path';
 import { SystemLoggerOptions } from './system-logger';
 import 'winston-daily-rotate-file';
-import { getLoggerFilePath, getLoggerFormat, getLoggerLevel, getLoggerTransport } from './config';
-import { Transports } from './transports';
-import {
-  delimiterFormat,
-  delimiterFormatWithColor,
-  escapeFormat,
-  logfmtFormat,
-  logfmtFormatWithColor,
-  sortFormat,
-} from './format';
+import { getLoggerLevel } from './config';
+import { getTransports } from './transports';
+import { colorFormat, getFormat, logfmtFormat, sortFormat } from './format';
 
-interface LoggerOptions extends Omit<winston.LoggerOptions, 'transports'> {
+interface LoggerOptions extends Omit<winston.LoggerOptions, 'transports' | 'format'> {
   dirname?: string;
   filename?: string;
-  transports?: (string | winston.transport)[];
+  format?: 'logfmt' | 'json' | 'delimiter' | winston.Logform.Format;
+  transports?: ('console' | 'file' | 'dailyRotateFile' | winston.transport)[];
 }
-
-const getTransports = (options: LoggerOptions) => {
-  const { filename } = options;
-  let { transports: configTransports, dirname } = options;
-  configTransports = configTransports || getLoggerTransport();
-  dirname = dirname || getLoggerFilePath();
-  if (!path.isAbsolute(dirname)) {
-    dirname = path.resolve(process.cwd(), dirname);
-  }
-  const configFormat = getLoggerFormat();
-
-  const format = (format?: winston.Logform.Format, withColor = false) => {
-    let logFormat: winston.Logform.Format;
-    switch (configFormat) {
-      case 'logfmt':
-        logFormat = withColor ? logfmtFormatWithColor : logfmtFormat;
-        break;
-      case 'delimiter':
-        logFormat = winston.format.combine(escapeFormat, withColor ? delimiterFormatWithColor : delimiterFormat);
-        break;
-      default:
-        logFormat = winston.format.json({ deterministic: false });
-    }
-
-    return winston.format.combine(format || sortFormat, logFormat);
-  };
-
-  const transports = {
-    console: () =>
-      Transports.console({
-        format: format(
-          winston.format((info) => ({
-            logfile: filename || 'console',
-            level: info.level,
-            timestamp: info.timestamp,
-            ...info,
-          }))(),
-          true,
-        ),
-      }),
-    file: () =>
-      Transports.file({
-        dirname,
-        filename: filename.includes('.log') ? filename : `${filename}.log`,
-        format: format(),
-      }),
-    dailyRotateFile: () =>
-      Transports.dailyRotateFile({
-        dirname,
-        filename: filename.includes('%DATE%') || filename.includes('.log') ? filename : `${filename}_%DATE%.log`,
-        format: format(),
-      }),
-  };
-  return configTransports?.map((t) => (typeof t === 'string' ? transports[t]() : t)) || transports['console']();
-};
 
 export const createLogger = (options: LoggerOptions) => {
   if (process.env.GITHUB_ACTIONS) {
     return createConsoleLogger();
   }
-  const { transports, ...rest } = options;
+  const { transports, format: _format, ...rest } = options;
+  const format = winston.format.combine(
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    getFormat(_format),
+  );
   const winstonOptions = {
     level: getLoggerLevel(),
     ...rest,
-    transports: getTransports(options),
-    format: winston.format.combine(
-      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      options.format || winston.format.combine(winston.format.simple(), winston.format.json({ deterministic: false })),
-    ),
+    transports: getTransports({ ...options, format }),
   };
   return winston.createLogger(winstonOptions);
 };
@@ -99,7 +37,7 @@ export const createConsoleLogger = (options?: winston.LoggerOptions) => {
       winston.format.timestamp({
         format: 'YYYY-MM-DD HH:mm:ss',
       }),
-      format || winston.format.combine(sortFormat, logfmtFormatWithColor),
+      format || winston.format.combine(sortFormat, colorFormat, logfmtFormat),
     ),
     ...(rest || {}),
     transports: [new winston.transports.Console()],

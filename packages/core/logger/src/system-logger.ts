@@ -2,6 +2,7 @@ import winston, { format } from 'winston';
 import { LoggerOptions, createLogger } from './logger';
 import Transport from 'winston-transport';
 import { SPLAT } from 'triple-beam';
+import { getFormat, sortFormat } from './format';
 
 export interface SystemLoggerOptions extends LoggerOptions {
   seperateError?: boolean; // print error seperately, default true
@@ -12,13 +13,13 @@ class SystemLoggerTransport extends Transport {
   private errorLogger: winston.Logger;
 
   constructor({ seperateError, filename, ...options }: SystemLoggerOptions) {
-    super(options);
+    super({ ...options, format: null });
     this.logger = createLogger({
       ...options,
       filename,
       format: winston.format.combine(
         format((info) => (seperateError && info.level === 'error' ? false : info))(),
-        options.format || winston.format((info) => info)(),
+        getFormat(options.format),
       ),
     });
     if (seperateError) {
