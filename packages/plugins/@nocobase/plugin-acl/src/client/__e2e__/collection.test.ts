@@ -407,7 +407,7 @@ test.describe('export', () => {
   });
 });
 
-test.describe('importt', () => {
+test.describe('import', () => {
   test('general permission', async ({ page, mockPage, mockRole, updateRole }) => {
     await mockPage().goto();
     //新建角色并切换到新角色
