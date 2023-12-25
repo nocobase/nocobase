@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-action-bulk-edit",
-  "version": "0.18.0-alpha.1",
+  "version": "0.18.0-alpha.2",
   "main": "dist/server/index.js",
   "displayName": "Bulk edit action",
   "displayName.zh-CN": "批量编辑操作",
