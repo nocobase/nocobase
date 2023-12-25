@@ -35,34 +35,33 @@ test.describe('form item & create form', () => {
   });
 
   test('set default value', async ({ page, mockPage, mockRecord }) => {
+    let nowTime;
     await testDefaultValue({
       page,
-      gotoPage: () =>
-        (async (mockPage) => {
-          const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields).waitForInit();
-          await nocoPage.goto();
-        })(mockPage),
-      openDialog: () =>
-        (async (page: Page) => {
-          await page.getByRole('button', { name: 'Add new' }).click();
-        })(page),
+      gotoPage: async () => {
+        const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndDatetimeFields).waitForInit();
+        await nocoPage.goto();
+      },
+      openDialog: async () => {
+        await page.getByRole('button', { name: 'Add new' }).click();
+      },
       closeDialog: () => page.getByLabel('drawer-Action.Container-general-Add record-mask').click(),
-      showMenu: () =>
-        (async (page: Page, fieldName: string) => {
-          await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-          await page
-            .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-            .hover();
-        })(page, 'time'),
+      showMenu: async () => {
+        await page.getByLabel(`block-item-CollectionField-general-form-general.time-time`).hover();
+        await page
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.time`)
+          .hover();
+      },
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
       inputConstantValue: async () => {
         await page.getByLabel('block-item-VariableInput-').getByPlaceholder('Select time').click();
         await page.getByText('Now').click();
+        nowTime = dayjs();
       },
       expectConstantValue: async () => {
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.time-time').getByPlaceholder('Select time'),
-        ).toHaveValue(new RegExp(dayjs().format('HH:mm:'))); // 去掉后面的秒，是因为可能因为延迟导致秒数不一致
+        ).toHaveValue(new RegExp(nowTime.format('HH:mm:ss')));
       },
     });
   });
