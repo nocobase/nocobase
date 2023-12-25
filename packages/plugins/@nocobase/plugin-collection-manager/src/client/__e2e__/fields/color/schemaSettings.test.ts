@@ -18,19 +18,11 @@ import {
 
 test.describe('form item & create form', () => {
   test('set default value', async ({ page, mockPage, mockRecord }) => {
-    await (async (mockPage) => {
-      const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-      await nocoPage.goto();
-    })(mockPage);
-    await (async (page: Page) => {
-      await page.getByRole('button', { name: 'Add new' }).click();
-    })(page);
-    await (async (page: Page, fieldName: string) => {
-      await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-      await page
-        .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-        .hover();
-    })(page, 'color');
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
+    await nocoPage.goto();
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page.getByLabel(`block-item-CollectionField-general-form-general.color-color`).hover();
+    await page.getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.color`).hover();
     // 简单测试下是否有选项，值的话无法选中，暂时测不了
     await expect(page.getByRole('menuitem', { name: 'Set default value' })).toBeVisible();
   });
@@ -38,22 +30,19 @@ test.describe('form item & create form', () => {
   test('pattern', async ({ page, mockPage }) => {
     await testPattern({
       page,
-      gotoPage: () =>
-        (async (mockPage) => {
-          const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-          await nocoPage.goto();
-        })(mockPage),
-      openDialog: () =>
-        (async (page: Page) => {
-          await page.getByRole('button', { name: 'Add new' }).click();
-        })(page),
-      showMenu: () =>
-        (async (page: Page, fieldName: string) => {
-          await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-          await page
-            .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-            .hover();
-        })(page, 'color'),
+      gotoPage: async () => {
+        const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
+        await nocoPage.goto();
+      },
+      openDialog: async () => {
+        await page.getByRole('button', { name: 'Add new' }).click();
+      },
+      showMenu: async () => {
+        await page.getByLabel(`block-item-CollectionField-general-form-general.color-color`).hover();
+        await page
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.color`)
+          .hover();
+      },
       expectEditable: async () => {
         // 默认情况下显示颜色选择框
         await page.getByLabel('color-picker-normal').hover();
@@ -232,10 +221,6 @@ test.describe('form item & view form', () => {
   });
 });
 
-test.describe('form item & filter form', () => {
-  test('supported options', async ({ page }) => {});
-});
-
 test.describe('table column & table', () => {
   test('supported options', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
@@ -251,24 +236,4 @@ test.describe('table column & table', () => {
       supportedOptions: ['Custom column title', 'Column width', 'Delete'],
     });
   });
-});
-
-test.describe('table column & table & record picker', () => {
-  test('supported options', async ({ page }) => {});
-});
-
-test.describe('table column & table & Relationship block', () => {
-  test('supported options', async ({ page }) => {});
-});
-
-test.describe('table column & sub table & create from', () => {
-  test('supported options', async ({ page }) => {});
-});
-
-test.describe('table column & sub table & edit from', () => {
-  test('supported options', async ({ page }) => {});
-});
-
-test.describe('table column & sub table & view from', () => {
-  test('supported options', async ({ page }) => {});
 });

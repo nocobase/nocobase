@@ -725,7 +725,8 @@ export async function expectSettingsMenu({
 export async function expectInitializerMenu({ showMenu, supportedOptions, page }) {
   await showMenu();
   for (const option of supportedOptions) {
-    await expect(page.getByRole('menuitem', { name: option })).toBeVisible();
+    // 使用 first 方法避免有重名的导致报错
+    await expect(page.getByRole('menuitem', { name: option }).first()).toBeVisible();
   }
 }
 

@@ -1,21 +1,71 @@
-import { test } from '@nocobase/test/e2e';
+import {
+  expectInitializerMenu,
+  oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields,
+  test,
+} from '@nocobase/test/e2e';
 
-test('form item & create form', async ({ page, mockPage }) => {});
+test.describe('form item & create form', () => {
+  test('configure fields', async ({ page, mockPage }) => {
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields).waitForInit();
+    await nocoPage.goto();
 
-test('form item & edit form', async ({ page, mockPage }) => {});
+    await expectInitializerMenu({
+      page,
+      showMenu: async () => {
+        await page.getByRole('button', { name: 'Add new' }).click();
+        await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+      },
+      supportedOptions: ['formula', 'sequence', 'JSON', 'collection'],
+    });
+  });
+});
 
-test('form item & view form', async ({ page, mockPage }) => {});
+test.describe('form item & edit form', () => {
+  test('configure fields', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields).waitForInit();
+    await mockRecord('general');
+    await nocoPage.goto();
 
-test('form item & filter form', async ({ page, mockPage }) => {});
+    await expectInitializerMenu({
+      page,
+      showMenu: async () => {
+        await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
+        await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+      },
+      supportedOptions: ['formula', 'sequence', 'JSON', 'collection'],
+    });
+  });
+});
 
-test('table column & table', async ({ page, mockPage }) => {});
+test.describe('form item & view form', () => {
+  test('configure fields', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields).waitForInit();
+    await mockRecord('general');
+    await nocoPage.goto();
 
-test('table column & table & record picker', async ({ page, mockPage }) => {});
+    await expectInitializerMenu({
+      page,
+      showMenu: async () => {
+        await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
+        await page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general').hover();
+      },
+      supportedOptions: ['formula', 'sequence', 'JSON', 'collection'],
+    });
+  });
+});
 
-test('table column & table & Relationship block', async ({ page, mockPage }) => {});
+test.describe('table column & table', () => {
+  test('configure columns', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAdvancedFields).waitForInit();
+    await mockRecord('general');
+    await nocoPage.goto();
 
-test('table column & sub table & create from', async ({ page, mockPage }) => {});
-
-test('table column & sub table & edit from', async ({ page, mockPage }) => {});
-
-test('table column & sub table & view from', async ({ page, mockPage }) => {});
+    await expectInitializerMenu({
+      page,
+      showMenu: async () => {
+        await page.getByLabel('schema-initializer-TableV2-').hover();
+      },
+      supportedOptions: ['formula', 'sequence', 'JSON', 'collection'],
+    });
+  });
+});

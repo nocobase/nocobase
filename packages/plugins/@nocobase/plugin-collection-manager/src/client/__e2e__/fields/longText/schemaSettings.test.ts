@@ -268,10 +268,6 @@ test.describe('form item & view form', () => {
   });
 });
 
-test.describe('form item & filter form', () => {
-  test('supported options', async ({ page }) => {});
-});
-
 test.describe('table column & table', () => {
   test('supported options', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
@@ -287,24 +283,4 @@ test.describe('table column & table', () => {
       supportedOptions: ['Custom column title', 'Column width', 'Delete'],
     });
   });
-});
-
-test.describe('table column & table & record picker', () => {
-  test('supported options', async ({ page }) => {});
-});
-
-test.describe('table column & table & Relationship block', () => {
-  test('supported options', async ({ page }) => {});
-});
-
-test.describe('table column & sub table & create from', () => {
-  test('supported options', async ({ page }) => {});
-});
-
-test.describe('table column & sub table & edit from', () => {
-  test('supported options', async ({ page }) => {});
-});
-
-test.describe('table column & sub table & view from', () => {
-  test('supported options', async ({ page }) => {});
 });

@@ -62,19 +62,20 @@ test.describe('form item & edit form', () => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndMediaFields).waitForInit();
     await mockRecord('general');
     await nocoPage.goto();
-    await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
-    await page
-      .getByLabel(`block-item-CollectionField-general-form-general.attachment-attachment`, { exact: true })
-      .hover();
-    await page
-      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.attachment`, {
-        exact: true,
-      })
-      .hover();
 
     await expectSettingsMenu({
       page,
-      showMenu: async () => {},
+      showMenu: async () => {
+        await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
+        await page
+          .getByLabel(`block-item-CollectionField-general-form-general.attachment-attachment`, { exact: true })
+          .hover();
+        await page
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.attachment`, {
+            exact: true,
+          })
+          .hover();
+      },
       supportedOptions: ['Edit field title', 'Display title', 'Edit description', 'Required', 'Pattern', 'Delete'],
       unsupportedOptions: ['Set default value'],
     });
@@ -266,10 +267,6 @@ test.describe('form item & view form', () => {
   });
 });
 
-test.describe('form item & filter form', () => {
-  test('supported options', async ({ page }) => {});
-});
-
 test.describe('table column & table', () => {
   test('supported options', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndMediaFields).waitForInit();
@@ -285,24 +282,4 @@ test.describe('table column & table', () => {
       supportedOptions: ['Custom column title', 'Column width', 'Delete'],
     });
   });
-});
-
-test.describe('table column & table & record picker', () => {
-  test('supported options', async ({ page }) => {});
-});
-
-test.describe('table column & table & Relationship block', () => {
-  test('supported options', async ({ page }) => {});
-});
-
-test.describe('table column & sub table & create from', () => {
-  test('supported options', async ({ page }) => {});
-});
-
-test.describe('table column & sub table & edit from', () => {
-  test('supported options', async ({ page }) => {});
-});
-
-test.describe('table column & sub table & view from', () => {
-  test('supported options', async ({ page }) => {});
 });

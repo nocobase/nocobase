@@ -1,21 +1,73 @@
-import { test } from '@nocobase/test/e2e';
+import {
+  expectInitializerMenu,
+  oneTableBlockWithAddNewAndViewAndEditAndAssociationFields,
+  test,
+} from '@nocobase/test/e2e';
 
-test('form item & create form', async ({ page, mockPage }) => {});
+test.describe('form item & create form', () => {
+  test('configure fields', async ({ page, mockPage, mockRecords }) => {
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
+    await mockRecords('users', 3);
+    await nocoPage.goto();
 
-test('form item & edit form', async ({ page, mockPage }) => {});
+    await expectInitializerMenu({
+      page,
+      showMenu: async () => {
+        await page.getByRole('button', { name: 'Add new' }).click();
+        await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+      },
+      supportedOptions: ['oneToMany', 'manyToOne', 'manyToMany', 'oneToOneBelongsTo', 'oneToOneHasOne'],
+    });
+  });
+});
 
-test('form item & view form', async ({ page, mockPage }) => {});
+test.describe('form item & edit form', () => {
+  test('configure fields', async ({ page, mockPage, mockRecords }) => {
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
+    await mockRecords('users', 3);
+    await mockRecords('general', 1);
+    await nocoPage.goto();
 
-test('form item & filter form', async ({ page, mockPage }) => {});
+    await expectInitializerMenu({
+      page,
+      showMenu: async () => {
+        await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
+        await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
+      },
+      supportedOptions: ['oneToMany', 'manyToOne', 'manyToMany', 'oneToOneBelongsTo', 'oneToOneHasOne'],
+    });
+  });
+});
 
-test('table column & table', async ({ page, mockPage }) => {});
+test.describe('form item & view form', () => {
+  test('configure fields', async ({ page, mockPage, mockRecords }) => {
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
+    await mockRecords('general', 1);
+    await nocoPage.goto();
 
-test('table column & table & record picker', async ({ page, mockPage }) => {});
+    await expectInitializerMenu({
+      page,
+      showMenu: async () => {
+        await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
+        await page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general').hover();
+      },
+      supportedOptions: ['oneToMany', 'manyToOne', 'manyToMany', 'oneToOneBelongsTo', 'oneToOneHasOne'],
+    });
+  });
+});
 
-test('table column & table & Relationship block', async ({ page, mockPage }) => {});
+test.describe('table column & table', () => {
+  test('configure columns', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
+    await mockRecord('general');
+    await nocoPage.goto();
 
-test('table column & sub table & create from', async ({ page, mockPage }) => {});
-
-test('table column & sub table & edit from', async ({ page, mockPage }) => {});
-
-test('table column & sub table & view from', async ({ page, mockPage }) => {});
+    await expectInitializerMenu({
+      page,
+      showMenu: async () => {
+        await page.getByLabel('schema-initializer-TableV2-').hover();
+      },
+      supportedOptions: ['oneToMany', 'manyToOne', 'manyToMany', 'oneToOneBelongsTo', 'oneToOneHasOne'],
+    });
+  });
+});
