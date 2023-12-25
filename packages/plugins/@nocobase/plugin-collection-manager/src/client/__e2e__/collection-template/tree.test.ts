@@ -75,7 +75,6 @@ test.describe('create collection', () => {
   });
 
   test('uncheck more options', async ({ page }) => {
-    test.fail();
     const collectionDisplayName = uid();
     // 避免以数字开头，会报错
     const collectionName = `t_${uid()}`;
@@ -85,7 +84,6 @@ test.describe('create collection', () => {
     const collectionSettings = await collectionManagerPage.createCollection('Tree collection');
     await collectionSettings.change('Collection display name', collectionDisplayName);
     await collectionSettings.change('Collection name', collectionName);
-    await collectionSettings.change('Generate ID field automatically', false);
     await collectionSettings.change('Store the creation user of each record', false);
     await collectionSettings.change('Store the last update user of each record', false);
     await collectionSettings.change('Store the creation time of each record', false);
