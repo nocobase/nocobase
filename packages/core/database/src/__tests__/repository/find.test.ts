@@ -92,12 +92,21 @@ describe('find with associations', () => {
         },
         {
           name: 'o2',
-          owner: {
-            name: u2.get('id'),
-          },
+          owner: u2.get('id'),
         },
       ],
     });
+
+    const orgs = await Org.repository.findAndCount({
+      limit: 2,
+      filter: {
+        $or: [{ 'owner.qualifications.name.$includes': 'q1' }, { 'owner.qualifications.name.$includes': 'q2' }],
+      },
+    });
+
+    const [results, count] = orgs;
+    expect(count).toEqual(2);
+    expect(results.length).toEqual(2);
   });
 
   it('should filter has many with limit', async () => {
