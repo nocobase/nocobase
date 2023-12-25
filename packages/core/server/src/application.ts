@@ -3,7 +3,14 @@ import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
-import { AppLoggerOptions, createLogger, createAppLogger, AppLogger } from '@nocobase/logger';
+import {
+  AppLoggerOptions,
+  createLogger,
+  createAppLogger,
+  AppLogger,
+  LoggerOptions,
+  getLoggerFilePath,
+} from '@nocobase/logger';
 import { Resourcer, ResourceOptions } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, measureExecutionTime, Toposort, ToposortOptions } from '@nocobase/utils';
 import { Command, CommandOptions, ParseOptions } from 'commander';
@@ -35,6 +42,7 @@ import { randomUUID } from 'crypto';
 import packageJson from '../package.json';
 import chalk from 'chalk';
 import { RecordableHistogram, performance } from 'node:perf_hooks';
+import path from 'path';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -683,6 +691,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
   }
 
+  createLogger(options: LoggerOptions) {
+    const { dirname } = options;
+    return createLogger({
+      ...options,
+      dirname: getLoggerFilePath(this.name || 'main', dirname || ''),
+    });
+  }
+
   protected init() {
     const options = this.options;
 
@@ -760,8 +776,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   protected createDatabase(options: ApplicationOptions) {
-    const sqlLogger = createLogger({
-      appName: this.name,
+    const sqlLogger = this.createLogger({
       filename: 'sql',
       level: 'debug',
     });

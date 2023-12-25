@@ -14,17 +14,16 @@ import {
 } from './format';
 
 interface LoggerOptions extends Omit<winston.LoggerOptions, 'transports'> {
-  appName?: string;
-  path?: string;
+  dirname?: string;
   filename?: string;
   transports?: (string | winston.transport)[];
 }
 
 const getTransports = (options: LoggerOptions) => {
   const { filename } = options;
-  let { transports: configTransports, path: dirname } = options;
+  let { transports: configTransports, dirname } = options;
   configTransports = configTransports || getLoggerTransport();
-  dirname = dirname || path.resolve(getLoggerFilePath(), options.appName || '');
+  dirname = dirname || getLoggerFilePath();
   if (!path.isAbsolute(dirname)) {
     dirname = path.resolve(process.cwd(), dirname);
   }
@@ -62,13 +61,13 @@ const getTransports = (options: LoggerOptions) => {
     file: () =>
       Transports.file({
         dirname,
-        filename: `${filename}.log`,
+        filename: filename.includes('.log') ? filename : `${filename}.log`,
         format: format(),
       }),
     dailyRotateFile: () =>
       Transports.dailyRotateFile({
         dirname,
-        filename: `${filename}_%DATE%.log`,
+        filename: filename.includes('%DATE%') || filename.includes('.log') ? filename : `${filename}_%DATE%.log`,
         format: format(),
       }),
   };

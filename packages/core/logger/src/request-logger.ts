@@ -1,3 +1,4 @@
+import { getLoggerFilePath } from './config';
 import { AppLoggerOptions, createLogger } from './logger';
 import { pick } from 'lodash';
 const defaultRequestWhitelist = [
@@ -11,9 +12,13 @@ const defaultRequestWhitelist = [
 const defaultResponseWhitelist = ['status'];
 
 export const requestLogger = (appName: string, options?: AppLoggerOptions) => {
+  const requestLogger = createLogger({
+    dirname: getLoggerFilePath(appName),
+    filename: 'request',
+    ...(options?.request || {}),
+  });
   return async (ctx, next) => {
     const reqId = ctx.reqId;
-    const requestLogger = createLogger({ appName, filename: 'request', ...(options?.request || {}) });
     const path = /^\/api\/(.+):(.+)/.exec(ctx.path);
     const contextLogger = ctx.app.log.child({ reqId, module: path?.[1], submodule: path?.[2] });
     // ctx.reqId = reqId;

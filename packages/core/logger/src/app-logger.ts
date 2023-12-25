@@ -1,8 +1,9 @@
 import { Logger } from 'winston';
 import { SystemLoggerOptions, createSystemLogger } from './system-logger';
+import { getLoggerFilePath } from './config';
 
 export const createAppLogger = ({ app, ...options }: SystemLoggerOptions & { app?: string }) =>
-  createSystemLogger({ appName: app, filename: 'system', seperateError: true, ...options });
+  createSystemLogger({ dirname: getLoggerFilePath(app), filename: 'system', seperateError: true, ...options });
 
 export type logMethod = (
   message: string,
