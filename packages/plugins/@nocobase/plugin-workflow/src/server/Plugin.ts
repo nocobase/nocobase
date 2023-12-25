@@ -394,6 +394,7 @@ export default class WorkflowPlugin extends Plugin {
         const execution = (await this.db.getRepository('executions').findOne({
           filter: {
             status: EXECUTION_STATUS.QUEUEING,
+            'workflow.enabled': true,
             'workflow.id': {
               [Op.not]: null,
             },
@@ -401,7 +402,7 @@ export default class WorkflowPlugin extends Plugin {
           appends: ['workflow'],
           sort: 'createdAt',
         })) as ExecutionModel;
-        if (execution && execution.workflow.enabled) {
+        if (execution) {
           this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
           next = [execution];
         }
