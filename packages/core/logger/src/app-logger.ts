@@ -12,9 +12,9 @@ export type logMethod = (
     method?: string;
     [key: string]: any;
   },
-) => void;
+) => AppLogger;
 
-export interface AppLogger extends Logger {
+export interface AppLogger extends Omit<Logger, 'info' | 'warn' | 'error' | 'debug'> {
   info: logMethod;
   warn: logMethod;
   error: logMethod;
