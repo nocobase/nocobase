@@ -61,6 +61,7 @@ test.describe('form item & view form', () => {
   test('configure fields', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
     await mockRecord('general');
+    await nocoPage.goto();
 
     await expectInitializerMenu({
       page,
