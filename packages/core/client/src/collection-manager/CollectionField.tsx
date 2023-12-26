@@ -45,11 +45,10 @@ const InternalField: React.FC = (props: Props) => {
     setFieldProps('content', uiSchema['x-content']);
     setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
-    if (ctx?.form) {
+    if (ctx?.form && !field?.readOnly && !field?.readPretty) {
       const defaultVal = fieldSchema.default || defaultValue;
       defaultVal !== null && defaultVal !== undefined && setFieldProps('initialValue', defaultVal);
     }
-
     if (!field.validator && (uiSchema['x-validator'] || fieldSchema['x-validator'])) {
       const concatSchema = concat([], uiSchema['x-validator'] || [], fieldSchema['x-validator'] || []);
       field.validator = concatSchema;
