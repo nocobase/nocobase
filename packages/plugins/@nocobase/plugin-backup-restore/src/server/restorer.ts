@@ -10,6 +10,7 @@ import lodash, { isPlainObject } from 'lodash';
 import { FieldValueWriter } from './field-value-writer';
 import * as Topo from '@hapi/topo';
 import { RestoreCheckError } from './errors/restore-check-error';
+import semver from 'semver';
 
 type RestoreOptions = {
   dataTypes: Set<DumpDataType>;
@@ -108,7 +109,9 @@ export class Restorer extends AppMigrator {
     }
 
     const version = meta['version'];
-    console.log(version);
+    if (semver.lt(version, '0.18.0-alpha.2')) {
+      throw new RestoreCheckError(`this backup file can only be imported in nocobase ${version}`);
+    }
   }
 
   async importCollections(options: RestoreOptions) {
