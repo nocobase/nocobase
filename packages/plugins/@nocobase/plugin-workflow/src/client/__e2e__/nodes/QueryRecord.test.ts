@@ -468,7 +468,7 @@ test('Collection event add data trigger, no filtering and no sorting, query the 
     if (pageNumber > Math.ceil(recordCount / pageSize)) {
         nodeResultRecords = 0;
         // expect(queryRecordNodeJobResult).toEqual([]);
-        expect(queryRecordNodeJobResult).not.toBeNull();
+        expect(queryRecordNodeJobResult).toBeNull();
     } else if (pageNumber * pageSize > recordCount) {
         nodeResultRecords = recordCount - (pageNumber - 1) * pageSize;
         expect(queryRecordNodeJobResult.length).toBe(nodeResultRecords);
