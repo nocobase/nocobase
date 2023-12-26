@@ -39,6 +39,8 @@ export default class extends Plugin {
       },
     });
 
+    this.app.acl.allow('users_jobs', ['list', 'get', 'submit'], 'loggedIn');
+
     const workflowPlugin = this.app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
     workflowPlugin.registerInstruction('manual', ManualInstruction);
   }

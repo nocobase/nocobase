@@ -187,7 +187,6 @@ export default class WorkflowPlugin extends Plugin {
       actions: ['workflows:list'],
     });
 
-    this.app.acl.allow('users_jobs', ['list', 'get', 'submit'], 'loggedIn');
     this.app.acl.allow('workflows', ['trigger'], 'loggedIn');
 
     await db.import({
