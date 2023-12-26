@@ -257,7 +257,7 @@ mySchemaSetting.remove('a')
 
 ### useSchemaSettingsRender()
 
-用于渲染 SchemaInitializer。
+用于渲染 SchemaSettings。
 
 - 类型
 
