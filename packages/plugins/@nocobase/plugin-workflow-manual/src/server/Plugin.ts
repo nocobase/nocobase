@@ -12,7 +12,7 @@ export default class extends Plugin {
   workflow: WorkflowPlugin;
 
   async load() {
-    this.importCollections(path.resolve(__dirname, 'collections'));
+    await this.importCollections(path.resolve(__dirname, 'collections'));
 
     this.app.resource({
       name: 'users_jobs',

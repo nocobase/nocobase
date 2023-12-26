@@ -153,6 +153,7 @@ describe('backup files', () => {
       },
       context: {},
     });
+
     const response = await app.agent().get('/backupFiles:dumpableCollections');
 
     expect(response.status).toBe(200);
@@ -170,8 +171,7 @@ describe('backup files', () => {
       title: '测试',
       dataType: 'business',
       origin: {
-        name: 'user',
-        title: 'user',
+        name: '@nocobase/plugin-collection-manager',
       },
     });
   });

@@ -23,7 +23,7 @@ export class CollectionModel extends MagicAttributeModel {
 
     const collectionOptions = {
       namespace: 'collections.business',
-      origin: 'collection-manager',
+      origin: 'plugin:collection-manager',
       ...this.get(),
       fields: [],
     };
