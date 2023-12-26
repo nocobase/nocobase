@@ -14,6 +14,101 @@ describe('find with associations', () => {
     await db.close();
   });
 
+  // 关系数据分页测试
+  it('should filter with associations by pagination', async () => {
+    const Org = db.collection({
+      name: 'organizations',
+      fields: [
+        { name: 'name', type: 'string' },
+        {
+          name: 'owner',
+          type: 'belongsTo',
+          target: 'users',
+        },
+      ],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { name: 'name', type: 'string' },
+        {
+          name: 'qualifications',
+          type: 'belongsToMany',
+          target: 'qualifications',
+        },
+      ],
+    });
+
+    const Qualification = db.collection({
+      name: 'qualifications',
+      fields: [
+        { name: 'name', type: 'string' },
+        {
+          name: 'user',
+          type: 'belongsToMany',
+          target: 'users',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: [
+        {
+          name: 'u1',
+          qualifications: [
+            {
+              name: 'q1',
+            },
+            {
+              name: 'q2',
+            },
+          ],
+        },
+        {
+          name: 'u2',
+          qualifications: [
+            {
+              name: 'q1',
+            },
+            {
+              name: 'q2',
+            },
+          ],
+        },
+      ],
+    });
+
+    const u1 = await User.repository.findOne({ filter: { name: 'u1' } });
+    const u2 = await User.repository.findOne({ filter: { name: 'u2' } });
+
+    await Org.repository.create({
+      values: [
+        {
+          name: 'o1',
+          owner: u1.get('id'),
+        },
+        {
+          name: 'o2',
+          owner: u2.get('id'),
+        },
+      ],
+    });
+
+    const orgs = await Org.repository.findAndCount({
+      limit: 2,
+      filter: {
+        $or: [{ 'owner.qualifications.name.$includes': 'q1' }, { 'owner.qualifications.name.$includes': 'q2' }],
+      },
+    });
+
+    const [results, count] = orgs;
+    expect(count).toEqual(2);
+    expect(results.length).toEqual(2);
+  });
+
   it('should filter has many with limit', async () => {
     const User = db.collection({
       name: 'users',

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-action-print",
-  "version": "0.18.0-alpha.1",
+  "version": "0.18.0-alpha.2",
   "main": "dist/server/index.js",
   "displayName": "Print",
   "displayName.zh-CN": "打印操作",

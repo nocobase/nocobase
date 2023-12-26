@@ -27,7 +27,7 @@ export default class extends Migration {
       if (plugin.packageName) {
         continue;
       }
-      const packageName = PluginManager.getPackageName(name);
+      const packageName = await PluginManager.getPackageName(name);
       await repository.update({
         filter: {
           name,
