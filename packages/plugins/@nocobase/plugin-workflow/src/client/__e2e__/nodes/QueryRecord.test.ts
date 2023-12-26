@@ -375,15 +375,27 @@ test('Collection event add data trigger, no filtering and no sorting, query mult
     const queryRecordNodeJob = jobs.find(job => job.nodeId.toString() === queryRecordNodeId);
     const queryRecordNodeJobResult = queryRecordNodeJob.result;
     let nodeResultRecords = 0;
-    if (pageNumber > Math.ceil(triggerNodeCollectionRecordNumber / pageSize)) {
+    const recordCount = triggerNodeCollectionRecordNumber + 1;
+    if (pageNumber > Math.ceil(recordCount / pageSize)) {
         nodeResultRecords = 0;
         expect(queryRecordNodeJobResult).toEqual([]);
-    } else if (pageNumber * pageSize > triggerNodeCollectionRecordNumber) {
-        nodeResultRecords = triggerNodeCollectionRecordNumber - (pageNumber - 1) * pageSize;
+    } else if (pageNumber * pageSize > recordCount) {
+        nodeResultRecords = recordCount - (pageNumber - 1) * pageSize;
         expect(queryRecordNodeJobResult.length).toBe(nodeResultRecords);
+        // 获取数组中对象下ID的值
+        const nodeResultRecordsIDArray = queryRecordNodeJobResult.map((obj) => obj.id);
+        // 断言数组的最小值等于（页码-1）*每页记录数+1
+        expect(Math.min(...nodeResultRecordsIDArray)).toBe((pageNumber - 1) * pageSize + 1);
+        // 断言数组的最大值等于总记录数
+        expect(Math.max(...nodeResultRecordsIDArray)).toBe(recordCount);
     } else {
         nodeResultRecords = pageSize;
         expect(queryRecordNodeJobResult.length).toBe(nodeResultRecords);
+        const nodeResultRecordsIDArray = queryRecordNodeJobResult.map((obj) => obj.id);
+        // 断言数组的最小值等于（页码-1）*每页记录数+1
+        expect(Math.min(...nodeResultRecordsIDArray)).toBe((pageNumber - 1) * pageSize + 1);
+        // 断言数组的最大值等于pageNumber * pageSize
+        expect(Math.max(...nodeResultRecordsIDArray)).toBe(pageNumber * pageSize);
     }
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -452,15 +464,27 @@ test('Collection event add data trigger, no filtering and no sorting, query the 
     const queryRecordNodeJob = jobs.find(job => job.nodeId.toString() === queryRecordNodeId);
     const queryRecordNodeJobResult = queryRecordNodeJob.result;
     let nodeResultRecords = 0;
-    if (pageNumber > Math.ceil(triggerNodeCollectionRecordNumber / pageSize)) {
+    const recordCount = triggerNodeCollectionRecordNumber + 1;
+    if (pageNumber > Math.ceil(recordCount / pageSize)) {
         nodeResultRecords = 0;
-        expect(queryRecordNodeJobResult).toBeNull();
-    } else if (pageNumber * pageSize > triggerNodeCollectionRecordNumber) {
-        nodeResultRecords = triggerNodeCollectionRecordNumber - (pageNumber - 1) * pageSize;
+        expect(queryRecordNodeJobResult).toEqual([]);
+    } else if (pageNumber * pageSize > recordCount) {
+        nodeResultRecords = recordCount - (pageNumber - 1) * pageSize;
         expect(queryRecordNodeJobResult.length).toBe(nodeResultRecords);
+        // 获取数组中对象下ID的值
+        const nodeResultRecordsIDArray = queryRecordNodeJobResult.map((obj) => obj.id);
+        // 断言数组的最小值等于（页码-1）*每页记录数+1
+        expect(Math.min(...nodeResultRecordsIDArray)).toBe((pageNumber - 1) * pageSize + 1);
+        // 断言数组的最大值等于总记录数
+        expect(Math.max(...nodeResultRecordsIDArray)).toBe(recordCount);
     } else {
         nodeResultRecords = pageSize;
         expect(queryRecordNodeJobResult.length).toBe(nodeResultRecords);
+        const nodeResultRecordsIDArray = queryRecordNodeJobResult.map((obj) => obj.id);
+        // 断言数组的最小值等于（页码-1）*每页记录数+1
+        expect(Math.min(...nodeResultRecordsIDArray)).toBe((pageNumber - 1) * pageSize + 1);
+        // 断言数组的最大值等于pageNumber * pageSize
+        expect(Math.max(...nodeResultRecordsIDArray)).toBe(pageNumber * pageSize);
     }
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
@@ -529,15 +553,27 @@ test('Collection event add data trigger, no filtering and no sorting, query the 
     const queryRecordNodeJob = jobs.find(job => job.nodeId.toString() === queryRecordNodeId);
     const queryRecordNodeJobResult = queryRecordNodeJob.result;
     let nodeResultRecords = 0;
-    if (pageNumber > Math.ceil(triggerNodeCollectionRecordNumber / pageSize)) {
+    const recordCount = triggerNodeCollectionRecordNumber + 1;
+    if (pageNumber > Math.ceil(recordCount / pageSize)) {
         nodeResultRecords = 0;
         expect(queryRecordNodeJobResult).toEqual([]);
-    } else if (pageNumber * pageSize > triggerNodeCollectionRecordNumber) {
-        nodeResultRecords = triggerNodeCollectionRecordNumber - (pageNumber - 1) * pageSize;
+    } else if (pageNumber * pageSize > recordCount) {
+        nodeResultRecords = recordCount - (pageNumber - 1) * pageSize;
         expect(queryRecordNodeJobResult.length).toBe(nodeResultRecords);
+        // 获取数组中对象下ID的值
+        const nodeResultRecordsIDArray = queryRecordNodeJobResult.map((obj) => obj.id);
+        // 断言数组的最小值等于（页码-1）*每页记录数+1
+        expect(Math.min(...nodeResultRecordsIDArray)).toBe((pageNumber - 1) * pageSize + 1);
+        // 断言数组的最大值等于总记录数
+        expect(Math.max(...nodeResultRecordsIDArray)).toBe(recordCount);
     } else {
         nodeResultRecords = pageSize;
         expect(queryRecordNodeJobResult.length).toBe(nodeResultRecords);
+        const nodeResultRecordsIDArray = queryRecordNodeJobResult.map((obj) => obj.id);
+        // 断言数组的最小值等于（页码-1）*每页记录数+1
+        expect(Math.min(...nodeResultRecordsIDArray)).toBe((pageNumber - 1) * pageSize + 1);
+        // 断言数组的最大值等于pageNumber * pageSize
+        expect(Math.max(...nodeResultRecordsIDArray)).toBe(pageNumber * pageSize);
     }
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
