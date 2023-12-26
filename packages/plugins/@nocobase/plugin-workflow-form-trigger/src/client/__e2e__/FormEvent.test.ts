@@ -124,7 +124,7 @@ test.describe('Duplicate', () => {
         await page.waitForLoadState('networkidle');
         await page.getByLabel(`action-Action.Link-Duplicate-workflows-${workFlowName}`).click();
         await page.getByLabel(`action-Action-Submit-workflows-${workFlowName}`).click();
-
+        await page.waitForLoadState('networkidle');
         // 3、预期结果：列表中出现筛选的工作流
         await expect(page.getByText(`${workFlowName} copy`)).toBeAttached();
 
@@ -204,7 +204,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const fieldData = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
         await page.getByRole('textbox').fill(fieldData);
         await page.getByLabel(`action-Action-Submit-submit-${triggerNodeCollectionName}-form`, { exact: true }).click();
-
+        await page.waitForLoadState('networkidle');
         // 3、预期结果：触发次数为1
         let getWorkflow = await apiGetWorkflow(workflowId);
         let getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
@@ -284,7 +284,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
         const fieldData = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
         await page.getByRole('textbox').fill(fieldData);
         await page.getByLabel(`action-Action-Submit to workflow-customize:triggerWorkflows-${triggerNodeCollectionName}-form`).click();
-
+        await page.waitForLoadState('networkidle');
         // 3、预期结果：触发次数为1
         let getWorkflow = await apiGetWorkflow(workflowId);
         let getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
