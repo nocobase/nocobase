@@ -14,7 +14,7 @@ export class DestroyInstruction extends Instruction {
       context: {
         executionId: processor.execution.id,
       },
-      transaction: processor.transaction,
+      // transaction: processor.transaction,
     });
 
     return {

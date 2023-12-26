@@ -18,7 +18,7 @@ export type Runner = (node: FlowNodeModel, input: any, processor: Processor) => 
 // what should a instruction do?
 // - base on input and context, do any calculations or system call (io), and produce a result or pending.
 export abstract class Instruction {
-  constructor(public plugin: Plugin) {}
+  constructor(public workflow: Plugin) {}
 
   abstract run(node: FlowNodeModel, input: any, processor: Processor): InstructionResult;
 

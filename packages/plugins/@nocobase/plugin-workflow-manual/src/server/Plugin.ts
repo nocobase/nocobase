@@ -11,8 +11,6 @@ import { submit } from './actions';
 import ManualInstruction from './ManualInstruction';
 
 export default class extends Plugin {
-  workflow: WorkflowPlugin;
-
   async load() {
     this.app.db.collection(usersJobsCollection);
     this.app.db.extendCollection(usersCollection);
@@ -41,8 +39,7 @@ export default class extends Plugin {
       },
     });
 
-    const workflowPlugin = this.app.getPlugin('workflow') as WorkflowPlugin;
-    this.workflow = workflowPlugin;
-    workflowPlugin.instructions.register('manual', new ManualInstruction(workflowPlugin));
+    const workflowPlugin = this.app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
+    workflowPlugin.registerInstruction('manual', ManualInstruction);
   }
 }

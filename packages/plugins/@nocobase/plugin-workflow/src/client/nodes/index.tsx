@@ -30,7 +30,13 @@ import { JobStatusOptionsMap } from '../constants';
 import { useGetAriaLabelOfAddButton } from '../hooks/useGetAriaLabelOfAddButton';
 import { lang } from '../locale';
 import useStyles from '../style';
-import { VariableOption, VariableOptions } from '../variable';
+import { UseVariableOptions, VariableOption } from '../variable';
+
+export type NodeAvailableContext = {
+  workflow: object;
+  upstream: object;
+  branchIndex: number;
+};
 
 export abstract class Instruction {
   title: string;
@@ -43,10 +49,10 @@ export abstract class Instruction {
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
   Component?(props): JSX.Element;
-  useVariables?(node, options?): VariableOption;
-  useScopeVariables?(node, options?): VariableOptions;
+  useVariables?(node, options?: UseVariableOptions): VariableOption;
+  useScopeVariables?(node, options?): VariableOption[];
   useInitializers?(node): SchemaInitializerItemType | null;
-  isAvailable?(ctx: object): boolean;
+  isAvailable?(ctx: NodeAvailableContext): boolean;
 }
 
 function useUpdateAction() {
@@ -362,7 +368,7 @@ export function NodeDefaultView(props) {
                       className: 'workflow-node-config-button',
                     },
                   },
-                  [`${instruction.type}_${data.id}`]: {
+                  [data.id]: {
                     type: 'void',
                     title: (
                       <div

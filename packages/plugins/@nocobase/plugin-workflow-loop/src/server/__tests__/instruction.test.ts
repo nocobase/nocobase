@@ -1,6 +1,6 @@
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin from '..';
@@ -404,7 +404,7 @@ describe('workflow > instructions > loop', () => {
 
       const n2 = await workflow.createNode({
         type: 'loop',
-        branchIndex: BRANCH_INDEX.ON_TRUE,
+        branchIndex: 1,
         upstreamId: n1.id,
         config: {
           target: 0,
@@ -442,7 +442,7 @@ describe('workflow > instructions > loop', () => {
 
       const n2 = await workflow.createNode({
         type: 'loop',
-        branchIndex: BRANCH_INDEX.ON_TRUE,
+        branchIndex: 1,
         upstreamId: n1.id,
         config: {
           target: 2,
