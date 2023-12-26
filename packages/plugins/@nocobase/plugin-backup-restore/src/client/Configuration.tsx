@@ -398,7 +398,6 @@ export const BackupAndRestoreList = () => {
           <NewBackup refresh={handleRefresh} />
         </Space>
         <Table
-          tableLayout="fixed"
           dataSource={dataSource}
           loading={loading}
           columns={[
