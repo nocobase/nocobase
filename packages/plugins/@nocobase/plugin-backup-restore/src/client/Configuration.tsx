@@ -6,6 +6,7 @@ import type { UploadProps, TabsProps } from 'antd';
 import { saveAs } from 'file-saver';
 import { InboxOutlined, PlusOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
 import { useDuplicatorTranslation, generateNTemplate } from './locale';
+import A from 'packages/core/database/src/__tests__/fixtures/c0/a';
 
 const { Dragger } = Upload;
 const options = [
@@ -459,9 +460,9 @@ export const BackupAndRestoreList = () => {
               render: (_, record) => (
                 <Space split={<Divider type="vertical" />}>
                   <Restore ButtonComponent={'a'} title={t('Restore')} fileData={record} />
-                  <Button type="link" onClick={() => handleDownload(record)} loading={downloadTarget === record.name}>
+                  <a type="link" onClick={() => handleDownload(record)}>
                     {t('Download')}
-                  </Button>
+                  </a>
                   <a onClick={() => handleDestory(record)}>{t('Delete')}</a>
                 </Space>
               ),
