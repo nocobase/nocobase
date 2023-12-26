@@ -137,7 +137,14 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
       children: (
         <>
           <Alert style={{ marginBottom: 16 }} message={'占位，系统元数据说明'} />
-          <Table bordered size={'small'} dataSource={dataSource?.meta} columns={columns} scroll={{ y: 400 }} />
+          <Table
+            pagination={{ pageSize: 100 }}
+            bordered
+            size={'small'}
+            dataSource={dataSource?.meta}
+            columns={columns}
+            scroll={{ y: 400 }}
+          />
         </>
       ),
     },
@@ -147,7 +154,14 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
       children: (
         <>
           <Alert style={{ marginBottom: 16 }} message={'占位，系统配置数据说明'} />
-          <Table bordered size={'small'} dataSource={dataSource?.config} columns={columns} scroll={{ y: 400 }} />
+          <Table
+            pagination={{ pageSize: 100 }}
+            bordered
+            size={'small'}
+            dataSource={dataSource?.config}
+            columns={columns}
+            scroll={{ y: 400 }}
+          />
         </>
       ),
     },
@@ -157,7 +171,14 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
       children: (
         <>
           <Alert style={{ marginBottom: 16 }} message={'占位，系统业务数据说明'} />
-          <Table bordered size={'small'} dataSource={dataSource?.business} columns={columns} scroll={{ y: 400 }} />
+          <Table
+            pagination={{ pageSize: 100 }}
+            bordered
+            size={'small'}
+            dataSource={dataSource?.business}
+            columns={columns}
+            scroll={{ y: 400 }}
+          />
         </>
       ),
     },

@@ -1,7 +1,9 @@
-export default {
+import { defineCollection } from '@nocobase/database';
+
+export default defineCollection({
   namespace: 'verification.verificationData',
   duplicator: {
-    dataType: 'config',
+    dataType: 'business',
   },
   name: 'verifications',
   fields: [
@@ -37,4 +39,4 @@ export default {
       target: 'verifications_providers',
     },
   ],
-};
+});
