@@ -3,7 +3,7 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   namespace: 'localization.localization',
   duplicator: {
-    dataType: 'config',
+    dataType: 'meta',
   },
   name: 'localizationTexts',
   title: '{{t("Localization Texts")}}',

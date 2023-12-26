@@ -3,16 +3,15 @@ import archiver from 'archiver';
 import dayjs from 'dayjs';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
-import lodash from 'lodash';
-import _ from 'lodash';
+import { default as _, default as lodash } from 'lodash';
 import mkdirp from 'mkdirp';
 import path from 'path';
+import * as process from 'process';
 import stream from 'stream';
 import util from 'util';
 import { AppMigrator } from './app-migrator';
 import { FieldValueWriter } from './field-value-writer';
 import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
-import * as process from 'process';
 
 const finished = util.promisify(stream.finished);
 
@@ -256,7 +255,7 @@ export class Dumper extends AppMigrator {
     return _(await this.dumpableCollections())
       .map((c) => _.pick(c, ['name', 'dataType', 'origin', 'title', 'isView', 'inherits']))
       .groupBy('dataType')
-      .mapValues((items) => _.sortBy(items, (item) => item.origin.name))
+      .mapValues((items) => _.sortBy(items, (item) => item.name))
       .value();
   }
 

@@ -1,5 +1,6 @@
 import { Logger } from '@nocobase/logger';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import chalk from 'chalk';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { backOff } from 'exponential-backoff';
@@ -22,6 +23,7 @@ import {
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
+import { CollectionFactory } from './collection-factory';
 import { CollectionGroupManager } from './collection-group-manager';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import DatabaseUtils from './database-utils';
@@ -30,6 +32,7 @@ import { referentialIntegrityCheck } from './features/referential-integrity-chec
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
+import { checkDatabaseVersion } from './helpers';
 import { InheritedCollection } from './inherited-collection';
 import InheritanceMap from './inherited-map';
 import { registerBuiltInListeners } from './listeners';
@@ -72,9 +75,6 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
-import { CollectionFactory } from './collection-factory';
-import chalk from 'chalk';
-import { checkDatabaseVersion } from './helpers';
 
 export type MergeOptions = merge.Options;
 
@@ -297,6 +297,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       timestamps: false,
       namespace: 'core.server',
       duplicator: 'required',
+      origin: 'core',
       fields: [{ type: 'string', name: 'name', primaryKey: true }],
     });
 
