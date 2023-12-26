@@ -1,6 +1,6 @@
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import Plugin from '..';
@@ -453,7 +453,7 @@ describe('workflow > instructions > parallel', () => {
 
       const n2 = await workflow.createNode({
         type: 'parallel',
-        branchIndex: BRANCH_INDEX.ON_TRUE,
+        branchIndex: 1,
         upstreamId: n1.id,
       });
 
@@ -521,7 +521,7 @@ describe('workflow > instructions > parallel', () => {
       const n4 = await workflow.createNode({
         type: 'echo',
         upstreamId: n3.id,
-        branchIndex: BRANCH_INDEX.ON_TRUE,
+        branchIndex: 1,
       });
 
       const n5 = await workflow.createNode({
