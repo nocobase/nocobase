@@ -221,6 +221,7 @@
   "General collection": "普通数据表",
   "SQL collection": "SQL数据表",
   "Connect to database view": "连接数据库视图",
+  "Sync from database":"从数据库同步",
   "Source collections": "来源数据表",
   "Field source": "来源字段",
   "Preview": "预览",
