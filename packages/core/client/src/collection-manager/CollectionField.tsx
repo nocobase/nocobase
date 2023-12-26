@@ -49,7 +49,6 @@ const InternalField: React.FC = (props: Props) => {
       const defaultVal = fieldSchema.default || defaultValue;
       defaultVal !== null && defaultVal !== undefined && setFieldProps('initialValue', defaultVal);
     }
-
     if (!field.validator && (uiSchema['x-validator'] || fieldSchema['x-validator'])) {
       const concatSchema = concat([], uiSchema['x-validator'] || [], fieldSchema['x-validator'] || []);
       field.validator = concatSchema;
