@@ -233,6 +233,10 @@ export default class WorkflowPlugin extends Plugin {
   toggle(workflow: WorkflowModel, enable?: boolean) {
     const type = workflow.get('type');
     const trigger = this.triggers.get(type);
+    if (!trigger) {
+      this.getLogger(workflow.id).error(`trigger type ${workflow.type} of workflow ${workflow.id} is not implemented`);
+      return;
+    }
     if (typeof enable !== 'undefined' ? enable : workflow.get('enabled')) {
       // NOTE: remove previous listener if config updated
       const prev = workflow.previous();
@@ -396,6 +400,7 @@ export default class WorkflowPlugin extends Plugin {
         const execution = (await this.db.getRepository('executions').findOne({
           filter: {
             status: EXECUTION_STATUS.QUEUEING,
+            'workflow.enabled': true,
             'workflow.id': {
               [Op.not]: null,
             },
@@ -403,7 +408,7 @@ export default class WorkflowPlugin extends Plugin {
           appends: ['workflow'],
           sort: 'createdAt',
         })) as ExecutionModel;
-        if (execution && execution.workflow.enabled) {
+        if (execution) {
           this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
           next = [execution];
         }

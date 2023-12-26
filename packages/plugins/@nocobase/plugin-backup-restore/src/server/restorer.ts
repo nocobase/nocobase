@@ -106,6 +106,9 @@ export class Restorer extends AppMigrator {
     for (const envName of ['DB_UNDERSCORED', 'DB_SCHEMA', 'COLLECTION_MANAGER_SCHEMA', 'DB_TABLE_PREFIX']) {
       checkEnv(envName);
     }
+
+    const version = meta['version'];
+    console.log(version);
   }
 
   async importCollections(options: RestoreOptions) {

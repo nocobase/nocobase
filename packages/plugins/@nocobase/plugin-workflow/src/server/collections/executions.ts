@@ -16,11 +16,6 @@ export default {
       name: 'key',
     },
     {
-      type: 'boolean',
-      name: 'useTransaction',
-      defaultValue: false,
-    },
-    {
       type: 'hasMany',
       name: 'jobs',
       onDelete: 'CASCADE',

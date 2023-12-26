@@ -49,7 +49,7 @@ export {
   useInheritsTableColumnInitializerFields,
   useRecordCollectionDataSourceItems,
   useRemoveGridFormItem,
-  useTableColumnInitializerFields
+  useTableColumnInitializerFields,
 } from './utils';
 
 export class SchemaInitializerPlugin extends Plugin {

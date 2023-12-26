@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-calendar",
-  "version": "0.18.0-alpha.1",
+  "version": "0.18.0-alpha.2",
   "displayName": "Calendar",
   "displayName.zh-CN": "日历",
   "description": "Provide calendar template and block",
@@ -9,20 +9,20 @@
   "main": "./dist/server/index.js",
   "types": "./dist/server/index.d.ts",
   "devDependencies": {
-    "react-big-calendar": "^1.8.1",
     "@ant-design/icons": "5.x",
     "@formily/antd-v5": "1.x",
+    "@formily/core": "2.x",
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
-    "@formily/core": "2.x",
-    "lodash": "^4.17.21",
-    "react": "^18.2.0",
-    "dayjs": "^1.11.8",
+    "antd": "5.x",
     "antd-style": "3.4.5",
     "cron-parser": "4.4.0",
+    "dayjs": "^1.11.8",
+    "lodash": "^4.17.21",
+    "react": "^18.2.0",
+    "react-big-calendar": "^1.8.1",
     "react-js-cron": "^3.1.0",
-    "solarlunar-es": "^1.0.9",
-    "antd": "5.x"
+    "solarlunar-es": "^1.0.9"
   },
   "peerDependencies": {
     "@nocobase/client": "0.x",

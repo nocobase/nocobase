@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-shop-actions",
-  "version": "0.18.0-alpha.1",
+  "version": "0.18.0-alpha.2",
   "main": "./dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "0.x",
