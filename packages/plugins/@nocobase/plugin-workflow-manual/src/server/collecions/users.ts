@@ -1,4 +1,6 @@
-export default {
+import { extendCollection } from '@nocobase/database';
+
+export default extendCollection({
   name: 'users',
   fields: [
     {
@@ -12,4 +14,4 @@ export default {
       target: 'users_jobs',
     },
   ],
-};
+});

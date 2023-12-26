@@ -1,4 +1,6 @@
-export default {
+import { extendCollection } from '@nocobase/database';
+
+export default extendCollection({
   name: 'jobs',
   fields: [
     {
@@ -14,4 +16,4 @@ export default {
       onDelete: 'CASCADE',
     },
   ],
-};
+});

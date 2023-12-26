@@ -1,6 +1,6 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
+export default defineCollection({
   namespace: 'workflow.executionLogs',
   name: 'users_jobs',
   duplicator: {
@@ -49,4 +49,4 @@ export default {
       name: 'result',
     },
   ],
-} as CollectionOptions;
+});
