@@ -406,7 +406,7 @@ export const apiGetWorkflowNodeExecutions = async (id: number) => {
 
   const state = await api.storageState();
   const headers = getHeaders(state);
-  const url = `/api/executions:list?appends[]=jobs&filter[workflowId]=${id}&fields=id,createdAt,updatedAt,key,useTransaction,status,workflowId,jobs`;
+  const url = `/api/executions:list?appends[]=jobs&filter[workflowId]=${id}&fields=id,createdAt,updatedAt,key,status,workflowId,jobs`;
   const result = await api.get(url, {
     headers,
   });
