@@ -1523,13 +1523,13 @@ test.describe('update data node,batch update', () => {
     updateNodeCollectionData = await apiGetList(updateNodeCollectionName);
     updateNodeCollectionDataObj = JSON.parse(JSON.stringify(updateNodeCollectionData));
     updateNodeCollectionDataArr = updateNodeCollectionDataObj.data;
-    recordOnebeforeUpdateExpect = updateNodeCollectionDataArr.find(arr => arr.establishdate === updateNodeCollectionRecordOne);
+    recordOnebeforeUpdateExpect = updateNodeCollectionDataArr.find(arr => dayjs(arr.establishdate).format('YYYY-MM-DD') === updateNodeCollectionRecordOne);
     expect(recordOnebeforeUpdateExpect).toBeFalsy();
-    recordTwobeforeUpdateExpect = updateNodeCollectionDataArr.find(arr => arr.establishdate === updateNodeCollectionRecordTwo);
+    recordTwobeforeUpdateExpect = updateNodeCollectionDataArr.find(arr => dayjs(arr.establishdate).format('YYYY-MM-DD') === updateNodeCollectionRecordTwo);
     expect(recordTwobeforeUpdateExpect).toBeFalsy();
-    recordThreebeforeUpdateExpect = updateNodeCollectionDataArr.find(arr => arr.establishdate === updateNodeCollectionRecordThree);
+    recordThreebeforeUpdateExpect = updateNodeCollectionDataArr.find(arr => dayjs(arr.establishdate).format('YYYY-MM-DD') === updateNodeCollectionRecordThree);
     expect(recordThreebeforeUpdateExpect).toBeFalsy();
-    afterUpdateExpect = updateNodeCollectionDataArr.find(arr => arr.establishdate === updateRecordNodefieldData);
+    afterUpdateExpect = updateNodeCollectionDataArr.find(arr => dayjs(arr.establishdate).format('YYYY-MM-DD') === updateRecordNodefieldData);
     expect(afterUpdateExpect).toBeTruthy();
 
     const getWorkflow = await apiGetWorkflow(workflowId);
