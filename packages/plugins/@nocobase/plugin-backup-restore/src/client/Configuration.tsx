@@ -404,7 +404,7 @@ export const BackupAndRestoreList = () => {
             {
               title: t('Name'),
               dataIndex: 'name',
-              width: 400,
+              width: 500,
               onCell: (data) => {
                 return data.inProgress
                   ? {
@@ -435,6 +435,7 @@ export const BackupAndRestoreList = () => {
             {
               title: t('Created at'),
               dataIndex: 'createdAt',
+              width: 300,
               onCell: (data) => {
                 return data.inProgress
                   ? {
