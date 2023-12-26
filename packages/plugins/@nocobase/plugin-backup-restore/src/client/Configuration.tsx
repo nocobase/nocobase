@@ -1,12 +1,11 @@
-import { useAPIClient, useCompile, Checkbox, DatePicker } from '@nocobase/client';
-import { Button, Card, message, Modal, Table, Upload, Tabs, Alert, Divider, Space, App, Spin } from 'antd';
+import { Checkbox, DatePicker, useAPIClient, useCompile } from '@nocobase/client';
+import { Alert, Button, Modal, TabsProps, UploadProps } from 'antd';
+import { Alert, App, Button, Card, Divider, message, Modal, Space, Spin, Table, Tabs, Upload } from 'antd';
 import { FormItem } from '@formily/antd-v5';
 import React, { useEffect, useMemo, useState } from 'react';
-import type { UploadProps, TabsProps } from 'antd';
 import { saveAs } from 'file-saver';
 import { InboxOutlined, PlusOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
-import { useDuplicatorTranslation, generateNTemplate } from './locale';
-import A from 'packages/core/database/src/__tests__/fixtures/c0/a';
+import { generateNTemplate, useDuplicatorTranslation } from './locale';
 
 const { Dragger } = Upload;
 const options = [
