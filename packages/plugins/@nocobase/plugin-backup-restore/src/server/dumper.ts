@@ -172,7 +172,7 @@ export class Dumper extends AppMigrator {
   }
 
   backUpStorageDir() {
-    return path.resolve(process.cwd(), 'storage', 'duplicator');
+    return path.resolve(process.cwd(), 'storage', 'backups');
   }
 
   async allBackUpFilePaths(options?: { includeInProgress?: boolean; dir?: string }) {
@@ -484,7 +484,7 @@ export class Dumper extends AppMigrator {
   }
 
   async packDumpedDir(fileName: string) {
-    const dirname = path.resolve(process.cwd(), 'storage', 'duplicator');
+    const dirname = this.backUpStorageDir();
     await mkdirp(dirname);
 
     const filePath = path.resolve(dirname, fileName);
