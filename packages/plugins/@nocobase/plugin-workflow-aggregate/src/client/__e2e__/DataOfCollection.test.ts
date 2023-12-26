@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { AggregateNode, CollectionTriggerNode, apiCreateWorkflow, apiDeleteWorkflow, apiGetWorkflow, apiGetWorkflowNodeExecutions, apiUpdateWorkflowTrigger, appendJsonCollectionName, generalWithNoRelationalFields } from '@nocobase/plugin-workflow-test/e2e';
-import { expect, test } from '@nocobase/test/client';
+import { expect, test } from '@nocobase/test/e2e';
 import { dayjs } from '@nocobase/utils';
 
 test('Collection event add data trigger, aggregated data table, no filtering, normal table integer fields not de-emphasised COUNT', async ({ page, mockCollections, mockRecords }) => {
