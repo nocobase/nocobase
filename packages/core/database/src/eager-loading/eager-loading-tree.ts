@@ -4,7 +4,6 @@ import Database from '../database';
 import { appendChildCollectionNameAfterRepositoryFind } from '../listeners/append-child-collection-name-after-repository-find';
 import { OptionsParser } from '../options-parser';
 import { AdjacencyListRepository } from '../repositories/tree-repository/adjacency-list-repository';
-import association from '../operators/association';
 
 interface EagerLoadingNode {
   model: ModelStatic<any>;
