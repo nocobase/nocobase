@@ -59,6 +59,14 @@ export class CollectionFieldInterfaceV2 {
     return this.options.default;
   }
 
+  get sortable() {
+    return this.options.sortable;
+  }
+
+  get filterable() {
+    return this.options.filterable;
+  }
+
   getOption<K extends keyof CollectionFieldInterfaceOptions>(key: K): CollectionFieldInterfaceOptions[K] {
     return this.options[key];
   }

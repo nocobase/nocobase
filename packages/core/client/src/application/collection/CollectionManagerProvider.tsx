@@ -1,8 +1,8 @@
-import React, { FC, ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 import type { CollectionManagerV2, GetCollectionOptions } from './CollectionManager';
 import type { CollectionV2 } from './Collection';
 
-export const CollectionManagerContextV2 = createContext<CollectionManagerV2>(null);
+export const CollectionManagerContextV2 = createContext<CollectionManagerV2<any>>(null);
 CollectionManagerContextV2.displayName = 'CollectionManagerContextV2';
 
 export interface CollectionManagerProviderProps {
@@ -16,10 +16,10 @@ export const CollectionManagerProviderV2: FC<CollectionManagerProviderProps> = (
   );
 };
 
-export const useCollectionManagerV2 = () => {
-  const context = useContext(CollectionManagerContextV2);
+export function useCollectionManagerV2<Mixins = {}>() {
+  const context = useContext<CollectionManagerV2<Mixins>>(CollectionManagerContextV2);
   return context;
-};
+}
 
 export const useCollectionsV2 = (ns?: string, predicate?: (collection: CollectionV2) => boolean) => {
   const collectionManager = useCollectionManagerV2();

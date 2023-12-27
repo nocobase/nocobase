@@ -5,10 +5,10 @@ import { CollectionTemplateOptionsV2, CollectionTemplateV2 } from './CollectionT
 import { CollectionFieldOptionsV2, CollectionOptionsV2, CollectionV2 } from './Collection';
 import type { Application } from '../Application';
 
-type Constructor<T = {}> = new (...args: any[]) => T;
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
+export type CollectionMixinConstructor<T = {}> = new (...args: any[]) => T;
+export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
 
-function applyMixins(derivedCtor: Constructor, baseCtors: Constructor[]) {
+function applyMixins(derivedCtor: CollectionMixinConstructor, baseCtors: CollectionMixinConstructor[]) {
   baseCtors.forEach((baseCtor) => {
     Object.getOwnPropertyNames(baseCtor.prototype).forEach((name) => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -29,15 +29,15 @@ export interface CollectionManagerOptionsV2 {
   collectionTemplates?: CollectionTemplateV2[] | CollectionTemplateOptionsV2[];
   collectionFieldInterfaces?: CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[];
   collectionNamespaces?: Record<string, string>;
-  collectionMixins?: Constructor[];
+  collectionMixins?: CollectionMixinConstructor[];
 }
 
-export class CollectionManagerV2 {
+export class CollectionManagerV2<Mixins = {}> {
   public app: Application;
   protected collections: Record<string, Record<string, CollectionV2>> = {};
   protected collectionTemplates: Record<string, CollectionTemplateV2> = {};
   protected collectionFieldInterfaces: Record<string, CollectionFieldInterfaceV2> = {};
-  protected collectionMixins: Constructor[] = [];
+  protected collectionMixins: CollectionMixinConstructor[] = [];
   protected collectionNamespaces: Record<string, string> = {
     [DEFAULT_COLLECTION_NAMESPACE_NAME]: DEFAULT_COLLECTION_NAMESPACE_TITLE,
   };
@@ -113,10 +113,7 @@ export class CollectionManagerV2 {
    * getCollection('users.profile'); // 获取 users 表的 profile 字段的关联表
    * getCollection('a.b.c'); // 获取 a 表的 b 字段的关联表，然后 b.target 表对应的 c 字段的关联表
    */
-  getCollection<T extends Constructor[] = []>(
-    path: string,
-    options: GetCollectionOptions = {},
-  ): (UnionToIntersection<InstanceType<T[number]>> & CollectionV2) | undefined {
+  getCollection(path: string, options: GetCollectionOptions = {}): (Mixins & CollectionV2) | undefined {
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
     this.checkNamespace(ns);
     if (path.split('.').length > 1) {
@@ -125,7 +122,7 @@ export class CollectionManagerV2 {
 
       return this.getCollection(associationField.target, { ns });
     }
-    return this.collections[ns]?.[path] as UnionToIntersection<InstanceType<T[number]>> & CollectionV2;
+    return this.collections[ns]?.[path] as Mixins & CollectionV2;
   }
   getCollectionName(path: string, options: GetCollectionOptions = {}): string | undefined {
     const res = this.getCollection(path, options);
