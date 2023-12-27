@@ -127,7 +127,8 @@ export const AdminSettingsLayout = () => {
               ghost={false}
               title={currentTopLevelSetting.title}
               footer={
-                currentTopLevelSetting.children?.length > 0 && (
+                currentTopLevelSetting.children?.length > 0 &&
+                currentTopLevelSetting.showTabs !== false && (
                   <Menu
                     style={{ marginLeft: -theme.margin }}
                     onClick={({ key }) => {
