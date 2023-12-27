@@ -36,11 +36,6 @@ export default function () {
         defaultValue: {},
       },
       {
-        type: 'boolean',
-        name: 'useTransaction',
-        // defaultValue: true,
-      },
-      {
         type: 'hasMany',
         name: 'nodes',
         target: 'flow_nodes',

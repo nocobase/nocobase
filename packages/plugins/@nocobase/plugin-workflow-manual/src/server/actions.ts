@@ -81,7 +81,7 @@ export async function submit(context: Context, next) {
     await handler.call(instruction, userJob, forms[formKey], processor);
   }
 
-  await userJob.save({ transaction: processor.transaction });
+  await userJob.save();
 
   await processor.exit();
 

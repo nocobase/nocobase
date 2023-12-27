@@ -65,7 +65,7 @@ export default class extends Instruction {
       })
       .finally(() => {
         processor.logger.info(`request (#${node.id}) response received, status: ${job.get('status')}`);
-        this.plugin.resume(job);
+        this.workflow.resume(job);
       });
 
     processor.logger.info(`request (#${node.id}) sent to "${config.url}", waiting for response...`);

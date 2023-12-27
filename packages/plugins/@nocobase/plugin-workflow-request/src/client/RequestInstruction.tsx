@@ -1,8 +1,11 @@
 import { ArrayItems } from '@formily/antd-v5';
 
-import { defaultFieldNames } from '@nocobase/client';
-
-import { Instruction, WorkflowVariableInput, WorkflowVariableJSON } from '@nocobase/plugin-workflow/client';
+import {
+  Instruction,
+  WorkflowVariableInput,
+  WorkflowVariableJSON,
+  defaultFieldNames,
+} from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../locale';
 

@@ -15,7 +15,7 @@ export class CreateInstruction extends Instruction {
       context: {
         executionId: processor.execution.id,
       },
-      transaction: processor.transaction,
+      // transaction: processor.transaction,
     });
 
     let result = created;
@@ -28,7 +28,7 @@ export class CreateInstruction extends Instruction {
       result = await repository.findOne({
         filterByTk: created[model.primaryKeyAttribute],
         appends: Array.from(includeFields),
-        transaction: processor.transaction,
+        // transaction: processor.transaction,
       });
     }
 

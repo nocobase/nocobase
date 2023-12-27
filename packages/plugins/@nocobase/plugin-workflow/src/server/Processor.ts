@@ -25,8 +25,6 @@ export default class Processor {
 
   logger: Logger;
 
-  transaction?: Transaction;
-
   nodes: FlowNodeModel[] = [];
   nodesMap = new Map<number, FlowNodeModel>();
   jobsMap = new Map<number, JobModel>();
@@ -67,27 +65,11 @@ export default class Processor {
     });
   }
 
-  private async getTransaction() {
-    if (!this.execution.workflow.options?.useTransaction) {
-      return;
-    }
-
-    const { options } = this;
-
-    // @ts-ignore
-    return options.transaction && !options.transaction.finished
-      ? options.transaction
-      : await options.plugin.db.sequelize.transaction();
-  }
-
   public async prepare() {
     const { execution } = this;
     if (!execution.workflow) {
       execution.workflow = await execution.getWorkflow();
     }
-
-    const transaction = await this.getTransaction();
-    this.transaction = transaction;
 
     const nodes = await execution.workflow.getNodes();
 
@@ -95,7 +77,6 @@ export default class Processor {
 
     const jobs = await execution.getJobs({
       order: [['id', 'ASC']],
-      transaction,
     });
 
     this.makeJobs(jobs);
@@ -123,13 +104,6 @@ export default class Processor {
     await this.prepare();
     const node = this.nodesMap.get(job.nodeId);
     await this.recall(node, job);
-  }
-
-  private async commit() {
-    // @ts-ignore
-    if (this.transaction && (!this.options.transaction || this.options.transaction.finished)) {
-      await this.transaction.commit();
-    }
   }
 
   private async exec(instruction: Runner, node: FlowNodeModel, prevJob) {
@@ -224,10 +198,9 @@ export default class Processor {
   async exit(s?: number) {
     if (typeof s === 'number') {
       const status = (<typeof Processor>this.constructor).StatusMap[s] ?? Math.sign(s);
-      await this.execution.update({ status }, { transaction: this.transaction });
+      await this.execution.update({ status });
     }
     this.logger.info(`execution (${this.execution.id}) exiting with status ${this.execution.status}`);
-    await this.commit();
     return null;
   }
 
@@ -237,22 +210,15 @@ export default class Processor {
     const { model } = database.getCollection('jobs');
     let job;
     if (payload instanceof model) {
-      job = await payload.save({ transaction: this.transaction });
+      job = await payload.save();
     } else if (payload.id) {
       job = await model.findByPk(payload.id);
-      await job.update(payload, {
-        transaction: this.transaction,
-      });
+      await job.update(payload);
     } else {
-      job = await model.create(
-        {
-          ...payload,
-          executionId: this.execution.id,
-        },
-        {
-          transaction: this.transaction,
-        },
-      );
+      job = await model.create({
+        ...payload,
+        executionId: this.execution.id,
+      });
     }
     this.jobsMap.set(job.id, job);
 
