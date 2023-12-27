@@ -9,10 +9,10 @@ import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
-import { CollectionFieldInterfaceOptions } from '../../application';
+import { CollectionFieldInterfaceOptions, useCollectionManagerV2 } from '../../application';
+import { InheritanceCollectionMixin } from '../collections/InheritanceCollectionMixin';
 
 const getSchema = (schema: CollectionFieldInterfaceOptions, record: any, compile, getContainer): ISchema => {
   if (!schema) {
@@ -90,7 +90,7 @@ const getSchema = (schema: CollectionFieldInterfaceOptions, record: any, compile
 
 const useOverridingCollectionField = () => {
   const form = useForm();
-  const cm = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
@@ -135,25 +135,21 @@ const getIsOverriding = (currentFields, record) => {
 export const OverridingFieldAction = (props) => {
   const { scope, getContainer, item: record, children, currentCollection } = props;
   const { target, through } = record;
-  const cm = useCollectionManager();
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
   const { t } = useTranslation();
   const compile = useCompile();
   const getFilterCollections = (filterKey) => {
-    const childCollections =
-      filterKey &&
-      getChildrenCollections(filterKey)
-        ?.map((v) => v.name)
-        .concat([filterKey]);
+    const childCollections = filterKey && cm.getCollection(filterKey).getChildrenCollections().concat([filterKey]);
     return childCollections;
   };
   const [data, setData] = useState<any>({});
-  const currentFields = getCurrentCollectionFields(currentCollection);
+  const currentFields = cm.getCollection(currentCollection)?.getCurrentFields();
   const disabled = getIsOverriding(currentFields, record);
   const currentCollections = useMemo(() => {
-    return collections.map((v) => {
+    return cm.getCollections().map((v) => {
       return {
         label: compile(v.title),
         value: v.name,
@@ -183,7 +179,7 @@ export const OverridingFieldAction = (props) => {
               }
               const schema = getSchema(
                 {
-                  ...interfaceConf,
+                  ...interfaceConf.getOptions(),
                   default: defaultValues,
                 },
                 record,

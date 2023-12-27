@@ -1,8 +1,7 @@
 import { useField } from '@formily/react';
 import { Result } from 'ahooks/es/useRequest/src/types';
 import React, { createContext, useContext, useEffect } from 'react';
-import { useCollectionManager } from '.';
-import { CollectionProvider, useRecord } from '..';
+import { CollectionProvider, useCollectionManagerV2, useRecord } from '..';
 import { useAPIClient, useRequest } from '../api-client';
 
 export const ResourceActionContext = createContext<
@@ -89,9 +88,9 @@ const AssociationResourceActionProvider = (props) => {
 export const ResourceActionProvider: React.FC<ResourceActionProviderProps> = (props) => {
   // eslint-disable-next-line prefer-const
   let { collection, request } = props;
-  const { getCollection } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   if (typeof collection === 'string') {
-    collection = getCollection(collection);
+    collection = cm.getCollection(collection);
   }
   if (!collection) {
     return null;

@@ -11,6 +11,7 @@ import { useActionContext, useSchemaComponentContext } from '../schema-component
 import { useFilterFieldOptions, useFilterFieldProps } from '../schema-component/antd/filter/useFilterActionProps';
 import { useResourceActionContext, useResourceContext } from './ResourceActionProvider';
 import { useCollectionManagerV2, useCollectionV2 } from '../application';
+import { InheritanceCollectionMixin } from './collections/InheritanceCollectionMixin';
 
 export const useCancelAction = () => {
   const form = useForm();
@@ -104,8 +105,8 @@ export const useSortFields = (collectionName: string) => {
 };
 
 export const useChildrenCollections = (collectionName: string) => {
-  const cm = useCollectionManagerV2();
-  const childrenCollections = getChildrenCollections(collectionName);
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
+  const childrenCollections = cm.getCollection(collectionName).getChildrenCollections();
   return childrenCollections.map((collection: any) => {
     return {
       value: collection.name,
@@ -115,9 +116,9 @@ export const useChildrenCollections = (collectionName: string) => {
 };
 
 export const useSelfAndChildrenCollections = (collectionName: string) => {
-  const cm = useCollectionManagerV2();
-  const childrenCollections = getChildrenCollections(collectionName);
-  const self = useMemo(() => cm.getCollection(collectionName), [collectionName, cm]);
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
+  const collection = cm.getCollection(collectionName);
+  const childrenCollections = useMemo(() => collection.getChildrenCollections(), [collection]);
   if (!collectionName) {
     return null;
   }
@@ -128,8 +129,8 @@ export const useSelfAndChildrenCollections = (collectionName: string) => {
     };
   });
   options.unshift({
-    value: self.name,
-    label: self?.title || self.name,
+    value: collection.name,
+    label: collection?.title || collection.name,
   });
   return options;
 };

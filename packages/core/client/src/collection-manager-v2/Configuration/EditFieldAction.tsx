@@ -117,7 +117,7 @@ const getSchema = (schema: CollectionFieldInterfaceOptions, record: any, compile
 const useUpdateCollectionField = () => {
   const form = useForm();
   const { run } = useUpdateAction();
-  const cm = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();

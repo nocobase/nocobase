@@ -1,5 +1,6 @@
 import { Plugin } from '../application';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
+import { InheritanceCollectionMixin } from './collections/InheritanceCollectionMixin';
 import {
   checkbox,
   checkboxGroup,
@@ -69,6 +70,7 @@ export class CollectionPlugin extends Plugin {
     this.app.addProviders([CollectionManagerSchemaComponentProvider]);
     this.addCollectionTemplates();
     this.addCollectionFieldInterfaces();
+    this.collectionManager.addCollectionMixins([InheritanceCollectionMixin]);
 
     this.collectionManager.setReloadCollections(this.reloadCollections.bind(this));
     await this.collectionManager.reload();

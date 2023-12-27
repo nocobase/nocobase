@@ -66,6 +66,10 @@ export class CollectionManagerV2<Mixins = {}> {
     }
   }
 
+  addCollectionMixins(mixins: CollectionMixinConstructor[]) {
+    this.collectionMixins.push(...mixins);
+  }
+
   // collections
   addCollections(collections: (CollectionOptionsV2 | CollectionV2)[], options: GetCollectionOptions = {}) {
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
@@ -103,8 +107,8 @@ export class CollectionManagerV2<Mixins = {}> {
   getAllCollections() {
     return this.collections;
   }
-  getCollections(ns: string = DEFAULT_COLLECTION_NAMESPACE_NAME, predicate?: (collection: CollectionV2) => boolean) {
-    return filter(Object.values(this.collections[ns]), predicate);
+  getCollections(predicate?: (collection: CollectionV2) => boolean, options: GetCollectionOptions = {}) {
+    return filter(Object.values(this.collections[options.ns || DEFAULT_COLLECTION_NAMESPACE_NAME]), predicate);
   }
   /**
    * 获取数据表
@@ -236,10 +240,6 @@ export class CollectionManagerV2<Mixins = {}> {
   }
   getCollectionFieldInterface(name: string) {
     return this.collectionFieldInterfaces[name];
-  }
-
-  isTitleField(field) {
-    return !field.isForeignKey && this.getCollectionFieldInterface(field.interface)?.getOption('titleUsable');
   }
 
   setReloadCollections(fn: () => Promise<any>) {

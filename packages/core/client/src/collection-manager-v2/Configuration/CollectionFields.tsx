@@ -26,7 +26,8 @@ import { collection } from './schemas/collectionFields';
 import { SyncFieldsAction } from './SyncFieldsAction';
 import { SyncSQLFieldsAction } from './SyncSQLFieldsAction';
 import { ViewCollectionField } from './ViewInheritedField';
-import { useCollectionManagerV2 } from '../../application';
+import { isTitleField, useCollectionManagerV2 } from '../../application';
+import { InheritanceCollectionMixin } from '../collections/InheritanceCollectionMixin';
 
 const indentStyle = css`
   .ant-table {
@@ -102,7 +103,7 @@ const CurrentFields = (props) => {
             });
         };
 
-        return cm.isTitleField(record) ? (
+        return isTitleField(cm, record) ? (
           <Tooltip title={t(titlePrompt)} placement="right" overlayInnerStyle={{ textAlign: 'center' }}>
             <Switch
               aria-label={`switch-title-field-${record.name}`}
@@ -220,7 +221,7 @@ const InheritFields = (props) => {
             });
         };
 
-        return cm.isTitleField(record) ? (
+        return isTitleField(cm, record) ? (
           <Tooltip title={t(titlePrompt)} placement="right" overlayInnerStyle={{ textAlign: 'center' }}>
             <Switch
               size="small"
@@ -273,14 +274,15 @@ export const CollectionFields = () => {
   const {
     data: { database },
   } = useCurrentAppInfo();
-  const cm = useCollectionManagerV2();
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
   const form = useMemo(() => createForm(), []);
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
   const { t } = useTranslation();
   const collectionResource = useResourceContext();
   const { refreshAsync } = useContext(ResourceActionContext);
   const targetTemplate = cm.getCollectionTemplate(template);
-  const inherits = getInheritCollections(name);
+  const collection = cm.getCollection(name);
+  const inherits = collection.getParentCollections();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -318,7 +320,7 @@ export const CollectionFields = () => {
     },
   ];
 
-  const fields = getCurrentCollectionFields(name);
+  const fields = collection.getCurrentFields();
   const groups = {
     pf: [],
     association: [],
@@ -366,7 +368,7 @@ export const CollectionFields = () => {
   dataSource.push(
     ...inherits
       .map((key) => {
-        const collection = getCollection(key);
+        const collection = cm.getCollection(key);
         if (!collection) {
           return;
         }
@@ -374,7 +376,7 @@ export const CollectionFields = () => {
           key,
           title: `${t('Inherited fields')} - ` + compile(collection?.title),
           inherit: true,
-          fields: collection?.fields || [],
+          fields: collection.getCurrentFields(),
         };
       })
       .filter(Boolean),

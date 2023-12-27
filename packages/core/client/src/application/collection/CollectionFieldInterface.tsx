@@ -67,6 +67,10 @@ export class CollectionFieldInterfaceV2 {
     return this.options.filterable;
   }
 
+  get titleUsable() {
+    return this.options.titleUsable;
+  }
+
   getOption<K extends keyof CollectionFieldInterfaceOptions>(key: K): CollectionFieldInterfaceOptions[K] {
     return this.options[key];
   }

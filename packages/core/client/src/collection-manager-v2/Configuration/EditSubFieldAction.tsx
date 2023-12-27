@@ -69,7 +69,7 @@ const getSchema = (schema: CollectionFieldInterfaceOptions): ISchema => {
 const useUpdateCollectionField = () => {
   const form = useForm();
   const { run } = useUpdateAction();
-  const cm = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { refresh } = useSchemaComponentContext();
   return {
     async run() {

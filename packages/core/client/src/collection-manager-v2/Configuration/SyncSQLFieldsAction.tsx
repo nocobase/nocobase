@@ -12,6 +12,7 @@ import { FormLayout } from '@formily/antd-v5';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useAPIClient } from '../../api-client';
 import { useField, useForm } from '@formily/react';
+import { useCollectionManagerV2 } from '../../application';
 
 const schema = {
   type: 'object',
@@ -89,7 +90,7 @@ const schema = {
 const useSyncFromDB = (refreshCMList?: any) => {
   const form = useForm();
   const ctx = useActionContext();
-  const cm = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { refresh } = useResourceActionContext();
   const { targetKey } = useResourceContext();
   const { [targetKey]: filterByTk } = useRecord();

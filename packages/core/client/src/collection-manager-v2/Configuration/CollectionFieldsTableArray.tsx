@@ -17,6 +17,7 @@ import {
 } from '../..';
 import { useCollectionManagerV2 } from '../../application';
 import { overridingSchema } from '../Configuration/schemas/collectionFields';
+import { InheritanceCollectionMixin } from '../collections/InheritanceCollectionMixin';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -86,7 +87,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
     const { name } = useRecord();
     const { t } = useTranslation();
     const compile = useCompile();
-    const cm = useCollectionManagerV2();
+    const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
     const {
       showIndex = true,
       useSelectedRowKeys = useDef,
@@ -97,7 +98,8 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
     const [selectedRowKeys, setSelectedRowKeys] = useSelectedRowKeys();
     const [categorizeData, setCategorizeData] = useState<Array<CategorizeDataItem>>([]);
     const [expandedKeys, setExpendedKeys] = useState(selectedRowKeys);
-    const inherits = getInheritCollections(name);
+    const collection = cm.getCollection(name);
+    const inherits = collection.getParentCollections();
     useDataSource({
       onSuccess(data) {
         field.value = data?.data || [];
@@ -128,10 +130,10 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
           }
         });
         if (inherits) {
-          inherits.forEach((v) => {
+          inherits.forEach((v: any) => {
             sortKeyArr.push(v);
-            const parentCollection = getCollection(v);
-            parentCollection.fields.map((k) => {
+            const parentCollection = cm.getCollection(v);
+            parentCollection.getCurrentFields().map((k) => {
               if (k.interface) {
                 addCategorizeVal(v, new Proxy(k, {}));
                 field.value.push(new Proxy(k, {}));
@@ -141,7 +143,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
         }
         sortKeyArr.forEach((key) => {
           if (categorizeMap.get(key)?.length > 0) {
-            const parentCollection = getCollection(key);
+            const parentCollection = cm.getCollection(key);
             tmpData.push({
               key,
               name:

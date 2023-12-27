@@ -76,6 +76,7 @@ export class CollectionV2 {
     this.options = options;
     this.setFields(options.fields || []);
     this.collectionManager = collectionManager;
+    this.init();
   }
   get name() {
     return this.options.name;
@@ -90,9 +91,23 @@ export class CollectionV2 {
     const field = this.getFields('primaryKey')[0];
     return field ? field.name : 'id';
   }
+
+  get inherits() {
+    return this.options.inherits || [];
+  }
+
   get titleFieldName() {
     return this.hasField(this.options.titleField) ? this.options.titleField : this.primaryKey;
   }
+
+  get sources() {
+    return this.options.sources || [];
+  }
+
+  init() {
+    // DO NOTHING
+  }
+
   private setFields(fields: CollectionFieldOptionsV2[]) {
     this.fields = fields.reduce((memo, field) => {
       memo[field.name] = field;
