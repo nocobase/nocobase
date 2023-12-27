@@ -1,21 +1,24 @@
-import { CollectionManagerV2, CollectionV2 } from '../../application';
-import _, { unionBy, uniq, uniqBy } from 'lodash';
+import { CollectionFieldOptionsV2, CollectionManagerV2, CollectionV2 } from '../../application';
+import _, { uniq, uniqBy } from 'lodash';
 
 export class InheritanceCollectionMixin extends CollectionV2 {
   public declare collectionManager: CollectionManagerV2<InheritanceCollectionMixin>;
+  protected parentCollections: string[];
+  protected childrenCollections: string[];
+  protected inheritsFields: CollectionFieldOptionsV2[];
+  protected currentFields: CollectionFieldOptionsV2[];
+  protected parentCollectionFields: Record<string, CollectionFieldOptionsV2> = {};
+  protected allCollectionsInheritChain: string[];
+  protected inheritCollectionsChain: string[];
 
   get inherits() {
     return this.options.inherits;
   }
 
-  init() {
-    this.fields = this.getFields().reduce((memo, field) => {
-      memo[field.name] = field;
-      return memo;
-    }, {});
-  }
-
   getParentCollections() {
+    if (this.parentCollections) {
+      return this.parentCollections;
+    }
     const parents: string[] = [];
     const getParentCollectionsInner = (collectionName: string) => {
       const collection = this.collectionManager.getCollection(collectionName);
@@ -32,10 +35,15 @@ export class InheritanceCollectionMixin extends CollectionV2 {
       return uniq(parents);
     };
 
-    return getParentCollectionsInner(this.name);
+    this.parentCollections = getParentCollectionsInner(this.name);
+    return this.parentCollections;
   }
 
   getChildrenCollections(isSupportView = false) {
+    if (this.childrenCollections) {
+      return this.childrenCollections;
+    }
+
     const children: string[] = [];
     const collections = this.collectionManager.getCollections();
     const getChildrenCollectionsInner = (collectionName: string) => {
@@ -60,31 +68,33 @@ export class InheritanceCollectionMixin extends CollectionV2 {
       return uniqBy(children, 'key');
     };
 
-    return getChildrenCollectionsInner(this.name);
+    this.childrenCollections = getChildrenCollectionsInner(this.name);
+    return this.childrenCollections;
   }
 
   getInheritedFields() {
+    if (this.inheritsFields) {
+      return this.inheritsFields;
+    }
+
     const parentCollections = this.getParentCollections();
-    return parentCollections
+    this.inheritsFields = parentCollections
       .map((collectionName) => this.collectionManager.getCollection(collectionName)?.getFields())
       .flat()
       .filter(Boolean);
+
+    return this.inheritsFields;
   }
 
   getCurrentFields() {
     return this.options.fields || [];
   }
 
-  getFields() {
-    const currentFields = this.getCurrentFields();
-    const inheritedFields = this.getInheritedFields();
-    const totalFields = unionBy(currentFields?.concat(inheritedFields) || [], 'name').filter((v: any) => {
-      return !v.isForeignKey;
-    });
-    return totalFields;
-  }
-
   getParentCollectionFields(parentCollectionName: string) {
+    if (this.parentCollectionFields[parentCollectionName]) {
+      return this.parentCollectionFields[parentCollectionName];
+    }
+
     const currentFields = this.getCurrentFields();
     const parentCollections = this.getParentCollections();
     const parentCollection = this.collectionManager.getCollection(parentCollectionName);
@@ -98,14 +108,20 @@ export class InheritanceCollectionMixin extends CollectionV2 {
         filterFields = filterFields.concat(collection.getCurrentFields());
       });
     }
-    return parentFields.filter((v) => {
+    this.parentCollectionFields[parentCollectionName] = parentFields.filter((v) => {
       return !filterFields.find((k) => {
         return k.name === v.name;
       });
     });
+
+    return this.parentCollectionFields[parentCollectionName];
   }
 
   getAllCollectionsInheritChain() {
+    if (this.allCollectionsInheritChain) {
+      return this.allCollectionsInheritChain;
+    }
+
     const collectionsInheritChain = [this.name];
     const getInheritChain = (name: string) => {
       const collection = this.collectionManager.getCollection(name);
@@ -139,10 +155,14 @@ export class InheritanceCollectionMixin extends CollectionV2 {
       return collectionsInheritChain;
     };
 
-    return getInheritChain(this.name);
+    this.allCollectionsInheritChain = getInheritChain(this.name);
+    return this.allCollectionsInheritChain;
   }
 
   getInheritCollectionsChain() {
+    if (this.inheritCollectionsChain) {
+      return this.inheritCollectionsChain;
+    }
     const collectionsInheritChain = [this.name];
     const getInheritChain = (name: string) => {
       const collection = this.collectionManager.getCollection(name);
@@ -162,6 +182,8 @@ export class InheritanceCollectionMixin extends CollectionV2 {
       return collectionsInheritChain;
     };
 
-    return getInheritChain(this.name);
+    this.inheritCollectionsChain = getInheritChain(this.name);
+
+    return this.inheritCollectionsChain;
   }
 }

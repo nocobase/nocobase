@@ -70,13 +70,19 @@ export type GetCollectionFieldPredicate =
 export class CollectionV2 {
   protected options: CollectionOptionsV2;
   protected fields: Record<string, CollectionFieldOptionsV2> = {};
+  protected fieldsArr: CollectionFieldOptionsV2[];
   public collectionManager: CollectionManagerV2;
 
   constructor(options: CollectionOptionsV2, collectionManager: CollectionManagerV2) {
-    this.options = options;
-    this.setFields(options.fields || []);
     this.collectionManager = collectionManager;
-    this.init();
+    this.init(options);
+  }
+  init(options: CollectionOptionsV2) {
+    this.options = options;
+    this.fields = this.getFields().reduce((memo, field) => {
+      memo[field.name] = field;
+      return memo;
+    }, {});
   }
   get name() {
     return this.options.name;
@@ -103,17 +109,6 @@ export class CollectionV2 {
   get sources() {
     return this.options.sources || [];
   }
-
-  init() {
-    // DO NOTHING
-  }
-
-  private setFields(fields: CollectionFieldOptionsV2[]) {
-    this.fields = fields.reduce((memo, field) => {
-      memo[field.name] = field;
-      return memo;
-    }, {});
-  }
   getOptions() {
     return this.options;
   }
@@ -121,8 +116,7 @@ export class CollectionV2 {
     return this.options[key];
   }
   setOptions<CollectionOptionsV2>(options: CollectionOptionsV2) {
-    Object.assign(this.options, options);
-    this.setFields(this.options.fields || []);
+    this.init(Object.assign(this.options, options));
   }
   /**
    * Get fields
@@ -134,7 +128,11 @@ export class CollectionV2 {
    * getFields((field) => field.name === 'nickname') // 获取 name: 'nickname' 字段
    */
   getFields(predicate?: GetCollectionFieldPredicate) {
-    return filter(this.options.fields || [], predicate);
+    if (!predicate && this.fieldsArr) {
+      return this.fieldsArr;
+    }
+    this.fieldsArr = Object.values(this.fields);
+    return filter(this.fieldsArr, predicate);
   }
   getField(name: SchemaKey) {
     return this.fields[name];
