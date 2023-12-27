@@ -34,6 +34,7 @@
     "@nocobase/plugin-import": "0.18.0-alpha.2",
     "@nocobase/plugin-kanban": "0.18.0-alpha.2",
     "@nocobase/plugin-localization-management": "0.18.0-alpha.2",
+    "@nocobase/plugin-logger": "0.18.0-alpha.2",
     "@nocobase/plugin-map": "0.18.0-alpha.2",
     "@nocobase/plugin-math-formula-field": "0.18.0-alpha.2",
     "@nocobase/plugin-mobile-client": "0.18.0-alpha.2",

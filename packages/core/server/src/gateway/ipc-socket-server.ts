@@ -2,6 +2,7 @@ import net from 'net';
 import fs from 'fs';
 import { AppSupervisor } from '../app-supervisor';
 import { writeJSON } from './ipc-socket-client';
+import { randomUUID } from 'crypto';
 
 export class IPCSocketServer {
   socketServer: net.Server;
@@ -32,19 +33,23 @@ export class IPCSocketServer {
             continue;
           }
 
+          const reqId = randomUUID();
           const dataObj = JSON.parse(message);
 
-          IPCSocketServer.handleClientMessage(dataObj)
+          IPCSocketServer.handleClientMessage({ reqId, ...dataObj })
             .then(() => {
               writeJSON(c, {
+                reqId,
                 type: 'success',
               });
             })
             .catch((err) => {
               writeJSON(c, {
+                reqId,
                 type: 'error',
                 payload: {
                   message: err.message,
+                  stack: err.stack,
                 },
               });
             });
@@ -59,7 +64,7 @@ export class IPCSocketServer {
     return new IPCSocketServer(socketServer);
   }
 
-  static async handleClientMessage({ type, payload }) {
+  static async handleClientMessage({ reqId, type, payload }) {
     console.log(`cli received message ${type}`);
 
     if (type === 'passCliArgv') {
@@ -76,6 +81,7 @@ export class IPCSocketServer {
       }
 
       return mainApp.runAsCLI(argv, {
+        reqId,
         from: 'node',
         throwError: true,
       });

@@ -1,0 +1,19 @@
+{
+  "name": "@nocobase/plugin-logger",
+  "displayName": "Logger",
+  "displayName.zh-CN": "日志",
+  "description": "Package and download log files",
+  "description.zh-CN": "打包下载日志文件",
+  "version": "0.18.0-alpha.2",
+  "main": "dist/server/index.js",
+  "devDependencies": {
+    "tar-fs": "^3.0.4",
+    "@types/tar-fs": "^2.0.2"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "0.x",
+    "@nocobase/server": "0.x",
+    "@nocobase/test": "0.x",
+    "@nocobase/actions": "0.x"
+  }
+}

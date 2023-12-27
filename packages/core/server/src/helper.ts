@@ -13,6 +13,8 @@ import { dateTemplate } from './middlewares/data-template';
 import { dataWrapping } from './middlewares/data-wrapping';
 import { db2resource } from './middlewares/db2resource';
 import { i18n } from './middlewares/i18n';
+import { requestLogger } from '@nocobase/logger';
+import { randomUUID } from 'crypto';
 import { createHistogram, RecordableHistogram } from 'perf_hooks';
 
 export function createI18n(options: ApplicationOptions) {
@@ -40,6 +42,11 @@ export function createResourcer(options: ApplicationOptions) {
 }
 
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
+  app.use(async (ctx, next) => {
+    app.context.reqId = randomUUID();
+    await next();
+  });
+  app.use(requestLogger(app.name, options.logger), { tag: 'logger' });
   app.use(
     cors({
       exposeHeaders: ['content-disposition'],

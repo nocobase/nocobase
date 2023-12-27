@@ -14,10 +14,10 @@ export class Locale {
   constructor(app: Application) {
     this.app = app;
     this.app.on('afterLoad', async () => {
-      this.app.log.debug('load locale resource');
+      this.app.log.debug('load locale resource', { submodule: 'locale', method: 'onAfterLoad' });
       this.app.setMaintainingMessage('load locale resource');
       await this.load();
-      this.app.log.debug('locale resource loaded');
+      this.app.log.debug('locale resource loaded', { submodule: 'locale', method: 'onAfterLoad' });
       this.app.setMaintainingMessage('locale resource loaded');
     });
   }
