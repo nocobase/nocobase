@@ -30,6 +30,7 @@ export const AdminSettingsLayout = () => {
   const compile = useCompile();
   const settings = useMemo(() => {
     const list = app.pluginSettingsManager.getList();
+    console.log(list);
     // compile title
     function traverse(settings: PluginSettingsPageType[]) {
       settings.forEach((item) => {
@@ -43,6 +44,7 @@ export const AdminSettingsLayout = () => {
     traverse(list);
     return list;
   }, [app.pluginSettingsManager, compile]);
+  console.log(settings);
   const getFirstDeepChildPath = useCallback((settings: PluginSettingsPageType[]) => {
     if (!settings || !settings.length) {
       return '/admin';
@@ -73,17 +75,21 @@ export const AdminSettingsLayout = () => {
     if (!currentSetting) {
       return null;
     }
-    return settings.find((item) => item.name === currentSetting.topLevelName);
+    return settings.find(
+      (item) => item.name === currentSetting.parentLevelName || item.name === currentSetting.topLevelName,
+    );
   }, [currentSetting, settings]);
   const sidebarMenus = useMemo(() => {
-    return getMenuItems(settings.map((item) => ({ ...item, children: null })));
+    return getMenuItems(settings.filter((v) => v.isTop !== false).map((item) => ({ ...item, children: null })));
   }, [settings]);
   if (!currentSetting || location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
     return <Navigate replace to={getFirstDeepChildPath(settings)} />;
   }
-  if (location.pathname === currentTopLevelSetting.path && currentTopLevelSetting.children?.length > 0) {
-    return <Navigate replace to={getFirstDeepChildPath(currentTopLevelSetting.children)} />;
+  if (location.pathname === currentTopLevelSetting?.path && currentTopLevelSetting?.children?.length > 0) {
+    return <Navigate replace to={getFirstDeepChildPath(currentTopLevelSetting?.children)} />;
   }
+  console.log(sidebarMenus);
+  console.log(currentSetting, currentTopLevelSetting, currentSetting?.topLevelName);
   return (
     <div>
       <Layout>
@@ -104,7 +110,7 @@ export const AdminSettingsLayout = () => {
           theme={'light'}
         >
           <Menu
-            selectedKeys={[currentSetting?.topLevelName]}
+            selectedKeys={[currentSetting?.pluginKey || currentSetting.topLevelName]}
             style={{ height: 'calc(100vh - 46px)', overflowY: 'auto', overflowX: 'hidden' }}
             onClick={({ key }) => {
               const plugin = settings.find((item) => item.name === key);
@@ -136,7 +142,7 @@ export const AdminSettingsLayout = () => {
                     }}
                     selectedKeys={[currentSetting?.name]}
                     mode="horizontal"
-                    items={getMenuItems(currentTopLevelSetting.children)}
+                    items={getMenuItems(currentSetting.children || currentTopLevelSetting.children)}
                   ></Menu>
                 )
               }
