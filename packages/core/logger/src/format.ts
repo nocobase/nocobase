@@ -26,7 +26,7 @@ export const getFormat = (format?: LoggerOptions['format']) => {
       logFormat = winston.format.combine(stripColorFormat, winston.format.json({ deterministic: false }));
       break;
     default:
-      return winston.format.combine(stripColorFormat, format as winston.Logform.Format);
+      return winston.format.combine(format as winston.Logform.Format);
   }
   return winston.format.combine(sortFormat, logFormat);
 };
