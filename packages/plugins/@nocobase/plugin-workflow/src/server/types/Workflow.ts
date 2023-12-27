@@ -19,7 +19,6 @@ export default class WorkflowModel extends Model {
   declare description?: string;
   declare type: string;
   declare config: any;
-  declare useTransaction: boolean;
   declare executed: number;
 
   declare createdAt: Date;
