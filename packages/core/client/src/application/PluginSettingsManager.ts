@@ -75,7 +75,7 @@ export class PluginSettingsManager {
   add(name: string, options: PluginSettingOptions) {
     const nameArr = name.split('.');
     const topLevelName = nameArr[0];
-    this.settings[name] = { Component: Outlet, ...options, name, topLevelName };
+    this.settings[name] = { Component: Outlet, ...options, name, topLevelName: options.topLevelName || topLevelName };
 
     // add children
     if (nameArr.length > 1) {
