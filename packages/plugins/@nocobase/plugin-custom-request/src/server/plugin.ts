@@ -1,4 +1,4 @@
-import { Logger, LoggerOptions, Transports, createLogger, getLoggerFilePath } from '@nocobase/logger';
+import { Logger, LoggerOptions } from '@nocobase/logger';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { listByCurrentRole } from './actions/listByCurrentRole';
@@ -14,14 +14,10 @@ export class CustomRequestPlugin extends Plugin {
   }
 
   getLogger(): Logger {
-    const logger = createLogger({
-      transports: [
-        'console',
-        Transports.dailyRotateFile({
-          dirname: getLoggerFilePath('custom-request'),
-          filename: this.app.name + '-%DATE%.log',
-        }),
-      ],
+    const logger = this.createLogger({
+      dirname: 'custom-request',
+      filename: '%DATE%.log',
+      transports: [...(process.env.NODE_ENV === 'production' ? ['dailyRotateFile'] : ['console'])],
     } as LoggerOptions);
 
     return logger;

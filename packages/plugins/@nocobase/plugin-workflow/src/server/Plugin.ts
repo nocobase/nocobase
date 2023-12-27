@@ -51,14 +51,10 @@ export default class WorkflowPlugin extends Plugin {
       return this.loggerCache.get(key);
     }
 
-    const logger = createLogger({
-      transports: [
-        ...(process.env.NODE_ENV !== 'production' ? ['console'] : []),
-        new winston.transports.File({
-          filename: getLoggerFilePath('workflows', date, `${workflowId}.log`),
-          level: getLoggerLevel(),
-        }),
-      ],
+    const logger = this.createLogger({
+      dirname: path.join('workflows', date),
+      filename: `${workflowId}.log`,
+      transports: [...(process.env.NODE_ENV !== 'production' ? ['console'] : ['file'])],
     } as LoggerOptions);
 
     this.loggerCache.set(key, logger);

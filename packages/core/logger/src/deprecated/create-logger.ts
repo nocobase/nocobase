@@ -48,6 +48,7 @@ interface LoggerOptions extends Omit<winston.LoggerOptions, 'transports'> {
   transports?: WinstonTransport;
 }
 
+// @deprecated
 function createLogger(options: LoggerOptions = {}) {
   const transports: winston.transport[] = toArr(options?.transports || ['console', 'dailyRotateFile'])
     .map((t) => {

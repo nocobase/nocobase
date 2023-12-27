@@ -4,6 +4,7 @@ import { resolve } from 'path';
 import { Application } from './application';
 import { InstallOptions, getExposeChangelogUrl, getExposeReadmeUrl } from './plugin-manager';
 import { checkAndGetCompatible } from './plugin-manager/utils';
+import { LoggerOptions, createLogger, getLoggerFilePath } from '@nocobase/logger';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -38,7 +39,10 @@ export abstract class Plugin<O = any> implements PluginInterface {
   }
 
   get log() {
-    return this.app.log;
+    return this.app.log.child({
+      reqId: this.app.context.reqId,
+      module: this.name,
+    });
   }
 
   get name() {
@@ -75,6 +79,10 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   getName() {
     return (this.options as any).name;
+  }
+
+  createLogger(options: LoggerOptions) {
+    return this.app.createLogger(options);
   }
 
   afterAdd() {}
