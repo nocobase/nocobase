@@ -3,9 +3,9 @@ import actions from '@nocobase/actions';
 import { HandlerType } from '@nocobase/resourcer';
 import WorkflowPlugin, { JOB_STATUS } from '@nocobase/plugin-workflow';
 
-import jobsCollection from './collecions/jobs';
-import usersCollection from './collecions/users';
-import usersJobsCollection from './collecions/users_jobs';
+import jobsCollection from './collections/jobs';
+import usersCollection from './collections/users';
+import usersJobsCollection from './collections/users_jobs';
 import { submit } from './actions';
 
 import ManualInstruction from './ManualInstruction';
