@@ -56,7 +56,17 @@ export async function getApp({
     ...options,
     autoStart,
     cleanDb,
-    plugins: [WorkflowPlugin, WorkflowTestPlugin, ...plugins],
+    plugins: [
+      [
+        WorkflowPlugin,
+        {
+          instructions,
+          functions,
+        },
+      ],
+      WorkflowTestPlugin,
+      ...plugins,
+    ],
   });
 }
 
@@ -65,15 +75,5 @@ export default class WorkflowTestPlugin extends Plugin {
     await this.db.import({
       directory: path.resolve(__dirname, 'collections'),
     });
-
-    const workflow = this.app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
-
-    for (const [key, instruction] of Object.entries(instructions)) {
-      workflow.registerInstruction(key, instruction);
-    }
-
-    for (const [key, func] of Object.entries(functions)) {
-      workflow.functions.register(key, func);
-    }
   }
 }
