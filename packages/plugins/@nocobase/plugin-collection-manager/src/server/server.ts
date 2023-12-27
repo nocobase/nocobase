@@ -361,7 +361,6 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.extendCollection({
       name: 'collectionCategory',
-      namespace: 'collection-manager',
       duplicator: 'required',
       origin: `plugin:${this.name}`,
     });

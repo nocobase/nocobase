@@ -1,5 +1,4 @@
 export default {
-  namespace: 'verification.verificationProviders',
   duplicator: {
     dataType: 'config',
   },

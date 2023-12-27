@@ -1,7 +1,6 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'localization.localization',
   duplicator: {
     dataType: 'meta',
   },

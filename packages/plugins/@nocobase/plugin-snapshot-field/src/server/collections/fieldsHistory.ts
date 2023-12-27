@@ -1,10 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'snapshot-field.snapshot-field',
   duplicator: 'required',
   name: 'fieldsHistory',
-  title: '{{t("Fields history")}}',
   autoGenId: false,
   model: 'FieldModel',
   timestamps: false,

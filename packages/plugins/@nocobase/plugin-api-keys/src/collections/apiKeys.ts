@@ -2,7 +2,6 @@ import type { CollectionOptions } from '@nocobase/database';
 import { generateNTemplate } from '../locale';
 
 export default {
-  namespace: 'api-keys',
   duplicator: {
     dataType: 'business',
   },

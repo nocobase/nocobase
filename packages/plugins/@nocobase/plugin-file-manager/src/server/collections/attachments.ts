@@ -6,7 +6,6 @@ export default {
     dataType: 'business',
   },
   name: 'attachments',
-  title: '文件管理器',
   createdBy: true,
   updatedBy: true,
   template: 'file',

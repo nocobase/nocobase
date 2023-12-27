@@ -1,7 +1,6 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'users.users',
   duplicator: {
     dataType: 'business',
     with: 'rolesUsers',

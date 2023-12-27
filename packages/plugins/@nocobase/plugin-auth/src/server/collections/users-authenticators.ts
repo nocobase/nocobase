@@ -5,7 +5,6 @@ import { CollectionOptions } from '@nocobase/database';
  * such as saml, oicd, oauth, sms, etc.
  */
 export default {
-  namespace: 'auth.users-auth',
   duplicator: {
     dataType: 'business',
     /**

@@ -5,6 +5,5 @@ export default {
   duplicator: {
     dataType: 'business',
   },
-  namespace: 'acl.users',
   fields: [{ type: 'boolean', name: 'default' }],
 } as CollectionOptions;

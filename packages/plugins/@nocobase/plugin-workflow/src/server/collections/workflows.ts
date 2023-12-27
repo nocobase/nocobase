@@ -2,7 +2,6 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default function () {
   return {
-    namespace: 'workflow.workflowConfig',
     duplicator: 'required',
     name: 'workflows',
     fields: [

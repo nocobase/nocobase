@@ -1,7 +1,6 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'multi-app-manager.multi-apps',
   duplicator: {
     dataType: 'business',
   },

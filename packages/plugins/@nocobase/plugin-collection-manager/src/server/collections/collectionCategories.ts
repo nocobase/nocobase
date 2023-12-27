@@ -1,7 +1,6 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'collection-manager.core',
   duplicator: {
     dumpable: 'required',
     with: 'collectionCategory',

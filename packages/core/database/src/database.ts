@@ -295,7 +295,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
       name: 'migrations',
       autoGenId: false,
       timestamps: false,
-      namespace: 'core.server',
       duplicator: 'required',
       origin: 'core',
       fields: [{ type: 'string', name: 'name', primaryKey: true }],

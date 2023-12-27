@@ -1,10 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'snapshot-field.snapshot-field',
   duplicator: 'required',
   name: 'collectionsHistory',
-  title: '数据表历史',
   sortable: 'sort',
   autoGenId: false,
   model: 'CollectionModel',

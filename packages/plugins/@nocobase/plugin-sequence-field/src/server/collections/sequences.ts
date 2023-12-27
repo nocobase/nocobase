@@ -1,7 +1,6 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'sequence-field.sequences',
   duplicator: {
     dumpable: 'required',
     async delayRestore(restorer) {

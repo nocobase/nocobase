@@ -1,7 +1,6 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'ui-schema-storage.uiSchemas',
   duplicator: 'required',
   name: 'uiSchemaTemplates',
   autoGenId: false,

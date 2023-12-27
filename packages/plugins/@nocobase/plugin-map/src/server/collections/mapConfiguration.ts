@@ -1,8 +1,7 @@
-import { MapConfigurationCollectionName } from '../constants';
 import { defineCollection } from '@nocobase/database';
+import { MapConfigurationCollectionName } from '../constants';
 
 export default defineCollection({
-  namespace: 'map.mapConfiguration',
   duplicator: {
     dataType: 'config',
   },

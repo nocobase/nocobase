@@ -4,7 +4,6 @@ import { CollectionOptions } from '@nocobase/database';
  * Collection for extended authentication methods,
  */
 export default {
-  namespace: 'auth.auth',
   duplicator: {
     dataType: 'config',
   },

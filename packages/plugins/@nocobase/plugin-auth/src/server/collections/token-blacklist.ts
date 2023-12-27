@@ -1,7 +1,6 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'auth.token-black',
   duplicator: {
     dataType: 'business',
   },

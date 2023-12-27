@@ -253,7 +253,7 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
           {upload && !restoreData && <RestoreUpload setRestoreData={setRestoreData} />}
           {(!upload || restoreData) && [
             <strong style={{ fontWeight: 600, display: 'block', margin: '16px 0 8px' }} key="info">
-              {t('Select the data to be backed up')} (
+              {t('Select the data to be backed up')}，以下选中的数据表会进行全覆盖 (
               <LearnMore collectionsData={restoreData?.dumpableCollectionsGroupByDataTypes} />
               ):
             </strong>,
@@ -316,7 +316,7 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
       </ButtonComponent>
       <Modal title={t('New backup')} width={800} open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
         <strong style={{ fontWeight: 600, display: 'block', margin: '16px 0 8px' }}>
-          {t('Select the data to be backed up')} (
+          {t('Select the data to be backed up')}，以下选中的数据表会进行全覆盖 (
           <LearnMore isBackup={true} />
           ):
         </strong>

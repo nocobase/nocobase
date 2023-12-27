@@ -1,7 +1,6 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'workflow.executionLogs',
   name: 'users_jobs',
   duplicator: {
     dataType: 'business',
