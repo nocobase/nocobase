@@ -3,8 +3,7 @@ import React, { FC, ReactNode } from 'react';
 import { CollectionProviderV2 } from './CollectionProvider';
 import { CollectionFieldProviderV2 } from './CollectionFieldProvider';
 import { useCollectionManagerV2 } from './CollectionManagerProvider';
-import { Spin } from 'antd';
-import { useRequest } from '../../api-client';
+import { DeletedPlaceholder } from './DeletedPlaceholder';
 
 export interface AssociationProviderProps {
   ns?: string;
@@ -16,14 +15,9 @@ export const AssociationProviderV2: FC<AssociationProviderProps> = (props) => {
   const { name, ns, children } = props;
 
   const collectionManager = useCollectionManagerV2();
-  const { loading, data: collectionName } = useRequest<string>(
-    () => collectionManager.getCollectionName(name, { ns }),
-    {
-      refreshDeps: [name, ns],
-    },
-  );
+  const collectionName = collectionManager.getCollectionName(name, { ns });
 
-  if (loading) return <Spin />;
+  if (!collectionName) return <DeletedPlaceholder />;
 
   return (
     <CollectionProviderV2 name={name.split('.')[0]} ns={ns}>

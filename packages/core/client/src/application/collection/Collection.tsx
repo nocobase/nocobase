@@ -80,6 +80,9 @@ export class CollectionV2 {
   get name() {
     return this.options.name;
   }
+  get title() {
+    return this.options.title;
+  }
   get primaryKey(): string {
     if (this.options.targetKey) {
       return this.options.targetKey;

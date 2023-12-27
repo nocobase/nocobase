@@ -32,10 +32,10 @@ class CollectionManagerV2 {
   setCollections(collections: (CollectionOptions | CollectionV2)[], options?: GetCollectionOptions): void
   getAllCollections(): Record<string, Record<string, CollectionV2>>
   getCollections(ns?: string, predicate?: (collection: CollectionV2) => boolean): CollectionV2[]
-  async getCollection(path: string, options?: GetCollectionOptions): Promise<CollectionV2 | undefined>
-  async getCollectionName(path: string, options?: GetCollectionOptions): Promise<string | undefined>;
-  async removeCollection(path: string, options?: GetCollectionOptions): void;
-  async getCollectionField(path: string, options?: GetCollectionOptions): Promise<CollectionFieldOptions | undefined>;
+  getCollection(path: string, options?: GetCollectionOptions): Promise<CollectionV2 | undefined>
+  getCollectionName(path: string, options?: GetCollectionOptions): Promise<string | undefined>;
+  removeCollection(path: string, options?: GetCollectionOptions): void;
+  getCollectionField(path: string, options?: GetCollectionOptions): Promise<CollectionFieldOptions | undefined>;
 
   addCollectionFieldInterfaces(interfaces:CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[]): void;
   getCollectionFieldInterfaces(): CollectionFieldInterfaceV2[]
@@ -412,7 +412,7 @@ class CollectionManagerV2 {
 
 ```tsx | pure
 class CollectionManagerV2 {
-  async getCollection(path: string, options?: GetCollectionOptions): Promise<CollectionV2 | undefined>
+  getCollection(path: string, options?: GetCollectionOptions): CollectionV2 | undefined
 }
 ```
 
@@ -441,7 +441,7 @@ collectionManager.getCollection('users', { ns: 'db2' }); // userCollection
 
 ```tsx | pure
 class CollectionManagerV2 {
-  async getCollectionName(path: string, options?: GetCollectionOptions): Promise<string | undefined>;
+  getCollectionName(path: string, options?: GetCollectionOptions): string | undefined;
 }
 ```
 
@@ -461,7 +461,7 @@ collectionManager.getCollectionName('users.profileId'); // 'profiles'
 
 ```tsx | pure
 class CollectionManagerV2 {
-  async removeCollection(path: string, options?: GetCollectionOptions): void;
+  removeCollection(path: string, options?: GetCollectionOptions): void;
 }
 ```
 
@@ -479,7 +479,7 @@ collectionManager.removeCollection('users');
 
 ```tsx | pure
 class CollectionManagerV2 {
-  async getCollectionField(path: string, options?: GetCollectionOptions): CollectionFieldOptions | undefined;
+  getCollectionField(path: string, options?: GetCollectionOptions): CollectionFieldOptions | undefined;
 }
 ```
 

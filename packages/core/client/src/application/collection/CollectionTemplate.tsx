@@ -73,12 +73,24 @@ export class CollectionTemplateV2 {
     return this.options.name;
   }
 
+  get title() {
+    return this.options.title;
+  }
+
   get Collection() {
     return this.options.Collection;
   }
 
   get transform() {
     return this.options.transform;
+  }
+
+  get configureActions() {
+    return this.options.configureActions;
+  }
+
+  get forbidDeletion() {
+    return this.options.forbidDeletion;
   }
 
   getOption<K extends keyof CollectionTemplateOptionsV2>(key: K): CollectionTemplateOptionsV2[K] {

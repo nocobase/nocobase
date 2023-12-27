@@ -55,6 +55,10 @@ export class CollectionFieldInterfaceV2 {
     return this.options.title;
   }
 
+  get default() {
+    return this.options.default;
+  }
+
   getOption<K extends keyof CollectionFieldInterfaceOptions>(key: K): CollectionFieldInterfaceOptions[K] {
     return this.options[key];
   }
