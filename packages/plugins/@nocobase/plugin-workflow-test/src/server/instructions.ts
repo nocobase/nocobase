@@ -1,66 +1,69 @@
+import { Instruction } from '@nocobase/plugin-workflow';
 import { lodash } from '@nocobase/utils';
 
 export default {
-  echo: {
+  echo: class extends Instruction {
     run({ config = {} }: any, { result }, processor) {
       return {
         status: 1,
         result: config.path == null ? result : lodash.get(result, config.path),
       };
-    },
+    }
   },
 
-  error: {
+  error: class extends Instruction {
     run(node, input, processor) {
       throw new Error('definite error');
-    },
+      return null;
+    }
   },
 
-  pending: {
+  pending: class extends Instruction {
     run(node, input, processor) {
       return {
         status: 0,
       };
-    },
+    }
   },
 
-  prompt: {
+  prompt: class extends Instruction {
     run(node, input, processor) {
       return {
         status: 0,
       };
-    },
+    }
     resume(node, job, processor) {
       return job.set({
         status: 1,
       });
-    },
+    }
   },
 
-  'prompt->error': {
+  'prompt->error': class extends Instruction {
     run(node, input, processor) {
       return {
         status: 0,
       };
-    },
+    }
     resume(node, input, processor) {
       throw new Error('input failed');
-    },
+      return null;
+    }
   },
 
-  customizedSuccess: {
+  customizedSuccess: class extends Instruction {
     run(node, input, processor) {
       return {
         status: 100,
       };
-    },
+    }
   },
 
-  customizedError: {
+  customizedError: class extends Instruction {
     run(node, input, processor) {
       return {
         status: -100,
       };
-    },
+    }
   },
 };

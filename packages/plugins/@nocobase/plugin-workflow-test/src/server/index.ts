@@ -5,6 +5,7 @@ import { MockServer, mockServer } from '@nocobase/test';
 
 import instructions from './instructions';
 import functions from './functions';
+import WorkflowPlugin from '@nocobase/plugin-workflow';
 
 interface MockServerOptions extends ApplicationOptions {
   autoStart?: boolean;
@@ -55,20 +56,20 @@ export async function getApp({
     ...options,
     autoStart,
     cleanDb,
-    plugins: ['workflow', 'workflow-test', ...plugins],
+    plugins: [WorkflowPlugin, WorkflowTestPlugin, ...plugins],
   });
 }
 
-export default class extends Plugin {
+export default class WorkflowTestPlugin extends Plugin {
   async load() {
     await this.db.import({
       directory: path.resolve(__dirname, 'collections'),
     });
 
-    const workflow = this.app.getPlugin<any>('workflow');
+    const workflow = this.app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
 
     for (const [key, instruction] of Object.entries(instructions)) {
-      workflow.instructions.register(key, instruction);
+      workflow.registerInstruction(key, instruction);
     }
 
     for (const [key, func] of Object.entries(functions)) {
