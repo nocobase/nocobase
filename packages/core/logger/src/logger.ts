@@ -3,7 +3,7 @@ import { SystemLoggerOptions } from './system-logger';
 import 'winston-daily-rotate-file';
 import { getLoggerLevel } from './config';
 import { getTransports } from './transports';
-import { colorFormat, getFormat, logfmtFormat, sortFormat } from './format';
+import { colorFormat, logfmtFormat, sortFormat } from './format';
 
 interface LoggerOptions extends Omit<winston.LoggerOptions, 'transports' | 'format'> {
   dirname?: string;
@@ -16,15 +16,11 @@ export const createLogger = (options: LoggerOptions) => {
   if (process.env.GITHUB_ACTIONS) {
     return createConsoleLogger();
   }
-  const { transports, format: _format, ...rest } = options;
-  const format = winston.format.combine(
-    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    getFormat(_format),
-  );
+  const { format, ...rest } = options;
   const winstonOptions = {
     level: getLoggerLevel(),
     ...rest,
-    transports: getTransports({ ...options, format }),
+    transports: getTransports(options),
   };
   return winston.createLogger(winstonOptions);
 };

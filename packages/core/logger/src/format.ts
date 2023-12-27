@@ -23,10 +23,10 @@ export const getFormat = (format?: LoggerOptions['format']) => {
       logFormat = winston.format.combine(escapeFormat, delimiterFormat);
       break;
     case 'json':
-      logFormat = winston.format.json({ deterministic: false });
+      logFormat = winston.format.combine(stripColorFormat, winston.format.json({ deterministic: false }));
       break;
     default:
-      return format as winston.Logform.Format;
+      return winston.format.combine(stripColorFormat, format as winston.Logform.Format);
   }
   return winston.format.combine(sortFormat, logFormat);
 };
@@ -49,6 +49,17 @@ export const colorFormat: winston.Logform.Format = winston.format((info) => {
   return info;
 })();
 
+export const stripColorFormat: winston.Logform.Format = winston.format((info) => {
+  Object.entries(info).forEach(([k, v]) => {
+    if (typeof v !== 'string') {
+      return;
+    }
+    const regex = new RegExp(`\\x1b\\[\\d+m`, 'g');
+    info[k] = v.replace(regex, '');
+  });
+  return info;
+})();
+
 // https://brandur.org/logfmt
 export const logfmtFormat: winston.Logform.Format = winston.format.printf((info) =>
   Object.entries(info)
@@ -59,6 +70,9 @@ export const logfmtFormat: winston.Logform.Format = winston.format.printf((info)
         } catch (error) {
           v = String(v);
         }
+      }
+      if (v === undefined || v === null) {
+        v = '';
       }
       return `${k}=${v}`;
     })

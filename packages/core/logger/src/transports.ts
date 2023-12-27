@@ -1,9 +1,9 @@
 import winston from 'winston';
 import { DailyRotateFileTransportOptions } from 'winston-daily-rotate-file';
 import { LoggerOptions } from './logger';
-import { getLoggerFilePath, getLoggerTransport } from './config';
+import { getLoggerFilePath, getLoggerFormat, getLoggerTransport } from './config';
 import path from 'path';
-import { colorFormat } from './format';
+import { colorFormat, getFormat } from './format';
 
 export const Transports = {
   console: (options?: winston.transports.ConsoleTransportOptions) => new winston.transports.Console(options),
@@ -22,30 +22,35 @@ export const Transports = {
 };
 
 export const getTransports = (options: LoggerOptions) => {
-  const { filename, format, transports: _transports } = options;
+  const { filename, format: _format, transports: _transports } = options;
   let { dirname } = options;
   const configTransports = _transports || getLoggerTransport();
+  const configFormat = _format || getLoggerFormat();
   dirname = dirname || getLoggerFilePath();
   if (!path.isAbsolute(dirname)) {
     dirname = path.resolve(process.cwd(), dirname);
   }
+  const format = winston.format.combine(
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    getFormat(configFormat),
+  );
 
   const transports = {
     console: () =>
       Transports.console({
-        format: winston.format.combine(winston.format.colorize(), colorFormat, format as winston.Logform.Format),
+        format: winston.format.combine(winston.format.colorize(), colorFormat, format),
       }),
     file: () =>
       Transports.file({
         dirname,
         filename: filename.includes('.log') ? filename : `${filename}.log`,
-        format: format as winston.Logform.Format,
+        format,
       }),
     dailyRotateFile: () =>
       Transports.dailyRotateFile({
         dirname,
         filename: filename.includes('%DATE%') || filename.includes('.log') ? filename : `${filename}_%DATE%.log`,
-        format: format as winston.Logform.Format,
+        format,
       }),
   };
   return configTransports?.map((t) => (typeof t === 'string' ? transports[t]() : t)) || transports['console']();

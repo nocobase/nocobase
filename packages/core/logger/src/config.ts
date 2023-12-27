@@ -7,10 +7,11 @@ export const getLoggerFilePath = (...paths: string[]): string => {
   return path.resolve(process.env.LOGGER_BASE_PATH || path.resolve(process.cwd(), 'storage', 'logs'), ...paths);
 };
 
-export const getLoggerTransport = () =>
+export const getLoggerTransport = (): ('console' | 'file' | 'dailyRotateFile')[] =>
   (
-    process.env.LOGGER_TRANSPORT || (process.env.APP_ENV === 'development' ? 'console' : 'console,dailyRotateFile')
+    (process.env.LOGGER_TRANSPORT as any) ||
+    (process.env.APP_ENV === 'development' ? 'console' : 'console,dailyRotateFile')
   ).split(',');
 
-export const getLoggerFormat = () =>
-  process.env.LOGGER_FORMAT || (process.env.APP_ENV === 'development' ? 'logfmt' : 'json');
+export const getLoggerFormat = (): 'logfmt' | 'json' | 'delimiter' =>
+  (process.env.LOGGER_FORMAT as any) || (process.env.APP_ENV === 'development' ? 'logfmt' : 'json');

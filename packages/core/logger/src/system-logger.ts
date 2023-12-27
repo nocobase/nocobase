@@ -2,7 +2,7 @@ import winston, { format } from 'winston';
 import { LoggerOptions, createLogger } from './logger';
 import Transport from 'winston-transport';
 import { SPLAT } from 'triple-beam';
-import { getFormat, sortFormat } from './format';
+import { getFormat } from './format';
 
 export interface SystemLoggerOptions extends LoggerOptions {
   seperateError?: boolean; // print error seperately, default true
