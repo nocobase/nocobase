@@ -1,6 +1,6 @@
 const execa = require('execa');
 const { resolve, dirname } = require('path');
-const pLimit = require('p-limit');
+const pAll = require('p-all');
 const dotenv = require('dotenv');
 const fs = require('fs');
 const { Client } = require('pg');
@@ -60,11 +60,9 @@ async function runApp(index = 1, dir) {
     fileSet.add(dirname(file));
   }
 
-  const limit = pLimit(5);
-
   const commands = [...fileSet.values()].map((v, i) => {
-    return limit(() => runApp(i + 1, v));
+    return () => runApp(i + 1, v);
   });
 
-  await Promise.all(commands);
+  await pAll(commands, { concurrency: 5, stopOnError: false });
 })();
