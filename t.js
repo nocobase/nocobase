@@ -6,8 +6,17 @@ const fs = require('fs');
 const { Client } = require('pg');
 const _ = require('lodash');
 
-const data = fs.readFileSync(resolve(process.cwd(), '.env.e2e.example'), 'utf-8');
-const config = dotenv.parse(data);
+let ENV_FILE = resolve(process.cwd(), '.env.e2e');
+
+if (!fs.existsSync(ENV_FILE)) {
+  ENV_FILE = resolve(process.cwd(), '.env.e2e.example');
+}
+
+const data = fs.readFileSync(ENV_FILE, 'utf-8');
+const config = {
+  ...dotenv.parse(data),
+  ...process.env,
+};
 const limit = pLimit(10);
 const input = _.range(50).map((i) => limit(() => runApp(i + 1)));
 
