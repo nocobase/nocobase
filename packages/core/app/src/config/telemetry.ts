@@ -1,6 +1,6 @@
-import { AppTelemetryOptions } from '@nocobase/server';
+import { TelemetryOptions } from '@nocobase/telemetry';
 
-export const telemetry: AppTelemetryOptions = {
+export const telemetry: TelemetryOptions = {
   enabled: process.env.TELEMETRY_ENABLED === 'true',
   metric: {
     readerName: process.env.TELEMETRY_METRIC_READER,

@@ -51,10 +51,6 @@ export interface ResourcerOptions {
   prefix?: string;
 }
 
-export interface AppTelemetryOptions extends TelemetryOptions {
-  enabled?: boolean;
-}
-
 export interface ApplicationOptions {
   database?: IDatabaseOptions | Database;
   cacheManager?: CacheManagerOptions;
@@ -71,7 +67,7 @@ export interface ApplicationOptions {
   name?: string;
   authManager?: AuthManagerOptions;
   perfHooks?: boolean;
-  telemetry?: AppTelemetryOptions;
+  telemetry?: TelemetryOptions;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -357,16 +353,19 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (options?.reload) {
       this.setMaintainingMessage('app reload');
       this.log.info(`app.reload()`, { method: 'load' });
+
+      if (this.cacheManager) {
+        await this.cacheManager.close();
+      }
+
+      if (this.telemetry.started) {
+        await this.telemetry.shutdown();
+      }
+
       const oldDb = this._db;
       this.init();
       if (!oldDb.closed()) {
         await oldDb.close();
-      }
-      if (this.cacheManager) {
-        await this.cacheManager.close();
-      }
-      if (this.telemetry.started) {
-        await this.telemetry.shutdown();
       }
     }
 
@@ -379,6 +378,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.setMaintainingMessage('emit beforeLoad');
     await this.emitAsync('beforeLoad', this, options);
+
+    if (this.options.telemetry?.enabled) {
+      this.telemetry.start();
+    }
 
     await this.pm.load(options);
 
@@ -528,10 +531,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     this.setMaintainingMessage('starting app...');
-
-    if (this.options.telemetry?.enabled) {
-      this.telemetry.start();
-    }
 
     if (this.db.closed()) {
       await this.db.reconnect();

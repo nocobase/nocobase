@@ -1,18 +1,20 @@
 import { Registry } from '@nocobase/utils';
-import opentelemetry from '@opentelemetry/api';
-import { ConsoleSpanExporter, SpanExporter } from '@opentelemetry/sdk-trace-base';
+import { BatchSpanProcessor, ConsoleSpanExporter, SpanExporter } from '@opentelemetry/sdk-trace-base';
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
+import { Resource } from '@opentelemetry/resources';
 
 export type TraceOptions = {
   tracerName?: string;
   version?: string;
-  exporterName?: string;
+  exporterName?: string | string[];
 };
 
 export class Trace {
-  exporterName: string;
+  exporterName: string | string[];
   exporters = new Registry<SpanExporter>();
   tracerName: string;
   version: string;
+  provider: NodeTracerProvider;
 
   constructor(options?: TraceOptions) {
     const { exporterName, tracerName, version } = options || {};
@@ -22,16 +24,36 @@ export class Trace {
     this.registerExporter('console', new ConsoleSpanExporter());
   }
 
+  init(resource: Resource) {
+    this.provider = new NodeTracerProvider({
+      resource,
+    });
+  }
+
   registerExporter(name: string, exporter: SpanExporter) {
     this.exporters.register(name, exporter);
   }
 
-  getExporter(name?: string) {
-    name = name || this.exporterName;
+  getExporter(name: string) {
     return this.exporters.get(name);
   }
 
   getTracer() {
-    return opentelemetry.trace.getTracer(this.tracerName, this.version);
+    return this.provider.getTracer(this.tracerName, this.version);
+  }
+
+  start() {
+    let exporterName = this.exporterName;
+    if (typeof exporterName === 'string') {
+      exporterName = exporterName.split(',');
+    }
+    exporterName.forEach((name) => {
+      const exporter = this.getExporter(name);
+      this.provider.addSpanProcessor(new BatchSpanProcessor(exporter));
+    });
+  }
+
+  shutdown() {
+    return this.provider.shutdown();
   }
 }

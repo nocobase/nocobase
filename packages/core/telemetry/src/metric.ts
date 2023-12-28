@@ -1,16 +1,22 @@
 import { Registry } from '@nocobase/utils';
-import opentelemetry from '@opentelemetry/api';
-import { MetricReader, PeriodicExportingMetricReader, ConsoleMetricExporter } from '@opentelemetry/sdk-metrics';
+import {
+  MetricReader,
+  PeriodicExportingMetricReader,
+  ConsoleMetricExporter,
+  MeterProvider,
+} from '@opentelemetry/sdk-metrics';
+import { Resource } from '@opentelemetry/resources';
 
 export type MetricOptions = {
   meterName?: string;
-  readerName?: string;
+  readerName?: string | string[];
 };
 
 export class Metric {
   meterName: string;
-  readerName: string;
+  readerName: string | string[];
   readers = new Registry<MetricReader>();
+  provider: MeterProvider;
 
   constructor(options?: MetricOptions) {
     const { meterName, readerName } = options || {};
@@ -24,17 +30,35 @@ export class Metric {
     );
   }
 
+  init(resource: Resource) {
+    this.provider = new MeterProvider({ resource });
+  }
+
   registerReader(name: string, reader: MetricReader) {
     this.readers.register(name, reader);
   }
 
-  getReader(name?: string) {
-    name = name || this.readerName;
+  getReader(name: string) {
     return this.readers.get(name);
   }
 
   getMeter(name?: string) {
     name = name || this.meterName;
-    return opentelemetry.metrics.getMeter(name);
+    return this.provider.getMeter(name);
+  }
+
+  start() {
+    let readerName = this.readerName;
+    if (typeof readerName === 'string') {
+      readerName = readerName.split(',');
+    }
+    readerName.forEach((name) => {
+      const reader = this.getReader(name);
+      this.provider.addMetricReader(reader);
+    });
+  }
+
+  shutdown() {
+    return this.provider.shutdown();
   }
 }
