@@ -15,7 +15,7 @@
     "@formily/core": "2.x",
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "antd": "5.x",
     "react": "18.x",
     "react-i18next": "^11.15.1",

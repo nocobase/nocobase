@@ -7,7 +7,7 @@
   "devDependencies": {
     "@formily/react": "2.x",
     "@formulajs/formulajs": "^4.2.0",
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1"
   },

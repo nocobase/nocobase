@@ -9,7 +9,7 @@
   "license": "AGPL-3.0",
   "devDependencies": {
     "@hapi/topo": "^6.0.0",
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "async-mutex": "^0.3.2",
     "toposort": "^2.0.2"
   },

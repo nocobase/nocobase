@@ -9,7 +9,7 @@
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@nocobase/plugin-workflow-test": ">=0.17.0-alpha.3",
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "antd": "5.x",
     "react": "18.x",
     "react-i18next": "^11.15.1"

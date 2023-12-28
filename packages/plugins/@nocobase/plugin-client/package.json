@@ -8,7 +8,7 @@
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "antd": "5.x",
     "cronstrue": "^2.11.0",
     "koa-send": "^5.0.1",

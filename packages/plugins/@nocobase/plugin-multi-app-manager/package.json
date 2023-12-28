@@ -10,7 +10,7 @@
   "devDependencies": {
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "antd": "5.x",
     "async-mutex": "^0.3.2",
     "mysql2": "^2.3.3",

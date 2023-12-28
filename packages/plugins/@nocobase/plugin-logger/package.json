@@ -8,7 +8,7 @@
   "main": "dist/server/index.js",
   "devDependencies": {
     "tar-fs": "^3.0.4",
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "@types/tar-fs": "^2.0.2"
   },
   "peerDependencies": {

@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@koa/multer": "^3.0.2",
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "@types/archiver": "^5.3.1",
     "antd": "5.x",
     "archiver": "^5.3.1",

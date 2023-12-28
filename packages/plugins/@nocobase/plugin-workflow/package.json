@@ -14,7 +14,7 @@
     "@formily/react": "2.x",
     "@types/ejs": "^3.1.1",
     "@nocobase/plugin-workflow-test": ">= 0.18.0-alpha.2",
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "antd": "5.x",
     "axios": "^0.26.1",
     "classnames": "^2.3.1",

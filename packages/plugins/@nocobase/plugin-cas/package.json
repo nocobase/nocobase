@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@ant-design/icons": "5.x",
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "antd": "5.x",
     "react-router-dom": "6.x"
   }

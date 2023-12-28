@@ -16,7 +16,7 @@
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
     "@googlemaps/js-api-loader": "^1.16.1",
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "@types/google.maps": "^3.53.4",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",

@@ -6,7 +6,7 @@
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {
-    "@nocobase/test": "0.x"
+    "@nocobase/test": "0.18.0-alpha.2"
   },
   "peerDependencies": {
     "@nocobase/client": "0.x",

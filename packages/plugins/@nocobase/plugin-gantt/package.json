@@ -11,7 +11,7 @@
     "antd-style": "3.4.5"
   },
   "devDependencies": {
-    "@nocobase/test": "0.x"
+    "@nocobase/test": "0.18.0-alpha.2"
   },
   "peerDependencies": {
     "@nocobase/client": "0.x",

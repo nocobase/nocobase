@@ -14,7 +14,7 @@
     "@formily/core": "2.x",
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "antd": "5.x",
     "classnames": "^2.3.1",
     "koa-compose": "^4.1.0",

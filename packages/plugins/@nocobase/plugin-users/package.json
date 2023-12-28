@@ -8,7 +8,7 @@
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "@types/jsonwebtoken": "^8.5.8",
     "jsonwebtoken": "^8.5.1"
   },

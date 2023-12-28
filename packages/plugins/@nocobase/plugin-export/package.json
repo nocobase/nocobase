@@ -11,7 +11,7 @@
     "@formily/antd-v5": "1.x",
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "@types/node-xlsx": "^0.15.1",
     "file-saver": "^2.0.5",
     "node-xlsx": "^0.16.1",

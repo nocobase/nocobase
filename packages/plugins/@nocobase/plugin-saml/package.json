@@ -10,7 +10,7 @@
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@formily/react": "2.x",
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "@node-saml/node-saml": "^4.0.2",
     "antd": "5.x",
     "react": "18.x",

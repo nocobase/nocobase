@@ -6,7 +6,7 @@
     "@ant-design/icons": "5.x",
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "@types/cron": "^2.0.1",
     "antd": "5.x",
     "cron": "^2.3.1",

@@ -3,7 +3,7 @@
   "version": "0.18.0-alpha.2",
   "main": "dist/server/index.js",
   "devDependencies": {
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "echarts": "^5.4.3",
     "echarts-for-react": "^3.0.2"
   },

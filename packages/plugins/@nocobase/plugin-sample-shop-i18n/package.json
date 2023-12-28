@@ -3,7 +3,7 @@
   "version": "0.18.0-alpha.2",
   "main": "./dist/server/index.js",
   "devDependencies": {
-  "@nocobase/test": "0.x",
+  "@nocobase/test": "0.18.0-alpha.2",
     "antd": "5.x",
     "nodejs-snowflake": "2.0.1",
     "react": "^18.2.0",

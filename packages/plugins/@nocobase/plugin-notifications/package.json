@@ -6,7 +6,7 @@
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@types/nodemailer": "6.4.4",
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "nodemailer": "^6.6.1",
     "nodemailer-mock": "^1.5.11"
   },

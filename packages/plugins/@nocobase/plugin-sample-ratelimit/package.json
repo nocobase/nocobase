@@ -3,7 +3,7 @@
   "version": "0.18.0-alpha.2",
   "main": "./dist/server/index.js",
   "devDependencies": {
-    "@nocobase/test": "0.x",
+    "@nocobase/test": "0.18.0-alpha.2",
     "koa-ratelimit": "^5.0.1"
   },
   "peerDependencies": {
