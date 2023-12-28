@@ -701,6 +701,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._databases.get(name);
   }
 
+  setDb(db: Database, name = 'main') {
+    this._databases.set(name, db);
+  }
+
   protected init() {
     const options = this.options;
 
@@ -802,10 +806,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       logger: this._logger.child({ module: 'database' }),
     });
     return db;
-  }
-
-  private setDb(db: Database, name = 'main') {
-    this._databases.set(name, db);
   }
 }
 
