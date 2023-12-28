@@ -6,7 +6,7 @@ const fs = require('fs');
 const { Client } = require('pg');
 const _ = require('lodash');
 
-const data = fs.readFileSync(resolve(process.cwd(), '.env.e2e'), 'utf-8');
+const data = fs.readFileSync(resolve(process.cwd(), '.env.e2e.example'), 'utf-8');
 const config = dotenv.parse(data);
 const limit = pLimit(10);
 const input = _.range(50).map((i) => limit(() => runApp(i + 1)));
