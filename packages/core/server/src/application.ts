@@ -42,7 +42,7 @@ import { randomUUID } from 'crypto';
 import packageJson from '../package.json';
 import chalk from 'chalk';
 import { RecordableHistogram, performance } from 'node:perf_hooks';
-import path from 'path';
+import { TelemetryOptions, Telemetry } from '@nocobase/telemetry';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -67,6 +67,7 @@ export interface ApplicationOptions {
   name?: string;
   authManager?: AuthManagerOptions;
   perfHooks?: boolean;
+  telemetry?: TelemetryOptions & { enabled?: boolean };
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -243,6 +244,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._locales;
   }
 
+  protected _telemetry: Telemetry;
+
+  get telemetry() {
+    return this._telemetry;
+  }
+
   protected _version: ApplicationVersion;
 
   get version() {
@@ -354,8 +361,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       if (this._cacheManager) {
         await this._cacheManager.close();
       }
+      if (this._telemetry.started) {
+        await this._telemetry.shutdown();
+      }
     }
 
+    if (this.options.telemetry?.enabled) {
+      this._telemetry.start();
+    }
     this._cacheManager = await createCacheManager(this, this.options.cacheManager);
 
     this.setMaintainingMessage('init plugins');
@@ -586,6 +599,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       await this._cacheManager.close();
     }
 
+    if (this._telemetry.started) {
+      await this._telemetry.shutdown();
+    }
+
     await this.emitAsync('afterStop', this, options);
 
     this.stopped = true;
@@ -740,6 +757,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       app: this,
       plugins: plugins || [],
     });
+
+    this._telemetry = new Telemetry(options.telemetry);
 
     this._authManager = new AuthManager({
       authKey: 'X-Authenticator',
