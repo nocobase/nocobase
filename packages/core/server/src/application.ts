@@ -362,17 +362,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       if (!oldDb.closed()) {
         await oldDb.close();
       }
-      if (this._cacheManager) {
-        await this._cacheManager.close();
+      if (this.cacheManager) {
+        await this.cacheManager.close();
       }
-      if (this._telemetry.started) {
-        await this._telemetry.shutdown();
+      if (this.telemetry.started) {
+        await this.telemetry.shutdown();
       }
     }
 
-    if (this.options.telemetry?.enabled) {
-      this._telemetry.start();
-    }
     this._cacheManager = await createCacheManager(this, this.options.cacheManager);
 
     this.setMaintainingMessage('init plugins');
@@ -532,6 +529,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.setMaintainingMessage('starting app...');
 
+    if (this.options.telemetry?.enabled) {
+      this.telemetry.start();
+    }
+
     if (this.db.closed()) {
       await this.db.reconnect();
     }
@@ -599,12 +600,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.log.error(e.message, { method: 'stop', err: e.stack });
     }
 
-    if (this._cacheManager) {
-      await this._cacheManager.close();
+    if (this.cacheManager) {
+      await this.cacheManager.close();
     }
 
-    if (this._telemetry.started) {
-      await this._telemetry.shutdown();
+    if (this.telemetry.started) {
+      await this.telemetry.shutdown();
     }
 
     await this.emitAsync('afterStop', this, options);
