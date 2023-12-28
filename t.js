@@ -64,5 +64,5 @@ async function runApp(index = 1, dir) {
     return () => runApp(i + 1, v);
   });
 
-  await pAll(commands, { concurrency: 10, stopOnError: false });
+  await pAll(commands, { concurrency: 3, stopOnError: false });
 })();
