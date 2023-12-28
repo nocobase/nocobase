@@ -16,6 +16,10 @@ export function requireModule(m: any) {
 export default requireModule;
 
 export async function importModule(m: string) {
+  if (!process.env.VITEST) {
+    return requireModule(m);
+  }
+
   if (path.isAbsolute(m)) {
     m = pathToFileURL(m).href;
   }
