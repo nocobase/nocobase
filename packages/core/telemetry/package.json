@@ -11,6 +11,7 @@
     "directory": "packages/telemetry"
   },
   "dependencies": {
+    "@nocobase/utils": "0.18.0-alpha.2",
     "@opentelemetry/api": "^1.7.0",
     "@opentelemetry/instrumentation": "^0.46.0",
     "@opentelemetry/resources": "^1.19.0",

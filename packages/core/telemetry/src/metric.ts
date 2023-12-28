@@ -20,7 +20,6 @@ export class Metric {
       'console',
       new PeriodicExportingMetricReader({
         exporter: new ConsoleMetricExporter(),
-        exportIntervalMillis: 3000,
       }),
     );
   }

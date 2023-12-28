@@ -51,6 +51,10 @@ export interface ResourcerOptions {
   prefix?: string;
 }
 
+export interface AppTelemetryOptions extends TelemetryOptions {
+  enabled?: boolean;
+}
+
 export interface ApplicationOptions {
   database?: IDatabaseOptions | Database;
   cacheManager?: CacheManagerOptions;
@@ -67,7 +71,7 @@ export interface ApplicationOptions {
   name?: string;
   authManager?: AuthManagerOptions;
   perfHooks?: boolean;
-  telemetry?: TelemetryOptions & { enabled?: boolean };
+  telemetry?: AppTelemetryOptions;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -758,7 +762,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       plugins: plugins || [],
     });
 
-    this._telemetry = new Telemetry(options.telemetry);
+    this._telemetry = new Telemetry({
+      serviceName: `nocobase-${this.name}`,
+      version: this.getVersion(),
+      ...options.telemetry,
+    });
 
     this._authManager = new AuthManager({
       authKey: 'X-Authenticator',

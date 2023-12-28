@@ -1,16 +1,19 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { InstrumentationOption } from '@opentelemetry/instrumentation';
-import packageJson from '../package.json';
 import { Metric, MetricOptions } from './metric';
 import { Trace, TraceOptions } from './trace';
 
-export type TelemetryOptions = {
+export interface TelemetryOptions {
+  serviceName?: string;
+  version?: string;
   trace?: TraceOptions;
   metric?: MetricOptions;
-};
+}
 
 export class Telemetry {
+  serviceName: string;
+  version: string;
   sdk: NodeSDK;
   instrumentations: InstrumentationOption[] = [];
   trace: Trace;
@@ -18,17 +21,18 @@ export class Telemetry {
   started = false;
 
   constructor(options?: TelemetryOptions) {
-    const { trace, metric } = options || {};
-    this.trace = new Trace(trace);
-    this.metric = new Metric(metric);
+    const { trace, metric, serviceName, version } = options || {};
+    this.trace = new Trace({ tracerName: `${serviceName}-trace`, version, ...trace });
+    this.metric = new Metric({ meterName: `${serviceName}-meter`, ...metric });
+    this.serviceName = serviceName || 'nocobase';
+    this.version = version || '';
   }
 
   start() {
     if (!this.sdk) {
-      console.log(this.metric.getReader());
       this.sdk = new NodeSDK({
-        [SemanticResourceAttributes.SERVICE_NAME]: 'nocobase',
-        [SemanticResourceAttributes.SERVICE_VERSION]: packageJson.version,
+        [SemanticResourceAttributes.SERVICE_NAME]: this.serviceName,
+        [SemanticResourceAttributes.SERVICE_VERSION]: this.version,
         traceExporter: this.trace.getExporter(),
         metricReader: this.metric.getReader(),
         instrumentations: this.instrumentations,
