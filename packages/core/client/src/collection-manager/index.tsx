@@ -1,4 +1,5 @@
 export {
+  useCancelAction,
   useCollectionFilterOptions,
   useSortFields,
   useLinkageCollectionFilterOptions,
@@ -22,3 +23,4 @@ export * from './templates/types';
 export * from './types';
 export * from './CollectionHistoryProvider';
 export * from './interfaces/properties';
+export * from './sub-table';
