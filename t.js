@@ -32,6 +32,7 @@ async function runApp(index = 1) {
   await client.connect();
   await client.query(`DROP DATABASE IF EXISTS "${database}"`);
   await client.query(`CREATE DATABASE "${database}";`);
+  await client.end();
   return execa(
     'yarn',
     [
@@ -47,6 +48,7 @@ async function runApp(index = 1) {
       stdio: 'inherit',
       env: {
         ...config,
+        CI: true,
         APP_ENV: 'production',
         // APP_ENV_PATH: `.env${index}.e2e`,
         APP_PORT: 20000 + index,
