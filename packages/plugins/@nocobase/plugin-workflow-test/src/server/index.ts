@@ -5,7 +5,6 @@ import { MockServer, mockServer } from '@nocobase/test';
 
 import instructions from './instructions';
 import functions from './functions';
-import WorkflowPlugin from '@nocobase/plugin-workflow';
 
 interface MockServerOptions extends ApplicationOptions {
   autoStart?: boolean;
@@ -58,7 +57,7 @@ export async function getApp({
     cleanDb,
     plugins: [
       [
-        WorkflowPlugin,
+        'workflow',
         {
           instructions,
           functions,

@@ -8,7 +8,6 @@
   "types": "./dist/server/index.d.ts",
   "peerDependencies": {
     "@nocobase/database": "0.x",
-    "@nocobase/plugin-workflow": ">=0.18.0-alpha.2",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
   },
