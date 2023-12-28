@@ -1,4 +1,3 @@
-import React, { useRef, useMemo, useContext } from 'react';
 import { createForm } from '@formily/core';
 import { useField } from '@formily/react';
 import {
@@ -9,8 +8,9 @@ import {
   useAPIClient,
   useAssociationNames,
 } from '@nocobase/client';
-import { parse } from '@nocobase/utils/client';
 import { useFlowContext } from '@nocobase/plugin-workflow/client';
+import { parse } from '@nocobase/utils/client';
+import React, { useContext, useMemo, useRef } from 'react';
 
 function useFlowContextData(dataSource) {
   const { execution, nodes } = useFlowContext();
@@ -37,7 +37,8 @@ function useFlowContextData(dataSource) {
 export function DetailsBlockProvider(props) {
   const field = useField();
   const formBlockRef = useRef(null);
-  const { appends, updateAssociationValues } = useAssociationNames();
+  const { getAssociationAppends } = useAssociationNames();
+  const { appends, updateAssociationValues } = getAssociationAppends();
   const values = useFlowContextData(props.dataSource);
 
   const form = useMemo(

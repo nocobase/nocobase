@@ -1295,11 +1295,11 @@ export function getAssociationPath(str) {
 }
 
 export const useAssociationNames = () => {
+  let updateAssociationValues = new Set([]);
+  let appends = new Set([]);
   const { getCollectionJoinField, getCollection } = useCollectionManager();
   const fieldSchema = useFieldSchema();
-  const updateAssociationValues = new Set([]);
-  const appends = new Set([]);
-  const getAssociationAppends = (schema, str) => {
+  const _getAssociationAppends = (schema, str) => {
     schema.reduceProperties((pre, s) => {
       const prefix = pre || str;
       const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
@@ -1338,7 +1338,7 @@ export const useAssociationNames = () => {
         if (['Nester', 'SubTable', 'PopoverNester'].includes(s['x-component-props']?.mode)) {
           updateAssociationValues.add(path);
           const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
-          getAssociationAppends(s, bufPrefix);
+          _getAssociationAppends(s, bufPrefix);
         }
       } else if (
         ![
@@ -1354,12 +1354,18 @@ export const useAssociationNames = () => {
           'TableField',
         ].includes(s['x-component'])
       ) {
-        getAssociationAppends(s, str);
+        _getAssociationAppends(s, str);
       }
     }, str);
   };
-  getAssociationAppends(fieldSchema, '');
-  return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
+  const getAssociationAppends = () => {
+    updateAssociationValues = new Set([]);
+    appends = new Set([]);
+    _getAssociationAppends(fieldSchema, '');
+    return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
+  };
+
+  return { getAssociationAppends };
 };
 
 function getTargetField(obj) {
