@@ -14,7 +14,6 @@
     "@formily/react": "2.x",
     "@types/ejs": "^3.1.1",
     "@nocobase/plugin-workflow-test": ">= 0.18.0-alpha.2",
-    "@nocobase/test": "0.x",
     "antd": "5.x",
     "axios": "^0.26.1",
     "classnames": "^2.3.1",
@@ -39,7 +38,8 @@
     "@nocobase/plugin-users": "0.x",
     "@nocobase/resourcer": "0.x",
     "@nocobase/server": "0.x",
-    "@nocobase/utils": "0.x"
+    "@nocobase/utils": "0.x",
+    "@nocobase/test": "0.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }
