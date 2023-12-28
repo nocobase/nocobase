@@ -15,6 +15,7 @@
     "@formily/core": "2.x",
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
+    "@nocobase/test": "0.x",
     "antd": "5.x",
     "react": "18.x",
     "react-i18next": "^11.15.1",
@@ -26,7 +27,6 @@
     "@nocobase/database": "0.x",
     "@nocobase/resourcer": "0.x",
     "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"

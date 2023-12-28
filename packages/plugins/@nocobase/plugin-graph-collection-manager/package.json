@@ -20,6 +20,7 @@
     "@formily/react": "2.x",
     "@formily/reactive": "2.x",
     "@formily/shared": "2.x",
+    "@nocobase/test": "0.x",
     "ahooks": "^3.7.2",
     "antd": "5.x",
     "dagre": "^0.8.5",
@@ -30,7 +31,6 @@
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
     "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   }
 }

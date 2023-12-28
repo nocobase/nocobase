@@ -8,12 +8,12 @@
   "main": "dist/server/index.js",
   "devDependencies": {
     "tar-fs": "^3.0.4",
+    "@nocobase/test": "0.x",
     "@types/tar-fs": "^2.0.2"
   },
   "peerDependencies": {
     "@nocobase/client": "0.x",
     "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x",
     "@nocobase/actions": "0.x"
   }
 }

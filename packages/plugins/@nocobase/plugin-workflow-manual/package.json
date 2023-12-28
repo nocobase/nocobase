@@ -13,6 +13,7 @@
     "@formily/core": "2.x",
     "@formily/react": "2.x",
     "@nocobase/plugin-workflow-test": ">=0.17.0-alpha.3",
+    "@nocobase/test": "0.x",
     "antd": "5.x",
     "lodash": "4.17.21",
     "react": "18.x",
@@ -26,7 +27,6 @@
     "@nocobase/plugin-users": "0.x",
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
     "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"

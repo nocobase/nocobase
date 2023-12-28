@@ -9,6 +9,7 @@
   "devDependencies": {
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
+    "@nocobase/test": "0.x",
     "antd": "5.x",
     "lodash": "4.x",
     "react-i18next": "^11.15.1",
@@ -16,7 +17,6 @@
   },
   "peerDependencies": {
     "@nocobase/client": "0.x",
-    "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x"
+    "@nocobase/server": "0.x"
   }
 }

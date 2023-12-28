@@ -14,6 +14,7 @@
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
     "@koa/multer": "^3.0.2",
+    "@nocobase/test": "0.x",
     "@types/node-xlsx": "^0.15.1",
     "antd": "5.x",
     "file-saver": "^2.0.5",
@@ -29,7 +30,6 @@
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
     "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"

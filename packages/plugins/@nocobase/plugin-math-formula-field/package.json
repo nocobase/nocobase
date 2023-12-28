@@ -9,6 +9,7 @@
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@formily/react": "2.x",
+    "@nocobase/test": "0.x",
     "mathjs": "^10.6.0",
     "react": "18.x",
     "react-i18next": "^11.15.1"
@@ -16,7 +17,6 @@
   "peerDependencies": {
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
-    "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x"
+    "@nocobase/server": "0.x"
   }
 }

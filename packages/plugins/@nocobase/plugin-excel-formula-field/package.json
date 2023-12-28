@@ -7,13 +7,13 @@
   "devDependencies": {
     "@formily/react": "2.x",
     "@formulajs/formulajs": "^4.2.0",
+    "@nocobase/test": "0.x",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
-    "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x"
+    "@nocobase/server": "0.x"
   }
 }

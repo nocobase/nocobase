@@ -12,6 +12,7 @@
     "@formily/core": "2.x",
     "@formily/react": "2.x",
     "@formily/reactive": "2.x",
+    "@nocobase/test": "0.x",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1"
   },
@@ -20,7 +21,6 @@
     "@nocobase/database": "0.x",
     "@nocobase/evaluators": "0.x",
     "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   }
 }

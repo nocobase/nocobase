@@ -8,6 +8,7 @@
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@formily/react": "2.x",
+    "@nocobase/test": "0.x",
     "antd": "5.x",
     "react": "18.x",
     "react-i18next": "^11.15.1"
@@ -20,7 +21,6 @@
     "@nocobase/plugin-multi-app-manager": "0.x",
     "@nocobase/plugin-users": "0.x",
     "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   }
 }

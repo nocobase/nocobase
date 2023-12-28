@@ -7,9 +7,11 @@
   "description": "Provides bulk edit action",
   "description.zh-CN": "提供批量编辑操作",
   "license": "AGPL-3.0",
+  "devDependencies": {
+    "@nocobase/test": "0.x"
+  },
   "peerDependencies": {
     "@nocobase/client": "0.x",
-    "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x"
+    "@nocobase/server": "0.x"
   }
 }

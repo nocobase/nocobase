@@ -9,6 +9,7 @@
   "license": "AGPL-3.0",
   "devDependencies": {
     "@hapi/topo": "^6.0.0",
+    "@nocobase/test": "0.x",
     "async-mutex": "^0.3.2",
     "toposort": "^2.0.2"
   },
@@ -17,7 +18,6 @@
     "@nocobase/database": "0.x",
     "@nocobase/plugin-error-handler": "0.x",
     "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"

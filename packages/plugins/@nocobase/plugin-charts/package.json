@@ -12,6 +12,7 @@
     "@formily/core": "2.x",
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
+    "@nocobase/test": "0.x",
     "antd": "5.x",
     "json5": "^2.2.3",
     "react": "^18.2.0",
@@ -22,7 +23,6 @@
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
     "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   }
 }

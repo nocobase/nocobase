@@ -8,6 +8,7 @@
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {
+    "@nocobase/test": "0.x",
     "antd": "5.x",
     "cronstrue": "^2.11.0",
     "koa-send": "^5.0.1",
@@ -17,7 +18,6 @@
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
     "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"

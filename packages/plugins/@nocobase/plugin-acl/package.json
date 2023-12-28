@@ -8,6 +8,7 @@
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
+    "@nocobase/test": "0.x",
     "@types/jsonwebtoken": "^8.5.8",
     "async-mutex": "^0.3.2",
     "jsonwebtoken": "^8.5.1",
@@ -21,7 +22,6 @@
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
     "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
   "repository": {

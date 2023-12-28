@@ -11,6 +11,7 @@
     "@ant-design/icons": "5.x",
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
+    "@nocobase/test": "0.x",
     "antd": "5.x",
     "react": "^18.2.0",
     "react-i18next": "^11.15.1",
@@ -20,7 +21,6 @@
     "@nocobase/actions": "0.x",
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
-    "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x"
+    "@nocobase/server": "0.x"
   }
 }

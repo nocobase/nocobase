@@ -10,9 +10,11 @@
   "dependencies": {
     "antd-style": "3.4.5"
   },
+  "devDependencies": {
+    "@nocobase/test": "0.x"
+  },
   "peerDependencies": {
     "@nocobase/client": "0.x",
-    "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x"
+    "@nocobase/server": "0.x"
   }
 }

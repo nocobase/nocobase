@@ -2,10 +2,12 @@
   "name": "@nocobase/plugin-disable-pm-add",
   "version": "0.18.0-alpha.2",
   "main": "./dist/server/index.js",
+  "devDependencies": {
+    "@nocobase/test": "0.x"
+  },
   "peerDependencies": {
     "@nocobase/client": "0.x",
-    "@nocobase/server": "0.x",
-    "@nocobase/test": "0.x"
+    "@nocobase/server": "0.x"
   },
   "gitHead": "ee5825377d8bec05f968a8365a0cdcd49878ada6"
 }
