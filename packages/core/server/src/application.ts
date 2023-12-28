@@ -4,14 +4,14 @@ import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocoba
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import {
-  AppLoggerOptions,
-  createLogger,
-  createAppLogger,
   AppLogger,
-  LoggerOptions,
+  AppLoggerOptions,
+  createAppLogger,
+  createLogger,
   getLoggerFilePath,
+  LoggerOptions,
 } from '@nocobase/logger';
-import { Resourcer, ResourceOptions } from '@nocobase/resourcer';
+import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, measureExecutionTime, Toposort, ToposortOptions } from '@nocobase/utils';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { IncomingMessage, Server, ServerResponse } from 'http';
@@ -30,9 +30,9 @@ import {
   createAppProxy,
   createI18n,
   createResourcer,
+  enablePerfHooks,
   getCommandFullName,
   registerMiddlewares,
-  enablePerfHooks,
 } from './helper';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
@@ -41,8 +41,7 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 import { randomUUID } from 'crypto';
 import packageJson from '../package.json';
 import chalk from 'chalk';
-import { RecordableHistogram, performance } from 'node:perf_hooks';
-import path from 'path';
+import { RecordableHistogram } from 'node:perf_hooks';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -141,6 +140,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
+  private _databases: Map<string, Database> = new Map();
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -169,10 +169,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._cronJobManager;
   }
 
-  protected _db: Database;
-
   get db() {
-    return this._db;
+    return this.getDb();
   }
 
   protected _logger: AppLogger;
@@ -346,7 +344,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (options?.reload) {
       this.setMaintainingMessage('app reload');
       this.log.info(`app.reload()`, { method: 'load' });
-      const oldDb = this._db;
+      const oldDb = this.getDb();
+
       this.init();
       if (!oldDb.closed()) {
         await oldDb.close();
@@ -698,6 +697,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       dirname: getLoggerFilePath(this.name || 'main', dirname || ''),
     });
   }
+  getDb(name = 'main') {
+    return this._databases.get(name);
+  }
 
   protected init() {
     const options = this.options;
@@ -718,17 +720,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cronJobManager = new CronJobManager(this);
 
-    if (this._db) {
+    if (this.getDb()) {
       // MaxListenersExceededWarning
-      this._db.removeAllListeners();
+      this.getDb().removeAllListeners();
     }
 
-    this._db = this.createDatabase(options);
+    this.setDb(this.createDatabase(options));
 
     this._resourcer = createResourcer(options);
     this._cli = this.createCli();
     this._i18n = createI18n(options);
-    this.context.db = this._db;
+    this.context.db = this.getDb();
+
     // this.context.logger = this._logger;
     this.context.resourcer = this._resourcer;
     this.context.cacheManager = this._cacheManager;
@@ -799,6 +802,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       logger: this._logger.child({ module: 'database' }),
     });
     return db;
+  }
+
+  private setDb(db: Database, name = 'main') {
+    this._databases.set(name, db);
   }
 }
 
