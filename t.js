@@ -1,10 +1,11 @@
 const execa = require('execa');
-const { resolve } = require('path');
+const { resolve, dirname } = require('path');
 const pLimit = require('p-limit');
 const dotenv = require('dotenv');
 const fs = require('fs');
 const { Client } = require('pg');
 const _ = require('lodash');
+const glob = require('glob');
 
 let ENV_FILE = resolve(process.cwd(), '.env.e2e');
 
@@ -17,10 +18,8 @@ const config = {
   ...dotenv.parse(data),
   ...process.env,
 };
-const limit = pLimit(5);
-const input = _.range(10).map((i) => limit(() => runApp(i + 1)));
 
-async function runApp(index = 1) {
+async function runApp(index = 1, dir) {
   const database = `nocobase${index}`;
   const client = new Client({
     host: config['DB_HOST'],
@@ -33,34 +32,39 @@ async function runApp(index = 1) {
   await client.query(`DROP DATABASE IF EXISTS "${database}"`);
   await client.query(`CREATE DATABASE "${database}";`);
   await client.end();
-  return execa(
-    'yarn',
-    [
-      'nocobase',
-      'e2e',
-      'test',
-      'packages/plugins/@nocobase/plugin-workflow/src/client/__e2e__/calculationNode',
-      '-x',
-      '--skip-reporter',
-    ],
-    {
-      shell: true,
-      stdio: 'inherit',
-      env: {
-        ...config,
-        CI: true,
-        APP_ENV: 'production',
-        // APP_ENV_PATH: `.env${index}.e2e`,
-        APP_PORT: 20000 + index,
-        DB_DATABASE: `nocobase${index}`,
-        SOCKET_PATH: `storage/gateway-e2e-${index}.sock`,
-        PM2_HOME: resolve(process.cwd(), `storage/.pm2-${index}`),
-        PLAYWRIGHT_AUTH_FILE: resolve(process.cwd(), `storage/playwright/.auth/admin-${index}.json`),
-      },
+  return execa('yarn', ['nocobase', 'e2e', 'test', dir, '-x', '--skip-reporter'], {
+    shell: true,
+    stdio: 'inherit',
+    env: {
+      ...config,
+      CI: true,
+      __E2E__: true,
+      LOGGER_LEVEL: 'error',
+      APP_ENV: 'production',
+      APP_PORT: 20000 + index,
+      DB_DATABASE: `nocobase${index}`,
+      SOCKET_PATH: `storage/gateway-e2e-${index}.sock`,
+      PM2_HOME: resolve(process.cwd(), `storage/.pm2-${index}`),
+      PLAYWRIGHT_AUTH_FILE: resolve(process.cwd(), `storage/playwright/.auth/admin-${index}.json`),
     },
-  );
+  });
 }
 
 (async () => {
-  await Promise.all(input);
+  const files = glob.sync('packages/**/__e2e__/**/*.test.ts', {
+    root: process.cwd(),
+  });
+  const fileSet = new Set();
+
+  for (const file of files) {
+    fileSet.add(dirname(file));
+  }
+
+  const limit = pLimit(5);
+
+  const commands = [...fileSet.values()].map((v, i) => {
+    return limit(() => runApp(i + 1, v));
+  });
+
+  await Promise.all(commands);
 })();
