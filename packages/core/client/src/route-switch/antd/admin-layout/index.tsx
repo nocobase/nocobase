@@ -129,7 +129,8 @@ const MenuEditor = (props) => {
       const pageType = Object.values(properties).find(
         (item) => item['x-uid'] === params.name && item['x-component'] === 'Menu.Item',
       );
-      if (pageType) {
+      const isUIPage = Object.values(properties).some((v) => v['x-uid'] === params.name);
+      if (pageType || !isUIPage) {
         sideMenuRef.current.style.display = 'none';
       } else {
         sideMenuRef.current.style.display = 'block';

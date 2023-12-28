@@ -21,6 +21,20 @@ function getMenuItems(list: PluginSettingsPageType[]) {
     };
   });
 }
+function matchRoute(data, url) {
+  const keys = Object.keys(data);
+
+  for (const pattern of keys) {
+    const regexPattern = pattern.replace(/:[^/]+/g, '([^/]+)');
+    const match = url.match(new RegExp(`^${regexPattern}$`));
+
+    if (match) {
+      return data[pattern];
+    }
+  }
+
+  return null;
+}
 
 export const AdminSettingsLayout = () => {
   const { styles, theme } = useStyles();
@@ -30,7 +44,6 @@ export const AdminSettingsLayout = () => {
   const compile = useCompile();
   const settings = useMemo(() => {
     const list = app.pluginSettingsManager.getList();
-    console.log(list);
     // compile title
     function traverse(settings: PluginSettingsPageType[]) {
       settings.forEach((item) => {
@@ -44,7 +57,6 @@ export const AdminSettingsLayout = () => {
     traverse(list);
     return list;
   }, [app.pluginSettingsManager, compile]);
-  console.log(settings);
   const getFirstDeepChildPath = useCallback((settings: PluginSettingsPageType[]) => {
     if (!settings || !settings.length) {
       return '/admin';
@@ -70,14 +82,15 @@ export const AdminSettingsLayout = () => {
     return map;
   }, [settings]);
 
-  const currentSetting = useMemo(() => settingsMapByPath[location.pathname], [location.pathname, settingsMapByPath]);
+  const currentSetting = useMemo(
+    () => matchRoute(settingsMapByPath, location.pathname),
+    [location.pathname, settingsMapByPath],
+  );
   const currentTopLevelSetting = useMemo(() => {
     if (!currentSetting) {
       return null;
     }
-    return settings.find(
-      (item) => item.name === currentSetting.parentLevelName || item.name === currentSetting.topLevelName,
-    );
+    return settings.find((item) => item.name === currentSetting.topLevelName);
   }, [currentSetting, settings]);
   const sidebarMenus = useMemo(() => {
     return getMenuItems(settings.filter((v) => v.isTop !== false).map((item) => ({ ...item, children: null })));
@@ -85,11 +98,9 @@ export const AdminSettingsLayout = () => {
   if (!currentSetting || location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
     return <Navigate replace to={getFirstDeepChildPath(settings)} />;
   }
-  if (location.pathname === currentTopLevelSetting?.path && currentTopLevelSetting?.children?.length > 0) {
-    return <Navigate replace to={getFirstDeepChildPath(currentTopLevelSetting?.children)} />;
+  if (location.pathname === currentTopLevelSetting.path && currentTopLevelSetting.children?.length > 0) {
+    return <Navigate replace to={getFirstDeepChildPath(currentTopLevelSetting.children)} />;
   }
-  console.log(sidebarMenus);
-  console.log(currentSetting, currentTopLevelSetting, currentSetting?.topLevelName);
   return (
     <div>
       <Layout>
@@ -142,7 +153,7 @@ export const AdminSettingsLayout = () => {
                     }}
                     selectedKeys={[currentSetting?.name]}
                     mode="horizontal"
-                    items={getMenuItems(currentSetting.children || currentTopLevelSetting.children)}
+                    items={getMenuItems(currentTopLevelSetting.children)}
                   ></Menu>
                 )
               }
