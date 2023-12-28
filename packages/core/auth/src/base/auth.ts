@@ -66,7 +66,7 @@ export class BaseAuth extends Auth {
         }),
       );
     } catch (err) {
-      this.ctx.logger.error(err);
+      this.ctx.logger.error(err, { method: 'check' });
       return null;
     }
   }

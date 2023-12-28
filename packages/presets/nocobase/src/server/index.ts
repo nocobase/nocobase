@@ -35,6 +35,7 @@ export class PresetNocoBase extends Plugin {
     'data-visualization',
     'auth',
     'sms-auth',
+    'logger',
     'custom-request',
     'calendar',
     'action-bulk-update',

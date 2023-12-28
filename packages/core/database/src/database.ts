@@ -1,4 +1,4 @@
-import { Logger } from '@nocobase/logger';
+import { Logger, LoggerOptions, createConsoleLogger, createLogger } from '@nocobase/logger';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
@@ -92,6 +92,7 @@ export interface IDatabaseOptions extends Options {
   migrator?: any;
   usingBigIntForId?: boolean;
   underscored?: boolean;
+  logger?: LoggerOptions | Logger;
   customHooks?: any;
   instanceId?: string;
 }
@@ -218,6 +219,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
       ...lodash.clone(options),
     };
 
+    if (options.logger) {
+      if (typeof options.logger['log'] === 'function') {
+        this.logger = options.logger as Logger;
+      } else {
+        this.logger = createLogger(options.logger);
+      }
+    } else {
+      this.logger = createConsoleLogger();
+    }
+
     if (!options.instanceId) {
       this._instanceId = nanoid();
     } else {
@@ -240,6 +251,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       // https://github.com/sequelize/sequelize/issues/1774
       require('pg').defaults.parseInt8 = true;
     }
+
     this.options = opts;
 
     const sequelizeOptions = this.sequelizeOptions(this.options);
@@ -346,10 +358,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   setContext(context: any) {
     this.context = context;
-  }
-
-  setLogger(logger: Logger) {
-    this.logger = logger;
   }
 
   sequelizeOptions(options) {
@@ -757,11 +765,13 @@ export class Database extends EventEmitter implements AsyncEmitter {
     const authenticate = async () => {
       try {
         await this.sequelize.authenticate(others);
-        console.log('Connection has been established successfully.');
+        this.logger.info('Connection has been established successfully.', { method: 'auth' });
       } catch (error) {
-        console.log(`Attempt ${attemptNumber}/${retry}: Unable to connect to the database: ${error.message}`);
+        this.logger.warn(`Attempt ${attemptNumber}/${retry}: Unable to connect to the database: ${error.message}`, {
+          method: 'auth',
+        });
         const nextDelay = startingDelay * Math.pow(timeMultiple, attemptNumber - 1);
-        console.log(`Will retry in ${nextDelay}ms...`);
+        this.logger.warn(`Will retry in ${nextDelay}ms...`, { method: 'auth' });
         attemptNumber++;
         throw error; // Re-throw the error so that backoff can catch and handle it
       }
