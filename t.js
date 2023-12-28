@@ -18,7 +18,7 @@ const config = {
   ...process.env,
 };
 const limit = pLimit(5);
-const input = _.range(50).map((i) => limit(() => runApp(i + 1)));
+const input = _.range(10).map((i) => limit(() => runApp(i + 1)));
 
 async function runApp(index = 1) {
   const database = `nocobase${index}`;
@@ -38,7 +38,7 @@ async function runApp(index = 1) {
       'nocobase',
       'e2e',
       'test',
-      'packages/plugins/@nocobase/plugin-workflow/src/client/__e2e__/nodes/Calculation.test.ts',
+      'packages/plugins/@nocobase/plugin-workflow/src/client/__e2e__/calculationNode',
       '-x',
       '--skip-reporter',
     ],
