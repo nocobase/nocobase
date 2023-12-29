@@ -82,7 +82,8 @@ const PreviewCom = (props) => {
             setDataSource([]);
             const fieldsData = Object.values(data?.data?.fields)?.map((v: any) => {
               if (v.source) {
-                return v;
+                const option = fields?.data.find((h) => h.name === v.name) || v;
+                return { ...v, uiSchema: option.uiSchema };
               } else {
                 return fields?.data.find((h) => h.name === v.name) || v;
               }
@@ -205,7 +206,10 @@ const PreviewCom = (props) => {
           <Input
             value={item?.uiSchema?.title || text}
             onChange={(e) =>
-              handleFieldChange({ ...item, uiSchema: { ...item?.uiSchema, title: e.target.value } }, index)
+              handleFieldChange(
+                { ...item, uiSchema: { ...item?.uiSchema, title: e.target.value, rawTitle: e.target.value } },
+                index,
+              )
             }
           />
         );
