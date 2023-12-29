@@ -4,21 +4,24 @@ import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocoba
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import {
-  AppLoggerOptions,
-  createLogger,
-  createAppLogger,
   AppLogger,
-  LoggerOptions,
+  AppLoggerOptions,
+  createAppLogger,
+  createLogger,
   getLoggerFilePath,
+  LoggerOptions,
 } from '@nocobase/logger';
-import { Resourcer, ResourceOptions } from '@nocobase/resourcer';
+import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, measureExecutionTime, Toposort, ToposortOptions } from '@nocobase/utils';
+import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
+import { randomUUID } from 'crypto';
 import { IncomingMessage, Server, ServerResponse } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
 import lodash from 'lodash';
+import { RecordableHistogram } from 'node:perf_hooks';
 import { createACL } from './acl';
 import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
@@ -30,19 +33,16 @@ import {
   createAppProxy,
   createI18n,
   createResourcer,
+  enablePerfHooks,
   getCommandFullName,
   registerMiddlewares,
-  enablePerfHooks,
 } from './helper';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { randomUUID } from 'crypto';
+
 import packageJson from '../package.json';
-import chalk from 'chalk';
-import { RecordableHistogram, performance } from 'node:perf_hooks';
-import path from 'path';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
