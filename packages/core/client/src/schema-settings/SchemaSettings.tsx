@@ -1431,7 +1431,6 @@ export const SchemaSettingsEnableChildCollections = function EnableChildCollecti
 export const SchemaSettingsDataFormat = function DateFormatConfig(props: { fieldSchema: Schema }) {
   const { fieldSchema } = props;
   const field = useField();
-  const form = useForm();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const { getCollectionJoinField } = useCollectionManager();
@@ -1561,9 +1560,10 @@ export const SchemaSettingsDataFormat = function DateFormatConfig(props: { field
         };
         schema['x-component-props'] = fieldSchema['x-component-props'];
         field.componentProps = fieldSchema['x-component-props'];
-        field.query(`.*.${fieldSchema.name}`).forEach((f) => {
+        field.query(`*.*[:500].${fieldSchema.name}`).forEach((f) => {
           f.componentProps = fieldSchema['x-component-props'];
         });
+
         dn.emit('patch', {
           schema,
         });
