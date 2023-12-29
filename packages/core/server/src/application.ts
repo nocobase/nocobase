@@ -22,7 +22,6 @@ import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultSta
 import compose from 'koa-compose';
 import lodash from 'lodash';
 import { RecordableHistogram } from 'node:perf_hooks';
-import packageJson from '../package.json';
 import { createACL } from './acl';
 import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
@@ -42,6 +41,8 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+
+import packageJson from '../package.json';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -390,9 +391,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.log.debug(`finish reload`, { method: 'reload' });
   }
 
-  /**
-   * @deprecated Use the `pm.get()` instead.
-   */
   getPlugin<P extends Plugin>(name: string | typeof Plugin) {
     return this.pm.get(name) as P;
   }
