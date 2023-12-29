@@ -12,6 +12,7 @@
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
     "@formily/react": "2.x",
+    "@nocobase/plugin-workflow-test": ">=0.17.0-alpha.3",
     "antd": "5.x",
     "lodash": "4.17.21",
     "react": "18.x",
@@ -24,7 +25,6 @@
     "@nocobase/evaluators": "0.x",
     "@nocobase/plugin-collection-manager": "0.x",
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
-    "@nocobase/plugin-workflow-test": ">=0.17.0-alpha.3",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
