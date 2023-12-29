@@ -4,7 +4,7 @@
   "displayName.zh-CN": "工作流",
   "description": "A powerful workflow plugin designed to support business process management and automation.",
   "description.zh-CN": "工作流插件，为业务流程管理和自动化提供支持。",
-  "version": "0.18.0-alpha.2",
+  "version": "0.18.0-alpha.3",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
@@ -12,6 +12,7 @@
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
     "@formily/react": "2.x",
+    "@nocobase/plugin-workflow-test": "0.18.0-alpha.3",
     "@types/ejs": "^3.1.1",
     "antd": "5.x",
     "axios": "^0.26.1",
@@ -24,8 +25,7 @@
     "react-i18next": "^11.15.1",
     "react-js-cron": "^3.1.0",
     "react-router-dom": "^6.11.2",
-    "sequelize": "^6.26.0",
-    "winston": "^3.8.2"
+    "sequelize": "^6.26.0"
   },
   "peerDependencies": {
     "@nocobase/actions": "0.x",
@@ -36,7 +36,6 @@
     "@nocobase/plugin-collection-manager": "0.x",
     "@nocobase/plugin-error-handler": "0.x",
     "@nocobase/plugin-users": "0.x",
-    "@nocobase/plugin-workflow-test": ">=0.17.0-alpha.3",
     "@nocobase/resourcer": "0.x",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
