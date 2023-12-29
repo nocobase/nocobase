@@ -34,6 +34,10 @@ Object.defineProperty(window, 'matchMedia', {
 const { getComputedStyle } = window;
 window.getComputedStyle = (elt) => getComputedStyle(elt);
 
+// 解决 https://github.com/nocobase/nocobase/actions/runs/7353181446/job/20018831007?pr=3282
+// 该错误是发生在测试环境之后的，应该是存在异步代码没有 await 导致的，但是不知道是哪里的问题，所以先这样处理
+global.window = window;
+
 /**
  * 解决 TypeError: range.getBoundingClientRect is not a function
  * 参见：https://github.com/jsdom/jsdom/issues/3002
