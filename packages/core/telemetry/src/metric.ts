@@ -9,19 +9,22 @@ import { Resource } from '@opentelemetry/resources';
 
 export type MetricOptions = {
   meterName?: string;
+  version?: string;
   readerName?: string | string[];
 };
 
 export class Metric {
   meterName: string;
+  version: string;
   readerName: string | string[];
   readers = new Registry<MetricReader>();
   provider: MeterProvider;
 
   constructor(options?: MetricOptions) {
-    const { meterName, readerName } = options || {};
+    const { meterName, readerName, version } = options || {};
     this.readerName = readerName || 'console';
     this.meterName = meterName || 'nocobase-meter';
+    this.version = version || '';
     this.registerReader(
       'console',
       new PeriodicExportingMetricReader({
@@ -42,9 +45,8 @@ export class Metric {
     return this.readers.get(name);
   }
 
-  getMeter(name?: string) {
-    name = name || this.meterName;
-    return this.provider.getMeter(name);
+  getMeter(name?: string, version?: string) {
+    return this.provider.getMeter(name || this.meterName, version || this.version);
   }
 
   start() {

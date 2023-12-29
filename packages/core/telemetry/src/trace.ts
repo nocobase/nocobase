@@ -38,8 +38,8 @@ export class Trace {
     return this.exporters.get(name);
   }
 
-  getTracer() {
-    return this.provider.getTracer(this.tracerName, this.version);
+  getTracer(name?: string, version?: string) {
+    return this.provider.getTracer(name || this.tracerName, version || this.version);
   }
 
   start() {
