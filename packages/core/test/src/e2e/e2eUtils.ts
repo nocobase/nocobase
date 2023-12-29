@@ -89,6 +89,38 @@ export interface CollectionSetting {
   }>;
 }
 
+interface AclActionsSetting {
+  name: string; //操作标识，如cretae
+  fields?: any[]; //有该操作权限的字段
+  scope?: any; // 数据范围
+}
+interface AclResourcesSetting {
+  name: string; //数据表标识
+  usingActionsConfig: boolean; //是否开启单独配置
+  actions?: AclActionsSetting[];
+}
+interface AclRoleSetting {
+  name?: string;
+  title?: string;
+  /**
+   * @default true
+   */
+  allowNewMenu?: boolean;
+  //配置权限，如 ["app", "pm", "pm.*", "ui.*"]
+  snippets?: string[];
+  //操作权限策略
+  strategy?: any;
+  //数据表单独操作权限配置
+  resources?: AclResourcesSetting[];
+  /**
+   * @default false
+   */
+  default?: boolean;
+  key?: string;
+  //菜单权限配置
+  menuUiSchemas?: string[];
+}
+
 export interface PageConfig {
   /**
    * 页面类型
@@ -188,6 +220,14 @@ interface ExtendUtils {
    * @returns
    */
   deletePage: (pageName: string) => Promise<void>;
+  /**
+   * 生成一个新的角色，并和admin关联上
+   */
+  mockRole: <T = any>(roleSetting: AclRoleSetting) => Promise<T>;
+  /**
+   * 更新角色权限配置
+   */
+  updateRole: <T = any>(roleSetting: AclRoleSetting) => Promise<T>;
 }
 
 const PORT = process.env.APP_PORT || 20000;
@@ -232,7 +272,10 @@ export class NocoPage {
     await this._waitForInit;
     return this.url;
   }
-
+  async getUid() {
+    await this._waitForInit;
+    return this.uid;
+  }
   async waitForInit(this: NocoPage) {
     await this._waitForInit;
     return this;
@@ -267,6 +310,7 @@ const _test = base.extend<ExtendUtils>({
     // 测试运行完自动销毁页面
     for (const nocoPage of nocoPages) {
       await nocoPage.destroy();
+      await setDefaultRole('root');
     }
   },
   mockManualDestroyPage: async ({ browser }, use) => {
@@ -377,6 +421,20 @@ const _test = base.extend<ExtendUtils>({
       deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
     ];
     await Promise.all(deletePromises);
+  },
+  mockRole: async ({ page }, use) => {
+    const mockRole = async (roleSetting: AclRoleSetting) => {
+      return createRole(roleSetting);
+    };
+
+    await use(mockRole);
+  },
+  updateRole: async ({ page }, use) => {
+    async (roleSetting: AclRoleSetting) => {
+      return updateRole(roleSetting);
+    };
+
+    await use(updateRole);
   },
 });
 
@@ -590,6 +648,76 @@ const createCollections = async (collectionSettings: CollectionSetting | Collect
   }
 
   return (await result.json()).data;
+};
+
+/**
+ * 根据配置创建一个角色并将角色关联给superAdmin且切换到新角色
+ * @param page 运行测试的 page 实例
+ * @param AclRoleSetting
+ * @returns
+ */
+const createRole = async (roleSetting: AclRoleSetting) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const name = roleSetting.name || uid();
+
+  const result = await api.post(`/api/users/1/roles:create`, {
+    headers,
+    data: { ...roleSetting, name, title: name },
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  const roleData = (await result.json()).data;
+  await setDefaultRole(name);
+  return roleData;
+};
+
+/**
+ * 根据配置更新角色权限
+ * @param page 运行测试的 page 实例
+ * @param AclRoleSetting
+ * @returns
+ */
+const updateRole = async (roleSetting: AclRoleSetting) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const name = roleSetting.name;
+
+  const result = await api.post(`/api/users/1/roles:update?filterByTk=${name}`, {
+    headers,
+    data: { ...roleSetting },
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  const roleData = (await result.json()).data;
+  return roleData;
+};
+
+/**
+ * 设置默认角色
+ * @param name
+ */
+const setDefaultRole = async (name) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  await api.post(`/api/users:setDefaultRole`, {
+    headers,
+    data: { roleName: name },
+  });
 };
 
 /**
