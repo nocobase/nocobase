@@ -51,7 +51,14 @@ const VariablesProvider = ({ children }) => {
    * 3. 如果某个 `key` 不存在，且 `key` 不是一个关联字段，则返回当前值
    */
   const getValue = useCallback(
-    async (variablePath: string, localVariables?: VariableOption[]) => {
+    async (
+      variablePath: string,
+      localVariables?: VariableOption[],
+      options?: {
+        /** 第一次请求时，需要包含的关系字段 */
+        appends?: string[];
+      },
+    ) => {
       const list = variablePath.split('.');
       const variableName = list[0];
       const _variableToCollectionName = mergeVariableToCollectionNameWithLocalVariables(
@@ -85,6 +92,9 @@ const VariablesProvider = ({ children }) => {
                 const result = api
                   .request({
                     url,
+                    params: {
+                      appends: options?.appends,
+                    },
                   })
                   .then((data) => {
                     clearRequested(url);
@@ -106,6 +116,9 @@ const VariablesProvider = ({ children }) => {
           } else {
             const waitForData = api.request({
               url,
+              params: {
+                appends: options?.appends,
+              },
             });
             stashRequested(url, waitForData);
             data = await waitForData;
@@ -180,7 +193,14 @@ const VariablesProvider = ({ children }) => {
      * @param localVariables 局部变量，解析完成后会被清除
      * @returns
      */
-    async (str: string, localVariables?: VariableOption | VariableOption[]) => {
+    async (
+      str: string,
+      localVariables?: VariableOption | VariableOption[],
+      options?: {
+        /** 第一次请求时，需要包含的关系字段 */
+        appends?: string[];
+      },
+    ) => {
       if (!isVariable(str)) {
         return str;
       }
@@ -190,7 +210,7 @@ const VariablesProvider = ({ children }) => {
       }
 
       const path = getPath(str);
-      const value = await getValue(path, localVariables as VariableOption[]);
+      const value = await getValue(path, localVariables as VariableOption[], options);
 
       return uniq(filterEmptyValues(value));
     },

@@ -29,7 +29,14 @@ export interface VariablesContextType {
    * console.log(value); // test
    * ```
    */
-  parseVariable: (str: string, localVariable?: VariableOption | VariableOption[]) => Promise<any>;
+  parseVariable: (
+    str: string,
+    localVariable?: VariableOption | VariableOption[],
+    options?: {
+      /** 第一次请求时，需要包含的关系字段 */
+      appends?: string[];
+    },
+  ) => Promise<any>;
   /**
    * 注册变量
    * @param variableOption 新变量的配置

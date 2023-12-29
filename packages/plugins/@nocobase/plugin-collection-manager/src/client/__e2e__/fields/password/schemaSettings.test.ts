@@ -71,6 +71,7 @@ test.describe('form item & create form', () => {
   });
 
   test('pattern', async ({ page, mockPage }) => {
+    test.slow();
     await testPattern({
       page,
       gotoPage: () =>

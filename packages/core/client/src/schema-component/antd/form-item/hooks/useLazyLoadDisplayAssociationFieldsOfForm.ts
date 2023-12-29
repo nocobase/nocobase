@@ -3,6 +3,7 @@ import { useField, useFieldSchema, useForm } from '@formily/react';
 import { nextTick } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useEffect, useRef } from 'react';
+import { useAssociationNames } from '../../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../../collection-manager';
 import { useFlag } from '../../../../flag-provider';
 import { useVariables } from '../../../../variables';
@@ -25,6 +26,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const field = useField<Field>();
   const { formValue: subFormValue } = useSubFormValue();
   const { isInSubForm, isInSubTable } = useFlag() || {};
+  const { getAssociationAppends } = useAssociationNames();
 
   const schemaName = fieldSchema.name.toString();
   const formValue = _.cloneDeep(isInSubForm || isInSubTable ? subFormValue : form.values);
@@ -66,8 +68,10 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
       return;
     }
 
+    const { appends } = getAssociationAppends();
+
     variables
-      .parseVariable(variableString, formVariable)
+      .parseVariable(variableString, formVariable, { appends })
       .then((value) => {
         nextTick(() => {
           const result = transformVariableValue(value, { targetCollectionField: collectionFieldRef.current });
