@@ -1,3 +1,4 @@
+import { TFuncKey, TOptions } from 'i18next';
 import type { Application } from './Application';
 
 export class Plugin<T = any> {
@@ -38,4 +39,8 @@ export class Plugin<T = any> {
   async beforeLoad() {}
 
   async load() {}
+
+  t(text: TFuncKey | TFuncKey[], options: TOptions = {}) {
+    return this.app.i18n.t(text, { ns: this.options?.['packageName'], ...(options as any) });
+  }
 }

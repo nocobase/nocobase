@@ -1,10 +1,11 @@
 import { Model } from '@nocobase/database';
+import { LoggerOptions } from '@nocobase/logger';
 import fs from 'fs';
+import type { TFuncKey, TOptions } from 'i18next';
 import { resolve } from 'path';
 import { Application } from './application';
 import { InstallOptions, getExposeChangelogUrl, getExposeReadmeUrl } from './plugin-manager';
 import { checkAndGetCompatible } from './plugin-manager/utils';
-import { LoggerOptions, createLogger, getLoggerFilePath } from '@nocobase/logger';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -114,6 +115,10 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   requiredPlugins() {
     return [];
+  }
+
+  t(text: TFuncKey | TFuncKey[], options: TOptions = {}) {
+    return this.app.i18n.t(text, { ns: this.options['packageName'], ...(options as any) });
   }
 
   async toJSON(options: any = {}) {
