@@ -6,6 +6,7 @@
   "description.zh-CN": "SMS authentication for NocoBase",
   "version": "0.18.0-alpha.3",
   "main": "./dist/server/index.js",
+  "license": "AGPL-3.0",
   "devDependencies": {
     "@formily/react": "2.x",
     "antd": "5.x",

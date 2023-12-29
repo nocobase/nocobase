@@ -6,6 +6,7 @@
   "displayName.zh-CN": "自定义请求",
   "description": "Custom request action",
   "description.zh-CN": "自定义请求操作",
+  "license": "AGPL-3.0",
   "devDependencies": {
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
