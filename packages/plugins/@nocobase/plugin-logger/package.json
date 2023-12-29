@@ -4,7 +4,8 @@
   "displayName.zh-CN": "日志",
   "description": "Package and download log files",
   "description.zh-CN": "打包下载日志文件",
-  "version": "0.18.0-alpha.3",
+  "version": "0.18.0-alpha.8",
+  "license": "AGPL-3.0",
   "main": "dist/server/index.js",
   "devDependencies": {
     "@types/tar-fs": "^2.0.2",
@@ -15,5 +16,6 @@
     "@nocobase/client": "0.x",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
-  }
+  },
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }
