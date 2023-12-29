@@ -4,7 +4,7 @@
   "displayName.zh-CN": "工作流：人工处理节点",
   "description": "Could be used for workflows which some of decisions are made by users.",
   "description.zh-CN": "用于人工控制部分决策的流程。",
-  "version": "0.18.0-alpha.2",
+  "version": "0.18.0-alpha.3",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
@@ -12,6 +12,7 @@
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
     "@formily/react": "2.x",
+    "@nocobase/plugin-workflow-test": ">=0.17.0-alpha.3",
     "antd": "5.x",
     "lodash": "4.17.21",
     "react": "18.x",
@@ -24,7 +25,6 @@
     "@nocobase/plugin-collection-manager": "0.x",
     "@nocobase/plugin-users": "0.x",
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
-    "@nocobase/plugin-workflow-test": ">=0.17.0-alpha.3",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
