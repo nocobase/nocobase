@@ -191,8 +191,6 @@ export const ConfigurationTabs = () => {
     return {
       items: [
         {
-          role: 'button',
-          'aria-label': 'edit-category',
           key: 'edit',
           label: (
             <SchemaComponent
@@ -211,8 +209,6 @@ export const ConfigurationTabs = () => {
           ),
         },
         {
-          role: 'button',
-          'aria-label': 'delete-category',
           key: 'delete',
           label: compile("{{t('Delete category')}}"),
           onClick: () => remove(item.id),
