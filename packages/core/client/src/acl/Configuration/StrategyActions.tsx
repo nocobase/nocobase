@@ -67,6 +67,7 @@ export const StrategyActions = connect((props) => {
             render: (enabled, action) => (
               <Checkbox
                 checked={enabled}
+                aria-label={`${action.name}_checkbox`}
                 onChange={(e) => {
                   if (enabled) {
                     delete scopes[action.name];
