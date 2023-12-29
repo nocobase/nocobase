@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-custom-page",
-  "version": "0.18.0-alpha.2",
+  "version": "0.18.0-alpha.3",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "react": "^18.2.0"
