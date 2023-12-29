@@ -253,7 +253,7 @@ export class NocoPage {
 const _test = base.extend<ExtendUtils>({
   mockPage: async ({ page }, use) => {
     // 保证每个测试运行时 faker 的随机值都是一样的
-    faker.seed(1);
+    // faker.seed(1);
 
     const nocoPages: NocoPage[] = [];
     const mockPage = (config?: PageConfig) => {
@@ -284,27 +284,27 @@ const _test = base.extend<ExtendUtils>({
       collectionSettings = omitSomeFields(
         Array.isArray(collectionSettings) ? collectionSettings : [collectionSettings],
       );
-      collectionsName = collectionSettings.map((item) => item.name);
+      collectionsName = [...collectionsName, ...collectionSettings.map((item) => item.name)];
       await createCollections(collectionSettings);
     };
 
     await use(_createCollections);
 
     if (collectionsName.length) {
-      await deleteCollections(collectionsName);
+      await deleteCollections(_.uniq(collectionsName));
     }
   },
   mockCollections: async ({ page }, use) => {
     let collectionsName = [];
     const destroy = async () => {
       if (collectionsName.length) {
-        await deleteCollections(collectionsName);
+        await deleteCollections(_.uniq(collectionsName));
       }
     };
 
     const mockCollections = async (collectionSettings: CollectionSetting[]) => {
       collectionSettings = omitSomeFields(collectionSettings);
-      collectionsName = collectionSettings.map((item) => item.name);
+      collectionsName = [...collectionsName, ...collectionSettings.map((item) => item.name)];
       return createCollections(collectionSettings);
     };
 
@@ -315,13 +315,13 @@ const _test = base.extend<ExtendUtils>({
     let collectionsName = [];
     const destroy = async () => {
       if (collectionsName.length) {
-        await deleteCollections(collectionsName);
+        await deleteCollections(_.uniq(collectionsName));
       }
     };
 
     const mockCollection = async (collectionSetting: CollectionSetting, options?: { manualDestroy: boolean }) => {
       const collectionSettings = omitSomeFields([collectionSetting]);
-      collectionsName = collectionSettings.map((item) => item.name);
+      collectionsName = [...collectionsName, ...collectionSettings.map((item) => item.name)];
       return createCollections(collectionSettings);
     };
 
