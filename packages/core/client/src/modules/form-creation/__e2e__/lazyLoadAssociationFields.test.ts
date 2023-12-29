@@ -50,7 +50,7 @@ test.describe('display association fields', () => {
   });
 
   // https://nocobase.height.app/T-2615
-  test('BUG: should load association data', async ({ page, mockPage, mockRecord }) => {
+  test('should load association data', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(T2615).waitForInit();
     await mockRecord('T2615');
     await nocoPage.goto();
@@ -137,7 +137,7 @@ test.describe('display association fields', () => {
   });
 
   // https://nocobase.height.app/T-2614
-  test('BUG: should load association data in subform', async ({ page, mockPage, mockRecord }) => {
+  test('should load association data in subform', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(T2614).waitForInit();
     await mockRecord('T2614');
     await nocoPage.goto();
@@ -247,7 +247,7 @@ test.describe('association fields', () => {
   });
 
   // fix https://nocobase.height.app/T-2200
-  test('BUG: should be possible to change the value of the association field normally', async ({ page, mockPage }) => {
+  test('should be possible to change the value of the association field normally', async ({ page, mockPage }) => {
     await mockPage(T2200).goto();
 
     await page.getByLabel('action-Action.Link-Edit-update-users-table-0').click();
