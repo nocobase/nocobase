@@ -4,7 +4,6 @@ const pAll = require('p-all');
 const dotenv = require('dotenv');
 const fs = require('fs');
 const { Client } = require('pg');
-const _ = require('lodash');
 const glob = require('glob');
 
 let ENV_FILE = resolve(process.cwd(), '.env.e2e');
@@ -39,6 +38,7 @@ async function runApp(index = 1, dir) {
       ...config,
       CI: true,
       __E2E__: true,
+      APP_BASE_URL: undefined,
       LOGGER_LEVEL: 'error',
       APP_ENV: 'production',
       APP_PORT: 20000 + index,
@@ -50,7 +50,7 @@ async function runApp(index = 1, dir) {
   });
 }
 
-(async () => {
+exports.pTest = async (options) => {
   const files = glob.sync('packages/**/__e2e__/**/*.test.ts', {
     root: process.cwd(),
   });
@@ -64,5 +64,5 @@ async function runApp(index = 1, dir) {
     return () => runApp(i + 1, v);
   });
 
-  await pAll(commands, { concurrency: 3, stopOnError: false });
-})();
+  await pAll(commands, { concurrency: 3, stopOnError: false, ...options });
+};
