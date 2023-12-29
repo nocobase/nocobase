@@ -735,6 +735,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._cli = this.createCli();
     this._i18n = createI18n(options);
     this.context.db = this.getDb();
+    this.context.getDb = this.getDb;
 
     // this.context.logger = this._logger;
     this.context.resourcer = this._resourcer;
