@@ -4,7 +4,7 @@
   "displayName.zh-CN": "可视化的数据表管理",
   "description": "An ER diagram-like tool",
   "description.zh-CN": "类似 ER 图的工具",
-  "version": "0.18.0-alpha.3",
+  "version": "0.18.0-alpha.8",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
@@ -32,5 +32,6 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
-  }
+  },
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }
