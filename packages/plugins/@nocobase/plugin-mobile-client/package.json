@@ -2,6 +2,7 @@
   "name": "@nocobase/plugin-mobile-client",
   "version": "0.18.0-alpha.3",
   "main": "./dist/server/index.js",
+  "license": "AGPL-3.0",
   "displayName": "Mobile client",
   "displayName.zh-CN": "移动端",
   "description": "Provides the ability to configure mobile pages",

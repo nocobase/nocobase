@@ -2,6 +2,7 @@
   "name": "@nocobase/plugin-localization-management",
   "version": "0.18.0-alpha.3",
   "main": "dist/server/index.js",
+  "license": "AGPL-3.0",
   "devDependencies": {
     "deepmerge": "^4.3.1"
   },
