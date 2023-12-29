@@ -14,14 +14,14 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug Jest Tests",
+      "name": "Debug Tests",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": ["run", "--inspect-brk", "test", "--runInBand", "${file}"],
+      "runtimeArgs": ["run", "--inspect-brk", "test", "${file}"],
       "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "windows": {
-        "runtimeArgs": ["run", "--inspect-brk", "test", "--runInBand", "/${fileBasename}"]
+        "runtimeArgs": ["run", "--inspect-brk", "test", "/${fileBasename}"]
       }
     },
     {
