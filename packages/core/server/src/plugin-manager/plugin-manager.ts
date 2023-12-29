@@ -125,6 +125,7 @@ export class PluginManager {
   }
 
   static clearCache(packageName: string) {
+    return;
     const packageNamePath = packageName.replace('/', sep);
     Object.keys(require.cache).forEach((key) => {
       if (key.includes(packageNamePath)) {
