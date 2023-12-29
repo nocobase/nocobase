@@ -212,7 +212,7 @@ test.describe('creation form block schema settings', () => {
     });
 
     // fix https://nocobase.height.app/T-2165
-    test('BUG: variable labels should be displayed normally', async ({ page, mockPage }) => {
+    test('variable labels should be displayed normally', async ({ page, mockPage }) => {
       await mockPage(T2165).goto();
 
       await page.getByLabel('block-item-CardItem-users-form').hover();
@@ -628,7 +628,7 @@ test.describe('creation form block schema settings', () => {
     });
 
     // fix https://nocobase.height.app/T-2174
-    test('BUG: should show default value option', async ({ page, mockPage, mockRecord }) => {
+    test('should show default value option', async ({ page, mockPage, mockRecord }) => {
       const nocoPage = await mockPage(T2174).waitForInit();
       await mockRecord('test2174');
       await nocoPage.goto();
