@@ -51,6 +51,10 @@ export interface ResourcerOptions {
   prefix?: string;
 }
 
+export interface AppTelemetryOptions extends TelemetryOptions {
+  enabled?: boolean;
+}
+
 export interface ApplicationOptions {
   database?: IDatabaseOptions | Database;
   cacheManager?: CacheManagerOptions;
@@ -67,7 +71,7 @@ export interface ApplicationOptions {
   name?: string;
   authManager?: AuthManagerOptions;
   perfHooks?: boolean;
-  telemetry?: TelemetryOptions;
+  telemetry?: AppTelemetryOptions;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -379,7 +383,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.setMaintainingMessage('emit beforeLoad');
     await this.emitAsync('beforeLoad', this, options);
 
+    // Telemetry is initialized after beforeLoad hook
+    // since some configuration may be registered in beforeLoad hook
+    this.telemetry.init();
     if (this.options.telemetry?.enabled) {
+      // Start collecting telemetry data if enabled
       this.telemetry.start();
     }
 

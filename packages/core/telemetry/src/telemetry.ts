@@ -5,7 +5,6 @@ import { Metric, MetricOptions } from './metric';
 import { Trace, TraceOptions } from './trace';
 
 export interface TelemetryOptions {
-  enabled?: boolean;
   serviceName?: string;
   version?: string;
   trace?: TraceOptions;
@@ -13,7 +12,6 @@ export interface TelemetryOptions {
 }
 
 export class Telemetry {
-  enabled: boolean;
   serviceName: string;
   version: string;
   instrumentations: InstrumentationOption[] = [];
@@ -22,16 +20,11 @@ export class Telemetry {
   started = false;
 
   constructor(options?: TelemetryOptions) {
-    const { trace, metric, serviceName, version, enabled } = options || {};
+    const { trace, metric, serviceName, version } = options || {};
     this.trace = new Trace({ tracerName: `${serviceName}-trace`, version, ...trace });
     this.metric = new Metric({ meterName: `${serviceName}-meter`, ...metric });
     this.serviceName = serviceName || 'nocobase';
     this.version = version || '';
-    this.enabled = enabled || false;
-    if (!this.enabled) {
-      return;
-    }
-    this.init();
   }
 
   init() {

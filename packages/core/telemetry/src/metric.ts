@@ -4,6 +4,7 @@ import {
   PeriodicExportingMetricReader,
   ConsoleMetricExporter,
   MeterProvider,
+  View,
 } from '@opentelemetry/sdk-metrics';
 import { Resource } from '@opentelemetry/resources';
 
@@ -13,12 +14,15 @@ export type MetricOptions = {
   readerName?: string | string[];
 };
 
+type GetMetricReader = () => MetricReader;
+
 export class Metric {
   meterName: string;
   version: string;
   readerName: string | string[];
-  readers = new Registry<MetricReader>();
+  readers = new Registry<GetMetricReader>();
   provider: MeterProvider;
+  views: View[] = [];
 
   constructor(options?: MetricOptions) {
     const { meterName, readerName, version } = options || {};
@@ -27,22 +31,27 @@ export class Metric {
     this.version = version || '';
     this.registerReader(
       'console',
-      new PeriodicExportingMetricReader({
-        exporter: new ConsoleMetricExporter(),
-      }),
+      () =>
+        new PeriodicExportingMetricReader({
+          exporter: new ConsoleMetricExporter(),
+        }),
     );
   }
 
   init(resource: Resource) {
-    this.provider = new MeterProvider({ resource });
+    this.provider = new MeterProvider({ resource, views: this.views });
   }
 
-  registerReader(name: string, reader: MetricReader) {
+  registerReader(name: string, reader: GetMetricReader) {
     this.readers.register(name, reader);
   }
 
   getReader(name: string) {
     return this.readers.get(name);
+  }
+
+  addView(...view: View[]) {
+    this.views.push(...view);
   }
 
   getMeter(name?: string, version?: string) {
@@ -55,7 +64,7 @@ export class Metric {
       readerName = readerName.split(',');
     }
     readerName.forEach((name) => {
-      const reader = this.getReader(name);
+      const reader = this.getReader(name)();
       this.provider.addMetricReader(reader);
     });
   }
