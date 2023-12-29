@@ -1,6 +1,8 @@
 import { expect, oneFormBlockBasedOnUsers, test } from '@nocobase/test/e2e';
 
 test('fields', async ({ page, mockPage }) => {
+  // 在 CI 中多进程跑的时候，可能需要等待更长的时间
+  test.slow();
   await mockPage(oneFormBlockBasedOnUsers).goto();
   await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
   await page.getByRole('menuitem', { name: 'Nickname' }).click();

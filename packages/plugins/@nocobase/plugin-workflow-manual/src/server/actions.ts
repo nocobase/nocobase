@@ -12,7 +12,7 @@ export async function submit(context: Context, next) {
     return context.throw(401);
   }
 
-  const plugin: WorkflowPlugin = context.app.pm.get('workflow') as WorkflowPlugin;
+  const plugin: WorkflowPlugin = context.app.getPlugin(WorkflowPlugin);
   const instruction = plugin.instructions.get('manual') as ManualInstruction;
 
   const userJob = await repository.findOne({

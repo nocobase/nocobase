@@ -1,13 +1,12 @@
 import path from 'path';
 
 import LRUCache from 'lru-cache';
-import winston from 'winston';
 
 import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
-import { createLogger, getLoggerFilePath, getLoggerLevel, Logger, LoggerOptions } from '@nocobase/logger';
+import { Logger, LoggerOptions } from '@nocobase/logger';
 import Processor from './Processor';
 import initActions from './actions';
 import { EXECUTION_STATUS } from './constants';
@@ -15,7 +14,7 @@ import initFunctions, { CustomFunction } from './functions';
 import Trigger from './triggers';
 import CollectionTrigger from './triggers/CollectionTrigger';
 import ScheduleTrigger from './triggers/ScheduleTrigger';
-import Instruction from './instructions';
+import { Instruction, InstructionInterface } from './instructions';
 import CalculationInstruction from './instructions/CalculationInstruction';
 import ConditionInstruction from './instructions/ConditionInstruction';
 import CreateInstruction from './instructions/CreateInstruction';
@@ -32,7 +31,7 @@ type Pending = [ExecutionModel, JobModel?];
 type CachedEvent = [WorkflowModel, any, { context?: any }];
 
 export default class WorkflowPlugin extends Plugin {
-  instructions: Registry<Instruction> = new Registry();
+  instructions: Registry<InstructionInterface> = new Registry();
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<CustomFunction> = new Registry();
 
@@ -118,7 +117,7 @@ export default class WorkflowPlugin extends Plugin {
     }
   }
 
-  registerInstruction<T extends Instruction>(type: string, instruction: T | { new (p: Plugin): T }) {
+  registerInstruction(type: string, instruction: InstructionInterface | { new (p: Plugin): InstructionInterface }) {
     if (typeof instruction === 'function') {
       this.instructions.register(type, new instruction(this));
     } else if (instruction) {
