@@ -6,6 +6,6 @@ export const telemetry: AppTelemetryOptions = {
     readerName: process.env.TELEMETRY_METRIC_READER,
   },
   trace: {
-    processorName: process.env.TELEMETRY_TRACE_EXPORTER,
+    processorName: process.env.TELEMETRY_TRACE_PROCESSOR,
   },
 };

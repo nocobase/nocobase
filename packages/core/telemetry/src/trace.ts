@@ -23,7 +23,7 @@ export class Trace {
     this.processorName = processorName || 'console';
     this.tracerName = tracerName || 'nocobase-trace';
     this.version = version || '';
-    this.registerExporter('console', () => new BatchSpanProcessor(new ConsoleSpanExporter()));
+    this.registerProcessor('console', () => new BatchSpanProcessor(new ConsoleSpanExporter()));
   }
 
   init(resource: Resource) {
@@ -32,11 +32,11 @@ export class Trace {
     });
   }
 
-  registerExporter(name: string, exporter: GetSpanProcessor) {
-    this.processors.register(name, exporter);
+  registerProcessor(name: string, processor: GetSpanProcessor) {
+    this.processors.register(name, processor);
   }
 
-  getExporter(name: string) {
+  getProcessor(name: string) {
     return this.processors.get(name);
   }
 
@@ -50,7 +50,7 @@ export class Trace {
       processorName = processorName.split(',');
     }
     processorName.forEach((name) => {
-      const processor = this.getExporter(name)();
+      const processor = this.getProcessor(name)();
       this.provider.addSpanProcessor(processor);
     });
   }
