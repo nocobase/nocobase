@@ -12,8 +12,8 @@ export const getFormat = (format?: LoggerOptions['format']) => {
   const configFormat = format || getLoggerFormat();
   let logFormat: winston.Logform.Format;
   switch (configFormat) {
-    case 'develop':
-      logFormat = winston.format.combine(developFormat);
+    case 'console':
+      logFormat = winston.format.combine(consoleFormat);
       break;
     case 'logfmt':
       logFormat = logfmtFormat;
@@ -75,7 +75,7 @@ export const logfmtFormat: winston.Logform.Format = winston.format.printf((info)
     .join(' '),
 );
 
-export const developFormat: winston.Logform.Format = winston.format.printf((info) => {
+export const consoleFormat: winston.Logform.Format = winston.format.printf((info) => {
   const keys = ['level', 'timestamp', 'message'];
   Object.entries(info).forEach(([k, v]) => {
     if (typeof v === 'object') {

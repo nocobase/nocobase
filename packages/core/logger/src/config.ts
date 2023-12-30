@@ -13,5 +13,5 @@ export const getLoggerTransport = (): ('console' | 'file' | 'dailyRotateFile')[]
     (process.env.APP_ENV === 'development' ? 'console' : 'console,dailyRotateFile')
   ).split(',');
 
-export const getLoggerFormat = (): 'logfmt' | 'json' | 'delimiter' | 'develop' =>
-  (process.env.LOGGER_FORMAT as any) || (process.env.APP_ENV === 'development' ? 'develop' : 'json');
+export const getLoggerFormat = (): 'logfmt' | 'json' | 'delimiter' | 'console' =>
+  (process.env.LOGGER_FORMAT as any) || (process.env.APP_ENV === 'development' ? 'console' : 'json');

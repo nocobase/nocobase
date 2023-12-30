@@ -2,12 +2,12 @@ import winston, { Logger } from 'winston';
 import 'winston-daily-rotate-file';
 import { getLoggerLevel } from './config';
 import { getTransports } from './transports';
-import { developFormat } from './format';
+import { consoleFormat } from './format';
 
 interface LoggerOptions extends Omit<winston.LoggerOptions, 'transports' | 'format'> {
   dirname?: string;
   filename?: string;
-  format?: 'logfmt' | 'json' | 'delimiter' | 'develop' | winston.Logform.Format;
+  format?: 'logfmt' | 'json' | 'delimiter' | 'console' | winston.Logform.Format;
   transports?: ('console' | 'file' | 'dailyRotateFile' | winston.transport)[];
 }
 
@@ -32,7 +32,7 @@ export const createConsoleLogger = (options?: winston.LoggerOptions) => {
       winston.format.timestamp({
         format: 'YYYY-MM-DD HH:mm:ss',
       }),
-      format || developFormat,
+      format || consoleFormat,
     ),
     ...(rest || {}),
     transports: [new winston.transports.Console()],
