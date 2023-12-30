@@ -66,7 +66,7 @@ const useParseDefaultValue = () => {
       ) {
         // 一个变量字符串如果显示出来会比较奇怪
         if (isVariable(field.value)) {
-          field.setValue(null);
+          await field.reset({ forceClear: true });
         }
 
         field.loading = true;
@@ -83,17 +83,16 @@ const useParseDefaultValue = () => {
         });
 
         if (value == null || value === '') {
-          field.setValue(null);
+          // fix https://nocobase.height.app/T-2805
+          field.setInitialValue(null);
+          await field.reset({ forceClear: true });
         } else if (isSpecialCase()) {
           // 只需要设置一次就可以了
           if (index === 0) {
             setDefaultValue(value);
           }
         } else {
-          // eslint-disable-next-line promise/catch-or-return
-          Promise.resolve().then(() => {
-            field.setInitialValue(value);
-          });
+          field.setInitialValue(value);
         }
 
         field.loading = false;
@@ -133,12 +132,6 @@ const useParseDefaultValue = () => {
           return value;
         },
         () => run({ forceUpdate: true }),
-        {
-          equals: (oldValue, newValue) => {
-            field.setValue(newValue);
-            return oldValue === newValue;
-          },
-        },
       );
 
       return dispose;

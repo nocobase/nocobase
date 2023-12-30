@@ -38,23 +38,20 @@ test.describe('form item & create form', () => {
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
-      gotoPage: () =>
-        (async (mockPage) => {
-          const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-          await nocoPage.goto();
-        })(mockPage),
-      openDialog: () =>
-        (async (page: Page) => {
-          await page.getByRole('button', { name: 'Add new' }).click();
-        })(page),
+      gotoPage: async () => {
+        const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
+        await nocoPage.goto();
+      },
+      openDialog: async () => {
+        await page.getByRole('button', { name: 'Add new' }).click();
+      },
       closeDialog: () => page.getByLabel('drawer-Action.Container-general-Add record-mask').click(),
-      showMenu: () =>
-        (async (page: Page, fieldName: string) => {
-          await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-          await page
-            .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-            .hover();
-        })(page, 'singleLineText'),
+      showMenu: async () => {
+        await page.getByLabel(`block-item-CollectionField-general-form-general.singleLineText-singleLineText`).hover();
+        await page
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.singleLineText`)
+          .hover();
+      },
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
       constantValue: 'test single line text',
       variableValue: ['Current user', 'Email'], // 值为 admin@nocobase.com
