@@ -584,6 +584,7 @@ test.describe('creation form block schema settings', () => {
         .getByRole('button', { name: 'designer-schema-settings-TableV2.Column-TableV2.Column.Designer-users' })
         .hover();
       await page.getByRole('menuitem', { name: 'Set default value', exact: true }).click();
+      await page.mouse.move(300, 0);
       await page.getByLabel('Set default value').getByRole('textbox').click();
       await page.getByLabel('Set default value').getByRole('textbox').fill('test default value');
       await page.getByRole('button', { name: 'OK', exact: true }).click();

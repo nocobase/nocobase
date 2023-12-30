@@ -25,7 +25,7 @@ const useParseDefaultValue = () => {
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const record = useRecord();
-  const { isInAssignFieldValues, isInSetDefaultValueDialog, isInFormDataTemplate } = useFlag() || {};
+  const { isInAssignFieldValues, isInSetDefaultValueDialog, isInFormDataTemplate, isInSubTable } = useFlag() || {};
   const { getField } = useCollection();
   const { isSpecialCase, setDefaultValue } = useSpecialCase();
   const index = useRecordIndex();
@@ -52,14 +52,18 @@ const useParseDefaultValue = () => {
       isInFormDataTemplate ||
       isSubMode(fieldSchema) ||
       // 编辑状态下不需要设置默认值，否则会覆盖用户输入的值，只有新建状态下才需要设置默认值
-      (formBlockType === 'update' && isFromDatabase(record) && !isInAssignFieldValues)
+      (formBlockType === 'update' && !isInSubTable && isFromDatabase(record) && !isInAssignFieldValues)
     ) {
       return;
     }
 
     const _run = async () => {
       // 如果默认值是一个变量，则需要解析之后再显示出来
-      if (isVariable(fieldSchema.default) && variables && field) {
+      if (
+        variables &&
+        field &&
+        ((isVariable(fieldSchema.default) && field.value == null) || field.value === fieldSchema.default)
+      ) {
         // 一个变量字符串如果显示出来会比较奇怪
         if (isVariable(field.value)) {
           field.setValue(null);
@@ -128,7 +132,7 @@ const useParseDefaultValue = () => {
 
           return value;
         },
-        _run,
+        run,
         {
           equals: (oldValue, newValue) => {
             field.setValue(newValue);
