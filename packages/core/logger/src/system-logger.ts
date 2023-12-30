@@ -1,4 +1,4 @@
-import winston, { format } from 'winston';
+import winston, { Logger, format } from 'winston';
 import { LoggerOptions, createLogger } from './logger';
 import Transport from 'winston-transport';
 import { SPLAT } from 'triple-beam';
@@ -6,6 +6,23 @@ import { getFormat } from './format';
 
 export interface SystemLoggerOptions extends LoggerOptions {
   seperateError?: boolean; // print error seperately, default true
+}
+
+export type logMethod = (
+  message: string,
+  meta?: {
+    module?: string;
+    submodule?: string;
+    method?: string;
+    [key: string]: any;
+  },
+) => SystemLogger;
+
+export interface SystemLogger extends Omit<Logger, 'info' | 'warn' | 'error' | 'debug'> {
+  info: logMethod;
+  warn: logMethod;
+  error: logMethod;
+  debug: logMethod;
 }
 
 class SystemLoggerTransport extends Transport {
@@ -32,23 +49,24 @@ class SystemLoggerTransport extends Transport {
   }
 
   log(info: any, callback: any) {
-    const { level, message, reqId, [SPLAT]: args } = info;
+    const { level, message, reqId, app, [SPLAT]: args } = info;
     const logger = level === 'error' && this.errorLogger ? this.errorLogger : this.logger;
     const { module, submodule, method, ...meta } = args?.[0] || {};
     logger.log({
       level,
-      reqId,
       message,
+      meta,
       module: module || info['module'] || '',
       submodule: submodule || info['submodule'] || '',
       method: method || '',
-      meta,
+      app,
+      reqId,
     });
     callback(null, true);
   }
 }
 
-export const createSystemLogger = (options: SystemLoggerOptions) =>
+export const createSystemLogger = (options: SystemLoggerOptions): SystemLogger =>
   winston.createLogger({
     transports: [new SystemLoggerTransport(options)],
   });

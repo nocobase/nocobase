@@ -1,14 +1,13 @@
 import winston, { Logger } from 'winston';
-import { SystemLoggerOptions } from './system-logger';
 import 'winston-daily-rotate-file';
 import { getLoggerLevel } from './config';
 import { getTransports } from './transports';
-import { colorFormat, logfmtFormat, sortFormat } from './format';
+import { consoleFormat } from './format';
 
 interface LoggerOptions extends Omit<winston.LoggerOptions, 'transports' | 'format'> {
   dirname?: string;
   filename?: string;
-  format?: 'logfmt' | 'json' | 'delimiter' | winston.Logform.Format;
+  format?: 'logfmt' | 'json' | 'delimiter' | 'console' | winston.Logform.Format;
   transports?: ('console' | 'file' | 'dailyRotateFile' | winston.transport)[];
 }
 
@@ -33,7 +32,7 @@ export const createConsoleLogger = (options?: winston.LoggerOptions) => {
       winston.format.timestamp({
         format: 'YYYY-MM-DD HH:mm:ss',
       }),
-      format || winston.format.combine(sortFormat, colorFormat, logfmtFormat),
+      format || consoleFormat,
     ),
     ...(rest || {}),
     transports: [new winston.transports.Console()],
@@ -41,13 +40,3 @@ export const createConsoleLogger = (options?: winston.LoggerOptions) => {
 };
 
 export { Logger, LoggerOptions };
-interface ReqeustLoggerOptions extends LoggerOptions {
-  skip?: (ctx?: any) => Promise<boolean>;
-  requestWhitelist?: string[];
-  responseWhitelist?: string[];
-}
-
-export interface AppLoggerOptions {
-  request: ReqeustLoggerOptions;
-  system: SystemLoggerOptions;
-}
