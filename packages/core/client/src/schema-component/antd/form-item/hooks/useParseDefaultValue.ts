@@ -57,12 +57,12 @@ const useParseDefaultValue = () => {
       return;
     }
 
-    const _run = async () => {
+    const _run = async ({ forceUpdate = false } = {}) => {
       // 如果默认值是一个变量，则需要解析之后再显示出来
       if (
         variables &&
         field &&
-        ((isVariable(fieldSchema.default) && field.value == null) || field.value === fieldSchema.default)
+        ((isVariable(fieldSchema.default) && field.value == null) || field.value === fieldSchema.default || forceUpdate)
       ) {
         // 一个变量字符串如果显示出来会比较奇怪
         if (isVariable(field.value)) {
@@ -132,7 +132,7 @@ const useParseDefaultValue = () => {
 
           return value;
         },
-        run,
+        () => run({ forceUpdate: true }),
         {
           equals: (oldValue, newValue) => {
             field.setValue(newValue);
