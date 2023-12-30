@@ -38,7 +38,7 @@ export const getTransports = (options: LoggerOptions) => {
   const transports = {
     console: () =>
       Transports.console({
-        format: winston.format.combine(winston.format.colorize(), colorFormat, format),
+        format: winston.format.combine(format),
       }),
     file: () =>
       Transports.file({
