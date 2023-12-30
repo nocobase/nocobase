@@ -46,7 +46,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     app.context.reqId = randomUUID();
     await next();
   });
-  app.use(requestLogger(app.name, options.logger), { tag: 'logger' });
+  app.use(requestLogger(app.name, options.logger?.request), { tag: 'logger' });
   app.use(
     cors({
       exposeHeaders: ['content-disposition'],

@@ -4,12 +4,13 @@ import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocoba
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import {
-  AppLogger,
-  AppLoggerOptions,
-  createAppLogger,
+  SystemLogger,
+  RequestLoggerOptions,
   createLogger,
   getLoggerFilePath,
   LoggerOptions,
+  SystemLoggerOptions,
+  createSystemLogger,
 } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, measureExecutionTime, Toposort, ToposortOptions } from '@nocobase/utils';
@@ -49,6 +50,11 @@ export type PluginConfiguration = PluginType | [PluginType, any];
 
 export interface ResourcerOptions {
   prefix?: string;
+}
+
+export interface AppLoggerOptions {
+  request: RequestLoggerOptions;
+  system: SystemLoggerOptions;
 }
 
 export interface ApplicationOptions {
@@ -175,7 +181,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._db;
   }
 
-  protected _logger: AppLogger;
+  protected _logger: SystemLogger;
 
   get logger() {
     return this._logger;
@@ -702,11 +708,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected init() {
     const options = this.options;
 
-    this._logger = createAppLogger({
-      app: this.name,
+    this._logger = createSystemLogger({
+      dirname: getLoggerFilePath(this.name),
+      filename: 'system',
+      seperateError: true,
       ...(options.logger?.system || {}),
     }).child({
       reqId: this.context.reqId,
+      app: this.name,
       module: 'application',
     });
 
@@ -787,7 +796,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       if (msg.includes('INSERT INTO')) {
         msg = msg.substring(0, 2000) + '...';
       }
-      sqlLogger.debug({ reqId: this.context.reqId, message: msg });
+      sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
     };
     const dbOptions = options.database instanceof Database ? options.database.options : options.database;
     const db = new Database({

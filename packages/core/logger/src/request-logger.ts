@@ -1,5 +1,5 @@
 import { getLoggerFilePath } from './config';
-import { AppLoggerOptions, createLogger } from './logger';
+import { LoggerOptions, createLogger } from './logger';
 import { pick } from 'lodash';
 const defaultRequestWhitelist = [
   'action',
@@ -11,11 +11,17 @@ const defaultRequestWhitelist = [
 ];
 const defaultResponseWhitelist = ['status'];
 
-export const requestLogger = (appName: string, options?: AppLoggerOptions) => {
+export interface RequestLoggerOptions extends LoggerOptions {
+  skip?: (ctx?: any) => Promise<boolean>;
+  requestWhitelist?: string[];
+  responseWhitelist?: string[];
+}
+
+export const requestLogger = (appName: string, options?: RequestLoggerOptions) => {
   const requestLogger = createLogger({
     dirname: getLoggerFilePath(appName),
     filename: 'request',
-    ...(options?.request || {}),
+    ...(options || {}),
   });
   return async (ctx, next) => {
     const reqId = ctx.reqId;
@@ -29,11 +35,12 @@ export const requestLogger = (appName: string, options?: AppLoggerOptions) => {
       path: ctx.url,
     };
     requestLogger.info({
-      reqId,
       message: 'request',
       ...requestInfo,
-      req: pick(ctx.request.toJSON(), options?.request?.requestWhitelist || defaultRequestWhitelist),
+      req: pick(ctx.request.toJSON(), options?.requestWhitelist || defaultRequestWhitelist),
       action: ctx.action?.toJSON?.(),
+      app: appName,
+      reqId,
     });
     let error: Error;
     try {
@@ -44,14 +51,15 @@ export const requestLogger = (appName: string, options?: AppLoggerOptions) => {
       const cost = Date.now() - startTime;
       const status = ctx.status;
       const info = {
-        reqId,
         message: 'response',
         ...requestInfo,
-        res: pick(ctx.response.toJSON(), options?.request?.responseWhitelist || defaultResponseWhitelist),
+        res: pick(ctx.response.toJSON(), options?.responseWhitelist || defaultResponseWhitelist),
         action: ctx.action?.toJSON?.(),
         userId: ctx.auth?.user?.id,
         status: ctx.status,
         cost,
+        app: appName,
+        reqId,
       };
       if (Math.floor(status / 100) == 5) {
         requestLogger.error({ ...info, res: ctx.body?.['errors'] || ctx.body });
