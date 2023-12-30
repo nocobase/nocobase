@@ -30,6 +30,7 @@ export class Trace {
     this.provider = new NodeTracerProvider({
       resource,
     });
+    this.provider.register();
   }
 
   registerProcessor(name: string, processor: GetSpanProcessor) {

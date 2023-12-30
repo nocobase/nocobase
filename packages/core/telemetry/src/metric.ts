@@ -7,6 +7,7 @@ import {
   View,
 } from '@opentelemetry/sdk-metrics';
 import { Resource } from '@opentelemetry/resources';
+import opentelemetry from '@opentelemetry/api';
 
 export type MetricOptions = {
   meterName?: string;
@@ -40,6 +41,7 @@ export class Metric {
 
   init(resource: Resource) {
     this.provider = new MeterProvider({ resource, views: this.views });
+    opentelemetry.metrics.setGlobalMeterProvider(this.provider);
   }
 
   registerReader(name: string, reader: GetMetricReader) {
