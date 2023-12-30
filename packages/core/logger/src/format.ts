@@ -2,20 +2,19 @@ import chalk from 'chalk';
 import winston from 'winston';
 import { getLoggerFormat } from './config';
 import { LoggerOptions } from './logger';
+import { isEmpty } from 'lodash';
 
 const DEFAULT_DELIMITER = '|';
 
-const colorize = {
-  errors: chalk.red,
-  module: chalk.cyan,
-  reqId: chalk.gray,
-  request: chalk.green,
-};
+const colorize = {};
 
 export const getFormat = (format?: LoggerOptions['format']) => {
   const configFormat = format || getLoggerFormat();
   let logFormat: winston.Logform.Format;
   switch (configFormat) {
+    case 'console':
+      logFormat = winston.format.combine(consoleFormat);
+      break;
     case 'logfmt':
       logFormat = logfmtFormat;
       break;
@@ -23,7 +22,7 @@ export const getFormat = (format?: LoggerOptions['format']) => {
       logFormat = winston.format.combine(escapeFormat, delimiterFormat);
       break;
     case 'json':
-      logFormat = winston.format.combine(stripColorFormat, winston.format.json({ deterministic: false }));
+      logFormat = winston.format.combine(winston.format.json({ deterministic: false }));
       break;
     default:
       return winston.format.combine(format as winston.Logform.Format);
@@ -33,17 +32,14 @@ export const getFormat = (format?: LoggerOptions['format']) => {
 
 export const colorFormat: winston.Logform.Format = winston.format((info) => {
   Object.entries(info).forEach(([k, v]) => {
-    if (k === 'message' && info['level'].includes('error')) {
-      info[k] = colorize.errors(v);
+    const level = info['level'];
+    if (colorize[k]) {
+      info[k] = colorize[k](v);
+      return;
     }
-    if (k === 'reqId' && v) {
-      info[k] = colorize.reqId(v);
-    }
-    if ((k === 'module' || k === 'submodule') && v) {
-      info[k] = colorize.module(v);
-    }
-    if (v === 'request' || v === 'response') {
-      info[k] = colorize.request(v);
+    if (colorize[level]?.[k]) {
+      info[k] = colorize[level][k](v);
+      return;
     }
   });
   return info;
@@ -79,6 +75,45 @@ export const logfmtFormat: winston.Logform.Format = winston.format.printf((info)
     .join(' '),
 );
 
+export const consoleFormat: winston.Logform.Format = winston.format.printf((info) => {
+  const keys = ['level', 'timestamp', 'message'];
+  Object.entries(info).forEach(([k, v]) => {
+    if (typeof v === 'object') {
+      if (isEmpty(v)) {
+        info[k] = '';
+        return;
+      }
+      try {
+        info[k] = JSON.stringify(v);
+      } catch (error) {
+        info[k] = String(v);
+      }
+    }
+    if (v === undefined || v === null) {
+      info[k] = '';
+    }
+  });
+
+  const tags = Object.entries(info)
+    .filter(([k, v]) => !keys.includes(k) && v)
+    .map(([k, v]) => `${k}=${v}`)
+    .join(' ');
+
+  const level = info.level.padEnd(5, ' ');
+  const message = info.message.padEnd(44, ' ');
+  const color =
+    {
+      error: chalk.red,
+      warn: chalk.yellow,
+      info: chalk.green,
+      debug: chalk.blue,
+    }[info.level] || chalk.white;
+  const colorized = message.startsWith('Executing')
+    ? color(`${info.timestamp} [${level}]`) + ` ${message}`
+    : color(`${info.timestamp} [${level}] ${message}`);
+  return `${colorized} ${tags}`;
+});
+
 export const delimiterFormat = winston.format.printf((info) =>
   Object.entries(info)
     .map(([, v]) => {
@@ -103,4 +138,4 @@ export const escapeFormat: winston.Logform.Format = winston.format((info) => {
   return { ...info, message };
 })();
 
-export const sortFormat = winston.format((info) => ({ level: info.level, timestamp: info.timestamp, ...info }))();
+export const sortFormat = winston.format((info) => ({ level: info.level, ...info }))();
