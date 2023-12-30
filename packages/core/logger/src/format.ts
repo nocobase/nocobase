@@ -10,6 +10,7 @@ const colorize = {
   module: chalk.cyan,
   reqId: chalk.gray,
   request: chalk.green,
+  path: chalk.cyan,
 };
 
 export const getFormat = (format?: LoggerOptions['format']) => {
@@ -44,6 +45,9 @@ export const colorFormat: winston.Logform.Format = winston.format((info) => {
     }
     if (v === 'request' || v === 'response') {
       info[k] = colorize.request(v);
+    }
+    if (k === 'path') {
+      info[k] = colorize.path(v);
     }
   });
   return info;
@@ -103,4 +107,4 @@ export const escapeFormat: winston.Logform.Format = winston.format((info) => {
   return { ...info, message };
 })();
 
-export const sortFormat = winston.format((info) => ({ level: info.level, timestamp: info.timestamp, ...info }))();
+export const sortFormat = winston.format((info) => ({ level: info.level, ...info }))();

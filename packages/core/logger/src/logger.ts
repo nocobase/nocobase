@@ -41,13 +41,3 @@ export const createConsoleLogger = (options?: winston.LoggerOptions) => {
 };
 
 export { Logger, LoggerOptions };
-interface ReqeustLoggerOptions extends LoggerOptions {
-  skip?: (ctx?: any) => Promise<boolean>;
-  requestWhitelist?: string[];
-  responseWhitelist?: string[];
-}
-
-export interface AppLoggerOptions {
-  request: ReqeustLoggerOptions;
-  system: SystemLoggerOptions;
-}
