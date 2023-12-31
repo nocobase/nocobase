@@ -19,7 +19,10 @@ const config = {
   ...process.env,
 };
 
-async function runApp(index = 1, dir) {
+async function runApp(dir, index = 0) {
+  // 一个进程需要占用两个端口，一个是应用端口，一个是 socket 端口
+  index = index * 2;
+
   const database = `nocobase${index}`;
   const client = new Client({
     host: config['DB_HOST'],
@@ -57,7 +60,7 @@ exports.pTest = async (options) => {
   });
 
   const commands = splitArrayIntoParts(files, options.concurrency || 3).map((v, i) => {
-    return () => runApp(i, v.join(' '));
+    return () => runApp(v.join(' '), i);
   });
 
   await pAll(commands, { concurrency: 3, stopOnError: false, ...options });
