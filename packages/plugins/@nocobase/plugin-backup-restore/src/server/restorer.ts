@@ -5,7 +5,7 @@ import path from 'path';
 import { AppMigrator, AppMigratorOptions } from './app-migrator';
 import { readLines } from './utils';
 import { Application } from '@nocobase/server';
-import { DataTypes, DumpDataType } from '@nocobase/database';
+import { DataTypes, DumpRulesGroupType } from '@nocobase/database';
 import lodash, { isPlainObject } from 'lodash';
 import { FieldValueWriter } from './field-value-writer';
 import * as Topo from '@hapi/topo';
@@ -13,7 +13,7 @@ import { RestoreCheckError } from './errors/restore-check-error';
 import semver from 'semver';
 
 type RestoreOptions = {
-  dataTypes: Set<DumpDataType>;
+  groups: Set<DumpRulesGroupType>;
 };
 
 export class Restorer extends AppMigrator {
@@ -121,14 +121,14 @@ export class Restorer extends AppMigrator {
       });
     };
 
-    const { dumpableCollectionsGroupByDataTypes, delayCollections } = await this.parseBackupFile();
+    const { dumpableCollectionsGroupByGroup, delayCollections } = await this.parseBackupFile();
 
     // import plugins
     await importCollection('applicationPlugins');
     await this.app.reload();
 
-    // import meta collections
-    const metaCollections = dumpableCollectionsGroupByDataTypes.meta;
+    // import required collections
+    const metaCollections = dumpableCollectionsGroupByGroup.required;
 
     for (const collection of metaCollections) {
       if (collection.name === 'applicationPlugins') {
@@ -142,22 +142,14 @@ export class Restorer extends AppMigrator {
       await importCollection(collection.name);
     }
 
-    if (options.dataTypes.has('config')) {
-      const configCollections = dumpableCollectionsGroupByDataTypes.config;
+    options.groups.delete('required');
 
-      for (const collection of configCollections) {
-        await importCollection(collection.name);
-      }
-    }
+    // import other groups
+    const importGroups = [...options.groups];
+    for (const group of importGroups) {
+      const collections = dumpableCollectionsGroupByGroup[group];
 
-    if (options.dataTypes.has('business')) {
-      const businessCollections = dumpableCollectionsGroupByDataTypes.business;
-
-      for (const collection of Restorer.sortCollectionsByInherits(businessCollections)) {
-        // skip import view collection in logic level
-        if (collection.isView) {
-          continue;
-        }
+      for (const collection of Restorer.sortCollectionsByInherits(collections)) {
         await importCollection(collection.name);
       }
     }
@@ -170,7 +162,7 @@ export class Restorer extends AppMigrator {
     await this.app.db.sync();
 
     for (const collectionName of delayCollections) {
-      const delayRestore = this.app.db.getCollection(collectionName).options.duplicator['delayRestore'];
+      const delayRestore = this.app.db.getCollection(collectionName).options.dumpRules['delayRestore'];
       await delayRestore(this);
     }
 
@@ -365,7 +357,7 @@ export class Restorer extends AppMigrator {
     const sqlData = JSON.parse(await fsPromises.readFile(sqlContentPath, 'utf8'));
 
     const sqlContent = Object.keys(sqlData)
-      .filter((key) => options.dataTypes.has(sqlData[key].type))
+      .filter((key) => options.groups.has(sqlData[key].group))
       .reduce((acc, key) => {
         acc[key] = sqlData[key];
         return acc;
@@ -375,7 +367,7 @@ export class Restorer extends AppMigrator {
       sqlContent as {
         [key: string]: {
           sql: string | string[];
-          type: DumpDataType;
+          group: DumpRulesGroupType;
         };
       },
     );

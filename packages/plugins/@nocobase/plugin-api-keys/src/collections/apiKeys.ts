@@ -2,8 +2,8 @@ import type { CollectionOptions } from '@nocobase/database';
 import { generateNTemplate } from '../locale';
 
 export default {
-  duplicator: {
-    dataType: 'business',
+  dumpRules: {
+    group: 'user',
   },
   name: 'apiKeys',
   title: '{{t("API keys", {"ns": "api-keys"})}}',

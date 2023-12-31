@@ -16,7 +16,7 @@ import { Model } from './model';
 import { AdjacencyListRepository } from './repositories/tree-repository/adjacency-list-repository';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
-import { Dumpable, DumpDataType } from './collection-group-manager';
+import { BuiltInGroup } from './collection-group-manager';
 
 export type RepositoryType = typeof Repository;
 
@@ -61,19 +61,15 @@ function EnsureAtomicity(target: any, propertyKey: string, descriptor: PropertyD
   return descriptor;
 }
 
-export type BaseDuplicatorObject = {
-  with?: string[] | string;
+export type BaseDumpRules = {
   delayRestore?: any;
 };
 
-export type Duplicator =
-  | Dumpable
-  | ({
-      dumpable?: Dumpable;
-    } & BaseDuplicatorObject)
-  | ({
-      dataType?: DumpDataType;
-    } & BaseDuplicatorObject);
+export type DumpRules =
+  | BuiltInGroup
+  | ({ required: true } & BaseDumpRules)
+  | ({ skipped: true } & BaseDumpRules)
+  | ({ group: BuiltInGroup | string } & BaseDumpRules);
 
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
@@ -87,7 +83,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    * @prop {string[] | string} [with] - Collections dumped with this collection
    * @prop {any} [delayRestore] - A function to execute after all collections are restored
    */
-  duplicator?: Duplicator;
+  dumpRules?: DumpRules;
 
   tableName?: string;
   inherits?: string[] | string;

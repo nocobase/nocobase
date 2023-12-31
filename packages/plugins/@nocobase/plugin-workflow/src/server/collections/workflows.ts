@@ -2,7 +2,7 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default function () {
   return {
-    duplicator: 'required',
+    dumpRules: 'required',
     name: 'workflows',
     fields: [
       {

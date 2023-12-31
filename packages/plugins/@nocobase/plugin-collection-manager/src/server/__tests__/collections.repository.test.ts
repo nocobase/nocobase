@@ -124,8 +124,8 @@ describe('collections repository', () => {
     await Collection.repository.create({
       values: {
         name: 'tests',
-        duplicator: {
-          dumpable: 'optional',
+        dumpRules: {
+          group: 'business',
         },
         fields: [
           {
@@ -139,16 +139,16 @@ describe('collections repository', () => {
 
     const testsCollection = db.getCollection('tests');
 
-    const duplicator = CollectionGroupManager.unifyDuplicatorOption(testsCollection.options.duplicator);
-    expect(duplicator.dataType).toEqual('business');
+    const duplicator = CollectionGroupManager.unifyDumpRules(testsCollection.options.dumpRules);
+    expect(duplicator.group).toEqual('business');
   });
 
   it('should create collection with required duplicator option', async () => {
     await Collection.repository.create({
       values: {
         name: 'tests',
-        duplicator: {
-          dumpable: 'required',
+        dumpRules: {
+          group: 'required',
         },
         fields: [
           {
@@ -162,8 +162,8 @@ describe('collections repository', () => {
 
     const testsCollection = db.getCollection('tests');
 
-    const duplicator = CollectionGroupManager.unifyDuplicatorOption(testsCollection.options.duplicator);
-    expect(duplicator.dataType).toEqual('meta');
+    const duplicator = CollectionGroupManager.unifyDumpRules(testsCollection.options.dumpRules);
+    expect(duplicator.group).toEqual('required');
   });
 
   it('should create collection with sortable option', async () => {

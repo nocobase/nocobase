@@ -1,8 +1,8 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  duplicator: {
-    dumpable: 'required',
+  dumpRules: {
+    group: 'required',
     async delayRestore(restorer) {
       const app = restorer.app;
       const importedCollections = restorer.importedCollections;

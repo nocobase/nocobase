@@ -2,8 +2,8 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   name: 'rolesUsers',
-  duplicator: {
-    dataType: 'business',
+  dumpRules: {
+    group: 'user',
   },
   fields: [{ type: 'boolean', name: 'default' }],
 } as CollectionOptions;

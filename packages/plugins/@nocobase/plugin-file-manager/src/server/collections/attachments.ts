@@ -2,8 +2,8 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   namespace: 'file-manager.attachmentRecords',
-  duplicator: {
-    dataType: 'business',
+  dumpRules: {
+    group: 'user',
   },
   name: 'attachments',
   createdBy: true,

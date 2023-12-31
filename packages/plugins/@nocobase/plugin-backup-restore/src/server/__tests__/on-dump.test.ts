@@ -34,7 +34,7 @@ describe('on dump', () => {
       async onDump(dumper: Dumper, collection) {
         dumper.writeSQLContent('onDumpCollection', {
           sql: `CREATE TABLE ${collection.getTableNameWithSchemaAsString()} (id int);`,
-          type: 'meta',
+          group: 'required',
         });
       },
     });
@@ -51,7 +51,7 @@ describe('on dump', () => {
     const dumper = new Dumper(app);
 
     const result = await dumper.dump({
-      dataTypes: new Set(['meta']),
+      groups: new Set(['meta']),
     });
 
     const restorer = new Restorer(app, {
@@ -65,7 +65,7 @@ describe('on dump', () => {
 
     expect(sqlContent).toBeDefined();
     await restorer.restore({
-      dataTypes: new Set(['meta']),
+      groups: new Set(['required']),
     });
   });
 });

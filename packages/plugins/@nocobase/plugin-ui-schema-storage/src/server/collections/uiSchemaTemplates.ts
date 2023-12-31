@@ -1,7 +1,7 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  duplicator: 'required',
+  dumpRules: 'required',
   name: 'uiSchemaTemplates',
   autoGenId: false,
   fields: [

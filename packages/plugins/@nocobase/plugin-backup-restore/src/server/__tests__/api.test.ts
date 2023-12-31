@@ -160,16 +160,16 @@ describe('backup files', () => {
 
     const body = response.body;
 
-    expect(body['meta']).toBeTruthy();
-    expect(body['config']).toBeTruthy();
+    expect(body['required']).toBeTruthy();
+    expect(body['third-party']).toBeTruthy();
     expect(body['business']).toBeTruthy();
 
-    const testCollectionInfo = body['business'].find((item: any) => item.name === 'test');
+    const testCollectionInfo = body['custom'].find((item: any) => item.name === 'test');
 
     expect(testCollectionInfo).toMatchObject({
       name: 'test',
       title: '测试',
-      dataType: 'business',
+      group: 'custom',
       origin: {
         name: '@nocobase/plugin-collection-manager',
       },

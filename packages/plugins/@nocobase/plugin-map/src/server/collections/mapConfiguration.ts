@@ -2,8 +2,8 @@ import { defineCollection } from '@nocobase/database';
 import { MapConfigurationCollectionName } from '../constants';
 
 export default defineCollection({
-  duplicator: {
-    dataType: 'config',
+  dumpRules: {
+    group: 'third-party',
   },
   name: MapConfigurationCollectionName,
   title: '{{t("Map Manager")}}',

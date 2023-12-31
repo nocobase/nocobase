@@ -1,7 +1,7 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  duplicator: 'required',
+  dumpRules: 'required',
   name: 'flow_nodes',
   fields: [
     {

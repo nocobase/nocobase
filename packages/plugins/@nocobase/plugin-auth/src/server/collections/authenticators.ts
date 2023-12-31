@@ -4,8 +4,8 @@ import { CollectionOptions } from '@nocobase/database';
  * Collection for extended authentication methods,
  */
 export default {
-  duplicator: {
-    dataType: 'config',
+  dumpRules: {
+    group: 'third-party',
   },
   name: 'authenticators',
   sortable: true,

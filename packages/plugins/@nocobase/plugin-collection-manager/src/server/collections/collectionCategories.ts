@@ -1,9 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  duplicator: {
-    dumpable: 'required',
-    with: 'collectionCategory',
+  dumpRules: {
+    group: 'required',
   },
   name: 'collectionCategories',
   autoGenId: true,

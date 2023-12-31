@@ -894,7 +894,7 @@ export class PluginACL extends Plugin {
 
     this.db.extendCollection({
       name: 'rolesUischemas',
-      duplicator: 'required',
+      dumpRules: 'required',
       origin: `plugin:${this.name}`,
     });
   }

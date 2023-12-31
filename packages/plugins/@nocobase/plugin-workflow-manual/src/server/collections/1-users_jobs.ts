@@ -2,8 +2,8 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'users_jobs',
-  duplicator: {
-    dataType: 'business',
+  dumpRules: {
+    group: 'log',
   },
   fields: [
     {

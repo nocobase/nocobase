@@ -1,9 +1,7 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  duplicator: {
-    dataType: 'config',
-  },
+  dumpRules: 'required',
   name: 'systemSettings',
   fields: [
     {

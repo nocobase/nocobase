@@ -2,41 +2,48 @@ import { CollectionGroupManager } from '../collection-group-manager';
 
 describe('collection group manager', () => {
   it('should unify duplicator option', async () => {
-    expect(CollectionGroupManager.unifyDuplicatorOption('skip')).toBeUndefined();
+    expect(CollectionGroupManager.unifyDumpRules('skipped')).toMatchObject({
+      group: 'skipped',
+    });
 
-    expect(CollectionGroupManager.unifyDuplicatorOption('required')).toMatchObject({
-      dataType: 'meta',
+    expect(CollectionGroupManager.unifyDumpRules('required')).toMatchObject({
+      group: 'required',
     });
 
     expect(
-      CollectionGroupManager.unifyDuplicatorOption({
-        dumpable: 'required',
-        with: 'test',
+      CollectionGroupManager.unifyDumpRules({
+        required: true,
       }),
     ).toMatchObject({
-      dataType: 'meta',
-      with: 'test',
+      group: 'required',
     });
 
     expect(
-      CollectionGroupManager.unifyDuplicatorOption({
-        dataType: 'business',
-        with: 'test',
+      CollectionGroupManager.unifyDumpRules({
+        skipped: true,
       }),
     ).toMatchObject({
-      dataType: 'business',
-      with: 'test',
+      group: 'skipped',
     });
 
-    expect(() =>
-      CollectionGroupManager.unifyDuplicatorOption({
-        dumpable: 'optional',
-        with: 'test',
+    expect(
+      CollectionGroupManager.unifyDumpRules({
+        group: 'required',
+        delayRestore: {},
       }),
-    ).toThrow('invalid duplicator option');
+    ).toMatchObject({
+      group: 'required',
+      delayRestore: {},
+    });
 
-    expect(() => CollectionGroupManager.unifyDuplicatorOption('optional')).toThrow(
-      'optional collection must have dataType specified',
-    );
+    expect(
+      CollectionGroupManager.unifyDumpRules({
+        group: 'logs',
+        delayRestore: {},
+      }),
+    ).toMatchObject({
+      group: 'logs',
+      delayRestore: {},
+    });
   });
 });

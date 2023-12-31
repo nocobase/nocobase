@@ -1,5 +1,5 @@
 import { Dumper } from '../dumper';
-import { DumpDataType } from '@nocobase/database';
+import { DumpRulesGroupType } from '@nocobase/database';
 import fs from 'fs';
 import { koaMulter as multer } from '@nocobase/utils';
 import os from 'os';
@@ -105,7 +105,7 @@ export default {
       const dumper = new Dumper(ctx.app);
 
       const taskId = await dumper.runDumpTask({
-        dataTypes: new Set(data.dataTypes) as Set<DumpDataType>,
+        groups: new Set(data.dataTypes) as Set<DumpRulesGroupType>,
       });
 
       ctx.body = {
@@ -204,7 +204,7 @@ export default {
 
       const dumper = new Dumper(ctx.app);
 
-      ctx.body = await dumper.dumpableCollectionsGroupByDataTypes();
+      ctx.body = await dumper.dumpableCollectionsGroupByGroup();
 
       await next();
     },

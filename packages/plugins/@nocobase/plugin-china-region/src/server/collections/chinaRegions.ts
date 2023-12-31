@@ -1,7 +1,7 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  duplicator: 'skip',
+  dumpRules: 'skipped',
   name: 'chinaRegions',
   title: '中国行政区划',
   autoGenId: false,

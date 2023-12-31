@@ -1,8 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  duplicator: {
-    dataType: 'business',
+  dumpRules: {
+    group: 'log',
   },
   name: 'jobs',
   fields: [

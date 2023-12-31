@@ -2,8 +2,8 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   namespace: 'localization.localization',
-  duplicator: {
-    dataType: 'meta',
+  dumpRules: {
+    group: 'required',
   },
   name: 'localizationTranslations',
   title: '{{t("Localization Translations")}}',

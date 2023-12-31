@@ -1,4 +1,4 @@
-import { Collection, CollectionGroupManager as DBCollectionGroupManager, DumpDataType } from '@nocobase/database';
+import { Collection, CollectionGroupManager as DBCollectionGroupManager, DumpRulesGroupType } from '@nocobase/database';
 import archiver from 'archiver';
 import dayjs from 'dayjs';
 import fs from 'fs';
@@ -16,7 +16,7 @@ import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
 const finished = util.promisify(stream.finished);
 
 type DumpOptions = {
-  dataTypes: Set<DumpDataType>;
+  groups: Set<DumpRulesGroupType>;
   fileName?: string;
 };
 
@@ -41,7 +41,7 @@ export class Dumper extends AppMigrator {
   sqlContent: {
     [key: string]: {
       sql: string | string[];
-      type: DumpDataType;
+      group: DumpRulesGroupType;
     };
   } = {};
 
@@ -95,7 +95,7 @@ export class Dumper extends AppMigrator {
     key: string,
     data: {
       sql: string | string[];
-      type: DumpDataType;
+      group: DumpRulesGroupType;
     },
   ) {
     this.sqlContent[key] = data;
@@ -105,10 +105,10 @@ export class Dumper extends AppMigrator {
     return this.sqlContent[key];
   }
 
-  async getCollectionsByDataTypes(dataTypes: Set<DumpDataType>): Promise<string[]> {
+  async getCollectionsByDataTypes(groups: Set<DumpRulesGroupType>): Promise<string[]> {
     const dumpableCollectionsGroupByDataTypes = await this.collectionsGroupByDataTypes();
 
-    return [...dataTypes].reduce((acc, key) => {
+    return [...groups].reduce((acc, key) => {
       return acc.concat(dumpableCollectionsGroupByDataTypes[key] || []);
     }, []);
   }
@@ -118,7 +118,7 @@ export class Dumper extends AppMigrator {
       await Promise.all(
         [...this.app.db.collections.values()].map(async (c) => {
           try {
-            const duplicatorOption = DBCollectionGroupManager.unifyDuplicatorOption(c.options.duplicator);
+            const dumpRules = DBCollectionGroupManager.unifyDumpRules(c.options.dumpRules);
             let origin = c.origin;
             let originTitle = origin;
 
@@ -140,7 +140,7 @@ export class Dumper extends AppMigrator {
               name: c.name,
               title: c.options.title || c.name,
               options: c.options,
-              dataType: duplicatorOption?.dataType,
+              group: dumpRules?.group,
               isView: c.isView(),
               origin: {
                 name: origin,
@@ -159,13 +159,13 @@ export class Dumper extends AppMigrator {
           }
         }),
       )
-    ).filter(({ dataType }) => {
-      return !!dataType;
+    ).filter(({ group }) => {
+      return !!group;
     });
   }
 
   async collectionsGroupByDataTypes() {
-    const grouped = lodash.groupBy(await this.dumpableCollections(), 'dataType');
+    const grouped = lodash.groupBy(await this.dumpableCollections(), 'group');
 
     return Object.fromEntries(Object.entries(grouped).map(([key, value]) => [key, value.map((item) => item.name)]));
   }
@@ -239,7 +239,7 @@ export class Dumper extends AppMigrator {
     await this.writeLockFile(backupFileName);
 
     const promise = this.dump({
-      dataTypes: options.dataTypes,
+      groups: options.groups,
       fileName: backupFileName,
     }).finally(() => {
       this.cleanLockFile(backupFileName);
@@ -251,20 +251,20 @@ export class Dumper extends AppMigrator {
     return backupFileName;
   }
 
-  async dumpableCollectionsGroupByDataTypes() {
+  async dumpableCollectionsGroupByGroup() {
     return _(await this.dumpableCollections())
-      .map((c) => _.pick(c, ['name', 'dataType', 'origin', 'title', 'isView', 'inherits']))
-      .groupBy('dataType')
+      .map((c) => _.pick(c, ['name', 'group', 'origin', 'title', 'isView', 'inherits']))
+      .groupBy('group')
       .mapValues((items) => _.sortBy(items, (item) => item.name))
       .value();
   }
 
   async dump(options: DumpOptions) {
-    const dumpDataTypes = options.dataTypes;
-    dumpDataTypes.add('meta');
+    const dumpingGroups = options.groups;
+    dumpingGroups.add('required');
 
     const delayCollections = new Set();
-    const dumpedCollections = await this.getCollectionsByDataTypes(dumpDataTypes);
+    const dumpedCollections = await this.getCollectionsByDataTypes(dumpingGroups);
 
     for (const collectionName of dumpedCollections) {
       const collection = this.app.db.getCollection(collectionName);
@@ -278,10 +278,8 @@ export class Dumper extends AppMigrator {
     }
 
     await this.dumpMeta({
-      dumpableCollectionsGroupByDataTypes: lodash.pick(await this.dumpableCollectionsGroupByDataTypes(), [
-        ...dumpDataTypes,
-      ]),
-      dataTypes: [...dumpDataTypes],
+      dumpableCollectionsGroupByGroup: lodash.pick(await this.dumpableCollectionsGroupByGroup(), [...dumpingGroups]),
+      dumpedGroups: [...dumpingGroups],
       delayCollections: [...delayCollections],
     });
 
@@ -311,7 +309,7 @@ export class Dumper extends AppMigrator {
         dbDumpPath,
         JSON.stringify(
           Object.keys(this.sqlContent)
-            .filter((key) => options.dataTypes.has(this.sqlContent[key].type))
+            .filter((key) => options.groups.has(this.sqlContent[key].group))
             .reduce((acc, key) => {
               acc[key] = this.sqlContent[key];
               return acc;

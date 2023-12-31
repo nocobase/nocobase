@@ -1,7 +1,7 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  duplicator: {
+  dumpRules: {
     dataType: 'business',
   },
   name: 'executions',

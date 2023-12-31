@@ -26,7 +26,7 @@ describe('dumper', () => {
     });
 
     await restorer.restore({
-      dataTypes: new Set(['meta', 'business']),
+      groups: new Set(['meta', 'business']),
     });
   });
 
@@ -34,7 +34,7 @@ describe('dumper', () => {
     const dumper = new Dumper(app);
 
     const result = await dumper.dump({
-      dataTypes: new Set(['meta']),
+      groups: new Set(['required']),
     });
 
     const restorer = new Restorer(app, {
@@ -42,7 +42,7 @@ describe('dumper', () => {
     });
 
     await restorer.restore({
-      dataTypes: new Set(['meta']),
+      groups: new Set(['required']),
     });
   });
 
@@ -67,8 +67,9 @@ describe('dumper', () => {
     });
 
     const dumper = new Dumper(app);
+
     const result = await dumper.dump({
-      dataTypes: new Set(['meta', 'business']),
+      groups: new Set(['required', 'custom']),
     });
 
     const restorer = new Restorer(app, {
@@ -76,7 +77,7 @@ describe('dumper', () => {
     });
 
     await restorer.restore({
-      dataTypes: new Set(['meta', 'business']),
+      groups: new Set(['required', 'custom']),
     });
 
     const testCollection = app.db.getCollection('tests');
@@ -85,6 +86,8 @@ describe('dumper', () => {
   });
 
   describe('id seq', () => {
+    let allGroups;
+
     beforeEach(async () => {
       await db.getRepository('collections').create({
         values: {
@@ -111,8 +114,11 @@ describe('dumper', () => {
 
       const dumper = new Dumper(app);
 
+      const collections = await dumper.collectionsGroupByDataTypes();
+      allGroups = Object.keys(collections);
+
       const result = await dumper.dump({
-        dataTypes: new Set(['meta', 'config', 'business']),
+        groups: new Set(allGroups),
       });
 
       const restorer = new Restorer(app, {
@@ -120,7 +126,7 @@ describe('dumper', () => {
       });
 
       await restorer.restore({
-        dataTypes: new Set(['meta', 'config', 'business']),
+        groups: new Set(allGroups),
       });
     });
 
@@ -183,7 +189,7 @@ describe('dumper', () => {
 
     const dumper = new Dumper(app);
     const result = await dumper.dump({
-      dataTypes: new Set(['meta', 'business']),
+      groups: new Set(['required', 'custom']),
     });
 
     const restorer = new Restorer(app, {
@@ -191,7 +197,7 @@ describe('dumper', () => {
     });
 
     await restorer.restore({
-      dataTypes: new Set(['meta', 'business']),
+      groups: new Set(['required', 'custom']),
     });
 
     expect(await app.db.getRepository('parent').count()).toEqual(2);
@@ -226,7 +232,7 @@ describe('dumper', () => {
 
     const dumper = new Dumper(app);
     const result = await dumper.dump({
-      dataTypes: new Set(['meta', 'business']),
+      groups: new Set(['required', 'log']),
     });
 
     const restorer = new Restorer(app, {
@@ -234,7 +240,7 @@ describe('dumper', () => {
     });
 
     await restorer.restore({
-      dataTypes: new Set(['meta', 'business']),
+      groups: new Set(['required', 'log']),
     });
 
     const log = await app.db.getCollection('auditLogs').repository.findOne({
@@ -344,7 +350,7 @@ describe('dumper', () => {
 
     const dumper = new Dumper(app);
     const result = await dumper.dump({
-      dataTypes: new Set(['meta', 'business']),
+      groups: new Set(['required', 'custom']),
     });
 
     const restorer = new Restorer(app, {
@@ -353,13 +359,13 @@ describe('dumper', () => {
 
     const meta = await restorer.parseBackupFile();
 
-    const businessCollections = meta.dumpableCollectionsGroupByDataTypes.business;
+    const businessCollections = meta.dumpableCollectionsGroupByGroup.custom;
     const child1 = businessCollections.find(({ name }) => name === 'child1');
 
     expect(child1.inherits).toEqual(['parent1', 'parent2']);
 
     await restorer.restore({
-      dataTypes: new Set(['meta', 'business']),
+      groups: new Set(['required', 'custom']),
     });
   });
 
@@ -415,7 +421,7 @@ describe('dumper', () => {
 
     const dumper = new Dumper(app);
     const result = await dumper.dump({
-      dataTypes: new Set(['meta', 'business']),
+      groups: new Set(['required', 'custom']),
     });
 
     const restorer = new Restorer(app, {
@@ -423,7 +429,7 @@ describe('dumper', () => {
     });
 
     await restorer.restore({
-      dataTypes: new Set(['meta', 'business']),
+      groups: new Set(['required', 'custom']),
     });
   });
 
@@ -454,7 +460,7 @@ describe('dumper', () => {
 
     const dumper = new Dumper(app);
     const result = await dumper.dump({
-      dataTypes: new Set(['meta', 'business']),
+      groups: new Set(['required', 'custom']),
     });
 
     const restorer = new Restorer(app, {
@@ -462,7 +468,7 @@ describe('dumper', () => {
     });
 
     await restorer.restore({
-      dataTypes: new Set(['meta', 'business']),
+      groups: new Set(['required', 'custom']),
     });
 
     expect(await app.db.getCollection('sequences').repository.count()).toBe(1);
@@ -524,7 +530,7 @@ describe('dumper', () => {
 
     const dumper = new Dumper(app);
     const result = await dumper.dump({
-      dataTypes: new Set(['meta', 'business']),
+      groups: new Set(['required', 'custom']),
     });
 
     const restorer = new Restorer(app, {
@@ -532,7 +538,7 @@ describe('dumper', () => {
     });
 
     await restorer.restore({
-      dataTypes: new Set(['meta', 'business']),
+      groups: new Set(['required', 'custom']),
     });
 
     const testCollection = app.db.getCollection('tests');
@@ -583,7 +589,7 @@ describe('dumper', () => {
   it('should save dump meta to dump file', async () => {
     const dumper = new Dumper(app);
     const result = await dumper.dump({
-      dataTypes: new Set(['meta']),
+      groups: new Set(['required']),
     });
 
     const restorer = new Restorer(app, {
@@ -591,7 +597,7 @@ describe('dumper', () => {
     });
 
     const meta = await restorer.parseBackupFile();
-    expect(meta.dumpableCollectionsGroupByDataTypes.meta).toBeTruthy();
+    expect(meta.dumpableCollectionsGroupByGroup.required).toBeTruthy();
 
     expect(meta.DB_UNDERSCORED).toBeDefined();
   });
@@ -608,7 +614,7 @@ describe('dumper', () => {
     it('should get ok status', async () => {
       const dumper = new Dumper(app);
       const result = await dumper.dump({
-        dataTypes: new Set(['meta']),
+        groups: new Set(['required']),
       });
 
       const status = await Dumper.getFileStatus(result.filePath);
@@ -624,7 +630,7 @@ describe('dumper', () => {
     const dumper = new Dumper(app);
 
     const taskId = await dumper.runDumpTask({
-      dataTypes: new Set(['meta']),
+      groups: new Set(['meta']),
     });
 
     expect(taskId).toBeDefined();
@@ -654,7 +660,7 @@ describe('dumper', () => {
     });
 
     const dumper = new Dumper(app);
-    const collections = await dumper.getCollectionsByDataTypes(new Set(['business']));
+    const collections = await dumper.getCollectionsByDataTypes(new Set(['custom']));
     expect(collections.includes('test_collection')).toBeTruthy();
   });
 
@@ -699,5 +705,25 @@ describe('dumper', () => {
       title: 'core',
       name: 'core',
     });
+  });
+
+  it('should get custom collections group', async () => {
+    await app.db.getRepository('collections').create({
+      values: {
+        name: 'test_collection',
+        fields: [
+          {
+            name: 'test_field1',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const dumper = new Dumper(app);
+    const dumpableCollections = await dumper.collectionsGroupByDataTypes();
+
+    expect(dumpableCollections.custom).toBeDefined();
   });
 });

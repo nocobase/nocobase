@@ -5,12 +5,8 @@ import { CollectionOptions } from '@nocobase/database';
  * such as saml, oicd, oauth, sms, etc.
  */
 export default {
-  duplicator: {
-    dataType: 'business',
-    /**
-     * When dump this collection, the users collection is required to be dumped.
-     */
-    with: 'users',
+  dumpRules: {
+    group: 'user',
   },
   name: 'usersAuthenticators',
   title: '{{t("Users Authenticators")}}',

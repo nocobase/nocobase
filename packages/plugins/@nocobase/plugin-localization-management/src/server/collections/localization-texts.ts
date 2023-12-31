@@ -1,8 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  duplicator: {
-    dataType: 'meta',
+  dumpRules: {
+    group: 'required',
   },
   name: 'localizationTexts',
   title: '{{t("Localization Texts")}}',

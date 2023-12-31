@@ -1,9 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  duplicator: {
-    dataType: 'business',
-    with: 'rolesUsers',
+  dumpRules: {
+    group: 'user',
   },
   name: 'users',
   title: '{{t("Users")}}',
