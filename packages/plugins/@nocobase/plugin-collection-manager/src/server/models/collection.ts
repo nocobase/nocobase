@@ -28,8 +28,8 @@ export class CollectionModel extends MagicAttributeModel {
       fields: [],
     };
 
-    if (!collectionOptions.duplicator?.dataType) {
-      lodash.set(collectionOptions, 'duplicator.dataType', 'business');
+    if (!collectionOptions.dumpRules?.group) {
+      lodash.set(collectionOptions, 'dumpRules.group', 'custom');
     }
 
     if (!this.db.inDialect('postgres') && collectionOptions.schema) {
