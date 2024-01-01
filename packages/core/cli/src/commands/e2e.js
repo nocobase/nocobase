@@ -205,7 +205,7 @@ module.exports = (cli) => {
   e2e
     .command('p-test')
     .option('--stop-on-error')
-    .option('--concurrency [concurrency]', '', 2)
+    .option('--concurrency [concurrency]', '', 4)
     .action(async (opts) => {
       await pTest(opts);
     });
