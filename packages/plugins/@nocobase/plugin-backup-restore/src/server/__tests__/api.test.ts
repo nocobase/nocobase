@@ -1,7 +1,6 @@
 import { MockServer, waitSecond } from '@nocobase/test';
 import createApp from './index';
 import { Dumper } from '../dumper';
-import { DumpDataType } from '@nocobase/database';
 
 describe('backup files', () => {
   let app: MockServer;
@@ -41,7 +40,7 @@ describe('backup files', () => {
       dumper = new Dumper(app);
 
       dumpKey = await dumper.runDumpTask({
-        groups: new Set(['meta', 'config', 'business']) as Set<DumpDataType>,
+        groups: new Set(['meta', 'config', 'business']),
       });
 
       const promise = Dumper.getTaskPromise(dumpKey);
