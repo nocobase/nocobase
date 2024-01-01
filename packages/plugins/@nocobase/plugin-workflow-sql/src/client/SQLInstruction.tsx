@@ -1,6 +1,6 @@
-import { css, defaultFieldNames } from '@nocobase/client';
+import { css } from '@nocobase/client';
 
-import { Instruction, WorkflowVariableRawTextArea } from '@nocobase/plugin-workflow/client';
+import { Instruction, WorkflowVariableRawTextArea, defaultFieldNames } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../locale';
 

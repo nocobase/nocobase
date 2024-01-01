@@ -11,7 +11,7 @@ export default class extends Instruction {
     }
 
     const result = await sequelize.query(sql, {
-      transaction: processor.transaction,
+      // transaction: processor.transaction,
       // plain: true,
       // model: db.getCollection(node.config.collection).model
     });

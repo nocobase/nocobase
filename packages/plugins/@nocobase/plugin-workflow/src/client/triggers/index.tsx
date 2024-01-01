@@ -7,6 +7,7 @@ import { ISchema, useForm } from '@formily/react';
 
 import {
   ActionContextProvider,
+  FieldNames,
   FormProvider,
   SchemaComponent,
   SchemaInitializerItemType,
@@ -24,7 +25,7 @@ import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { NAMESPACE, lang } from '../locale';
 import useStyles from '../style';
-import { VariableOptions } from '../variable';
+import { UseVariableOptions, VariableOption } from '../variable';
 
 function useUpdateConfigAction() {
   const form = useForm();
@@ -54,10 +55,9 @@ function useUpdateConfigAction() {
 
 export abstract class Trigger {
   title: string;
-  type: string;
   description?: string;
   // group: string;
-  useVariables?(config: any, options?): VariableOptions;
+  useVariables?(config: Record<string, any>, options?: UseVariableOptions): VariableOption[];
   fieldset: { [key: string]: ISchema };
   view?: ISchema;
   scope?: { [key: string]: any };

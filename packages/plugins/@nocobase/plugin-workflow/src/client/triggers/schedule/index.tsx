@@ -9,7 +9,6 @@ import { SCHEDULE_MODE } from './constants';
 
 export default class extends Trigger {
   title = `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`;
-  type = 'schedule';
   description = `{{t("Event will be scheduled and triggered base on time conditions.", { ns: "${NAMESPACE}" })}}`;
   fieldset = {
     config: {

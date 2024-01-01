@@ -94,7 +94,6 @@ export class MockServer extends Application {
 
     const databaseOptions = oldDatabase ? oldDatabase.options : <any>options?.database || {};
     const database = mockDatabase(databaseOptions);
-    database.setLogger(this._logger);
     database.setContext({ app: this });
 
     return database;

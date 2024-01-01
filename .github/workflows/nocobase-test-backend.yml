@@ -11,6 +11,7 @@ on:
       - 'packages/core/actions/**'
       - 'packages/core/database/**'
       - 'packages/core/server/**'
+      - 'packages/core/utils/**'
       - 'packages/plugins/**/src/server/**'
       - '.github/workflows/nocobase-test-backend.yml'
   pull_request:
@@ -20,6 +21,7 @@ on:
       - 'packages/core/actions/**'
       - 'packages/core/database/**'
       - 'packages/core/server/**'
+      - 'packages/core/utils/**'
       - 'packages/plugins/**/src/server/**'
       - '.github/workflows/nocobase-test-backend.yml'
 

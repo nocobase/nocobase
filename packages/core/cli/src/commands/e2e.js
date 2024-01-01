@@ -2,6 +2,7 @@ const { Command } = require('commander');
 const { run, isPortReachable } = require('../util');
 const { execSync } = require('node:child_process');
 const axios = require('axios');
+const { pTest } = require('./p-test');
 
 /**
  * 检查服务是否启动成功
@@ -200,4 +201,12 @@ module.exports = (cli) => {
   e2e.command('install-deps').action(async () => {
     await run('npx', ['playwright', 'install', '--with-deps']);
   });
+
+  e2e
+    .command('p-test')
+    .option('--stop-on-error')
+    .option('--concurrency [concurrency]', '', 3)
+    .action(async (opts) => {
+      await pTest(opts);
+    });
 };

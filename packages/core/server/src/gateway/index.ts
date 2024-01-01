@@ -1,4 +1,4 @@
-import { Toposort, ToposortOptions, uid } from '@nocobase/utils';
+import { Registry, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
 import compression from 'compression';
@@ -19,6 +19,8 @@ import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import { WSServer } from './ws-server';
+import { Logger, SystemLogger, createSystemLogger, getLoggerFilePath } from '@nocobase/logger';
+import { randomUUID } from 'crypto';
 
 const compress = promisify(compression());
 
@@ -58,6 +60,8 @@ export class Gateway extends EventEmitter {
   private host = '0.0.0.0';
   private wsServer: WSServer;
   private socketPath = xpipe.eq(resolve(process.cwd(), 'storage', 'gateway.sock'));
+
+  loggers = new Registry<SystemLogger>();
 
   private constructor() {
     super();
@@ -124,6 +128,24 @@ export class Gateway extends EventEmitter {
     this.emit('appSelectorChanged');
   }
 
+  getLogger(appName: string, res: ServerResponse) {
+    const reqId = randomUUID();
+    res.setHeader('X-Request-Id', reqId);
+    let logger = this.loggers.get(appName);
+    if (logger) {
+      return logger.child({ reqId });
+    }
+    logger = createSystemLogger({
+      dirname: getLoggerFilePath(appName),
+      filename: 'system',
+      defaultMeta: {
+        app: appName,
+        module: 'gateway',
+      },
+    });
+    return logger.child({ reqId });
+  }
+
   responseError(
     res: ServerResponse,
     error: {
@@ -139,7 +161,10 @@ export class Gateway extends EventEmitter {
   }
 
   responseErrorWithCode(code, res, options) {
-    this.responseError(res, applyErrorWithArgs(getErrorWithCode(code), options));
+    const log = this.getLogger(options.appName, res);
+    const error = applyErrorWithArgs(getErrorWithCode(code), options);
+    log.error(error.message, { method: 'responseErrorWithCode', error });
+    this.responseError(res, error);
   }
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
@@ -188,6 +213,7 @@ export class Gateway extends EventEmitter {
     }
 
     const handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
+    const log = this.getLogger(handleApp, res);
 
     const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
 
@@ -198,6 +224,7 @@ export class Gateway extends EventEmitter {
     let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
 
     if (appStatus === 'not_found') {
+      log.warn(`app not found`, { method: 'requestHandler' });
       this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
       return;
     }
@@ -216,7 +243,8 @@ export class Gateway extends EventEmitter {
     const app = await AppSupervisor.getInstance().getApp(handleApp);
 
     if (appStatus !== 'running') {
-      this.responseErrorWithCode(`${appStatus}`, res, { app });
+      log.warn(`app is not running`, { method: 'requestHandler', status: appStatus });
+      this.responseErrorWithCode(`${appStatus}`, res, { app, appName: handleApp });
       return;
     }
 

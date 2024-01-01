@@ -57,6 +57,7 @@ export const defineConfig = (config = {}) => {
               '**/lib/**',
               '**/es/**',
               '**/e2e/**',
+              '**/__e2e__/**',
               '**/{vitest,commitlint}.config.*',
               'packages/**/{dumi-theme-nocobase,sdk,client}/**/__tests__/**/*.{test,spec}.{ts,tsx}',
             ],

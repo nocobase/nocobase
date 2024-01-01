@@ -85,7 +85,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
   // TODO: `result.toJSON()` throws error
   const json = toJSON(result);
 
-  this.plugin.trigger(
+  this.workflow.trigger(
     workflow,
     { data: json },
     {
@@ -98,7 +98,7 @@ export default class CollectionTrigger extends Trigger {
   events = new Map();
 
   on(workflow: WorkflowModel) {
-    const { db } = this.plugin.app;
+    const { db } = this.workflow.app;
     const { collection, mode } = workflow.config;
     const Collection = db.getCollection(collection);
     if (!Collection) {
@@ -125,7 +125,7 @@ export default class CollectionTrigger extends Trigger {
   }
 
   off(workflow: WorkflowModel) {
-    const { db } = this.plugin.app;
+    const { db } = this.workflow.app;
     const { collection, mode } = workflow.config;
     const Collection = db.getCollection(collection);
     if (!Collection) {

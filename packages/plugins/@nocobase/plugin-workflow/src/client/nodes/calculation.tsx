@@ -1,11 +1,11 @@
-import { SchemaInitializerItemType, defaultFieldNames } from '@nocobase/client';
+import { SchemaInitializerItemType } from '@nocobase/client';
 import { Evaluator, evaluators, getOptions } from '@nocobase/evaluators/client';
 
 import { RadioWithTooltip } from '../components/RadioWithTooltip';
 import { ValueBlock } from '../components/ValueBlock';
 import { renderEngineReference } from '../components/renderEngineReference';
 import { NAMESPACE, lang } from '../locale';
-import { BaseTypeSets, WorkflowVariableTextArea } from '../variable';
+import { BaseTypeSets, WorkflowVariableTextArea, defaultFieldNames } from '../variable';
 import { Instruction } from '.';
 
 export default class extends Instruction {

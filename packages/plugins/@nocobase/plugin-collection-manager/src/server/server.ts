@@ -238,7 +238,7 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     const loadCollections = async () => {
-      this.app.log.debug('loading custom collections');
+      this.log.debug('loading custom collections', { method: 'loadCollections' });
       this.app.setMaintainingMessage('loading custom collections');
       await this.app.db.getRepository<CollectionRepository>('collections').load({
         filter: this.loadFilter,
