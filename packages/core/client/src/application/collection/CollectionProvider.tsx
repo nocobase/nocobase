@@ -11,29 +11,27 @@ export interface CollectionProviderProps {
   name: string;
   ns?: string;
   children?: ReactNode;
+  allowNull?: boolean;
 }
 
 export const CollectionProviderV2: FC<CollectionProviderProps> = (props) => {
-  const { name, ns, children } = props;
+  const { name, ns, children, allowNull } = props;
   const collectionManager = useCollectionManagerV2();
   const collection = useMemo(() => collectionManager.getCollection(name, { ns }), [collectionManager, name, ns]);
 
-  if (!collection) return <DeletedPlaceholder />;
+  if (!collection && allowNull) return <>{props.children}</>;
+  if (!collection && !allowNull) return <DeletedPlaceholder />;
 
   return <CollectionContextV2.Provider value={collection}>{children}</CollectionContextV2.Provider>;
 };
 
-type Constructor<T = {}> = new (...args: any[]) => T;
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
-export function useCollectionV2<T extends Constructor[] = []>():
-  | (UnionToIntersection<InstanceType<T[number]>> & CollectionV2)
-  | undefined {
+export function useCollectionV2<Mixins = {}>(): (Mixins & CollectionV2) | undefined {
   const context = useContext(CollectionContextV2);
-  if (!context) {
-    throw new Error('useCollection() must be used within a CollectionProviderV2');
-  }
+  // if (!context) {
+  //   throw new Error('useCollection() must be used within a CollectionProviderV2');
+  // }
 
-  return context as (UnionToIntersection<InstanceType<T[number]>> & CollectionV2) | undefined;
+  return context as (Mixins & CollectionV2) | undefined;
 }
 
 export const useCollectionFieldsV2 = (predicate?: GetCollectionFieldPredicate) => {

@@ -1,14 +1,12 @@
-import { filter } from 'lodash';
-
 import { CollectionFieldInterfaceOptions, CollectionFieldInterfaceV2 } from './CollectionFieldInterface';
 import { CollectionTemplateOptionsV2, CollectionTemplateV2 } from './CollectionTemplate';
 import { CollectionFieldOptionsV2, CollectionOptionsV2, CollectionV2 } from './Collection';
 import type { Application } from '../Application';
 
-type Constructor<T = {}> = new (...args: any[]) => T;
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
+export type CollectionMixinConstructor<T = {}> = new (...args: any[]) => T;
+export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
 
-function applyMixins(derivedCtor: Constructor, baseCtors: Constructor[]) {
+function applyMixins(derivedCtor: CollectionMixinConstructor, baseCtors: CollectionMixinConstructor[]) {
   baseCtors.forEach((baseCtor) => {
     Object.getOwnPropertyNames(baseCtor.prototype).forEach((name) => {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -29,22 +27,29 @@ export interface CollectionManagerOptionsV2 {
   collectionTemplates?: CollectionTemplateV2[] | CollectionTemplateOptionsV2[];
   collectionFieldInterfaces?: CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[];
   collectionNamespaces?: Record<string, string>;
-  collectionMixins?: Constructor[];
+  collectionMixins?: CollectionMixinConstructor[];
 }
 
-export class CollectionManagerV2 {
+export class CollectionManagerV2<Mixins = {}> {
   public app: Application;
   protected collections: Record<string, Record<string, CollectionV2>> = {};
   protected collectionTemplates: Record<string, CollectionTemplateV2> = {};
   protected collectionFieldInterfaces: Record<string, CollectionFieldInterfaceV2> = {};
-  protected collectionMixins: Constructor[] = [];
+  protected collectionMixins: CollectionMixinConstructor[] = [];
   protected collectionNamespaces: Record<string, string> = {
     [DEFAULT_COLLECTION_NAMESPACE_NAME]: DEFAULT_COLLECTION_NAMESPACE_TITLE,
   };
   protected reloadFn?: () => Promise<any>;
+  protected collectionArr: Record<string, CollectionV2[]> = {};
+  protected options: CollectionManagerOptionsV2 = {};
 
   constructor(options: CollectionManagerOptionsV2 = {}, app: Application) {
+    this.options = options;
     this.app = app;
+    this.collectionMixins = options.collectionMixins || [];
+    this.addCollectionTemplates(options.collectionTemplates || []);
+    this.addCollectionFieldInterfaces(options.collectionFieldInterfaces || []);
+    this.addCollectionNamespaces(options.collectionNamespaces || {});
     if (Array.isArray(options.collections)) {
       this.addCollections(options.collections);
     } else {
@@ -52,10 +57,6 @@ export class CollectionManagerV2 {
         this.addCollections(options.collections[ns], { ns });
       });
     }
-    this.addCollectionTemplates(options.collectionTemplates || []);
-    this.addCollectionFieldInterfaces(options.collectionFieldInterfaces || []);
-    this.addCollectionNamespaces(options.collectionNamespaces || {});
-    this.collectionMixins = options.collectionMixins || [];
   }
 
   private checkNamespace(ns: string) {
@@ -64,6 +65,17 @@ export class CollectionManagerV2 {
         `[@nocobase/client]: CollectionManager "${ns}" does not exist in namespace, you should call collectionManager.addNamespaces() to add it`,
       );
     }
+  }
+
+  addCollectionMixins(mixins: CollectionMixinConstructor[]) {
+    if (mixins.length === 0) return;
+    this.collectionMixins.push(...mixins);
+
+    // 重新添加数据表
+    Object.keys(this.collections).forEach((ns) => {
+      const collections = this.getCollections(undefined, { ns });
+      this.addCollections(collections, { ns });
+    });
   }
 
   // collections
@@ -103,8 +115,17 @@ export class CollectionManagerV2 {
   getAllCollections() {
     return this.collections;
   }
-  getCollections(ns: string = DEFAULT_COLLECTION_NAMESPACE_NAME, predicate?: (collection: CollectionV2) => boolean) {
-    return filter(Object.values(this.collections[ns]), predicate);
+  getCollections(predicate?: (collection: CollectionV2) => boolean, options: GetCollectionOptions = {}) {
+    const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
+    if (!predicate && this.collectionArr[ns]) {
+      return this.collectionArr[ns];
+    }
+
+    this.collectionArr[ns] = Object.values(this.collections[ns] || {});
+    if (predicate) {
+      return this.collectionArr[ns].filter(predicate);
+    }
+    return this.collectionArr[ns];
   }
   /**
    * 获取数据表
@@ -113,11 +134,9 @@ export class CollectionManagerV2 {
    * getCollection('users.profile'); // 获取 users 表的 profile 字段的关联表
    * getCollection('a.b.c'); // 获取 a 表的 b 字段的关联表，然后 b.target 表对应的 c 字段的关联表
    */
-  getCollection<T extends Constructor[] = []>(
-    path: string,
-    options: GetCollectionOptions = {},
-  ): (UnionToIntersection<InstanceType<T[number]>> & CollectionV2) | undefined {
+  getCollection(path: string, options: GetCollectionOptions = {}): (Mixins & CollectionV2) | undefined {
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
+    if (!path) return undefined;
     this.checkNamespace(ns);
     if (path.split('.').length > 1) {
       // 获取到关联字段
@@ -125,7 +144,7 @@ export class CollectionManagerV2 {
 
       return this.getCollection(associationField.target, { ns });
     }
-    return this.collections[ns]?.[path] as UnionToIntersection<InstanceType<T[number]>> & CollectionV2;
+    return this.collections[ns]?.[path] as Mixins & CollectionV2;
   }
   getCollectionName(path: string, options: GetCollectionOptions = {}): string | undefined {
     const res = this.getCollection(path, options);
@@ -181,6 +200,7 @@ export class CollectionManagerV2 {
 
   // CollectionTemplates
   addCollectionTemplates(templates: CollectionTemplateV2[] | CollectionTemplateOptionsV2[]) {
+    const newCollectionTemplateNames = {};
     templates
       .map((template) => {
         if (template instanceof CollectionTemplateV2) {
@@ -190,12 +210,26 @@ export class CollectionManagerV2 {
       })
       .forEach((template) => {
         this.collectionTemplates[template.name] = template;
+        newCollectionTemplateNames[template.name] = true;
       });
+
+    // 重新添加数据表
+    const reAddCollections = Object.keys(this.collections).reduce<Record<string, CollectionV2[]>>((acc, ns) => {
+      acc[ns] = this.getCollections(
+        (collection) => {
+          return newCollectionTemplateNames[collection.template];
+        },
+        { ns },
+      );
+      return acc;
+    }, {});
+
+    Object.keys(reAddCollections).forEach((ns) => {
+      this.addCollections(reAddCollections[ns], { ns });
+    });
   }
   getCollectionTemplates() {
-    return Object.values(this.collectionTemplates).sort(
-      (a, b) => (a.getOption('order') || 0) - (b.getOption('order') || 0),
-    );
+    return Object.values(this.collectionTemplates).sort((a, b) => (a.order || 0) - (b.order || 0));
   }
   getCollectionTemplate(name: string) {
     return this.collectionTemplates[name];
@@ -241,11 +275,7 @@ export class CollectionManagerV2 {
     return this.collectionFieldInterfaces[name];
   }
 
-  isTitleField(field) {
-    return !field.isForeignKey && this.getCollectionFieldInterface(field.interface)?.getOption('titleUsable');
-  }
-
-  setReloadCollections(fn: () => Promise<any>) {
+  setReloadCollections(fn: (...args: any[]) => Promise<any>) {
     this.reloadFn = fn;
   }
 
@@ -255,5 +285,14 @@ export class CollectionManagerV2 {
       this.setCollections(collections);
       refresh && refresh();
     }
+  }
+
+  clone() {
+    return {
+      collections: Object.values(this.collections[DEFAULT_COLLECTION_NAMESPACE_NAME]),
+      collectionNamespaces: this.collectionNamespaces,
+      collectionTemplates: Object.values(this.collectionTemplates),
+      collectionFieldInterfaces: Object.values(this.collectionFieldInterfaces),
+    };
   }
 }

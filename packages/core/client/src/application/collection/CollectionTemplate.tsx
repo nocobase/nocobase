@@ -93,6 +93,38 @@ export class CollectionTemplateV2 {
     return this.options.forbidDeletion;
   }
 
+  get default() {
+    return this.options.default;
+  }
+
+  get events() {
+    return this.options.events;
+  }
+
+  get availableFieldInterfaces() {
+    return this.options.availableFieldInterfaces;
+  }
+
+  get configurableProperties() {
+    return this.options.configurableProperties;
+  }
+
+  get description() {
+    return this.options.description;
+  }
+
+  get order() {
+    return this.options.order;
+  }
+
+  get color() {
+    return this.options.color;
+  }
+
+  get divider() {
+    return this.options.divider;
+  }
+
   getOption<K extends keyof CollectionTemplateOptionsV2>(key: K): CollectionTemplateOptionsV2[K] {
     return this.options[key];
   }

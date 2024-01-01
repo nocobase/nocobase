@@ -13,3 +13,5 @@ export * from './CollectionTemplate';
 
 export * from './CollectionManager';
 export * from './CollectionManagerProvider';
+
+export * from './utils';
