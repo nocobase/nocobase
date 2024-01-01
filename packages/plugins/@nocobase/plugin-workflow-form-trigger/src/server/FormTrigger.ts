@@ -5,10 +5,10 @@ import { Model, modelAssociationByKey } from '@nocobase/database';
 import WorkflowPlugin, { Trigger, WorkflowModel, toJSON } from '@nocobase/plugin-workflow';
 
 export default class extends Trigger {
-  constructor(plugin: WorkflowPlugin) {
-    super(plugin);
+  constructor(workflow: WorkflowPlugin) {
+    super(workflow);
 
-    plugin.app.resourcer.use(this.middleware);
+    workflow.app.resourcer.use(this.middleware);
   }
 
   async triggerAction(context, next) {
@@ -58,7 +58,7 @@ export default class extends Trigger {
     };
 
     const triggers = triggerWorkflows.split(',').map((trigger) => trigger.split('!'));
-    const workflowRepo = this.plugin.db.getRepository('workflows');
+    const workflowRepo = this.workflow.db.getRepository('workflows');
     const workflows = await workflowRepo.find({
       filter: {
         key: triggers.map((trigger) => trigger[0]),
@@ -95,11 +95,11 @@ export default class extends Trigger {
               appends,
             });
           }
-          this.plugin.trigger(workflow, { data: toJSON(payload), ...userInfo });
+          this.workflow.trigger(workflow, { data: toJSON(payload), ...userInfo });
         });
       } else {
         const data = trigger[1] ? get(values, trigger[1]) : values;
-        this.plugin.trigger(workflow, {
+        this.workflow.trigger(workflow, {
           data,
           ...userInfo,
         });

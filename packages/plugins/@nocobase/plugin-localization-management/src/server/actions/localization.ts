@@ -132,7 +132,7 @@ export const getTextsFromMenu = async (db: Database, migrate = false) => {
 
 const sync = async (ctx: Context, next: Next) => {
   const startTime = Date.now();
-  ctx.app.logger.info('Start sync localization resources');
+  ctx.logger.info('Start sync localization resources');
   const resourcesInstance = await getResourcesInstance(ctx);
   const locale = ctx.get('X-Locale') || 'en-US';
   const { type = [] } = ctx.action.params.values || {};
@@ -192,7 +192,7 @@ const sync = async (ctx: Context, next: Next) => {
     });
     await resourcesInstance.updateCacheTexts(newTexts);
   });
-  ctx.app.logger.info(`Sync localization resources done, ${Date.now() - startTime}ms`);
+  ctx.logger.info(`Sync localization resources done, ${Date.now() - startTime}ms`);
   await next();
 };
 

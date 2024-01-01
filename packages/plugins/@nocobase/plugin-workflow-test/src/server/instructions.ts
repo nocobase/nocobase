@@ -13,6 +13,7 @@ export default {
   error: {
     run(node, input, processor) {
       throw new Error('definite error');
+      return null;
     },
   },
 
@@ -45,6 +46,7 @@ export default {
     },
     resume(node, input, processor) {
       throw new Error('input failed');
+      return null;
     },
   },
 

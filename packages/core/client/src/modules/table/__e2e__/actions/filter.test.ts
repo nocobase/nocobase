@@ -2,7 +2,7 @@ import { expect, test } from '@nocobase/test/e2e';
 import { T2183, T2186 } from '../templatesOfBug';
 
 // fix https://nocobase.height.app/T-2183
-test('BUG: should save conditions', async ({ page, mockPage }) => {
+test('should save conditions', async ({ page, mockPage }) => {
   await mockPage(T2183).goto();
   await page.getByLabel('action-Filter.Action-Filter-filter-users-table').click();
   await page.getByText('Add condition', { exact: true }).click();
@@ -19,7 +19,7 @@ test('BUG: should save conditions', async ({ page, mockPage }) => {
 });
 
 // fix https://nocobase.height.app/T-2186
-test('BUG: the input box displayed should correspond to the field type', async ({ page, mockPage }) => {
+test('the input box displayed should correspond to the field type', async ({ page, mockPage }) => {
   await mockPage(T2186).goto();
 
   await page.getByLabel('action-Filter.Action-Filter-filter-users-table').click();

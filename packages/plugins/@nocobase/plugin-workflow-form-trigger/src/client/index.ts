@@ -13,7 +13,6 @@ export default class extends Plugin {
   // You can get and modify the app instance here
   async load() {
     const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
-    const formTrigger = new FormTrigger();
-    workflow.triggers.register(formTrigger.type, formTrigger);
+    workflow.registerTrigger('form', FormTrigger);
   }
 }

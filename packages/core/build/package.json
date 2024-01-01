@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/build",
-  "version": "0.18.0-alpha.2",
+  "version": "0.18.0-alpha.8",
   "description": "Library build tool based on rollup.",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
@@ -36,5 +36,5 @@
   "scripts": {
     "build": "tsup"
   },
-  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }

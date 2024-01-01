@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli",
-  "version": "0.18.0-alpha.2",
+  "version": "0.18.0-alpha.8",
   "description": "",
   "license": "Apache-2.0",
   "main": "./src/index.js",
@@ -8,7 +8,7 @@
     "nocobase": "./bin/index.js"
   },
   "dependencies": {
-    "@nocobase/app": "0.18.0-alpha.2",
+    "@nocobase/app": "0.18.0-alpha.8",
     "@types/fs-extra": "^11.0.1",
     "@umijs/utils": "3.5.20",
     "chalk": "^4.1.1",
@@ -17,18 +17,19 @@
     "execa": "^5.1.1",
     "fast-glob": "^3.3.1",
     "fs-extra": "^11.1.1",
+    "p-all": "3.0.0",
     "pm2": "^5.2.0",
     "portfinder": "^1.0.28",
     "serve": "^13.0.2",
     "tsx": "^4.6.2"
   },
   "devDependencies": {
-    "@nocobase/devtools": "0.18.0-alpha.2"
+    "@nocobase/devtools": "0.18.0-alpha.8"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/core/cli"
   },
-  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }

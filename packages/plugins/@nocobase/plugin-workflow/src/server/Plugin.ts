@@ -1,21 +1,20 @@
 import path from 'path';
 
 import LRUCache from 'lru-cache';
-import winston from 'winston';
 
 import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
-import { createLogger, getLoggerFilePath, getLoggerLevel, Logger, LoggerOptions } from '@nocobase/logger';
+import { Logger, LoggerOptions } from '@nocobase/logger';
 import Processor from './Processor';
 import initActions from './actions';
 import { EXECUTION_STATUS } from './constants';
 import initFunctions, { CustomFunction } from './functions';
-import type Trigger from './triggers';
+import Trigger from './triggers';
 import CollectionTrigger from './triggers/CollectionTrigger';
 import ScheduleTrigger from './triggers/ScheduleTrigger';
-import type Instruction from './instructions';
+import { Instruction, InstructionInterface } from './instructions';
 import CalculationInstruction from './instructions/CalculationInstruction';
 import ConditionInstruction from './instructions/ConditionInstruction';
 import CreateInstruction from './instructions/CreateInstruction';
@@ -32,7 +31,7 @@ type Pending = [ExecutionModel, JobModel?];
 type CachedEvent = [WorkflowModel, any, { context?: any }];
 
 export default class WorkflowPlugin extends Plugin {
-  instructions: Registry<Instruction> = new Registry();
+  instructions: Registry<InstructionInterface> = new Registry();
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<CustomFunction> = new Registry();
 
@@ -51,14 +50,10 @@ export default class WorkflowPlugin extends Plugin {
       return this.loggerCache.get(key);
     }
 
-    const logger = createLogger({
-      transports: [
-        ...(process.env.NODE_ENV !== 'production' ? ['console'] : []),
-        new winston.transports.File({
-          filename: getLoggerFilePath('workflows', date, `${workflowId}.log`),
-          level: getLoggerLevel(),
-        }),
-      ],
+    const logger = this.createLogger({
+      dirname: path.join('workflows', date),
+      filename: `${workflowId}.log`,
+      transports: [...(process.env.NODE_ENV !== 'production' ? ['console'] : ['file'])],
     } as LoggerOptions);
 
     this.loggerCache.set(key, logger);
@@ -112,29 +107,45 @@ export default class WorkflowPlugin extends Plugin {
     }
   };
 
-  initTriggers<T extends Trigger>(more: { [key: string]: T | { new (p: Plugin): T } } = {}) {
-    const { triggers } = this;
-
-    triggers.register('collection', new CollectionTrigger(this));
-    triggers.register('schedule', new ScheduleTrigger(this));
-
-    for (const [name, trigger] of Object.entries(more)) {
-      triggers.register(name, typeof trigger === 'function' ? new trigger(this) : trigger);
+  registerTrigger<T extends Trigger>(type: string, trigger: T | { new (p: Plugin): T }) {
+    if (typeof trigger === 'function') {
+      this.triggers.register(type, new trigger(this));
+    } else if (trigger) {
+      this.triggers.register(type, trigger);
+    } else {
+      throw new Error('invalid trigger type to register');
     }
   }
 
-  initInstructions<T extends Instruction>(more: { [key: string]: T | { new (p: Plugin): T } } = {}) {
-    const { instructions } = this;
+  registerInstruction(type: string, instruction: InstructionInterface | { new (p: Plugin): InstructionInterface }) {
+    if (typeof instruction === 'function') {
+      this.instructions.register(type, new instruction(this));
+    } else if (instruction) {
+      this.instructions.register(type, instruction);
+    } else {
+      throw new Error('invalid instruction type to register');
+    }
+  }
 
-    instructions.register('calculation', new CalculationInstruction(this));
-    instructions.register('condition', new ConditionInstruction(this));
-    instructions.register('create', new CreateInstruction(this));
-    instructions.register('destroy', new DestroyInstruction(this));
-    instructions.register('query', new QueryInstruction(this));
-    instructions.register('update', new UpdateInstruction(this));
+  private initTriggers<T extends Trigger>(more: { [key: string]: T | { new (p: Plugin): T } } = {}) {
+    this.registerTrigger('collection', CollectionTrigger);
+    this.registerTrigger('schedule', ScheduleTrigger);
+
+    for (const [name, trigger] of Object.entries(more)) {
+      this.registerTrigger(name, trigger);
+    }
+  }
+
+  private initInstructions<T extends Instruction>(more: { [key: string]: T | { new (p: Plugin): T } } = {}) {
+    this.registerInstruction('calculation', CalculationInstruction);
+    this.registerInstruction('condition', ConditionInstruction);
+    this.registerInstruction('create', CreateInstruction);
+    this.registerInstruction('destroy', DestroyInstruction);
+    this.registerInstruction('query', QueryInstruction);
+    this.registerInstruction('update', UpdateInstruction);
 
     for (const [name, instruction] of Object.entries({ ...more })) {
-      instructions.register(name, typeof instruction === 'function' ? new instruction(this) : instruction);
+      this.registerInstruction(name, instruction);
     }
   }
 
@@ -171,7 +182,6 @@ export default class WorkflowPlugin extends Plugin {
       actions: ['workflows:list'],
     });
 
-    this.app.acl.allow('users_jobs', ['list', 'get', 'submit'], 'loggedIn');
     this.app.acl.allow('workflows', ['trigger'], 'loggedIn');
 
     await this.importCollections(path.resolve(__dirname, 'collections'));

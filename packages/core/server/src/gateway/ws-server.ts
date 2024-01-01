@@ -5,6 +5,7 @@ import { IncomingMessage } from 'http';
 import { AppSupervisor } from '../app-supervisor';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import lodash from 'lodash';
+import { Logger } from '@nocobase/logger';
 
 declare class WebSocketWithId extends WebSocket {
   id: string;
@@ -26,6 +27,7 @@ function getPayloadByErrorCode(code, options) {
 export class WSServer {
   wss: WebSocket.Server;
   webSocketClients = new Map<string, WebSocketClient>();
+  logger: Logger;
 
   constructor() {
     this.wss = new WebSocketServer({ noServer: true });

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/client",
-  "version": "0.18.0-alpha.2",
+  "version": "0.18.0-alpha.8",
   "license": "Apache-2.0",
   "main": "lib/index.js",
   "module": "es/index.mjs",
@@ -25,9 +25,9 @@
     "@formily/reactive-react": "^2.2.27",
     "@formily/shared": "^2.2.27",
     "@formily/validator": "^2.2.27",
-    "@nocobase/evaluators": "0.18.0-alpha.2",
-    "@nocobase/sdk": "0.18.0-alpha.2",
-    "@nocobase/utils": "0.18.0-alpha.2",
+    "@nocobase/evaluators": "0.18.0-alpha.8",
+    "@nocobase/sdk": "0.18.0-alpha.8",
+    "@nocobase/utils": "0.18.0-alpha.8",
     "ahooks": "^3.7.2",
     "antd": "^5.12.2",
     "antd-style": "3.4.5",
@@ -72,5 +72,5 @@
     "dumi": "^2.2.0",
     "dumi-theme-nocobase": "^0.2.19"
   },
-  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }

@@ -58,7 +58,7 @@
   "Null": "Null",
   "Boolean": "Booléen",
   "String": "Chaîne de caractères",
-  "Calculator": "Calculatrice",
+  "Operator": "Calculatrice",
   "Arithmetic calculation": "Calcul arithmétique",
   "String operation": "Opération sur les chaînes de caractères",
   "Executed at": "Exécuté à",

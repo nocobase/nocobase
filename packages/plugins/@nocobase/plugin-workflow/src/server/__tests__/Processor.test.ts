@@ -1,11 +1,11 @@
-import Database from '@nocobase/database';
+import { MockDatabase } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
-import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '../constants';
+import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
 
 describe('workflow > Processor', () => {
   let app: MockServer;
-  let db: Database;
+  let db: MockDatabase;
   let PostRepo;
   let WorkflowModel;
   let workflow;
@@ -251,13 +251,13 @@ describe('workflow > Processor', () => {
 
       const n2 = await workflow.createNode({
         type: 'echo',
-        branchIndex: BRANCH_INDEX.ON_TRUE,
+        branchIndex: 1,
         upstreamId: n1.id,
       });
 
       await workflow.createNode({
         type: 'echo',
-        branchIndex: BRANCH_INDEX.ON_FALSE,
+        branchIndex: 0,
         upstreamId: n1.id,
       });
 
@@ -283,7 +283,7 @@ describe('workflow > Processor', () => {
 
       const n2 = await workflow.createNode({
         type: 'prompt',
-        branchIndex: BRANCH_INDEX.ON_TRUE,
+        branchIndex: 1,
         upstreamId: n1.id,
       });
 
@@ -323,7 +323,7 @@ describe('workflow > Processor', () => {
 
       const n2 = await workflow.createNode({
         type: 'prompt->error',
-        branchIndex: BRANCH_INDEX.ON_TRUE,
+        branchIndex: 1,
         upstreamId: n1.id,
       });
 

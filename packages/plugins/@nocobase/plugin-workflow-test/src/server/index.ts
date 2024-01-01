@@ -55,22 +55,22 @@ export async function getApp({
     ...options,
     autoStart,
     cleanDb,
-    plugins: ['workflow', 'workflow-test', ...plugins],
+    plugins: [
+      [
+        'workflow',
+        {
+          instructions,
+          functions,
+        },
+      ],
+      WorkflowTestPlugin,
+      ...plugins,
+    ],
   });
 }
 
-export default class extends Plugin {
+export default class WorkflowTestPlugin extends Plugin {
   async load() {
     await this.importCollections(path.resolve(__dirname, 'collections'));
-
-    const workflow = this.app.getPlugin<any>('workflow');
-
-    for (const [key, instruction] of Object.entries(instructions)) {
-      workflow.instructions.register(key, instruction);
-    }
-
-    for (const [key, func] of Object.entries(functions)) {
-      workflow.functions.register(key, func);
-    }
   }
 }
