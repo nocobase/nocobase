@@ -7,23 +7,28 @@ test('fields', async ({ page, mockPage }) => {
   await page.getByRole('menuitem', { name: 'Username' }).click();
   await page.getByRole('menuitem', { name: 'Email' }).click();
 
-  const sourceElement = page.getByLabel('block-item-CollectionField-users-form-users.nickname');
-  await sourceElement.hover();
-  const source = sourceElement.getByLabel('designer-drag');
-  await source.hover();
-  const targetElement = page.getByLabel('block-item-CollectionField-users-form-users.username');
-  await source.dragTo(targetElement);
+  await page.getByLabel('block-item-CollectionField-users-form-users.nickname').hover();
+  await page.getByLabel('block-item-CollectionField-users-form-users.nickname').getByLabel('designer-drag').hover();
+  await page
+    .getByLabel('block-item-CollectionField-users-form-users.nickname')
+    .getByLabel('designer-drag')
+    .dragTo(page.getByLabel('block-item-CollectionField-users-form-users.username'));
   await page.waitForTimeout(1000);
 
-  const targetElement2 = page.getByLabel('block-item-CollectionField-users-form-users.email');
-  await source.hover();
-  await source.dragTo(targetElement2);
+  await page.getByLabel('block-item-CollectionField-users-form-users.nickname').getByLabel('designer-drag').hover();
+  await page
+    .getByLabel('block-item-CollectionField-users-form-users.nickname')
+    .getByLabel('designer-drag')
+    .dragTo(page.getByLabel('block-item-CollectionField-users-form-users.email'));
   await page.waitForTimeout(1000);
 
-  await sourceElement.hover();
-  const nickname = await source.boundingBox();
-  const username = await targetElement.boundingBox();
-  const email = await targetElement2.boundingBox();
+  await page.getByLabel('block-item-CollectionField-users-form-users.nickname').hover();
+  const nickname = await page
+    .getByLabel('block-item-CollectionField-users-form-users.nickname')
+    .getByLabel('designer-drag')
+    .boundingBox();
+  const username = await page.getByLabel('block-item-CollectionField-users-form-users.username').boundingBox();
+  const email = await page.getByLabel('block-item-CollectionField-users-form-users.email').boundingBox();
   const max = Math.max(username.y, nickname.y, email.y);
   //拖拽调整排序符合预期
   expect(nickname.y).toBe(max);

@@ -149,29 +149,23 @@ test.describe('form item & edit form', () => {
     await testPattern({
       page,
       gotoPage: async () => {
-        record = await (async (mockPage, mockRecord) => {
-          const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndChoicesFields).waitForInit();
-          const record = await mockRecord('general');
-          await nocoPage.goto();
-
-          return record;
-        })(mockPage, mockRecord);
+        const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndChoicesFields).waitForInit();
+        record = await mockRecord('general');
+        await nocoPage.goto();
       },
-      openDialog: () =>
-        (async (page: Page) => {
-          await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
-        })(page),
-      showMenu: () =>
-        (async (page: Page, fieldName: string) => {
-          await page
-            .getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`, { exact: true })
-            .hover();
-          await page
-            .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`, {
-              exact: true,
-            })
-            .hover();
-        })(page, 'radioGroup'),
+      openDialog: async () => {
+        await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
+      },
+      showMenu: async () => {
+        await page
+          .getByLabel(`block-item-CollectionField-general-form-general.radioGroup-radioGroup`, { exact: true })
+          .hover();
+        await page
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.radioGroup`, {
+            exact: true,
+          })
+          .hover();
+      },
       expectEditable: async () => {
         if (record.radioGroup) {
           await expect(
