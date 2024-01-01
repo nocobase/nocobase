@@ -3,6 +3,7 @@ import {
   expect,
   expectSettingsMenu,
   oneTableBlockWithAddNewAndViewAndEditAndBasicFields,
+  oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable,
   test,
 } from '@nocobase/test/e2e';
 import { createColumnItem, showSettingsMenu, testDefaultValue, testPattern, testSetValidationRules } from '../../utils';
@@ -37,23 +38,20 @@ test.describe('form item & create form', () => {
   test('set default value', async ({ page, mockPage }) => {
     await testDefaultValue({
       page,
-      gotoPage: () =>
-        (async (mockPage) => {
-          const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-          await nocoPage.goto();
-        })(mockPage),
-      openDialog: () =>
-        (async (page: Page) => {
-          await page.getByRole('button', { name: 'Add new' }).click();
-        })(page),
+      gotoPage: async () => {
+        const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
+        await nocoPage.goto();
+      },
+      openDialog: async () => {
+        await page.getByRole('button', { name: 'Add new' }).click();
+      },
       closeDialog: () => page.getByLabel('drawer-Action.Container-general-Add record-mask').click(),
-      showMenu: () =>
-        (async (page: Page, fieldName: string) => {
-          await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-          await page
-            .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-            .hover();
-        })(page, 'singleLineText'),
+      showMenu: async () => {
+        await page.getByLabel(`block-item-CollectionField-general-form-general.singleLineText-singleLineText`).hover();
+        await page
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.singleLineText`)
+          .hover();
+      },
       supportVariables: ['Constant', 'Current user', 'Date variables', 'Current form'],
       constantValue: 'test single line text',
       variableValue: ['Current user', 'Email'], // 值为 admin@nocobase.com
@@ -372,5 +370,70 @@ test.describe('table column & table', () => {
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.getByRole('columnheader', { name: 'singleLineText' })).toBeHidden();
+  });
+});
+
+test.describe('table column & sub-table in edit form', () => {
+  test('supported options', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable).waitForInit();
+    await mockRecord('subTable');
+    await nocoPage.goto();
+
+    await expectSettingsMenu({
+      page,
+      showMenu: async () => {
+        await page.getByLabel('action-Action.Link-Edit record-update-subTable-table-0').click();
+        await page.getByRole('button', { name: 'singleLineText', exact: true }).hover();
+        await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.Column.Designer-general').hover();
+      },
+      supportedOptions: ['Custom column title', 'Column width', 'Required', 'Pattern', 'Set default value', 'Delete'],
+    });
+  });
+
+  test('set default value', async ({ page, mockPage, mockRecord }) => {
+    let record;
+    await testDefaultValue({
+      page,
+      gotoPage: async () => {
+        const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFieldsAndSubTable).waitForInit();
+        record = await mockRecord('subTable');
+        await nocoPage.goto();
+      },
+      openDialog: async () => {
+        await page.getByLabel('action-Action.Link-Edit record-update-subTable-table-0').click();
+      },
+      closeDialog: async () => {
+        await page.getByLabel('drawer-Action.Container-subTable-Edit record-mask').click();
+      },
+      showMenu: async () => {
+        await page.getByRole('button', { name: 'singleLineText', exact: true }).hover();
+        await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.Column.Designer-general').hover();
+      },
+      supportVariables: [
+        'Constant',
+        'Current user',
+        'Current role',
+        'Current form',
+        'Current object',
+        'Current record',
+      ],
+      variableValue: ['Current user', 'Nickname'],
+      expectVariableValue: async () => {
+        await page.getByRole('button', { name: 'plus' }).click();
+        await expect(
+          page
+            .getByLabel('block-item-CollectionField-general-form-general.singleLineText-singleLineText')
+            .nth(0)
+            .getByRole('textbox'),
+        ).toHaveValue(record.manyToMany[0].singleLineText);
+
+        await expect(
+          page
+            .getByLabel('block-item-CollectionField-general-form-general.singleLineText-singleLineText')
+            .nth(record.manyToMany.length) // 最后一行
+            .getByRole('textbox'),
+        ).toHaveValue('Super Admin');
+      },
+    });
   });
 });
