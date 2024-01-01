@@ -204,7 +204,7 @@ const PreviewCom = (props) => {
         const item = dataSource[index];
         return (
           <Input
-            value={item?.uiSchema?.title || text}
+            defaultValue={item?.uiSchema?.title || text}
             onChange={(e) =>
               handleFieldChange(
                 { ...item, uiSchema: { ...item?.uiSchema, title: e.target.value, rawTitle: e.target.value } },
