@@ -148,7 +148,10 @@ export class Restorer extends AppMigrator {
     const importGroups = [...options.groups];
     for (const group of importGroups) {
       const collections = dumpableCollectionsGroupByGroup[group];
-
+      if (!collections) {
+        this.app.log.warn(`group ${group} not found`);
+        continue;
+      }
       for (const collection of Restorer.sortCollectionsByInherits(collections)) {
         await importCollection(collection.name);
       }

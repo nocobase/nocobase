@@ -51,7 +51,7 @@ describe('on dump', () => {
     const dumper = new Dumper(app);
 
     const result = await dumper.dump({
-      groups: new Set(['meta']),
+      groups: new Set(['required']),
     });
 
     const restorer = new Restorer(app, {
