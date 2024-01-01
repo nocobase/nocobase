@@ -22,6 +22,7 @@ docker/**/storage
 cache/diskstore-*
 *.nbdump
 storage/duplicator/*
+storage/backups/*
 **/.dumi/tmp
 **/.dumi/tmp-test
 **/.dumi/tmp-production

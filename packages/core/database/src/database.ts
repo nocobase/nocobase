@@ -1,4 +1,4 @@
-import { Logger, LoggerOptions, createConsoleLogger, createLogger } from '@nocobase/logger';
+import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import chalk from 'chalk';
 import merge from 'deepmerge';
@@ -937,7 +937,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
             `DROP VIEW IF EXISTS ${collection.getTableNameWithSchemaAsString()}`,
             `CREATE VIEW ${collection.getTableNameWithSchemaAsString()} AS ${viewDef}`,
           ],
-          type: 'meta',
+          group: 'required',
         });
 
         return;

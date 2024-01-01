@@ -190,6 +190,7 @@ export class Restorer extends AppMigrator {
     const db = app.db;
 
     const collectionName = options.name;
+
     if (!collectionName) {
       throw new Error('collection name is required');
     }
@@ -198,6 +199,13 @@ export class Restorer extends AppMigrator {
 
     const collectionDataPath = path.resolve(dir, 'collections', collectionName, 'data');
     const collectionMetaPath = path.resolve(dir, 'collections', collectionName, 'meta');
+
+    try {
+      await fsPromises.stat(collectionMetaPath);
+    } catch (e) {
+      app.logger.info(`${collectionName} has no meta`);
+      return;
+    }
 
     const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
     const meta = JSON.parse(metaContent);

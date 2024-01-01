@@ -65,7 +65,7 @@ describe('on dump', () => {
 
     expect(sqlContent).toBeDefined();
     await restorer.restore({
-      groups: new Set(['required']),
+      groups: new Set(['required', 'custom']),
     });
   });
 });
