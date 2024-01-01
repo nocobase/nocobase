@@ -1,10 +1,11 @@
 const execa = require('execa');
-const { resolve, dirname } = require('path');
+const { resolve } = require('path');
 const pAll = require('p-all');
 const dotenv = require('dotenv');
 const fs = require('fs');
 const { Client } = require('pg');
 const glob = require('glob');
+const _ = require('lodash');
 
 let ENV_FILE = resolve(process.cwd(), '.env.e2e');
 
@@ -18,7 +19,10 @@ const config = {
   ...process.env,
 };
 
-async function runApp(index = 1, dir) {
+async function runApp(dir, index = 0) {
+  // 一个进程需要占用两个端口? (一个是应用端口，一个是 socket 端口)
+  index = index * 2;
+
   const database = `nocobase${index}`;
   const client = new Client({
     host: config['DB_HOST'],
@@ -54,15 +58,15 @@ exports.pTest = async (options) => {
   const files = glob.sync('packages/**/__e2e__/**/*.test.ts', {
     root: process.cwd(),
   });
-  const fileSet = new Set();
 
-  for (const file of files) {
-    fileSet.add(dirname(file));
-  }
-
-  const commands = [...fileSet.values()].map((v, i) => {
-    return () => runApp(i + 1, v);
+  const commands = splitArrayIntoParts(files, options.concurrency || 3).map((v, i) => {
+    return () => runApp(v.join(' '), i);
   });
 
   await pAll(commands, { concurrency: 3, stopOnError: false, ...options });
 };
+
+function splitArrayIntoParts(array, parts) {
+  let chunkSize = Math.ceil(array.length / parts);
+  return _.chunk(array, chunkSize);
+}
