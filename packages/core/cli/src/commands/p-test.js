@@ -59,7 +59,7 @@ exports.pTest = async (options) => {
     root: process.cwd(),
   });
 
-  const commands = splitArrayIntoParts(files, options.concurrency || 3).map((v, i) => {
+  const commands = splitArrayIntoParts(_.shuffle(files), options.concurrency || 3).map((v, i) => {
     return () => runApp(v.join(' '), i);
   });
 
