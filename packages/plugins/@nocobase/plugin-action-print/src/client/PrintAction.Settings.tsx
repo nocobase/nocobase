@@ -3,8 +3,7 @@ import {
   ActionDesigner,
   useSchemaToolbar,
   SchemaSettingsLinkageRules,
-  useLinkageAction,
-  useCollection,
+  useCollectionV2,
 } from '@nocobase/client';
 
 const printActionSettings = new SchemaSettings({
@@ -28,7 +27,7 @@ const printActionSettings = new SchemaSettings({
           name: 'linkageRules',
           Component: SchemaSettingsLinkageRules,
           useComponentProps() {
-            const { name } = useCollection();
+            const { name } = useCollectionV2();
             const { linkageRulesProps } = useSchemaToolbar();
             return {
               ...linkageRulesProps,

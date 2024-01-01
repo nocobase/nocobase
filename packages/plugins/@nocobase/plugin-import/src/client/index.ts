@@ -6,7 +6,7 @@ export * from './ImportDesigner';
 export * from './ImportPluginProvider';
 export * from './useImportAction';
 
-import { Plugin, useCollection } from '@nocobase/client';
+import { Plugin, useCollectionV2 } from '@nocobase/client';
 import { ImportPluginProvider } from './ImportPluginProvider';
 
 export class ImportPlugin extends Plugin {
@@ -25,7 +25,7 @@ export class ImportPlugin extends Plugin {
         },
       },
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollectionV2();
         return (
           (collection.template !== 'view' || collection?.writableView) &&
           collection.template !== 'file' &&

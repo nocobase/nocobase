@@ -4,13 +4,13 @@ import { SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   CollectionCategroriesContext,
-  CollectionProvider,
+  CollectionProviderV2,
   SchemaComponent,
   SchemaComponentProvider,
   Select,
   StablePopover,
   collection,
-  useCollectionManager,
+  useCollectionManagerV2,
   useCompile,
   useCurrentAppInfo,
   useRecord,
@@ -58,8 +58,8 @@ const OperationButton: any = React.memo((props: any) => {
   // 获取当前字段列表
   const useCurrentFields = () => {
     const record = useRecord();
-    const { getCollectionFields } = useCollectionManager();
-    const fields = getCollectionFields(record.collectionName || record.name) as any[];
+    const cm = useCollectionManagerV2();
+    const fields = cm.getCollectionFields(record.collectionName || record.name) as any[];
     return fields;
   };
   return (
@@ -207,7 +207,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
   } = node;
   const compile = useCompile();
   const { styles } = useStyles();
-  const { getInterface } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const [isHovered, setIsHovered] = useState(false);
   const CollectionConten = React.useCallback((data) => {
     const { type, name, primaryKey, allowNull, autoIncrement } = data;
@@ -265,7 +265,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
             <div>
               {compile(property.uiSchema?.title)}
               <span style={{ color: '#ffa940', float: 'right' }}>
-                {compile(getInterface(property.interface)?.title)}
+                {compile(cm.getCollectionFieldInterface(property.interface)?.title)}
               </span>
             </div>
           }
@@ -277,7 +277,7 @@ const PopoverContent = React.forwardRef((props: any, ref) => {
             {compile(property.uiSchema?.title)}
           </div>
         </StablePopover>
-        <div className={`type  field_type`}>{compile(getInterface(property.interface)?.title)}</div>
+        <div className={`type  field_type`}>{compile(cm.getCollectionFieldInterface(property.interface)?.title)}</div>
         {isHovered && <OperationButton property={property} {...operatioBtnProps} />}
       </div>
     </div>
@@ -423,7 +423,7 @@ const Entity: React.FC<{
         <div className={styles.tableBtnClass}>
           <SchemaComponentProvider>
             <CollectionNodeProvder setTargetNode={setTargetNode} node={node}>
-              <CollectionProvider collection={collection}>
+              <CollectionProviderV2 name={collection.name}>
                 <SchemaComponent
                   scope={{
                     useUpdateCollectionActionAndRefreshCM,
@@ -490,7 +490,7 @@ const Entity: React.FC<{
                     },
                   }}
                 />
-              </CollectionProvider>
+              </CollectionProviderV2>
             </CollectionNodeProvder>
           </SchemaComponentProvider>
         </div>

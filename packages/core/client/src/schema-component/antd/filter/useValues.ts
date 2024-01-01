@@ -4,8 +4,8 @@ import flat, { unflatten } from 'flat';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import { useCallback, useContext, useEffect, useMemo } from 'react';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { FilterContext } from './context';
+import { useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 interface UseValuesReturn {
   fields: any[];
@@ -35,8 +35,8 @@ const findOption = (dataIndex = [], options) => {
 };
 
 export const useValues = (): UseValuesReturn => {
-  const { name } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { name } = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const field = useField<any>();
   const { options, collectionName, field: ctxField } = useContext(FilterContext) || {};
   const values: object = flat(field.value || {});
@@ -44,8 +44,8 @@ export const useValues = (): UseValuesReturn => {
 
   const collectionField = useMemo(() => {
     const [fieldPath = ''] = path.split('.$');
-    return getCollectionJoinField(`${collectionName || name}.${fieldPath}`);
-  }, [name, path]);
+    return cm.getCollectionField(`${collectionName || name}.${fieldPath}`);
+  }, [cm, collectionName, name, path]);
 
   const data2value = useCallback(() => {
     field.value = flat.unflatten({
@@ -68,7 +68,7 @@ export const useValues = (): UseValuesReturn => {
     if (dataIndex?.length > 1) {
       const fieldNames = dataIndex.concat();
       fieldNames.pop();
-      const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
+      const targetField = cm.getCollectionField(`${name}.${fieldNames.join('.')}`);
       ctxField.collectionName = targetField?.target;
     } else {
       ctxField.collectionName = null;
@@ -95,7 +95,7 @@ export const useValues = (): UseValuesReturn => {
       if (dataIndex?.length > 1) {
         const fieldNames = dataIndex.concat();
         fieldNames.pop();
-        const targetField = getCollectionJoinField(`${name}.${fieldNames.join('.')}`);
+        const targetField = cm.getCollectionField(`${name}.${fieldNames.join('.')}`);
         ctxField.collectionName = targetField?.target;
       } else {
         ctxField.collectionName = null;

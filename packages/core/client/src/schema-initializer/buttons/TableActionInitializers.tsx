@@ -1,6 +1,6 @@
 import { useFieldSchema } from '@formily/react';
-import { useCollection } from '../../';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
+import { useCollectionV2 } from '../../application';
 
 // 表格操作配置
 export const tableActionInitializers = new SchemaInitializer({
@@ -38,7 +38,7 @@ export const tableActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
@@ -52,7 +52,7 @@ export const tableActionInitializers = new SchemaInitializer({
             'x-decorator': 'ACLActionProvider',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return !['view', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
@@ -74,7 +74,7 @@ export const tableActionInitializers = new SchemaInitializer({
           },
           useVisible() {
             const schema = useFieldSchema();
-            const collection = useCollection();
+            const collection = useCollectionV2();
             const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
             return collection.tree && treeTable !== false;
           },
@@ -85,7 +85,7 @@ export const tableActionInitializers = new SchemaInitializer({
       name: 'divider',
       type: 'divider',
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollectionV2();
         return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
     },
@@ -110,7 +110,7 @@ export const tableActionInitializers = new SchemaInitializer({
         },
       ],
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollectionV2();
         return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
     },

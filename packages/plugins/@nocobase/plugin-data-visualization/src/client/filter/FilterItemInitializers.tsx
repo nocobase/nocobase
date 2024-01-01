@@ -8,7 +8,7 @@ import {
   SchemaInitializer,
   SchemaInitializerItem,
   gridRowColWrap,
-  useCollectionManager,
+  useCollectionManagerV2,
   useDesignable,
   useGlobalTheme,
   useSchemaInitializerItem,
@@ -100,7 +100,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
   const { theme } = useGlobalTheme();
   const { insert } = props;
   const itemConfig = useSchemaInitializerItem();
-  const { getCollectionJoinField, getInterface } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const sourceFields = useChartFilterSourceFields();
   const { options: fieldComponents, values: fieldComponentValues } = useFieldComponents();
   const handleClick = useCallback(async () => {
@@ -168,7 +168,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
       effects() {
         onFieldValueChange('source', (field) => {
           const name = field.value?.join('.');
-          const props = getCollectionJoinField(name);
+          const props = cm.getCollectionField(name);
           if (!props) {
             return;
           }
@@ -194,7 +194,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
       },
     });
     const { name, title, component, props } = values;
-    const defaultSchema = getInterface(component)?.default?.uiSchema || {};
+    const defaultSchema = cm.getCollectionFieldInterface(component)?.default?.uiSchema || {};
     insert(
       gridRowColWrap({
         'x-component': component,
@@ -228,12 +228,12 @@ export const chartFilterItemInitializers = new SchemaInitializer({
       name: 'displayFields',
       title: '{{ t("Display fields") }}',
       useChildren: () => {
-        const { getCollection } = useCollectionManager();
+        const cm = useCollectionManagerV2();
         const { getChartCollections } = useChartData();
         const { getChartFilterFields } = useChartFilter();
         const collections = getChartCollections();
         return collections.map((name: any) => {
-          const collection = getCollection(name);
+          const collection = cm.getCollection(name);
           const fields = getChartFilterFields(collection);
           return {
             name: collection.key,

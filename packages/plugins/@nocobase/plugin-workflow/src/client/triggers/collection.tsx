@@ -1,4 +1,9 @@
-import { SchemaInitializerItemType, useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
+import {
+  SchemaInitializerItemType,
+  useCollectionDataSource,
+  useCollectionManagerV2,
+  useCompile,
+} from '@nocobase/client';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { FieldsSelect } from '../components/FieldsSelect';
 import { NAMESPACE, lang } from '../locale';
@@ -151,7 +156,7 @@ export default class extends Trigger {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { getCollectionFields } = useCollectionManager();
+    const collectionManager = useCollectionManagerV2();
     const rootFields = [
       {
         collectionName: config.collection,
@@ -172,7 +177,7 @@ export default class extends Trigger {
       ...options,
       fields: rootFields,
       compile,
-      getCollectionFields,
+      collectionManager,
     });
     return result;
   }

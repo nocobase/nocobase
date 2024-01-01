@@ -8,15 +8,17 @@ import template from 'lodash/template';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  CollectionProviderV2,
   TableFieldResource,
   WithoutTableFieldResource,
   useAPIClient,
   useActionContext,
+  useCollectionManagerV2,
+  useCollectionV2,
   useDesignable,
   useRecord,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
-import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
@@ -50,11 +52,11 @@ interface UseResourceProps {
 
 export const useAssociation = (props) => {
   const { association } = props;
-  const { getCollectionField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   if (typeof association === 'string') {
-    return getCollectionField(association);
+    return cm.getCollectionField(association);
   } else if (association?.collectionName && association?.name) {
-    return getCollectionField(`${association?.collectionName}.${association?.name}`);
+    return cm.getCollectionField(`${association?.collectionName}.${association?.name}`);
   }
 };
 
@@ -114,7 +116,7 @@ const useResourceAction = (props, opts = {}) => {
    * fieldName: 来自 TableFieldProvider
    */
   const { resource, action, fieldName: tableFieldName, runWhenParamsChanged = false } = props;
-  const { fields } = useCollection();
+  const collection = useCollectionV2();
   const params = useActionParams(props);
   const api = useAPIClient();
   const fieldSchema = useFieldSchema();
@@ -123,7 +125,7 @@ const useResourceAction = (props, opts = {}) => {
   const record = useRecord();
   const isTemplate = fieldSchema['x-template-key'];
   if (!Reflect.has(params, 'appends')) {
-    const appends = fields?.filter((field) => field.target).map((field) => field.name);
+    const appends = collection.fields?.filter((field) => field.target).map((field) => field.name);
     if (appends?.length) {
       params['appends'] = appends;
     }
@@ -173,9 +175,9 @@ const useResourceAction = (props, opts = {}) => {
 export const MaybeCollectionProvider = (props) => {
   const { collection } = props;
   return collection ? (
-    <CollectionProvider collection={collection}>
+    <CollectionProviderV2 name={collection.name}>
       <ACLCollectionProvider>{props.children}</ACLCollectionProvider>
-    </CollectionProvider>
+    </CollectionProviderV2>
   ) : (
     props.children
   );
@@ -316,7 +318,7 @@ export const BlockProvider = (props: {
 
   return (
     <BlockContext.Provider value={blockValue}>
-      <MaybeCollectionProvider collection={collection}>
+      <MaybeCollectionProvider name={collection.name}>
         <BlockAssociationContext.Provider value={association}>
           <BlockResourceContext.Provider value={resource}>
             <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
@@ -341,8 +343,8 @@ export const useFilterByTk = () => {
   const { resource, __parent } = useContext(BlockRequestContext);
   const recordIndex = useRecordIndex();
   const record = useRecord();
-  const collection = useCollection();
-  const { getCollectionField } = useCollectionManager();
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const assoc = useContext(BlockAssociationContext);
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   if (!withoutTableFieldResource) {
@@ -352,7 +354,7 @@ export const useFilterByTk = () => {
   }
 
   if (assoc) {
-    const association = getCollectionField(assoc);
+    const association = cm.getCollectionField(assoc);
     return record?.[association.targetKey || 'id'];
   }
   return record?.[collection.filterTargetKey || 'id'];
@@ -360,20 +362,20 @@ export const useFilterByTk = () => {
 
 export const useSourceIdFromRecord = () => {
   const record = useRecord();
-  const { getCollectionField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const assoc = useContext(BlockAssociationContext);
   if (assoc) {
-    const association = getCollectionField(assoc);
+    const association = cm.getCollectionField(assoc);
     return record?.[association.sourceKey || 'id'];
   }
 };
 
 export const useSourceIdFromParentRecord = () => {
   const record = useRecord();
-  const { getCollectionField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const assoc = useContext(BlockAssociationContext);
   if (assoc) {
-    const association = getCollectionField(assoc);
+    const association = cm.getCollectionField(assoc);
     return record?.__parent?.[association.sourceKey || 'id'];
   }
 };
@@ -381,12 +383,12 @@ export const useSourceIdFromParentRecord = () => {
 export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
   const record = useRecord();
-  const { fields } = useCollection();
+  const collection = useCollectionV2();
   const fieldSchema = useFieldSchema();
-  const { getCollectionJoinField } = useCollectionManager();
-  const collectionField = getCollectionJoinField(fieldSchema?.['x-decorator-props']?.resource);
-  const filterFields = fields
-    .filter((v) => {
+  const cm = useCollectionManagerV2();
+  const collectionField = cm.getCollectionField(fieldSchema?.['x-decorator-props']?.resource);
+  const filterFields = collection
+    .getFields((v) => {
       return ['boolean', 'date', 'integer', 'radio', 'sort', 'string', 'time', 'uid', 'uuid'].includes(v.type);
     })
     .map((v) => v.name);

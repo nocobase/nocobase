@@ -3,6 +3,8 @@ import { AuditLogsProvider } from './AuditLogsProvider';
 import { auditLogsTableActionColumnInitializers } from './initializers/AuditLogsTableActionColumnInitializers';
 import { auditLogsTableActionInitializers } from './initializers/AuditLogsTableActionInitializers';
 import { auditLogsTableColumnInitializers } from './initializers/AuditLogsTableColumnInitializers';
+import { auditLogsCollection } from './deplicated/AuditLogs';
+import { auditChangesCollection, auditCollectionsCollection } from './collections';
 export * from './AuditLogsBlockInitializer';
 export * from './AuditLogsProvider';
 
@@ -21,6 +23,8 @@ export class AuditLogsPlugin extends Plugin {
     };
     blockInitializers.add('otherBlocks.auditLogs', auditLogs);
     recordBlockInitializers.add('otherBlocks.auditLogs', auditLogs);
+
+    this.collectionManager.addCollections([auditLogsCollection, auditChangesCollection, auditCollectionsCollection]);
   }
 }
 

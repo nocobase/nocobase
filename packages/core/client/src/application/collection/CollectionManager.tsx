@@ -1,5 +1,3 @@
-import { filter } from 'lodash';
-
 import { CollectionFieldInterfaceOptions, CollectionFieldInterfaceV2 } from './CollectionFieldInterface';
 import { CollectionTemplateOptionsV2, CollectionTemplateV2 } from './CollectionTemplate';
 import { CollectionFieldOptionsV2, CollectionOptionsV2, CollectionV2 } from './Collection';
@@ -42,9 +40,16 @@ export class CollectionManagerV2<Mixins = {}> {
     [DEFAULT_COLLECTION_NAMESPACE_NAME]: DEFAULT_COLLECTION_NAMESPACE_TITLE,
   };
   protected reloadFn?: () => Promise<any>;
+  protected collectionArr: Record<string, CollectionV2[]> = {};
+  protected options: CollectionManagerOptionsV2 = {};
 
   constructor(options: CollectionManagerOptionsV2 = {}, app: Application) {
+    this.options = options;
     this.app = app;
+    this.collectionMixins = options.collectionMixins || [];
+    this.addCollectionTemplates(options.collectionTemplates || []);
+    this.addCollectionFieldInterfaces(options.collectionFieldInterfaces || []);
+    this.addCollectionNamespaces(options.collectionNamespaces || {});
     if (Array.isArray(options.collections)) {
       this.addCollections(options.collections);
     } else {
@@ -52,10 +57,6 @@ export class CollectionManagerV2<Mixins = {}> {
         this.addCollections(options.collections[ns], { ns });
       });
     }
-    this.addCollectionTemplates(options.collectionTemplates || []);
-    this.addCollectionFieldInterfaces(options.collectionFieldInterfaces || []);
-    this.addCollectionNamespaces(options.collectionNamespaces || {});
-    this.collectionMixins = options.collectionMixins || [];
   }
 
   private checkNamespace(ns: string) {
@@ -67,7 +68,14 @@ export class CollectionManagerV2<Mixins = {}> {
   }
 
   addCollectionMixins(mixins: CollectionMixinConstructor[]) {
+    if (mixins.length === 0) return;
     this.collectionMixins.push(...mixins);
+
+    // 重新添加数据表
+    Object.keys(this.collections).forEach((ns) => {
+      const collections = this.getCollections(undefined, { ns });
+      this.addCollections(collections, { ns });
+    });
   }
 
   // collections
@@ -108,7 +116,16 @@ export class CollectionManagerV2<Mixins = {}> {
     return this.collections;
   }
   getCollections(predicate?: (collection: CollectionV2) => boolean, options: GetCollectionOptions = {}) {
-    return filter(Object.values(this.collections[options.ns || DEFAULT_COLLECTION_NAMESPACE_NAME]), predicate);
+    const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
+    if (!predicate && this.collectionArr[ns]) {
+      return this.collectionArr[ns];
+    }
+
+    this.collectionArr[ns] = Object.values(this.collections[ns] || {});
+    if (predicate) {
+      return this.collectionArr[ns].filter(predicate);
+    }
+    return this.collectionArr[ns];
   }
   /**
    * 获取数据表
@@ -119,6 +136,7 @@ export class CollectionManagerV2<Mixins = {}> {
    */
   getCollection(path: string, options: GetCollectionOptions = {}): (Mixins & CollectionV2) | undefined {
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
+    if (!path) return undefined;
     this.checkNamespace(ns);
     if (path.split('.').length > 1) {
       // 获取到关联字段
@@ -182,6 +200,7 @@ export class CollectionManagerV2<Mixins = {}> {
 
   // CollectionTemplates
   addCollectionTemplates(templates: CollectionTemplateV2[] | CollectionTemplateOptionsV2[]) {
+    const newCollectionTemplateNames = {};
     templates
       .map((template) => {
         if (template instanceof CollectionTemplateV2) {
@@ -191,12 +210,26 @@ export class CollectionManagerV2<Mixins = {}> {
       })
       .forEach((template) => {
         this.collectionTemplates[template.name] = template;
+        newCollectionTemplateNames[template.name] = true;
       });
+
+    // 重新添加数据表
+    const reAddCollections = Object.keys(this.collections).reduce<Record<string, CollectionV2[]>>((acc, ns) => {
+      acc[ns] = this.getCollections(
+        (collection) => {
+          return newCollectionTemplateNames[collection.template];
+        },
+        { ns },
+      );
+      return acc;
+    }, {});
+
+    Object.keys(reAddCollections).forEach((ns) => {
+      this.addCollections(reAddCollections[ns], { ns });
+    });
   }
   getCollectionTemplates() {
-    return Object.values(this.collectionTemplates).sort(
-      (a, b) => (a.getOption('order') || 0) - (b.getOption('order') || 0),
-    );
+    return Object.values(this.collectionTemplates).sort((a, b) => (a.order || 0) - (b.order || 0));
   }
   getCollectionTemplate(name: string) {
     return this.collectionTemplates[name];
@@ -242,7 +275,7 @@ export class CollectionManagerV2<Mixins = {}> {
     return this.collectionFieldInterfaces[name];
   }
 
-  setReloadCollections(fn: () => Promise<any>) {
+  setReloadCollections(fn: (...args: any[]) => Promise<any>) {
     this.reloadFn = fn;
   }
 
@@ -252,5 +285,14 @@ export class CollectionManagerV2<Mixins = {}> {
       this.setCollections(collections);
       refresh && refresh();
     }
+  }
+
+  clone() {
+    return {
+      collections: Object.values(this.collections[DEFAULT_COLLECTION_NAMESPACE_NAME]),
+      collectionNamespaces: this.collectionNamespaces,
+      collectionTemplates: Object.values(this.collectionTemplates),
+      collectionFieldInterfaces: Object.values(this.collectionFieldInterfaces),
+    };
   }
 }

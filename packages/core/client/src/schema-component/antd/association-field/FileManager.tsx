@@ -12,7 +12,6 @@ import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
 import { EllipsisWithTooltip } from '../input';
@@ -21,6 +20,7 @@ import { ReadPrettyInternalViewer } from './InternalViewer';
 import { useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, isShowFilePicker, useLabelUiSchema } from './util';
+import { CollectionProviderV2, useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 const useTableSelectorProps = () => {
   const field: any = useField();
@@ -69,8 +69,8 @@ const InternalFileManager = (props) => {
   const fieldNames = useFieldNames(props);
   const field: any = useField();
   const [options, setOptions] = useState([]);
-  const { getField } = useCollection();
-  const collectionField = getField(field.props.name);
+  const collection = useCollectionV2();
+  const collectionField = collection.getField(field.props.name);
   const labelUiSchema = useLabelUiSchema(collectionField?.target, fieldNames?.label || 'label');
   const compile = useCompile();
   const { modalProps } = useActionContext();
@@ -169,7 +169,7 @@ const InternalFileManager = (props) => {
         }}
       >
         <RecordPickerProvider {...pickerProps}>
-          <CollectionProvider name={collectionField?.target}>
+          <CollectionProviderV2 name={collectionField?.target}>
             <FormProvider>
               <TableSelectorParamsProvider params={{ filter: getFilter() }}>
                 <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps }}>
@@ -184,7 +184,7 @@ const InternalFileManager = (props) => {
                 </SchemaComponentOptions>
               </TableSelectorParamsProvider>
             </FormProvider>
-          </CollectionProvider>
+          </CollectionProviderV2>
         </RecordPickerProvider>
       </ActionContextProvider>
     </div>
@@ -194,9 +194,10 @@ const InternalFileManager = (props) => {
 const FileManageReadPretty = connect((props) => {
   const fieldNames = useFieldNames(props);
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
-  const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2();
+  const collectionField =
+    collection.getField(fieldSchema.name) || cm.getCollectionField(fieldSchema['x-collection-field']);
   const labelUiSchema = useLabelUiSchema(collectionField?.target, fieldNames?.label || 'label');
   const showFilePicker = isShowFilePicker(labelUiSchema);
   if (showFilePicker) {

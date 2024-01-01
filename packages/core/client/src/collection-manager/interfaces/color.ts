@@ -1,7 +1,7 @@
 import { defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const color: IField = {
+export const color = new CollectionFieldInterfaceV2({
   name: 'color',
   type: 'object',
   group: 'basic',
@@ -23,4 +23,4 @@ export const color: IField = {
   filterable: {
     operators: operators.string,
   },
-};
+});

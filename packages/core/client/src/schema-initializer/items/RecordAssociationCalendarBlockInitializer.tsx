@@ -4,12 +4,16 @@ import { SchemaOptionsContext } from '@formily/react';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useCollectionManager } from '../../collection-manager';
 import { useGlobalTheme } from '../../global-theme';
 import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createCalendarBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import {
+  SchemaInitializerItem,
+  useCollectionManagerV2,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+} from '../../application';
 
 export const RecordAssociationCalendarBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -18,9 +22,9 @@ export const RecordAssociationCalendarBlockInitializer = () => {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
-  const { getCollection } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const field = itemConfig.field;
-  const collection = getCollection(field.target);
+  const collection = cm.getCollection(field.target);
   const resource = `${field.collectionName}.${field.name}`;
   const { theme } = useGlobalTheme();
 

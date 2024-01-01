@@ -2,13 +2,13 @@ import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
 import {
   useBlockAssociationContext,
-  useCollection,
   useSchemaTemplateManager,
   useRecordCollectionDataSourceItems,
   useBlockRequestContext,
   useSchemaInitializer,
   SchemaInitializerItem,
   useSchemaInitializerItem,
+  useCollectionV2,
 } from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -74,7 +74,7 @@ export const SnapshotBlockInitializersDetailItem = () => {
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const collection = targetCollection || useCollection();
+  const collection = targetCollection || useCollectionV2();
   const association = useBlockAssociationContext();
   const { block } = useBlockRequestContext();
   const actionInitializers =

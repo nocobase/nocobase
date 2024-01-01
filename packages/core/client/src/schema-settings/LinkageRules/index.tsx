@@ -3,7 +3,6 @@ import { Form } from '@formily/core';
 import { observer, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { FormBlockContext } from '../../block-provider';
-import { useCollectionManager } from '../../collection-manager';
 import { RecordProvider } from '../../record-provider';
 import { SchemaComponent } from '../../schema-component';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
@@ -13,6 +12,8 @@ import { VariableInput, getShouldChange } from '../VariableInput/VariableInput';
 import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 import { EnableLinkage } from './components/EnableLinkage';
 import { ArrayCollapse } from './components/LinkageHeader';
+import { useCollectionManagerV2 } from '../../application';
+import { InheritanceCollectionMixin } from '../../collection-manager';
 
 interface usePropsReturn {
   options: any;
@@ -39,7 +40,7 @@ export const FormLinkageRules = observer(
     const { useProps, dynamicComponent } = props;
     const { options, defaultValues, collectionName, form, formBlockType, variables, localVariables, record } =
       useProps();
-    const { getAllCollectionsInheritChain } = useCollectionManager();
+    const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
 
     const components = useMemo(() => ({ ArrayCollapse }), []);
     const schema = useMemo(
@@ -101,7 +102,7 @@ export const FormLinkageRules = observer(
                                 collectionField,
                                 variables,
                                 localVariables,
-                                getAllCollectionsInheritChain,
+                                collectionManager: cm,
                               })}
                             />
                           );

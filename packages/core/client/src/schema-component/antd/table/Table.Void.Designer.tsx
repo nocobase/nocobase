@@ -2,7 +2,7 @@ import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useResourceActionContext } from '../../../collection-manager';
+import { useResourceActionContext } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
 import {
   GeneralSchemaDesigner,
@@ -15,9 +15,10 @@ import {
 } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
+import { useCollectionV2 } from '../../../application';
 
 export const TableVoidDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title } = useCollectionV2();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);

@@ -7,8 +7,8 @@ import {
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
   isPatternDisabled,
-  useCollection,
-  useCollectionManager,
+  useCollectionManagerV2,
+  useCollectionV2,
   useDesignable,
   useFormBlockContext,
 } from '@nocobase/client';
@@ -17,14 +17,15 @@ import React from 'react';
 import { useMapTranslation } from '../locale';
 
 const Designer = () => {
-  const { getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useMapTranslation();
   const { dn, refresh } = useDesignable();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const collectionField =
+    collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']);
   const originalTitle = collectionField?.uiSchema?.title;
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,

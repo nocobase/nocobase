@@ -6,10 +6,10 @@ import { uniqBy } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
+import { useCollectionManagerV2, useCollectionV2 } from '../../../application';
 const EMPTY = 'N/A';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
@@ -43,19 +43,19 @@ const InternalRemoteSelect = connect(
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
     const isQuickAdd = fieldSchema['x-component-props']?.addMode === 'quickAdd';
-    const { getField } = useCollection();
+    const collection = useCollectionV2();
     const searchData = useRef(null);
-    const { getCollectionJoinField, getInterface } = useCollectionManager();
-    const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema.name as string);
+    const cm = useCollectionManagerV2();
+    const collectionField = collection.getField(fieldSchema.name) || cm.getCollectionField(fieldSchema.name as string);
     const targetField =
       _targetField ||
       (collectionField?.target &&
         fieldNames?.label &&
-        getCollectionJoinField(`${collectionField.target}.${fieldNames.label}`));
+        cm.getCollectionField(`${collectionField.target}.${fieldNames.label}`));
 
     const operator = useMemo(() => {
       if (targetField?.interface) {
-        return getInterface(targetField.interface)?.filterable?.operators[0].value || '$includes';
+        return cm.getCollectionFieldInterface(targetField.interface)?.filterable?.operators[0].value || '$includes';
       }
       return '$includes';
     }, [targetField]);

@@ -1,5 +1,5 @@
+import { useCollectionV2 } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
-import { useCollection } from '../../collection-manager';
 
 // 表单的操作配置
 export const gridCardActionInitializers = new SchemaInitializer({
@@ -35,7 +35,7 @@ export const gridCardActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
@@ -60,7 +60,7 @@ export const gridCardActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -113,7 +113,7 @@ export const gridCardItemActionInitializers = new SchemaInitializer({
             'x-align': 'left',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -128,7 +128,7 @@ export const gridCardItemActionInitializers = new SchemaInitializer({
             'x-align': 'left',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return collection.template !== 'sql';
           },
         },
@@ -217,7 +217,7 @@ export const gridCardItemActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -229,7 +229,7 @@ export const gridCardItemActionInitializers = new SchemaInitializer({
             'x-action': 'customize:table:request',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },

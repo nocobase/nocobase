@@ -3,14 +3,14 @@ import { isArr } from '@formily/shared';
 import { dayjs, getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import { Tag } from 'antd';
 import React from 'react';
-import { CollectionFieldOptions, useCollectionManager } from '../../../collection-manager';
+import { CollectionFieldOptionsV2, useCollectionManagerV2 } from '../../../application';
 
-export const useLabelUiSchema = (collectionField: CollectionFieldOptions, label: string): ISchema => {
-  const { getCollectionJoinField } = useCollectionManager();
+export const useLabelUiSchema = (collectionField: CollectionFieldOptionsV2, label: string): ISchema => {
+  const cm = useCollectionManagerV2();
   if (!collectionField) {
     return;
   }
-  const labelField = getCollectionJoinField(`${collectionField.target}.${label}`) as CollectionFieldOptions;
+  const labelField = cm.getCollectionField(`${collectionField.target}.${label}`);
   return labelField?.uiSchema;
 };
 
@@ -25,7 +25,7 @@ export const getLabelFormatValue = (labelUiSchema: ISchema, value: any, isTag = 
   if (Array.isArray(labelUiSchema?.enum) && value) {
     const opt: any = labelUiSchema.enum.find((option: any) => option.value === value);
     if (isTag) {
-      return React.createElement(Tag, { color: opt?.color, children: opt?.label });
+      return React.createElement(Tag, { color: opt?.color }, opt?.label);
     }
     return opt?.label;
   }

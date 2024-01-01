@@ -3,7 +3,7 @@ import { Tag, TreeSelect } from 'antd';
 import type { DefaultOptionType } from 'rc-tree-select/es/TreeSelect';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions, useCollectionManager, useCompile } from '../../..';
+import { CollectionManagerV2, useCollectionManagerV2, useCompile } from '../../..';
 
 export type AppendsTreeSelectProps = {
   value: string[] | string;
@@ -27,7 +27,7 @@ function usePropsCollection({ collection }) {
 
 type CallScope = {
   compile?(value: string): string;
-  getCollectionFields?(name: any): CollectionFieldOptions[];
+  cm: CollectionManagerV2;
   filter(field): boolean;
 };
 
@@ -52,12 +52,12 @@ function trueFilter(field) {
 }
 
 function getCollectionFieldOptions(this: CallScope, collection, parentNode?): TreeOptionType[] {
-  const fields = this.getCollectionFields(collection).filter(isAssociation);
+  const fields = this.cm.getCollectionFields(collection).filter(isAssociation);
   const boundLoadChildren = loadChildren.bind(this);
   return fields.filter(this.filter).map((field) => {
     const key = parentNode ? `${parentNode.value ? `${parentNode.value}.` : ''}${field.name}` : field.name;
     const fieldTitle = this.compile(field.uiSchema?.title) ?? field.name;
-    const isLeaf = !this.getCollectionFields(field.target).filter(isAssociation).filter(this.filter).length;
+    const isLeaf = !this.cm.getCollectionFields(field.target).filter(isAssociation).filter(this.filter).length;
     return {
       pId: parentNode?.key ?? null,
       id: key,
@@ -83,7 +83,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
     rootOption,
     ...restProps
   } = props;
-  const { getCollectionFields } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const compile = useCompile();
   const { t } = useTranslation();
   const [optionsMap, setOptionsMap] = useState({});
@@ -119,11 +119,7 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
           isLeaf: false,
         }
       : null;
-    const treeData = getCollectionFieldOptions.call(
-      { compile, getCollectionFields, filter },
-      baseCollection,
-      parentNode,
-    );
+    const treeData = getCollectionFieldOptions.call({ compile, cm, filter }, baseCollection, parentNode);
     const map = treeData.reduce((result, item) => Object.assign(result, { [item.value]: item }), {});
     if (parentNode) {
       map[parentNode.value] = parentNode;
@@ -217,8 +213,8 @@ export const AppendsTreeSelect: React.FC<AppendsTreeSelectProps> = (props) => {
   const valueKeys: string[] = props.multiple
     ? (propsValue as string[])
     : propsValue != null
-    ? [propsValue as string]
-    : [];
+      ? [propsValue as string]
+      : [];
 
   return (
     <TreeSelect

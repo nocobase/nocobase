@@ -1,11 +1,11 @@
 import _ from 'lodash';
-import { CollectionFieldOptions } from '../../collection-manager';
+import { CollectionFieldOptionsV2 } from '../../application';
 
 interface Deps {
   /**
    * 消费当前变量值的 collection field，根据其值去判断应该怎么转换变量值
    */
-  targetCollectionField: CollectionFieldOptions;
+  targetCollectionField: CollectionFieldOptionsV2;
 }
 
 /**

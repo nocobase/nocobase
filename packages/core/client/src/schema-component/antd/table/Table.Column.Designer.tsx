@@ -1,6 +1,5 @@
 import { ISchema, useField, useFieldSchema, useForm } from '@formily/react';
 import React from 'react';
-import { useCollectionManager } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDivider,
@@ -10,14 +9,15 @@ import {
 } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 import { useActionContext } from '../action';
+import { useCollectionManagerV2 } from '../../../application';
 
 const useLabelFields = (collectionName?: any) => {
   const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   if (!collectionName) {
     return [];
   }
-  const targetFields = getCollectionFields(collectionName);
+  const targetFields = cm.getCollectionFields(collectionName);
   return targetFields
     ?.filter?.((field) => !field?.target && field.type !== 'boolean')
     ?.map?.((field) => {

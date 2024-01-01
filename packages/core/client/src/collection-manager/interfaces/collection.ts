@@ -1,8 +1,8 @@
 import { ISchema } from '@formily/react';
 import { collectionDataSource, defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const collection: IField = {
+export const collection = new CollectionFieldInterfaceV2({
   name: 'collection',
   type: 'string',
   group: 'advanced',
@@ -34,4 +34,4 @@ export const collection: IField = {
       props['ellipsis'] = true;
     }
   },
-};
+});

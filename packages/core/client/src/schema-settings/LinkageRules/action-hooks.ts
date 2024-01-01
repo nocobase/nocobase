@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager } from '../../collection-manager';
 import { ActionType } from './type';
+import { useCollectionManagerV2 } from '../../application';
 
 export const useLinkageCollectionFieldOptions = (collectionName: string) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
-  const fields = getCollectionFields(collectionName).filter((v) => {
+  const cm = useCollectionManagerV2();
+  const fields = cm.getCollectionFields(collectionName).filter((v) => {
     return !['id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'].includes(v.name);
   });
   const { t } = useTranslation();
@@ -20,7 +20,7 @@ export const useLinkageCollectionFieldOptions = (collectionName: string) => {
     { label: t('Value'), value: ActionType.Value, selected: false, schema: {} },
   ];
   const field2option = (field, depth) => {
-    const fieldInterface = getInterface(field.interface);
+    const fieldInterface = cm.getCollectionFieldInterface(field.interface);
     if (!fieldInterface) {
       return;
     }

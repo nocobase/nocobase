@@ -1,9 +1,9 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { defaultProps } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const subTable: IField = {
+export const subTable = new CollectionFieldInterfaceV2({
   name: 'subTable',
   type: 'object',
   group: 'relation',
@@ -208,4 +208,4 @@ export const subTable: IField = {
     //   'x-component': 'DatabaseField',
     // },
   },
-};
+});

@@ -3,8 +3,6 @@ import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAPIClient } from '../api-client';
-import type { CollectionFieldOptions } from '../collection-manager';
-import { useCollectionManager } from '../collection-manager';
 import { useCompile } from '../schema-component';
 import useBuiltInVariables from './hooks/useBuiltinVariables';
 import { VariableOption, VariablesContextType } from './types';
@@ -14,6 +12,7 @@ import { getPath } from './utils/getPath';
 import { clearRequested, getRequested, hasRequested, stashRequested } from './utils/hasRequested';
 import { isVariable } from './utils/isVariable';
 import { uniq } from './utils/uniq';
+import { CollectionFieldOptionsV2, useCollectionManagerV2 } from '../application';
 
 export const VariablesContext = createContext<VariablesContextType>(null);
 
@@ -33,7 +32,7 @@ const getFieldPath = (variablePath: string, variableToCollectionName: Record<str
 const VariablesProvider = ({ children }) => {
   const ctxRef = useRef<Record<string, any>>({});
   const api = useAPIClient();
-  const { getCollectionJoinField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const compile = useCompile();
   const { builtinVariables } = useBuiltInVariables();
 
@@ -71,7 +70,7 @@ const VariablesProvider = ({ children }) => {
         }
 
         const key = list[index];
-        const associationField: CollectionFieldOptions = getCollectionJoinField(
+        const associationField: CollectionFieldOptionsV2 = cm.getCollectionField(
           getFieldPath(list.slice(0, index + 1).join('.'), _variableToCollectionName),
         );
         if (Array.isArray(current)) {
@@ -124,7 +123,7 @@ const VariablesProvider = ({ children }) => {
 
       return compile(_.isFunction(current) ? current() : current);
     },
-    [getCollectionJoinField],
+    [cm],
   );
 
   /**
@@ -208,7 +207,7 @@ const VariablesProvider = ({ children }) => {
       }
 
       const path = getPath(variableString);
-      let result = getCollectionJoinField(
+      let result = cm.getCollectionField(
         getFieldPath(
           path,
           mergeVariableToCollectionNameWithLocalVariables(variableToCollectionName, localVariables as VariableOption[]),
@@ -224,7 +223,7 @@ const VariablesProvider = ({ children }) => {
 
       return result;
     },
-    [getCollectionJoinField],
+    [cm],
   );
 
   useEffect(() => {

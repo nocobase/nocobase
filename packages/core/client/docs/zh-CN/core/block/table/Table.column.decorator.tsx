@@ -1,13 +1,13 @@
 import { useField, useFieldSchema } from '@formily/react';
-import { useCollection, useCollectionManager, useCompile, useSchemaToolbarRender } from '@nocobase/client';
+import { useCollectionManagerV2, useCollectionV2, useCompile, useSchemaToolbarRender } from '@nocobase/client';
 import React, { useLayoutEffect } from 'react';
 import { isCollectionFieldComponent } from './Table.useProps';
 
 export const useColumnSchema = () => {
-  const { getField } = useCollection();
+  const collection = useCollectionV2();
   const compile = useCompile();
   const columnSchema = useFieldSchema();
-  const { getCollectionJoinField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const fieldSchema = columnSchema.reduceProperties((buf, s) => {
     if (isCollectionFieldComponent(s)) {
       return s;
@@ -18,7 +18,8 @@ export const useColumnSchema = () => {
     return {};
   }
 
-  const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
+  const collectionField =
+    collection.getField(fieldSchema.name) || cm.getCollectionField(fieldSchema?.['x-collection-field']);
   return { columnSchema, fieldSchema, collectionField, uiSchema: compile(collectionField?.uiSchema) };
 };
 

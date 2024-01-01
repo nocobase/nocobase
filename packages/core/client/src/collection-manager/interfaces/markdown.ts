@@ -1,9 +1,9 @@
 import { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
 import { defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const markdown: IField = {
+export const markdown = new CollectionFieldInterfaceV2({
   name: 'markdown',
   type: 'object',
   title: '{{t("Markdown")}}',
@@ -28,7 +28,7 @@ export const markdown: IField = {
       schema['x-component-props']['ellipsis'] = true;
     }
   },
-  validateSchema(fieldSchema) {
+  validateSchema() {
     return {
       max: {
         type: 'number',
@@ -72,4 +72,4 @@ export const markdown: IField = {
   filterable: {
     operators: operators.string,
   },
-};
+});

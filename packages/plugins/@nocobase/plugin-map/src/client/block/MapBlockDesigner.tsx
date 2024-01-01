@@ -13,9 +13,11 @@ import {
   SchemaSettingsRemove,
   SchemaSettingsSelectItem,
   SchemaSettingsTemplate,
+  getCollectionFieldsOptions,
   mergeFilter,
-  useCollection,
-  useCollectionManager,
+  useCollectionManagerV2,
+  useCollectionV2,
+  useCompile,
   useDesignable,
   useFormBlockContext,
   useSchemaTemplate,
@@ -27,29 +29,33 @@ import { useMapBlockContext } from './MapBlockProvider';
 import { findNestedOption } from './utils';
 
 export const MapBlockDesigner = () => {
-  const { name, title } = useCollection();
+  const collection = useCollectionV2();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
   const { service } = useMapBlockContext();
   const { t } = useMapTranslation();
   const { dn } = useDesignable();
-  const { getCollectionFieldsOptions } = useCollectionManager();
-  const collection = useCollection();
+  const cm = useCollectionManagerV2();
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
   const defaultZoom = fieldSchema?.['x-component-props']?.['zoom'] || 13;
-
+  const compile = useCompile();
   const template = useSchemaTemplate();
 
   const mapFieldOptions = getCollectionFieldsOptions(collection?.name, ['point', 'lineString', 'polygon'], {
     association: ['o2o', 'obo', 'oho', 'o2m', 'm2o', 'm2m'],
+    collectionManager: cm,
+    compile,
   });
-  const markerFieldOptions = getCollectionFieldsOptions(collection?.name, 'string');
+  const markerFieldOptions = getCollectionFieldsOptions(collection?.name, 'string', {
+    collectionManager: cm,
+    compile,
+  });
   const isPointField = findNestedOption(fieldNames.field, mapFieldOptions)?.type === 'point';
 
   return (
-    <GeneralSchemaDesigner template={template} title={title || name}>
+    <GeneralSchemaDesigner template={template} title={collection.title || collection.name}>
       <SchemaSettingsBlockTitleItem />
       <FixedBlockDesignerItem />
       <SchemaSettingsCascaderItem
@@ -126,7 +132,7 @@ export const MapBlockDesigner = () => {
         }}
       ></SchemaSettingsModalItem>
       <SchemaSettingsDataScope
-        collectionName={name}
+        collectionName={collection.name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
         form={form}
         onSubmit={({ filter }) => {

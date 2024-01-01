@@ -176,7 +176,7 @@ function getNextAppends(field, appends: string[] | null): string[] | null {
   return appends.filter((item) => item.startsWith(fieldPrefix)).map((item) => item.replace(fieldPrefix, ''));
 }
 
-function filterTypedFields({ fields, types, appends, depth = 1, compile, getCollectionFields }) {
+function filterTypedFields({ fields, types, appends, depth = 1, compile, collectionManager }) {
   return fields.filter((field) => {
     const match = types?.length ? types.some((type) => matchFieldType(field, type)) : true;
     if (isAssociationField(field)) {
@@ -187,12 +187,12 @@ function filterTypedFields({ fields, types, appends, depth = 1, compile, getColl
         return (
           match ||
           filterTypedFields({
-            fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
+            fields: getNormalizedFields(field.target, { compile, collectionManager }),
             types,
             depth: depth - 1,
             appends,
             compile,
-            getCollectionFields,
+            collectionManager,
           })
         );
       }
@@ -204,12 +204,12 @@ function filterTypedFields({ fields, types, appends, depth = 1, compile, getColl
         return (
           (nextAppends?.length || included) &&
           filterTypedFields({
-            fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
+            fields: getNormalizedFields(field.target, { compile, collectionManager }),
             types,
             // depth: depth - 1,
             appends: nextAppends,
             compile,
-            getCollectionFields,
+            collectionManager,
           }).length
         );
       }
@@ -246,8 +246,8 @@ export function useWorkflowVariableOptions(options: OptionsOfUseVariableOptions 
   return result;
 }
 
-function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
-  const fields = getCollectionFields(collectionName);
+function getNormalizedFields(collectionName, { compile, collectionManager }) {
+  const fields = collectionManager.getCollectionFields(collectionName);
   const foreignKeyFields: any[] = [];
   const otherFields: any[] = [];
   fields.forEach((field) => {
@@ -330,12 +330,12 @@ export function getCollectionFieldOptions(options): VariableOption[] {
     appends = [],
     depth = 1,
     compile,
-    getCollectionFields,
+    collectionManager,
     fieldNames = defaultFieldNames,
   } = options;
-  const normalizedFields = getNormalizedFields(collection, { compile, getCollectionFields });
+  const normalizedFields = getNormalizedFields(collection, { compile, collectionManager });
   const computedFields = fields ?? normalizedFields;
-  const boundLoadChildren = loadChildren.bind({ compile, getCollectionFields, fieldNames });
+  const boundLoadChildren = loadChildren.bind({ compile, collectionManager, fieldNames });
 
   const result: VariableOption[] = filterTypedFields({
     fields: computedFields,
@@ -343,7 +343,7 @@ export function getCollectionFieldOptions(options): VariableOption[] {
     depth,
     appends,
     compile,
-    getCollectionFields,
+    collectionManager,
   }).map((field) => {
     const label = compile(field.uiSchema?.title || field.name);
     const nextAppends = getNextAppends(field, appends);

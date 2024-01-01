@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { useFormBlockContext, useTableBlockContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
 import { FilterBlockType } from '../../../filter-provider/utils';
 import { RecordProvider, useRecord } from '../../../record-provider';
@@ -25,10 +24,11 @@ import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { FixedBlockDesignerItem } from '../page';
+import { useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 export const TableBlockDesigner = () => {
-  const { name, title, sortable } = useCollection();
-  const { getCollectionField, getCollection } = useCollectionManager();
+  const { name, title, sortable } = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
@@ -53,10 +53,10 @@ export const TableBlockDesigner = () => {
         };
   });
   const template = useSchemaTemplate();
-  const collection = useCollection();
+  const collection = useCollectionV2();
   const { dragSort, resource } = field.decoratorProps;
-  const collectionField = resource && getCollectionField(resource);
-  const treeCollection = resource?.includes('.') ? getCollection(collectionField?.target)?.tree : !!collection?.tree;
+  const collectionField = resource && cm.getCollectionField(resource);
+  const treeCollection = resource?.includes('.') ? cm.getCollection(collectionField?.target)?.tree : !!collection?.tree;
   const onDataScopeSubmit = useCallback(
     ({ filter }) => {
       filter = removeNullCondition(filter);
@@ -82,7 +82,7 @@ export const TableBlockDesigner = () => {
   return (
     // fix https://nocobase.height.app/T-2259
     <RecordProvider parent={record} record={{}}>
-      <GeneralSchemaDesigner template={template} title={title || name}>
+      <GeneralSchemaDesigner template={template} title={collection.title || collection.name}>
         <SchemaSettingsBlockTitleItem />
         {collection?.tree && collectionField?.collectionName === collectionField?.target && (
           <SchemaSettingsSwitchItem

@@ -2,8 +2,13 @@ import { Field } from '@formily/core';
 import { Schema, useFieldSchema, useForm } from '@formily/react';
 import _ from 'lodash';
 import { useCallback, useEffect, useMemo } from 'react';
-import { CollectionFieldOptions, useCollection, useCollectionManager } from '../../../../collection-manager';
 import { isSubMode } from '../../association-field/util';
+import {
+  CollectionFieldOptionsV2,
+  CollectionManagerV2,
+  useCollectionManagerV2,
+  useCollectionV2,
+} from '../../../../application';
 
 /**
  * #### 处理 `子表单` 和 `子表格` 中的特殊情况
@@ -14,16 +19,16 @@ import { isSubMode } from '../../association-field/util';
 export const useSpecialCase = () => {
   const form = useForm();
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const { getCollectionField } = useCollectionManager();
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2();
 
   const collectionField = useMemo(() => {
-    return getField(fieldSchema.name);
-  }, [fieldSchema.name, getField]);
+    return collection?.getField(fieldSchema.name);
+  }, [fieldSchema.name, collection]);
 
   const isSpecialCase = useCallback(() => {
-    return isSpecialCaseField({ collectionField, fieldSchema, getCollectionField });
-  }, [collectionField, fieldSchema, getCollectionField]);
+    return isSpecialCaseField({ collectionField, fieldSchema, collectionManager: cm });
+  }, [collectionField, fieldSchema, cm]);
 
   const setDefaultValue = useCallback(
     (value: any) => {
@@ -72,16 +77,16 @@ export function getParentFieldSchema(fieldSchema: Schema) {
 export function isSpecialCaseField({
   collectionField,
   fieldSchema,
-  getCollectionField,
+  collectionManager,
 }: {
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptionsV2;
   fieldSchema: Schema;
-  getCollectionField: (name: string) => CollectionFieldOptions;
+  collectionManager: CollectionManagerV2;
 }) {
   if (collectionField && ['hasOne', 'belongsTo'].includes(collectionField.type) && fieldSchema) {
     const parentFieldSchema = getParentFieldSchema(fieldSchema);
     if (parentFieldSchema && parentFieldSchema['x-collection-field']) {
-      const parentCollectionField = getCollectionField(parentFieldSchema['x-collection-field']);
+      const parentCollectionField = collectionManager.getCollectionField(parentFieldSchema['x-collection-field']);
       if (['hasMany', 'belongsToMany'].includes(parentCollectionField?.type)) {
         return true;
       }

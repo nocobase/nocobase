@@ -1,8 +1,8 @@
 import { i18n } from '../../i18n';
 import { defaultProps, unique } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const password: IField = {
+export const password = new CollectionFieldInterfaceV2({
   name: 'password',
   type: 'object',
   group: 'basic',
@@ -24,7 +24,7 @@ export const password: IField = {
     ...defaultProps,
     unique,
   },
-  validateSchema(fieldSchema) {
+  validateSchema() {
     return {
       max: {
         type: 'number',
@@ -65,4 +65,4 @@ export const password: IField = {
       },
     };
   },
-};
+});

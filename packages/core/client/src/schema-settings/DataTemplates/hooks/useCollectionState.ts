@@ -1,9 +1,10 @@
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import React, { useCallback, useState } from 'react';
-import { useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../../schema-component';
 import { TreeNode } from '../TreeLabel';
+import { useCollectionManagerV2 } from '../../../application';
+import { InheritanceCollectionMixin } from '../../../collection-manager';
 
 // 过滤掉系统字段
 export const systemKeys = [
@@ -19,14 +20,14 @@ export const systemKeys = [
   'sequence',
 ];
 export const useCollectionState = (currentCollectionName: string) => {
-  const { getCollectionFields, getAllCollectionsInheritChain, getCollection, getInterface } = useCollectionManager();
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
   const [collectionList] = useState(getCollectionList);
   const compile = useCompile();
   const templateField: any = useField();
 
   function getCollectionList() {
-    const collections = getAllCollectionsInheritChain(currentCollectionName);
-    return collections.map((name) => ({ label: getCollection(name)?.title, value: name }));
+    const collections = cm.getCollection(currentCollectionName).getAllCollectionsInheritChain();
+    return collections.map((name) => ({ label: cm.getCollection(name)?.title, value: name }));
   }
 
   /**
@@ -37,7 +38,8 @@ export const useCollectionState = (currentCollectionName: string) => {
       return [];
     }
 
-    return getCollectionFields(collectionName)
+    return cm
+      .getCollectionFields(collectionName)
       .map((field) => {
         if (exclude.includes(field.name)) {
           return;
@@ -90,7 +92,8 @@ export const useCollectionState = (currentCollectionName: string) => {
     if (depth > maxDepth) {
       return [];
     }
-    return getCollectionFields(collectionName)
+    return cm
+      .getCollectionFields(collectionName)
       .map((field) => {
         if (!field.target || !field.interface) {
           return;
@@ -170,12 +173,12 @@ export const useCollectionState = (currentCollectionName: string) => {
   }, []);
 
   const getScopeDataSource = (resource: string) => {
-    const fields = getCollectionFields(resource);
+    const fields = cm.getCollectionFields(resource);
     const field2option = (field, depth) => {
       if (!field.interface) {
         return;
       }
-      const fieldInterface = getInterface(field.interface);
+      const fieldInterface = cm.getCollectionFieldInterface(field.interface);
       if (!fieldInterface?.filterable) {
         return;
       }
@@ -200,7 +203,7 @@ export const useCollectionState = (currentCollectionName: string) => {
         option['children'] = children;
       }
       if (nested) {
-        const targetFields = getCollectionFields(field.target);
+        const targetFields = cm.getCollectionFields(field.target);
         const options = getOptions(targetFields, depth + 1).filter(Boolean);
         option['children'] = option['children'] || [];
         option['children'].push(...options);
@@ -223,10 +226,10 @@ export const useCollectionState = (currentCollectionName: string) => {
   const useTitleFieldDataSource = (field) => {
     const fieldPath = field.path.entire.replace('titleField', 'collection');
     const collectionName = field.query(fieldPath).get('value');
-    const targetFields = getCollectionFields(collectionName);
+    const targetFields = cm.getCollectionFields(collectionName);
     const options = targetFields
       .filter((field) => {
-        return !field.isForeignKey && getInterface(field.interface)?.titleUsable;
+        return !field.isForeignKey && cm.getCollectionFieldInterface(field.interface)?.titleUsable;
       })
       .map((field) => ({
         value: field?.name,

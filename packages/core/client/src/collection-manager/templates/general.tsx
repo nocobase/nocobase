@@ -1,7 +1,7 @@
 import { getConfigurableProperties } from './properties';
-import { ICollectionTemplate } from './types';
+import { CollectionTemplateV2 } from '../../application/collection/CollectionTemplate';
 
-export const general: ICollectionTemplate = {
+export const generalCollectionTemplate = new CollectionTemplateV2({
   name: 'general',
   title: '{{t("General collection")}}',
   order: 1,
@@ -17,4 +17,4 @@ export const general: ICollectionTemplate = {
     'description',
     'moreOptions',
   ),
-};
+});

@@ -1,8 +1,13 @@
 import { Schema, useFieldSchema } from '@formily/react';
-import { useCollection, useCollectionManager } from '../..';
-import { SchemaInitializerItemType, useSchemaInitializer } from '../../application';
+import {
+  SchemaInitializerItemType,
+  useCollectionManagerV2,
+  useCollectionV2,
+  useSchemaInitializer,
+} from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../utils';
+import { InheritanceCollectionMixin } from '../../collection-manager';
 
 const recursiveParent = (schema: Schema) => {
   if (!schema) return null;
@@ -16,8 +21,8 @@ const recursiveParent = (schema: Schema) => {
 
 const useRelationFields = () => {
   const fieldSchema = useFieldSchema();
-  const { getCollectionFields } = useCollectionManager();
-  const collection = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   let fields = [];
 
   if (fieldSchema['x-initializer']) {
@@ -25,12 +30,12 @@ const useRelationFields = () => {
   } else {
     const collection = recursiveParent(fieldSchema.parent);
     if (collection) {
-      fields = getCollectionFields(collection);
+      fields = cm.getCollectionFields(collection);
     }
   }
 
-  const relationFields = fields
-    .filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
+  const relationFields = collection
+    .getFields((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
     .map((field) => {
       if (['hasOne', 'belongsTo'].includes(field.type)) {
         return {
@@ -180,11 +185,10 @@ const useFormCollections = (props) => {
 function useRecordBlocks() {
   const { options } = useSchemaInitializer();
   const { actionInitializers } = options;
-  const collection = useCollection();
-  const { getChildrenCollections } = useCollectionManager();
-  const formChildrenCollections = getChildrenCollections(collection.name);
+  const collection = useCollectionV2<InheritanceCollectionMixin>();
+  const formChildrenCollections = collection.getChildrenCollections();
   const hasFormChildCollection = formChildrenCollections?.length > 0;
-  const detailChildrenCollections = getChildrenCollections(collection.name, true);
+  const detailChildrenCollections = collection.getChildrenCollections();
   const hasDetailChildCollection = detailChildrenCollections?.length > 0;
   const modifyFlag = (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
   const detailChildren = useDetailCollections({

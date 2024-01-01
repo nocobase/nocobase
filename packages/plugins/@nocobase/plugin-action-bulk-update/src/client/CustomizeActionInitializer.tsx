@@ -1,8 +1,8 @@
 import React from 'react';
-import { BlockInitializer, useCollection, useSchemaInitializerItem } from '@nocobase/client';
+import { BlockInitializer, useCollectionV2, useSchemaInitializerItem } from '@nocobase/client';
 
 export const CustomizeActionInitializer = () => {
-  const collection = useCollection();
+  const collection = useCollectionV2();
   const itemConfig = useSchemaInitializerItem();
 
   const schema = {};

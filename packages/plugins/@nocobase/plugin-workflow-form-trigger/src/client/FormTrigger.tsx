@@ -1,6 +1,11 @@
 import { useForm } from '@formily/react';
 
-import { SchemaInitializerItemType, useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
+import {
+  SchemaInitializerItemType,
+  useCollectionDataSource,
+  useCollectionManagerV2,
+  useCompile,
+} from '@nocobase/client';
 import { Trigger, CollectionBlockInitializer, getCollectionFieldOptions } from '@nocobase/plugin-workflow/client';
 import { NAMESPACE, useLang } from '../locale';
 
@@ -65,7 +70,7 @@ export default class extends Trigger {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { getCollectionFields } = useCollectionManager();
+    const cm = useCollectionManagerV2();
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const langTriggerData = useLang('Trigger data');
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -104,7 +109,7 @@ export default class extends Trigger {
       ...options,
       fields: rootFields,
       compile,
-      getCollectionFields,
+      collectionManager: cm,
     });
     return result;
   }

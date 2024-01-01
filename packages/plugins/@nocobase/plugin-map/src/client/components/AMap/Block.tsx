@@ -4,8 +4,8 @@ import {
   ActionContextProvider,
   RecordProvider,
   css,
-  useCollection,
-  useCollectionManager,
+  useCollectionManagerV2,
+  useCollectionV2,
   useCompile,
   useFilterAPI,
   useProps,
@@ -21,9 +21,9 @@ import { getSource } from '../../utils';
 export const AMapBlock = (props) => {
   const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys, lineSort } =
     useProps(props);
-  const { name, getPrimaryKey } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
-  const primaryKey = getPrimaryKey();
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2();
+  const primaryKey = collection.getPrimaryKey();
   const [isMapInitialization, setIsMapInitialization] = useState(false);
   const mapRef = useRef<AMapForwardedRefProps>();
   const geometryUtils: AMap.IGeometryUtil = mapRef.current?.aMap?.GeometryUtil;
@@ -116,7 +116,7 @@ export const AMapBlock = (props) => {
       Array.isArray(fieldNames?.field) && fieldNames?.field.length > 1
         ? fieldNames?.field.slice(0, -1)
         : fieldNames?.field;
-    const cf = getCollectionJoinField([name, ...fieldPaths].flat().join('.'));
+    const cf = cm.getCollectionField([name, ...fieldPaths].flat().join('.'));
     const overlays = dataSource
       .map((item) => {
         const data = getSource(item, fieldNames?.field, cf?.interface)?.filter(Boolean);

@@ -1,6 +1,6 @@
 import { registerField, registerGroup, useCurrentAppInfo } from '@nocobase/client';
 import React, { useEffect } from 'react';
-import { fields } from './fields';
+import { fieldInterfaces } from './fields';
 import { generateNTemplate } from './locale';
 import './locale';
 
@@ -10,14 +10,14 @@ export const useRegisterInterface = () => {
     const dialect = data?.database.dialect;
     if (!dialect) return;
 
-    registerGroup(fields[0].group, {
+    registerGroup(fieldInterfaces[0].group, {
       label: generateNTemplate('Map-based geometry'),
       order: 51,
     });
 
-    fields.forEach((field) => {
-      if (Array.isArray(field.dialects)) {
-        if (!field.dialects.includes(dialect)) {
+    fieldInterfaces.forEach((field) => {
+      if (Array.isArray(field.getOption('dialects'))) {
+        if (!field.getOption('dialects').includes(dialect)) {
           return;
         }
       }

@@ -1,4 +1,4 @@
-import { i18n, IField, interfacesProperties } from '@nocobase/client';
+import { i18n, interfacesProperties, CollectionFieldInterfaceV2 } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { lodash, Registry } from '@nocobase/utils/client';
 import { NAMESPACE } from '../locale';
@@ -54,7 +54,7 @@ const datetimeProperties = {
   },
 };
 
-export default {
+const formulaFieldInterface = new CollectionFieldInterfaceV2({
   name: 'formula',
   type: 'object',
   group: 'advanced',
@@ -198,4 +198,6 @@ export default {
     operators: operators.number,
   },
   titleUsable: true,
-} as IField;
+});
+
+export default formulaFieldInterface;

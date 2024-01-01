@@ -1,9 +1,9 @@
 import { PreviewFields } from './components/PreviewFields';
 import { PreviewTable } from './components/PreviewTable';
 import { getConfigurableProperties } from './properties';
-import { ICollectionTemplate } from './types';
+import { CollectionTemplateV2 } from '../../application/collection/CollectionTemplate';
 
-export const view: ICollectionTemplate = {
+export const viewCollectionTemplate = new CollectionTemplateV2({
   name: 'view',
   title: '{{t("Connect to database view")}}',
   order: 4,
@@ -138,4 +138,4 @@ export const view: ICollectionTemplate = {
 
     ...getConfigurableProperties('category', 'description'),
   },
-};
+});

@@ -1,7 +1,7 @@
 import { SyncOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
 import { Loader } from '@googlemaps/js-api-loader';
-import { css, useAPIClient, useApp, useCollection } from '@nocobase/client';
+import { css, useAPIClient, useApp, useCollectionV2 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Button, Spin } from 'antd';
 import React, { useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
@@ -80,7 +80,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
     const { value, onChange, block = false, readonly, disabled = block, zoom = 13, overlayCommonOptions } = props;
     const { accessKey } = useMapConfiguration(props.mapType) || {};
     const { t } = useMapTranslation();
-    const { getField } = useCollection();
+    const collection = useCollectionV2();
     const fieldSchema = useFieldSchema();
     const drawingManagerRef = useRef<google.maps.drawing.DrawingManager>();
     const map = useRef<google.maps.Map>();
@@ -92,7 +92,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
 
     const type = useMemo<MapEditorType>(() => {
       if (props.type) return props.type;
-      const collectionField = getField(fieldSchema?.name);
+      const collectionField = collection.getField(fieldSchema?.name);
       return collectionField?.interface;
     }, [props?.type, fieldSchema?.name]);
 

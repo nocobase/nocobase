@@ -1,10 +1,10 @@
 import { connect, mapReadPretty, useFieldSchema } from '@formily/react';
 import { Select, SelectProps } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useCollection } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { EllipsisWithTooltip } from '../input';
 import Cron from './Cron';
+import { useCollectionV2 } from '../../../application';
 
 interface CronSetProps extends SelectProps {
   onChange: (v: string) => void;
@@ -12,9 +12,9 @@ interface CronSetProps extends SelectProps {
 
 const CronSetInternal = (props: CronSetProps) => {
   const { onChange, value } = props;
-  const { getField } = useCollection();
+  const collection = useCollectionV2();
   const fieldSchema = useFieldSchema();
-  const uiSchemaOptions = getField(fieldSchema?.name)?.uiSchema.enum;
+  const uiSchemaOptions = collection.getField(fieldSchema?.name)?.uiSchema.enum;
   const compile = useCompile();
 
   const [customizeOption, setCustomizeOption] = useState({
@@ -87,8 +87,8 @@ const ReadPretty = (props: CronSetProps) => {
   const { value } = props;
   const compile = useCompile();
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const uiSchemaOptions = getField(fieldSchema?.name)?.uiSchema.enum;
+  const collection = useCollectionV2();
+  const uiSchemaOptions = collection.getField(fieldSchema?.name)?.uiSchema.enum;
 
   const options = useMemo(() => {
     return (props.options || []).concat((uiSchemaOptions as any[]) || []);

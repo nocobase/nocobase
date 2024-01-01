@@ -7,19 +7,19 @@ import { useTranslation } from 'react-i18next';
 import {
   useSchemaInitializer,
   useSchemaInitializerItem,
-  useCollectionManager,
   useGlobalTheme,
   FormDialog,
   SchemaComponent,
   DataBlockInitializer,
   SchemaComponentOptions,
+  useCollectionManagerV2,
 } from '@nocobase/client';
 import { createGanttBlockSchema } from './utils';
 
 export const GanttBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
-  const { getCollectionFields } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const itemConfig = useSchemaInitializerItem();
@@ -30,7 +30,7 @@ export const GanttBlockInitializer = () => {
       componentType={'Gantt'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
-        const collectionFields = getCollectionFields(item.name);
+        const collectionFields = cm.getCollectionFields(item.name);
         const stringFields = collectionFields
           ?.filter((field) => field.type === 'string')
           ?.map((field) => {

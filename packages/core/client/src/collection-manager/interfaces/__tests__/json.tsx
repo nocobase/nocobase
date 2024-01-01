@@ -10,7 +10,7 @@ import { json } from '../json';
 const Component = () => {
   return (
     <SchemaComponentProvider components={{ Input, Checkbox }}>
-      <SchemaComponent schema={json} />
+      <SchemaComponent schema={json.getOptions()} />
     </SchemaComponentProvider>
   );
 };

@@ -6,11 +6,12 @@ import {
   BlockRequestContext,
   BlockResourceContext,
   FormBlockContext,
+  InheritanceCollectionMixin,
   MaybeCollectionProvider,
   RecordProvider,
   useBlockRequestContext,
   useBlockResource,
-  useCollectionManager,
+  useCollectionManagerV2,
   useDesignable,
   useRecord,
   useResource,
@@ -77,7 +78,7 @@ const BlockProvider = (props) => {
   const resource = useResource(props);
 
   return (
-    <MaybeCollectionProvider collection={collection}>
+    <MaybeCollectionProvider name={collection.name}>
       <BlockAssociationContext.Provider value={association}>
         <BlockResourceContext.Provider value={resource}>
           <BlockRequestProvider {...props}>{props.children}</BlockRequestProvider>
@@ -90,8 +91,8 @@ const BlockProvider = (props) => {
 export const SnapshotBlockProvider = (props) => {
   const record = useRecord();
   const { __tableName } = record;
-  const { getInheritCollections } = useCollectionManager();
-  const inheritCollections = getInheritCollections(__tableName);
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
+  const inheritCollections = cm.getCollection(__tableName).getParentCollectionsName();
   const { designable } = useDesignable();
   const flag =
     !designable && __tableName && !inheritCollections.includes(props.collection) && __tableName !== props.collection;

@@ -8,9 +8,16 @@ import { ChangeEvent, useCallback, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
-import { AssociationFilter, useFormActiveFields, useFormBlockContext, useTableBlockContext } from '../..';
+import {
+  AssociationFilter,
+  InheritanceCollectionMixin,
+  useCollectionManagerV2,
+  useCollectionV2,
+  useFormActiveFields,
+  useFormBlockContext,
+  useTableBlockContext,
+} from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useCollection, useCollectionManager } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
 import { transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
@@ -72,7 +79,7 @@ export function getFormValues({
   field,
   form,
   fieldNames,
-  getField,
+  collection,
   resource,
   actionFields,
 }: {
@@ -80,14 +87,14 @@ export function getFormValues({
   field;
   form;
   fieldNames;
-  getField;
+  collection;
   resource;
   actionFields: any[];
 }) {
   if (filterByTk) {
     if (actionFields) {
       const keys = Object.keys(form.values).filter((key) => {
-        const f = getField(key);
+        const f = collection.getField(key);
         return !actionFields.includes(key) && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(f?.type);
       });
       return omit({ ...form.values }, keys);
@@ -101,8 +108,8 @@ export function useCollectValuesToSubmit() {
   const form = useForm();
   const filterByTk = useFilterByTk();
   const { field, resource } = useBlockRequestContext();
-  const { fields, getField, getTreeParentField, name } = useCollection();
-  const fieldNames = fields.map((field) => field.name);
+  const collection = useCollectionV2();
+  const fieldNames = collection.fields.map((field) => field.name);
   const { fieldSchema } = useActionContext();
   const { getActiveFieldsName } = useFormActiveFields() || {};
   const variables = useVariables();
@@ -117,7 +124,7 @@ export function useCollectValuesToSubmit() {
       field,
       form,
       fieldNames,
-      getField,
+      collection,
       resource,
       actionFields: getActiveFieldsName?.('form') || [],
     });
@@ -125,11 +132,11 @@ export function useCollectValuesToSubmit() {
     const assignedValues = {};
     const waitList = Object.keys(originalAssignedValues).map(async (key) => {
       const value = originalAssignedValues[key];
-      const collectionField = getField(key);
+      const collectionField = collection.getField(key);
 
       if (process.env.NODE_ENV !== 'production') {
         if (!collectionField) {
-          throw new Error(`field "${key}" not found in collection "${name}"`);
+          throw new Error(`field "${key}" not found in collection "${collection.name}"`);
         }
       }
 
@@ -146,7 +153,7 @@ export function useCollectValuesToSubmit() {
     // const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
     const addChild = fieldSchema?.['x-component-props']?.addChild;
     if (addChild) {
-      const treeParentField = getTreeParentField();
+      const treeParentField = collection.getFields().find((field) => field.treeParent);
       values[treeParentField?.name ?? 'parent'] = omit(currentRecord?.__parent, ['children']);
       values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord?.__parent?.id;
     }
@@ -165,10 +172,8 @@ export function useCollectValuesToSubmit() {
     filterByTk,
     form,
     getActiveFieldsName,
-    getField,
-    getTreeParentField,
     localVariables,
-    name,
+    collection,
     resource,
     variables,
   ]);
@@ -253,7 +258,7 @@ export const useAssociationCreateActionProps = () => {
   const { setVisible, fieldSchema } = useActionContext();
   const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField, getTreeParentField, name } = useCollection();
+  const collection = useCollectionV2();
   const compile = useCompile();
   const filterByTk = useFilterByTk();
   const currentRecord = useRecord();
@@ -265,7 +270,7 @@ export const useAssociationCreateActionProps = () => {
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
   return {
     async onClick() {
-      const fieldNames = fields.map((field) => field.name);
+      const fieldNames = collection.fields.map((field) => field.name);
       const {
         assignedValues: originalAssignedValues = {},
         onSuccess,
@@ -278,11 +283,13 @@ export const useAssociationCreateActionProps = () => {
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
-        const collectionField = getField(key);
+        const collectionField = collection.getField(key);
 
         if (process.env.NODE_ENV !== 'production') {
           if (!collectionField) {
-            throw new Error(`useAssociationCreateActionProps: field "${key}" not found in collection "${name}"`);
+            throw new Error(
+              `useAssociationCreateActionProps: field "${key}" not found in collection "${collection.name}"`,
+            );
           }
         }
 
@@ -305,12 +312,12 @@ export const useAssociationCreateActionProps = () => {
         field,
         form,
         fieldNames,
-        getField,
+        collection,
         resource,
         actionFields: getActiveFieldsName?.('form') || [],
       });
       if (addChild) {
-        const treeParentField = getTreeParentField();
+        const treeParentField = collection.getFields().find((field) => field.treeParent);
         values[treeParentField?.name ?? 'parent'] = currentRecord;
         values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord.id;
       }
@@ -383,8 +390,8 @@ export const useFilterBlockActionProps = () => {
   const actionField = useField();
   const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
-  const { name } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { name } = useCollectionV2();
+  const cm = useCollectionManagerV2();
 
   actionField.data = actionField.data || {};
 
@@ -404,9 +411,7 @@ export const useFilterBlockActionProps = () => {
             // 保留原有的 filter
             const storedFilter = block.service.params?.[1]?.filters || {};
 
-            storedFilter[uid] = removeNullCondition(
-              transformToFilter(form.values, fieldSchema, getCollectionJoinField, name),
-            );
+            storedFilter[uid] = removeNullCondition(transformToFilter(form.values, fieldSchema, cm, name));
 
             const mergedFilter = mergeFilter([
               ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
@@ -488,7 +493,7 @@ export const useCustomizeUpdateActionProps = () => {
   const { modal } = App.useApp();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
-  const { name, getField } = useCollection();
+  const collection = useCollectionV2();
 
   return {
     async onClick() {
@@ -501,7 +506,7 @@ export const useCustomizeUpdateActionProps = () => {
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
-        const collectionField = getField(key);
+        const collectionField = collection.getField(key);
 
         if (process.env.NODE_ENV !== 'production') {
           if (!collectionField) {
@@ -576,7 +581,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const { modal } = App.useApp();
   const variables = useVariables();
   const record = useRecord();
-  const { name, getField } = useCollection();
+  const collection = useCollectionV2();
   const localVariables = useLocalVariables({ currentRecord: { __parent: record, __collectionName: name } });
 
   return {
@@ -592,7 +597,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
-        const collectionField = getField(key);
+        const collectionField = collection.getField(key);
 
         if (process.env.NODE_ENV !== 'production') {
           if (!collectionField) {
@@ -773,7 +778,7 @@ export const useCustomizeRequestActionProps = () => {
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
-  const { fields, getField } = useCollection();
+  const collection = useCollectionV2();
   const { field, resource, __parent, service } = useBlockRequestContext();
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
@@ -799,13 +804,13 @@ export const useCustomizeRequestActionProps = () => {
       const data = requestSettings['data'] ? JSON.parse(requestSettings['data']) : {};
       const methods = ['POST', 'PUT', 'PATCH'];
       if (xAction === 'customize:form:request' && methods.includes(requestSettings['method'])) {
-        const fieldNames = fields.map((field) => field.name);
+        const fieldNames = collection.fields.map((field) => field.name);
         const values = getFormValues({
           filterByTk,
           field,
           form,
           fieldNames,
-          getField,
+          collection,
           resource,
           actionFields: getActiveFieldsName?.('form') || [],
         });
@@ -865,7 +870,7 @@ export const useUpdateActionProps = () => {
   const { setVisible } = useActionContext();
   const actionSchema = useFieldSchema();
   const navigate = useNavigate();
-  const { fields, getField, name } = useCollection();
+  const collection = useCollectionV2();
   const compile = useCompile();
   const actionField = useField();
   const { updateAssociationValues } = useFormBlockContext();
@@ -888,7 +893,7 @@ export const useUpdateActionProps = () => {
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
-        const collectionField = getField(key);
+        const collectionField = collection.getField(key);
 
         if (process.env.NODE_ENV !== 'production') {
           if (!collectionField) {
@@ -910,13 +915,13 @@ export const useUpdateActionProps = () => {
       if (!skipValidator) {
         await form.submit();
       }
-      const fieldNames = fields.map((field) => field.name);
+      const fieldNames = collection.fields.map((field) => field.name);
       const values = getFormValues({
         filterByTk,
         field,
         form,
         fieldNames,
-        getField,
+        collection,
         resource,
         actionFields: getActiveFieldsName?.('form') || [],
       });
@@ -1151,9 +1156,9 @@ export const useAssociationFilterProps = () => {
 };
 
 export const useOptionalFieldList = () => {
-  const { currentFields = [] } = useCollection();
+  const collection = useCollectionV2<InheritanceCollectionMixin>();
 
-  return currentFields.filter((field) => isOptionalField(field) && field.uiSchema.enum);
+  return collection.getCurrentFields().filter((field) => isOptionalField(field) && field.uiSchema.enum);
 };
 
 const isOptionalField = (field) => {
@@ -1295,14 +1300,14 @@ export function getAssociationPath(str) {
 }
 
 export const useAssociationNames = () => {
-  const { getCollectionJoinField, getCollection } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const fieldSchema = useFieldSchema();
   const updateAssociationValues = new Set([]);
   const appends = new Set([]);
   const getAssociationAppends = (schema, str) => {
     schema.reduceProperties((pre, s) => {
       const prefix = pre || str;
-      const collectionField = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+      const collectionField = s['x-collection-field'] && cm.getCollectionField(s['x-collection-field']);
       const isAssociationSubfield = s.name.includes('.');
       const isAssociationField =
         collectionField && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionField.type);
@@ -1325,7 +1330,7 @@ export const useAssociationNames = () => {
         });
       }
 
-      const isTreeCollection = isAssociationField && getCollection(collectionField.target)?.template === 'tree';
+      const isTreeCollection = isAssociationField && cm.getCollection(collectionField.target)?.template === 'tree';
       if (collectionField && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
         const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
         const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;

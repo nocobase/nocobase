@@ -6,14 +6,14 @@ import { Checkbox, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../block-provider';
-import { CollectionFieldProvider, useCollection, useCollectionField } from '../../collection-manager';
 import { useCompile, useComponent } from '../../schema-component';
 import { DeletedField } from './DeletedField';
+import { CollectionFieldProviderV2, useCollectionFieldV2, useCollectionV2 } from '../../application';
 
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { name, interface: interfaceType, uiSchema } = useCollectionField();
+  const { name, interface: interfaceType, uiSchema } = useCollectionFieldV2();
   const component = useComponent(uiSchema?.['x-component']);
   const compile = useCompile();
   const setFieldProps = (key, value) => {
@@ -66,9 +66,9 @@ const InternalField: React.FC = (props) => {
 const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   return (
-    <CollectionFieldProvider name={fieldSchema.name} fallback={<DeletedField />}>
+    <CollectionFieldProviderV2 name={fieldSchema.name} fallback={<DeletedField />}>
       <InternalField {...props} />
-    </CollectionFieldProvider>
+    </CollectionFieldProviderV2>
   );
 });
 
@@ -85,8 +85,8 @@ export const BulkEditField = (props: any) => {
   const field = useField<Field>();
   const [type, setType] = useState<number>(BulkEditFormItemValueType.RemainsTheSame);
   const [value, setValue] = useState(null);
-  const { getField } = useCollection();
-  const collectionField = getField(fieldSchema.name) || {};
+  const collection = useCollectionV2();
+  const collectionField = collection.getField(fieldSchema.name) || {};
 
   useEffect(() => {
     field.value = { [type]: value };

@@ -4,22 +4,22 @@ import flat from 'flat';
 import { useTranslation } from 'react-i18next';
 import { useBlockRequestContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 export const useGetFilterOptions = () => {
-  const { getCollectionFields } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const getFilterFieldOptions = useGetFilterFieldOptions();
 
   return (collectionName) => {
-    const fields = getCollectionFields(collectionName);
+    const fields = cm.getCollectionFields(collectionName);
     const options = getFilterFieldOptions(fields);
     return options;
   };
 };
 
 export const useFilterOptions = (collectionName: string) => {
-  const { getCollectionFields } = useCollectionManager();
-  const fields = getCollectionFields(collectionName);
+  const cm = useCollectionManagerV2();
+  const fields = cm.getCollectionFields(collectionName);
   const options = useFilterFieldOptions(fields);
   return options;
 };
@@ -27,7 +27,7 @@ export const useFilterOptions = (collectionName: string) => {
 export const useGetFilterFieldOptions = () => {
   const fieldSchema = useFieldSchema();
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const field2option = (field, depth) => {
     if (nonfilterable.length && depth === 1 && nonfilterable.includes(field.name)) {
       return;
@@ -35,7 +35,7 @@ export const useGetFilterFieldOptions = () => {
     if (!field.interface) {
       return;
     }
-    const fieldInterface = getInterface(field.interface);
+    const fieldInterface = cm.getCollectionFieldInterface(field.interface);
     if (!fieldInterface?.filterable) {
       return;
     }
@@ -62,7 +62,7 @@ export const useGetFilterFieldOptions = () => {
       option['children'] = children;
     }
     if (nested) {
-      const targetFields = getCollectionFields(field.target);
+      const targetFields = cm.getCollectionFields(field.target);
       const options = getOptions(targetFields, depth + 1).filter(Boolean);
       option['children'] = option['children'] || [];
       option['children'].push(...options);
@@ -85,7 +85,7 @@ export const useGetFilterFieldOptions = () => {
 export const useFilterFieldOptions = (fields) => {
   const fieldSchema = useFieldSchema();
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const field2option = (field, depth) => {
     if (nonfilterable.length && depth === 1 && nonfilterable.includes(field.name)) {
       return;
@@ -93,7 +93,7 @@ export const useFilterFieldOptions = (fields) => {
     if (!field.interface) {
       return;
     }
-    const fieldInterface = getInterface(field.interface);
+    const fieldInterface = cm.getCollectionFieldInterface(field.interface);
     if (!fieldInterface?.filterable) {
       return;
     }
@@ -119,7 +119,7 @@ export const useFilterFieldOptions = (fields) => {
       option['children'] = children;
     }
     if (nested) {
-      const targetFields = getCollectionFields(field.target);
+      const targetFields = cm.getCollectionFields(field.target);
       const options = getOptions(targetFields, depth + 1).filter(Boolean);
       option['children'] = option['children'] || [];
       option['children'].push(...options);
@@ -159,7 +159,7 @@ export const removeNullCondition = (filter) => {
 };
 
 export const useFilterActionProps = () => {
-  const { name } = useCollection();
+  const { name } = useCollectionV2();
   const options = useFilterOptions(name);
   const { service, props } = useBlockRequestContext();
   return useFilterFieldProps({ options, service, params: props?.params });

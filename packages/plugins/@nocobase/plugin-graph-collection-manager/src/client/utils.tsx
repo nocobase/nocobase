@@ -1,7 +1,8 @@
+import { CollectionManagerV2, InheritanceCollectionMixin } from '@nocobase/client';
 import lodash from 'lodash';
 import { useTranslation } from 'react-i18next';
 
-const { groupBy, reduce, uniq, uniqBy } = lodash;
+const { groupBy, reduce, uniqBy } = lodash;
 
 const shape = {
   ER: 'er-rect',
@@ -12,48 +13,13 @@ export const useGCMTranslation = () => {
   return useTranslation('graph-collection-manager');
 };
 
-export const getInheritCollections = (collections, name) => {
-  const parents = [];
-  const getParents = (name) => {
-    const collection = collections?.find((collection) => collection.name === name);
-    if (collection) {
-      const { inherits } = collection;
-      if (inherits) {
-        for (let index = 0; index < inherits.length; index++) {
-          const collectionKey = inherits[index];
-          parents.push(collectionKey);
-          getParents(collectionKey);
-        }
-      }
-    }
-    return uniq(parents);
-  };
-
-  return getParents(name);
-};
-
-export const getChildrenCollections = (collections, name) => {
-  const childrens = [];
-  const getChildrens = (name) => {
-    const inheritCollections = collections.filter((v) => {
-      return v.inherits?.includes(name);
-    });
-    inheritCollections.forEach((v) => {
-      const collectionKey = v.name;
-      childrens.push(v);
-      return getChildrens(collectionKey);
-    });
-    return childrens;
-  };
-  return getChildrens(name);
-};
-export const formatData = (data) => {
+export const formatData = (collectionManager: CollectionManagerV2<InheritanceCollectionMixin>, data) => {
   const edgeData = [];
   const targetTablekeys = [];
   const tableData = data.map((item, index) => {
     const ports = [];
     const totalFields = [...item.fields];
-    const inheritCollections = getInheritCollections(data, item.name);
+    const inheritCollections = collectionManager.getCollection(item.name).getParentCollectionsName();
     const inheritedFields = reduce(
       inheritCollections,
       (result, value) => {

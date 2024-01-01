@@ -4,8 +4,8 @@ import {
   ActionContextProvider,
   RecordProvider,
   css,
-  useCollection,
-  useCollectionManager,
+  useCollectionManagerV2,
+  useCollectionV2,
   useCompile,
   useFilterAPI,
   useProps,
@@ -39,8 +39,8 @@ const pointClass = css`
 export const GoogleMapsBlock = (props) => {
   const { collectionField, fieldNames, dataSource, fixedBlock, zoom, setSelectedRecordKeys, lineSort } =
     useProps(props);
-  const { getPrimaryKey } = useCollection();
-  const primaryKey = getPrimaryKey();
+  const collection = useCollectionV2();
+  const primaryKey = collection.getPrimaryKey();
   const { marker: markerName = 'id' } = fieldNames;
   const [isMapInitialization, setIsMapInitialization] = useState(false);
   const mapRef = useRef<GoogleMapForwardedRefProps>();
@@ -55,7 +55,7 @@ export const GoogleMapsBlock = (props) => {
   const overlaysRef = useRef<google.maps.MVCObject[]>([]);
   selectingModeRef.current = selectingMode;
 
-  const { getCollectionJoinField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
 
   const setOverlayOptions = (overlay: google.maps.MVCObject, state?: boolean) => {
     const selected = typeof state !== 'undefined' ? !state : overlay.get(OVERLAY_SELECtED);
@@ -157,7 +157,7 @@ export const GoogleMapsBlock = (props) => {
       Array.isArray(fieldNames?.field) && fieldNames?.field.length > 1
         ? fieldNames?.field.slice(0, -1)
         : fieldNames?.field;
-    const cf = getCollectionJoinField([name, ...fieldPaths].flat().join('.'));
+    const cf = cm.getCollectionField([collection.name, ...fieldPaths].flat().join('.'));
 
     const overlays: google.maps.MVCObject[] = dataSource
       .map((item) => {

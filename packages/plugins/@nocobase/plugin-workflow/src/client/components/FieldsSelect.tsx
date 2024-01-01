@@ -2,7 +2,7 @@ import { observer, useForm } from '@formily/react';
 import { Select } from 'antd';
 import React from 'react';
 
-import { useCollectionManager, useCompile } from '@nocobase/client';
+import { useCollectionManagerV2, useCompile } from '@nocobase/client';
 
 function defaultFilter() {
   return true;
@@ -12,9 +12,9 @@ export const FieldsSelect = observer(
   (props: any) => {
     const { filter = defaultFilter, ...others } = props;
     const compile = useCompile();
-    const { getCollectionFields } = useCollectionManager();
+    const cm = useCollectionManagerV2();
     const { values } = useForm();
-    const fields = getCollectionFields(values?.collection);
+    const fields = cm.getCollectionFields(values?.collection);
 
     return (
       <Select

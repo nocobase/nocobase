@@ -1,8 +1,8 @@
 import { ISchema } from '@formily/react';
 import { defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const checkbox: IField = {
+export const checkbox = new CollectionFieldInterfaceV2({
   name: 'checkbox',
   type: 'object',
   group: 'choices',
@@ -30,4 +30,4 @@ export const checkbox: IField = {
       schema['x-component-props']['ellipsis'] = true;
     }
   },
-};
+});

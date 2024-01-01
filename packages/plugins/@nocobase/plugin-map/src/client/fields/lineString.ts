@@ -1,8 +1,8 @@
-import { IField } from '@nocobase/client';
+import { CollectionFieldInterfaceV2 } from '@nocobase/client';
 import { generateNTemplate } from '../locale';
 import { commonSchema } from './schema';
 
-export const lineString: IField = {
+export const lineString = new CollectionFieldInterfaceV2({
   name: 'lineString',
   type: 'object',
   group: 'map',
@@ -21,4 +21,4 @@ export const lineString: IField = {
     },
   },
   ...commonSchema,
-};
+});

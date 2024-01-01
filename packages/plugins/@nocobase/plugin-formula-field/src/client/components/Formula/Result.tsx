@@ -1,14 +1,13 @@
 import { onFormValuesChange } from '@formily/core';
 import { useField, useFieldSchema, useFormEffects } from '@formily/react';
 import { toJS } from '@formily/reactive';
-import type { CollectionOptions } from '@nocobase/client';
 import {
   Checkbox,
   DatePicker,
   InputNumber,
   Input as InputString,
-  useCollection,
-  useCollectionManager,
+  useCollectionManagerV2,
+  useCollectionV2,
   useFormBlockContext,
 } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
@@ -29,15 +28,15 @@ const TypedComponents = {
 
 function useTargetCollectionField() {
   const fieldSchema = useFieldSchema();
-  const providedCollection = useCollection();
-  const { getCollection, getCollectionField } = useCollectionManager();
+  const providedCollection = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const paths = (fieldSchema.name as string).split('.');
-  let collection: CollectionOptions = providedCollection;
+  let collection = providedCollection;
   for (let i = 0; i < paths.length - 1; i++) {
     const field = collection.getField(paths[i]);
-    collection = getCollection(field.target);
+    collection = cm.getCollection(field.target);
   }
-  return getCollectionField(`${collection.name}.${paths[paths.length - 1]}`);
+  return cm.getCollectionField(`${collection.name}.${paths[paths.length - 1]}`);
 }
 function getValuesByPath(values, key, index?) {
   const targetValue = values[key];

@@ -4,7 +4,6 @@ import flat from 'flat';
 import React, { Fragment, useRef, useState } from 'react';
 import { useDesignable } from '../../';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
-import { CollectionProvider } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
@@ -13,6 +12,7 @@ import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { getTabFormatValue, useLabelUiSchema } from './util';
+import { CollectionProviderV2 } from '../../../application';
 
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
@@ -104,7 +104,7 @@ export const ReadPrettyInternalTag: React.FC = observer(
     return (
       <div>
         <BlockAssociationContext.Provider value={`${collectionField?.collectionName}.${collectionField?.name}`}>
-          <CollectionProvider name={collectionField?.target ?? collectionField?.targetCollection}>
+          <CollectionProviderV2 name={collectionField?.target ?? collectionField?.targetCollection}>
             <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
               {renderRecords()}
             </EllipsisWithTooltip>
@@ -113,7 +113,7 @@ export const ReadPrettyInternalTag: React.FC = observer(
             >
               {renderRecordProvider()}
             </ActionContextProvider>
-          </CollectionProvider>
+          </CollectionProviderV2>
         </BlockAssociationContext.Provider>
       </div>
     );

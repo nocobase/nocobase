@@ -1,10 +1,10 @@
 import React from 'react';
-import { useCollection } from '../../collection-manager';
 
 import { ActionInitializer } from './ActionInitializer';
+import { useCollectionV2 } from '../../application';
 
 export const BulkDestroyActionInitializer = (props) => {
-  const collection = useCollection();
+  const collection = useCollectionV2();
   const schema = {
     title: '{{ t("Delete") }}',
     'x-action': 'destroy',

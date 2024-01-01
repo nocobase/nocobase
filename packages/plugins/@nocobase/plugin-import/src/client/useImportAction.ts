@@ -3,8 +3,8 @@ import {
   useActionContext,
   useAPIClient,
   useBlockRequestContext,
-  useCollection,
-  useCollectionManager,
+  useCollectionManagerV2,
+  useCollectionV2,
   useCompile,
 } from '@nocobase/client';
 import lodash from 'lodash';
@@ -34,8 +34,8 @@ export const useDownloadXlsxTemplateAction = () => {
   const apiClient = useAPIClient();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
-  const { getCollectionJoinField, getCollectionField } = useCollectionManager();
-  const { name, title, getField } = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   const { t } = useTranslation(NAMESPACE);
   const { schema: importSchema } = useImportSchema(actionSchema);
   return {
@@ -45,13 +45,13 @@ export const useDownloadXlsxTemplateAction = () => {
       );
       const columns = toArr(importColumns)
         .map((column) => {
-          const field = getCollectionField(`${name}.${column.dataIndex[0]}`);
+          const field = cm.getCollectionField(`${collection.name}.${column.dataIndex[0]}`);
           if (!field) {
             return;
           }
           column.defaultTitle = compile(field?.uiSchema?.title) || field.name;
           if (column.dataIndex.length > 1) {
-            const subField = getCollectionJoinField(`${name}.${column.dataIndex.join('.')}`);
+            const subField = cm.getCollectionField(`${collection.name}.${column.dataIndex.join('.')}`);
             if (!subField) {
               return;
             }
@@ -66,7 +66,7 @@ export const useDownloadXlsxTemplateAction = () => {
       const { data } = await resource.downloadXlsxTemplate(
         {
           values: {
-            title: compile(title),
+            title: compile(collection.title),
             explain,
             columns: compile(columns),
           },
@@ -77,7 +77,7 @@ export const useDownloadXlsxTemplateAction = () => {
         },
       );
       const blob = new Blob([data], { type: 'application/x-xls' });
-      saveAs(blob, `${compile(title)}.xlsx`);
+      saveAs(blob, `${compile(collection.title)}.xlsx`);
     },
   };
 };
@@ -87,8 +87,8 @@ export const useImportStartAction = () => {
   const apiClient = useAPIClient();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
-  const { getCollectionJoinField, getCollectionField } = useCollectionManager();
-  const { name, title, getField } = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   const { t } = useTranslation(NAMESPACE);
   const { schema: importSchema } = useImportSchema(actionSchema);
   const form = useForm();
@@ -101,13 +101,13 @@ export const useImportStartAction = () => {
       );
       const columns = toArr(importColumns)
         .map((column) => {
-          const field = getCollectionField(`${name}.${column.dataIndex[0]}`);
+          const field = cm.getCollectionField(`${name}.${column.dataIndex[0]}`);
           if (!field) {
             return;
           }
           column.defaultTitle = compile(field?.uiSchema?.title) || field.name;
           if (column.dataIndex.length > 1) {
-            const subField = getCollectionJoinField(`${name}.${column.dataIndex.join('.')}`);
+            const subField = cm.getCollectionField(`${name}.${column.dataIndex.join('.')}`);
             if (!subField) {
               return;
             }

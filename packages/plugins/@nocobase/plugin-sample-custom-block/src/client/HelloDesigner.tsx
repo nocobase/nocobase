@@ -1,10 +1,10 @@
-import { GeneralSchemaDesigner, SchemaSettingsRemove, useCollection } from '@nocobase/client';
+import { GeneralSchemaDesigner, SchemaSettingsRemove, useCollectionV2 } from '@nocobase/client';
 import React from 'react';
 
 export const HelloDesigner = () => {
-  const { name, title } = useCollection();
+  const collection = useCollectionV2();
   return (
-    <GeneralSchemaDesigner title={title || name}>
+    <GeneralSchemaDesigner title={collection.title || collection.name}>
       <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{

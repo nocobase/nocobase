@@ -7,12 +7,12 @@ import {
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   VariablesContext,
-  useCollection,
-  useCollectionManager,
   useCompile,
   useDesignable,
   SchemaSettingsSelectItem,
-  CollectionFieldOptions,
+  useCollectionManagerV2,
+  CollectionFieldOptionsV2,
+  useCollectionV2,
 } from '@nocobase/client';
 import { useChartsTranslation } from '../locale';
 import { Schema, useField, useFieldSchema } from '@formily/react';
@@ -77,24 +77,24 @@ const EditOperator = () => {
   const { t } = useChartsTranslation();
   const { dn } = useDesignable();
   const { setField } = useContext(ChartFilterContext);
-  const { getInterface, getCollectionJoinField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
 
-  const getOperators = (props: CollectionFieldOptions) => {
+  const getOperators = (props: CollectionFieldOptionsV2) => {
     let fieldInterface = props?.interface;
     if (fieldInterface === 'formula') {
       fieldInterface = getFormulaInterface(props.dataType) || props.dataType;
     }
-    const interfaceConfig = getInterface(fieldInterface);
+    const interfaceConfig = cm.getCollectionFieldInterface(fieldInterface);
     const operatorList = interfaceConfig?.filterable?.operators || [];
     return { operatorList, interfaceConfig };
   };
 
-  let props = getCollectionJoinField(fieldName);
+  let props = cm.getCollectionField(fieldName);
   let { operatorList, interfaceConfig } = getOperators(props);
   if (!operatorList.length) {
     const names = fieldName.split('.');
     const name = names.pop();
-    props = getCollectionJoinField(names.join('.'));
+    props = cm.getCollectionField(names.join('.'));
     if (!props) {
       return null;
     }
@@ -243,22 +243,22 @@ const EditDefaultValue = () => {
 };
 
 const EditTitleField = () => {
-  const { getCollectionFields, getCollectionJoinField, getInterface } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useChartsTranslation();
   const { dn } = useDesignable();
   const compile = useCompile();
-  const collectionField = getCollectionJoinField(fieldSchema['x-collection-field']);
+  const collectionField = cm.getCollectionField(fieldSchema['x-collection-field']);
   const targetFields = collectionField?.target
-    ? getCollectionFields(collectionField?.target)
-    : getCollectionFields(collectionField?.targetCollection) ?? [];
+    ? cm.getCollectionFields(collectionField?.target)
+    : cm.getCollectionFields(collectionField?.targetCollection) ?? [];
   const options = targetFields
     .filter((field) => {
       if (field?.target || field.type === 'boolean') {
         return false;
       }
-      const fieldInterface = getInterface(field?.interface);
+      const fieldInterface = cm.getCollectionFieldInterface(field?.interface);
       return fieldInterface?.titleUsable;
     })
     .map((field) => ({
@@ -295,12 +295,12 @@ const EditTitleField = () => {
 };
 
 export const ChartFilterItemDesigner: React.FC = () => {
-  const { getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   const { t } = useChartsTranslation();
   const fieldSchema = useFieldSchema();
   const fieldName = fieldSchema.name as string;
-  const collectionField = getField(fieldName) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const collectionField = collection.getField(fieldName) || cm.getCollectionField(fieldSchema['x-collection-field']);
   const isCustom = fieldName.startsWith('custom.');
   const hasProps = getPropsSchemaByComponent(fieldSchema['x-component']);
   const originalTitle = useCollectionJoinFieldTitle(fieldName);

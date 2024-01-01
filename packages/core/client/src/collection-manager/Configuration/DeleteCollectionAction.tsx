@@ -5,9 +5,10 @@ import { Button, message } from 'antd';
 import { useForm } from '@formily/react';
 import { DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import { RecordProvider, useRecord } from '../../record-provider';
-import { ActionContextProvider, SchemaComponent } from '../../schema-component';
+import { ActionContextProvider, SchemaComponent, useSchemaComponentContext } from '../../schema-component';
 import * as components from './components';
-import { useCollectionManager, useResourceActionContext, useResourceContext, useActionContext } from '../../';
+import { useCollectionManagerV2 } from '../../application';
+import { useResourceActionContext, useResourceContext, useActionContext } from '../..';
 import { useCancelAction } from '../action-hooks';
 
 export const DeleteCollection = (props) => {
@@ -17,21 +18,23 @@ export const DeleteCollection = (props) => {
 
 export const useDestroyActionAndRefreshCM = () => {
   const { run } = useDestroyAction();
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
+  const { refresh } = useSchemaComponentContext();
   return {
     async run() {
       await run();
-      await refreshCM();
+      await cm.reload(refresh);
     },
   };
 };
 export const useBulkDestroyActionAndRefreshCM = () => {
   const { run } = useBulkDestroyAction();
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
+  const { refresh } = useSchemaComponentContext();
   return {
     async run() {
       await run();
-      await refreshCM();
+      await cm.reload(refresh);
     },
   };
 };

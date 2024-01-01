@@ -3,10 +3,10 @@ import { Cascader, Input, Select, Spin, Table, Tag } from 'antd';
 import { last } from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ResourceActionContext, useCompile } from '../../../';
+import { ResourceActionContext, useCollectionManagerV2, useCompile } from '../../..';
 import { useAPIClient } from '../../../api-client';
 import { getOptions } from '../../Configuration/interfaces';
-import { useCollectionManager } from '../../hooks/useCollectionManager';
+import { InheritanceCollectionMixin } from '../../collection-mixins/InheritanceCollectionMixin';
 
 const getInterfaceOptions = (data, type) => {
   const interfaceOptions = [];
@@ -31,21 +31,20 @@ const PreviewCom = (props) => {
   const [sourceCollections, setSourceCollections] = useState(sources);
   const field: any = useField();
   const form = useForm();
-  const { getCollection, getInterface, getCollectionFields, getInheritCollections, getParentCollectionFields } =
-    useCollectionManager();
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
   const compile = useCompile();
   const initOptions = getOptions().filter((v) => !['relation', 'systemInfo'].includes(v.key));
   useEffect(() => {
     const data = [];
     sourceCollections.forEach((item) => {
-      const collection = getCollection(item);
-      const inherits = getInheritCollections(item);
+      const collection = cm.getCollection(item);
+      const inherits = collection.getParentCollectionsName();
       const result: any[] = inherits.map((v) => {
-        const fields = getParentCollectionFields(v, item);
+        const fields = collection.getParentCollectionFields(v);
         return {
           type: 'group',
           key: v,
-          label: t(`Parent collection fields`) + t(`(${getCollection(v).title})`),
+          label: t(`Parent collection fields`) + t(`(${cm.getCollection(v).title})`),
           children: fields
             .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
             .map((k) => {
@@ -56,8 +55,8 @@ const PreviewCom = (props) => {
             }),
         };
       });
-      const children = collection.fields
-        .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
+      const children = collection
+        .getFields((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
         ?.map((v) => {
           return { value: v.name, key: v.name, label: t(v.uiSchema?.title) };
         })
@@ -129,7 +128,7 @@ const PreviewCom = (props) => {
             style={{ width: '100%' }}
             options={compile(sourceFields)}
             onChange={(value, selectedOptions) => {
-              const sourceField = getCollectionFields(value?.[0])?.find((v) => v.name === last(value));
+              const sourceField = cm.getCollectionFields(value?.[0])?.find((v) => v.name === last(value));
               handleFieldChange({ ...record, source: value, uiSchema: sourceField?.uiSchema }, index);
             }}
             placeholder={t('Select field source')}
@@ -177,7 +176,7 @@ const PreviewCom = (props) => {
             style={{ width: '100%' }}
             popupMatchSelectWidth={false}
             onChange={(value) => {
-              const interfaceConfig = getInterface(value);
+              const interfaceConfig = cm.getCollectionFieldInterface(value);
               handleFieldChange({ ...item, interface: value, uiSchema: interfaceConfig?.default?.uiSchema }, index);
             }}
           >

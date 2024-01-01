@@ -11,13 +11,12 @@ import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
-import { IField } from '../interfaces/types';
 import { PreviewFields } from '../templates/components/PreviewFields';
 import { PreviewTable } from '../templates/components/PreviewTable';
 import * as components from './components';
+import { CollectionFieldInterfaceOptions, useCollectionManagerV2 } from '../../application';
 
-const getSchema = (schema: IField, record: any, compile) => {
+const getSchema = (schema: CollectionFieldInterfaceOptions, record: any, compile) => {
   if (!schema) {
     return;
   }
@@ -123,7 +122,7 @@ const getSchema = (schema: IField, record: any, compile) => {
 
 const useSyncFromDatabase = () => {
   const form = useForm();
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { targetKey } = useResourceContext();
@@ -144,7 +143,7 @@ const useSyncFromDatabase = () => {
         await form.reset();
         field.data.loading = false;
         refresh();
-        await refreshCM();
+        await cm.reload(refresh);
       } catch (error) {
         field.data.loading = false;
       }

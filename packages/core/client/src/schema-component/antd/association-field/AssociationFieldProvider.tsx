@@ -1,24 +1,24 @@
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useCollectionManager } from '../../../collection-manager';
 import { AssociationFieldContext } from './context';
+import { useCollectionManagerV2 } from '../../../application';
 
 export const AssociationFieldProvider = observer(
   (props) => {
     const field = useField<Field>();
-    const { getCollectionJoinField, getCollection } = useCollectionManager();
+    const cm = useCollectionManagerV2();
     const fieldSchema = useFieldSchema();
     const allowMultiple = fieldSchema['x-component-props']?.multiple !== false;
     const allowDissociate = fieldSchema['x-component-props']?.allowDissociate !== false;
 
     const collectionField = useMemo(
-      () => getCollectionJoinField(fieldSchema['x-collection-field']),
+      () => cm.getCollectionField(fieldSchema['x-collection-field']),
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-collection-field'], fieldSchema.name],
     );
     const isFileCollection = useMemo(
-      () => getCollection(collectionField?.target)?.template === 'file',
+      () => cm.getCollection(collectionField?.target)?.template === 'file',
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-collection-field']],
     );

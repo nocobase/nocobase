@@ -1,18 +1,19 @@
 import { error } from '@nocobase/utils/client';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions, useCollectionManager } from '../../../collection-manager';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { FieldOption, Option } from '../type';
+import { CollectionFieldOptionsV2, useCollectionManagerV2 } from '../../../application';
+import { InheritanceCollectionMixin } from '../../../collection-manager';
 
 export const useIsSameOrChildCollection = () => {
-  const { getChildrenCollections } = useCollectionManager();
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
   return (contextCollection, targetCollection) => {
     if (contextCollection === targetCollection) {
       return true;
     }
-    const children = getChildrenCollections(targetCollection);
-    return children?.some((v) => v.name === contextCollection);
+    const children = cm.getCollection(targetCollection).getChildrenCollectionsName();
+    return children?.some((v) => v === contextCollection);
   };
 };
 
@@ -71,7 +72,7 @@ export const useContextAssociationFields = ({
   schema: any;
   maxDepth?: number;
   contextCollectionName: string;
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptionsV2;
 }) => {
   const { t } = useTranslation();
   const compile = useCompile();

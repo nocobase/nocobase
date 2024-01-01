@@ -6,7 +6,9 @@ import {
   FormDialog,
   SchemaComponent,
   SchemaComponentOptions,
-  useCollectionManager,
+  getCollectionFieldsOptions,
+  useCollectionManagerV2,
+  useCompile,
   useGlobalTheme,
   useSchemaInitializer,
   useSchemaInitializerItem,
@@ -19,9 +21,11 @@ export const MapBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
   const options = useContext(SchemaOptionsContext);
-  const { getCollectionFieldsOptions } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { t } = useMapTranslation();
   const { theme } = useGlobalTheme();
+  const compile = useCompile();
+
   return (
     <DataBlockInitializer
       componentType={'Map'}
@@ -29,8 +33,13 @@ export const MapBlockInitializer = () => {
       onCreateBlockSchema={async ({ item }) => {
         const mapFieldOptions = getCollectionFieldsOptions(item.name, ['point', 'lineString', 'polygon'], {
           association: ['o2o', 'obo', 'oho', 'o2m', 'm2o', 'm2m'],
+          collectionManager: cm,
+          compile,
         });
-        const markerFieldOptions = getCollectionFieldsOptions(item.name, 'string');
+        const markerFieldOptions = getCollectionFieldsOptions(item.name, 'string', {
+          collectionManager: cm,
+          compile,
+        });
         const values = await FormDialog(
           t('Create map block'),
           () => {

@@ -1,8 +1,8 @@
-import { IField } from '@nocobase/client';
+import { CollectionFieldInterfaceV2 } from '@nocobase/client';
 import { generateNTemplate } from '../locale';
 import { commonSchema } from './schema';
 
-export const point: IField = {
+export const point = new CollectionFieldInterfaceV2({
   name: 'point',
   type: 'object',
   group: 'map',
@@ -21,4 +21,4 @@ export const point: IField = {
     },
   },
   ...commonSchema,
-};
+});

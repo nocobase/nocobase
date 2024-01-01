@@ -1,5 +1,5 @@
 import { useFieldSchema } from '@formily/react';
-import { useCollection, SchemaInitializer } from '@nocobase/client';
+import { SchemaInitializer, useCollectionV2 } from '@nocobase/client';
 
 export const GanttActionInitializers = new SchemaInitializer({
   name: 'GanttActionInitializers',
@@ -36,7 +36,7 @@ export const GanttActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
@@ -50,7 +50,7 @@ export const GanttActionInitializers = new SchemaInitializer({
             'x-decorator': 'ACLActionProvider',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return !['view', 'sql'].includes(collection.template) || collection?.writableView;
           },
         },
@@ -72,7 +72,7 @@ export const GanttActionInitializers = new SchemaInitializer({
           },
           useVisible() {
             const schema = useFieldSchema();
-            const collection = useCollection();
+            const collection = useCollectionV2();
             const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
             return collection.tree && treeTable !== false;
           },
@@ -83,7 +83,7 @@ export const GanttActionInitializers = new SchemaInitializer({
       name: 'divider',
       type: 'divider',
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollectionV2();
         return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
     },
@@ -140,7 +140,7 @@ export const GanttActionInitializers = new SchemaInitializer({
         },
       ],
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollectionV2();
         return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
     },

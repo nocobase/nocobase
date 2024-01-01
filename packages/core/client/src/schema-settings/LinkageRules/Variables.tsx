@@ -1,5 +1,5 @@
+import { useCollectionManagerV2 } from '../../application';
 import { useCompile } from '../../schema-component';
-import { useCollectionManager, useCollection } from '../../collection-manager';
 
 const supportsType = [
   'id',
@@ -26,9 +26,9 @@ const supportsType = [
   'm2m',
 ];
 const useVariableTypes = (currentCollection, excludes = []) => {
-  const { getCollectionFields, getInterface, getCollection } = useCollectionManager();
-  const collection = getCollection(currentCollection);
-  const fields = getCollectionFields(currentCollection);
+  const cm = useCollectionManagerV2();
+  const collection = cm.getCollection(currentCollection);
+  const fields = cm.getCollectionFields(currentCollection);
   return [
     {
       title: collection.title,
@@ -38,7 +38,7 @@ const useVariableTypes = (currentCollection, excludes = []) => {
           if (!field.interface || !supportsType.filter((v) => !excludes.includes(v)).includes(field.interface)) {
             return;
           }
-          const fieldInterface = getInterface(field.interface);
+          const fieldInterface = cm.getCollectionFieldInterface(field.interface);
           if (!fieldInterface?.filterable) {
             return;
           }
@@ -59,7 +59,7 @@ const useVariableTypes = (currentCollection, excludes = []) => {
             option['children'] = children;
           }
           if (nested) {
-            const targetFields = getCollectionFields(field.target);
+            const targetFields = cm.getCollectionFields(field.target);
             const options = getOptions(targetFields, depth + 1).filter(Boolean);
             option['children'] = option['children'] || [];
             option['children'].push(...options);

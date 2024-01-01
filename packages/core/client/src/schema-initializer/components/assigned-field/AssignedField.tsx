@@ -4,13 +4,7 @@ import { merge } from '@formily/shared';
 import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFormBlockContext } from '../../../block-provider';
-import {
-  CollectionFieldProvider,
-  useCollection,
-  useCollectionField,
-  useCollectionFilterOptions,
-  useCollectionManager,
-} from '../../../collection-manager';
+import { InheritanceCollectionMixin, useCollectionFilterOptions } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
 import { useCompile, useComponent } from '../../../schema-component';
 import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
@@ -18,6 +12,12 @@ import { Option } from '../../../schema-settings/VariableInput/type';
 import { formatVariableScop } from '../../../schema-settings/VariableInput/utils/formatVariableScop';
 import { useLocalVariables, useVariables } from '../../../variables';
 import { DeletedField } from '../DeletedField';
+import {
+  CollectionFieldProviderV2,
+  useCollectionFieldV2,
+  useCollectionManagerV2,
+  useCollectionV2,
+} from '../../../application';
 
 interface AssignedFieldProps {
   value: any;
@@ -28,7 +28,7 @@ interface AssignedFieldProps {
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { uiSchema } = useCollectionField();
+  const { uiSchema } = useCollectionFieldV2();
   const component = useComponent(uiSchema?.['x-component']);
   const compile = useCompile();
   const setFieldProps = (key, value) => {
@@ -82,9 +82,9 @@ const InternalField: React.FC = (props) => {
 const CollectionField = (props) => {
   const fieldSchema = useFieldSchema();
   return (
-    <CollectionFieldProvider name={fieldSchema.name} fallback={<DeletedField />}>
+    <CollectionFieldProviderV2 name={fieldSchema.name} fallback={<DeletedField />}>
       <InternalField {...props} />
-    </CollectionFieldProvider>
+    </CollectionFieldProviderV2>
   );
 };
 
@@ -95,8 +95,8 @@ export enum AssignedFieldValueType {
 
 export const AssignedField = (props: AssignedFieldProps) => {
   const { value, onChange } = props;
-  const { getCollectionFields, getAllCollectionsInheritChain } = useCollectionManager();
-  const collection = useCollection();
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
+  const collection = useCollectionV2();
   const { form } = useFormBlockContext();
   const fieldSchema = useFieldSchema();
   const record = useRecord();
@@ -104,18 +104,18 @@ export const AssignedField = (props: AssignedFieldProps) => {
   const localVariables = useLocalVariables();
   const currentFormFields = useCollectionFilterOptions(collection);
 
-  const { name, getField } = collection;
-  const collectionField = getField(fieldSchema.name);
+  const { name } = collection;
+  const collectionField = collection.getField(fieldSchema.name);
 
   const shouldChange = useMemo(
-    () => getShouldChange({ collectionField, variables, localVariables, getAllCollectionsInheritChain }),
-    [collectionField, getAllCollectionsInheritChain, localVariables, variables],
+    () => getShouldChange({ collectionField, variables, localVariables, collectionManager: cm }),
+    [collectionField, cm, localVariables, variables],
   );
 
   const returnScope = useCallback(
     (scope: Option[]) => {
       const currentForm = scope.find((item) => item.value === '$nForm');
-      const fields = getCollectionFields(name);
+      const fields = cm.getCollectionFields(name);
 
       // fix https://nocobase.height.app/T-1355
       // 工作流人工节点的 `自定义表单` 区块，与其它表单区块不同，根据它的数据表名称，获取到的字段列表为空，所以需要在这里特殊处理一下

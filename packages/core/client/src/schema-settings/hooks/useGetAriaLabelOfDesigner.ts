@@ -1,6 +1,6 @@
 import { useFieldSchema } from '@formily/react';
 import { useCallback } from 'react';
-import { useCollection } from '../../collection-manager';
+import { useCollectionV2 } from '../../application';
 
 /**
  * label = 'designer' + name + x-component + [x-designer] + [collectionName] + [x-collection-field] + [postfix]
@@ -8,7 +8,7 @@ import { useCollection } from '../../collection-manager';
  */
 export const useGetAriaLabelOfDesigner = () => {
   const fieldSchema = useFieldSchema();
-  const { name: _collectionName } = useCollection();
+  const collection = useCollectionV2();
   const getAriaLabel = useCallback(
     (name: string, postfix?: string) => {
       if (!fieldSchema) return '';
@@ -16,12 +16,12 @@ export const useGetAriaLabelOfDesigner = () => {
       const component = fieldSchema['x-component'];
       const designer = fieldSchema['x-designer'] ? `-${fieldSchema['x-designer']}` : '';
       const collectionField = fieldSchema['x-collection-field'] ? `-${fieldSchema['x-collection-field']}` : '';
-      const collectionName = _collectionName ? `-${_collectionName}` : '';
+      const collectionName = collection?.name ? `-${collection.name}` : '';
       postfix = postfix ? `-${postfix}` : '';
 
       return `designer-${name}-${component}${designer}${collectionName}${collectionField}${postfix}`;
     },
-    [fieldSchema, _collectionName],
+    [fieldSchema, collection?.name],
   );
 
   return { getAriaLabel };

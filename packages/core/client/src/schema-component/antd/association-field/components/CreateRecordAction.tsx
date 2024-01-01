@@ -1,10 +1,10 @@
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import React, { useState } from 'react';
-import { CollectionProvider } from '../../../../collection-manager';
 import { CreateAction } from '../../../../schema-initializer/components';
 import { ActionContextProvider, useActionContext } from '../../action';
 import { useAssociationFieldContext, useInsertSchema } from '../hooks';
 import schema from '../schema';
+import { CollectionProviderV2 } from '../../../../application';
 
 export const CreateRecordAction = observer(
   (props) => {
@@ -21,10 +21,10 @@ export const CreateRecordAction = observer(
       setCurrentCollection(name);
     };
     return (
-      <CollectionProvider name={collectionField?.target}>
+      <CollectionProviderV2 name={collectionField?.target}>
         <CreateAction {...props} onClick={(arg) => addbuttonClick(arg)} />
         <ActionContextProvider value={{ ...ctx, visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
-          <CollectionProvider name={currentCollection}>
+          <CollectionProviderV2 name={currentCollection}>
             <RecursionField
               onlyRenderProperties
               basePath={field.address}
@@ -33,9 +33,9 @@ export const CreateRecordAction = observer(
                 return s['x-component'] === 'AssociationField.AddNewer';
               }}
             />
-          </CollectionProvider>
+          </CollectionProviderV2>
         </ActionContextProvider>
-      </CollectionProvider>
+      </CollectionProviderV2>
     );
   },
   { displayName: 'CreateRecordAction' },

@@ -10,11 +10,10 @@ import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
-import { IField } from '../interfaces/types';
 import * as components from './components';
+import { CollectionFieldInterfaceOptions, useCollectionManagerV2 } from '../../application';
 
-const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
+const getSchema = (schema: CollectionFieldInterfaceOptions, record: any, compile, getContainer): ISchema => {
   if (!schema) {
     return;
   }
@@ -101,7 +100,7 @@ export const useValuesFromRecord = (options) => {
 };
 
 export const useUpdateCollectionActionAndRefreshCM = (options) => {
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const form = useForm();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
@@ -119,7 +118,7 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
       ctx.setVisible(false);
       await form.reset();
       refresh();
-      await refreshCM();
+      await cm.reload(refresh);
     },
   };
 };
@@ -131,7 +130,7 @@ export const EditCollection = (props) => {
 
 export const EditCollectionAction = (props) => {
   const { scope, getContainer, item: record, children, ...otherProps } = props;
-  const { getTemplate } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const { t } = useTranslation();
@@ -143,10 +142,10 @@ export const EditCollectionAction = (props) => {
         <a
           {...otherProps}
           onClick={async () => {
-            const templateConf = getTemplate(record.template);
+            const templateConf = cm.getCollectionTemplate(record.template);
             const schema = getSchema(
               {
-                ...templateConf,
+                ...(templateConf.getOptions() as any),
               },
               record,
               compile,

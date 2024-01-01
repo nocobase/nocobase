@@ -1,16 +1,16 @@
 import { useFieldSchema } from '@formily/react';
 import { useCallback, useMemo } from 'react';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { isInFilterFormBlock } from '../../../filter-provider';
 import { useRecord } from '../../../record-provider';
+import { useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 export default function useServiceOptions(props) {
   const { action = 'list', service, fieldNames } = props;
   const params = service?.params || {};
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const { getCollectionFields } = useCollectionManager();
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const record = useRecord();
 
   const normalizeValues = useCallback(
@@ -35,8 +35,8 @@ export default function useServiceOptions(props) {
   }, [props.value, normalizeValues]);
 
   const collectionField = useMemo(() => {
-    return getField(fieldSchema.name);
-  }, [fieldSchema.name]);
+    return collection.getField(fieldSchema.name);
+  }, [collection, fieldSchema.name]);
 
   const sourceValue = record?.[collectionField?.sourceKey];
   const filter = useMemo(() => {
@@ -74,7 +74,7 @@ export default function useServiceOptions(props) {
       ],
       '$or',
     );
-  }, [params?.filter, getCollectionFields, collectionField, sourceValue, value, fieldNames.value]);
+  }, [params?.filter, cm.getCollectionFields, collectionField, sourceValue, value, fieldNames.value]);
 
   return useMemo(() => {
     return {

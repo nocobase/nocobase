@@ -1,12 +1,6 @@
 import React from 'react';
-import { SchemaComponentOptions } from '../';
-import {
-  CollectionField,
-  CollectionFieldProvider,
-  CollectionProvider,
-  ResourceActionProvider,
-  useDataSourceFromRAC,
-} from './';
+import { SchemaComponentOptions } from '..';
+import { ResourceActionProvider, useDataSourceFromRAC } from '.';
 import * as hooks from './action-hooks';
 import { DataSourceProvider, ds, SubFieldDataSourceProvider } from './sub-table';
 
@@ -17,9 +11,6 @@ export const CollectionManagerSchemaComponentProvider: React.FC = (props) => {
       components={{
         SubFieldDataSourceProvider,
         DataSourceProvider,
-        CollectionField,
-        CollectionFieldProvider,
-        CollectionProvider,
         ResourceActionProvider,
       }}
     >

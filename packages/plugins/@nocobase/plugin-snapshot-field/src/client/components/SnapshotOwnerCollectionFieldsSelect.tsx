@@ -1,4 +1,4 @@
-import { useCollectionManager, useCompile } from '@nocobase/client';
+import { useCollectionManagerV2, useCompile } from '@nocobase/client';
 import { Select, SelectProps } from 'antd';
 import React from 'react';
 import { useTopRecord } from '../interface';
@@ -7,12 +7,12 @@ export type SnapshotOwnerCollectionFieldsSelectProps = Omit<SelectProps, 'option
 
 export const useSnapshotOwnerCollectionFields = () => {
   const record = useTopRecord();
-  const { getCollection } = useCollectionManager();
-  const collection = getCollection(record.name);
+  const cm = useCollectionManagerV2();
+  const collection = cm.getCollection(record.name);
   const compile = useCompile();
 
-  return collection.fields
-    .filter((i) => !!i.target && !!i.interface)
+  return collection
+    .getFields((i) => !!i.target && !!i.interface)
     .map((i) => ({ ...i, label: compile(i.uiSchema?.title), value: i.name }));
 };
 

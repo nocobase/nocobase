@@ -6,7 +6,6 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
 import {
   SchemaSettingsModalItem,
   SchemaSettingsSelectItem,
@@ -16,6 +15,7 @@ import {
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useOperatorList } from '../filter/useOperators';
 import { isFileCollection } from './FormItem';
+import { useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 export const findFilterOperators = (schema: Schema) => {
   while (schema) {
@@ -41,13 +41,14 @@ const divWrap = (schema: ISchema) => {
 };
 
 export const EditTitle = () => {
-  const { getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const collectionField =
+    collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']);
 
   return collectionField ? (
     <SchemaSettingsModalItem
@@ -195,15 +196,16 @@ export const EditRequired = () => {
 };
 
 export const EditValidationRules = () => {
-  const { getInterface, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { dn, refresh } = useDesignable();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const interfaceConfig = getInterface(collectionField?.interface);
+  const collectionField =
+    collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']);
+  const interfaceConfig = cm.getCollectionFieldInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
 
   return form && !form?.readPretty && validateSchema ? (
@@ -331,14 +333,15 @@ export const EditValidationRules = () => {
 };
 
 export const EditDefaultValue = () => {
-  const { getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { dn, refresh } = useDesignable();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const collectionField =
+    collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']);
 
   return form && !form?.readPretty && collectionField?.uiSchema?.type ? (
     <SchemaSettingsModalItem
@@ -378,16 +381,17 @@ export const EditDefaultValue = () => {
 };
 
 export const EditComponent = () => {
-  const { getCollectionJoinField, getCollection } = useCollectionManager();
-  const { getField } = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const collectionField =
+    collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']);
   const fieldModeOptions = useFieldModeOptions();
   const isAssociationField = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collectionField?.type);
-  const targetCollection = getCollection(collectionField?.target);
+  const targetCollection = cm.getCollection(collectionField?.target);
   const isFileField = isFileCollection(targetCollection as any);
 
   return isAssociationField && fieldModeOptions ? (
@@ -415,14 +419,15 @@ export const EditComponent = () => {
 };
 
 export const EditPattern = () => {
-  const { getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const collectionField =
+    collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']);
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';
@@ -569,17 +574,18 @@ export const EditOperator = () => {
 };
 
 export const EditTitleField = () => {
-  const { getCollectionFields, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const compile = useCompile();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const collectionField =
+    collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']);
   const targetFields = collectionField?.target
-    ? getCollectionFields(collectionField?.target)
-    : getCollectionFields(collectionField?.targetCollection) ?? [];
+    ? cm.getCollectionFields(collectionField?.target)
+    : cm.getCollectionFields(collectionField?.targetCollection) ?? [];
   const options = targetFields
     .filter((field) => !field?.target && field.type !== 'boolean')
     .map((field) => ({

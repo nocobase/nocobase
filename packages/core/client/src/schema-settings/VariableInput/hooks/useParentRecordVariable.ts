@@ -1,10 +1,10 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions } from '../../../collection-manager';
 import { useBaseVariable } from './useBaseVariable';
+import { CollectionFieldOptionsV2 } from '../../../application';
 
 interface Props {
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptionsV2;
   schema: any;
   collectionName: string;
   noDisabled?: boolean;

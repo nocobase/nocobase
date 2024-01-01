@@ -1,19 +1,19 @@
 import { Field } from '@formily/core';
 import { observer, useField, useForm } from '@formily/react';
 import { Select } from 'antd';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useRecord } from '../../../record-provider';
 import { useCompile } from '../../../schema-component';
-import { useCollectionManager } from '../../hooks';
+import { useCollectionManagerV2 } from '../../../application';
 
 export const SourceForeignKey = observer(
   () => {
     const record = useRecord();
-    const { getCollection } = useCollectionManager();
-    const collection = record?.collectionName ? getCollection(record.collectionName) : record;
+    const collectionManager = useCollectionManagerV2();
+    const collection = useMemo(() => {
+      return record?.collectionName ? collectionManager.getCollection(record.collectionName) : record;
+    }, [collectionManager, record]);
     const field = useField<Field>();
-    const form = useForm();
-    const { getCollectionFields } = useCollectionManager();
     return (
       <div>
         <Select
@@ -21,7 +21,7 @@ export const SourceForeignKey = observer(
           placeholder={'留空时，自动生成 FK 字段'}
           disabled={field.disabled}
           value={field.value}
-          options={getCollectionFields(collection.name)
+          options={collection.fields
             .filter((field) => field.type)
             .map((field) => {
               return {
@@ -40,7 +40,10 @@ export const ThroughForeignKey = observer(
   () => {
     const field = useField<Field>();
     const form = useForm();
-    const { getCollectionFields } = useCollectionManager();
+    const collectionManager = useCollectionManagerV2();
+    const collection = useMemo(() => {
+      return collectionManager.getCollection(form.values.through);
+    }, [collectionManager, form.values.through]);
     return (
       <div>
         <Select
@@ -49,8 +52,8 @@ export const ThroughForeignKey = observer(
           placeholder={'留空时，自动生成 FK 字段'}
           disabled={field.disabled}
           value={field.value}
-          options={getCollectionFields(form.values.through)
-            .filter((field) => field.type)
+          options={collection
+            .getFields((field) => field.type)
             .map((field) => {
               return {
                 label: field?.uiSchema?.title || field.name,
@@ -68,7 +71,10 @@ export const TargetForeignKey = observer(
   () => {
     const field = useField<Field>();
     const form = useForm();
-    const { getCollectionFields } = useCollectionManager();
+    const collectionManager = useCollectionManagerV2();
+    const collection = useMemo(() => {
+      return collectionManager.getCollection(form.values.target);
+    }, [collectionManager, form.values.target]);
     return (
       <div>
         <Select
@@ -77,8 +83,8 @@ export const TargetForeignKey = observer(
           placeholder={'留空时，自动生成 FK 字段'}
           disabled={field.disabled}
           value={field.value}
-          options={getCollectionFields(form.values.target)
-            .filter((field) => field.type)
+          options={collection
+            .getFields((field) => field.type)
             .map((field) => {
               return {
                 label: field?.uiSchema?.title || field.name,
@@ -95,8 +101,8 @@ export const TargetForeignKey = observer(
 export const SourceCollection = observer(
   () => {
     const record = useRecord();
-    const { getCollection } = useCollectionManager();
-    const collection = record?.collectionName ? getCollection(record.collectionName) : record;
+    const collectionManager = useCollectionManagerV2();
+    const collection = record?.collectionName ? collectionManager.getCollection(record.collectionName) : record;
     const compile = useCompile();
     return (
       <div>

@@ -3,7 +3,6 @@ import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
 import { useDesignable } from '../../';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
-import { CollectionProvider, useCollectionManager } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
@@ -13,6 +12,7 @@ import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './ho
 import { transformNestedData } from './InternalCascadeSelect';
 import schema from './schema';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
+import { CollectionProviderV2, useCollectionManagerV2 } from '../../../application';
 
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
@@ -31,7 +31,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
   (props: any) => {
     const fieldSchema = useFieldSchema();
     const recordCtx = useRecord();
-    const { getCollection } = useCollectionManager();
+    const cm = useCollectionManagerV2();
     const { enableLink } = fieldSchema['x-component-props'] || {};
     // value 做了转换，但 props.value 和原来 useField().value 的值不一致
     const field = useField();
@@ -43,7 +43,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const compile = useCompile();
     const { designable } = useDesignable();
     const { snapshot } = useActionContext();
-    const targetCollection = getCollection(collectionField?.target);
+    const targetCollection = cm.getCollection(collectionField?.target);
     const isTreeCollection = targetCollection?.template === 'tree';
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
     const renderRecords = () =>
@@ -54,8 +54,8 @@ export const ReadPrettyInternalViewer: React.FC = observer(
               .map((o) => o?.[fieldNames?.label || 'label'])
               .join(' / ')
           : isObject(value)
-          ? JSON.stringify(value)
-          : value;
+            ? JSON.stringify(value)
+            : value;
         const val = toValue(compile(label), 'N/A');
         const labelUiSchema = useLabelUiSchema(
           record?.__collection || collectionField?.target,
@@ -120,7 +120,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     return (
       <div>
         <BlockAssociationContext.Provider value={`${collectionField?.collectionName}.${collectionField?.name}`}>
-          <CollectionProvider name={collectionField?.target ?? collectionField?.targetCollection}>
+          <CollectionProviderV2 name={collectionField?.target ?? collectionField?.targetCollection}>
             <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
               {renderRecords()}
             </EllipsisWithTooltip>
@@ -129,7 +129,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
             >
               {renderRecordProvider()}
             </ActionContextProvider>
-          </CollectionProvider>
+          </CollectionProviderV2>
         </BlockAssociationContext.Provider>
       </div>
     );

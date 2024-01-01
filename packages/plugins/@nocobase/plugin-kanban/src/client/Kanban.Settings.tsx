@@ -2,13 +2,13 @@ import { useField, useFieldSchema } from '@formily/react';
 import {
   useFormBlockContext,
   SchemaSettingsDataScope,
-  useCollection,
   useDesignable,
   SchemaSettings,
   FixedBlockDesignerItem,
   SchemaSettingsBlockTitleItem,
   removeNullCondition,
   SchemaSettingsTemplate,
+  useCollectionV2,
 } from '@nocobase/client';
 import { useKanbanBlockContext } from './KanbanBlockProvider';
 export const kanbanSettings = new SchemaSettings({
@@ -22,7 +22,7 @@ export const kanbanSettings = new SchemaSettings({
       name: 'dataScope',
       Component: SchemaSettingsDataScope,
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollectionV2();
         const fieldSchema = useFieldSchema();
         const { form } = useFormBlockContext();
         const field = useField();
@@ -57,7 +57,7 @@ export const kanbanSettings = new SchemaSettings({
       name: 'template',
       Component: SchemaSettingsTemplate,
       useComponentProps() {
-        const { name } = useCollection();
+        const collection = useCollectionV2();
         return {
           componentName: 'Kanban',
           collectionName: name,

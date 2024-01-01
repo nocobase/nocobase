@@ -1,12 +1,12 @@
 import { CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { observer, useField, useForm } from '@formily/react';
 import {
-  CollectionField,
-  CollectionProvider,
+  CollectionFieldV2,
+  CollectionProviderV2,
   SchemaComponent,
   Variable,
   css,
-  useCollectionManager,
+  useCollectionManagerV2,
   useCompile,
   useToken,
 } from '@nocobase/client';
@@ -17,11 +17,11 @@ import { lang } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';
 
 function AssociationInput(props) {
-  const { getCollectionFields } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { path } = useField();
   const fieldName = path.segments[path.segments.length - 1] as string;
   const { values: config } = useForm();
-  const fields = getCollectionFields(config?.collection);
+  const fields = cm.getCollectionFields(config?.collection);
   const { type } = fields.find((item) => item.name === fieldName);
 
   const value = Array.isArray(props.value) ? props.value.join(',') : props.value;
@@ -39,11 +39,11 @@ const CollectionFieldSet = observer(
     const { t } = useTranslation();
     const compile = useCompile();
     const form = useForm();
-    const { getCollection, getCollectionFields } = useCollectionManager();
+    const cm = useCollectionManagerV2();
     const scope = useWorkflowVariableOptions();
     const { values: config } = form;
     const collectionName = config?.collection;
-    const collectionFields = getCollectionFields(collectionName).filter((field) => field.uiSchema);
+    const collectionFields = cm.getCollectionFields(collectionName).filter((field) => field.uiSchema);
     const fields = filter ? collectionFields.filter(filter.bind(config)) : collectionFields;
 
     const unassignedFields = useMemo(() => fields.filter((field) => !value || !(field.name in value)), [fields, value]);
@@ -79,7 +79,7 @@ const CollectionFieldSet = observer(
         `}
       >
         {fields.length ? (
-          <CollectionProvider collection={getCollection(collectionName)}>
+          <CollectionProviderV2 name={collectionName}>
             {fields
               .filter((field) => value && field.name in value)
               .map((field) => {
@@ -87,7 +87,7 @@ const CollectionFieldSet = observer(
                 // dynamic values only support belongsTo/hasOne association, other association type should disable
                 const ConstantCompoent = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
                   ? AssociationInput
-                  : CollectionField;
+                  : CollectionFieldV2;
                 // TODO: try to use <ObjectField> to replace this map
                 return (
                   <Form.Item
@@ -141,7 +141,7 @@ const CollectionFieldSet = observer(
                 <Button icon={<PlusOutlined />}>{t('Add field')}</Button>
               </Dropdown>
             ) : null}
-          </CollectionProvider>
+          </CollectionProviderV2>
         ) : (
           <p style={{ color: token.colorText }}>{lang('Please select collection first')}</p>
         )}

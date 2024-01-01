@@ -5,7 +5,7 @@ import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollection, useSortFields } from '../../../collection-manager';
+import { useSortFields } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import {
   GeneralSchemaDesigner,
@@ -21,6 +21,7 @@ import { SchemaComponentOptions } from '../../core';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { defaultColumnCount, gridSizes, pageSizeOptions, screenSizeMaps, screenSizeTitleMaps } from './options';
+import { useCollectionV2 } from '../../../application';
 
 const columnCountMarks = [1, 2, 3, 4, 6, 8, 12, 24].reduce((obj, cur) => {
   obj[cur] = cur;
@@ -28,14 +29,14 @@ const columnCountMarks = [1, 2, 3, 4, 6, 8, 12, 24].reduce((obj, cur) => {
 }, {});
 
 export const GridCardDesigner = () => {
-  const { name, title } = useCollection();
+  const collection = useCollectionV2();
   const template = useSchemaTemplate();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
   const field = useField();
   const { dn } = useDesignable();
-  const sortFields = useSortFields(name);
+  const sortFields = useSortFields(collection.name);
   const record = useRecord();
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
@@ -82,7 +83,7 @@ export const GridCardDesigner = () => {
   return (
     // fix https://nocobase.height.app/T-2259
     <RecordProvider parent={record} record={{}}>
-      <GeneralSchemaDesigner template={template} title={title || name}>
+      <GeneralSchemaDesigner template={template} title={collection.title || collection.name}>
         <SchemaComponentOptions components={{ Slider }}>
           <SchemaSettingsModalItem
             title={t('Set the count of columns displayed in a row')}
@@ -106,7 +107,7 @@ export const GridCardDesigner = () => {
             }}
           />
           <SchemaSettingsDataScope
-            collectionName={name}
+            collectionName={collection.name}
             defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
             form={form}
             onSubmit={({ filter }) => {

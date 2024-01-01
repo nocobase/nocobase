@@ -5,12 +5,12 @@ import {
   useSchemaToolbar,
   useDesignable,
   SchemaSettingOpenModeSchemaItems,
-  useCollection,
   useRecord,
   SchemaSettingsModalItem,
   SchemaSettingsLinkageRules,
   useCollectionState,
   useSyncFromForm,
+  useCollectionV2,
 } from '@nocobase/client';
 import { onFieldInputValueChange } from '@formily/core';
 import { cloneDeep } from 'lodash';
@@ -81,7 +81,7 @@ function DuplicationMode() {
   const { t } = useTranslation();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { name } = useCollection();
+  const { name } = useCollectionV2();
   const { collectionList, getEnableFieldTree, getOnLoadData, getOnCheck } = useCollectionState(name);
   const duplicateValues = cloneDeep(fieldSchema['x-component-props'].duplicateFields || []);
   const record = useRecord();
@@ -328,7 +328,7 @@ const duplicateActionSettings = new SchemaSettings({
           name: 'linkageRules',
           Component: SchemaSettingsLinkageRules,
           useComponentProps() {
-            const { name } = useCollection();
+            const collection = useCollectionV2();
             const { linkageRulesProps } = useSchemaToolbar();
             return {
               ...linkageRulesProps,

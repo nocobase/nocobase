@@ -2,17 +2,17 @@ import { observer, useForm } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import React, { createContext, useContext, useState } from 'react';
 import {
-  CollectionOptions,
-  CollectionProvider,
+  CollectionOptionsV2,
+  CollectionProviderV2,
   useActionContext,
-  useCollectionManager,
+  useCollectionManagerV2,
   useRecord,
   useRecordIndex,
   useRequest,
-} from '../';
+} from '..';
 import { useAPIClient } from '../api-client';
 
-const collection: CollectionOptions = {
+const collection: CollectionOptionsV2 = {
   name: 'fields',
   targetKey: 'name',
   fields: [
@@ -204,7 +204,7 @@ export const SubFieldDataSourceProvider = observer(
       },
     );
     return (
-      <CollectionProvider collection={collection}>
+      <CollectionProviderV2 name={collection.name}>
         <DataSourceContext.Provider
           value={{
             rowKey: 'name',
@@ -217,7 +217,7 @@ export const SubFieldDataSourceProvider = observer(
         >
           {props.children}
         </DataSourceContext.Provider>
-      </CollectionProvider>
+      </CollectionProviderV2>
     );
   },
   { displayName: 'SubFieldDataSourceProvider' },
@@ -230,8 +230,8 @@ export const DataSourceProvider = observer(
     const [dataSource, setDataSource] = useState([]);
     const record = useRecord();
     const api = useAPIClient();
-    const { getCollection } = useCollectionManager();
-    const coll = getCollection(collection);
+    const cm = useCollectionManagerV2();
+    const coll = cm.getCollection(collection);
     const resourceOf = record?.[association.targetKey || 'id'];
     const service = useRequest(
       () => {
@@ -258,7 +258,7 @@ export const DataSourceProvider = observer(
       },
     );
     return (
-      <CollectionProvider collection={coll}>
+      <CollectionProviderV2 name={coll.name}>
         <DataSourceContext.Provider
           value={{
             rowKey,
@@ -271,7 +271,7 @@ export const DataSourceProvider = observer(
         >
           {props.children}
         </DataSourceContext.Provider>
-      </CollectionProvider>
+      </CollectionProviderV2>
     );
   },
   { displayName: 'DataSourceProvider' },

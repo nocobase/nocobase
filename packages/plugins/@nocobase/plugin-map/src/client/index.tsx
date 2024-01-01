@@ -1,24 +1,19 @@
-import { CollectionManagerContext, CurrentAppInfoProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
-import React, { useContext } from 'react';
+import { CurrentAppInfoProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
+import React from 'react';
 import { MapBlockOptions } from './block';
 import { mapActionInitializers } from './block/MapActionInitializers';
 import { Configuration, Map } from './components';
-import { interfaces } from './fields';
 import { MapInitializer } from './initialize';
 import { generateNTemplate } from './locale';
 import { NAMESPACE } from './locale';
+import { fieldInterfaces } from './fields';
 
 const MapProvider = React.memo((props) => {
-  const ctx = useContext(CollectionManagerContext);
   return (
     <CurrentAppInfoProvider>
       <MapInitializer>
         <SchemaComponentOptions components={{ Map }}>
-          <MapBlockOptions>
-            <CollectionManagerContext.Provider value={{ ...ctx, interfaces: { ...ctx.interfaces, ...interfaces } }}>
-              {props.children}
-            </CollectionManagerContext.Provider>
-          </MapBlockOptions>
+          <MapBlockOptions>{props.children}</MapBlockOptions>
         </SchemaComponentOptions>
       </MapInitializer>
     </CurrentAppInfoProvider>
@@ -44,6 +39,8 @@ export class MapPlugin extends Plugin {
       Component: Configuration,
       aclSnippet: 'pm.map.configuration',
     });
+
+    this.collectionManager.addCollectionFieldInterfaces(fieldInterfaces);
   }
 }
 

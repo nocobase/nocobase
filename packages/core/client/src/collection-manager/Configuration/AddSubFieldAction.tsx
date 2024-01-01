@@ -8,13 +8,12 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider } from '../../record-provider';
-import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
-import { useCollectionManager } from '../hooks';
+import { ActionContextProvider, SchemaComponent, useCompile } from '../../schema-component';
 import { useOptions } from '../hooks/useOptions';
-import { IField } from '../interfaces/types';
 import * as components from './components';
+import { CollectionFieldInterfaceOptions, useCollectionManagerV2 } from '../../application';
 
-const getSchema = (schema: IField): ISchema => {
+const getSchema = (schema: CollectionFieldInterfaceOptions): ISchema => {
   if (!schema) {
     return;
   }
@@ -75,27 +74,13 @@ const getSchema = (schema: IField): ISchema => {
 };
 
 const useCreateSubField = () => {
-  const ctx = useActionContext();
   return {
-    async run() {
-      // const options = form?.values?.uiSchema?.enum?.slice() || [];
-      // form.setValuesIn(
-      //   'uiSchema.enum',
-      //   options.map((option) => {
-      //     return {
-      //       value: uid(),
-      //       ...option,
-      //     };
-      //   }),
-      // );
-      // await run();
-      // await refreshCM();
-    },
+    async run() {},
   };
 };
 
 export const AddSubFieldAction = () => {
-  const { getInterface } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const compile = useCompile();
@@ -120,13 +105,13 @@ export const AddSubFieldAction = () => {
         overflow: 'auto',
       },
       onClick: (info) => {
-        const schema = getSchema(getInterface(info.key));
+        const schema = getSchema(cm.getCollectionFieldInterface(info.key));
         setSchema(schema);
         setVisible(true);
       },
       items,
     };
-  }, [items]);
+  }, [cm, items]);
 
   return (
     <ActionContextProvider value={{ visible, setVisible }}>

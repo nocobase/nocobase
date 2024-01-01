@@ -5,12 +5,13 @@ import cloneDeep from 'lodash/cloneDeep';
 import omit from 'lodash/omit';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useCollectionManager } from '.';
-import { useRequest } from '../api-client';
+import { useAPIClient, useRequest } from '../api-client';
 import { useRecord } from '../record-provider';
-import { useActionContext } from '../schema-component';
+import { useActionContext, useSchemaComponentContext } from '../schema-component';
 import { useFilterFieldOptions, useFilterFieldProps } from '../schema-component/antd/filter/useFilterActionProps';
 import { useResourceActionContext, useResourceContext } from './ResourceActionProvider';
+import { useCollectionManagerV2, useCollectionV2 } from '../application';
+import { InheritanceCollectionMixin } from './collection-mixins/InheritanceCollectionMixin';
 
 export const useCancelAction = () => {
   const form = useForm();
@@ -56,7 +57,9 @@ export const useResetFilterAction = () => {
 };
 
 export const useKanbanEvents = () => {
-  const { resource } = useCollection();
+  const api = useAPIClient();
+  const collection = useCollectionV2();
+  const resource = api.resource(collection?.name);
   return {
     async onCardDragEnd({ columns, groupField }, { fromColumnId, fromPosition }, { toColumnId, toPosition }) {
       const sourceColumn = columns.find((column) => column.id === fromColumnId);
@@ -80,14 +83,14 @@ export const useKanbanEvents = () => {
 };
 
 export const useSortFields = (collectionName: string) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
-  const fields = getCollectionFields(collectionName);
+  const cm = useCollectionManagerV2();
+  const fields = useMemo(() => cm.getCollectionFields(collectionName), [collectionName, cm]);
   return fields
     .filter((field: any) => {
       if (!field.interface) {
         return false;
       }
-      const fieldInterface = getInterface(field.interface);
+      const fieldInterface = cm.getCollectionFieldInterface(field.interface);
       if (fieldInterface?.sortable) {
         return true;
       }
@@ -102,9 +105,9 @@ export const useSortFields = (collectionName: string) => {
 };
 
 export const useChildrenCollections = (collectionName: string) => {
-  const { getChildrenCollections } = useCollectionManager();
-  const childrenCollections = getChildrenCollections(collectionName);
-  return childrenCollections.map((collection: any) => {
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
+  const childrenCollections = cm.getCollection(collectionName).getChildrenCollections();
+  return childrenCollections.map((collection) => {
     return {
       value: collection.name,
       label: collection?.title || collection.name,
@@ -113,34 +116,34 @@ export const useChildrenCollections = (collectionName: string) => {
 };
 
 export const useSelfAndChildrenCollections = (collectionName: string) => {
-  const { getChildrenCollections, getCollection } = useCollectionManager();
-  const childrenCollections = getChildrenCollections(collectionName);
-  const self = getCollection(collectionName);
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
+  const collection = cm.getCollection(collectionName);
+  const childrenCollections = useMemo(() => collection.getChildrenCollections(), [collection]);
   if (!collectionName) {
     return null;
   }
-  const options = childrenCollections.map((collection: any) => {
+  const options = childrenCollections.map((collection) => {
     return {
       value: collection.name,
       label: collection?.title || collection.name,
     };
   });
   options.unshift({
-    value: self.name,
-    label: self?.title || self.name,
+    value: collection.name,
+    label: collection?.title || collection.name,
   });
   return options;
 };
 
 export const useCollectionFilterOptions = (collection: any) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   return useMemo(() => {
-    const fields = getCollectionFields(collection);
+    const fields = cm.getCollectionFields(collection);
     const field2option = (field, depth) => {
       if (!field.interface) {
         return;
       }
-      const fieldInterface = getInterface(field.interface);
+      const fieldInterface = cm.getCollectionFieldInterface(field.interface);
       if (!fieldInterface?.filterable) {
         return;
       }
@@ -165,7 +168,7 @@ export const useCollectionFilterOptions = (collection: any) => {
         option['children'] = children;
       }
       if (nested) {
-        const targetFields = getCollectionFields(field.target);
+        const targetFields = cm.getCollectionFields(field.target);
         const options = getOptions(targetFields, depth + 1).filter(Boolean);
         option['children'] = option['children'] || [];
         option['children'].push(...options);
@@ -188,15 +191,15 @@ export const useCollectionFilterOptions = (collection: any) => {
 };
 
 export const useCollectionFilterOptionsV2 = (collection: any) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const cm = useCollectionManagerV2();
 
   const getFields = useCallback(() => {
-    const fields = getCollectionFields(collection);
+    const fields = cm.getCollectionFields(collection);
     const field2option = (field, depth) => {
       if (!field.interface) {
         return;
       }
-      const fieldInterface = getInterface(field.interface);
+      const fieldInterface = cm.getCollectionFieldInterface(field.interface);
       if (!fieldInterface?.filterable) {
         return;
       }
@@ -221,7 +224,7 @@ export const useCollectionFilterOptionsV2 = (collection: any) => {
         option['children'] = children;
       }
       if (nested) {
-        const targetFields = getCollectionFields(field.target);
+        const targetFields = cm.getCollectionFields(field.target);
         const options = getOptions(targetFields, depth + 1).filter(Boolean);
         option['children'] = option['children'] || [];
         option['children'].push(...options);
@@ -246,13 +249,13 @@ export const useCollectionFilterOptionsV2 = (collection: any) => {
 };
 
 export const useLinkageCollectionFilterOptions = (collectionName: string) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
-  const fields = getCollectionFields(collectionName);
+  const cm = useCollectionManagerV2();
+  const fields = useMemo(() => cm.getCollectionFields(collectionName), [collectionName, cm]);
   const field2option = (field, depth) => {
     if (!field.interface) {
       return;
     }
-    const fieldInterface = getInterface(field.interface);
+    const fieldInterface = cm.getCollectionFieldInterface(field.interface);
     if (!fieldInterface?.filterable) {
       return;
     }
@@ -277,7 +280,7 @@ export const useLinkageCollectionFilterOptions = (collectionName: string) => {
       option['children'] = children;
     }
     if (nested) {
-      const targetFields = getCollectionFields(field.target).filter((v) => {
+      const targetFields = cm.getCollectionFields(field.target).filter((v) => {
         if (['hasMany', 'belongsToMany'].includes(field.type)) {
           return !['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(v.type);
         }
@@ -304,14 +307,14 @@ export const useLinkageCollectionFilterOptions = (collectionName: string) => {
 };
 // 通用
 export const useCollectionFieldsOptions = (collectionName: string, maxDepth = 2, excludes = []) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
-  const fields = getCollectionFields(collectionName).filter((v) => !excludes.includes(v.interface));
+  const cm = useCollectionManagerV2();
+  const fields = cm.getCollectionFields(collectionName).filter((v) => !excludes.includes(v.interface));
 
   const field2option = (field, depth, prefix?) => {
     if (!field.interface) {
       return;
     }
-    const fieldInterface = getInterface(field.interface);
+    const fieldInterface = cm.getCollectionFieldInterface(field.interface);
     if (!fieldInterface?.filterable) {
       return;
     }
@@ -339,7 +342,7 @@ export const useCollectionFieldsOptions = (collectionName: string, maxDepth = 2,
       });
     }
     if (nested) {
-      const targetFields = getCollectionFields(field.target).filter((v) => !excludes.includes(v.interface));
+      const targetFields = cm.getCollectionFields(field.target).filter((v) => !excludes.includes(v.interface));
       const options = getOptions(targetFields, depth + 1, field.name).filter(Boolean);
       option['children'] = option['children'] || [];
       option['children'].push(...options);
@@ -361,7 +364,7 @@ export const useCollectionFieldsOptions = (collectionName: string, maxDepth = 2,
 };
 
 export const useFilterDataSource = (options) => {
-  const { name } = useCollection();
+  const collection = useCollectionV2();
   const data = useCollectionFilterOptions(name);
   return useRequest(
     () =>
@@ -521,33 +524,36 @@ export const useValuesFromRA = (options) => {
 
 export const useCreateActionAndRefreshCM = () => {
   const { run } = useCreateAction();
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
+  const { refresh } = useSchemaComponentContext();
   return {
     async run() {
       await run();
-      await refreshCM();
+      await cm.reload(refresh);
     },
   };
 };
 
 export const useUpdateActionAndRefreshCM = () => {
   const { run } = useUpdateAction();
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
+  const { refresh } = useSchemaComponentContext();
   return {
     async run() {
       await run();
-      await refreshCM();
+      await cm.reload(refresh);
     },
   };
 };
 
 export const useDestroyActionAndRefreshCM = () => {
   const { run } = useDestroyAction();
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
+  const { refresh } = useSchemaComponentContext();
   return {
     async run() {
       await run();
-      await refreshCM();
+      await cm.reload(refresh);
     },
   };
 };
@@ -565,11 +571,12 @@ export const isDeleteButtonDisabled = (record?: any) => {
 
 export const useBulkDestroyActionAndRefreshCM = () => {
   const { run } = useBulkDestroyAction();
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
+  const { refresh } = useSchemaComponentContext();
   return {
     async run() {
       await run();
-      await refreshCM();
+      await cm.reload(refresh);
     },
   };
 };

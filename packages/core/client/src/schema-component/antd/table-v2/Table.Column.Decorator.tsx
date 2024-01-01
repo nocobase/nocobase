@@ -1,14 +1,14 @@
 import { useField, useFieldSchema } from '@formily/react';
 import React, { useLayoutEffect } from 'react';
-import { SortableItem, useCollection, useCollectionManager, useCompile, useDesigner } from '../../../';
+import { SortableItem, useCollectionManagerV2, useCollectionV2, useCompile, useDesigner } from '../../../';
 import { designerCss } from './Table.Column.ActionBar';
 import { isCollectionFieldComponent } from './utils';
 
 export const useColumnSchema = () => {
-  const { getField } = useCollection();
+  const collection = useCollectionV2();
   const compile = useCompile();
   const columnSchema = useFieldSchema();
-  const { getCollectionJoinField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const fieldSchema = columnSchema.reduceProperties((buf, s) => {
     if (isCollectionFieldComponent(s)) {
       return s;
@@ -19,7 +19,8 @@ export const useColumnSchema = () => {
     return {};
   }
 
-  const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
+  const collectionField =
+    collection.getField(fieldSchema.name) || cm.getCollectionField(fieldSchema?.['x-collection-field']);
   return { columnSchema, fieldSchema, collectionField, uiSchema: compile(collectionField?.uiSchema) };
 };
 

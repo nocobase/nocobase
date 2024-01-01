@@ -1,4 +1,4 @@
-import { Plugin, useCollection } from '@nocobase/client';
+import { Plugin, useCollectionV2 } from '@nocobase/client';
 import { BulkEditPluginProvider } from './BulkEditPluginProvider';
 import { BulkEditFormItemInitializers } from './BulkEditFormItemInitializers';
 import { CreateFormBulkEditBlockInitializers } from './CreateFormBulkEditBlockInitializers';
@@ -27,7 +27,7 @@ export class BulkEditPlugin extends Plugin {
         },
       },
       useVisible() {
-        const collection = useCollection();
+        const collection = useCollectionV2();
         return (
           (collection.template !== 'view' || collection?.writableView) &&
           collection.template !== 'file' &&

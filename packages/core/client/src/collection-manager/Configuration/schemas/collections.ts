@@ -4,15 +4,15 @@ import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { i18n } from '../../../i18n';
-import { CollectionOptions } from '../../types';
 import { CollectionCategory } from '../components/CollectionCategory';
 import { CollectionTemplate } from '../components/CollectionTemplate';
+import { CollectionOptionsV2 } from '../../../application';
 
 const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
 };
 
-export const collection: CollectionOptions = {
+export const collection: CollectionOptionsV2 = {
   name: 'collections',
   filterTargetKey: 'name',
   targetKey: 'name',

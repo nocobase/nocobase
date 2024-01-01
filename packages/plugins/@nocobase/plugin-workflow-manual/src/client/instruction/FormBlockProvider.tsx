@@ -2,7 +2,7 @@ import { createForm } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import {
   BlockRequestContext,
-  CollectionProvider,
+  CollectionProviderV2,
   FormActiveFieldsProvider,
   FormBlockContext,
   FormV2,
@@ -64,7 +64,7 @@ export function FormBlockProvider(props) {
   }, [field, form, params, service, updateAssociationValues]);
 
   return !userJob.status || values ? (
-    <CollectionProvider collection={props.collection}>
+    <CollectionProviderV2 name={props.collection}>
       <RecordProvider record={values} parent={false}>
         <FormActiveFieldsProvider name="form">
           <BlockRequestContext.Provider value={{ block: 'form', props, field, service, resource, __parent }}>
@@ -79,6 +79,6 @@ export function FormBlockProvider(props) {
           </BlockRequestContext.Provider>
         </FormActiveFieldsProvider>
       </RecordProvider>
-    </CollectionProvider>
+    </CollectionProviderV2>
   ) : null;
 }

@@ -1,8 +1,8 @@
-import { ActionInitializer, useCollection } from '@nocobase/client';
+import { ActionInitializer, useCollectionV2 } from '@nocobase/client';
 import React from 'react';
 
 export const UploadActionInitializer = (props) => {
-  const collection = useCollection();
+  const collection = useCollectionV2();
 
   const schema = {
     type: 'void',

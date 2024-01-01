@@ -9,7 +9,6 @@ import {
   CurrentUser,
   NavigateIfNotSignIn,
   PinnedPluginList,
-  RemoteCollectionManagerProvider,
   RemoteSchemaTemplateManagerPlugin,
   RemoteSchemaTemplateManagerProvider,
   SchemaComponent,
@@ -24,7 +23,6 @@ import {
 } from '../../../';
 import { Plugin } from '../../../application/Plugin';
 import { useAppSpin } from '../../../application/hooks/useAppSpin';
-import { useCollectionManager } from '../../../collection-manager';
 import { VariablesProvider } from '../../../variables';
 
 const filterByACL = (schema, options) => {
@@ -196,10 +194,8 @@ const MenuEditor = (props) => {
 export const InternalAdminLayout = (props: any) => {
   const sideMenuRef = useRef<HTMLDivElement>();
   const result = useSystemSettings();
-  const { service } = useCollectionManager();
   const params = useParams<any>();
   const { token } = useToken();
-  const { render } = useAppSpin();
 
   return (
     <Layout>
@@ -344,7 +340,7 @@ export const InternalAdminLayout = (props: any) => {
             pointer-events: none;
           `}
         ></header>
-        {service.contentLoading ? render() : <Outlet />}
+        <Outlet />
       </Layout.Content>
     </Layout>
   );
@@ -355,11 +351,9 @@ export const AdminProvider = (props) => {
     <CurrentAppInfoProvider>
       <NavigateIfNotSignIn>
         <RemoteSchemaTemplateManagerProvider>
-          <RemoteCollectionManagerProvider>
-            <VariablesProvider>
-              <ACLRolesCheckProvider>{props.children}</ACLRolesCheckProvider>
-            </VariablesProvider>
-          </RemoteCollectionManagerProvider>
+          <VariablesProvider>
+            <ACLRolesCheckProvider>{props.children}</ACLRolesCheckProvider>
+          </VariablesProvider>
         </RemoteSchemaTemplateManagerProvider>
       </NavigateIfNotSignIn>
     </CurrentAppInfoProvider>

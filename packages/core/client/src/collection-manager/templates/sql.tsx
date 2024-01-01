@@ -1,11 +1,10 @@
 import { Field } from '@formily/core';
-import { useAsyncData } from '../../async-data-provider';
 import { SQLInput, PreviewTable, FieldsConfigure, SQLRequestProvider } from './components/sql-collection';
 import { getConfigurableProperties } from './properties';
-import { ICollectionTemplate } from './types';
+import { CollectionTemplateV2 } from '../../application/collection/CollectionTemplate';
 import { i18n } from '../../i18n';
 
-export const sql: ICollectionTemplate = {
+export const sqlCollectionTemplate = new CollectionTemplateV2({
   name: 'sql',
   title: '{{t("SQL collection")}}',
   order: 4,
@@ -77,4 +76,4 @@ export const sql: ICollectionTemplate = {
     },
     ...getConfigurableProperties('category'),
   },
-};
+});

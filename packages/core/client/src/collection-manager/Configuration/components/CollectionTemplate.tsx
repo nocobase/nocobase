@@ -1,17 +1,20 @@
 import { observer } from '@formily/react';
 import { Tag } from 'antd';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useCompile } from '../../../schema-component';
-import { useCollectionManager } from '../../hooks';
+import { useCollectionManagerV2 } from '../../../application';
 
 export const CollectionTemplate = observer(
   (props: any) => {
     const { value } = props;
-    const { getTemplate } = useCollectionManager();
+    const collectionManager = useCollectionManagerV2();
     const compile = useCompile();
-    const schema = getTemplate(value);
+    const collectionTemplate = useMemo(
+      () => collectionManager.getCollectionTemplate(value),
+      [collectionManager, value],
+    );
 
-    return <Tag>{compile(schema?.title || '{{t("General collection")}}')}</Tag>;
+    return <Tag>{compile(collectionTemplate?.title || '{{t("General collection")}}')}</Tag>;
   },
   { displayName: 'CollectionTemplate' },
 );

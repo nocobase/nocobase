@@ -1,9 +1,9 @@
 import type { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
 import { defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const richText: IField = {
+export const richText = new CollectionFieldInterfaceV2({
   name: 'richText',
   type: 'object',
   group: 'media',
@@ -29,7 +29,7 @@ export const richText: IField = {
       schema['x-component-props']['ellipsis'] = true;
     }
   },
-  validateSchema(fieldSchema, formItemStyle) {
+  validateSchema() {
     return {
       max: {
         type: 'number',
@@ -73,4 +73,4 @@ export const richText: IField = {
   filterable: {
     operators: operators.string,
   },
-};
+});

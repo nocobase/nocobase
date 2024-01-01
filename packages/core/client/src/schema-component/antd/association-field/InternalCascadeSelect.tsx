@@ -6,7 +6,7 @@ import { Select as AntdSelect, Input, Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, useCollectionManager } from '../../../';
+import { useAPIClient, useCollectionManagerV2 } from '../../../';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { SchemaComponent, useCompile } from '../../../schema-component';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
@@ -33,15 +33,15 @@ const CascadeSelect = connect((props) => {
   const service = useServiceOptions(props);
   const { options: collectionField, field: associationField } = useAssociationFieldContext<any>();
   const resource = api.resource(collectionField.target);
-  const { getCollectionJoinField, getInterface } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const fieldNames = associationField?.componentProps?.fieldNames;
   const targetField =
     collectionField?.target &&
     fieldNames?.label &&
-    getCollectionJoinField(`${collectionField.target}.${fieldNames.label}`);
+    cm.getCollectionField(`${collectionField.target}.${fieldNames.label}`);
   const operator = useMemo(() => {
     if (targetField?.interface) {
-      return getInterface(targetField.interface)?.filterable?.operators[0].value || '$includes';
+      return cm.getCollectionFieldInterface(targetField.interface)?.filterable?.operators[0].value || '$includes';
     }
     return '$includes';
   }, [targetField]);

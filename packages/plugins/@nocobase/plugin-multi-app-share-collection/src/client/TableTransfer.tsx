@@ -1,5 +1,5 @@
 import { connect } from '@formily/react';
-import { css, useCollectionManager, useRecord, useRequest, useToken } from '@nocobase/client';
+import { css, useCollectionManagerV2, useRecord, useRequest, useToken } from '@nocobase/client';
 import { CollectionsGraph, lodash } from '@nocobase/utils/client';
 import { App, Col, Input, Row, Select, Spin, Table, Tag } from 'antd';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -8,29 +8,29 @@ import { useTranslation } from 'react-i18next';
 const excludeCollections = ['users', 'roles', 'applications'];
 
 const useCollectionsGraph = ({ removed = [] }) => {
-  const { collections } = useCollectionManager();
+  const cm = useCollectionManagerV2();
 
   const findAddable = useCallback(
     (name) => {
       return CollectionsGraph.connectedNodes({
-        collections,
+        collections: cm.getCollections(),
         nodes: [name],
         excludes: excludeCollections,
       }).filter((name) => removed.includes(name));
     },
-    [removed],
+    [removed, cm],
   );
 
   const findRemovable = useCallback(
     (name) => {
       return CollectionsGraph.connectedNodes({
-        collections,
+        collections: cm.getCollections(),
         nodes: [name],
         excludes: excludeCollections,
         direction: 'reverse',
       }).filter((name) => !removed.includes(name));
     },
-    [removed],
+    [removed, cm],
   );
 
   return {

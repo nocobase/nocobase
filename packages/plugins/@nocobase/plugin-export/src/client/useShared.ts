@@ -1,9 +1,9 @@
-import { Cascader, css, useCollection } from '@nocobase/client';
+import { Cascader, css, useCollectionV2 } from '@nocobase/client';
 import { useFields } from './useFields';
 
 export const useShared = () => {
-  const { name } = useCollection();
-  const fields = useFields(name);
+  const collection = useCollectionV2();
+  const fields = useFields(collection?.name);
   return {
     schema: {
       type: 'void',

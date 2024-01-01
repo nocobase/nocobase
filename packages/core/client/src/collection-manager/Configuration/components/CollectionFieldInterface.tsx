@@ -1,19 +1,22 @@
 import { observer } from '@formily/react';
 import { Tag } from 'antd';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useCompile } from '../../../schema-component';
-import { useCollectionManager } from '../../hooks';
+import { useCollectionManagerV2 } from '../../../application';
 
 export const CollectionFieldInterface = observer(
   (props: any) => {
     const { value } = props;
-    const { getInterface } = useCollectionManager();
+    const collectionManager = useCollectionManagerV2();
     const compile = useCompile();
-    const schema = getInterface(value);
+    const collectionFieldInterface = useMemo(
+      () => collectionManager.getCollectionFieldInterface(value),
+      [collectionManager, value],
+    );
 
-    if (!schema) return null;
+    if (!collectionFieldInterface) return null;
 
-    return <Tag>{compile(schema.title)}</Tag>;
+    return <Tag>{compile(collectionFieldInterface.title)}</Tag>;
   },
   { displayName: 'CollectionFieldInterface' },
 );

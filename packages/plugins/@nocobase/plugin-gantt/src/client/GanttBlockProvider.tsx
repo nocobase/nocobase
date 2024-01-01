@@ -2,10 +2,10 @@ import { useField } from '@formily/react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   useACLRoleContext,
-  useCollection,
   BlockProvider,
   useBlockRequestContext,
   TableBlockProvider,
+  useCollectionV2,
 } from '@nocobase/client';
 
 export const GanttBlockContext = createContext<any>({});
@@ -93,15 +93,15 @@ export const useGanttBlockContext = () => {
 export const useGanttBlockProps = () => {
   const ctx = useGanttBlockContext();
   const [tasks, setTasks] = useState<any>([]);
-  const { getPrimaryKey, name, template, writableView } = useCollection();
+  const collection = useCollectionV2();
   const { parseAction } = useACLRoleContext();
-  const primaryKey = getPrimaryKey();
+  const primaryKey = collection.getPrimaryKey();
   const checkPermission = (record) => {
     const actionPath = `${name}:update`;
     const schema = {};
     const recordPkValue = record?.[primaryKey];
     const params = parseAction(actionPath, { schema, recordPkValue });
-    return (template === 'view' && !writableView) || !params;
+    return (collection.template === 'view' && !collection.writableView) || !params;
   };
 
   const onExpanderClick = (task: any) => {

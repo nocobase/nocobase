@@ -1,9 +1,9 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { IField, interfacesProperties } from '@nocobase/client';
+import { CollectionFieldInterfaceOptions, interfacesProperties } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 
-export const attachment: IField = {
+export const attachment: CollectionFieldInterfaceOptions = {
   name: 'attachment',
   type: 'object',
   group: 'media',

@@ -1,7 +1,7 @@
 import { useForm } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import React, { useContext, useRef, useState } from 'react';
+import React, { useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldsTable } from '.';
 import { useAPIClient } from '../../api-client';
@@ -10,7 +10,6 @@ import { useRecord } from '../../record-provider';
 import { SchemaComponent, SchemaComponentContext, useCompile } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
 import { CollectionCategroriesContext } from '../context';
-import { useCollectionManager } from '../hooks/useCollectionManager';
 import { DataSourceContext } from '../sub-table';
 import { AddSubFieldAction } from './AddSubFieldAction';
 import { CollectionFields } from './CollectionFields';
@@ -18,6 +17,7 @@ import { EditSubFieldAction } from './EditSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { TemplateSummary } from './components/TemplateSummary';
 import { collectionSchema } from './schemas/collections';
+import { useCollectionManagerV2 } from '../../application';
 
 /**
  * @param service
@@ -27,6 +27,7 @@ import { collectionSchema } from './schemas/collections';
 const useAsyncDataSource = (service: any, exclude?: string[]) => {
   return (field: any, options?: any) => {
     field.loading = true;
+    // eslint-disable-next-line promise/catch-or-return
     service(field, options, exclude).then(
       action.bound((data: any) => {
         field.dataSource = data;
@@ -66,14 +67,15 @@ const useBulkDestroySubField = () => {
 // 获取当前字段列表
 const useCurrentFields = () => {
   const record = useRecord();
+  const cm = useCollectionManagerV2();
   // 仅当当前字段为子表单时，从DataSourceContext中获取已配置的字段列表
   if (record.__parent && record.__parent.interface === 'subTable') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const ctx = useContext(DataSourceContext);
     return ctx.dataSource;
   }
 
-  const { getCollectionFields } = useCollectionManager();
-  const fields = getCollectionFields(record.collectionName || record.name) as any[];
+  const fields = cm.getCollectionFields(record.collectionName || record.name) as any[];
   return fields;
 };
 
@@ -83,7 +85,7 @@ const useNewId = (prefix) => {
 
 export const ConfigurationTable = () => {
   const { t } = useTranslation();
-  const { collections = [], interfaces } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const {
     data: { database },
   } = useCurrentAppInfo();
@@ -92,7 +94,10 @@ export const ConfigurationTable = () => {
   const api = useAPIClient();
   const resource = api.resource('dbViews');
   const collectonsRef: any = useRef();
-  collectonsRef.current = collections;
+  collectonsRef.current = useMemo(() => cm.getCollections(), [cm]);
+  const interfaces = useMemo(() => {
+    return cm.getCollectionFieldInterfaces();
+  }, [cm]);
   const compile = useCompile();
 
   /**

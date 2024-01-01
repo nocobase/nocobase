@@ -6,7 +6,6 @@ import _ from 'lodash';
 import { useCallback, useEffect } from 'react';
 import { useRecord, useRecordIndex } from '../../../../../src/record-provider';
 import { useFormBlockType } from '../../../../block-provider/FormBlockProvider';
-import { useCollection } from '../../../../collection-manager';
 import { useFlag } from '../../../../flag-provider';
 import { DEBOUNCE_WAIT, useLocalVariables, useVariables } from '../../../../variables';
 import { getPath } from '../../../../variables/utils/getPath';
@@ -15,6 +14,7 @@ import { isVariable } from '../../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 import { isSubMode } from '../../association-field/util';
 import { isFromDatabase, useSpecialCase } from './useSpecialCase';
+import { useCollectionV2 } from '../../../../application';
 
 /**
  * 用于解析并设置 FormItem 的默认值
@@ -26,7 +26,7 @@ const useParseDefaultValue = () => {
   const localVariables = useLocalVariables();
   const record = useRecord();
   const { isInAssignFieldValues, isInSetDefaultValueDialog, isInFormDataTemplate } = useFlag() || {};
-  const { getField } = useCollection();
+  const collection = useCollectionV2();
   const { isSpecialCase, setDefaultValue } = useSpecialCase();
   const index = useRecordIndex();
   const { type: formBlockType } = useFormBlockType();
@@ -66,7 +66,7 @@ const useParseDefaultValue = () => {
         }
 
         field.loading = true;
-        const collectionField = !fieldSchema.name.toString().includes('.') && getField(fieldSchema.name);
+        const collectionField = !fieldSchema.name.toString().includes('.') && collection.getField(fieldSchema.name);
 
         if (process.env.NODE_ENV !== 'production') {
           if (!collectionField) {

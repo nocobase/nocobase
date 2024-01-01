@@ -4,7 +4,7 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollection, useSortFields } from '../../../collection-manager';
+import { useSortFields } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import {
   GeneralSchemaDesigner,
@@ -19,16 +19,17 @@ import {
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
+import { useCollectionV2 } from '../../../application';
 
 export const ListDesigner = () => {
-  const { name, title } = useCollection();
+  const collection = useCollectionV2();
   const template = useSchemaTemplate();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
   const field = useField();
   const { dn } = useDesignable();
-  const sortFields = useSortFields(name);
+  const sortFields = useSortFields(collection.name);
   const record = useRecord();
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
@@ -46,10 +47,10 @@ export const ListDesigner = () => {
   return (
     // fix https://nocobase.height.app/T-2259
     <RecordProvider parent={record} record={{}}>
-      <GeneralSchemaDesigner template={template} title={title || name}>
+      <GeneralSchemaDesigner template={template} title={collection.title || collection.name}>
         <SchemaSettingsBlockTitleItem />
         <SchemaSettingsDataScope
-          collectionName={name}
+          collectionName={collection.name}
           defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
           form={form}
           onSubmit={({ filter }) => {

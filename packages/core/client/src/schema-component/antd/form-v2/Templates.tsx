@@ -7,10 +7,10 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
-import { useCollectionManager } from '../../../collection-manager';
 import { compatibleDataId } from '../../../schema-settings/DataTemplates/FormDataTemplates';
 import { useToken } from '../__builtins__';
 import { RemoteSelect } from '../remote-select';
+import { useCollectionManagerV2 } from '../../../application';
 
 export interface ITemplate {
   config?: {
@@ -39,7 +39,7 @@ const useDataTemplates = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { duplicateData } = useFormBlockContext();
-  const { getCollectionJoinField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   if (duplicateData) {
     return duplicateData;
   }
@@ -49,7 +49,7 @@ const useDataTemplates = () => {
     try {
       item.fields = item.fields
         ?.map((field) => {
-          const joinField = getCollectionJoinField(`${item.collection}.${field}`);
+          const joinField = cm.getCollectionField(`${item.collection}.${field}`);
           if (joinField) {
             return field;
           }
@@ -72,7 +72,7 @@ const useDataTemplates = () => {
       key: i,
       ...t,
       isLeaf: t.dataId !== null && t.dataId !== undefined,
-      titleCollectionField: t?.titleField && getCollectionJoinField(`${t.collection}.${t.titleField}`),
+      titleCollectionField: t?.titleField && cm.getCollectionField(`${t.collection}.${t.titleField}`),
     })),
   );
   const defaultTemplate = items.find((item) => item.default);
@@ -87,7 +87,7 @@ const useDataTemplates = () => {
 export const Templates = ({ style = {}, form }) => {
   const { token } = useToken();
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
-  const { getCollectionJoinField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const templateOptions = compatibleDataId(templates);
   const [targetTemplate, setTargetTemplate] = useState(defaultTemplate?.key || 'none');
   const [targetTemplateData, setTemplateData] = useState(null);
@@ -181,7 +181,7 @@ export const Templates = ({ style = {}, form }) => {
               },
             }}
             onChange={(value) => handleTemplateDataChange(value?.id, { ...value, ...template })}
-            targetField={getCollectionJoinField(`${template?.collection}.${template.titleField}`)}
+            targetField={cm.getCollectionField(`${template?.collection}.${template.titleField}`)}
           />
         )}
       </Space>

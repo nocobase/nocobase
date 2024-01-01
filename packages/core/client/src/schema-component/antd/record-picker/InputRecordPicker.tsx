@@ -7,13 +7,13 @@ import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { FormProvider, SchemaComponentOptions } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
 import { FileSelector } from '../preview';
 import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
+import { CollectionProviderV2, useCollectionV2 } from '../../../application';
 
 export const RecordPickerContext = createContext(null);
 
@@ -87,11 +87,11 @@ const usePickActionProps = () => {
 const useAssociation = (props) => {
   const fieldSchema = useFieldSchema();
   const { association } = props;
-  const { getField } = useCollection();
+  const collection = useCollectionV2();
   if (association) {
     return association;
   }
-  return getField(fieldSchema.name);
+  return collection.getField(fieldSchema.name);
 };
 
 interface IRecordPickerProps {
@@ -269,7 +269,7 @@ const Drawer: React.FunctionComponent<{
   };
   return (
     <RecordPickerProvider {...recordPickerProps}>
-      <CollectionProvider allowNull name={collectionField?.target}>
+      <CollectionProviderV2 allowNull name={collectionField?.target}>
         <ActionContextProvider openMode="drawer" visible={visible} setVisible={setVisible}>
           <FormProvider>
             <TableSelectorParamsProvider params={{ filter: getFilter() }}>
@@ -285,7 +285,7 @@ const Drawer: React.FunctionComponent<{
             </TableSelectorParamsProvider>
           </FormProvider>
         </ActionContextProvider>
-      </CollectionProvider>
+      </CollectionProviderV2>
     </RecordPickerProvider>
   );
 };

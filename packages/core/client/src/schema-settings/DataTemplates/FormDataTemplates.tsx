@@ -6,7 +6,6 @@ import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { mergeFilter } from '../../block-provider';
-import { useCollectionManager } from '../../collection-manager';
 import { SchemaComponent, SchemaComponentContext, removeNullCondition } from '../../schema-component';
 import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
 import { VariableInput } from '../VariableInput';
@@ -15,6 +14,7 @@ import { ArrayCollapse } from './components/DataTemplateTitle';
 import { getSelectedIdFilter } from './components/Designer';
 import { useCollectionState } from './hooks/useCollectionState';
 import { useSyncFromForm } from './utils';
+import { useCollectionManagerV2 } from '../../application';
 
 const Tree = connect(
   AntdTree,
@@ -50,7 +50,7 @@ export const FormDataTemplates = observer(
       getScopeDataSource,
       useTitleFieldDataSource,
     } = useCollectionState(collectionName);
-    const { getCollection, getCollectionField } = useCollectionManager();
+    const cm = useCollectionManagerV2();
     const { t } = useTranslation();
     // 不要在后面的数组中依赖 defaultValues，否则会因为 defaultValues 的变化导致 activeData 响应性丢失
     const activeData = useMemo<ITemplate>(
@@ -65,14 +65,14 @@ export const FormDataTemplates = observer(
       [],
     );
     const getTargetField = (collectionName: string) => {
-      const collection = getCollection(collectionName);
-      return getCollectionField(
+      const collection = cm.getCollection(collectionName);
+      return cm.getCollectionField(
         `${collectionName}.${activeData?.config[collectionName]?.titleField || collection?.titleField || 'id'}`,
       );
     };
 
     const getFieldNames = (collectionName: string) => {
-      const collection = getCollection(collectionName);
+      const collection = cm.getCollection(collectionName);
       return {
         label: getLabel(activeData.config?.[collectionName]?.titleField || collection?.titleField || 'id'),
         value: 'id',

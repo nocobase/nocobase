@@ -1,5 +1,5 @@
-import { CollectionFieldOptions } from '../../../collection-manager';
+import { CollectionFieldOptionsV2 } from '../../../application';
 
-export const getTargetKey = (field?: CollectionFieldOptions) => {
+export const getTargetKey = (field?: CollectionFieldOptionsV2) => {
   return field?.targetKey || 'id';
 };

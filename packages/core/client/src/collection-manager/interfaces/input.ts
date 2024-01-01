@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { defaultProps, operators, unique } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 import { i18n } from '../../i18n';
 import { registerValidateRules } from '@formily/validator';
 
@@ -10,7 +10,7 @@ registerValidateRules({
   },
 });
 
-export const input: IField = {
+export const input = new CollectionFieldInterfaceV2({
   name: 'input',
   type: 'object',
   group: 'basic',
@@ -41,7 +41,7 @@ export const input: IField = {
       schema['x-component-props']['ellipsis'] = true;
     }
   },
-  validateSchema(fieldSchema) {
+  validateSchema() {
     return {
       max: {
         type: 'number',
@@ -165,4 +165,4 @@ export const input: IField = {
       },
     };
   },
-};
+});

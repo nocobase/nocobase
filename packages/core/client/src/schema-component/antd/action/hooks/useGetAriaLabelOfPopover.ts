@@ -1,7 +1,7 @@
 import { useFieldSchema } from '@formily/react';
 import { useCallback } from 'react';
-import { useCollection } from '../../../../collection-manager';
 import { useCompile } from '../../../hooks';
+import { useCollectionV2 } from '../../../../application';
 
 /**
  * label = 'popover' + x-component + [collectionName] + [title] + [postfix]
@@ -11,7 +11,7 @@ export const useGetAriaLabelOfPopover = () => {
   const fieldSchema = useFieldSchema();
   const component = fieldSchema['x-component'];
   const compile = useCompile();
-  let { name: collectionName } = useCollection();
+  let { name: collectionName } = useCollectionV2();
   let title = compile(fieldSchema.title);
   collectionName = collectionName ? `-${collectionName}` : '';
   title = title ? `-${title}` : '';

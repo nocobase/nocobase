@@ -1,9 +1,9 @@
 import { useFieldSchema } from '@formily/react';
 import { useCallback } from 'react';
 import { useBlockContext } from '../../../../block-provider/BlockProvider';
-import { useCollection } from '../../../../collection-manager';
 import { useRecord, useRecordIndex } from '../../../../record-provider';
 import { useCompile } from '../../../hooks';
+import { useCollectionV2 } from '../../../../application';
 
 /**
  * label = 'action' + x-component + actionTitle + [x-action] + [collectionName] + [blockName] + [record.name || record.title || recordIndex] + [postfix]
@@ -18,7 +18,7 @@ export const useGetAriaLabelOfAction = (title: string) => {
   const component = fieldSchema['x-component'];
   let recordName = record?.name || record?.title || (recordIndex != null ? String(recordIndex) : '');
   let action = fieldSchema['x-action'];
-  let { name: collectionName } = useCollection();
+  let { name: collectionName } = useCollectionV2();
   let { name: blockName } = useBlockContext() || {};
   const actionTitle = title || compile(fieldSchema.title);
   collectionName = collectionName ? `-${collectionName}` : '';

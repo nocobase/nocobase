@@ -6,10 +6,11 @@ import { observer, useField, useForm } from '@formily/react';
 import { ArrayField } from '@formily/core';
 import { getOptions } from '../../../Configuration/interfaces';
 import { useCompile } from '../../../../schema-component';
-import { useCollectionManager } from '../../../hooks';
 import dayjs from 'dayjs';
 import { FieldOptions } from '@nocobase/database';
 import { ResourceActionContext } from '../../../ResourceActionProvider';
+import { InheritanceCollectionMixin } from '../../../collection-mixins';
+import { useCollectionManagerV2 } from '../../../../application';
 
 const inferInterface = (field: string, value: any) => {
   if (field.toLowerCase().includes('id')) {
@@ -34,17 +35,17 @@ const useSourceFieldsOptions = () => {
   const form = useForm();
   const { sources = [] } = form.values;
   const { t } = useTranslation();
-  const { getCollection, getInheritCollections, getParentCollectionFields } = useCollectionManager();
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
   const data = [];
   sources.forEach((item: string) => {
-    const collection = getCollection(item);
-    const inherits = getInheritCollections(item);
+    const collection = cm.getCollection(item);
+    const inherits = collection.getParentCollectionsName();
     const result = inherits.map((v) => {
-      const fields: FieldOptions[] = getParentCollectionFields(v, item);
+      const fields: any[] = collection.getParentCollectionFields(v);
       return {
         type: 'group',
         key: v,
-        label: t(`Parent collection fields`) + t(`(${getCollection(v).title})`),
+        label: t(`Parent collection fields`) + t(`(${cm.getCollection(v).title})`),
         children: fields
           .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
           .map((k) => {
@@ -58,7 +59,7 @@ const useSourceFieldsOptions = () => {
     if (!collection) {
       return;
     }
-    const children = (collection.fields as FieldOptions[])
+    const children = (collection.getFields() as FieldOptions[])
       .filter((v) => !['hasOne', 'hasMany', 'belongsToMany'].includes(v?.type))
       ?.map((v) => {
         return { value: v.name, label: t(v.uiSchema?.title) };
@@ -81,7 +82,7 @@ export const FieldsConfigure = observer(() => {
   const field: ArrayField = useField();
   const { data: curFields } = useContext(ResourceActionContext);
   const compile = useCompile();
-  const { getInterface, getCollectionField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const interfaceOptions = useMemo(
     () =>
       getOptions()
@@ -99,7 +100,7 @@ export const FieldsConfigure = observer(() => {
   );
   const sourceFieldsOptions = useSourceFieldsOptions();
 
-  const refGetInterface = useRef(getInterface);
+  const refGetInterface = useRef(cm.getCollectionFieldInterface);
   useEffect(() => {
     const fieldsMp = new Map();
     if (!loading) {
@@ -206,7 +207,7 @@ export const FieldsConfigure = observer(() => {
             onChange={(value: string[]) => {
               let sourceField = sourceFields[value?.[1]];
               if (!sourceField) {
-                sourceField = getCollectionField(value?.join('.') || '');
+                sourceField = cm.getCollectionField(value?.join('.') || '');
               }
               handleFieldChange(
                 {
@@ -231,14 +232,14 @@ export const FieldsConfigure = observer(() => {
       render: (text: string, record: any, index: number) => {
         const field = dataSource[index];
         return field.source ? (
-          <Tag>{compile(getInterface(text)?.title) || text}</Tag>
+          <Tag>{compile(cm.getCollectionFieldInterface(text)?.title) || text}</Tag>
         ) : (
           <Select
             defaultValue={field.interface || 'input'}
             style={{ width: '100%' }}
             popupMatchSelectWidth={false}
             onChange={(value) => {
-              const interfaceConfig = getInterface(value);
+              const interfaceConfig = cm.getCollectionFieldInterface(value);
               handleFieldChange(
                 {
                   ...field,

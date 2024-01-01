@@ -4,7 +4,7 @@ import {
   SchemaComponentContext,
   SchemaInitializerItemType,
   useCollectionDataSource,
-  useCollectionManager,
+  useCollectionManagerV2,
   useCompile,
 } from '@nocobase/client';
 
@@ -61,15 +61,15 @@ export default class extends Instruction {
     useCollectionDataSource,
     useSortableFields() {
       const compile = useCompile();
-      const { getCollectionFields, getInterface } = useCollectionManager();
+      const cm = useCollectionManagerV2();
       const { values } = useForm();
-      const fields = getCollectionFields(values.collection);
+      const fields = cm.getCollectionFields(values.collection);
       return fields
         .filter((field: any) => {
           if (!field.interface) {
             return false;
           }
-          const fieldInterface = getInterface(field.interface);
+          const fieldInterface = cm.getCollectionFieldInterface(field.interface);
           if (fieldInterface?.sortable) {
             return true;
           }
@@ -93,7 +93,7 @@ export default class extends Instruction {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { getCollectionFields } = useCollectionManager();
+    const collectionManager = useCollectionManagerV2();
     // const depth = config?.params?.appends?.length
     //   ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1)
     //   : 0;
@@ -114,7 +114,7 @@ export default class extends Instruction {
         },
       ],
       compile,
-      getCollectionFields,
+      collectionManager,
     });
 
     return result;

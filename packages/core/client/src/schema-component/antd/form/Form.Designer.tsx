@@ -1,8 +1,13 @@
 import React from 'react';
-import { useCollection } from '../../../collection-manager';
 import { GeneralSchemaDesigner } from '../../../schema-settings';
+import { useCollectionV2 } from '../../../application';
 
 export const FormDesigner = () => {
-  const { name, title } = useCollection();
-  return <GeneralSchemaDesigner schemaSettings="FormV1Settings" title={title || name}></GeneralSchemaDesigner>;
+  const collection = useCollectionV2();
+  return (
+    <GeneralSchemaDesigner
+      schemaSettings="FormV1Settings"
+      title={collection.title || collection.name}
+    ></GeneralSchemaDesigner>
+  );
 };

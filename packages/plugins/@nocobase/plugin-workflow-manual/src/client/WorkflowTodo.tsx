@@ -6,13 +6,11 @@ import dayjs from 'dayjs';
 import { css, usePlugin } from '@nocobase/client';
 
 import {
-  CollectionManagerProvider,
   SchemaComponent,
   SchemaComponentContext,
   TableBlockProvider,
   useAPIClient,
   useActionContext,
-  useCollectionManager,
   useCompile,
   useCurrentUserContext,
   useFormBlockContext,
@@ -33,7 +31,7 @@ import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
 import { NAMESPACE } from '../locale';
 
-const nodeCollection = {
+export const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
   name: 'flow_nodes',
   fields: [
@@ -74,7 +72,7 @@ const nodeCollection = {
   ],
 };
 
-const workflowCollection = {
+export const workflowCollection = {
   title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
   name: 'workflows',
   fields: [
@@ -92,7 +90,7 @@ const workflowCollection = {
   ],
 };
 
-const todoCollection = {
+export const todoCollection = {
   title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
   name: 'users_jobs',
   fields: [
@@ -508,8 +506,8 @@ function useFormBlockProps() {
       ? 'readPretty'
       : 'disabled'
     : user?.data?.id !== userJob.userId
-    ? 'disabled'
-    : 'editable';
+      ? 'disabled'
+      : 'editable';
 
   useEffect(() => {
     form?.setPattern(pattern);
@@ -585,7 +583,6 @@ function Drawer() {
 }
 
 function Decorator({ params = {}, children }) {
-  const { collections, ...cm } = useCollectionManager();
   const blockProps = {
     collection: 'users_jobs',
     resource: 'users_jobs',
@@ -603,14 +600,9 @@ function Decorator({ params = {}, children }) {
   };
 
   return (
-    <CollectionManagerProvider
-      {...cm}
-      collections={[...collections, nodeCollection, workflowCollection, todoCollection]}
-    >
-      <TableBlockProvider name="workflow-todo" {...blockProps}>
-        {children}
-      </TableBlockProvider>
-    </CollectionManagerProvider>
+    <TableBlockProvider name="workflow-todo" {...blockProps}>
+      {children}
+    </TableBlockProvider>
   );
 }
 

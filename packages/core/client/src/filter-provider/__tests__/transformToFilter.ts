@@ -19,18 +19,20 @@ describe('transformToFilter', () => {
       },
     };
 
-    const getField = (name: string) => {
-      if (name === 'user' || name === 'list') {
+    const cm: any = {
+      getField: (name: string) => {
+        if (name === 'user' || name === 'list') {
+          return {
+            targetKey: 'name',
+          };
+        }
         return {
-          targetKey: 'name',
+          targetKey: undefined,
         };
-      }
-      return {
-        targetKey: undefined,
-      };
+      },
     };
 
-    expect(transformToFilter(values, fieldSchema as any, getField)).toEqual({
+    expect(transformToFilter(values, fieldSchema as any, cm, undefined)).toEqual({
       $and: [
         {
           name: {

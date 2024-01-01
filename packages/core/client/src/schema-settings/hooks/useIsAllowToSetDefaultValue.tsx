@@ -2,9 +2,10 @@ import { Form } from '@formily/core';
 import { Schema, useFieldSchema } from '@formily/react';
 import React, { useContext, useMemo } from 'react';
 import {
-  CollectionFieldOptions,
-  useCollection,
-  useCollectionManager,
+  CollectionFieldOptionsV2,
+  CollectionManagerV2,
+  useCollectionManagerV2,
+  useCollectionV2,
   useFormBlockContext,
   useFormBlockType,
 } from '../..';
@@ -16,8 +17,8 @@ interface DefaultValueProviderProps {
 }
 
 export interface IsAllowToSetDefaultValueParams {
-  collectionField: CollectionFieldOptions;
-  getInterface: (name: string) => any;
+  collectionManager: CollectionManagerV2;
+  collectionField?: CollectionFieldOptionsV2;
   formBlockType?: 'update' | 'create';
   form: Form;
   fieldSchema: Schema<any, any, any, any, any, any, any, any, any>;
@@ -27,7 +28,7 @@ export interface IsAllowToSetDefaultValueParams {
 interface Props {
   form?: Form;
   fieldSchema?: Schema<any, any, any, any, any, any, any, any, any>;
-  collectionField?: CollectionFieldOptions;
+  collectionField?: CollectionFieldOptionsV2;
 }
 
 const DefaultValueContext = React.createContext<Omit<DefaultValueProviderProps, 'children'>>(null);
@@ -43,20 +44,20 @@ export const DefaultValueProvider = (props: DefaultValueProviderProps) => {
 };
 
 const useIsAllowToSetDefaultValue = ({ form, fieldSchema, collectionField }: Props = {}) => {
-  const { getInterface, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   const { form: innerForm } = useFormBlockContext();
   const innerFieldSchema = useFieldSchema();
   const { type } = useFormBlockType();
   const { isAllowToSetDefaultValue = _isAllowToSetDefaultValue } = useContext(DefaultValueContext) || {};
   const innerCollectionField =
-    getField(innerFieldSchema['name']) || getCollectionJoinField(innerFieldSchema['x-collection-field']);
+    collection.getField(innerFieldSchema['name']) || cm.getCollectionField(innerFieldSchema['x-collection-field']);
 
   return {
     isAllowToSetDefaultValue: (isSubTableColumn?: boolean) => {
       return isAllowToSetDefaultValue({
         collectionField: collectionField || innerCollectionField,
-        getInterface,
+        collectionManager: cm,
         form: form || innerForm,
         formBlockType: type,
         fieldSchema: fieldSchema || innerFieldSchema,
@@ -85,7 +86,7 @@ export const interfacesOfUnsupportedDefaultValue = [
 
 function _isAllowToSetDefaultValue({
   collectionField,
-  getInterface,
+  collectionManager,
   formBlockType,
   form,
   fieldSchema,
@@ -94,7 +95,7 @@ function _isAllowToSetDefaultValue({
   if (isSubTableColumn) {
     return (
       !interfacesOfUnsupportedDefaultValue.includes(collectionField?.interface) &&
-      !isSystemField(collectionField, getInterface)
+      !isSystemField(collectionField, collectionManager)
     );
   }
 
@@ -121,6 +122,6 @@ function _isAllowToSetDefaultValue({
     !form?.readPretty &&
     !isPatternDisabled(fieldSchema) &&
     !interfacesOfUnsupportedDefaultValue.includes(collectionField?.interface) &&
-    !isSystemField(collectionField, getInterface)
+    !isSystemField(collectionField, collectionManager)
   );
 }

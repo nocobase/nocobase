@@ -2,7 +2,7 @@ import { FormItem, FormLayout } from '@formily/antd-v5';
 import { registerValidateRules } from '@formily/core';
 import React from 'react';
 import { defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
 registerValidateRules({
   json(value) {
@@ -18,7 +18,7 @@ registerValidateRules({
   },
 });
 
-export const json: IField = {
+export const json = new CollectionFieldInterfaceV2({
   name: 'json',
   type: 'object',
   group: 'advanced',
@@ -62,4 +62,4 @@ export const json: IField = {
   filterable: {
     operators: operators.string,
   },
-};
+});

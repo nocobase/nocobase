@@ -1,16 +1,16 @@
 import set from 'lodash/set';
 import { useMemo } from 'react';
-import { useCollectionManager } from './useCollectionManager';
+import { useCollectionManagerV2 } from '../../application';
 
 export const useOptions = () => {
-  const { interfaces } = useCollectionManager();
+  const collectionManager = useCollectionManagerV2();
 
   return useMemo(() => {
     const fields = {};
-
-    Object.keys(interfaces).forEach((type) => {
-      const schema = interfaces[type];
-      registerField(schema.group || 'others', type, { order: 0, ...schema });
+    const fieldInterfaces = collectionManager.getCollectionFieldInterfaces();
+    fieldInterfaces.forEach((fieldInterface) => {
+      const options = fieldInterface.getOptions();
+      registerField(options.group || 'others', options.type, { order: 0, ...options });
     });
 
     function registerField(group: string, type: string, schema) {
@@ -44,5 +44,5 @@ export const useOptions = () => {
         })
         .sort((a, b) => a.order - b.order),
     }));
-  }, [interfaces]);
+  }, [collectionManager]);
 };

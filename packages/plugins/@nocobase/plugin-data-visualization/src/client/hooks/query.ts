@@ -1,6 +1,6 @@
 import { ArrayField } from '@formily/core';
 import { ISchema, Schema, useForm } from '@formily/react';
-import { CollectionFieldOptions, useACLRoleContext, useCollectionManager } from '@nocobase/client';
+import { CollectionFieldOptionsV2, useACLRoleContext, useCollectionManagerV2 } from '@nocobase/client';
 import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChartConfigContext } from '../configure';
@@ -24,7 +24,7 @@ export type FieldOption = {
 
 export const useFields = (
   collection?: string,
-): (CollectionFieldOptions & {
+): (CollectionFieldOptionsV2 & {
   key: string;
   label: string;
   value: string;
@@ -33,8 +33,10 @@ export const useFields = (
   if (!collection) {
     collection = current?.collection || '';
   }
-  const { getCollectionFields } = useCollectionManager();
-  const fields = (getCollectionFields(collection) || [])
+  const cm = useCollectionManagerV2();
+  const fields = cm
+    .getCollection(collection)
+    .getFields()
     .filter((field) => {
       return field.interface;
     })
@@ -48,18 +50,18 @@ export const useFields = (
 };
 
 export const useFieldsWithAssociation = (collection?: string) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { t } = useTranslation();
   const fields = useFields(collection);
   return fields.map((field) => {
-    const filterable = getInterface(field.interface)?.filterable;
+    const filterable = cm.getCollectionFieldInterface(field.interface)?.filterable;
     const label = Schema.compile(field.uiSchema?.title || field.name, { t });
     if (!(filterable && (filterable?.nested || filterable?.children?.length))) {
       return { ...field, label };
     }
     let targetFields = [];
     if (filterable?.nested) {
-      const nestedFields = (getCollectionFields(field.target) || [])
+      const nestedFields = (cm.getCollection(field.target).getFields() || [])
         .filter((targetField) => {
           return targetField.interface;
         })
@@ -124,10 +126,10 @@ export const useFormatters = (fields: FieldOption[]) => (field: any) => {
 
 export const useCollectionOptions = () => {
   const { t } = useTranslation();
-  const { collections } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { allowAll, parseAction } = useACLRoleContext();
-  const options = collections
-    .filter((collection: { name: string }) => {
+  const options = cm
+    .getCollections((collection: { name: string }) => {
       if (allowAll) {
         return true;
       }

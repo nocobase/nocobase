@@ -38,6 +38,8 @@ export interface CollectionOptionsV2 {
 
   tableName?: string;
   inherits?: string[] | string;
+  inherit?: string;
+  key?: string;
   viewName?: string;
   writableView?: boolean;
 
@@ -59,6 +61,12 @@ export interface CollectionOptionsV2 {
 
   template?: string;
 
+  foreignKeyFields?: CollectionFieldOptionsV2[];
+
+  isThrough?: boolean;
+  autoCreate?: boolean;
+  resource?: string;
+
   [key: string]: any;
 }
 
@@ -69,9 +77,11 @@ export type GetCollectionFieldPredicate =
 
 export class CollectionV2 {
   protected options: CollectionOptionsV2;
-  protected fields: Record<string, CollectionFieldOptionsV2> = {};
-  protected fieldsArr: CollectionFieldOptionsV2[];
+  protected fieldsMap: Record<string, CollectionFieldOptionsV2> = {};
+  protected primaryKey: string;
   public collectionManager: CollectionManagerV2;
+  public allFields: CollectionFieldOptionsV2[];
+  public fields: CollectionFieldOptionsV2[];
 
   constructor(options: CollectionOptionsV2, collectionManager: CollectionManagerV2) {
     this.collectionManager = collectionManager;
@@ -79,7 +89,9 @@ export class CollectionV2 {
   }
   init(options: CollectionOptionsV2) {
     this.options = options;
-    this.fields = this.getFields().reduce((memo, field) => {
+    this.fields = this.options.fields || [];
+    this.allFields = this.getAllFields();
+    this.fieldsMap = this.allFields.reduce((memo, field) => {
       memo[field.name] = field;
       return memo;
     }, {});
@@ -87,28 +99,92 @@ export class CollectionV2 {
   get name() {
     return this.options.name;
   }
+  get key() {
+    return this.options.key;
+  }
   get title() {
     return this.options.title;
   }
-  get primaryKey(): string {
+  get inherit() {
+    return this.options.inherit;
+  }
+  getPrimaryKey(): string {
+    if (this.primaryKey) {
+      return this.primaryKey;
+    }
     if (this.options.targetKey) {
       return this.options.targetKey;
     }
     const field = this.getFields('primaryKey')[0];
-    return field ? field.name : 'id';
+    this.primaryKey = field ? field.name : 'id';
+
+    return this.primaryKey;
   }
 
   get inherits() {
     return this.options.inherits || [];
   }
 
-  get titleFieldName() {
+  get titleField() {
     return this.hasField(this.options.titleField) ? this.options.titleField : this.primaryKey;
   }
 
   get sources() {
     return this.options.sources || [];
   }
+
+  get template() {
+    return this.options.template;
+  }
+
+  get tableName() {
+    return this.options.tableName;
+  }
+
+  get viewName() {
+    return this.options.viewName;
+  }
+
+  get writableView() {
+    return this.options.writableView;
+  }
+
+  get filterTargetKey() {
+    return this.options.filterTargetKey;
+  }
+
+  get sortable() {
+    return this.options.sortable;
+  }
+
+  get autoGenId() {
+    return this.options.autoGenId;
+  }
+
+  get magicAttribute() {
+    return this.options.magicAttribute;
+  }
+
+  get tree() {
+    return this.options.tree;
+  }
+
+  get foreignKeyFields() {
+    return this.options.foreignKeyFields || [];
+  }
+
+  get isThrough() {
+    return this.options.isThrough;
+  }
+
+  get autoCreate() {
+    return this.options.autoCreate;
+  }
+
+  get resource() {
+    return this.options.resource;
+  }
+
   getOptions() {
     return this.options;
   }
@@ -128,14 +204,13 @@ export class CollectionV2 {
    * getFields((field) => field.name === 'nickname') // 获取 name: 'nickname' 字段
    */
   getFields(predicate?: GetCollectionFieldPredicate) {
-    if (!predicate && this.fieldsArr) {
-      return this.fieldsArr;
-    }
-    this.fieldsArr = Object.values(this.fields);
-    return filter(this.fieldsArr, predicate);
+    return predicate ? filter(this.fields, predicate) : this.fields;
+  }
+  getAllFields() {
+    return this.options.fields || [];
   }
   getField(name: SchemaKey) {
-    return this.fields[name];
+    return this.fieldsMap[name];
   }
   hasField(name: SchemaKey) {
     return !!this.getField(name);

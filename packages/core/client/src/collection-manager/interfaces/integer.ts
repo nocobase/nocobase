@@ -1,14 +1,14 @@
 import { registerValidateFormats } from '@formily/core';
 import { i18n } from '../../i18n';
 import { defaultProps, operators, unique } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
 registerValidateFormats({
   odd: /^-?\d*[13579]$/,
   even: /^-?\d*[02468]$/,
 });
 
-export const integer: IField = {
+export const integer = new CollectionFieldInterfaceV2({
   name: 'integer',
   type: 'object',
   group: 'basic',
@@ -39,7 +39,7 @@ export const integer: IField = {
     operators: operators.number,
   },
   titleUsable: true,
-  validateSchema(fieldSchema) {
+  validateSchema() {
     return {
       maximum: {
         type: 'number',
@@ -107,4 +107,4 @@ export const integer: IField = {
       },
     };
   },
-};
+});

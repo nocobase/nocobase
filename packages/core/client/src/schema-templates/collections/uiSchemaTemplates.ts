@@ -1,6 +1,6 @@
-import { CollectionOptions } from '../../collection-manager';
+import { CollectionOptionsV2 } from '../../application';
 
-export const uiSchemaTemplatesCollection: CollectionOptions = {
+export const uiSchemaTemplatesCollection: CollectionOptionsV2 = {
   name: 'uiSchemaTemplates',
   filterTargetKey: 'key',
   targetKey: 'key',

@@ -3,13 +3,13 @@ import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react
 import { Spin } from 'antd';
 import _, { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { FormActiveFieldsProvider } from './hooks';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
+import { useCollectionV2 } from '../application';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -92,7 +92,7 @@ export const FormBlockProvider = (props) => {
   const record = useRecord();
   const { collection, isCusomeizeCreate } = props;
   const { __collection } = record;
-  const currentCollection = useCollection();
+  const currentCollection = useCollectionV2();
   const { designable } = useDesignable();
   const isDetailBlock = useIsDetailBlock();
   let detailFlag = false;

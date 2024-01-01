@@ -4,7 +4,7 @@ import { Schema } from '@formily/json-schema';
 import _ from 'lodash';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions } from '../../collection-manager';
+import { InheritanceCollectionMixin } from '../../collection-manager';
 import { Variable, useVariableScope } from '../../schema-component';
 import { useValues } from '../../schema-component/antd/filter/useValues';
 import { VariableOption, VariablesContextType } from '../../variables/types';
@@ -15,13 +15,13 @@ import { useRecordVariable } from './hooks/useRecordVariable';
 import { useUserVariable } from './hooks/useUserVariable';
 import { useVariableOptions } from './hooks/useVariableOptions';
 import { Option } from './type';
+import { CollectionFieldOptionsV2, CollectionManagerV2 } from '../../application';
 
 interface GetShouldChangeProps {
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptionsV2;
   variables: VariablesContextType;
   localVariables: VariableOption | VariableOption[];
-  /** `useCollectionManager` 返回的 */
-  getAllCollectionsInheritChain: (collectionName: string) => string[];
+  collectionManager: CollectionManagerV2<InheritanceCollectionMixin>;
 }
 
 interface RenderSchemaComponentProps {
@@ -39,7 +39,7 @@ type Props = {
   children?: any;
   className?: string;
   style?: React.CSSProperties;
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptionsV2;
   contextCollectionName?: string;
   /**
    * 根据 `onChange` 的第一个参数，判断是否需要触发 `onChange`
@@ -141,9 +141,11 @@ export const getShouldChange = ({
   collectionField,
   variables,
   localVariables,
-  getAllCollectionsInheritChain,
+  collectionManager,
 }: GetShouldChangeProps) => {
-  const collectionsInheritChain = collectionField ? getAllCollectionsInheritChain(collectionField.target) : [];
+  const collectionsInheritChain = collectionField
+    ? collectionManager.getCollection(collectionField.target).getAllCollectionsInheritChain()
+    : [];
 
   return async (value: any, optionPath: any[]) => {
     if (_.isString(value) && value.includes('$nRole')) {
@@ -215,7 +217,7 @@ export interface FormatVariableScopeReturn {
  */
 export function useCompatOldVariables(props: {
   uiSchema: any;
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptionsV2;
   blockCollectionName: string;
   noDisabled?: boolean;
   targetFieldSchema?: Schema;

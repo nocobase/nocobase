@@ -7,13 +7,13 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { GeneralSchemaDesigner, SchemaSettingsDataScope, SchemaSettingsItem } from '../..';
 import { mergeFilter, useFormBlockContext } from '../../../block-provider';
-import { useCollectionManager } from '../../../collection-manager';
 import { removeNullCondition, useCompile, useDesignable } from '../../../schema-component';
 import { ITemplate } from '../../../schema-component/antd/form-v2/Templates';
+import { isTitleField, useCollectionManagerV2 } from '../../../application';
 
 export const Designer = observer(
   () => {
-    const { getCollectionFields, getCollectionField, getCollection, isTitleField } = useCollectionManager();
+    const cm = useCollectionManagerV2();
     const field = useField<Field>();
     const fieldSchema = useFieldSchema();
     const { t } = useTranslation();
@@ -28,8 +28,8 @@ export const Designer = observer(
     // 在这里读取 resource 的值，当 resource 变化时，会触发该组件的更新
     const collectionName = field.componentProps.service.resource;
 
-    const collection = getCollection(collectionName);
-    const collectionFields = getCollectionFields(collectionName);
+    const collection = cm.getCollection(collectionName);
+    const collectionFields = cm.getCollectionFields(collectionName);
 
     if (!data) {
       error('data is required');
@@ -54,7 +54,7 @@ export const Designer = observer(
     };
 
     const options = collectionFields
-      .filter((field) => isTitleField(field))
+      .filter((field) => isTitleField(cm, field))
       .map((field) => ({
         value: field?.name,
         label: compile(field?.uiSchema?.title) || field?.name,
@@ -111,7 +111,7 @@ export const Designer = observer(
                 }
 
                 item.componentProps.fieldNames.label = label;
-                item.componentProps.targetField = getCollectionField(
+                item.componentProps.targetField = cm.getCollectionField(
                   `${collectionName}.${label || collection?.titleField || 'id'}`,
                 );
               });

@@ -1,8 +1,8 @@
 import { ISchema } from '@formily/react';
 import { defaultProps, operators, unique } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const email: IField = {
+export const email = new CollectionFieldInterfaceV2({
   name: 'email',
   type: 'object',
   group: 'basic',
@@ -35,4 +35,4 @@ export const email: IField = {
       schema['x-component-props']['ellipsis'] = true;
     }
   },
-};
+});

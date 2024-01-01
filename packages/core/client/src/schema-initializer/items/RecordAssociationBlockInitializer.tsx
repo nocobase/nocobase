@@ -1,19 +1,23 @@
 import React from 'react';
 import { TableOutlined } from '@ant-design/icons';
 
-import { useCollectionManager } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createTableBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import {
+  SchemaInitializerItem,
+  useCollectionManagerV2,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+} from '../../application';
 
 export const RecordAssociationBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const { getCollection } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const field = itemConfig.field;
-  const collection = getCollection(field.target);
+  const collection = cm.getCollection(field.target);
   const resource = `${field.collectionName}.${field.name}`;
   return (
     <SchemaInitializerItem

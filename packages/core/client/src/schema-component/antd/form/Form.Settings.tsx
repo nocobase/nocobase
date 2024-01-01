@@ -1,5 +1,5 @@
+import { useCollectionV2 } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings';
-import { useCollection } from '../../../collection-manager';
 import { SchemaSettingsTemplate } from '../../../schema-settings/SchemaSettings';
 
 export const formV1Settings = new SchemaSettings({
@@ -9,7 +9,7 @@ export const formV1Settings = new SchemaSettings({
       name: 'template',
       Component: SchemaSettingsTemplate,
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollectionV2();
         return {
           componentName: 'Form',
           collectionName: name,

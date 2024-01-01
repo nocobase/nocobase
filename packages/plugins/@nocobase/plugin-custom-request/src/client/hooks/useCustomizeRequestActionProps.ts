@@ -5,7 +5,7 @@ import {
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
-  useCollection,
+  useCollectionV2,
   useCompile,
   useFilterByTk,
   useFormActiveFields,
@@ -24,7 +24,7 @@ export const useCustomizeRequestActionProps = () => {
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
-  const { fields, getField, getPrimaryKey } = useCollection();
+  const collection = useCollectionV2();
   const { field, resource, __parent, service } = useBlockRequestContext();
   const { getActiveFieldsName } = useFormActiveFields() || {};
   const record = useRecord();
@@ -50,13 +50,13 @@ export const useCustomizeRequestActionProps = () => {
       let formValues = {};
       const methods = ['POST', 'PUT', 'PATCH'];
       if (xAction === 'customize:form:request' && methods.includes(options['method'])) {
-        const fieldNames = fields.map((field) => field.name);
+        const fieldNames = collection.fields.map((field) => field.name);
         const values = getFormValues({
           filterByTk,
           field,
           form,
           fieldNames,
-          getField,
+          collection,
           resource,
           actionFields: getActiveFieldsName?.('form') || [],
         });
@@ -71,7 +71,7 @@ export const useCustomizeRequestActionProps = () => {
           method: 'POST',
           data: {
             currentRecord: {
-              id: record[getPrimaryKey()],
+              id: record[collection.getPrimaryKey()],
               appends: service.params[0].appends,
               data: formValues,
             },

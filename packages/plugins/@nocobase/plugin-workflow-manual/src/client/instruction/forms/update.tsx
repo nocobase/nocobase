@@ -10,8 +10,8 @@ import {
   SchemaSettingsDivider,
   SchemaSettingsLinkageRules,
   SchemaSettingsRemove,
-  useCollection,
   useCollectionFilterOptions,
+  useCollectionV2,
   useDesignable,
   useMenuSearch,
 } from '@nocobase/client';
@@ -23,13 +23,13 @@ import { ManualFormType } from '../SchemaConfig';
 import { findSchema } from '../utils';
 
 function UpdateFormDesigner() {
-  const { name, title } = useCollection();
+  const collection = useCollectionV2();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { dn } = useDesignable();
 
   return (
-    <GeneralSchemaDesigner title={title || name}>
+    <GeneralSchemaDesigner title={collection.title || collection.name}>
       <SchemaSettingsBlockTitleItem />
       <SchemaSettingsActionModalItem
         title={t('Filter settings', { ns: NAMESPACE })}

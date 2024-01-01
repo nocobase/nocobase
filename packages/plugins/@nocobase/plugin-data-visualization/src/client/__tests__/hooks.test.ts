@@ -15,7 +15,7 @@ import {
 
 describe('hooks', () => {
   beforeEach(() => {
-    vi.spyOn(client, 'useCollectionManager').mockReturnValue({
+    vi.spyOn(client, 'useCollectionManagerV2').mockReturnValue({
       getCollectionFields: (name: string) =>
         ({
           orders: [
@@ -64,7 +64,7 @@ describe('hooks', () => {
             },
           ],
         })[name],
-      getInterface: (i: string) => {
+      getCollectionFieldInterface: (i: string) => {
         switch (i) {
           case 'm2o':
             return {

@@ -4,7 +4,6 @@ import React, { Fragment, useRef, useState } from 'react';
 import { WithoutTableFieldResource } from '../../../block-provider';
 // TODO: 不要使用 '../../../block-provider' 这个路径引用 BlockAssociationContext，在 Vitest 中会报错，待修复
 import { BlockAssociationContext } from '../../../block-provider/BlockProvider';
-import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
@@ -14,6 +13,7 @@ import { Preview } from '../preview';
 import { isShowFilePicker } from './InputRecordPicker';
 import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
+import { CollectionProviderV2, useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
@@ -31,13 +31,14 @@ export const ReadPrettyRecordPicker: React.FC = observer(
     const { ellipsis } = props;
     const fieldSchema = useFieldSchema();
     const recordCtx = useRecord();
-    const { getCollectionJoinField } = useCollectionManager();
+    const cm = useCollectionManagerV2();
     // value 做了转换，但 props.value 和原来 useField().value 的值不一致
     // const field = useField<Field>();
     const fieldNames = useFieldNames(props);
     const [visible, setVisible] = useState(false);
-    const { getField } = useCollection();
-    const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
+    const collection = useCollectionV2();
+    const collectionField =
+      collection.getField(fieldSchema.name) || cm.getCollectionField(fieldSchema?.['x-collection-field']);
     const [record, setRecord] = useState({});
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
@@ -109,7 +110,7 @@ export const ReadPrettyRecordPicker: React.FC = observer(
     return collectionField ? (
       <div>
         <BlockAssociationContext.Provider value={`${collectionField.collectionName}.${collectionField.name}`}>
-          <CollectionProvider name={collectionField.target ?? collectionField.targetCollection}>
+          <CollectionProviderV2 name={collectionField.target ?? collectionField.targetCollection}>
             <EllipsisWithTooltip ellipsis={ellipsis} ref={ellipsisWithTooltipRef}>
               {renderRecords()}
             </EllipsisWithTooltip>
@@ -118,7 +119,7 @@ export const ReadPrettyRecordPicker: React.FC = observer(
             >
               {renderRecordProvider()}
             </ActionContextProvider>
-          </CollectionProvider>
+          </CollectionProviderV2>
         </BlockAssociationContext.Provider>
       </div>
     ) : null;

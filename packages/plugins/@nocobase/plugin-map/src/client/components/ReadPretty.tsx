@@ -1,13 +1,13 @@
 import { useFieldSchema, useForm } from '@formily/react';
-import { EllipsisWithTooltip, useCollection, useFieldTitle } from '@nocobase/client';
+import { EllipsisWithTooltip, useCollectionV2, useFieldTitle } from '@nocobase/client';
 import React from 'react';
 import { MapComponent } from './MapComponent';
 
 const ReadPretty = (props) => {
   const { value } = props;
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const collectionField = getField(fieldSchema.name);
+  const collection = useCollectionV2();
+  const collectionField = collection.getField(fieldSchema.name);
   const mapType = props.mapType || collectionField?.uiSchema['x-component-props']?.mapType;
   const form = useForm();
   useFieldTitle();

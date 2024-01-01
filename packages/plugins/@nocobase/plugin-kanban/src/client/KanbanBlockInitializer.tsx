@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 
 import {
   useAPIClient,
-  useCollectionManager,
   useGlobalTheme,
   FormDialog,
   SchemaComponent,
@@ -14,13 +13,14 @@ import {
   DataBlockInitializer,
   useSchemaInitializer,
   useSchemaInitializerItem,
+  useCollectionManagerV2,
 } from '@nocobase/client';
 import { createKanbanBlockSchema } from './utils';
 
 export const KanbanBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
-  const { getCollectionFields } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
   const { theme } = useGlobalTheme();
@@ -32,7 +32,7 @@ export const KanbanBlockInitializer = () => {
       componentType={'Kanban'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
-        const collectionFields = getCollectionFields(item.name);
+        const collectionFields = cm.getCollectionFields(item.name);
         const fields = collectionFields
           ?.filter((field) => ['select', 'radioGroup'].includes(field.interface))
           ?.map((field) => {

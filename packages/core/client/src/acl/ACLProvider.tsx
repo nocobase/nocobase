@@ -5,11 +5,10 @@ import { Navigate } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
-import { useCollection, useCollectionManager } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
-import { useApp } from '../application';
+import { useApp, useCollectionManagerV2, useCollectionV2 } from '../application';
 
 export const ACLContext = createContext<any>({});
 
@@ -151,7 +150,7 @@ const useResourceName = () => {
 export function useACLRoleContext() {
   const { data, getActionAlias, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const allowedActions = useAllowedActions();
-  const { getCollectionJoinField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const verifyScope = (actionName: string, recordPkValue: any) => {
     const actionAlias = getActionAlias(actionName);
     if (!Array.isArray(allowedActions?.[actionAlias])) {
@@ -163,7 +162,7 @@ export function useACLRoleContext() {
     ...data,
     parseAction: (actionPath: string, options: any = {}) => {
       const [resourceName, actionName] = actionPath.split(':');
-      const targetResource = resourceName?.includes('.') && getCollectionJoinField(resourceName)?.target;
+      const targetResource = resourceName?.includes('.') && cm.getCollectionField(resourceName)?.target;
       if (!getIgnoreScope(options)) {
         const r = verifyScope(actionName, options.recordPkValue);
         if (r !== null) {
@@ -208,14 +207,14 @@ export const useACLActionParamsContext = () => {
 };
 
 export const useRecordPkValue = () => {
-  const { getPrimaryKey } = useCollection();
+  const collection = useCollectionV2();
   const record = useRecord();
-  const primaryKey = getPrimaryKey();
+  const primaryKey = collection.getPrimaryKey();
   return record?.[primaryKey];
 };
 
 export const ACLActionProvider = (props) => {
-  const { template, writableView } = useCollection();
+  const collection = useCollectionV2();
   const recordPkValue = useRecordPkValue();
   const resource = useResourceName();
   const { parseAction } = useACLRoleContext();
@@ -237,7 +236,7 @@ export const ACLActionProvider = (props) => {
   }
   //视图表无编辑权限时不显示
   if (editablePath.includes(actionPath) || editablePath.includes(actionPath?.split(':')[1])) {
-    if (template !== 'view' || writableView) {
+    if (collection.template !== 'view' || collection.writableView) {
       return <ACLActionParamsContext.Provider value={params}>{props.children}</ACLActionParamsContext.Provider>;
     }
     return null;

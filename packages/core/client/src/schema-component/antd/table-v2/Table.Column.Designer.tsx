@@ -3,7 +3,6 @@ import { set } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollectionManager } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDataFormat,
@@ -21,15 +20,16 @@ import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAll
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { removeNullCondition } from '../filter';
+import { useCollectionManagerV2 } from '../../../application';
 
 const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用
   const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   if (!collectionName) {
     return [];
   }
-  const targetFields = getCollectionFields(collectionName);
+  const targetFields = cm.getCollectionFields(collectionName);
   return targetFields
     ?.filter?.((field) => field?.interface && !field?.target && field.type !== 'boolean' && !field.isForeignKey)
     ?.map?.((field) => {
@@ -42,11 +42,11 @@ const useLabelFields = (collectionName?: any) => {
 
 export const useColorFields = (collectionName?: any) => {
   const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   if (!collectionName) {
     return [];
   }
-  const targetFields = getCollectionFields(collectionName);
+  const targetFields = cm.getCollectionFields(collectionName);
   return targetFields
     ?.filter?.((field) => field?.interface === 'color')
     ?.map?.((field) => {
@@ -59,7 +59,7 @@ export const useColorFields = (collectionName?: any) => {
 export const TableColumnDesigner = (props) => {
   const { uiSchema, fieldSchema, collectionField } = props;
   const { form } = useFormBlockContext();
-  const { getInterface, getCollection } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const field: any = useField();
   const { t } = useTranslation();
   const columnSchema = useFieldSchema();
@@ -68,8 +68,8 @@ export const TableColumnDesigner = (props) => {
     fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
   const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
   const colorFieldOptions = useColorFields(collectionField?.target ?? collectionField?.targetCollection);
-  const interfaceCfg = getInterface(collectionField?.interface);
-  const targetCollection = getCollection(collectionField?.target);
+  const interfaceCfg = cm.getCollectionFieldInterface(collectionField?.interface);
+  const targetCollection = cm.getCollection(collectionField?.target);
   const isFileField = isFileCollection(targetCollection);
   const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
   const { currentMode } = useAssociationFieldContext();

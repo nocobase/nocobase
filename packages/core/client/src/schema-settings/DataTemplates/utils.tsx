@@ -4,14 +4,14 @@ import { message } from 'antd';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAssociationPath } from '../../block-provider/hooks';
-import { useCollectionManager } from '../../collection-manager';
 import { useCompile } from '../../schema-component';
 import { TreeNode } from './TreeLabel';
 import { systemKeys } from './hooks/useCollectionState';
 import LRUCache from 'lru-cache';
+import { useCollectionManagerV2 } from '../../application';
 
 export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
-  const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const array = ArrayBase.useArray();
   const index = ArrayBase.useIndex();
   const record = ArrayBase.useRecord();
@@ -29,7 +29,8 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
       if (depth > maxDepth) {
         return [];
       }
-      const result = getCollectionFields(collectionName)
+      const result = cm
+        .getCollectionFields(collectionName)
         .map((field) => {
           if (exclude.includes(field.name)) {
             return;
@@ -114,7 +115,8 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
         return [];
       }
 
-      const result = getCollectionFields(collectionName)
+      const result = cm
+        .getCollectionFields(collectionName)
         .map((field) => {
           if (!field.target || !field.interface) {
             return;
@@ -168,7 +170,7 @@ export const useSyncFromForm = (fieldSchema, collection?, callBack?) => {
       const getAssociationAppends = (schema, str) => {
         schema?.reduceProperties?.((pre, s) => {
           const prefix = pre || str;
-          const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+          const collectionfield = s['x-collection-field'] && cm.getCollectionField(s['x-collection-field']);
           const isAssociationSubfield = s.name.includes('.');
           const isAssociationField =
             collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type);

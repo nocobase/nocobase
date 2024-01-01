@@ -1,16 +1,15 @@
 import React from 'react';
 import { Tooltip } from 'antd';
 import { FallOutlined } from '@ant-design/icons';
-import { useCollectionManager } from '@nocobase/client';
 import { getPopupContainer, useGCMTranslation } from '../utils';
+import { InheritanceCollectionMixin, useCollectionManagerV2 } from '@nocobase/client';
 
 export const ConnectChildAction = (props) => {
   const { targetGraph, item } = props;
   const { t } = useGCMTranslation();
-  const { getChildrenCollections } = useCollectionManager();
-  const childs = getChildrenCollections(item.name);
-
-  const isShowChild = childs?.some(({ name }) => {
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
+  const childs = cm.getCollection(item.name).getChildrenCollectionsName();
+  const isShowChild = childs?.some((name) => {
     return !targetGraph.hasCell(name);
   });
   return isShowChild ? (
@@ -18,7 +17,7 @@ export const ConnectChildAction = (props) => {
       <FallOutlined
         className="btn-inheriedChild"
         onClick={() => {
-          targetGraph.onConnectionChilds(childs.map((v) => v.name));
+          targetGraph.onConnectionChilds(childs);
         }}
       />
     </Tooltip>

@@ -1,41 +1,41 @@
 import React from 'react';
-import { useCollection } from '../../../collection-manager';
 import { GeneralSchemaDesigner } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { useCollectionV2 } from '../../../application';
 
 export const FormDesigner = () => {
-  const { name, title } = useCollection();
+  const collection = useCollectionV2();
   const template = useSchemaTemplate();
 
   return (
     <GeneralSchemaDesigner
       schemaSettings="FormSettings"
       template={template}
-      title={title || name}
+      title={collection.title || collection.name}
     ></GeneralSchemaDesigner>
   );
 };
 
 export const ReadPrettyFormDesigner = () => {
-  const { name, title } = useCollection();
+  const collection = useCollectionV2();
   const template = useSchemaTemplate();
   return (
     <GeneralSchemaDesigner
       schemaSettings="ReadPrettyFormSettings"
       template={template}
-      title={title || name}
+      title={collection.title || collection.name}
     ></GeneralSchemaDesigner>
   );
 };
 
 export const DetailsDesigner = () => {
-  const { name, title } = useCollection();
+  const collection = useCollectionV2();
   const template = useSchemaTemplate();
   return (
     <GeneralSchemaDesigner
       schemaSettings="FormDetailsSettings"
       template={template}
-      title={title || name}
+      title={collection.title || collection.name}
     ></GeneralSchemaDesigner>
   );
 };

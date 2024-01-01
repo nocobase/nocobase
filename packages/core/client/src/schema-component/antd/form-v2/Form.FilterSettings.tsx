@@ -1,6 +1,5 @@
 import { useFieldSchema } from '@formily/react';
 import { SchemaSettings } from '../../../application/schema-settings';
-import { useCollection } from '../../../collection-manager';
 import { FilterBlockType } from '../../../filter-provider';
 import { useTranslation } from 'react-i18next';
 import {
@@ -9,6 +8,7 @@ import {
   SchemaSettingsConnectDataBlocks,
   SchemaSettingsBlockTitleItem,
 } from '../../../schema-settings';
+import { useCollectionV2 } from '../../../application';
 
 export const formFilterSettings = new SchemaSettings({
   name: 'FormFilterSettings',
@@ -21,7 +21,7 @@ export const formFilterSettings = new SchemaSettings({
       name: 'formItemTemplate',
       Component: SchemaSettingsFormItemTemplate,
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollectionV2();
         const fieldSchema = useFieldSchema();
         const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
         return {
@@ -35,7 +35,7 @@ export const formFilterSettings = new SchemaSettings({
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollectionV2();
         return {
           collectionName: name,
         };

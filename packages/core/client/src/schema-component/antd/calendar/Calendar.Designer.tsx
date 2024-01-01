@@ -1,9 +1,8 @@
 import { useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { FixedBlockDesignerItem, removeNullCondition, useDesignable } from '../..';
+import { FixedBlockDesignerItem, removeNullCondition, useCompile, useDesignable } from '../..';
 import { useCalendarBlockContext, useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import {
   GeneralSchemaDesigner,
@@ -17,29 +16,31 @@ import {
   SchemaSettingsTemplate,
 } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { getCollectionFieldsOptions, useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 export const CalendarDesigner = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
-  const { name, title } = useCollection();
-  const { getCollectionFieldsOptions } = useCollectionManager();
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const { service } = useCalendarBlockContext();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const template = useSchemaTemplate();
+  const compile = useCompile();
   const record = useRecord();
   const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
 
   return (
     <RecordProvider parent={record} record={{}}>
-      <GeneralSchemaDesigner template={template} title={title || name}>
+      <GeneralSchemaDesigner template={template} title={collection.title || collection.name}>
         <SchemaSettingsBlockTitleItem />
         <SchemaSettingsSelectItem
           title={t('Title field')}
           value={fieldNames.title}
-          options={getCollectionFieldsOptions(name, 'string')}
+          options={getCollectionFieldsOptions(collection.name, 'string', { collectionManager: cm, compile })}
           onChange={(title) => {
             const fieldNames = field.decoratorProps.fieldNames || {};
             fieldNames['title'] = title;
@@ -76,8 +77,10 @@ export const CalendarDesigner = () => {
         <SchemaSettingsCascaderItem
           title={t('Start date field')}
           value={fieldNames.start}
-          options={getCollectionFieldsOptions(name, 'date', {
+          options={getCollectionFieldsOptions(collection.name, 'date', {
             association: ['o2o', 'obo', 'oho', 'm2o'],
+            collectionManager: cm,
+            compile,
           })}
           onChange={(start) => {
             const fieldNames = field.decoratorProps.fieldNames || {};
@@ -97,8 +100,10 @@ export const CalendarDesigner = () => {
         <SchemaSettingsCascaderItem
           title={t('End date field')}
           value={fieldNames.end}
-          options={getCollectionFieldsOptions(name, 'date', {
+          options={getCollectionFieldsOptions(collection.name, 'date', {
             association: ['o2o', 'obo', 'oho', 'm2o'],
+            collectionManager: cm,
+            compile,
           })}
           onChange={(end) => {
             const fieldNames = field.decoratorProps.fieldNames || {};
@@ -116,7 +121,7 @@ export const CalendarDesigner = () => {
           }}
         />
         <SchemaSettingsDataScope
-          collectionName={name}
+          collectionName={collection.name}
           defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}
           form={form}
           onSubmit={({ filter }) => {

@@ -3,9 +3,8 @@ import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Dropdown, MenuProps } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useDesignable } from '../../';
+import { CollectionProviderV2, InheritanceCollectionMixin, useCollectionV2, useDesignable } from '../../';
 import { useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
-import { CollectionProvider, useCollection, useCollectionManager } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
 import { ActionContextProvider, useActionContext, useCompile } from '../../schema-component';
 import { linkageAction } from '../../schema-component/antd/action/utils';
@@ -55,7 +54,7 @@ export const actionDesignerCss = css`
 const actionAclCheck = function useAclCheck(actionPath) {
   const { data, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const recordPkValue = useRecordPkValue();
-  const collection = useCollection();
+  const collection = useCollectionV2();
   const resource = collection.resource;
   const parseAction = (actionPath: string, options: any = {}) => {
     const [resourceName] = actionPath.split(':');
@@ -86,7 +85,7 @@ const actionAclCheck = function useAclCheck(actionPath) {
 export const CreateRecordAction = observer(
   (props: any) => {
     const [visible, setVisible] = useState(false);
-    const collection = useCollection();
+    const collection = useCollectionV2();
     const fieldSchema = useFieldSchema();
     const field: any = useField();
     const [currentCollection, setCurrentCollection] = useState(collection.name);
@@ -122,9 +121,9 @@ export const CreateRecordAction = observer(
               setCurrentCollection(name);
             }}
           />
-          <CollectionProvider name={currentCollection}>
+          <CollectionProviderV2 name={currentCollection}>
             <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
-          </CollectionProvider>
+          </CollectionProviderV2>
         </ActionContextProvider>
       </div>
     );
@@ -148,7 +147,7 @@ function getLinkageCollection(str, form, field) {
 export const CreateAction = observer(
   (props: any) => {
     const { onClick } = props;
-    const collection = useCollection();
+    const collection = useCollectionV2<InheritanceCollectionMixin>();
     const fieldSchema = useFieldSchema();
     const field: any = useField();
     const form = useForm();
@@ -159,8 +158,7 @@ export const CreateAction = observer(
     const linkageFromForm = fieldSchema?.['x-component-props']?.['linkageFromForm'];
     // antd v5 danger type is deprecated
     const componentType = field.componentProps.type === 'danger' ? undefined : field.componentProps.type || 'primary';
-    const { getChildrenCollections } = useCollectionManager();
-    const totalChildCollections = getChildrenCollections(collection.name);
+    const totalChildCollections = collection.getChildrenCollections();
     const inheritsCollections = useMemo(() => {
       return enableChildren
         .map((k) => {

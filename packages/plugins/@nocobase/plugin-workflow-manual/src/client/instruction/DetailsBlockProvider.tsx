@@ -3,7 +3,7 @@ import { createForm } from '@formily/core';
 import { useField } from '@formily/react';
 import {
   BlockRequestContext,
-  CollectionProvider,
+  CollectionProviderV2,
   FormBlockContext,
   RecordProvider,
   useAPIClient,
@@ -63,7 +63,7 @@ export function DetailsBlockProvider(props) {
   const __parent = useContext(BlockRequestContext);
 
   return (
-    <CollectionProvider collection={props.collection}>
+    <CollectionProviderV2 name={props.collection}>
       <RecordProvider record={values} parent={false}>
         <BlockRequestContext.Provider value={{ block: 'form', field, service, resource, __parent }}>
           <FormBlockContext.Provider
@@ -80,6 +80,6 @@ export function DetailsBlockProvider(props) {
           </FormBlockContext.Provider>
         </BlockRequestContext.Provider>
       </RecordProvider>
-    </CollectionProvider>
+    </CollectionProviderV2>
   );
 }

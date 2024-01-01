@@ -5,7 +5,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext, useTableSelectorContext } from '../../../block-provider';
 import { recursiveParent } from '../../../block-provider/TableSelectorProvider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
 import {
   GeneralSchemaDesigner,
@@ -19,10 +18,11 @@ import {
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
+import { useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 export const TableSelectorDesigner = () => {
-  const { name, title } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { name, title } = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { form } = useFormBlockContext();
@@ -32,7 +32,7 @@ export const TableSelectorDesigner = () => {
   const { dn } = useDesignable();
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
-  const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
+  const collectionField = cm.getCollectionField(collectionFieldSchema?.['x-collection-field']);
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
       ? {
@@ -45,10 +45,10 @@ export const TableSelectorDesigner = () => {
         };
   });
   const template = useSchemaTemplate();
-  const collection = useCollection();
+  const collection = useCollectionV2();
   const { dragSort } = field.decoratorProps;
   return (
-    <GeneralSchemaDesigner template={template} title={title || name} disableInitializer>
+    <GeneralSchemaDesigner template={template} title={collection.title || collection.name} disableInitializer>
       <SchemaSettingsDataScope
         collectionName={name}
         defaultFilter={fieldSchema?.['x-decorator-props']?.params?.filter || {}}

@@ -1,7 +1,6 @@
 import { useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection } from '../../../collection-manager';
 import { FilterBlockType } from '../../../filter-provider/utils';
 import {
   GeneralSchemaDesigner,
@@ -12,16 +11,17 @@ import {
   SchemaSettingsTemplate,
 } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { useCollectionV2 } from '../../../application';
 
 export const AssociationFilterBlockDesigner = () => {
-  const { name, title } = useCollection();
+  const collection = useCollectionV2();
   const template = useSchemaTemplate();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
 
   return (
-    <GeneralSchemaDesigner template={template} title={title || name}>
+    <GeneralSchemaDesigner template={template} title={collection.title || collection.name}>
       <SchemaSettingsBlockTitleItem />
       <SchemaSettingsTemplate componentName={'FilterCollapse'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettingsConnectDataBlocks type={FilterBlockType.COLLAPSE} emptyDescription={t('No blocks to connect')} />

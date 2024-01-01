@@ -3,9 +3,9 @@ import { Select, SelectProps, Tag } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelfAndChildrenCollections } from '../../../collection-manager/action-hooks';
-import { useCollection, useCollectionManager } from '../../../collection-manager/hooks';
 import { useCompile } from '../../hooks';
 import { FilterContext } from '../filter/context';
+import { useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 export type CollectionSelectProps = SelectProps<any, any> & {
   filter?: (item: any, index: number, array: any[]) => boolean;
@@ -16,15 +16,15 @@ function useOptions({ filter, isTableOid }: CollectionSelectProps) {
   const compile = useCompile();
   const field: any = useField();
   const ctx: any = useContext(FilterContext);
-  const collection = useCollection();
+  const collection = useCollectionV2();
   const targetCollection = isTableOid && (ctx?.field?.collectionName || ctx?.collectionName || collection.name);
   const inheritCollections = useSelfAndChildrenCollections(targetCollection);
-  const { collections = [] } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const currentCollections = field?.dataSource
-    ? collections.filter((v) => {
+    ? cm.getCollections((v) => {
         return field?.dataSource.find((i) => i.value === v.name) || field?.dataSource.includes(v.name);
       })
-    : collections;
+    : cm.getCollections();
   const filtered =
     typeof filter === 'function'
       ? ((inheritCollections || currentCollections) as any[]).filter(filter)

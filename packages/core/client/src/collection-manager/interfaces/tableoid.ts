@@ -1,7 +1,7 @@
 import { operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const tableoid: IField = {
+export const tableoid = new CollectionFieldInterfaceV2({
   name: 'tableoid',
   type: 'object',
   group: 'systemInfo',
@@ -42,4 +42,4 @@ export const tableoid: IField = {
   filterable: {
     operators: operators.tableoid,
   },
-};
+});

@@ -1,4 +1,4 @@
-import { IField, interfacesProperties } from '@nocobase/client';
+import { CollectionFieldInterfaceOptions, interfacesProperties } from '@nocobase/client';
 
 import { NAMESPACE } from '../locale';
 
@@ -21,4 +21,4 @@ export default {
   properties: {
     ...defaultProps,
   },
-} as IField;
+} as CollectionFieldInterfaceOptions;

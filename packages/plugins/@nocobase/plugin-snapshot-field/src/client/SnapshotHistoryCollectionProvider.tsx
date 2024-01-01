@@ -1,9 +1,15 @@
-import { CollectionManagerContext, useHistoryCollectionsByNames } from '@nocobase/client';
-import React, { useContext } from 'react';
+import {
+  CollectionManagerProviderV2,
+  CollectionManagerV2,
+  useApp,
+  useCollectionManagerV2,
+  useHistoryCollectionsByNames,
+} from '@nocobase/client';
+import React, { useMemo } from 'react';
 
 export const SnapshotHistoryCollectionProvider: React.FC<{ collectionName: string }> = (props) => {
   const { collectionName } = props;
-  const { collections: allCollections, ...rest } = useContext(CollectionManagerContext);
+  const cm = useCollectionManagerV2();
 
   // 目标表
   const snapshotTargetCollection = useHistoryCollectionsByNames([collectionName])?.[0];
@@ -21,22 +27,30 @@ export const SnapshotHistoryCollectionProvider: React.FC<{ collectionName: strin
     ...inheritCollections,
   ].filter((i) => i);
 
-  // 过滤出不需要替换的表
-  const filterdAllCollection = allCollections.filter(
-    (c) => !finallyHistoryCollecionts.map((i) => i.name).includes(c.name),
-  );
+  const app = useApp();
+
+  const newCollectionManager = useMemo(() => {
+    const options = cm.clone();
+    // 过滤出不需要替换的表
+    const filterdAllCollection = options.collections.filter(
+      (c) => !finallyHistoryCollecionts.map((i) => i.name).includes(c.name),
+    );
+    const overridedCollections = [...filterdAllCollection, ...finallyHistoryCollecionts];
+
+    const newCM = new CollectionManagerV2(
+      {
+        ...options,
+        collections: overridedCollections,
+      },
+      app,
+    );
+    newCM.setCollections(cm.getCollections());
+    return newCM;
+  }, [cm, finallyHistoryCollecionts, app]);
 
   // 最终替换后的表
-  const overridedCollections = [...filterdAllCollection, ...finallyHistoryCollecionts];
 
   return (
-    <CollectionManagerContext.Provider
-      value={{
-        ...rest,
-        collections: overridedCollections,
-      }}
-    >
-      {props.children}
-    </CollectionManagerContext.Provider>
+    <CollectionManagerProviderV2 collectionManager={newCollectionManager}>{props.children}</CollectionManagerProviderV2>
   );
 };

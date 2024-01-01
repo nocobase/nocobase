@@ -2,12 +2,12 @@ import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useCollectionManager } from '../collection-manager';
 import { isInFilterFormBlock } from '../filter-provider';
 import { RecordProvider, useRecord } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { mergeFilter } from './SharedFilterProvider';
+import { useCollectionManagerV2 } from '../application';
 
 type Params = {
   filter?: any;
@@ -73,8 +73,9 @@ const InternalTableSelectorProvider = (props) => {
 };
 
 const useAssociationNames2 = (collection) => {
-  const { getCollectionFields } = useCollectionManager();
-  const names = getCollectionFields(collection)
+  const cm = useCollectionManagerV2();
+  const names = cm
+    .getCollectionFields(collection)
     ?.filter((field) => field.target)
     .map((field) => field.name);
   return names;
@@ -84,18 +85,18 @@ export const recursiveParent = (schema: Schema, component) => {
   return schema['x-component'] === component
     ? schema
     : schema.parent
-    ? recursiveParent(schema.parent, component)
-    : null;
+      ? recursiveParent(schema.parent, component)
+      : null;
 };
 
 const useAssociationNames = (collection) => {
-  const { getCollectionFields } = useCollectionManager();
-  const collectionFields = getCollectionFields(collection);
+  const cm = useCollectionManagerV2();
+  const collectionFields = cm.getCollectionFields(collection);
   const associationFields = new Set();
   for (const collectionField of collectionFields) {
     if (collectionField.target) {
       associationFields.add(collectionField.name);
-      const fields = getCollectionFields(collectionField.target);
+      const fields = cm.getCollectionFields(collectionField.target);
       for (const field of fields) {
         if (field.target) {
           associationFields.add(`${collectionField.name}.${field.name}`);
@@ -138,13 +139,12 @@ const useAssociationNames = (collection) => {
 export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
   const parentParams = useTableSelectorParams();
   const fieldSchema = useFieldSchema();
-  const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const record = useRecord();
-  const { getCollection } = useCollectionManager();
-  const collection = getCollection(props.collection);
+  const collection = cm.getCollection(props.collection);
   const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
-  const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
+  const collectionField = cm.getCollectionField(collectionFieldSchema?.['x-collection-field']);
   const appends = useAssociationNames(props.collection);
   let params = { ...props.params };
   if (props.dragSort) {
@@ -191,7 +191,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
       }
     }
     if (['obo'].includes(collectionField.interface) && !isInFilterFormBlock(fieldSchema)) {
-      const fields = getCollectionFields(collectionField.target);
+      const fields = cm.getCollectionFields(collectionField.target);
       const targetField = fields.find((f) => f.foreignKey && f.foreignKey === collectionField.foreignKey);
       if (targetField) {
         if (record?.[collectionField.foreignKey]) {

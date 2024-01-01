@@ -11,13 +11,12 @@ import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
 import useDialect from '../hooks/useDialect';
-import { IField } from '../interfaces/types';
 import * as components from './components';
 import { getOptions } from './interfaces';
+import { CollectionFieldInterfaceOptions, useCollectionManagerV2 } from '../../application';
 
-const getSchema = (schema: IField, record: any, compile) => {
+const getSchema = (schema: CollectionFieldInterfaceOptions, record: any, compile) => {
   if (!schema) {
     return;
   }
@@ -140,7 +139,7 @@ export const useCollectionFieldFormValues = () => {
 
 const useCreateCollectionField = () => {
   const form = useForm();
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
@@ -163,7 +162,7 @@ const useCreateCollectionField = () => {
         await form.reset();
         field.data.loading = false;
         refresh();
-        await refreshCM();
+        await cm.reload(refresh);
       } catch (error) {
         field.data.loading = false;
       }
@@ -178,7 +177,7 @@ export const AddCollectionField = (props) => {
 
 export const AddFieldAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align, database } = props;
-  const { getInterface, getTemplate, collections } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});
@@ -187,16 +186,16 @@ export const AddFieldAction = (props) => {
   const { isDialect } = useDialect();
 
   const currentCollections = useMemo(() => {
-    return collections.map((v) => {
+    return cm.getCollections().map((v) => {
       return {
         label: compile(v.title),
         value: v.name,
       };
     });
-  }, []);
+  }, [cm, compile]);
   const getFieldOptions = useCallback(() => {
-    const { availableFieldInterfaces } = getTemplate(record.template) || {};
-    const { exclude, include } = availableFieldInterfaces || {};
+    const template = cm.getCollectionTemplate(record.template);
+    const { exclude, include } = template.getOption('availableFieldInterfaces') as any;
     const optionArr = [];
     getOptions().forEach((v) => {
       if (v.key === 'systemInfo') {
@@ -241,7 +240,7 @@ export const AddFieldAction = (props) => {
       }
     });
     return optionArr;
-  }, [getTemplate, record]);
+  }, [cm, database?.dialect, record]);
   const items = useMemo<MenuProps['items']>(() => {
     return getFieldOptions()
       .map((option) => {
@@ -288,7 +287,7 @@ export const AddFieldAction = (props) => {
         };
       })
       .filter((v) => v?.children?.length);
-  }, [getFieldOptions]);
+  }, [compile, getFieldOptions, record.template]);
   const menu = useMemo<MenuProps>(() => {
     return {
       style: {
@@ -299,7 +298,7 @@ export const AddFieldAction = (props) => {
         //@ts-ignore
         const targetScope = e.item.props['data-targetScope'];
         targetScope && setTargetScope(targetScope);
-        const schema = getSchema(getInterface(e.key), record, compile);
+        const schema = getSchema(cm.getCollectionFieldInterface(e.key), record, compile);
         if (schema) {
           setSchema(schema);
           setVisible(true);
@@ -307,7 +306,7 @@ export const AddFieldAction = (props) => {
       },
       items,
     };
-  }, [getInterface, items, record]);
+  }, [cm, compile, items, record]);
   return (
     record.template !== 'sql' && (
       <RecordProvider record={record}>

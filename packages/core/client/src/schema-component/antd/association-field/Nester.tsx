@@ -43,7 +43,7 @@ const ToOneNester = (props) => {
   const { field } = useAssociationFieldContext<ArrayField>();
 
   const isAllowToSetDefaultValue = useCallback(
-    ({ form, fieldSchema, collectionField, getInterface, formBlockType }: IsAllowToSetDefaultValueParams) => {
+    ({ form, fieldSchema, collectionField, collectionManager, formBlockType }: IsAllowToSetDefaultValueParams) => {
       if (!collectionField) {
         if (process.env.NODE_ENV !== 'production') {
           console.error(`collectionField should not be ${collectionField}`);
@@ -69,7 +69,7 @@ const ToOneNester = (props) => {
         !form?.readPretty &&
         !isPatternDisabled(fieldSchema) &&
         !interfacesOfUnsupportedDefaultValue.includes(collectionField?.interface) &&
-        !isSystemField(collectionField, getInterface)
+        !isSystemField(collectionField, collectionManager)
       );
     },
     [],
@@ -98,7 +98,7 @@ const ToManyNester = observer(
       field.value = [];
     }
 
-    const isAllowToSetDefaultValue = useCallback(({ form, fieldSchema, collectionField, getInterface }) => {
+    const isAllowToSetDefaultValue = useCallback(({ form, fieldSchema, collectionField, collectionManager }) => {
       if (!collectionField) {
         if (process.env.NODE_ENV !== 'production') {
           console.error(`collectionField should not be ${collectionField}`);
@@ -119,7 +119,7 @@ const ToManyNester = observer(
         !form?.readPretty &&
         !isPatternDisabled(fieldSchema) &&
         !interfacesOfUnsupportedDefaultValue.includes(collectionField?.interface) &&
-        !isSystemField(collectionField, getInterface)
+        !isSystemField(collectionField, collectionManager)
       );
     }, []);
 

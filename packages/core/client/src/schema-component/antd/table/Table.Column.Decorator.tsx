@@ -1,10 +1,10 @@
 import { useField, useFieldSchema } from '@formily/react';
 import React, { useLayoutEffect } from 'react';
-import { SortableItem, useCollection, useCompile, useDesignable, useDesigner } from '../../../';
+import { SortableItem, useCollectionV2, useCompile, useDesignable, useDesigner } from '../../../';
 import { designerCss } from './Table.Column.ActionBar';
 
 export const useColumnSchema = () => {
-  const { getField } = useCollection();
+  const collection = useCollectionV2();
   const compile = useCompile();
   const columnSchema = useFieldSchema();
   const fieldSchema = columnSchema.reduceProperties((buf, s) => {
@@ -16,7 +16,7 @@ export const useColumnSchema = () => {
   if (!fieldSchema) {
     return {};
   }
-  const collectionField = getField(fieldSchema.name);
+  const collectionField = collection.getField(fieldSchema.name);
   return { columnSchema, fieldSchema, collectionField, uiSchema: compile(collectionField?.uiSchema) };
 };
 

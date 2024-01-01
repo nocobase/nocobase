@@ -3,9 +3,9 @@ import { uniqBy } from 'lodash';
 import React, { createContext, useEffect, useRef } from 'react';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { SharedFilter, mergeFilter } from '../block-provider/SharedFilterProvider';
-import { CollectionFieldOptions, useCollection } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { useAssociatedFields } from './utils';
+import { CollectionFieldOptionsV2, CollectionV2, useCollectionV2 } from '../application';
 
 export interface ForeignKeyField {
   /** 外键字段所在的数据表的名称 */
@@ -19,21 +19,19 @@ export interface ForeignKeyField {
   [key: string]: any;
 }
 
-type Collection = ReturnType<typeof useCollection>;
-
 export interface DataBlock {
   /** 唯一标识符，schema 中的 name 值 */
   uid: string;
   /** 用户自行设置的区块名称 */
   title?: string;
   /** 与数据区块相关的数据表信息 */
-  collection: Collection;
+  collection: CollectionV2;
   /** 根据提供的参数执行该方法即可刷新数据区块的数据 */
   doFilter: (params: any, params2?: any) => Promise<void>;
   /** 清除筛选区块设置的筛选参数 */
   clearFilter: (uid: string) => void;
   /** 数据区块表中所有的关系字段 */
-  associatedFields?: CollectionFieldOptions[];
+  associatedFields?: CollectionFieldOptionsV2[];
   /** 数据区块表中所有的外键字段 */
   foreignKeyFields?: ForeignKeyField[];
   /** 数据区块已经存在的过滤条件（通过 `设置数据范围` 或者其它能设置筛选条件的功能） */
@@ -73,7 +71,7 @@ export const FilterBlockRecord = ({
   children: React.ReactNode;
   params?: { filter: SharedFilter };
 }) => {
-  const collection = useCollection();
+  const collection = useCollectionV2();
   const { recordDataBlocks, removeDataBlock } = useFilterBlock();
   const { service } = useBlockRequestContext();
   const field = useField();

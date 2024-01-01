@@ -1,5 +1,5 @@
 import { useFieldSchema } from '@formily/react';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 /**
  * 获取当前字段所支持的操作符列表
@@ -8,14 +8,13 @@ import { useCollection, useCollectionManager } from '../../../collection-manager
 export const useOperatorList = (): any[] => {
   const schema = useFieldSchema();
   const fieldInterface = schema['x-designer-props']?.interface;
-  const { name } = useCollection();
-  const { getCollectionFields, getInterface } = useCollectionManager();
-  const collectionFields = getCollectionFields(name);
-
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2();
+  const collectionFields = collection?.getFields() || [];
   if (fieldInterface) {
-    return getInterface(fieldInterface)?.filterable?.operators || [];
+    return cm?.getCollectionFieldInterface(fieldInterface)?.filterable?.operators || [];
   }
 
   const field = collectionFields.find((item) => item.name === schema.name);
-  return getInterface(field?.interface)?.filterable?.operators || [];
+  return cm?.getCollectionFieldInterface(field?.interface)?.filterable?.operators || [];
 };

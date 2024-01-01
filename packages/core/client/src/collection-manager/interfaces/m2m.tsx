@@ -1,9 +1,9 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { defaultProps, relationshipType, reverseFieldProperties } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const m2m: IField = {
+export const m2m = new CollectionFieldInterfaceV2({
   name: 'm2m',
   type: 'object',
   group: 'relation',
@@ -243,4 +243,4 @@ export const m2m: IField = {
       // },
     ],
   },
-};
+});

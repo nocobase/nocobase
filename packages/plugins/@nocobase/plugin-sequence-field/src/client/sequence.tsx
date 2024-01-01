@@ -3,12 +3,13 @@ import { onFieldValueChange } from '@formily/core';
 import { ISchema, SchemaOptionsContext, useForm, useFormEffects } from '@formily/react';
 import {
   Cron,
-  IField,
+  CollectionFieldOptionsV2,
   SchemaComponent,
   SchemaComponentOptions,
   css,
   interfacesProperties,
   useCompile,
+  CollectionFieldInterfaceOptions,
 } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import { Button, Select } from 'antd';
@@ -266,7 +267,7 @@ export function RuleConfigForm() {
   ) : null;
 }
 
-export const sequence: IField = {
+export const sequence: CollectionFieldInterfaceOptions = {
   name: 'sequence',
   type: 'object',
   group: 'advanced',

@@ -5,18 +5,18 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActionContextProvider,
-  CollectionProvider,
   RecordProvider,
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
-  useCollection,
-  useCollectionManager,
   useDesignable,
   useRecord,
   fetchTemplateData,
   FormBlockContext,
   useFormBlockContext,
+  useCollectionV2,
+  useCollectionManagerV2,
+  CollectionProviderV2,
 } from '@nocobase/client';
 
 export const actionDesignerCss = css`
@@ -75,10 +75,10 @@ export const DuplicateAction = observer(
     const record = useRecord();
     const { id, __collection } = record;
     const ctx = useActionContext();
-    const { name } = useCollection();
-    const { getCollectionFields } = useCollectionManager();
+    const { name } = useCollectionV2();
+    const cm = useCollectionManagerV2();
     const { t } = useTranslation();
-    const collectionFields = getCollectionFields(__collection || name);
+    const collectionFields = cm.getCollectionFields(__collection || name);
     const formctx = useFormBlockContext();
     const template = {
       key: 'duplicate',
@@ -178,13 +178,13 @@ export const DuplicateAction = observer(
                 {loading ? t('Duplicating') : children || t('Duplicate')}
               </Button>
             )}
-            <CollectionProvider name={duplicateCollection || name}>
+            <CollectionProviderV2 name={duplicateCollection || name}>
               <RecordProvider record={{ ...record, __collection: duplicateCollection || __collection }}>
                 <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
                   <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
                 </ActionContextProvider>
               </RecordProvider>
-            </CollectionProvider>
+            </CollectionProviderV2>
           </div>
         </FormBlockContext.Provider>
       </div>

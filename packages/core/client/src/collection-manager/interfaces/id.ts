@@ -1,7 +1,7 @@
 import { operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const id: IField = {
+export const id = new CollectionFieldInterfaceV2({
   name: 'id',
   type: 'object',
   group: 'systemInfo',
@@ -46,4 +46,4 @@ export const id: IField = {
     operators: operators.id,
   },
   titleUsable: true,
-};
+});

@@ -4,20 +4,25 @@ import { SchemaOptionsContext } from '@formily/react';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useCollectionManager } from '../../collection-manager';
 import { useGlobalTheme } from '../../global-theme';
-import { FormDialog, SchemaComponent, SchemaComponentOptions } from '../../schema-component';
+import { FormDialog, SchemaComponent, SchemaComponentOptions, useCompile } from '../../schema-component';
 import { createCalendarBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
-import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import {
+  getCollectionFieldsOptions,
+  useCollectionManagerV2,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+} from '../../application';
 
 export const CalendarBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
   const { t } = useTranslation();
-  const { getCollectionField, getCollectionFieldsOptions } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const itemConfig = useSchemaInitializerItem();
+  const compile = useCompile();
 
   return (
     <DataBlockInitializer
@@ -25,9 +30,14 @@ export const CalendarBlockInitializer = () => {
       componentType={'Calendar'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
-        const stringFieldsOptions = getCollectionFieldsOptions(item.name, 'string');
+        const stringFieldsOptions = getCollectionFieldsOptions(item.name, 'string', {
+          collectionManager: cm,
+          compile,
+        });
         const dateFieldsOptions = getCollectionFieldsOptions(item.name, 'date', {
           association: ['o2o', 'obo', 'oho', 'm2o'],
+          collectionManager: cm,
+          compile,
         });
 
         const values = await FormDialog(
@@ -50,7 +60,7 @@ export const CalendarBlockInitializer = () => {
                           title: t('Start date field'),
                           enum: dateFieldsOptions,
                           required: true,
-                          default: getCollectionField(`${item.name}.createdAt`) ? 'createdAt' : null,
+                          default: cm.getCollectionField(`${item.name}.createdAt`) ? 'createdAt' : null,
                           'x-component': 'Cascader',
                           'x-decorator': 'FormItem',
                         },

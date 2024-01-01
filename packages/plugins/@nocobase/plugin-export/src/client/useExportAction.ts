@@ -2,8 +2,8 @@ import { useFieldSchema } from '@formily/react';
 import {
   useAPIClient,
   useBlockRequestContext,
-  useCollection,
-  useCollectionManager,
+  useCollectionManagerV2,
+  useCollectionV2,
   useCompile,
 } from '@nocobase/client';
 import lodash from 'lodash';
@@ -15,15 +15,15 @@ export const useExportAction = () => {
   const apiClient = useAPIClient();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
-  const { getCollectionJoinField } = useCollectionManager();
-  const { name, title, getField } = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   const { t } = useTranslation();
   return {
     async onClick() {
       const { exportSettings } = lodash.cloneDeep(actionSchema?.['x-action-settings'] ?? {});
       exportSettings.forEach((es) => {
         const { uiSchema, interface: fieldInterface } =
-          getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};
+          cm.getCollectionField(`${name}.${es.dataIndex.join('.')}`) ?? {};
         // @ts-ignore
         es.enum = uiSchema?.enum?.map((e) => ({ value: e.value, label: e.label }));
         if (!es.enum && uiSchema?.type === 'boolean') {
@@ -39,7 +39,7 @@ export const useExportAction = () => {
       });
       const { data } = await resource.export(
         {
-          title: compile(title),
+          title: compile(collection.title),
           appends: service.params[0]?.appends?.join(),
           filter: JSON.stringify(service.params[0]?.filter),
           sort: service.params[0]?.sort,
@@ -53,7 +53,7 @@ export const useExportAction = () => {
         },
       );
       const blob = new Blob([data], { type: 'application/x-xls' });
-      saveAs(blob, `${compile(title)}.xlsx`);
+      saveAs(blob, `${compile(collection.title)}.xlsx`);
     },
   };
 };

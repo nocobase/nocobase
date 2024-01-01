@@ -1,8 +1,11 @@
 import { cloneDeep, merge } from 'lodash';
 import { ISchema } from '@formily/react';
+import { CollectionFieldOptionsV2 } from './Collection';
+import { MenuProps } from 'antd';
 
 export interface CollectionFieldInterfaceOptions extends ISchema {
   name: string;
+  description?: string;
   group: string;
   order?: number;
   default?: {
@@ -15,7 +18,8 @@ export interface CollectionFieldInterfaceOptions extends ISchema {
   hasDefaultValue?: boolean;
   isAssociation?: boolean;
   schemaInitialize?: (schema: ISchema, data: any) => void;
-  validateSchema?: (fieldSchema: ISchema) => void;
+  validateSchema?: (fieldSchema: ISchema) => Record<string, ISchema>;
+  usePathOptions?: (field: CollectionFieldOptionsV2) => any;
   operators?: any[];
   /**
    * - 如果该值为空，则在 Filter 组件中该字段会被过滤掉
@@ -55,6 +59,10 @@ export class CollectionFieldInterfaceV2 {
     return this.options.title;
   }
 
+  get description() {
+    return this.options.description;
+  }
+
   get default() {
     return this.options.default;
   }
@@ -69,6 +77,30 @@ export class CollectionFieldInterfaceV2 {
 
   get titleUsable() {
     return this.options.titleUsable;
+  }
+
+  get availableTypes() {
+    return this.options.availableTypes;
+  }
+
+  get hasDefaultValue() {
+    return this.options.hasDefaultValue;
+  }
+
+  get isAssociation() {
+    return this.options.isAssociation;
+  }
+
+  get schemaInitialize() {
+    return this.options.schemaInitialize;
+  }
+
+  get validateSchema() {
+    return this.options.validateSchema;
+  }
+
+  get usePathOptions() {
+    return this.options.usePathOptions;
   }
 
   getOption<K extends keyof CollectionFieldInterfaceOptions>(key: K): CollectionFieldInterfaceOptions[K] {

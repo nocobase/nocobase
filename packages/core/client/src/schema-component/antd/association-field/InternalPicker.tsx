@@ -9,12 +9,11 @@ import {
   SchemaComponentOptions,
   useActionContext,
 } from '../..';
-import { RecordProvider } from '../../../';
+import { CollectionProviderV2, RecordProvider } from '../../../';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { CollectionProvider } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
@@ -186,7 +185,7 @@ export const InternalPicker = observer(
           }}
         >
           <RecordPickerProvider {...pickerProps}>
-            <CollectionProvider name={collectionField?.target}>
+            <CollectionProviderV2 name={collectionField?.target}>
               <FormProvider>
                 <TableSelectorParamsProvider params={{ filter: getFilter() }}>
                   <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps }}>
@@ -201,7 +200,7 @@ export const InternalPicker = observer(
                   </SchemaComponentOptions>
                 </TableSelectorParamsProvider>
               </FormProvider>
-            </CollectionProvider>
+            </CollectionProviderV2>
           </RecordPickerProvider>
         </ActionContextProvider>
       </>

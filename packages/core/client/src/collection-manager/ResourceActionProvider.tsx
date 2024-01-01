@@ -1,8 +1,7 @@
 import { useField } from '@formily/react';
 import { Result } from 'ahooks/es/useRequest/src/types';
 import React, { createContext, useContext, useEffect } from 'react';
-import { useCollectionManager } from '.';
-import { CollectionProvider, useRecord } from '..';
+import { CollectionProviderV2, useCollectionManagerV2, useRecord } from '..';
 import { useAPIClient, useRequest } from '../api-client';
 
 export const ResourceActionContext = createContext<
@@ -50,7 +49,7 @@ const CollectionResourceActionProvider = (props) => {
   return (
     <ResourceContext.Provider value={{ type: 'collection', resource, collection }}>
       <ResourceActionContext.Provider value={{ ...service, defaultRequest: request, dragSort }}>
-        <CollectionProvider collection={collection}>{props.children}</CollectionProvider>
+        <CollectionProviderV2 name={collection.name}>{props.children}</CollectionProviderV2>
       </ResourceActionContext.Provider>
     </ResourceContext.Provider>
   );
@@ -80,7 +79,7 @@ const AssociationResourceActionProvider = (props) => {
   return (
     <ResourceContext.Provider value={{ type: 'association', resource, association, collection }}>
       <ResourceActionContext.Provider value={{ ...service, defaultRequest: request, dragSort }}>
-        <CollectionProvider collection={collection}>{props.children}</CollectionProvider>
+        <CollectionProviderV2 name={collection.name}>{props.children}</CollectionProviderV2>
       </ResourceActionContext.Provider>
     </ResourceContext.Provider>
   );
@@ -89,9 +88,9 @@ const AssociationResourceActionProvider = (props) => {
 export const ResourceActionProvider: React.FC<ResourceActionProviderProps> = (props) => {
   // eslint-disable-next-line prefer-const
   let { collection, request } = props;
-  const { getCollection } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   if (typeof collection === 'string') {
-    collection = getCollection(collection);
+    collection = cm.getCollection(collection);
   }
   if (!collection) {
     return null;
@@ -99,7 +98,7 @@ export const ResourceActionProvider: React.FC<ResourceActionProviderProps> = (pr
   if (request?.resource?.includes('.')) {
     return <AssociationResourceActionProvider {...props} collection={collection} />;
   }
-  return <CollectionResourceActionProvider {...props} collection={collection} />;
+  return <CollectionResourceActionProvider {...props} name={collection.name} />;
 };
 
 export const useResourceActionContext = () => {

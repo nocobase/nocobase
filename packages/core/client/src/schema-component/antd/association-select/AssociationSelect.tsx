@@ -7,7 +7,7 @@ import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager, useSortFields } from '../../../collection-manager';
+import { useSortFields } from '../../../collection-manager';
 import { GeneralSchemaItems } from '../../../schema-items';
 import {
   GeneralSchemaDesigner,
@@ -27,6 +27,7 @@ import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
 import useServiceOptions from './useServiceOptions';
+import { isTitleField, useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   action?: string;
@@ -98,9 +99,8 @@ interface AssociationSelectInterface {
 export const AssociationSelect = InternalAssociationSelect as unknown as AssociationSelectInterface;
 
 AssociationSelect.Designer = function Designer() {
-  const { getCollectionFields, getInterface, getCollectionJoinField, getCollection, isTitleField } =
-    useCollectionManager();
-  const { getField } = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
@@ -111,13 +111,14 @@ AssociationSelect.Designer = function Designer() {
   const IsShowMultipleSwitch = useIsShowMultipleSwitch();
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
 
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const collectionField =
+    collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']);
   const fieldComponentOptions = useFieldComponentOptions();
   const isSubFormAssociationField = field.address.segments.includes('__form_grid');
-  const interfaceConfig = getInterface(collectionField?.interface);
+  const interfaceConfig = cm.getCollectionFieldInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
-  const targetFields = collectionField?.target ? getCollectionFields(collectionField?.target) : [];
+  const targetFields = collectionField?.target ? cm.getCollectionFields(collectionField?.target) : [];
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
@@ -149,7 +150,7 @@ AssociationSelect.Designer = function Designer() {
   }
 
   const options = targetFields
-    .filter((field) => isTitleField(field))
+    .filter((field) => isTitleField(cm, field))
     .map((field) => ({
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
@@ -364,7 +365,7 @@ AssociationSelect.Designer = function Designer() {
               block: 'Form',
               readPretty: field.readPretty,
               action: tk ? 'get' : null,
-              targetCollection: getCollection(collectionField?.target),
+              targetCollection: cm.getCollection(collectionField?.target),
             });
 
             if (type === 'CollectionField') {
@@ -612,19 +613,20 @@ AssociationSelect.Designer = function Designer() {
  * @returns
  */
 AssociationSelect.FilterDesigner = function FilterDesigner() {
-  const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { dn, refresh } = useDesignable();
   const compile = useCompile();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const interfaceConfig = getInterface(collectionField?.interface);
+  const collectionField =
+    collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']);
+  const interfaceConfig = cm.getCollectionFieldInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
-  const targetFields = collectionField?.target ? getCollectionFields(collectionField?.target) : [];
+  const targetFields = collectionField?.target ? cm.getCollectionFields(collectionField?.target) : [];
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };

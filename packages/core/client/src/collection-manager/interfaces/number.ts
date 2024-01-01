@@ -1,8 +1,8 @@
 import { i18n } from '../../i18n';
 import { defaultProps, operators, unique } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const number: IField = {
+export const number = new CollectionFieldInterfaceV2({
   name: 'number',
   type: 'object',
   group: 'basic',
@@ -47,7 +47,7 @@ export const number: IField = {
     operators: operators.number,
   },
   titleUsable: true,
-  validateSchema(fieldSchema) {
+  validateSchema() {
     return {
       maximum: {
         type: 'number',
@@ -113,4 +113,4 @@ export const number: IField = {
       },
     };
   },
-};
+});

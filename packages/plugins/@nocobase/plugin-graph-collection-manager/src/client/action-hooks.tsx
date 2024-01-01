@@ -4,7 +4,7 @@ import {
   useAPIClient,
   useActionContext,
   useCollectionFieldFormValues,
-  useCollectionManager,
+  useCollectionManagerV2,
   useCompile,
   useRequest,
 } from '@nocobase/client';
@@ -62,7 +62,7 @@ export const useCreateActionAndRefreshCM = (setTargetNode) => {
   const form = useForm();
   const api = useAPIClient();
   const ctx = useActionContext();
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
 
   return {
     async run() {
@@ -71,7 +71,7 @@ export const useCreateActionAndRefreshCM = (setTargetNode) => {
       ctx.setVisible(false);
       await form.reset();
       setTargetNode('last');
-      await refreshCM();
+      await cm.reload();
     },
   };
 };
@@ -80,7 +80,7 @@ export const useCreateAction = (collectionName, targetId?) => {
   const form = useForm();
   const api = useAPIClient();
   const ctx = useActionContext();
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { positionTargetNode, openPorts } = useContext(GraphCollectionContext);
   const { getValues } = useCollectionFieldFormValues();
 
@@ -114,13 +114,13 @@ export const useCreateAction = (collectionName, targetId?) => {
       await form.reset();
       positionTargetNode();
       isOpenPorts && openPorts && openPorts();
-      await refreshCM();
+      await cm.reload();
     },
   };
 };
 
 export const useUpdateFieldAction = ({ collectionName, name, key }) => {
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { t } = useTranslation();
   const form = useForm();
   const ctx = useActionContext();
@@ -136,7 +136,7 @@ export const useUpdateFieldAction = ({ collectionName, name, key }) => {
       ctx.setVisible(false);
       message.success(t('Saved successfully'));
       positionTargetNode();
-      refreshCM();
+      cm.reload();
       node.setPortProp(key, 'uiSchema', { title: form.values?.uiSchema.title });
       await form.reset();
     },
@@ -149,7 +149,7 @@ export const useUpdateCollectionActionAndRefreshCM = () => {
   const ctx = useActionContext();
   const { name } = form.values;
   const api = useAPIClient();
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { positionTargetNode } = useContext(GraphCollectionContext);
   return {
     async run() {
@@ -162,7 +162,7 @@ export const useUpdateCollectionActionAndRefreshCM = () => {
       message.success(t('Saved successfully'));
       await form.reset();
       positionTargetNode();
-      refreshCM();
+      cm.reload();
     },
   };
 };
@@ -187,13 +187,13 @@ const useDestroyAction = (name) => {
 export const useDestroyActionAndRefreshCM = (props) => {
   const { name } = props;
   const { run } = useDestroyAction(name);
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { positionTargetNode } = useContext(GraphCollectionContext);
   return {
     async run() {
       await run();
       positionTargetNode('destory');
-      await refreshCM();
+      await cm.reload();
     },
   };
 };
@@ -213,12 +213,12 @@ const useDestroyFieldAction = (collectionName, name) => {
 
 export const useDestroyFieldActionAndRefreshCM = (props) => {
   const { collectionName, name } = props;
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { run } = useDestroyFieldAction(collectionName, name);
   return {
     async run() {
       await run();
-      await refreshCM();
+      await cm.reload();
     },
   };
 };

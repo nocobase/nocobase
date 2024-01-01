@@ -24,7 +24,7 @@ import {
   VariableScopeProvider,
   css,
   gridRowColWrap,
-  useCollectionManager,
+  useCollectionManagerV2,
   useCompile,
   useFormActiveFields,
   useFormBlockContext,
@@ -164,10 +164,10 @@ export const addBlockButton = new SchemaInitializer({
       name: 'form',
       title: '{{t("Form")}}',
       useChildren() {
-        const { collections } = useCollectionManager();
+        const cm = useCollectionManagerV2();
         return Array.from(manualFormTypes.getValues()).map((item: ManualFormType) => {
           const { useInitializer: getInitializer } = item.config;
-          return getInitializer({ collections });
+          return getInitializer({ collections: cm.getCollections() });
         });
       },
     },
@@ -416,7 +416,7 @@ export function SchemaConfig({ value, onChange }) {
   const nodeComponents = {};
   nodes.forEach((item) => {
     const instruction = workflowPlugin.instructions.get(item.type);
-    Object.assign(nodeInitializers, instruction.initializers);
+    Object.assign(nodeInitializers, (instruction as any).initializers);
     Object.assign(nodeComponents, instruction.components);
   });
 

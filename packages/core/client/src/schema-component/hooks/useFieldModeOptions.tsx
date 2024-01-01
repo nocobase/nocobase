@@ -1,18 +1,19 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useCollectionManager } from '../../collection-manager';
+import { useCollectionManagerV2, useCollectionV2 } from '../../application';
 
 export const useFieldModeOptions = (props?) => {
-  const { getCollectionJoinField, getCollection } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const currentFieldSchema = useFieldSchema();
   const fieldSchema = props?.fieldSchema || currentFieldSchema;
   const field = useField();
   const form = useForm();
   const isReadPretty = field.readPretty || form.readPretty;
   const isSubTableField = props?.fieldSchema;
-  const { getField } = useCollection();
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const collection = useCollectionV2();
+  const collectionField =
+    collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']);
   const { t } = useTranslation();
   const { label } = fieldSchema['x-component-props']?.fieldNames || {};
   const fieldModeOptions = useMemo(() => {
@@ -20,7 +21,7 @@ export const useFieldModeOptions = (props?) => {
       return;
     }
     if (!['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m'].includes(collectionField.interface)) return;
-    const collection = getCollection(collectionField.target);
+    const collection = cm.getCollection(collectionField.target);
     if (collection?.template === 'file') {
       return isReadPretty
         ? [

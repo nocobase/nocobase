@@ -1,11 +1,11 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions } from '../../../collection-manager';
 import { useBaseVariable } from './useBaseVariable';
+import { CollectionFieldOptionsV2 } from '../../../application';
 
 interface Props {
   collectionName: string;
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptionsV2;
   schema?: any;
   noDisabled?: boolean;
   /** 消费变量值的字段 */

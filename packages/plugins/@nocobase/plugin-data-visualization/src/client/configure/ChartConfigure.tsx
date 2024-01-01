@@ -9,6 +9,7 @@ import {
   gridRowColWrap,
   useCollectionFieldsOptions,
   useCollectionFilterOptions,
+  useCollectionV2,
   useDesignable,
 } from '@nocobase/client';
 import { Alert, App, Button, Card, Col, Modal, Row, Space, Table, Tabs, Typography } from 'antd';
@@ -27,7 +28,7 @@ import {
 } from '../hooks';
 import { useChartsTranslation } from '../locale';
 import { ChartRenderer, ChartRendererContext } from '../renderer';
-import { createRendererSchema, getField, getSelectedFields } from '../utils';
+import { createRendererSchema, getSelectedFields } from '../utils';
 import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
 import { useChartTypes, useCharts, useDefaultChartType } from '../chart/group';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
@@ -409,12 +410,13 @@ ChartConfigure.Data = function Data() {
   const fields = useFieldsWithAssociation();
   const data = useData(current?.data);
   const error = service?.error;
+  const collection = useCollectionV2();
   return !error ? (
     <Table
       dataSource={data}
       scroll={{ x: 'max-content' }}
       columns={Object.keys(data[0] || {}).map((col) => {
-        const field = getField(fields, col.split('.'));
+        const field = collection.getField(col);
         return {
           title: field?.label || col,
           dataIndex: col,

@@ -6,14 +6,13 @@ import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCurrentAppInfo } from '../../appInfo';
 import { RecordProvider, useRecord } from '../../record-provider';
-import { Action, useAttach, useCompile, SchemaComponent } from '../../schema-component';
+import { Action, useAttach, useCompile, SchemaComponent, useSchemaComponentContext } from '../../schema-component';
 import { Input } from '../../schema-component/antd/input';
 import {
   isDeleteButtonDisabled,
   useBulkDestroyActionAndRefreshCM,
   useDestroyActionAndRefreshCM,
 } from '../action-hooks';
-import { useCollectionManager } from '../hooks/useCollectionManager';
 import {
   ResourceActionContext,
   ResourceActionProvider,
@@ -23,10 +22,11 @@ import {
 import { AddCollectionField } from './AddFieldAction';
 import { EditCollectionField } from './EditFieldAction';
 import { OverridingCollectionField } from './OverridingCollectionField';
-import { collection } from './schemas/collectionFields';
 import { SyncFieldsAction } from './SyncFieldsAction';
 import { SyncSQLFieldsAction } from './SyncSQLFieldsAction';
 import { ViewCollectionField } from './ViewInheritedField';
+import { isTitleField, useCollectionManagerV2 } from '../../application';
+import { InheritanceCollectionMixin } from '../collection-mixins/InheritanceCollectionMixin';
 
 const indentStyle = css`
   .ant-table {
@@ -57,14 +57,14 @@ const titlePrompt = 'Default title for each record';
 
 const CurrentFields = (props) => {
   const compile = useCompile();
-  const { getInterface } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { t } = useTranslation();
   const { setState } = useResourceActionContext();
   const { resource, targetKey } = props.collectionResource || {};
   const { [targetKey]: filterByTk, titleField, template } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
-  const { refreshCM, isTitleField, getTemplate } = useCollectionManager();
-  const targetTemplate = getTemplate(template);
+  const targetTemplate = useMemo(() => cm.getCollectionTemplate(template), [cm, template]);
+  const { refresh } = useSchemaComponentContext();
   const columns: TableColumnProps<any>[] = [
     {
       dataIndex: ['uiSchema', 'rawTitle'],
@@ -78,7 +78,7 @@ const CurrentFields = (props) => {
     {
       dataIndex: 'interface',
       title: t('Field interface'),
-      render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
+      render: (value) => <Tag>{compile(cm.getCollectionFieldInterface(value)?.title)}</Tag>,
     },
     {
       dataIndex: 'titleField',
@@ -94,7 +94,7 @@ const CurrentFields = (props) => {
               //   // updateCollection(data.data);
               // }
               setLoadingRecord(null);
-              refreshCM();
+              cm.reload(refresh);
             })
             .catch((err) => {
               setLoadingRecord(null);
@@ -102,7 +102,7 @@ const CurrentFields = (props) => {
             });
         };
 
-        return isTitleField(record) ? (
+        return isTitleField(cm, record) ? (
           <Tooltip title={t(titlePrompt)} placement="right" overlayInnerStyle={{ textAlign: 'center' }}>
             <Switch
               aria-label={`switch-title-field-${record.name}`}
@@ -130,7 +130,7 @@ const CurrentFields = (props) => {
             content: t('Are you sure you want to delete it?'),
           },
           useAction: useDestroyActionAndRefreshCM,
-          disabled: isDeleteButtonDisabled(record) || targetTemplate?.forbidDeletion,
+          disabled: isDeleteButtonDisabled(record) || targetTemplate?.getOption('forbidDeletion'),
           title: t('Delete'),
         };
 
@@ -176,12 +176,12 @@ const CurrentFields = (props) => {
 
 const InheritFields = (props) => {
   const compile = useCompile();
-  const { getInterface } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { resource, targetKey } = props.collectionResource || {};
   const { [targetKey]: filterByTk, titleField, name } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { t } = useTranslation();
-  const { refreshCM, isTitleField } = useCollectionManager();
+  const { refresh } = useSchemaComponentContext();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -196,7 +196,7 @@ const InheritFields = (props) => {
     {
       dataIndex: 'interface',
       title: t('Field interface'),
-      render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
+      render: (value) => <Tag>{compile(cm.getCollectionFieldInterface(value)?.title)}</Tag>,
     },
     {
       dataIndex: 'titleField',
@@ -212,7 +212,7 @@ const InheritFields = (props) => {
               //   updateCollection(data.data);
               // }
               setLoadingRecord(null);
-              refreshCM();
+              cm.reload(refresh);
             })
             .catch((err) => {
               setLoadingRecord(null);
@@ -220,7 +220,7 @@ const InheritFields = (props) => {
             });
         };
 
-        return isTitleField(record) ? (
+        return isTitleField(cm, record) ? (
           <Tooltip title={t(titlePrompt)} placement="right" overlayInnerStyle={{ textAlign: 'center' }}>
             <Switch
               size="small"
@@ -273,15 +273,15 @@ export const CollectionFields = () => {
   const {
     data: { database },
   } = useCurrentAppInfo();
-  const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields, getTemplate } =
-    useCollectionManager();
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
   const form = useMemo(() => createForm(), []);
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
   const { t } = useTranslation();
   const collectionResource = useResourceContext();
   const { refreshAsync } = useContext(ResourceActionContext);
-  const targetTemplate = getTemplate(template);
-  const inherits = getInheritCollections(name);
+  const targetTemplate = cm.getCollectionTemplate(template);
+  const collection = cm.getCollection(name);
+  const inherits = collection.getParentCollectionsName();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -319,7 +319,7 @@ export const CollectionFields = () => {
     },
   ];
 
-  const fields = getCurrentCollectionFields(name);
+  const fields = collection.getCurrentFields();
   const groups = {
     pf: [],
     association: [],
@@ -331,7 +331,7 @@ export const CollectionFields = () => {
     if (field.primaryKey || field.isForeignKey) {
       groups.pf.push(field);
     } else if (field.interface) {
-      const conf = getInterface(field.interface);
+      const conf = cm.getCollectionFieldInterface(field.interface);
       if (conf?.group === 'systemInfo') {
         groups.system.push(field);
       } else if (conf?.group === 'relation') {
@@ -367,7 +367,7 @@ export const CollectionFields = () => {
   dataSource.push(
     ...inherits
       .map((key) => {
-        const collection = getCollection(key);
+        const collection = cm.getCollection(key);
         if (!collection) {
           return;
         }
@@ -375,7 +375,7 @@ export const CollectionFields = () => {
           key,
           title: `${t('Inherited fields')} - ` + compile(collection?.title),
           inherit: true,
-          fields: collection?.fields || [],
+          fields: collection.getCurrentFields(),
         };
       })
       .filter(Boolean),

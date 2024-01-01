@@ -122,7 +122,7 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
   );
 
   return (
-    <MaybeCollectionProvider collection={collection}>
+    <MaybeCollectionProvider name={collection}>
       <ConfigProvider card={{ style: { boxShadow: 'none' } }}>
         <ChartRendererContext.Provider value={{ collection, config, transform, service, query }}>
           {props.children}

@@ -1,5 +1,5 @@
 import { RecordProvider, useRecord } from '../../record-provider';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ActionContextProvider, FormProvider, SchemaComponent, useActionContext } from '../../schema-component';
 import { SyncOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -9,10 +9,10 @@ import { useCancelAction } from '../action-hooks';
 import { FieldsConfigure, PreviewTable, SQLRequestProvider } from '../templates/components/sql-collection';
 import { createForm } from '@formily/core';
 import { FormLayout } from '@formily/antd-v5';
-import { useCollectionManager } from '../hooks';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useAPIClient } from '../../api-client';
 import { useField, useForm } from '@formily/react';
+import { useCollectionManagerV2 } from '../../application';
 
 const schema = {
   type: 'object',
@@ -90,7 +90,7 @@ const schema = {
 const useSyncFromDB = (refreshCMList?: any) => {
   const form = useForm();
   const ctx = useActionContext();
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { refresh } = useResourceActionContext();
   const { targetKey } = useResourceContext();
   const { [targetKey]: filterByTk } = useRecord();
@@ -113,7 +113,7 @@ const useSyncFromDB = (refreshCMList?: any) => {
         await form.reset();
         field.data.loading = false;
         refresh();
-        await refreshCM();
+        await cm.reload(refresh);
         await refreshCMList?.();
       } catch (err) {
         field.data.loading = false;

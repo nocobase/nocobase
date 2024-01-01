@@ -1,13 +1,13 @@
 import {
   AntdSchemaComponentProvider,
-  CollectionManagerProvider,
-  CollectionProvider,
+  Application,
+  CollectionProviderV2,
   Filter,
   Input,
   SchemaComponent,
   SchemaComponentProvider,
-  useCollection,
-  useCollectionManager,
+  useCollectionManagerV2,
+  useCollectionV2,
 } from '@nocobase/client';
 import { Select } from 'antd';
 import React, { useState } from 'react';
@@ -57,7 +57,7 @@ const schema: any = {
       'x-component': 'Filter',
       'x-component-props': {
         useProps: () => {
-          const { name } = useCollection();
+          const { name } = useCollectionV2();
           const options = useFilterOptions(name);
           return {
             options,
@@ -69,8 +69,8 @@ const schema: any = {
 };
 
 const SwitchCollection = (props) => {
-  const [collection, setCollection] = useState(collections[0]);
-  const { getCollection } = useCollectionManager();
+  const [collection, setCollection] = useState<any>(collections[0]);
+  const cm = useCollectionManagerV2();
   return (
     <div>
       <Select
@@ -80,26 +80,33 @@ const SwitchCollection = (props) => {
         ]}
         defaultValue={'test1'}
         onChange={(value) => {
-          setCollection(getCollection(value));
+          setCollection(cm.getCollection(value).getOptions());
         }}
       />
       <br />
       <br />
-      <CollectionProvider collection={collection}>{props.children}</CollectionProvider>
+      <CollectionProviderV2 name={collection.name}>{props.children}</CollectionProviderV2>
     </div>
   );
 };
 
-export default () => {
+const Root = () => {
   return (
     <SchemaComponentProvider>
       <AntdSchemaComponentProvider>
-        <CollectionManagerProvider collections={collections}>
-          <SwitchCollection>
-            <SchemaComponent components={{ Input, Filter }} schema={schema} />
-          </SwitchCollection>
-        </CollectionManagerProvider>
+        <SwitchCollection>
+          <SchemaComponent components={{ Input, Filter }} schema={schema} />
+        </SwitchCollection>
       </AntdSchemaComponentProvider>
     </SchemaComponentProvider>
   );
 };
+
+const app = new Application({
+  providers: [Root],
+  collectionManager: {
+    collections: collections,
+  },
+});
+
+export default app.getRootComponent();

@@ -27,30 +27,12 @@ import {
   DeleteCollection,
   DeleteCollectionAction,
 } from './Configuration';
-
-import { CollectionCategroriesProvider } from './CollectionManagerProvider';
-
-const schema: ISchema = {
-  type: 'object',
-  properties: {
-    [uid()]: {
-      'x-component': 'Action.Drawer',
-      type: 'void',
-      title: '{{t("Collections & Fields")}}',
-      properties: {
-        configuration: {
-          'x-component': 'ConfigurationTable',
-        },
-      },
-    },
-  },
-};
+import { CollectionCategroriesProvider } from './CollectionCategroriesProvider';
 
 const schema2: ISchema = {
   type: 'object',
   properties: {
     [uid()]: {
-      // 'x-decorator': 'CollectionCategroriesProvider',
       'x-component': 'ConfigurationTable',
     },
   },
@@ -58,7 +40,6 @@ const schema2: ISchema = {
 
 export const CollectionManagerPane = () => {
   return (
-    // <Card bordered={false}>
     <SchemaComponent
       schema={schema2}
       components={{
@@ -88,6 +69,5 @@ export const CollectionManagerPane = () => {
         SyncSQLFieldsAction,
       }}
     />
-    // </Card>
   );
 };

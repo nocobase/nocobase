@@ -1,13 +1,12 @@
 import React from 'react';
 import { TableOutlined } from '@ant-design/icons';
-import { useCollectionManager } from '../../collection-manager';
 import { DataBlockInitializer } from './DataBlockInitializer';
 import { createTableBlockSchema } from '../utils';
-import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import { useCollectionManagerV2, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 export const TableBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
-  const { getCollection } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const itemConfig = useSchemaInitializerItem();
   return (
     <DataBlockInitializer
@@ -15,7 +14,7 @@ export const TableBlockInitializer = () => {
       icon={<TableOutlined />}
       componentType={'Table'}
       onCreateBlockSchema={async ({ item }) => {
-        const collection = getCollection(item.name);
+        const collection = cm.getCollection(item.name);
         const schema = createTableBlockSchema({
           collection: item.name,
           rowKey: collection.filterTargetKey || 'id',

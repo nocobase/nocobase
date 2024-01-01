@@ -2,12 +2,11 @@ import React from 'react';
 import { OrderedListOutlined } from '@ant-design/icons';
 import { createGridCardBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
-import { useCollectionManager } from '../../collection-manager';
-import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import { useCollectionManagerV2, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 export const GridCardBlockInitializer = () => {
   const { insert } = useSchemaInitializer();
-  const { getCollection } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const itemConfig = useSchemaInitializerItem();
   return (
     <DataBlockInitializer
@@ -15,7 +14,7 @@ export const GridCardBlockInitializer = () => {
       icon={<OrderedListOutlined />}
       componentType={'GridCard'}
       onCreateBlockSchema={async ({ item }) => {
-        const collection = getCollection(item.name);
+        const collection = cm.getCollection(item.name);
         const schema = createGridCardBlockSchema({
           collection: item.name,
           rowKey: collection.filterTargetKey || 'id',

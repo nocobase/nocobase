@@ -3,23 +3,24 @@ import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useCollectionManager } from '../collection-manager';
 import { useDesignable } from '../schema-component';
 import { getTempFieldState } from '../schema-component/antd/form-v2/utils';
 import { SchemaSettingsModalItem, SchemaSettingsSwitchItem } from '../schema-settings';
+import { useCollectionManagerV2, useCollectionV2 } from '../application';
 
 export const GeneralSchemaItems: React.FC<{
   required?: boolean;
 }> = observer(
   (props) => {
     const { required = true } = props;
-    const { getCollectionJoinField } = useCollectionManager();
-    const { getField } = useCollection();
+    const cm = useCollectionManagerV2();
+    const collection = useCollectionV2();
     const field = useField<Field>();
     const fieldSchema = useFieldSchema();
     const { t } = useTranslation();
     const { dn, refresh } = useDesignable();
-    const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+    const collectionField =
+      collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']);
     return (
       <>
         {collectionField && (

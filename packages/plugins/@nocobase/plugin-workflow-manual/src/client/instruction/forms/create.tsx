@@ -7,7 +7,7 @@ import {
   SchemaSettingsDivider,
   SchemaSettingsLinkageRules,
   SchemaSettingsRemove,
-  useCollection,
+  useCollectionV2,
   useMenuSearch,
 } from '@nocobase/client';
 
@@ -18,10 +18,10 @@ import { ManualFormType } from '../SchemaConfig';
 import { findSchema } from '../utils';
 
 function CreateFormDesigner() {
-  const { name, title } = useCollection();
+  const collection = useCollectionV2();
 
   return (
-    <GeneralSchemaDesigner title={title || name}>
+    <GeneralSchemaDesigner title={collection.title || collection.name}>
       <SchemaSettingsBlockTitleItem />
       <SchemaSettingsLinkageRules collectionName={name} />
       <SchemaSettingsDataTemplates collectionName={name} />

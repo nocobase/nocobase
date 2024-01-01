@@ -1,9 +1,9 @@
 import { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import { defaultProps, operators, recordPickerViewer } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const createdBy: IField = {
+export const createdBy = new CollectionFieldInterfaceV2({
   name: 'createdBy',
   type: 'object',
   group: 'systemInfo',
@@ -65,4 +65,4 @@ export const createdBy: IField = {
       schema['x-component-props']['ellipsis'] = true;
     }
   },
-};
+});

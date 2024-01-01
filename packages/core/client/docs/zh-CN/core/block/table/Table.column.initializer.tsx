@@ -1,6 +1,11 @@
 import { Schema } from '@formily/json-schema';
 import { useFieldSchema, useForm } from '@formily/react';
-import { SchemaInitializer, SchemaInitializerItemType, useCollectionManager, useCollectionV2 } from '@nocobase/client';
+import {
+  SchemaInitializer,
+  SchemaInitializerItemType,
+  useCollectionManagerV2,
+  useCollectionV2,
+} from '@nocobase/client';
 
 const quickEditField = [
   'attachment',
@@ -35,20 +40,20 @@ export const removeTableColumn = (schema, cb) => {
   cb(schema.parent);
 };
 export const useTableColumnInitializerFields = () => {
-  const { name, fields = [] } = useCollectionV2();
-  const { getInterface, getCollection } = useCollectionManager();
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const fieldSchema = useFieldSchema();
   const isSubTable = fieldSchema['x-component'] === 'AssociationField.SubTable';
   const form = useForm();
   const isReadPretty = isSubTable ? form.readPretty : true;
 
-  return fields
-    .filter(
+  return collection
+    .getFields(
       (field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey && !field?.treeChildren,
     )
     .map((field) => {
-      const interfaceConfig = getInterface(field.interface);
-      const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
+      const interfaceConfig = cm.getCollectionFieldInterface(field.interface);
+      const isFileCollection = field?.target && cm.getCollection(field?.target)?.template === 'file';
       const schema = {
         name: field.name,
         'x-collection-field': `${name}.${field.name}`,
@@ -85,7 +90,7 @@ export const useTableColumnInitializerFields = () => {
             field,
             readPretty: isReadPretty,
             block: 'Table',
-            targetCollection: getCollection(field.target),
+            targetCollection: cm.getCollection(field.target),
           });
         },
         field,

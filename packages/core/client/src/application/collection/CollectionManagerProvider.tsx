@@ -21,18 +21,11 @@ export function useCollectionManagerV2<Mixins = {}>() {
   return context;
 }
 
-export const useCollectionsV2 = (ns?: string, predicate?: (collection: CollectionV2) => boolean) => {
+export const useCollectionsV2 = (predicate?: (collection: CollectionV2) => boolean, options?: GetCollectionOptions) => {
   const collectionManager = useCollectionManagerV2();
   const collections = useMemo(
-    () => collectionManager.getCollections(ns, predicate),
-    [collectionManager, ns, predicate],
+    () => collectionManager.getCollections(predicate, options),
+    [collectionManager, options, predicate],
   );
   return collections;
-};
-
-export const useCollectionFieldByPathV2 = (path: string, options?: GetCollectionOptions) => {
-  const collectionManager = useCollectionManagerV2();
-  const field = useMemo(() => collectionManager.getCollectionField(path, options), [collectionManager, path, options]);
-
-  return field;
 };

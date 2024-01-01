@@ -11,12 +11,11 @@ import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction, useUpdateAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
 import useDialect from '../hooks/useDialect';
-import { IField } from '../interfaces/types';
 import * as components from './components';
+import { CollectionFieldInterfaceOptions, useCollectionManagerV2 } from '../../application';
 
-const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
+const getSchema = (schema: CollectionFieldInterfaceOptions, record: any, compile, getContainer): ISchema => {
   if (!schema) {
     return;
   }
@@ -118,7 +117,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 const useUpdateCollectionField = () => {
   const form = useForm();
   const { run } = useUpdateAction();
-  const { refreshCM } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
@@ -137,7 +136,7 @@ const useUpdateCollectionField = () => {
       ctx.setVisible(false);
       await form.reset();
       refresh();
-      await refreshCM();
+      await cm.reload(refresh);
     },
   };
 };
@@ -149,7 +148,7 @@ export const EditCollectionField = (props) => {
 
 export const EditFieldAction = (props) => {
   const { scope, getContainer, item: record, children, ...otherProps } = props;
-  const { getInterface, collections } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
@@ -159,7 +158,7 @@ export const EditFieldAction = (props) => {
   const { isDialect } = useDialect();
 
   const currentCollections = useMemo(() => {
-    return collections.map((v) => {
+    return cm.getCollections().map((v) => {
       return {
         label: compile(v.title),
         value: v.name,
@@ -178,7 +177,7 @@ export const EditFieldAction = (props) => {
               appends: ['reverseField'],
             });
             setData(data?.data);
-            const interfaceConf = getInterface(record.interface);
+            const interfaceConf = cm.getCollectionFieldInterface(record.interface);
             const defaultValues: any = cloneDeep(data?.data) || {};
             if (!defaultValues?.reverseField) {
               defaultValues.autoCreateReverseField = false;
@@ -188,7 +187,7 @@ export const EditFieldAction = (props) => {
             }
             const schema = getSchema(
               {
-                ...interfaceConf,
+                ...interfaceConf.getOptions(),
                 default: defaultValues,
               },
               record,

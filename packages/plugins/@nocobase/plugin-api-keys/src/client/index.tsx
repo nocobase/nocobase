@@ -1,6 +1,7 @@
 import { Plugin } from '@nocobase/client';
 import { NAMESPACE } from '../constants';
 import { Configuration } from './Configuration';
+import apiKeysCollection from '../collections/api-keys';
 
 class APIKeysPlugin extends Plugin {
   async load() {
@@ -10,6 +11,8 @@ class APIKeysPlugin extends Plugin {
       Component: Configuration,
       aclSnippet: 'pm.api-keys.configuration',
     });
+
+    this.collectionManager.addCollections([apiKeysCollection]);
   }
 }
 

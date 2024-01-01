@@ -1,4 +1,9 @@
-import { SchemaInitializerItemType, useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
+import {
+  SchemaInitializerItemType,
+  useCollectionDataSource,
+  useCollectionManagerV2,
+  useCompile,
+} from '@nocobase/client';
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
 import { NAMESPACE, lang } from '../../locale';
@@ -28,7 +33,7 @@ export default class extends Trigger {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { getCollectionFields } = useCollectionManager();
+    const collectionManager = useCollectionManagerV2();
     const options: any[] = [];
     if (!opts?.types || opts.types.includes('date')) {
       options.push({ key: 'date', value: 'date', label: lang('Trigger time') });
@@ -55,7 +60,7 @@ export default class extends Trigger {
           },
         ],
         compile,
-        getCollectionFields,
+        collectionManager,
       });
       if (fieldOption) {
         options.push(fieldOption);

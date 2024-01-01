@@ -1,14 +1,14 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager } from '../../hooks';
 import Summary from './Summary';
+import { useCollectionManagerV2 } from '../../../application';
 
 export const FieldSummary = (props) => {
   const { t } = useTranslation();
-  const { getInterface } = useCollectionManager();
+  const collectionManager = useCollectionManagerV2();
   const schema = useMemo(() => {
-    return getInterface(props.schemaKey);
-  }, [getInterface, props.schemaKey]);
+    return collectionManager.getCollectionFieldInterface(props.schemaKey);
+  }, [collectionManager, props.schemaKey]);
 
   return <Summary label={t('Field interface')} schema={schema} />;
 };

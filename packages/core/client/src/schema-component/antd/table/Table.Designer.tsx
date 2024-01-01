@@ -1,11 +1,11 @@
 import React from 'react';
-import { useCollection } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettingsRemove } from '../../../schema-settings';
+import { useCollectionV2 } from '../../../application';
 
 export const TableDesigner = () => {
-  const { name, title } = useCollection();
+  const collection = useCollectionV2();
   return (
-    <GeneralSchemaDesigner title={title || name}>
+    <GeneralSchemaDesigner title={collection.title || collection.name}>
       <SchemaSettingsRemove
         removeParentsIfNoChildren
         breakRemoveOn={{

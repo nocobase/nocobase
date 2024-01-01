@@ -1,6 +1,11 @@
 import type { Field } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
-import { IField, interfacesProperties, useCollectionManager, useRecord } from '@nocobase/client';
+import {
+  CollectionFieldInterfaceOptions,
+  interfacesProperties,
+  useCollectionManagerV2,
+  useRecord,
+} from '@nocobase/client';
 import lodash from 'lodash';
 import { NAMESPACE } from './locale';
 
@@ -19,10 +24,10 @@ export const useTopRecord = () => {
 };
 
 function useRecordCollection() {
-  const { getCollectionField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const record = useTopRecord();
   const formValues = useForm().values;
-  return getCollectionField(`${record.name}.${formValues.targetField}`)?.target;
+  return cm.getCollectionField(`${record.name}.${formValues.targetField}`)?.target;
 }
 
 const onTargetFieldChange = (field: Field) => {
@@ -34,13 +39,13 @@ const onTargetFieldChange = (field: Field) => {
 };
 
 function MakeFieldsPathOptions(fields, appends = []) {
-  const { getCollection } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const options = [];
   fields.forEach((field) => {
     if (['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)) {
       const currentAppends = appends.filter((key) => `${key}.`.startsWith(`${field.name}.`));
       if (currentAppends.length) {
-        const nextCollection = getCollection(field.target);
+        const nextCollection = cm.getCollection(field.target);
         const nextAppends = currentAppends
           .filter((key) => key !== field.name)
           .map((key) => key.replace(`${field.name}.`, ''))
@@ -95,7 +100,7 @@ const recordPickerViewer = {
   },
 };
 
-export const snapshot: IField = {
+export const snapshot: CollectionFieldInterfaceOptions = {
   name: 'snapshot',
   type: 'object',
   group: 'advanced',
@@ -124,8 +129,8 @@ export const snapshot: IField = {
   initialize: (values: any) => {},
   usePathOptions(field) {
     const { appends = [], targetCollection } = field;
-    const { getCollection } = useCollectionManager();
-    const { fields } = getCollection(targetCollection);
+    const cm = useCollectionManagerV2();
+    const { fields } = cm.getCollection(targetCollection);
 
     const result = MakeFieldsPathOptions(fields, appends);
 

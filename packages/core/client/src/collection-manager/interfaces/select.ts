@@ -1,8 +1,8 @@
 import { ISchema } from '@formily/react';
 import { dataSource, defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const select: IField = {
+export const select = new CollectionFieldInterfaceV2({
   name: 'select',
   type: 'object',
   group: 'choices',
@@ -40,4 +40,4 @@ export const select: IField = {
       props['ellipsis'] = true;
     }
   },
-};
+});

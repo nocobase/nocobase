@@ -1,4 +1,4 @@
-import { SchemaInitializerItemType, useCollectionManager, useCompile } from '@nocobase/client';
+import { SchemaInitializerItemType, useCollectionManagerV2, useCompile } from '@nocobase/client';
 
 import {
   defaultFieldNames,
@@ -80,7 +80,7 @@ export default class extends Instruction {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { getCollectionFields } = useCollectionManager();
+    const cm = useCollectionManagerV2();
     const formKeys = Object.keys(config.forms ?? {});
     if (!formKeys.length) {
       return null;
@@ -95,7 +95,7 @@ export default class extends Instruction {
           collection: form.collection,
           types,
           compile,
-          getCollectionFields,
+          collectionManager: cm,
         });
         const label = compile(form.title) || formKey;
         return fieldsOptions.length
@@ -120,7 +120,7 @@ export default class extends Instruction {
   }
   useInitializers(node): SchemaInitializerItemType | null {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { getCollection } = useCollectionManager();
+    const cm = useCollectionManagerV2();
     const formKeys = Object.keys(node.config.forms ?? {});
     if (!formKeys.length || node.config.mode) {
       return null;
@@ -129,7 +129,7 @@ export default class extends Instruction {
     const forms = formKeys
       .map((formKey) => {
         const form = node.config.forms[formKey];
-        const { fields = [] } = getCollection(form.collection);
+        const { fields = [] } = cm.getCollection(form.collection);
 
         return fields.length
           ? ({

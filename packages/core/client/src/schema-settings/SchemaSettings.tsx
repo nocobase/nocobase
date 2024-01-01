@@ -40,9 +40,6 @@ import { Router } from 'react-router-dom';
 import {
   APIClientProvider,
   ActionContextProvider,
-  CollectionFieldOptions,
-  CollectionManagerContext,
-  CollectionProvider,
   DatePickerProvider,
   Designable,
   FormDialog,
@@ -56,8 +53,7 @@ import {
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
-  useCollection,
-  useCollectionManager,
+  InheritanceCollectionMixin,
   useCompile,
   useDesignable,
   useFilterBlock,
@@ -66,6 +62,12 @@ import {
   useRecord,
   useSchemaSettingsItem,
   useSortFields,
+  useCollectionV2,
+  useCollectionManagerV2,
+  CollectionManagerV2,
+  CollectionFieldOptionsV2,
+  CollectionProviderV2,
+  CollectionManagerProviderV2,
 } from '..';
 import { BlockRequestContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
 import {
@@ -142,10 +144,10 @@ interface SchemaSettingsProviderProps {
 export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (props) => {
   const { children, fieldSchema, ...others } = props;
   const { getTemplateBySchema } = useSchemaTemplateManager();
-  const { name } = useCollection();
+  const collection = useCollectionV2();
   const template = getTemplateBySchema(fieldSchema);
   return (
-    <SchemaSettingsContext.Provider value={{ collectionName: name, template, fieldSchema, ...others }}>
+    <SchemaSettingsContext.Provider value={{ collectionName: collection?.name, template, fieldSchema, ...others }}>
       {children}
     </SchemaSettingsContext.Provider>
   );
@@ -197,7 +199,7 @@ export const SchemaSettingsDropdown: React.FC<SchemaSettingsProps> = (props) => 
 export const SchemaSettingsTemplate = function Template(props) {
   const { componentName, collectionName, resourceName, needRender } = props;
   const { t } = useTranslation();
-  const { getCollection } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const compile = useCompile();
   const api = useAPIClient();
@@ -233,7 +235,7 @@ export const SchemaSettingsTemplate = function Template(props) {
       title="Save as template"
       onClick={async () => {
         setVisible(false);
-        const { title } = collectionName ? getCollection(collectionName) : { title: '' };
+        const { title } = collectionName ? cm.getCollection(collectionName) : { title: '' };
         const values = await FormDialog(
           t('Save as template'),
           () => {
@@ -326,7 +328,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
   const { insertAdjacentPosition = 'afterBegin', componentName, collectionName, resourceName } = props;
   const { t } = useTranslation();
   const compile = useCompile();
-  const { getCollection } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const api = useAPIClient();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
@@ -378,7 +380,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
       title="Save as block template"
       onClick={async () => {
         setVisible(false);
-        const { title } = getCollection(collectionName);
+        const { title } = cm.getCollection(collectionName);
         const gridSchema = findGridSchema(fieldSchema);
         const values = await FormDialog(
           t('Save as template'),
@@ -597,13 +599,13 @@ export const SchemaSettingsConnectDataBlocks: FC<SchemaSettingsConnectDataBlocks
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const collection = useCollection();
+  const collection = useCollectionV2<InheritanceCollectionMixin>();
   const { inProvider } = useFilterBlock();
   const dataBlocks = useSupportedBlocks(type);
   // eslint-disable-next-line prefer-const
   let { targets = [], uid } = findFilterTargets(fieldSchema);
   const compile = useCompile();
-  const { getAllCollectionsInheritChain } = useCollectionManager();
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
 
   if (!inProvider) {
     return null;
@@ -668,7 +670,7 @@ export const SchemaSettingsConnectDataBlocks: FC<SchemaSettingsConnectDataBlocks
         title={title}
         value={target?.field || ''}
         options={[
-          ...getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name), block).map((field) => {
+          ...getSupportFieldsByAssociation(collection.getAllCollectionsInheritChain(), block).map((field) => {
             return {
               label: compile(field.uiSchema.title) || field.name,
               value: `${field.name}.${getTargetKey(field)}`,
@@ -953,8 +955,8 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
-  const cm = useContext(CollectionManagerContext);
-  const collection = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
   const apiClient = useAPIClient();
   const { theme } = useGlobalTheme();
   const ctx = useContext(BlockRequestContext);
@@ -978,8 +980,8 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
               <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
                 <Router location={location} navigator={null}>
                   <BlockRequestContext.Provider value={ctx}>
-                    <CollectionManagerContext.Provider value={cm}>
-                      <CollectionProvider collection={collection}>
+                    <CollectionManagerProviderV2 collectionManager={cm}>
+                      <CollectionProviderV2 name={collection.name}>
                         <SchemaComponentOptions scope={options.scope} components={options.components}>
                           <FormLayout
                             layout={'vertical'}
@@ -1002,8 +1004,8 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                             </APIClientProvider>
                           </FormLayout>
                         </SchemaComponentOptions>
-                      </CollectionProvider>
-                    </CollectionManagerContext.Provider>
+                      </CollectionProviderV2>
+                    </CollectionManagerProviderV2>
                   </BlockRequestContext.Provider>
                 </Router>
               </FormActiveFieldsProvider>
@@ -1078,7 +1080,7 @@ export const SchemaSettingsDefaultSortingRules = function DefaultSortingRules(pr
   const fieldSchema = useFieldSchema();
   const field = useField();
   const title = props.title || t('Set default sorting rules');
-  const { name } = useCollection();
+  const collection = useCollectionV2();
   const defaultSort = get(fieldSchema, path) || [];
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
@@ -1348,9 +1350,9 @@ export const SchemaSettingsEnableChildCollections = function EnableChildCollecti
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
-  const { getCollectionJoinField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const ctx = useBlockRequestContext();
-  const collectionField = getCollectionJoinField(fieldSchema?.parent?.['x-collection-field']) || {};
+  const collectionField = cm.getCollectionField(fieldSchema?.parent?.['x-collection-field']) || {};
   const isAssocationAdd = fieldSchema?.parent?.['x-component'] === 'CollectionField';
   return (
     <SchemaSettingsModalItem
@@ -1434,8 +1436,8 @@ export const SchemaSettingsDataFormat = function DateFormatConfig(props: { field
   const form = useForm();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const { getCollectionJoinField } = useCollectionManager();
-  const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']) || {};
+  const cm = useCollectionManagerV2();
+  const collectionField = cm.getCollectionField(fieldSchema?.['x-collection-field']) || {};
   const isShowTime = fieldSchema?.['x-component-props']?.showTime;
   const dateFormatDefaultValue =
     fieldSchema?.['x-component-props']?.dateFormat ||
@@ -1598,11 +1600,10 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
   const actionCtx = useActionContext();
   let targetField;
 
-  const { getField } = useCollection();
-  const { getCollectionJoinField, getCollectionFields, getAllCollectionsInheritChain } = useCollectionManager();
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const collection = useCollection();
   const record = useRecord();
   const { form } = useFormBlockContext();
   const { getFields } = useCollectionFilterOptionsV2(collection);
@@ -1610,18 +1611,18 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
 
   const { name } = collection;
   const collectionField = useMemo(
-    () => getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']),
-    [fieldSchema, getCollectionJoinField, getField],
+    () => collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']),
+    [fieldSchema, cm.getCollectionField, collection],
   );
   const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
   if (collectionField?.target) {
-    targetField = getCollectionJoinField(
+    targetField = cm.getCollectionField(
       `${collectionField.target}.${fieldSchema['x-component-props']?.fieldNames?.label || 'id'}`,
     );
   }
 
   const parentFieldSchema = collectionField?.interface === 'm2o' && findParentFieldSchema(fieldSchema);
-  const parentCollectionField = parentFieldSchema && getCollectionJoinField(parentFieldSchema?.['x-collection-field']);
+  const parentCollectionField = parentFieldSchema && cm.getCollectionField(parentFieldSchema?.['x-collection-field']);
   const tableCtx = useTableBlockContext();
   const isAllowContextVariable =
     actionCtx?.fieldSchema?.['x-action'] === 'customize:create' &&
@@ -1631,7 +1632,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
   const returnScope = useCallback(
     (scope: Option[]) => {
       const currentForm = scope.find((item) => item.value === '$nForm');
-      const fields = getCollectionFields(name);
+      const fields = cm.getCollectionFields(name);
 
       // fix https://nocobase.height.app/T-1355
       // 工作流人工节点的 `自定义表单` 区块，与其它表单区块不同，根据它的数据表名称，获取到的字段列表为空，所以需要在这里特殊处理一下
@@ -1680,7 +1681,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
               collectionField,
               variables,
               localVariables,
-              getAllCollectionsInheritChain,
+              collectionManager: cm,
             }),
             renderSchemaComponent: function Com(props) {
               const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
@@ -1738,11 +1739,11 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
       },
     } as ISchema;
   }, [
+    cm,
     collectionField,
     fieldSchema,
     fieldSchemaWithoutRequired,
     form,
-    getAllCollectionsInheritChain,
     isAllowContextVariable,
     localVariables,
     record,
@@ -1786,10 +1787,11 @@ export const SchemaSettingsSortingRule = function SortRuleConfigure(props) {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const currentSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const fieldSchema = props?.fieldSchema ?? currentSchema;
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const collectionField =
+    collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']);
   const sortFields = useSortFields(collectionField?.target);
   const defaultSort = fieldSchema['x-component-props']?.service?.params?.sort || [];
   const sort = defaultSort?.map((item: string) => {
@@ -1904,7 +1906,7 @@ export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeCon
   const { form } = useFormBlockContext();
   const variables = useVariables();
   const localVariables = useLocalVariables();
-  const { getAllCollectionsInheritChain } = useCollectionManager();
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
   const { isInSubForm, isInSubTable } = useFlag() || {};
 
   const dynamicComponent = useCallback(
@@ -1919,13 +1921,13 @@ export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeCon
               collectionField: props.collectionField,
               variables,
               localVariables,
-              getAllCollectionsInheritChain,
+              collectionManager: cm,
             })}
           />
         </DatePickerProvider>
       );
     },
-    [form, getAllCollectionsInheritChain, localVariables, record, variables],
+    [form, cm, localVariables, record, variables],
   );
 
   const getSchema = () => {
@@ -1966,8 +1968,8 @@ export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeCon
 };
 
 // 是否是系统字段
-export const isSystemField = (collectionField: CollectionFieldOptions, getInterface) => {
-  const i = getInterface?.(collectionField?.interface);
+export const isSystemField = (collectionField: CollectionFieldOptionsV2, collectionManager: CollectionManagerV2) => {
+  const i = collectionManager.getCollectionFieldInterface?.(collectionField?.interface);
   return i?.group === 'systemInfo';
 };
 
@@ -1975,7 +1977,7 @@ export const isPatternDisabled = (fieldSchema: Schema) => {
   return fieldSchema?.['x-component-props']?.['pattern-disable'] == true;
 };
 
-function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
+function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptionsV2) {
   const result = fieldSchema?.default ?? collectionField?.defaultValue;
   return result;
 }

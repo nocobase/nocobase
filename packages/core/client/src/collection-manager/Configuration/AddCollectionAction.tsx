@@ -11,10 +11,10 @@ import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
-import { useCollectionManager } from '../hooks';
 import * as components from './components';
 import { TemplateSummary } from './components/TemplateSummary';
 import { templateOptions } from './templates';
+import { useCollectionManagerV2 } from '../../application';
 
 const getSchema = (schema, category, compile): ISchema => {
   if (!schema) {
@@ -195,7 +195,7 @@ const getDefaultCollectionFields = (values) => {
 
 const useCreateCollection = (schema?: any) => {
   const form = useForm();
-  const { refreshCM } = useCollectionManager();
+  const collectionManager = useCollectionManagerV2();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
@@ -228,7 +228,7 @@ const useCreateCollection = (schema?: any) => {
         await form.reset();
         field.data.loading = false;
         refresh();
-        await refreshCM();
+        await collectionManager.reload(refresh);
       } catch (error) {
         field.data.loading = false;
       }
@@ -243,7 +243,7 @@ export const AddCollection = (props) => {
 
 export const AddCollectionAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align } = props;
-  const { getTemplate } = useCollectionManager();
+  const collectionManager = useCollectionManagerV2();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const compile = useCompile();
@@ -265,7 +265,7 @@ export const AddCollectionAction = (props) => {
       });
     });
     return result;
-  }, [collectionTemplates]);
+  }, [collectionTemplates, compile]);
   const {
     state: { category },
   } = useResourceActionContext();
@@ -276,13 +276,13 @@ export const AddCollectionAction = (props) => {
         overflow: 'auto',
       },
       onClick: (info) => {
-        const schema = getSchema(getTemplate(info.key), category, compile);
+        const schema = getSchema(collectionManager.getCollectionTemplate(info.key), category, compile);
         setSchema(schema);
         setVisible(true);
       },
       items,
     };
-  }, [category, items]);
+  }, [category, collectionManager, compile, items]);
 
   return (
     <RecordProvider record={record}>

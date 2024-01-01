@@ -1,4 +1,4 @@
-import { useCollection } from '../..';
+import { useCollectionV2 } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 
 // 表单的操作配置
@@ -27,7 +27,7 @@ export const calendarFormActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -40,7 +40,7 @@ export const calendarFormActionInitializers = new SchemaInitializer({
             'x-decorator': 'ACLActionProvider',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -53,7 +53,7 @@ export const calendarFormActionInitializers = new SchemaInitializer({
             'x-decorator': 'ACLActionProvider',
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -141,7 +141,7 @@ export const calendarFormActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },
@@ -150,7 +150,7 @@ export const calendarFormActionInitializers = new SchemaInitializer({
           title: '{{t("Custom request")}}',
           Component: 'CustomRequestInitializer',
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';
           },
         },

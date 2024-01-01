@@ -3,9 +3,9 @@ import { useField, useFieldSchema, useForm } from '@formily/react';
 import { nextTick } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useEffect, useRef } from 'react';
-import { useCollection, useCollectionManager } from '../../../../collection-manager';
 import { useFlag } from '../../../../flag-provider';
 import { useVariables } from '../../../../variables';
+import { useCollectionV2, useCollectionManagerV2 } from '../../../../application';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 import { useSubFormValue } from '../../association-field/hooks';
 import { isDisplayField } from '../utils';
@@ -17,25 +17,25 @@ import { isDisplayField } from '../utils';
  * - 这里就是加载这些字段值的地方
  */
 const useLazyLoadDisplayAssociationFieldsOfForm = () => {
-  const { name } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const form = useForm();
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const field = useField<Field>();
   const { formValue: subFormValue } = useSubFormValue();
   const { isInSubForm, isInSubTable } = useFlag() || {};
-
+  const name = collection?.name;
   const schemaName = fieldSchema.name.toString();
   const formValue = _.cloneDeep(isInSubForm || isInSubTable ? subFormValue : form.values);
   const collectionFieldRef = useRef(null);
   const sourceCollectionFieldRef = useRef(null);
 
   if (collectionFieldRef.current == null && isDisplayField(schemaName)) {
-    collectionFieldRef.current = getCollectionJoinField(`${name}.${schemaName}`);
+    collectionFieldRef.current = cm.getCollectionField(`${name}.${schemaName}`);
   }
   if (sourceCollectionFieldRef.current == null && isDisplayField(schemaName)) {
-    sourceCollectionFieldRef.current = getCollectionJoinField(`${name}.${schemaName.split('.')[0]}`);
+    sourceCollectionFieldRef.current = cm.getCollectionField(`${name}.${schemaName.split('.')[0]}`);
   }
 
   const sourceKeyValue =

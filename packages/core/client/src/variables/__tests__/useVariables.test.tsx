@@ -11,7 +11,7 @@ vi.mock('../../collection-manager', async () => {
   return {
     useCollectionManager: () => {
       return {
-        getCollectionJoinField: (path: string) => {
+        getCollectionField: (path: string) => {
           if (path === 'users.belongsToField') {
             return {
               type: 'belongsTo',

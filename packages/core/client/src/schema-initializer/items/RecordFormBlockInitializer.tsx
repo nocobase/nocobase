@@ -1,17 +1,21 @@
 import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
 import { useBlockAssociationContext } from '../../block-provider';
-import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import {
+  SchemaInitializerItem,
+  useCollectionV2,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+} from '../../application';
 
 export const RecordFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { onCreateBlockSchema, componentType, createBlockSchema, targetCollection, ...others } = itemConfig;
   const { insert } = useSchemaInitializer();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const currentCollection = useCollection();
+  const currentCollection = useCollectionV2();
   const collection = targetCollection || currentCollection;
   const association = useBlockAssociationContext();
   return (

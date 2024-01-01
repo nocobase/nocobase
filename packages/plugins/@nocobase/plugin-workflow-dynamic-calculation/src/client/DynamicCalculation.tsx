@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { SchemaInitializerItemType, Variable, useCollectionManager } from '@nocobase/client';
+import { SchemaInitializerItemType, Variable, useCollectionManagerV2 } from '@nocobase/client';
 import {
   BaseTypeSets,
   Instruction,
@@ -16,18 +16,18 @@ function useDynamicExpressionCollectionFieldMatcher(field): boolean {
     return false;
   }
 
-  if (this.getCollection(field.collectionName)?.template === 'expression') {
+  if (this.collectionManager.getCollection(field.collectionName)?.template === 'expression') {
     return true;
   }
 
-  const fields = this.getCollectionFields(field.target);
+  const fields = this.collectionManager.getCollectionFields(field.target);
   return fields.some((f) => f.interface === 'expression');
 }
 
 function DynamicExpression({ value, onChange }) {
-  const { getCollectionFields, getCollection } = useCollectionManager();
+  const collectionManager = useCollectionManagerV2();
   const scope = useWorkflowVariableOptions({
-    types: [useDynamicExpressionCollectionFieldMatcher.bind({ getCollectionFields, getCollection })],
+    types: [useDynamicExpressionCollectionFieldMatcher.bind({ collectionManager })],
   });
 
   return <Variable.Input value={value} onChange={onChange} scope={scope} />;

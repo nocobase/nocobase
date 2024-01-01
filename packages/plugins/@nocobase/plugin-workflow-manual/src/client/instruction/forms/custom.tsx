@@ -7,8 +7,7 @@ import { useField, useFieldSchema, useForm } from '@formily/react';
 
 import {
   ActionContextProvider,
-  CollectionContext,
-  CollectionProvider,
+  CollectionProviderV2,
   FormBlockContext,
   RecordProvider,
   SchemaComponent,
@@ -17,7 +16,8 @@ import {
   SchemaInitializerItemType,
   SchemaInitializerItems,
   gridRowColWrap,
-  useCollectionManager,
+  useCollectionManagerV2,
+  useCollectionV2,
   useRecord,
   useSchemaInitializer,
   useSchemaInitializerItem,
@@ -46,11 +46,12 @@ function CustomFormBlockProvider(props) {
   );
 
   return !userJob.status || values ? (
-    <CollectionProvider
-      collection={{
-        ...props.collection,
-        fields,
-      }}
+    <CollectionProviderV2
+      // collection={{
+      //   ...props.collection,
+      //   fields,
+      // }}
+      name={props.collection.name}
     >
       <RecordProvider record={values} parent={false}>
         <FormBlockContext.Provider
@@ -63,7 +64,7 @@ function CustomFormBlockProvider(props) {
           {props.children}
         </FormBlockContext.Provider>
       </RecordProvider>
-    </CollectionProvider>
+    </CollectionProviderV2>
   ) : null;
 }
 
@@ -183,8 +184,8 @@ function getOptions(interfaces) {
 }
 
 function useCommonInterfaceInitializers(): SchemaInitializerItemType[] {
-  const { interfaces } = useCollectionManager();
-  const options = getOptions(interfaces);
+  const cm = useCollectionManagerV2();
+  const options = getOptions(cm.getCollectionFieldInterfaces());
 
   return options.map((group) => ({
     name: group.title,
@@ -206,7 +207,7 @@ const CustomItemsComponent = (props) => {
   const [interfaceOptions, setInterface] = useState<any>(null);
   const [insert, setCallback] = useState<any>();
   const items = useCommonInterfaceInitializers();
-  const collection = useContext(CollectionContext);
+  const collection = useCollectionV2();
   const { setCollectionFields } = useContext(FormBlockContext);
 
   return (
@@ -332,9 +333,9 @@ function CustomFormFieldInitializer() {
   const itemConfig = useSchemaInitializerItem();
   const { insert, setVisible } = useSchemaInitializer();
   const { onAddField, setCallback } = useContext(AddCustomFormFieldButtonContext);
-  const { getInterface } = useCollectionManager();
+  const cm = useCollectionManagerV2();
 
-  const interfaceOptions = getInterface(itemConfig.fieldInterface);
+  const interfaceOptions = cm.getCollectionFieldInterface(itemConfig.fieldInterface);
 
   return (
     <SchemaInitializerItem

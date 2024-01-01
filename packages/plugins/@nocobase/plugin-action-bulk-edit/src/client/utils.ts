@@ -1,21 +1,21 @@
 import {
-  useCollection,
-  useCollectionManager,
   useRemoveGridFormItem,
   SchemaInitializerItemType,
+  useCollectionV2,
+  useCollectionManagerV2,
 } from '@nocobase/client';
 import { useForm } from '@formily/react';
 import { useMemo } from 'react';
 
 export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
-  const { name, fields } = useCollection();
-  const { getInterface, getCollection } = useCollectionManager();
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const remove = useRemoveGridFormItem();
   const filterFields = useMemo(
     () =>
-      fields
+      collection.fields
         ?.filter((field) => {
           return (
             field?.interface &&
@@ -25,7 +25,7 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
           );
         })
         .map((field) => {
-          const interfaceConfig = getInterface(field.interface);
+          const interfaceConfig = cm.getCollectionFieldInterface(field.interface);
           const schema = {
             type: 'string',
             name: field.name,
@@ -46,13 +46,13 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
                 field,
                 block,
                 readPretty,
-                targetCollection: getCollection(field.target),
+                targetCollection: cm.getCollection(field.target),
               });
             },
             schema,
           } as SchemaInitializerItemType;
         }),
-    [fields],
+    [collection.fields, cm],
   );
 
   return filterFields;

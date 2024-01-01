@@ -2,7 +2,7 @@ import { registerValidateRules } from '@formily/core';
 import { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
 import { defaultProps, operators, unique } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
 registerValidateRules({
   percentMode(value, rule) {
@@ -47,7 +47,7 @@ registerValidateRules({
 //   percentInteger: /^(\d+)(.\d{0,2})?$/,
 // });
 
-export const percent: IField = {
+export const percent = new CollectionFieldInterfaceV2({
   name: 'percent',
   type: 'object',
   group: 'basic',
@@ -100,7 +100,7 @@ export const percent: IField = {
     operators: operators.number,
   },
   titleUsable: true,
-  validateSchema(fieldSchema) {
+  validateSchema() {
     return {
       maxValue: {
         type: 'number',
@@ -164,4 +164,4 @@ export const percent: IField = {
       },
     };
   },
-};
+});

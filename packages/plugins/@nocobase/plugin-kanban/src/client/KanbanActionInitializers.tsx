@@ -1,4 +1,4 @@
-import { useCollection, SchemaInitializer } from '@nocobase/client';
+import { SchemaInitializer, useCollectionV2 } from '@nocobase/client';
 
 export const kanbanActionInitializers = new SchemaInitializer({
   name: 'KanbanActionInitializers',
@@ -33,7 +33,7 @@ export const kanbanActionInitializers = new SchemaInitializer({
             },
           },
           useVisible() {
-            const collection = useCollection();
+            const collection = useCollectionV2();
             return (collection as any).template !== 'view' || collection?.writableView;
           },
         },

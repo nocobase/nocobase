@@ -10,13 +10,14 @@ import {
   RecordIndexProvider,
   RecordProvider,
   SchemaComponent,
-  useCollectionManager,
   useCompile,
   useRecord,
   useRequest,
   useSchemaInitializerRender,
 } from '../..';
-import { overridingSchema } from '../Configuration/schemas/collectionFields';
+import { useCollectionManagerV2 } from '../../application';
+import { overridingSchema } from './schemas/collectionFields';
+import { InheritanceCollectionMixin } from '../collection-mixins/InheritanceCollectionMixin';
 
 const isColumnComponent = (schema: Schema) => {
   return schema['x-component']?.endsWith('.Column') > -1;
@@ -86,8 +87,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
     const { name } = useRecord();
     const { t } = useTranslation();
     const compile = useCompile();
-    const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields, getInheritedFields } =
-      useCollectionManager();
+    const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
     const {
       showIndex = true,
       useSelectedRowKeys = useDef,
@@ -98,7 +98,8 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
     const [selectedRowKeys, setSelectedRowKeys] = useSelectedRowKeys();
     const [categorizeData, setCategorizeData] = useState<Array<CategorizeDataItem>>([]);
     const [expandedKeys, setExpendedKeys] = useState(selectedRowKeys);
-    const inherits = getInheritCollections(name);
+    const collection = cm.getCollection(name);
+    const inherits = collection.getParentCollectionsName();
     useDataSource({
       onSuccess(data) {
         field.value = data?.data || [];
@@ -113,7 +114,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
           categorizeMap.set(categorizeKey, fieldArr);
         };
         field.value.forEach((item) => {
-          const itemInterface = getInterface(item?.interface);
+          const itemInterface = cm.getCollectionFieldInterface(item?.interface);
           if (item?.primaryKey || item.isForeignKey) {
             addCategorizeVal('primaryAndForeignKey', item);
             return;
@@ -129,10 +130,10 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
           }
         });
         if (inherits) {
-          inherits.forEach((v) => {
+          inherits.forEach((v: any) => {
             sortKeyArr.push(v);
-            const parentCollection = getCollection(v);
-            parentCollection.fields.map((k) => {
+            const parentCollection = cm.getCollection(v);
+            parentCollection.getCurrentFields().map((k) => {
               if (k.interface) {
                 addCategorizeVal(v, new Proxy(k, {}));
                 field.value.push(new Proxy(k, {}));
@@ -142,7 +143,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
         }
         sortKeyArr.forEach((key) => {
           if (categorizeMap.get(key)?.length > 0) {
-            const parentCollection = getCollection(key);
+            const parentCollection = cm.getCollection(key);
             tmpData.push({
               key,
               name:

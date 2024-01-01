@@ -3,7 +3,6 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDataScope,
@@ -14,6 +13,7 @@ import {
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
+import { useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 export const AssociationFilterItemDesigner = (props) => {
   const fieldSchema = useFieldSchema();
@@ -21,16 +21,16 @@ export const AssociationFilterItemDesigner = (props) => {
 
   const field = useField();
   const { t } = useTranslation();
-  const { getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const cm = useCollectionManagerV2();
+  const collection = useCollectionV2();
 
-  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const collectionField =
+    collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']);
 
-  const { getCollectionFields } = useCollectionManager();
   const compile = useCompile();
   const { dn } = useDesignable();
 
-  const targetFields = collectionField?.target ? getCollectionFields(collectionField?.target) : [];
+  const targetFields = collectionField?.target ? cm.getCollectionFields(collectionField?.target) : [];
 
   const options = targetFields
     .filter((field) => !field?.target && field.type !== 'boolean')

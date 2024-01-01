@@ -8,11 +8,10 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useCompile } from '../../schema-component';
-import { useCollectionManager } from '../hooks';
-import { IField } from '../interfaces/types';
 import * as components from './components';
+import { CollectionFieldInterfaceOptions, useCollectionManagerV2 } from '../../application';
 
-const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
+const getSchema = (schema: CollectionFieldInterfaceOptions, record: any, compile, getContainer): ISchema => {
   if (!schema) {
     return;
   }
@@ -74,7 +73,7 @@ export const ViewCollectionField = (props) => {
 
 export const ViewFieldAction = (props) => {
   const { scope, getContainer, item: record, children } = props;
-  const { getInterface, collections } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const api = useAPIClient();
@@ -82,7 +81,7 @@ export const ViewFieldAction = (props) => {
   const compile = useCompile();
   const [data, setData] = useState<any>({});
   const currentCollections = useMemo(() => {
-    return collections.map((v) => {
+    return cm.getCollections().map((v) => {
       return {
         label: compile(v.title),
         value: v.name,
@@ -99,7 +98,7 @@ export const ViewFieldAction = (props) => {
               appends: ['reverseField'],
             });
             setData(data?.data);
-            const interfaceConf = getInterface(record.interface);
+            const interfaceConf = cm.getCollectionFieldInterface(record.interface);
             const defaultValues: any = cloneDeep(data?.data) || {};
             if (!defaultValues?.reverseField) {
               defaultValues.autoCreateReverseField = false;
@@ -109,7 +108,7 @@ export const ViewFieldAction = (props) => {
             }
             const schema = getSchema(
               {
-                ...interfaceConf,
+                ...interfaceConf.getOptions(),
                 default: defaultValues,
               },
               record,

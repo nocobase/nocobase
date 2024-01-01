@@ -1,8 +1,7 @@
-import { ISchema } from '@formily/react';
 import { defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const url: IField = {
+export const url = new CollectionFieldInterfaceV2({
   name: 'url',
   type: 'string',
   group: 'basic',
@@ -16,7 +15,6 @@ export const url: IField = {
     },
   },
   availableTypes: ['string'],
-  schemaInitialize(schema: ISchema, { block }) {},
   properties: {
     ...defaultProps,
   },
@@ -24,4 +22,4 @@ export const url: IField = {
   filterable: {
     operators: operators.string,
   },
-};
+});

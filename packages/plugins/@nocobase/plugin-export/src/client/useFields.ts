@@ -1,11 +1,11 @@
 import { useFieldSchema } from '@formily/react';
-import { useCollectionManager } from '@nocobase/client';
+import { useCollectionManagerV2 } from '@nocobase/client';
 
 export const useFields = (collectionName: string) => {
   const fieldSchema = useFieldSchema();
   const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
-  const { getCollectionFields } = useCollectionManager();
-  const fields = getCollectionFields(collectionName);
+  const cm = useCollectionManagerV2();
+  const fields = cm.getCollectionFields(collectionName);
   const field2option = (field, depth) => {
     if (!field.interface) {
       return;
@@ -20,7 +20,7 @@ export const useFields = (collectionName: string) => {
     }
 
     if (field.target) {
-      const targetFields = getCollectionFields(field.target);
+      const targetFields = cm.getCollectionFields(field.target);
       const options = getOptions(targetFields, depth + 1).filter(Boolean);
       option['children'] = option['children'] || [];
       option['children'].push(...options);
@@ -37,5 +37,6 @@ export const useFields = (collectionName: string) => {
     });
     return options;
   };
+  if (!collectionName) return [];
   return getOptions(fields, 1);
 };

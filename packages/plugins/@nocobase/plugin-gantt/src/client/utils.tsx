@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useCompile, useCollection } from '@nocobase/client';
+import { useCollectionV2, useCompile } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
 export const useGanttTranslation = () => {
@@ -8,8 +8,8 @@ export const useGanttTranslation = () => {
 };
 export const useOptions = (type = 'string') => {
   const compile = useCompile();
-  const { fields } = useCollection();
-  const options = fields
+  const collection = useCollectionV2();
+  const options = collection.fields
     ?.filter((field) => field.type === type)
     ?.map((field) => {
       return {

@@ -6,7 +6,6 @@ import _, { isString } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { isInFilterFormBlock } from '../../../filter-provider';
 import { useRecord } from '../../../record-provider';
 import { useParseDataScopeFilter } from '../../../schema-settings';
@@ -16,6 +15,7 @@ import { getVariableName } from '../../../variables/utils/getVariableName';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { useDesignable } from '../../hooks';
 import { AssociationFieldContext } from './context';
+import { useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 export const useInsertSchema = (component) => {
   const fieldSchema = useFieldSchema();
@@ -51,8 +51,8 @@ export default function useServiceOptions(props) {
   const { action = 'list', service, useOriginalFilter } = props;
   const fieldSchema = useFieldSchema();
   const field = useField();
-  const { getField } = useCollection();
-  const { getCollectionJoinField } = useCollectionManager();
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const record = useRecord();
   const { parseFilter, findVariable } = useParseDataScopeFilter();
   const [fieldServiceFilter, setFieldServiceFilter] = useState(null);
@@ -110,8 +110,8 @@ export default function useServiceOptions(props) {
   ]);
 
   const collectionField = useMemo(() => {
-    return getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
-  }, [fieldSchema]);
+    return collection.getField(fieldSchema.name) || cm.getCollectionField(fieldSchema?.['x-collection-field']);
+  }, [cm, collection, fieldSchema]);
 
   const sourceValue = record?.[collectionField?.sourceKey];
   const filter = useMemo(() => {

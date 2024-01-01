@@ -1,9 +1,4 @@
-import {
-  CollectionHistoryProvider,
-  CollectionManagerProvider,
-  registerField,
-  SchemaComponentOptions,
-} from '@nocobase/client';
+import { CollectionHistoryProvider, registerField, SchemaComponentOptions } from '@nocobase/client';
 import React, { useEffect } from 'react';
 import { SnapshotOwnerCollectionFieldsSelect } from './components/SnapshotOwnerCollectionFieldsSelect';
 import { snapshot } from './interface';
@@ -17,24 +12,18 @@ export const SnapshotFieldProvider = React.memo((props) => {
   }, []);
 
   return (
-    <CollectionManagerProvider
-      interfaces={{
-        snapshot,
-      }}
-    >
-      <CollectionHistoryProvider>
-        <SchemaComponentOptions
-          components={{
-            SnapshotRecordPicker,
-            SnapshotBlockProvider,
-            SnapshotBlockInitializersDetailItem,
-            SnapshotOwnerCollectionFieldsSelect,
-          }}
-        >
-          {props.children}
-        </SchemaComponentOptions>
-      </CollectionHistoryProvider>
-    </CollectionManagerProvider>
+    <CollectionHistoryProvider>
+      <SchemaComponentOptions
+        components={{
+          SnapshotRecordPicker,
+          SnapshotBlockProvider,
+          SnapshotBlockInitializersDetailItem,
+          SnapshotOwnerCollectionFieldsSelect,
+        }}
+      >
+        {props.children}
+      </SchemaComponentOptions>
+    </CollectionHistoryProvider>
   );
 });
 SnapshotFieldProvider.displayName = 'SnapshotFieldProvider';

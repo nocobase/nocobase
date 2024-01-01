@@ -4,16 +4,17 @@ import _ from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 import { mergeFilter } from '../block-provider';
 import { FilterTarget, findFilterTargets } from '../block-provider/hooks';
-import {
-  Collection,
-  CollectionFieldOptions,
-  FieldOptions,
-  useCollection,
-  useCollectionManager,
-} from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
 import { DataBlock, useFilterBlock } from './FilterProvider';
+import {
+  CollectionFieldOptionsV2,
+  CollectionManagerV2,
+  CollectionV2,
+  useCollectionManagerV2,
+  useCollectionV2,
+} from '../application';
+import { InheritanceCollectionMixin } from '../collection-manager';
 
 export enum FilterBlockType {
   FORM,
@@ -28,10 +29,7 @@ export const getSupportFieldsByAssociation = (inheritCollectionsChain: string[],
   );
 };
 
-export const getSupportFieldsByForeignKey = (
-  filterBlockCollection: ReturnType<typeof useCollection>,
-  block: DataBlock,
-) => {
+export const getSupportFieldsByForeignKey = (filterBlockCollection: CollectionV2, block: DataBlock) => {
   return block.foreignKeyFields?.filter((foreignKeyField) => {
     return filterBlockCollection.fields.some(
       (field) => field.type !== 'belongsTo' && field.foreignKey === foreignKeyField.name,
@@ -47,8 +45,8 @@ export const getSupportFieldsByForeignKey = (
 export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   const { getDataBlocks } = useFilterBlock();
   const fieldSchema = useFieldSchema();
-  const collection = useCollection();
-  const { getAllCollectionsInheritChain } = useCollectionManager();
+  const collection = useCollectionV2<InheritanceCollectionMixin>();
+  const cm = useCollectionManagerV2();
 
   // Form 和 Collapse 仅支持同表的数据区块
   if (filterBlockType === FilterBlockType.FORM || filterBlockType === FilterBlockType.COLLAPSE) {
@@ -66,7 +64,7 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
       return (
         fieldSchema['x-uid'] !== block.uid &&
         (isSameCollection(block.collection, collection) ||
-          getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name), block)?.length ||
+          getSupportFieldsByAssociation(collection.getAllCollectionsInheritChain(), block)?.length ||
           getSupportFieldsByForeignKey(collection, block)?.length)
       );
     });
@@ -76,7 +74,7 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
 export const transformToFilter = (
   values: Record<string, any>,
   fieldSchema: Schema,
-  getCollectionJoinField: (name: string) => CollectionFieldOptions,
+  collectionManager: CollectionManagerV2,
   collectionName: string,
 ) => {
   const { operators } = findFilterOperators(fieldSchema);
@@ -100,7 +98,7 @@ export const transformToFilter = (
         return true;
       }
 
-      const collectionField = getCollectionJoinField(`${collectionName}.${path}`);
+      const collectionField = collectionManager.getCollectionField(`${collectionName}.${path}`);
       if (collectionField?.target) {
         if (Array.isArray(value)) {
           return true;
@@ -118,7 +116,7 @@ export const transformToFilter = (
     $and: Object.keys(values)
       .map((key) => {
         let value = _.get(values, key);
-        const collectionField = getCollectionJoinField(`${collectionName}.${key}`);
+        const collectionField = collectionManager.getCollectionField(`${collectionName}.${key}`);
 
         if (collectionField?.target) {
           value = getValuesByPath(value, collectionField.targetKey || 'id');
@@ -142,18 +140,18 @@ export const transformToFilter = (
 };
 
 export const useAssociatedFields = () => {
-  const { fields } = useCollection();
+  const collection = useCollectionV2();
 
-  return fields.filter((field) => isAssocField(field)) || [];
+  return collection.fields.filter((field) => isAssocField(field)) || [];
 };
 
-export const isAssocField = (field?: FieldOptions) => {
+export const isAssocField = (field?: CollectionFieldOptionsV2) => {
   return ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo', 'chinaRegion'].includes(
     field?.interface,
   );
 };
 
-export const isSameCollection = (c1: Collection, c2: Collection) => {
+export const isSameCollection = (c1: CollectionV2, c2: CollectionV2) => {
   return c1.name === c2.name;
 };
 

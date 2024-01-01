@@ -1,7 +1,7 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions } from '../../../collection-manager';
 import { useBaseVariable } from './useBaseVariable';
+import { CollectionFieldOptionsV2 } from '../../../application';
 
 /**
  * 变量：`当前用户`
@@ -15,7 +15,7 @@ export const useUserVariable = ({
   targetFieldSchema,
   maxDepth = 3,
 }: {
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptionsV2;
   uiSchema: any;
   maxDepth?: number;
   noDisabled?: boolean;

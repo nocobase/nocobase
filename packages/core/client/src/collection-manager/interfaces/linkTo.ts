@@ -1,9 +1,9 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { defaultProps } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const linkTo: IField = {
+export const linkTo = new CollectionFieldInterfaceV2({
   name: 'linkTo',
   type: 'object',
   group: 'relation',
@@ -138,4 +138,4 @@ export const linkTo: IField = {
       // },
     ],
   },
-};
+});

@@ -1,9 +1,9 @@
 import { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
 import { defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const textarea: IField = {
+export const textarea = new CollectionFieldInterfaceV2({
   name: 'textarea',
   type: 'object',
   group: 'basic',
@@ -29,7 +29,7 @@ export const textarea: IField = {
       schema['x-component-props']['ellipsis'] = true;
     }
   },
-  validateSchema(fieldSchema) {
+  validateSchema() {
     return {
       max: {
         type: 'number',
@@ -73,4 +73,4 @@ export const textarea: IField = {
   filterable: {
     operators: operators.string,
   },
-};
+});

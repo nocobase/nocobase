@@ -5,24 +5,24 @@ import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   useACLRoleContext,
-  useCollection,
-  useCollectionManager,
   FixedBlockWrapper,
   BlockProvider,
   useBlockRequestContext,
+  useCollectionV2,
+  useCollectionManagerV2,
 } from '@nocobase/client';
 import { toColumns } from './Kanban';
 
 export const KanbanBlockContext = createContext<any>({});
 
 const useGroupField = (props) => {
-  const { getField } = useCollection();
+  const collection = useCollectionV2();
   const { groupField } = props;
   if (typeof groupField === 'string') {
-    return getField(groupField);
+    return collection.getField(groupField);
   }
   if (groupField?.name) {
-    return getField(groupField?.name);
+    return collection.getField(groupField?.name);
   }
 };
 
@@ -75,13 +75,13 @@ const recursiveProperties = (schema: Schema, component = 'CollectionField', asso
 };
 
 const useAssociationNames = (collection) => {
-  const { getCollectionFields } = useCollectionManager();
-  const collectionFields = getCollectionFields(collection);
+  const cm = useCollectionManagerV2();
+  const collectionFields = cm.getCollectionFields(collection);
   const associationFields = new Set();
   for (const collectionField of collectionFields) {
     if (collectionField.target) {
       associationFields.add(collectionField.name);
-      const fields = getCollectionFields(collectionField.target);
+      const fields = cm.getCollectionFields(collectionField.target);
       for (const field of fields) {
         if (field.target) {
           associationFields.add(`${collectionField.name}.${field.name}`);

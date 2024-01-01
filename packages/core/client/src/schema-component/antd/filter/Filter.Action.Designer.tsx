@@ -2,7 +2,6 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDivider,
@@ -12,15 +11,16 @@ import {
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings';
 import { useCompile } from '../../hooks';
+import { useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 export const useFilterableFields = (collectionName: string) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
-  const fields = getCollectionFields(collectionName);
+  const cm = useCollectionManagerV2();
+  const fields = cm.getCollectionFields(collectionName);
   return fields?.filter?.((field) => {
     if (!field.interface) {
       return false;
     }
-    const fieldInterface = getInterface(field.interface);
+    const fieldInterface = cm.getCollectionFieldInterface(field.interface);
     if (!fieldInterface?.filterable) {
       return false;
     }
@@ -32,7 +32,7 @@ export const FilterActionDesigner = (props) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
-  const { name } = useCollection();
+  const { name } = useCollectionV2();
   const fields = useFilterableFields(name);
   const compile = useCompile();
   const { t } = useTranslation();

@@ -1,7 +1,6 @@
 import { useField, useFieldSchema } from '@formily/react';
 import {
   useFormBlockContext,
-  useCollection,
   SchemaSettings,
   useDesignable,
   removeNullCondition,
@@ -10,6 +9,7 @@ import {
   SchemaSettingsSelectItem,
   SchemaSettingsDataScope,
   SchemaSettingsTemplate,
+  useCollectionV2,
 } from '@nocobase/client';
 import { useGanttTranslation, useOptions } from './utils';
 import { useGanttBlockContext } from './GanttBlockProvider';
@@ -195,7 +195,7 @@ export const ganttSettings = new SchemaSettings({
       name: 'dataScope',
       Component: SchemaSettingsDataScope,
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollectionV2();
         const fieldSchema = useFieldSchema();
         const { form } = useFormBlockContext();
         const field = useField();
@@ -230,7 +230,7 @@ export const ganttSettings = new SchemaSettings({
       name: 'template',
       Component: SchemaSettingsTemplate,
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollectionV2();
         return {
           componentName: 'Gantt',
           collectionName: name,

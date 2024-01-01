@@ -2,7 +2,7 @@ import { Schema, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import {
   SchemaInitializerSwitch,
-  useCollection,
+  useCollectionV2,
   useDesignable,
   useSchemaInitializer,
   useSchemaInitializerItem,
@@ -47,7 +47,7 @@ export const ExportActionInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
   const { exists, remove } = useCurrentSchema('export', 'x-action', itemConfig.find, itemConfig.remove);
-  const { name } = useCollection();
+  const { name } = useCollectionV2();
   const fields = useFields(name);
 
   const schema = {

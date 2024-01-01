@@ -1,5 +1,6 @@
-import { CollectionFieldOptionsV2, CollectionManagerV2, CollectionV2 } from '../../application';
-import _, { uniq, uniqBy } from 'lodash';
+import { CollectionFieldOptionsV2, CollectionManagerV2, GetCollectionFieldPredicate } from '../../application';
+import { CollectionV2 } from '../../application/collection/Collection';
+import _, { unionBy, uniq, uniqBy } from 'lodash';
 
 export class InheritanceCollectionMixin extends CollectionV2 {
   public declare collectionManager: CollectionManagerV2<InheritanceCollectionMixin>;
@@ -7,7 +8,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
   protected childrenCollections: string[];
   protected inheritsFields: CollectionFieldOptionsV2[];
   protected currentFields: CollectionFieldOptionsV2[];
-  protected parentCollectionFields: Record<string, CollectionFieldOptionsV2> = {};
+  protected parentCollectionFields: Record<string, CollectionFieldOptionsV2[]> = {};
   protected allCollectionsInheritChain: string[];
   protected inheritCollectionsChain: string[];
 
@@ -15,7 +16,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
     return this.options.inherits;
   }
 
-  getParentCollections() {
+  getParentCollectionsName() {
     if (this.parentCollections) {
       return this.parentCollections;
     }
@@ -39,7 +40,13 @@ export class InheritanceCollectionMixin extends CollectionV2 {
     return this.parentCollections;
   }
 
-  getChildrenCollections(isSupportView = false) {
+  getParentCollections() {
+    return this.getParentCollectionsName().map((collectionName) => {
+      return this.collectionManager.getCollection(collectionName);
+    });
+  }
+
+  getChildrenCollectionsName(isSupportView = false) {
     if (this.childrenCollections) {
       return this.childrenCollections;
     }
@@ -72,12 +79,18 @@ export class InheritanceCollectionMixin extends CollectionV2 {
     return this.childrenCollections;
   }
 
+  getChildrenCollections(isSupportView = false) {
+    return this.getChildrenCollectionsName(isSupportView).map((collectionName) => {
+      return this.collectionManager.getCollection(collectionName);
+    });
+  }
+
   getInheritedFields() {
     if (this.inheritsFields) {
       return this.inheritsFields;
     }
 
-    const parentCollections = this.getParentCollections();
+    const parentCollections = this.getParentCollectionsName();
     this.inheritsFields = parentCollections
       .map((collectionName) => this.collectionManager.getCollection(collectionName)?.getFields())
       .flat()
@@ -86,8 +99,8 @@ export class InheritanceCollectionMixin extends CollectionV2 {
     return this.inheritsFields;
   }
 
-  getCurrentFields() {
-    return this.options.fields || [];
+  getCurrentFields(predicate?: GetCollectionFieldPredicate) {
+    return super.getFields(predicate);
   }
 
   getParentCollectionFields(parentCollectionName: string) {
@@ -96,7 +109,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
     }
 
     const currentFields = this.getCurrentFields();
-    const parentCollections = this.getParentCollections();
+    const parentCollections = this.getParentCollectionsName();
     const parentCollection = this.collectionManager.getCollection(parentCollectionName);
     const parentFields = parentCollection.getCurrentFields();
     const index = parentCollections.indexOf(parentCollectionName);
@@ -127,7 +140,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
       const collection = this.collectionManager.getCollection(name);
       if (collection) {
         const { inherits } = collection;
-        const children = collection.getChildrenCollections();
+        const children = collection.getChildrenCollectionsName();
         // 搜寻祖先表
         if (inherits) {
           for (let index = 0; index < inherits.length; index++) {
@@ -185,5 +198,16 @@ export class InheritanceCollectionMixin extends CollectionV2 {
     this.inheritCollectionsChain = getInheritChain(this.name);
 
     return this.inheritCollectionsChain;
+  }
+
+  // override CollectionV2
+  getAllFields() {
+    const currentFields = this.getCurrentFields();
+    const inheritedFields = this.getInheritedFields();
+    const totalFields = unionBy(currentFields?.concat(inheritedFields) || [], 'name').filter((v: any) => {
+      return !v.isForeignKey;
+    });
+
+    return totalFields;
   }
 }

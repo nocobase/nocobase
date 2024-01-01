@@ -1,7 +1,7 @@
 import { defaultProps } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const icon: IField = {
+export const icon = new CollectionFieldInterfaceV2({
   name: 'icon',
   type: 'object',
   group: 'basic',
@@ -21,4 +21,4 @@ export const icon: IField = {
   properties: {
     ...defaultProps,
   },
-};
+});

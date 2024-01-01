@@ -6,8 +6,9 @@ import { useLocation } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { Plugin } from '../application/Plugin';
 import { useAppSpin } from '../application/hooks/useAppSpin';
-import { useCollectionManager } from '../collection-manager';
 import { BlockTemplate } from './BlockTemplate';
+import { useCollectionManagerV2 } from '../application';
+import { InheritanceCollectionMixin } from '../collection-manager';
 
 export const SchemaTemplateManagerContext = createContext<any>({});
 
@@ -37,7 +38,7 @@ export const useSchemaTemplate = () => {
 };
 
 export const useSchemaTemplateManager = () => {
-  const { getInheritCollections } = useCollectionManager();
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
   const { refresh, templates = [] } = useContext(SchemaTemplateManagerContext);
   const api = useAPIClient();
   return {
@@ -104,7 +105,7 @@ export const useSchemaTemplateManager = () => {
       return templates?.find((template) => template.key === key);
     },
     getTemplatesByCollection(collectionName: string, resourceName: string = null) {
-      const parentCollections = getInheritCollections(collectionName);
+      const parentCollections = cm.getCollection(collectionName).getParentCollectionsName();
       const totalCollections = parentCollections.concat([collectionName]);
       const items = templates?.filter?.((template) => totalCollections.includes(template.collectionName));
       return items || [];

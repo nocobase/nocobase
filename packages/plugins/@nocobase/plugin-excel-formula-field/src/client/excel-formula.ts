@@ -1,7 +1,7 @@
-import { IField, interfacesProperties } from '@nocobase/client';
+import { CollectionFieldInterfaceV2, interfacesProperties } from '@nocobase/client';
 const { defaultProps, operators } = interfacesProperties;
 
-export const excelFormula: IField = {
+export const excelFormulaFieldInterface = new CollectionFieldInterfaceV2({
   name: 'excelFormula',
   type: 'object',
   group: 'advanced',
@@ -79,4 +79,4 @@ export const excelFormula: IField = {
   filterable: {
     operators: operators.string,
   },
-};
+});

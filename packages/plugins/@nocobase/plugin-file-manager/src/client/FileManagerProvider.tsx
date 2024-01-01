@@ -1,4 +1,4 @@
-import { CollectionManagerProvider, registerField, registerTemplate, SchemaComponentOptions } from '@nocobase/client';
+import { registerField, registerTemplate, SchemaComponentOptions } from '@nocobase/client';
 import { forEach } from '@nocobase/utils/client';
 import React, { FC } from 'react';
 import * as hooks from './hooks';
@@ -15,10 +15,8 @@ registerField(attachment.group, 'attachment', attachment);
 
 export const FileManagerProvider: FC = (props) => {
   return (
-    <CollectionManagerProvider interfaces={{ attachment }}>
-      <SchemaComponentOptions scope={hooks} components={{ UploadActionInitializer }}>
-        {props.children}
-      </SchemaComponentOptions>
-    </CollectionManagerProvider>
+    <SchemaComponentOptions scope={hooks} components={{ UploadActionInitializer }}>
+      {props.children}
+    </SchemaComponentOptions>
   );
 };

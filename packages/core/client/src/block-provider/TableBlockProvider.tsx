@@ -1,13 +1,13 @@
 import { ArrayField, createForm } from '@formily/core';
 import { FormContext, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { useCollectionManager } from '../collection-manager';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { useRecord } from '../record-provider';
 import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { mergeFilter } from './SharedFilterProvider';
 import { findFilterTargets, useParsedFilter } from './hooks';
+import { useCollectionManagerV2 } from '../application';
 
 export const TableBlockContext = createContext<any>({});
 export function getIdsWithChildren(nodes) {
@@ -77,10 +77,10 @@ export const TableBlockProvider = (props) => {
   const resourceName = props.resource;
   const params = useMemo(() => ({ ...props.params }), [props.params]);
   const fieldSchema = useFieldSchema();
-  const { getCollection, getCollectionField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const record = useRecord();
 
-  const collection = getCollection(props.collection);
+  const collection = cm.getCollection(props.collection);
   const { treeTable, dragSortBy } = fieldSchema?.['x-decorator-props'] || {};
   if (props.dragSort) {
     params['sort'] = dragSortBy || ['sort'];
@@ -88,7 +88,7 @@ export const TableBlockProvider = (props) => {
   let childrenColumnName = 'children';
   if (collection?.tree && treeTable !== false) {
     if (resourceName?.includes('.')) {
-      const f = getCollectionField(resourceName);
+      const f = cm.getCollectionField(resourceName);
       if (f?.treeChildren) {
         childrenColumnName = f.name;
         params['tree'] = true;

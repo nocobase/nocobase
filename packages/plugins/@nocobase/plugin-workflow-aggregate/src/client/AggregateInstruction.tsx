@@ -8,7 +8,7 @@ import {
   css,
   useCollectionDataSource,
   useCollectionFilterOptions,
-  useCollectionManager,
+  useCollectionManagerV2,
   useCompile,
 } from '@nocobase/client';
 
@@ -52,7 +52,7 @@ function useAssociatedFields() {
 
 function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
   const { setValuesIn } = useForm();
-  const { getCollection } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const baseOptions = useAssociatedFields();
   const [options, setOptions] = useState(baseOptions);
 
@@ -118,7 +118,7 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
       // * target collection (from field name)
       const { collectionName, target, name } = field;
 
-      const collection = getCollection(collectionName);
+      const collection = cm.getCollection(collectionName);
       const primaryKeyField = collection.fields.find((f) => f.primaryKey);
 
       setValuesIn('collection', target);

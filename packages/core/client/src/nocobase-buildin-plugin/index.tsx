@@ -17,11 +17,11 @@ import { AdminLayoutPlugin, RouteSchemaComponent } from '../route-switch';
 import { AntdSchemaComponentPlugin, SchemaComponentPlugin, menuItemInitializer } from '../schema-component';
 import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { AssociationFilterPlugin, SchemaInitializerPlugin } from '../schema-initializer';
-import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
+import { BlockTemplateDetails, BlockTemplatePage, uiSchemaTemplatesCollection } from '../schema-templates';
 import { SystemSettingsPlugin } from '../system-settings';
 import { CurrentUserProvider, CurrentUserSettingsMenuProvider } from '../user';
 import { LocalePlugin } from './plugins/LocalePlugin';
-// import { CollectionPlugin } from '../collection-manager-v2';
+import { CollectionPlugin } from '../collection-manager';
 
 const AppSpin = () => {
   return (
@@ -317,6 +317,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
     await this.app.pm.add(ACLPlugin, { name: 'builtin-acl' });
     await this.app.pm.add(RemoteDocumentTitlePlugin, { name: 'remote-document-title' });
     await this.app.pm.add(PMPlugin, { name: 'builtin-pm' });
-    // await this.app.pm.add(CollectionPlugin, { name: 'builtin-collection' });
+    await this.app.pm.add(CollectionPlugin, { name: 'builtin-collection' });
+    this.app.collectionManager.addCollections([uiSchemaTemplatesCollection]);
   }
 }

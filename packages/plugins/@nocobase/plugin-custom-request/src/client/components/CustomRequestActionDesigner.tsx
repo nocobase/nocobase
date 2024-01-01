@@ -5,7 +5,7 @@ import {
   SchemaSettings,
   SchemaSettingsActionModalItem,
   actionSettingsItems,
-  useCollection,
+  useCollectionV2,
   useCurrentRoles,
   useRequest,
 } from '@nocobase/client';
@@ -19,7 +19,7 @@ import { useCustomRequestsResource } from '../hooks/useCustomRequestsResource';
 
 function CustomRequestSettingsItem() {
   const { t } = useTranslation();
-  const { name } = useCollection();
+  const { name } = useCollectionV2();
   const fieldSchema = useFieldSchema();
   const customRequestsResource = useCustomRequestsResource();
   const { message } = App.useApp();

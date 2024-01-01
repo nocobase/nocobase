@@ -3,7 +3,7 @@ import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 
 import Manual from './instruction';
 
-import { WorkflowTodo } from './WorkflowTodo';
+import { WorkflowTodo, nodeCollection, todoCollection, workflowCollection } from './WorkflowTodo';
 import { WorkflowTodoBlockInitializer } from './WorkflowTodoBlockInitializer';
 import { NAMESPACE } from '../locale';
 import { addActionButton, addBlockButton } from './instruction/SchemaConfig';
@@ -17,7 +17,7 @@ export default class extends Plugin {
   // You can get and modify the app instance here
   async load() {
     this.addComponents();
-
+    this.collectionManager.addCollections([nodeCollection, workflowCollection, todoCollection]);
     // this.app.addProvider(Provider);
     const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
     const manualInstruction = new Manual();

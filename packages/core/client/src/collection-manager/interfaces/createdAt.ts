@@ -1,7 +1,7 @@
 import { dateTimeProps, defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const createdAt: IField = {
+export const createdAt = new CollectionFieldInterfaceV2({
   name: 'createdAt',
   type: 'object',
   group: 'systemInfo',
@@ -29,4 +29,4 @@ export const createdAt: IField = {
     operators: operators.datetime,
   },
   titleUsable: true,
-};
+});

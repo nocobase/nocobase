@@ -13,7 +13,7 @@ import { InternaPopoverNester } from './InternalPopoverNester';
 import { InternalCascadeSelect } from './InternalCascadeSelect';
 import { CreateRecordAction } from './components/CreateRecordAction';
 import { useAssociationFieldContext } from './hooks';
-import { useCollection } from '../../../collection-manager';
+import { useCollectionV2 } from '../../../application';
 
 const EditableAssociationField = observer(
   (props: any) => {
@@ -25,8 +25,8 @@ const EditableAssociationField = observer(
     const useCreateActionProps = () => {
       const { onClick } = useCAP();
       const actionField: any = useField();
-      const { getPrimaryKey } = useCollection();
-      const primaryKey = getPrimaryKey();
+      const collection = useCollectionV2();
+      const primaryKey = collection.getPrimaryKey();
       return {
         async onClick() {
           await onClick();

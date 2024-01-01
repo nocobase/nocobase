@@ -1,15 +1,15 @@
 import React from 'react';
-import { useCollection, GeneralSchemaDesigner, useSchemaTemplate } from '@nocobase/client';
+import { GeneralSchemaDesigner, useCollectionV2, useSchemaTemplate } from '@nocobase/client';
 
 export const KanbanDesigner = () => {
-  const { name, title } = useCollection();
+  const collection = useCollectionV2();
   const template = useSchemaTemplate();
 
   return (
     <GeneralSchemaDesigner
       schemaSettings="KanbanSettings"
       template={template}
-      title={title || name}
+      title={collection.title || collection.name}
     ></GeneralSchemaDesigner>
   );
 };

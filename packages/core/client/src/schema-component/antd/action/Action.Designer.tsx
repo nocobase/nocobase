@@ -6,11 +6,10 @@ import { Alert, Tree as AntdTree, ModalProps } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
-import { useApp } from '../../../application';
+import { useApp, useCollectionManagerV2, useCollectionV2 } from '../../../application';
 import { usePlugin } from '../../../application/hooks';
 import { SchemaSettingOptions, SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
-import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
@@ -27,6 +26,7 @@ import {
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
+import { InheritanceCollectionMixin } from '../../../collection-manager';
 
 const Tree = connect(
   AntdTree,
@@ -100,8 +100,8 @@ function ButtonEditor(props) {
               default: fieldSchema?.['x-component-props']?.danger
                 ? 'danger'
                 : fieldSchema?.['x-component-props']?.type === 'primary'
-                ? 'primary'
-                : 'default',
+                  ? 'primary'
+                  : 'default',
               enum: [
                 { value: 'default', label: '{{t("Default")}}' },
                 { value: 'primary', label: '{{t("Highlight")}}' },
@@ -142,7 +142,7 @@ function SaveMode() {
   const { t } = useTranslation();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { name } = useCollection();
+  const { name } = useCollectionV2();
   const { getEnableFieldTree, getOnLoadData } = useCollectionState(name);
 
   return (
@@ -450,19 +450,19 @@ function WorkflowSelect({ types, ...props }) {
   const { t } = useTranslation();
   const index = ArrayTable.useIndex();
   const { setValuesIn } = useForm();
-  const baseCollection = useCollection();
-  const { getCollection } = useCollectionManager();
+  const baseCollection = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const [workflowCollection, setWorkflowCollection] = useState(baseCollection.name);
   useFormEffects(() => {
     onFieldValueChange(`group[${index}].context`, (field) => {
-      let collection: CollectionOptions = baseCollection;
+      let collection = baseCollection;
       if (field.value) {
         const paths = field.value.split('.');
         for (let i = 0; i < paths.length && collection; i++) {
           const path = paths[i];
           const associationField = collection.fields.find((f) => f.name === path);
           if (associationField) {
-            collection = getCollection(associationField.target);
+            collection = cm.getCollection(associationField.target);
           }
         }
       }
@@ -499,7 +499,7 @@ function WorkflowConfig() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-  const { name: collection } = useCollection();
+  const collection = useCollectionV2();
   const workflowPlugin = usePlugin('workflow') as any;
   const workflowTypes = workflowPlugin.getTriggersOptions().filter((item) => {
     return typeof item.options.useActionTriggerable === 'function'
@@ -666,7 +666,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
           return linkageAction || isAction;
         },
         useComponentProps() {
-          const { name } = useCollection();
+          const collection = useCollectionV2();
           const { linkageRulesProps } = useSchemaToolbar();
           return {
             ...linkageRulesProps,
@@ -755,14 +755,13 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         Component: SchemaSettingsLinkageRules,
         useVisible() {
           const fieldSchema = useFieldSchema();
-          const { name } = useCollection();
-          const { getChildrenCollections } = useCollectionManager();
+          const collection = useCollectionV2<InheritanceCollectionMixin>();
           const isChildCollectionAction =
-            getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
+            collection.getChildrenCollectionsName().length > 0 && fieldSchema['x-action'] === 'create';
           return isChildCollectionAction;
         },
         useComponentProps() {
-          const { name } = useCollection();
+          const { name } = useCollectionV2();
           return {
             collectionName: name,
           };

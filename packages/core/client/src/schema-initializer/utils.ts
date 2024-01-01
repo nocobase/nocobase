@@ -3,11 +3,20 @@ import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerItemType, useFormActiveFields, useFormBlockContext } from '../';
-import { CollectionFieldOptions, FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
+import {
+  CollectionFieldOptionsV2,
+  CollectionManagerV2,
+  SchemaInitializerItemType,
+  useCollectionManagerV2,
+  useCollectionV2,
+  useFormActiveFields,
+  useFormBlockContext,
+} from '../';
+import { InheritanceCollectionMixin } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
+import collections from '../schema-component/antd/calendar/demos/collections';
 
 export const itemsMerge = (items1) => {
   return items1;
@@ -85,20 +94,21 @@ const quickEditField = [
 ];
 
 export const useTableColumnInitializerFields = () => {
-  const { name, currentFields = [] } = useCollection();
-  const { getInterface, getCollection } = useCollectionManager();
+  const collection = useCollectionV2<InheritanceCollectionMixin>();
+  const cm = useCollectionManagerV2();
   const fieldSchema = useFieldSchema();
   const isSubTable = fieldSchema['x-component'] === 'AssociationField.SubTable';
   const form = useForm();
   const isReadPretty = isSubTable ? form.readPretty : true;
 
-  return currentFields
+  return collection
+    .getCurrentFields()
     .filter(
       (field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey && !field?.treeChildren,
     )
     .map((field) => {
-      const interfaceConfig = getInterface(field.interface);
-      const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
+      const interfaceConfig = cm.getCollectionFieldInterface(field.interface);
+      const isFileCollection = field?.target && cm.getCollection(field?.target)?.template === 'file';
       const schema = {
         name: field.name,
         'x-collection-field': `${name}.${field.name}`,
@@ -136,7 +146,7 @@ export const useTableColumnInitializerFields = () => {
             field,
             readPretty: isReadPretty,
             block: 'Table',
-            targetCollection: getCollection(field.target),
+            targetCollection: cm.getCollection(field.target),
           });
         },
         field,
@@ -146,21 +156,21 @@ export const useTableColumnInitializerFields = () => {
 };
 
 export const useAssociatedTableColumnInitializerFields = () => {
-  const { name, fields } = useCollection();
-  const { getInterface, getCollectionFields, getCollection } = useCollectionManager();
-  const groups = fields
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2();
+  const groups = collection.fields
     ?.filter((field) => {
       return ['o2o', 'oho', 'obo', 'm2o'].includes(field.interface);
     })
     ?.map((field) => {
-      const subFields = getCollectionFields(field.target);
+      const subFields = cm.getCollectionFields(field.target);
       const items = subFields
         // ?.filter((subField) => subField?.interface && !['o2o', 'oho', 'obo', 'o2m', 'm2o', 'subTable', 'linkTo'].includes(subField?.interface))
         ?.filter(
           (subField) => subField?.interface && !['subTable'].includes(subField?.interface) && !subField?.treeChildren,
         )
         ?.map((subField) => {
-          const interfaceConfig = getInterface(subField.interface);
+          const interfaceConfig = cm.getCollectionFieldInterface(subField.interface);
           const schema = {
             // type: 'string',
             name: `${field.name}.${subField.name}`,
@@ -184,7 +194,7 @@ export const useAssociatedTableColumnInitializerFields = () => {
                 field: subField,
                 readPretty: true,
                 block: 'Table',
-                targetCollection: getCollection(field.target),
+                targetCollection: cm.getCollection(field.target),
               });
             },
             field: subField,
@@ -203,24 +213,24 @@ export const useAssociatedTableColumnInitializerFields = () => {
 };
 
 export const useInheritsTableColumnInitializerFields = () => {
-  const { name } = useCollection();
-  const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
+  const collection = useCollectionV2<InheritanceCollectionMixin>();
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
   const fieldSchema = useFieldSchema();
   const isSubTable = fieldSchema['x-component'] === 'AssociationField.SubTable';
   const form = useForm();
   const isReadPretty = isSubTable ? form.readPretty : true;
-  const inherits = getInheritCollections(name);
+  const inherits = collection.getParentCollectionsName();
   return inherits?.map((v) => {
-    const fields = getParentCollectionFields(v, name);
-    const targetCollection = getCollection(v);
+    const fields = collection.getParentCollectionFields(v);
+    const targetCollection = cm.getCollection(v);
     return {
       [targetCollection?.title]: fields
         ?.filter((field) => {
           return field?.interface;
         })
         .map((k) => {
-          const interfaceConfig = getInterface(k.interface);
-          const isFileCollection = k?.target && getCollection(k?.target)?.template === 'file';
+          const interfaceConfig = cm.getCollectionFieldInterface(k.interface);
+          const isFileCollection = k?.target && cm.getCollection(k?.target)?.template === 'file';
           const schema = {
             name: `${k.name}`,
             'x-component': 'CollectionField',
@@ -257,7 +267,7 @@ export const useInheritsTableColumnInitializerFields = () => {
                 field: k,
                 readPretty: true,
                 block: 'Table',
-                targetCollection: getCollection(k?.target),
+                targetCollection: cm.getCollection(k?.target),
               });
             },
             field: k,
@@ -269,18 +279,19 @@ export const useInheritsTableColumnInitializerFields = () => {
 };
 
 export const useFormItemInitializerFields = (options?: any) => {
-  const { name, currentFields, template } = useCollection();
-  const { getInterface, getCollection } = useCollectionManager();
+  const collection = useCollectionV2<InheritanceCollectionMixin>();
+  const cm = useCollectionManagerV2();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const { snapshot, fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
-  return currentFields
+  return collection
+    .getCurrentFields()
     ?.filter((field) => field?.interface && !field?.isForeignKey && !field?.treeChildren)
     ?.map((field) => {
-      const interfaceConfig = getInterface(field.interface);
-      const targetCollection = getCollection(field.target);
-      const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
+      const interfaceConfig = cm.getCollectionFieldInterface(field.interface);
+      const targetCollection = cm.getCollection(field.target);
+      const isFileCollection = field?.target && cm.getCollection(field?.target)?.template === 'file';
       // const component =
       //   field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
       //     ? 'TableField'
@@ -333,18 +344,22 @@ export const useFormItemInitializerFields = (options?: any) => {
 
 // 筛选表单相关
 export const useFilterFormItemInitializerFields = (options?: any) => {
-  const { name, currentFields } = useCollection();
-  const { getInterface, getCollection } = useCollectionManager();
+  const collection = useCollectionV2<InheritanceCollectionMixin>();
+  const cm = useCollectionManagerV2();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'FilterForm' } = options || {};
   const { snapshot, fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
 
-  return currentFields
-    ?.filter((field) => field?.interface && !field?.isForeignKey && getInterface(field.interface)?.filterable)
+  return collection
+    .getCurrentFields()
+    ?.filter(
+      (field) =>
+        field?.interface && !field?.isForeignKey && cm.getCollectionFieldInterface(field.interface)?.filterable,
+    )
     ?.map((field) => {
-      const interfaceConfig = getInterface(field.interface);
-      const targetCollection = getCollection(field.target);
+      const interfaceConfig = cm.getCollectionFieldInterface(field.interface);
+      const targetCollection = cm.getCollection(field.target);
       // const component =
       //   field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
       //     ? 'TableField'
@@ -394,24 +409,24 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
 };
 
 export const useAssociatedFormItemInitializerFields = (options?: any) => {
-  const { name, fields } = useCollection();
-  const { getInterface, getCollectionFields, getCollection } = useCollectionManager();
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o'];
-  const groups = fields
+  const groups = collection.fields
     ?.filter((field) => {
       return interfaces.includes(field.interface);
     })
     ?.map((field) => {
-      const subFields = getCollectionFields(field.target);
+      const subFields = cm.getCollectionFields(field.target);
       const items = subFields
         ?.filter(
           (subField) => subField?.interface && !['subTable'].includes(subField?.interface) && !subField.treeChildren,
         )
         ?.map((subField) => {
-          const interfaceConfig = getInterface(subField.interface);
-          const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
+          const interfaceConfig = cm.getCollectionFieldInterface(subField.interface);
+          const isFileCollection = field?.target && cm.getCollection(field?.target)?.template === 'file';
           const isAssociationField = ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(subField?.type);
           const schema = {
             type: 'string',
@@ -443,7 +458,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
                 field: subField,
                 block,
                 readPretty,
-                targetCollection: getCollection(field.target),
+                targetCollection: cm.getCollection(field.target),
               });
             },
             schema,
@@ -461,16 +476,16 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
 };
 
 const getItem = (
-  field: FieldOptions,
+  field: CollectionFieldOptionsV2,
   schemaName: string,
   collectionName: string,
-  getCollectionFields,
+  cm: CollectionManagerV2,
   processedCollections: string[],
 ) => {
   if (field.interface === 'm2o') {
     if (processedCollections.includes(field.target)) return null;
 
-    const subFields = getCollectionFields(field.target);
+    const subFields = cm.getCollectionFields(field.target);
 
     return {
       type: 'subMenu',
@@ -478,7 +493,7 @@ const getItem = (
       title: field.uiSchema?.title,
       children: subFields
         .map((subField) =>
-          getItem(subField, `${schemaName}.${subField.name}`, collectionName, getCollectionFields, [
+          getItem(subField, `${schemaName}.${subField.name}`, collectionName, cm, [
             ...processedCollections,
             field.target,
           ]),
@@ -515,34 +530,34 @@ const getItem = (
 
 // 筛选表单相关
 export const useFilterAssociatedFormItemInitializerFields = () => {
-  const { name, fields } = useCollection();
-  const { getCollectionFields } = useCollectionManager();
+  const { name, fields } = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const interfaces = ['m2o'];
   const groups = fields
     ?.filter((field) => {
       return interfaces.includes(field.interface);
     })
-    ?.map((field) => getItem(field, field.name, name, getCollectionFields, []));
+    ?.map((field) => getItem(field, field.name, name, cm, []));
   return groups;
 };
 
 export const useInheritsFormItemInitializerFields = (options?) => {
-  const { name } = useCollection();
-  const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
-  const inherits = getInheritCollections(name);
+  const collection = useCollectionV2<InheritanceCollectionMixin>();
+  const cm = useCollectionManagerV2();
+  const inherits = collection.getParentCollectionsName();
   const { snapshot } = useActionContext();
   const form = useForm();
 
   return inherits?.map((v) => {
-    const fields = getParentCollectionFields(v, name);
+    const fields = collection.getParentCollectionFields(v);
     const { readPretty = form.readPretty, block = 'Form', component = 'CollectionField' } = options || {};
-    const targetCollection = getCollection(v);
+    const targetCollection = cm.getCollection(v);
     return {
       [targetCollection?.title]: fields
         ?.filter((field) => field?.interface && !field?.isForeignKey)
         ?.map((field) => {
-          const interfaceConfig = getInterface(field.interface);
-          const targetCollection = getCollection(field.target);
+          const interfaceConfig = cm.getCollectionFieldInterface(field.interface);
+          const targetCollection = cm.getCollection(field.target);
           // const component =
           //   field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
           //     ? 'TableField'
@@ -581,22 +596,25 @@ export const useInheritsFormItemInitializerFields = (options?) => {
 
 // 筛选表单相关
 export const useFilterInheritsFormItemInitializerFields = (options?) => {
-  const { name } = useCollection();
-  const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
-  const inherits = getInheritCollections(name);
+  const collection = useCollectionV2<InheritanceCollectionMixin>();
+  const cm = useCollectionManagerV2();
+  const inherits = collection.getParentCollectionsName();
   const { snapshot } = useActionContext();
   const form = useForm();
 
   return inherits?.map((v) => {
-    const fields = getParentCollectionFields(v, name);
+    const fields = collection.getParentCollectionFields(v);
     const { readPretty = form.readPretty, block = 'Form' } = options || {};
-    const targetCollection = getCollection(v);
+    const targetCollection = cm.getCollection(v);
     return {
       [targetCollection.title]: fields
-        ?.filter((field) => field?.interface && !field?.isForeignKey && getInterface(field.interface)?.filterable)
+        ?.filter(
+          (field) =>
+            field?.interface && !field?.isForeignKey && cm.getCollectionFieldInterface(field.interface)?.filterable,
+        )
         ?.map((field) => {
-          const interfaceConfig = getInterface(field.interface);
-          const targetCollection = getCollection(field.target);
+          const interfaceConfig = cm.getCollectionFieldInterface(field.interface);
+          const targetCollection = cm.getCollection(field.target);
           // const component =
           //   field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
           //     ? 'TableField'
@@ -634,12 +652,13 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
   });
 };
 export const useCustomFormItemInitializerFields = (options?: any) => {
-  const { name, currentFields } = useCollection();
-  const { getInterface, getCollection } = useCollectionManager();
+  const collection = useCollectionV2<InheritanceCollectionMixin>();
+  const cm = useCollectionManagerV2();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const remove = useRemoveGridFormItem();
-  return currentFields
+  return collection
+    .getCurrentFields()
     ?.filter((field) => {
       return (
         field?.interface &&
@@ -649,7 +668,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
       );
     })
     ?.map((field) => {
-      const interfaceConfig = getInterface(field.interface);
+      const interfaceConfig = cm.getCollectionFieldInterface(field.interface);
       const schema = {
         type: 'string',
         name: field.name,
@@ -670,7 +689,7 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
             field,
             block,
             readPretty,
-            targetCollection: getCollection(field.target),
+            targetCollection: cm.getCollection(field.target),
           });
         },
         schema,
@@ -679,14 +698,14 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
 };
 
 export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
-  const { name, fields } = useCollection();
-  const { getInterface, getCollection } = useCollectionManager();
+  const collection = useCollectionV2();
+  const cm = useCollectionManagerV2();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const remove = useRemoveGridFormItem();
   const filterFields = useMemo(
     () =>
-      fields
+      collection.fields
         ?.filter((field) => {
           return (
             field?.interface &&
@@ -696,7 +715,7 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
           );
         })
         .map((field) => {
-          const interfaceConfig = getInterface(field.interface);
+          const interfaceConfig = cm.getCollectionFieldInterface(field.interface);
           const schema = {
             type: 'string',
             name: field.name,
@@ -717,13 +736,13 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
                 field,
                 block,
                 readPretty,
-                targetCollection: getCollection(field.target),
+                targetCollection: cm.getCollection(field.target),
               });
             },
             schema,
           } as SchemaInitializerItemType;
         }),
-    [fields],
+    [collection.fields],
   );
 
   return filterFields;
@@ -792,7 +811,7 @@ export const useRecordCollectionDataSourceItems = (
   resourceName = null,
 ) => {
   const { t } = useTranslation();
-  const collection = useCollection();
+  const collection = useCollectionV2();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const templates = getTemplatesByCollection(collectionName || collection.name)
     .filter((template) => {
@@ -859,7 +878,7 @@ export const useRecordCollectionDataSourceItems = (
 
 export const useCollectionDataSourceItems = (componentName) => {
   const { t } = useTranslation();
-  const { collections, getCollectionFields } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
 
   return [
@@ -869,8 +888,7 @@ export const useCollectionDataSourceItems = (componentName) => {
       children: [],
       loadChildren: ({ searchValue } = { searchValue: '' }) => {
         return getChildren({
-          collections,
-          getCollectionFields,
+          cm,
           componentName,
           searchValue,
           getTemplatesByCollection,
@@ -883,19 +901,18 @@ export const useCollectionDataSourceItems = (componentName) => {
 
 export const useCollectionDataSourceItemsV2 = (componentName) => {
   const { t } = useTranslation();
-  const { collections, getCollectionFields } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
 
   const res = useMemo(() => {
     return getChildren({
-      collections,
-      getCollectionFields,
+      cm,
       componentName,
       searchValue: '',
       getTemplatesByCollection,
       t,
     });
-  }, [collections, componentName, getCollectionFields, getTemplatesByCollection, t]);
+  }, [collections, componentName, cm.getCollectionFields, getTemplatesByCollection, t]);
 
   return res;
 };
@@ -1593,26 +1610,24 @@ export const createCalendarBlockSchema = (options) => {
 };
 
 const getChildren = ({
-  collections,
-  getCollectionFields,
+  cm,
   componentName,
   searchValue,
   getTemplatesByCollection,
   t,
 }: {
-  collections: any[];
-  getCollectionFields: (name: any) => CollectionFieldOptions[];
+  cm: CollectionManagerV2;
   componentName: string;
   searchValue: string;
   getTemplatesByCollection: (collectionName: string, resourceName?: string) => any;
   t;
 }) => {
-  return collections
-    ?.filter((item) => {
+  return cm
+    .getCollections((item) => {
       if (item.inherit) {
         return false;
       }
-      const fields = getCollectionFields(item.name);
+      const fields = cm.getCollectionFields(item.name);
       if (item.autoGenId === false && !fields.find((v) => v.primaryKey)) {
         return false;
       } else if (

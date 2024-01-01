@@ -1,13 +1,12 @@
-import { CollectionManagerContext, registerField, SchemaComponentOptions } from '@nocobase/client';
-import React, { useContext } from 'react';
+import { registerField, SchemaComponentOptions } from '@nocobase/client';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { excelFormula } from './excel-formula';
 import { ExcelFormula } from './ExcelFormula';
+import { excelFormulaFieldInterface } from './excel-formula';
 
-registerField(excelFormula.group, 'excelFormula', excelFormula);
+registerField(excelFormulaFieldInterface.group, 'excelFormula', excelFormulaFieldInterface.getOptions());
 
 export const ExcelFormulaFieldProvider = React.memo((props) => {
-  const ctx = useContext(CollectionManagerContext);
   const { t } = useTranslation();
 
   return (
@@ -26,9 +25,7 @@ export const ExcelFormulaFieldProvider = React.memo((props) => {
         ExcelFormula,
       }}
     >
-      <CollectionManagerContext.Provider value={{ ...ctx, interfaces: { ...ctx.interfaces, excelFormula } }}>
-        {props.children}
-      </CollectionManagerContext.Provider>
+      {props.children}
     </SchemaComponentOptions>
   );
 });

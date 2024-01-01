@@ -2,9 +2,8 @@ import { RecursionField, useForm } from '@formily/react';
 import { Spin, Table } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { EllipsisWithTooltip, useCompile } from '../../../';
+import { EllipsisWithTooltip, useCollectionManagerV2, useCompile } from '../../..';
 import { useAPIClient } from '../../../api-client';
-import { useCollectionManager } from '../../hooks/useCollectionManager';
 
 const mapFields = ['lineString', 'point', 'circle', 'polygon'];
 export const PreviewTable = (props) => {
@@ -13,7 +12,7 @@ export const PreviewTable = (props) => {
   const [previewData, setPreviewData] = useState([]);
   const compile = useCompile();
   const [loading, setLoading] = useState(false);
-  const { getInterface, getCollectionFields } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const api = useAPIClient();
   const { t } = useTranslation();
   const form = useForm();
@@ -52,9 +51,12 @@ export const PreviewTable = (props) => {
       .filter((k) => k.source || k.interface)
       ?.map((item) => {
         const fieldSource = typeof item?.source === 'string' ? item?.source?.split('.') : item?.source;
-        const sourceField = getCollectionFields(fieldSource?.[0])?.find((v) => v.name === fieldSource?.[1])?.uiSchema;
+        const sourceField = cm.getCollectionFields(fieldSource?.[0])?.find((v) => v.name === fieldSource?.[1])
+          ?.uiSchema;
         const target = item?.uiSchema?.title || sourceField?.title || item.name;
-        const schema: any = item.source ? sourceField : getInterface(item.interface)?.default?.uiSchema;
+        const schema: any = item.source
+          ? sourceField
+          : cm.getCollectionFieldInterface(item.interface)?.default?.uiSchema;
         return {
           title: compile(target),
           dataIndex: item.name,

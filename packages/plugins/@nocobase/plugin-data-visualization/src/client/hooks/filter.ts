@@ -1,4 +1,4 @@
-import { SchemaInitializerItemType, i18n, useActionContext, useCollectionManager } from '@nocobase/client';
+import { SchemaInitializerItemType, i18n, useActionContext, useCollectionManagerV2 } from '@nocobase/client';
 import { useContext, useMemo } from 'react';
 import { ChartDataContext } from '../block/ChartDataProvider';
 import { CollectionOptions } from '@nocobase/database';
@@ -12,10 +12,10 @@ import { getFormulaComponent, getValuesByPath } from '../utils';
 import deepmerge from 'deepmerge';
 
 export const useCustomFieldInterface = () => {
-  const { getInterface } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   return {
     getSchemaByInterface: (fieldInterface: string) => {
-      const interfaceConfig = getInterface(fieldInterface);
+      const interfaceConfig = cm.getCollectionFieldInterface(fieldInterface);
       const defaultSchema = interfaceConfig?.default.uiSchema;
       const schema = {
         ...defaultSchema,
@@ -62,16 +62,16 @@ export const useChartFilter = () => {
   const { charts } = useContext(ChartDataContext);
   const { fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
-  const { getCollection, getInterface, getCollectionFields, getCollectionJoinField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { fields: fieldProps, form } = useContext(ChartFilterContext);
 
   const getChartFilterFields = (collection: CollectionOptions) => {
-    const fields = getCollectionFields(collection);
+    const fields = cm.getCollection(collection.name).getFields();
     const field2item = (field: any, title: string, name: string) => {
       const fieldTitle = field.uiSchema?.title || field.name;
-      const interfaceConfig = getInterface(field.interface);
+      const interfaceConfig = cm.getCollectionFieldInterface(field.interface);
       const defaultOperator = interfaceConfig?.filterable?.operators?.[0];
-      const targetCollection = getCollection(field.target);
+      const targetCollection = cm.getCollection(field.target);
       title = title ? `${title} / ${fieldTitle}` : fieldTitle;
       let schema = {
         type: 'string',
@@ -175,7 +175,7 @@ export const useChartFilter = () => {
       if (!field.interface) {
         return;
       }
-      const fieldInterface = getInterface(field.interface);
+      const fieldInterface = cm.getCollectionFieldInterface(field.interface);
       if (!fieldInterface?.filterable) {
         return;
       }
@@ -200,7 +200,7 @@ export const useChartFilter = () => {
         return item;
       }
       if (nested) {
-        const targetFields = getCollectionFields(field.target);
+        const targetFields = cm.getCollectionFields(field.target);
         const items = targetFields.map((targetField) =>
           field2option(targetField, depth + 1, '', `${name}.${field.name}`),
         );
@@ -252,7 +252,7 @@ export const useChartFilter = () => {
     const filter = {};
     Object.entries(fieldProps).forEach(([name, props]) => {
       const { operator } = props || {};
-      const field = getCollectionJoinField(name);
+      const field = cm.getCollectionField(name);
       if (field?.target) {
         name = `${name}.${field.targetKey || 'id'}`;
       }
@@ -375,13 +375,13 @@ export const useFilterVariable = () => {
 export const useChartFilterSourceFields = () => {
   const { t } = useChartsTranslation();
   const { getChartCollections } = useChartData();
-  const { getInterface, getCollectionFields, getCollection } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const { values } = useFieldComponents();
   const field2option = (field: any, depth: number) => {
     if (!field.interface) {
       return;
     }
-    const fieldInterface = getInterface(field.interface);
+    const fieldInterface = cm.getCollectionFieldInterface(field.interface);
     if (!fieldInterface?.filterable) {
       return;
     }
@@ -397,7 +397,7 @@ export const useChartFilterSourceFields = () => {
       return item;
     }
     if (nested) {
-      const targetFields = getCollectionFields(field.target);
+      const targetFields = cm.getCollectionFields(field.target);
       const items = targetFields.map((targetField) => field2option(targetField, depth + 1));
       return {
         value: field.name,
@@ -414,9 +414,9 @@ export const useChartFilterSourceFields = () => {
   const collections = getChartCollections();
   const options = [];
   collections.forEach((name) => {
-    const collection = getCollection(name);
+    const collection = cm.getCollection(name);
     const children = [];
-    const fields = getCollectionFields(collection);
+    const fields = collection.getFields();
     fields.forEach((field) => {
       const option = field2option(field, 1);
       if (option) {
@@ -455,7 +455,7 @@ export const useFieldComponents = () => {
 };
 
 export const useCollectionJoinFieldTitle = (name: string) => {
-  const { getCollection, getCollectionField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   return useMemo(() => {
     if (!name) {
       return;
@@ -464,13 +464,13 @@ export const useCollectionJoinFieldTitle = (name: string) => {
     if (!fieldNames?.length) {
       return;
     }
-    const collection = getCollection(collectionName);
+    const collection = cm.getCollection(collectionName);
     let cName: any = collectionName;
     let field: any;
     let title = Schema.compile(collection?.title, { t: i18n.t });
     while (cName && fieldNames.length > 0) {
       const fileName = fieldNames.shift();
-      field = getCollectionField(`${cName}.${fileName}`);
+      field = cm.getCollectionField(`${cName}.${fileName}`);
       const fieldTitle = field?.uiSchema?.title || field?.name;
       if (fieldTitle) {
         title += ` / ${Schema.compile(fieldTitle, { t: i18n.t })}`;

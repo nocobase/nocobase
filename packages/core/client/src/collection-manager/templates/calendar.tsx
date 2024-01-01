@@ -1,7 +1,7 @@
+import { CollectionTemplateV2 } from '../../application/collection/CollectionTemplate';
 import { getConfigurableProperties } from './properties';
-import { ICollectionTemplate } from './types';
 
-export const calendar: ICollectionTemplate = {
+export const calendarCollectionTemplate = new CollectionTemplateV2({
   name: 'calendar',
   title: '{{t("Calendar collection")}}',
   order: 2,
@@ -52,4 +52,4 @@ export const calendar: ICollectionTemplate = {
     include: [],
   },
   configurableProperties: getConfigurableProperties('title', 'name', 'inherits', 'category', 'description'),
-};
+});

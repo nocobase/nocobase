@@ -4,7 +4,7 @@ import { merge } from '@formily/shared';
 import {
   SchemaInitializerSwitch,
   css,
-  useCollection,
+  useCollectionV2,
   useDesignable,
   useSchemaInitializer,
   useSchemaInitializerItem,
@@ -50,7 +50,7 @@ export const ImportActionInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
   const { exists, remove } = useCurrentSchema('importXlsx', 'x-action', itemConfig.find, itemConfig.remove);
-  const { name } = useCollection();
+  const { name } = useCollectionV2();
   const fields = useFields(name);
   const schema: ISchema = {
     type: 'void',

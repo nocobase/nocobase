@@ -1,21 +1,21 @@
 import { ISchema, Schema } from '@formily/json-schema';
 import React, { useContext, useMemo } from 'react';
-import { CollectionFieldOptions, useCollectionManager } from '../../../collection-manager';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { isSpecialCaseField } from '../../../schema-component/antd/form-item/hooks/useSpecialCase';
 import { FieldOption, Option } from '../type';
+import { CollectionFieldOptionsV2, CollectionManagerV2, useCollectionManagerV2 } from '../../../application';
 
 export interface IsDisabledParams {
   option: FieldOption;
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptionsV2;
   uiSchema: ISchema;
   /** 消费变量值的字段 */
   targetFieldSchema: Schema;
-  getCollectionField: (name: string) => CollectionFieldOptions;
+  collectionManager: CollectionManagerV2;
 }
 
 interface GetOptionsParams {
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptionsV2;
   uiSchema: any;
   depth: number;
   /** 消费变量值的字段 */
@@ -28,12 +28,12 @@ interface GetOptionsParams {
   loadChildren?: (option: Option) => Promise<void>;
   compile: (value: string) => any;
   isDisabled?: (params: IsDisabledParams) => boolean;
-  getCollectionField?: (name: string) => CollectionFieldOptions;
+  collectionManager: CollectionManagerV2;
 }
 
 interface BaseProps {
   // 当前字段
-  collectionField: CollectionFieldOptions;
+  collectionField: CollectionFieldOptionsV2;
   /** 当前字段的 `uiSchema`，和 `collectionField.uiSchema` 不同，该值也包含操作符中 schema（参见 useValues） */
   uiSchema: any;
   /** 消费变量值的字段 */
@@ -87,7 +87,7 @@ const getChildren = (
     compile,
     isDisabled,
     targetFieldSchema,
-    getCollectionField,
+    collectionManager,
   }: GetOptionsParams,
 ): Option[] => {
   const result = options
@@ -99,7 +99,7 @@ const getChildren = (
           label: compile(option.title),
           disabled: noDisabled
             ? false
-            : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, getCollectionField }),
+            : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, collectionManager }),
           isLeaf: true,
           depth,
         };
@@ -118,7 +118,7 @@ const getChildren = (
         depth,
         disabled: noDisabled
           ? false
-          : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, getCollectionField }),
+          : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, collectionManager }),
         loadChildren,
       };
     })
@@ -143,7 +143,7 @@ export const useBaseVariable = ({
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
   const { isDisabled } = useContext(BaseVariableContext) || {};
-  const { getCollectionField } = useCollectionManager();
+  const cm = useCollectionManagerV2();
 
   const loadChildren = (option: Option): Promise<void> => {
     if (!option.field?.target) {
@@ -164,7 +164,7 @@ export const useBaseVariable = ({
             loadChildren,
             compile,
             isDisabled: isDisabled || isDisabledDefault,
-            getCollectionField,
+            collectionManager: cm,
           }) || []
         )
           // 将叶子节点排列在上面，方便用户选择
@@ -226,7 +226,7 @@ export const useBaseVariable = ({
  * @returns
  */
 function isDisabledDefault(params: IsDisabledParams) {
-  const { option, collectionField, uiSchema, targetFieldSchema, getCollectionField } = params;
+  const { option, collectionField, uiSchema, targetFieldSchema, collectionManager } = params;
 
   if (!uiSchema || !collectionField) {
     return true;
@@ -245,7 +245,7 @@ function isDisabledDefault(params: IsDisabledParams) {
     return false;
   }
 
-  if (option.target && isSpecialCaseField({ collectionField, fieldSchema: targetFieldSchema, getCollectionField })) {
+  if (option.target && isSpecialCaseField({ collectionField, fieldSchema: targetFieldSchema, collectionManager })) {
     return false;
   }
 

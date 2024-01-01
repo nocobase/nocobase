@@ -6,7 +6,6 @@ import { ConfigProvider, Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useAttach, useComponent } from '../..';
 import { useRequest } from '../../../api-client';
-import { useCollection } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
   SchemaSettingsDivider,
@@ -14,6 +13,7 @@ import {
   SchemaSettingsTemplate,
 } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { useCollectionV2 } from '../../../application';
 
 type Opts = Options<any, any> & { uid?: string };
 
@@ -121,11 +121,11 @@ export const Form: React.FC<FormProps> & { Designer?: any } = observer(
 );
 
 Form.Designer = function Designer() {
-  const { name, title } = useCollection();
+  const collection = useCollectionV2();
   const template = useSchemaTemplate();
   return (
-    <GeneralSchemaDesigner template={template} title={title || name}>
-      <SchemaSettingsTemplate componentName={'Form'} collectionName={name} />
+    <GeneralSchemaDesigner template={template} title={collection.title || collection.name}>
+      <SchemaSettingsTemplate componentName={'Form'} collectionName={collection.name} />
       <SchemaSettingsDivider />
       <SchemaSettingsRemove
         removeParentsIfNoChildren

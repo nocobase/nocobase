@@ -1,7 +1,7 @@
 import { dataSource, defaultProps, operators } from './properties';
-import { IField } from './types';
+import { CollectionFieldInterfaceV2 } from '../../application/collection/CollectionFieldInterface';
 
-export const radioGroup: IField = {
+export const radioGroup = new CollectionFieldInterfaceV2({
   name: 'radioGroup',
   type: 'object',
   group: 'choices',
@@ -27,4 +27,4 @@ export const radioGroup: IField = {
     operators: operators.enumType,
   },
   titleUsable: true,
-};
+});

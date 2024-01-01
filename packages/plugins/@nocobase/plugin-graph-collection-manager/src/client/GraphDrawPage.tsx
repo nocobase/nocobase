@@ -11,25 +11,35 @@ import {
   APIClientProvider,
   CollectionCategroriesContext,
   CollectionCategroriesProvider,
-  CollectionManagerContext,
-  CollectionManagerProvider,
   CurrentAppInfoContext,
   SchemaComponent,
   SchemaComponentOptions,
   Select,
   collection,
   useAPIClient,
-  useCollectionManager,
   useCompile,
   useCurrentAppInfo,
   useGlobalTheme,
   useApp,
   ApplicationContext,
+  useCollectionManagerV2,
+  InheritanceCollectionMixin,
+  CollectionManagerV2,
+  CollectionManagerProviderV2,
 } from '@nocobase/client';
 import { App, Button, ConfigProvider, Layout, Spin, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';
 import lodash from 'lodash';
-import React, { createContext, forwardRef, useContext, useEffect, useLayoutEffect, useState } from 'react';
+import React, {
+  createContext,
+  forwardRef,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAsyncDataSource, useCreateActionAndRefreshCM } from './action-hooks';
 import { AddCollectionAction } from './components/AddCollectionAction';
@@ -43,10 +53,8 @@ import { SimpleNodeView } from './components/ViewNode';
 import useStyles from './style';
 import {
   formatData,
-  getChildrenCollections,
   getDiffEdge,
   getDiffNode,
-  getInheritCollections,
   getPopupContainer,
   useGCMTranslation,
   cleanGraphContainer,
@@ -356,14 +364,13 @@ export const GraphDrawPage = React.memo(() => {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedCollections = searchParams.get('collections');
   const options = useContext(SchemaOptionsContext);
-  const ctx = useContext(CollectionManagerContext);
   const api = useAPIClient();
   const compile = useCompile();
   const { t } = useGCMTranslation();
   const [collectionData, setCollectionData] = useState<any>([]);
   const [collectionList, setCollectionList] = useState<any>([]);
   const [loading, setLoading] = useState(false);
-  const { refreshCM, collections } = useCollectionManager();
+  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
   const currentAppInfo = useCurrentAppInfo();
   const app = useApp();
   const {
@@ -403,21 +410,38 @@ export const GraphDrawPage = React.memo(() => {
       refreshPositions();
     }
   };
-  const refreshGM = async (collections?) => {
-    const data = collections?.length > 0 ? collections : await refreshCM();
-    targetGraph.collections = data;
-    targetGraph.updatePositionAction = updatePositionAction;
-    const currentNodes = targetGraph.getNodes();
-    setCollectionData(data);
-    setCollectionList(data);
-    if (!currentNodes.length) {
-      if (!selectedCollections) {
-        renderInitGraphCollection(data);
+  const refreshGM = useCallback(
+    async (collections) => {
+      const data = collections?.length > 0 ? collections : await cm.reload();
+      targetGraph.collections = data;
+      targetGraph.updatePositionAction = updatePositionAction;
+      const currentNodes = targetGraph.getNodes();
+      setCollectionData(data);
+      setCollectionList(data);
+      if (!currentNodes.length) {
+        if (!selectedCollections) {
+          renderInitGraphCollection(data);
+        }
+      } else {
+        renderDiffGraphCollection(data);
       }
-    } else {
-      renderDiffGraphCollection(data);
-    }
-  };
+    },
+    [cm, renderDiffGraphCollection, renderInitGraphCollection, selectedCollections, updatePositionAction],
+  );
+
+  const newCm = useMemo(() => {
+    const res = new CollectionManagerV2(
+      {
+        ...cm.clone(),
+        collections: targetGraph?.collections,
+      },
+      app,
+    );
+
+    res.setReloadCollections(refreshGM);
+    return res;
+  }, [app, cm, refreshGM]);
+
   const initGraphCollections = () => {
     targetGraph = new Graph({
       container: document.getElementById('container')!,
@@ -495,11 +519,7 @@ export const GraphDrawPage = React.memo(() => {
             <APIClientProvider apiClient={api}>
               <SchemaComponentOptions inherit scope={scope} components={components}>
                 <CollectionCategroriesProvider {...categoryCtx}>
-                  <CollectionManagerProvider
-                    collections={targetGraph?.collections}
-                    refreshCM={refreshGM}
-                    interfaces={ctx.interfaces}
-                  >
+                  <CollectionManagerProviderV2 collectionManager={newCm}>
                     {/* TODO: 因为画布中的卡片是一次性注册进 Graph 的，这里的 theme 是存在闭包里的，因此当主题动态变更时，并不会触发卡片的重新渲染 */}
                     <ConfigProvider theme={theme}>
                       <div style={{ height: 'auto' }}>
@@ -510,7 +530,7 @@ export const GraphDrawPage = React.memo(() => {
                         </App>
                       </div>
                     </ConfigProvider>
-                  </CollectionManagerProvider>
+                  </CollectionManagerProviderV2>
                 </CollectionCategroriesProvider>
               </SchemaComponentOptions>
             </APIClientProvider>
@@ -732,20 +752,20 @@ export const GraphDrawPage = React.memo(() => {
     m2mEdge && lightUp(m2mEdge);
   };
   // 全量渲染
-  const renderInitGraphCollection = (rawData, isSaveLayput = true) => {
+  function renderInitGraphCollection(rawData: any, isSaveLayput = true) {
     targetGraph.clearCells();
-    const { nodesData, edgesData, inheritEdges } = formatData(rawData);
+    const { nodesData, edgesData, inheritEdges } = formatData(cm, rawData);
     targetGraph.data = { nodes: nodesData, edges: edgesData };
     targetGraph.fromJSON({ nodes: nodesData });
     targetGraph.addEdges(edgesData);
     targetGraph.addEdges(inheritEdges);
     layout(saveGraphPositionAction, isSaveLayput);
-  };
+  }
 
   // 增量渲染
-  const renderDiffGraphCollection = (rawData) => {
+  function renderDiffGraphCollection(rawData) {
     const { positions }: { positions: { x: number; y: number }[] } = targetGraph;
-    const { nodesData, edgesData, inheritEdges } = formatData(rawData);
+    const { nodesData, edgesData, inheritEdges } = formatData(cm, rawData);
     const currentNodes = targetGraph.getNodes().map((v) => v.store.data);
     const totalEdges = targetGraph.getEdges().map((v) => v.store.data);
     const currentEdgesGroup = groupBy(totalEdges, (v) => {
@@ -824,7 +844,7 @@ export const GraphDrawPage = React.memo(() => {
     setTimeout(() => {
       renderDiffEdges(diffEdges.concat(diffInheritEdge));
     }, 300);
-  };
+  }
 
   const handleSearchCollection = (e) => {
     const value = e.target.value.toLowerCase();
@@ -842,7 +862,8 @@ export const GraphDrawPage = React.memo(() => {
   // 处理不同方向的继承关系表
   const hanleHighlightInheritedNode = (key, direction) => {
     if (direction === DirectionType.Target) {
-      const INodes = getInheritCollections(targetGraph.collections, key);
+      const collection = cm.getCollection(key);
+      const INodes = collection.getParentCollectionsName();
       INodes.forEach((v) => {
         targetGraph.getCellById(v)?.setAttrs({
           hightLight: true,
@@ -851,9 +872,9 @@ export const GraphDrawPage = React.memo(() => {
         });
       });
     } else {
-      const INodes = getChildrenCollections(targetGraph.collections, key);
+      const INodes = collection.getChildrenCollectionsName(key);
       INodes.forEach((v) => {
-        targetGraph.getCellById(v.name)?.setAttrs({
+        targetGraph.getCellById(v)?.setAttrs({
           hightLight: true,
           direction,
           connectionType: ConnectionType.Inherit,
@@ -1067,7 +1088,7 @@ export const GraphDrawPage = React.memo(() => {
     setLoading(true);
     refreshPositions()
       .then(async () => {
-        await refreshGM(collections);
+        await refreshGM(cm.getCollections());
         setLoading(false);
       })
       .catch((err) => {
@@ -1084,7 +1105,7 @@ export const GraphDrawPage = React.memo(() => {
       handelResetLayout(true);
       targetGraph.selectedCollections = selectedCollections;
     } else {
-      !selectedCollections && renderInitGraphCollection(collections, false);
+      !selectedCollections && renderInitGraphCollection(cm.getCollections(), false);
     }
     return () => {
       cleanGraphContainer();
@@ -1101,7 +1122,7 @@ export const GraphDrawPage = React.memo(() => {
     <Layout>
       <div className={styles.graphCollectionContainerClass}>
         <Spin spinning={loading}>
-          <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshGM}>
+          <CollectionManagerProviderV2 collectionManager={newCm}>
             <CollapsedContext.Provider value={{ collectionList, handleSearchCollection }}>
               <div className={cx(styles.collectionListClass)}>
                 <SchemaComponent
@@ -1250,7 +1271,7 @@ export const GraphDrawPage = React.memo(() => {
                 />
               </div>
             </CollapsedContext.Provider>
-          </CollectionManagerProvider>
+          </CollectionManagerProviderV2>
           <div id="container" style={{ width: '100vw' }}></div>
           <div
             id="graph-minimap"

@@ -2,7 +2,6 @@ import { SchemaSettings } from '../../../application/schema-settings';
 import { useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
 import {
   EditComponent,
   EditDescription,
@@ -12,6 +11,7 @@ import {
   EditTooltip,
   EditValidationRules,
 } from './SchemaSettingOptions';
+import { useCollectionManagerV2, useCollectionV2 } from '../../../application';
 
 export const filterFormItemSettings = new SchemaSettings({
   name: 'FilterFormItemSettings',
@@ -48,11 +48,11 @@ export const filterFormItemSettings = new SchemaSettings({
       name: 'divider',
       type: 'divider',
       useVisible() {
-        const { getCollectionJoinField } = useCollectionManager();
-        const { getField } = useCollection();
+        const cm = useCollectionManagerV2();
+        const collection = useCollectionV2();
         const fieldSchema = useFieldSchema();
         const collectionField =
-          getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+          collection.getField(fieldSchema['name']) || cm.getCollectionField(fieldSchema['x-collection-field']);
         return !!collectionField;
       },
     },

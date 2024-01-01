@@ -3,7 +3,6 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
 import { useDetailsBlockContext } from '../../../block-provider/DetailsBlockProvider';
-import { useCollection } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
@@ -15,6 +14,7 @@ import {
   SchemaSettingsDataScope,
   SchemaSettingsBlockTitleItem,
 } from '../../../schema-settings';
+import { useCollectionV2 } from '../../../application';
 
 export const formSettings = new SchemaSettings({
   name: 'FormSettings',
@@ -27,7 +27,7 @@ export const formSettings = new SchemaSettings({
       name: 'linkageRules',
       Component: SchemaSettingsLinkageRules,
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollectionV2();
         return {
           collectionName: name,
         };
@@ -41,7 +41,7 @@ export const formSettings = new SchemaSettings({
         return !action;
       },
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollectionV2();
         return {
           collectionName: name,
         };
@@ -55,7 +55,7 @@ export const formSettings = new SchemaSettings({
       name: 'formItemTemplate',
       Component: SchemaSettingsFormItemTemplate,
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollectionV2();
         const fieldSchema = useFieldSchema();
         const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
         return {
@@ -93,7 +93,7 @@ export const readPrettyFormSettings = new SchemaSettings({
       name: 'formItemTemplate',
       Component: SchemaSettingsFormItemTemplate,
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollectionV2();
         const fieldSchema = useFieldSchema();
         const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
         return {
@@ -132,7 +132,7 @@ export const formDetailsSettings = new SchemaSettings({
       name: 'dataScope',
       Component: SchemaSettingsDataScope,
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollectionV2();
         const fieldSchema = useFieldSchema();
         const { form } = useFormBlockContext();
         const field = useField();
@@ -163,7 +163,7 @@ export const formDetailsSettings = new SchemaSettings({
       name: 'sortingRules',
       type: 'modal',
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollectionV2();
         const { t } = useTranslation();
         const fieldSchema = useFieldSchema();
         const field = useField();
@@ -280,7 +280,7 @@ export const formDetailsSettings = new SchemaSettings({
       name: 'formItemTemplate',
       Component: SchemaSettingsFormItemTemplate,
       useComponentProps() {
-        const { name } = useCollection();
+        const { name } = useCollectionV2();
         const fieldSchema = useFieldSchema();
         const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
         return {

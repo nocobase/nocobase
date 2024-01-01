@@ -2,9 +2,10 @@ import React, { useContext } from 'react';
 import {
   Plugin,
   ActionBar,
-  CollectionManagerContext,
   CurrentAppInfoProvider,
   SchemaComponentOptions,
+  useCollectionManagerV2,
+  CollectionManagerProviderV2,
 } from '@nocobase/client';
 import { Gantt } from './components/gantt/gantt';
 import { GanttDesigner } from './Gantt.Designer';
@@ -22,14 +23,14 @@ Gantt.Event = Event;
 export { Gantt };
 
 const GanttProvider = React.memo((props) => {
-  const ctx = useContext(CollectionManagerContext);
+  const cm = useCollectionManagerV2();
   return (
     <CurrentAppInfoProvider>
       <SchemaComponentOptions
         components={{ Gantt, GanttBlockInitializer, GanttBlockProvider }}
         scope={{ useGanttBlockProps }}
       >
-        <CollectionManagerContext.Provider value={{ ...ctx }}>{props.children}</CollectionManagerContext.Provider>
+        <CollectionManagerProviderV2 collectionManager={cm}>{props.children}</CollectionManagerProviderV2>
       </SchemaComponentOptions>
     </CurrentAppInfoProvider>
   );

@@ -1,7 +1,7 @@
 import React from 'react';
 
 import {
-  CollectionProvider,
+  CollectionProviderV2,
   SchemaInitializerItem,
   SchemaInitializerItemType,
   createFormBlockSchema,
@@ -65,8 +65,8 @@ function InternalFormBlockInitializer({ schema, ...others }) {
 export function FormBlockInitializer() {
   const itemConfig = useSchemaInitializerItem();
   return (
-    <CollectionProvider collection={itemConfig.schema?.collection}>
+    <CollectionProviderV2 name={itemConfig.schema?.collection}>
       <InternalFormBlockInitializer {...itemConfig} />
-    </CollectionProvider>
+    </CollectionProviderV2>
   );
 }

@@ -4,11 +4,11 @@ import {
   useCompile,
   useRecord,
   useVariables,
-  useCollection,
   useLocalVariables,
   isVariable,
   transformVariableValue,
   TableFieldResource,
+  useCollectionV2,
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { SchemaExpressionScopeContext, useFieldSchema, useField } from '@formily/react';
@@ -32,7 +32,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const { modal } = App.useApp();
   const variables = useVariables();
   const record = useRecord();
-  const { name, getField } = useCollection();
+  const collection = useCollectionV2();
   const localVariables = useLocalVariables({ currentRecord: { __parent: record, __collectionName: name } });
 
   return {
@@ -48,7 +48,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
-        const collectionField = getField(key);
+        const collectionField = collection.getField(key);
 
         if (process.env.NODE_ENV !== 'production') {
           if (!collectionField) {
