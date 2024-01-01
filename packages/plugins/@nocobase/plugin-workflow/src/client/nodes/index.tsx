@@ -88,13 +88,15 @@ export function useNodeContext() {
   return useContext(NodeContext);
 }
 
-export function useAvailableUpstreams(node) {
+export function useAvailableUpstreams(node, filter?) {
   const stack: any[] = [];
   if (!node) {
     return [];
   }
   for (let current = node.upstream; current; current = current.upstream) {
-    stack.push(current);
+    if (typeof filter !== 'function' || filter(current)) {
+      stack.push(current);
+    }
   }
 
   return stack;

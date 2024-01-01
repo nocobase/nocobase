@@ -63,11 +63,9 @@ jobs:
           __E2E__: true
       - run: npx playwright install chromium --with-deps
       - name: Test with postgres
-        run: yarn e2e test -x --skip-reporter
+        run: yarn e2e p-test --stop-on-error
         env:
           __E2E__: true
-          APP_BASE_URL: http://127.0.0.1:13000
-          APP_PORT: 13000
           APP_ENV: production
           LOGGER_LEVEL: error
           DB_DIALECT: postgres
@@ -76,4 +74,4 @@ jobs:
           DB_USER: nocobase
           DB_PASSWORD: password
           DB_DATABASE: nocobase
-    timeout-minutes: 90
+    timeout-minutes: 180

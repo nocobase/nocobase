@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cache",
-  "version": "0.18.0-alpha.2",
+  "version": "0.18.0-alpha.8",
   "description": "",
   "license": "Apache-2.0",
   "main": "./lib/index.js",
@@ -18,5 +18,5 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/cache"
   },
-  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-auth",
-  "version": "0.18.0-alpha.2",
+  "version": "0.18.0-alpha.8",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@ant-design/icons": "5.x",
@@ -23,5 +23,6 @@
   "displayName": "Authentication",
   "displayName.zh-CN": "用户认证",
   "description": "Basic authentication and authenticator management",
-  "description.zh-CN": "提供基础认证功能和扩展认证器管理功能"
+  "description.zh-CN": "提供基础认证功能和扩展认证器管理功能",
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }

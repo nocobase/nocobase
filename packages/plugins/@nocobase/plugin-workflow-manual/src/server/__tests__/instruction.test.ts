@@ -1,5 +1,4 @@
 import Database from '@nocobase/database';
-import UserPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
@@ -38,7 +37,6 @@ describe('workflow > instructions > manual', () => {
       { id: 2, nickname: 'b' },
     ]);
 
-    const userPlugin = app.getPlugin('users') as UserPlugin;
     userAgents = users.map((user) => app.agent().login(user));
 
     workflow = await WorkflowModel.create({

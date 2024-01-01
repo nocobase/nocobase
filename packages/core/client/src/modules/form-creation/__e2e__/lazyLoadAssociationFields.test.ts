@@ -6,7 +6,7 @@ import {
   oneTableSubtableWithMultiLevelAssociationFields,
   test,
 } from '@nocobase/test/e2e';
-import { T2200, T2614, T2615 } from './templatesOfBug';
+import { T2200, T2614, T2615, T2845 } from './templatesOfBug';
 
 test.describe('display association fields', () => {
   test('form: should display correctly', async ({ page, mockPage, mockRecord }) => {
@@ -50,7 +50,7 @@ test.describe('display association fields', () => {
   });
 
   // https://nocobase.height.app/T-2615
-  test('BUG: should load association data', async ({ page, mockPage, mockRecord }) => {
+  test('should load association data', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(T2615).waitForInit();
     await mockRecord('T2615');
     await nocoPage.goto();
@@ -87,8 +87,57 @@ test.describe('display association fields', () => {
     );
   });
 
+  // https://nocobase.height.app/T-2845
+  test('should load association data of subform', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(T2845).waitForInit();
+    // 和 T2615 使用一样的数据表结构
+    const record = await mockRecord('T2615');
+    await nocoPage.goto();
+
+    // 1. 新增表单中应该显示关系字段的数据
+    await page.getByRole('button', { name: 'Add new' }).click();
+    await page
+      .getByLabel('block-item-CollectionField-T2615-form-T2615.m2o-m2o')
+      .getByTestId('select-object-single')
+      .click();
+    await page.getByRole('option', { name: String(record.m2o.id) }).click();
+    await expect(page.getByLabel('block-item-CollectionField-T2615Target2-form-T2615Target2.id-ID')).toHaveText(
+      `ID:${record.m2o.m2oOfTarget1.id}`,
+    );
+    await expect(page.getByLabel('block-item-CollectionField-T2615Target2-form-T2615Target2.m2oOfTarget2-')).toHaveText(
+      `m2oOfTarget2:${record.m2o.m2oOfTarget1.m2oOfTarget2.id}`,
+    );
+
+    // 关闭弹窗
+    await page.getByLabel('drawer-Action.Container-T2615-Add record-mask').click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
+
+    // 2. 编辑表单中应该显示关系字段的数据
+    await page.getByLabel(`action-Action.Link-Edit record-update-T2615-table-${record.id - 1}`).click();
+    await expect(page.getByLabel('block-item-CollectionField-T2615Target2-form-T2615Target2.id-ID')).toHaveText(
+      `ID:${record.m2o.m2oOfTarget1.id}`,
+    );
+    await expect(page.getByLabel('block-item-CollectionField-T2615Target2-form-T2615Target2.m2oOfTarget2-')).toHaveText(
+      `m2oOfTarget2:${record.m2o.m2oOfTarget1.m2oOfTarget2.id}`,
+    );
+
+    await page.getByLabel('drawer-Action.Container-T2615-Edit record-mask').click();
+
+    // 3. 详情中应该显示关系字段的数据
+    await page.getByLabel(`action-Action.Link-View record-view-T2615-table-${record.id - 1}`).click();
+    await expect(page.getByLabel('block-item-CollectionField-T2615-form-T2615.m2o-m2o')).toHaveText(
+      `m2o:${record.m2o.id}`,
+    );
+    await expect(page.getByLabel('block-item-CollectionField-T2615Target2-form-T2615Target2.id-ID')).toHaveText(
+      `ID:${record.m2o.m2oOfTarget1.id}`,
+    );
+    await expect(page.getByLabel('block-item-CollectionField-T2615Target2-form-T2615Target2.m2oOfTarget2-')).toHaveText(
+      `m2oOfTarget2:${record.m2o.m2oOfTarget1.m2oOfTarget2.id}`,
+    );
+  });
+
   // https://nocobase.height.app/T-2614
-  test('BUG: should load association data in subform', async ({ page, mockPage, mockRecord }) => {
+  test('should load association data in subform', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(T2614).waitForInit();
     await mockRecord('T2614');
     await nocoPage.goto();
@@ -198,7 +247,7 @@ test.describe('association fields', () => {
   });
 
   // fix https://nocobase.height.app/T-2200
-  test('BUG: should be possible to change the value of the association field normally', async ({ page, mockPage }) => {
+  test('should be possible to change the value of the association field normally', async ({ page, mockPage }) => {
     await mockPage(T2200).goto();
 
     await page.getByLabel('action-Action.Link-Edit-update-users-table-0').click();

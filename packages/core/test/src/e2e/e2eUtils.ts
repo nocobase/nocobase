@@ -89,6 +89,38 @@ export interface CollectionSetting {
   }>;
 }
 
+interface AclActionsSetting {
+  name: string; //操作标识，如cretae
+  fields?: any[]; //有该操作权限的字段
+  scope?: any; // 数据范围
+}
+interface AclResourcesSetting {
+  name: string; //数据表标识
+  usingActionsConfig: boolean; //是否开启单独配置
+  actions?: AclActionsSetting[];
+}
+interface AclRoleSetting {
+  name?: string;
+  title?: string;
+  /**
+   * @default true
+   */
+  allowNewMenu?: boolean;
+  //配置权限，如 ["app", "pm", "pm.*", "ui.*"]
+  snippets?: string[];
+  //操作权限策略
+  strategy?: any;
+  //数据表单独操作权限配置
+  resources?: AclResourcesSetting[];
+  /**
+   * @default false
+   */
+  default?: boolean;
+  key?: string;
+  //菜单权限配置
+  menuUiSchemas?: string[];
+}
+
 export interface PageConfig {
   /**
    * 页面类型
@@ -188,6 +220,14 @@ interface ExtendUtils {
    * @returns
    */
   deletePage: (pageName: string) => Promise<void>;
+  /**
+   * 生成一个新的角色，并和admin关联上
+   */
+  mockRole: <T = any>(roleSetting: AclRoleSetting) => Promise<T>;
+  /**
+   * 更新角色权限配置
+   */
+  updateRole: <T = any>(roleSetting: AclRoleSetting) => Promise<T>;
 }
 
 const PORT = process.env.APP_PORT || 20000;
@@ -195,8 +235,8 @@ const APP_BASE_URL = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
 
 export class NocoPage {
   private url: string;
-  private uid: string;
-  private collectionsName: string[];
+  private uid: string | undefined;
+  private collectionsName: string[] | undefined;
   private _waitForInit: Promise<void>;
 
   constructor(
@@ -232,7 +272,10 @@ export class NocoPage {
     await this._waitForInit;
     return this.url;
   }
-
+  async getUid() {
+    await this._waitForInit;
+    return this.uid;
+  }
   async waitForInit(this: NocoPage) {
     await this._waitForInit;
     return this;
@@ -253,7 +296,7 @@ export class NocoPage {
 const _test = base.extend<ExtendUtils>({
   mockPage: async ({ page }, use) => {
     // 保证每个测试运行时 faker 的随机值都是一样的
-    faker.seed(1);
+    // faker.seed(1);
 
     const nocoPages: NocoPage[] = [];
     const mockPage = (config?: PageConfig) => {
@@ -267,6 +310,7 @@ const _test = base.extend<ExtendUtils>({
     // 测试运行完自动销毁页面
     for (const nocoPage of nocoPages) {
       await nocoPage.destroy();
+      await setDefaultRole('root');
     }
   },
   mockManualDestroyPage: async ({ browser }, use) => {
@@ -278,33 +322,33 @@ const _test = base.extend<ExtendUtils>({
     await use(mockManualDestroyPage);
   },
   createCollections: async ({ page }, use) => {
-    let collectionsName = [];
+    let collectionsName: string[] = [];
 
     const _createCollections = async (collectionSettings: CollectionSetting | CollectionSetting[]) => {
       collectionSettings = omitSomeFields(
         Array.isArray(collectionSettings) ? collectionSettings : [collectionSettings],
       );
-      collectionsName = collectionSettings.map((item) => item.name);
+      collectionsName = [...collectionsName, ...collectionSettings.map((item) => item.name)];
       await createCollections(collectionSettings);
     };
 
     await use(_createCollections);
 
     if (collectionsName.length) {
-      await deleteCollections(collectionsName);
+      await deleteCollections(_.uniq(collectionsName));
     }
   },
   mockCollections: async ({ page }, use) => {
-    let collectionsName = [];
+    let collectionsName: string[] = [];
     const destroy = async () => {
       if (collectionsName.length) {
-        await deleteCollections(collectionsName);
+        await deleteCollections(_.uniq(collectionsName));
       }
     };
 
     const mockCollections = async (collectionSettings: CollectionSetting[]) => {
       collectionSettings = omitSomeFields(collectionSettings);
-      collectionsName = collectionSettings.map((item) => item.name);
+      collectionsName = [...collectionsName, ...collectionSettings.map((item) => item.name)];
       return createCollections(collectionSettings);
     };
 
@@ -312,16 +356,16 @@ const _test = base.extend<ExtendUtils>({
     await destroy();
   },
   mockCollection: async ({ page }, use) => {
-    let collectionsName = [];
+    let collectionsName: string[] = [];
     const destroy = async () => {
       if (collectionsName.length) {
-        await deleteCollections(collectionsName);
+        await deleteCollections(_.uniq(collectionsName));
       }
     };
 
     const mockCollection = async (collectionSetting: CollectionSetting, options?: { manualDestroy: boolean }) => {
       const collectionSettings = omitSomeFields([collectionSetting]);
-      collectionsName = collectionSettings.map((item) => item.name);
+      collectionsName = [...collectionsName, ...collectionSettings.map((item) => item.name)];
       return createCollections(collectionSettings);
     };
 
@@ -377,6 +421,20 @@ const _test = base.extend<ExtendUtils>({
       deleteRecords('roles', { name: { $ne: ['root', 'admin', 'member'] } }),
     ];
     await Promise.all(deletePromises);
+  },
+  mockRole: async ({ page }, use) => {
+    const mockRole = async (roleSetting: AclRoleSetting) => {
+      return createRole(roleSetting);
+    };
+
+    await use(mockRole);
+  },
+  updateRole: async ({ page }, use) => {
+    async (roleSetting: AclRoleSetting) => {
+      return updateRole(roleSetting);
+    };
+
+    await use(updateRole);
   },
 });
 
@@ -593,6 +651,76 @@ const createCollections = async (collectionSettings: CollectionSetting | Collect
 };
 
 /**
+ * 根据配置创建一个角色并将角色关联给superAdmin且切换到新角色
+ * @param page 运行测试的 page 实例
+ * @param AclRoleSetting
+ * @returns
+ */
+const createRole = async (roleSetting: AclRoleSetting) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const name = roleSetting.name || uid();
+
+  const result = await api.post(`/api/users/1/roles:create`, {
+    headers,
+    data: { ...roleSetting, name, title: name },
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  const roleData = (await result.json()).data;
+  await setDefaultRole(name);
+  return roleData;
+};
+
+/**
+ * 根据配置更新角色权限
+ * @param page 运行测试的 page 实例
+ * @param AclRoleSetting
+ * @returns
+ */
+const updateRole = async (roleSetting: AclRoleSetting) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const name = roleSetting.name;
+
+  const result = await api.post(`/api/users/1/roles:update?filterByTk=${name}`, {
+    headers,
+    data: { ...roleSetting },
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  const roleData = (await result.json()).data;
+  return roleData;
+};
+
+/**
+ * 设置默认角色
+ * @param name
+ */
+const setDefaultRole = async (name) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  await api.post(`/api/users:setDefaultRole`, {
+    headers,
+    data: { roleName: name },
+  });
+};
+
+/**
  * 根据 collection 的配置生成 Faker 数据
  * @param collectionSetting
  * @param all
@@ -618,41 +746,17 @@ const generateFakerData = (collectionSetting: CollectionSetting) => {
   };
   const result = {};
 
-  collectionSetting.fields.forEach((field) => {
-    if (excludeField.includes(field.name)) {
+  collectionSetting.fields?.forEach((field) => {
+    if (field.name && excludeField.includes(field.name)) {
       return;
     }
 
-    if (basicInterfaceToData[field.interface]) {
+    if (basicInterfaceToData[field.interface] && field.name) {
       result[field.name] = basicInterfaceToData[field.interface]();
     }
   });
 
   return result;
-};
-
-/**
- * 使用 Faker 为 collection 创建数据
- */
-const createFakerData = async (collectionSettings: CollectionSetting[]) => {
-  const api = await request.newContext({
-    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
-  });
-
-  const state = await api.storageState();
-  const headers = getHeaders(state);
-
-  for (const item of collectionSettings) {
-    const data = generateFakerData(item);
-    const result = await api.post(`/api/${item.name}:create`, {
-      headers,
-      form: data,
-    });
-
-    if (!result.ok()) {
-      throw new Error(await result.text());
-    }
-  }
 };
 
 const createRandomData = async (collectionName: string, count = 10, data?: any) => {
@@ -714,14 +818,31 @@ function getHeaders(storageState: any) {
   return headers;
 }
 
+interface ExpectSettingsMenuParams {
+  showMenu: () => Promise<void>;
+  supportedOptions: string[];
+  page: Page;
+  unsupportedOptions?: string[];
+}
+
 /**
  * 辅助断言 SchemaSettings 的菜单项是否存在
  * @param param0
  */
-export async function expectSettingsMenu({ showMenu, supportedOptions, page }) {
+export async function expectSettingsMenu({
+  showMenu,
+  supportedOptions,
+  page,
+  unsupportedOptions,
+}: ExpectSettingsMenuParams) {
   await showMenu();
   for (const option of supportedOptions) {
     await expect(page.getByRole('menuitem', { name: option })).toBeVisible();
+  }
+  if (unsupportedOptions) {
+    for (const option of unsupportedOptions) {
+      await expect(page.getByRole('menuitem', { name: option })).not.toBeVisible();
+    }
   }
 }
 
@@ -732,7 +853,8 @@ export async function expectSettingsMenu({ showMenu, supportedOptions, page }) {
 export async function expectInitializerMenu({ showMenu, supportedOptions, page }) {
   await showMenu();
   for (const option of supportedOptions) {
-    await expect(page.getByRole('menuitem', { name: option })).toBeVisible();
+    // 使用 first 方法避免有重名的导致报错
+    await expect(page.getByRole('menuitem', { name: option }).first()).toBeVisible();
   }
 }
 

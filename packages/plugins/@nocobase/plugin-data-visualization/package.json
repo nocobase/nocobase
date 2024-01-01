@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-visualization",
-  "version": "0.18.0-alpha.2",
+  "version": "0.18.0-alpha.8",
   "displayName": "Data Visualization",
   "displayName.zh-CN": "数据可视化",
   "description": "Provides business intelligence and data visualization features",
@@ -30,5 +30,6 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
-  }
+  },
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }

@@ -4,7 +4,7 @@
   "displayName.zh-CN": "工作流：人工处理节点",
   "description": "Could be used for workflows which some of decisions are made by users.",
   "description.zh-CN": "用于人工控制部分决策的流程。",
-  "version": "0.18.0-alpha.2",
+  "version": "0.18.0-alpha.8",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
@@ -24,10 +24,9 @@
     "@nocobase/plugin-collection-manager": "0.x",
     "@nocobase/plugin-users": "0.x",
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
-    "@nocobase/plugin-workflow-test": ">=0.17.0-alpha.3",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
-  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }

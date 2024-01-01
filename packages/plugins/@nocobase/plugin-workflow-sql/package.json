@@ -4,7 +4,7 @@
   "displayName.zh-CN": "工作流：SQL 节点",
   "description": "Execute SQL statements in workflow.",
   "description.zh-CN": "可用于在工作流中对数据库执行任意 SQL 语句。",
-  "version": "0.18.0-alpha.2",
+  "version": "0.18.0-alpha.8",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
@@ -16,9 +16,8 @@
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
-    "@nocobase/plugin-workflow-test": ">=0.17.0-alpha.3",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
   },
-  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }

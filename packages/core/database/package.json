@@ -1,13 +1,13 @@
 {
   "name": "@nocobase/database",
-  "version": "0.18.0-alpha.2",
+  "version": "0.18.0-alpha.8",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
   "dependencies": {
-    "@nocobase/logger": "0.18.0-alpha.2",
-    "@nocobase/utils": "0.18.0-alpha.2",
+    "@nocobase/logger": "0.18.0-alpha.8",
+    "@nocobase/utils": "0.18.0-alpha.8",
     "async-mutex": "^0.3.2",
     "chalk": "^4.1.1",
     "cron-parser": "4.4.0",
@@ -35,5 +35,5 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/database"
   },
-  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }

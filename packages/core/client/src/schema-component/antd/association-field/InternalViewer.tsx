@@ -125,7 +125,13 @@ export const ReadPrettyInternalViewer: React.FC = observer(
               {renderRecords()}
             </EllipsisWithTooltip>
             <ActionContextProvider
-              value={{ visible, setVisible, openMode: 'drawer', snapshot: collectionField?.interface === 'snapshot' }}
+              value={{
+                visible,
+                setVisible,
+                openMode: 'drawer',
+                snapshot: collectionField?.interface === 'snapshot',
+                fieldSchema: fieldSchema,
+              }}
             >
               {renderRecordProvider()}
             </ActionContextProvider>

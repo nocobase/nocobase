@@ -1,11 +1,11 @@
 {
   "name": "@nocobase/plugin-sample-command",
-  "version": "0.18.0-alpha.2",
+  "version": "0.18.0-alpha.8",
   "main": "./dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "0.x",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
   },
-  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }
