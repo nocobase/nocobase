@@ -41,7 +41,7 @@ describe('backup files', () => {
       dumper = new Dumper(app);
 
       dumpKey = await dumper.runDumpTask({
-        dataTypes: new Set(['meta', 'config', 'business']) as Set<DumpDataType>,
+        groups: new Set(['meta', 'config', 'business']) as Set<DumpDataType>,
       });
 
       const promise = Dumper.getTaskPromise(dumpKey);
@@ -162,7 +162,7 @@ describe('backup files', () => {
 
     expect(body['required']).toBeTruthy();
     expect(body['third-party']).toBeTruthy();
-    expect(body['business']).toBeTruthy();
+    expect(body['custom']).toBeTruthy();
 
     const testCollectionInfo = body['custom'].find((item: any) => item.name === 'test');
 
