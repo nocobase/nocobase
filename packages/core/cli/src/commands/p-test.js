@@ -20,7 +20,7 @@ const config = {
 };
 
 async function runApp(dir, index = 0) {
-  // 一个进程需要占用两个端口，一个是应用端口，一个是 socket 端口
+  // 一个进程需要占用两个端口? (一个是应用端口，一个是 socket 端口)
   index = index * 2;
 
   const database = `nocobase${index}`;
