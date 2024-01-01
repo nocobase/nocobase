@@ -116,8 +116,7 @@ test.describe('table block schema settings', () => {
       .getByRole('img', { name: 'menu' })
       .dragTo(page.getByLabel('table-index-1').getByRole('img', { name: 'menu' }));
 
-    // 等待表格刷新
-    await page.waitForTimeout(process.env.CI ? 10000 : 1000);
+    await page.reload();
 
     email1 = await page.getByText(records[0].email).boundingBox();
     email2 = await page.getByText(records[1].email).boundingBox();
