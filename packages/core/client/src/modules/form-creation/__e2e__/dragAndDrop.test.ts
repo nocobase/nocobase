@@ -1,8 +1,6 @@
 import { expect, oneFormBlockBasedOnUsers, test } from '@nocobase/test/e2e';
 
 test('fields', async ({ page, mockPage }) => {
-  // 在 CI 中多进程跑的时候，可能需要等待更长的时间
-  test.slow();
   await mockPage(oneFormBlockBasedOnUsers).goto();
   await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
   await page.getByRole('menuitem', { name: 'Nickname' }).click();
@@ -15,10 +13,12 @@ test('fields', async ({ page, mockPage }) => {
   await source.hover();
   const targetElement = page.getByLabel('block-item-CollectionField-users-form-users.username');
   await source.dragTo(targetElement);
+  await page.waitForTimeout(1000);
 
   const targetElement2 = page.getByLabel('block-item-CollectionField-users-form-users.email');
   await source.hover();
   await source.dragTo(targetElement2);
+  await page.waitForTimeout(1000);
 
   await sourceElement.hover();
   const nickname = await source.boundingBox();
