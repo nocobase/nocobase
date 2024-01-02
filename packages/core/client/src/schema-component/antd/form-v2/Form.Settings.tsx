@@ -14,6 +14,7 @@ import {
   SchemaSettingsFormItemTemplate,
   SchemaSettingsDataScope,
   SchemaSettingsBlockTitleItem,
+  SchemaSettingsTemplate,
 } from '../../../schema-settings';
 
 export const formSettings = new SchemaSettings({
@@ -277,8 +278,8 @@ export const formDetailsSettings = new SchemaSettings({
       },
     },
     {
-      name: 'formItemTemplate',
-      Component: SchemaSettingsFormItemTemplate,
+      name: 'template',
+      Component: SchemaSettingsTemplate,
       useComponentProps() {
         const { name } = useCollection();
         const fieldSchema = useFieldSchema();
