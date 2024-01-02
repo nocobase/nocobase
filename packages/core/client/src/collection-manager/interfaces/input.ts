@@ -25,7 +25,7 @@ export const input: IField = {
       'x-component': 'Input',
     },
   },
-  availableTypes: ['string'],
+  availableTypes: ['string', 'uid'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
