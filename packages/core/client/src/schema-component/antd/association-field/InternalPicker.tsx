@@ -125,6 +125,9 @@ export const InternalPicker = observer(
           }
           setVisible(false);
         },
+        style: {
+          display: multiple !== false && ['o2m', 'm2m'].includes(collectionField?.interface) ? 'block' : 'none',
+        },
       };
     };
     return (
@@ -189,7 +192,12 @@ export const InternalPicker = observer(
             <CollectionProvider name={collectionField?.target}>
               <FormProvider>
                 <TableSelectorParamsProvider params={{ filter: getFilter() }}>
-                  <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps }}>
+                  <SchemaComponentOptions
+                    scope={{
+                      usePickActionProps,
+                      useTableSelectorProps,
+                    }}
+                  >
                     <RecursionField
                       onlyRenderProperties
                       basePath={field.address}

@@ -1,4 +1,5 @@
-import { AppLoggerOptions, getLoggerLevel, getLoggerTransport } from '@nocobase/logger';
+import { getLoggerLevel, getLoggerTransport } from '@nocobase/logger';
+import { AppLoggerOptions } from '@nocobase/server';
 
 export default {
   request: {

@@ -2,11 +2,11 @@ import { expect, test } from '@nocobase/test/e2e';
 import { oneEmptyTableBlockWithDuplicateActions } from './utils';
 
 test.describe('direct duplicate & copy into the form and continue to fill in', () => {
-  test('direct duplicate', async ({ page, mockPage, mockCollections, mockRecords }) => {
+  test('direct duplicate', async ({ page, mockPage, mockRecords }) => {
     const nocoPage = await mockPage(oneEmptyTableBlockWithDuplicateActions).waitForInit();
     const data = await mockRecords('general', 3);
     await nocoPage.goto();
-    await expect(await page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0')).toBeVisible();
+    await expect(page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0')).toBeVisible();
     await page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0').hover();
     await page.getByRole('button', { name: 'designer-schema-settings-Action.Link-Action.Designer-general' }).click();
     await page.getByRole('menuitem', { name: 'Duplicate mode' }).click();
@@ -26,7 +26,7 @@ test.describe('direct duplicate & copy into the form and continue to fill in', (
     const nocoPage = await mockPage(oneEmptyTableBlockWithDuplicateActions).waitForInit();
     const data = await mockRecord('general');
     await nocoPage.goto();
-    await expect(await page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0')).toBeVisible();
+    await expect(page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0')).toBeVisible();
     await page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0').hover();
     await page.getByRole('button', { name: 'designer-schema-settings-Action.Link-Action.Designer-general' }).hover();
     await page.getByRole('menuitem', { name: 'Duplicate mode' }).click();
@@ -71,11 +71,8 @@ test.describe('direct duplicate & copy into the form and continue to fill in', (
 
     await page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0').click();
     await expect(
-      await page
-        .getByLabel('block-item-CollectionField-general-form-general.singleLineText')
-        .getByRole('textbox')
-        .inputValue(),
-    ).toBe(data['singleLineText']);
+      page.getByLabel('block-item-CollectionField-general-form-general.singleLineText').getByRole('textbox'),
+    ).toHaveValue(data['singleLineText']);
     const [request] = await Promise.all([
       page.waitForRequest((request) => request.url().includes('api/general:create')),
       page.getByLabel('action-Action-Submit-submit-general-form').click(),

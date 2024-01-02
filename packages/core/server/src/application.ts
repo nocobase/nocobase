@@ -4,21 +4,25 @@ import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocoba
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import {
-  AppLoggerOptions,
+  SystemLogger,
+  RequestLoggerOptions,
   createLogger,
-  createAppLogger,
-  AppLogger,
-  LoggerOptions,
   getLoggerFilePath,
+  LoggerOptions,
+  SystemLoggerOptions,
+  createSystemLogger,
 } from '@nocobase/logger';
-import { Resourcer, ResourceOptions } from '@nocobase/resourcer';
+import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, measureExecutionTime, Toposort, ToposortOptions } from '@nocobase/utils';
+import chalk from 'chalk';
 import { Command, CommandOptions, ParseOptions } from 'commander';
+import { randomUUID } from 'crypto';
 import { IncomingMessage, Server, ServerResponse } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
 import lodash from 'lodash';
+import { RecordableHistogram } from 'node:perf_hooks';
 import { createACL } from './acl';
 import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
@@ -30,25 +34,27 @@ import {
   createAppProxy,
   createI18n,
   createResourcer,
+  enablePerfHooks,
   getCommandFullName,
   registerMiddlewares,
-  enablePerfHooks,
 } from './helper';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { randomUUID } from 'crypto';
+
 import packageJson from '../package.json';
-import chalk from 'chalk';
-import { RecordableHistogram, performance } from 'node:perf_hooks';
-import path from 'path';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
 
 export interface ResourcerOptions {
   prefix?: string;
+}
+
+export interface AppLoggerOptions {
+  request: RequestLoggerOptions;
+  system: SystemLoggerOptions;
 }
 
 export interface ApplicationOptions {
@@ -175,7 +181,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._db;
   }
 
-  protected _logger: AppLogger;
+  protected _logger: SystemLogger;
 
   get logger() {
     return this._logger;
@@ -702,11 +708,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   protected init() {
     const options = this.options;
 
-    this._logger = createAppLogger({
-      app: this.name,
+    this._logger = createSystemLogger({
+      dirname: getLoggerFilePath(this.name),
+      filename: 'system',
+      seperateError: true,
       ...(options.logger?.system || {}),
     }).child({
       reqId: this.context.reqId,
+      app: this.name,
       module: 'application',
     });
 
@@ -787,7 +796,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       if (msg.includes('INSERT INTO')) {
         msg = msg.substring(0, 2000) + '...';
       }
-      sqlLogger.debug({ reqId: this.context.reqId, message: msg });
+      sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
     };
     const dbOptions = options.database instanceof Database ? options.database.options : options.database;
     const db = new Database({
