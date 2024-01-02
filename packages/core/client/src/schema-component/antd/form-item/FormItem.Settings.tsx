@@ -11,7 +11,7 @@ import { Collection, useCollection, useCollectionManager } from '../../../collec
 import { useRecord } from '../../../record-provider';
 import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
 import {
-  SchemaSettingsDataFormat,
+  SchemaSettingsDateFormat,
   SchemaSettingsDataScope,
   SchemaSettingsDefaultValue,
   SchemaSettingsSortingRule,
@@ -732,7 +732,7 @@ export const formItemSettings = new SchemaSettings({
     },
     {
       name: 'dateFormat',
-      Component: SchemaSettingsDataFormat,
+      Component: SchemaSettingsDateFormat,
       useVisible() {
         const collectionField = useCollectionField();
         const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);
