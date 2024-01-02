@@ -23,7 +23,6 @@ import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
 
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
-import { Meter } from '@opentelemetry/api';
 
 type ID = number | string;
 
@@ -43,7 +42,7 @@ export default class WorkflowPlugin extends Plugin {
   private eventsCount = 0;
 
   private loggerCache: LRUCache<string, Logger>;
-  private meter: Meter = null;
+  private meter = null;
 
   getLogger(workflowId: ID): Logger {
     const now = new Date();
