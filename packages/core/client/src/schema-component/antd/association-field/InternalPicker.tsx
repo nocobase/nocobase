@@ -62,7 +62,7 @@ const useTableSelectorProps = () => {
 
 export const InternalPicker = observer(
   (props: any) => {
-    const { value, multiple, onChange, quickUpload, selectFile, shouldMountElement, ...others } = props;
+    const { value, multiple, openSize, onChange, quickUpload, selectFile, shouldMountElement, ...others } = props;
     const field: any = useField();
     const fieldNames = useFieldNames(props);
     const [visibleSelector, setVisibleSelector] = useState(false);
@@ -183,6 +183,7 @@ export const InternalPicker = observer(
         </Input.Group>
         <ActionContextProvider
           value={{
+            openSize,
             openMode: 'drawer',
             visible: visibleSelector,
             setVisible: setVisibleSelector,
