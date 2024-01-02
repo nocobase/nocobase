@@ -3,12 +3,13 @@ import React from 'react';
 import { CustomRequestActionDesigner } from './CustomRequestActionDesigner';
 import { useFieldSchema } from '@formily/react';
 import { listByCurrentRoleUrl } from '../constants';
-import { useCustomizeRequestActionProps } from '../hooks';
+import { useCustomizeRequestActionProps, useGetCustomRequest } from '../hooks';
 
 export const CustomRequestActionACLDecorator = (props) => {
   const apiClient = useAPIClient();
   const isRoot = apiClient.auth.role === 'root';
   const fieldSchema = useFieldSchema();
+  const { data: customRequest } = useGetCustomRequest();
   const { data } = useRequest<{ data: string[] }>(
     {
       url: listByCurrentRoleUrl,
@@ -19,7 +20,7 @@ export const CustomRequestActionACLDecorator = (props) => {
     },
   );
 
-  if (!isRoot && !data?.data?.includes(fieldSchema?.['x-uid'])) {
+  if (!isRoot && customRequest?.data?.roles?.length && !data?.data?.includes(fieldSchema?.['x-uid'])) {
     return null;
   }
 

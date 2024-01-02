@@ -12,7 +12,6 @@ export const useGetCustomRequest = () => {
       },
     },
     {
-      manual: true,
       cacheKey: url,
     },
   );

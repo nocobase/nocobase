@@ -5,7 +5,9 @@ import {
   SchemaSettings,
   SchemaSettingsActionModalItem,
   actionSettingsItems,
+  useAPIClient,
   useCollection,
+  useCompile,
   useCurrentRoles,
   useRequest,
 } from '@nocobase/client';
@@ -32,7 +34,6 @@ function CustomRequestSettingsItem() {
         components={{
           ArrayItems,
         }}
-        beforeOpen={() => !data && refresh()}
         scope={{ useCustomRequestVariableOptions }}
         schema={CustomRequestConfigurationFieldsSchema}
         initialValues={{
@@ -64,6 +65,7 @@ function CustomRequestACL() {
   const customRequestsResource = useCustomRequestsResource();
   const { message } = App.useApp();
   const { data, refresh } = useGetCustomRequest();
+  const compile = useCompile();
   const { refresh: refreshRoleCustomKeys } = useRequest<{ data: string[] }>(
     {
       url: listByCurrentRoleUrl,
@@ -74,6 +76,15 @@ function CustomRequestACL() {
     },
   );
 
+  const apiClient = useAPIClient();
+  const { data: allRoles } = useRequest<any>(
+    {
+      url: '/roles:list?pageSize=1000',
+    },
+    {
+      manual: apiClient.auth.role !== 'root',
+    },
+  );
   const currentRoles = useCurrentRoles();
 
   return (
@@ -81,11 +92,14 @@ function CustomRequestACL() {
       <SchemaSettingsActionModalItem
         title={t('Access Control')}
         schema={CustomRequestACLSchema}
-        scope={{ currentRoles }}
+        scope={{
+          currentRoles: allRoles?.data?.length
+            ? allRoles?.data?.map(({ name, title }) => ({ name, title: compile(title) }))
+            : currentRoles,
+        }}
         initialValues={{
           roles: data?.data?.roles,
         }}
-        beforeOpen={() => !data && refresh()}
         onSubmit={async ({ roles }) => {
           await customRequestsResource.updateOrCreate({
             values: {
