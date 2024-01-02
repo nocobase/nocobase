@@ -6,7 +6,7 @@ import { useFormBlockContext } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
-  SchemaSettingsDataFormat,
+  SchemaSettingsDateFormat,
   SchemaSettingsDataScope,
   SchemaSettingsDefaultValue,
   SchemaSettingsDivider,
@@ -392,7 +392,7 @@ export const TableColumnDesigner = (props) => {
             }}
           />
         )}
-      {isDateField && <SchemaSettingsDataFormat fieldSchema={fieldSchema} />}
+      {isDateField && <SchemaSettingsDateFormat fieldSchema={fieldSchema} />}
       {isSubTableColumn &&
         !field?.readPretty &&
         ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface) && (

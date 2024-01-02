@@ -1428,7 +1428,7 @@ export const SchemaSettingsEnableChildCollections = function EnableChildCollecti
   );
 };
 
-export const SchemaSettingsDataFormat = function DateFormatConfig(props: { fieldSchema: Schema }) {
+export const SchemaSettingsDateFormat = function DateFormatConfig(props: { fieldSchema: Schema }) {
   const { fieldSchema } = props;
   const field = useField();
   const { dn } = useDesignable();
