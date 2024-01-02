@@ -68,12 +68,13 @@ test.describe('configure actions', () => {
 test.describe('configure columns', () => {
   test('action column & display collection fields & display association fields', async ({ page, mockPage }) => {
     await mockPage(oneEmptyTable).goto();
+    const configureColumnButton = page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-t_unp4scqamw9');
 
     // Action column -------------------------------------------------------------
     // 1. 点击开关，可以开启和关闭 Action column
     // 2. 点击开关之后，如果不移出鼠标，下拉框不应该关闭
     await expect(page.getByText('Actions', { exact: true })).toBeVisible();
-    await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-t_unp4scqamw9').hover();
+    await configureColumnButton.hover();
 
     await expect(page.getByRole('menuitem', { name: 'Action column' }).getByRole('switch')).toBeChecked();
     await page.getByRole('menuitem', { name: 'Action column' }).click();
@@ -84,14 +85,14 @@ test.describe('configure columns', () => {
     await expect(page.getByText('Actions', { exact: true })).not.toBeVisible();
 
     // 再次开启 Action column
-    await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-t_unp4scqamw9').hover();
+    await configureColumnButton.hover();
     await page.getByRole('menuitem', { name: 'Action column' }).click();
     await expect(page.getByRole('menuitem', { name: 'Action column' }).getByRole('switch')).toBeChecked();
     await page.mouse.move(300, 0);
     await expect(page.getByText('Actions', { exact: true })).toBeVisible();
 
     // display collection fields -------------------------------------------------------------
-    await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-t_unp4scqamw9').hover();
+    await configureColumnButton.hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).first().click();
     await page.getByRole('menuitem', { name: 'One to one (has one)' }).first().click();
@@ -106,7 +107,7 @@ test.describe('configure columns', () => {
     await expect(page.getByRole('button', { name: 'Many to one', exact: true })).toBeVisible();
 
     // 点击开关，删除创建的字段
-    await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-t_unp4scqamw9').hover();
+    await configureColumnButton.hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).first().click();
     await page.getByRole('menuitem', { name: 'One to one (has one)' }).first().click();
@@ -122,7 +123,7 @@ test.describe('configure columns', () => {
     await expect(page.getByRole('button', { name: 'Many to one', exact: true })).not.toBeVisible();
 
     // display association fields -------------------------------------------------------------
-    await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-t_unp4scqamw9').hover();
+    await configureColumnButton.hover();
 
     await page.getByText('Display collection fields', { exact: true }).hover();
     await page.mouse.wheel(0, 300);
@@ -132,7 +133,7 @@ test.describe('configure columns', () => {
     await expect(page.getByRole('button', { name: 'Nickname', exact: true })).toBeVisible();
 
     // 开关应该是开启状态
-    await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-t_unp4scqamw9').hover();
+    await configureColumnButton.hover();
     await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).nth(1).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).toBeChecked();
 
@@ -140,7 +141,7 @@ test.describe('configure columns', () => {
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
     await expect(page.getByRole('button', { name: 'Nickname', exact: true })).not.toBeVisible();
     // 开关应该是关闭状态
-    await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-t_unp4scqamw9').hover();
+    await configureColumnButton.hover();
     await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).nth(1).hover();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).not.toBeChecked();
   });
