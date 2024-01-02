@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormItem, FormLayout, Input } from '@formily/antd-v5';
-import { Field, GeneralField, createForm } from '@formily/core';
+import { Field, GeneralField, createForm, FormPath } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { error } from '@nocobase/utils/client';
@@ -1560,10 +1560,13 @@ export const SchemaSettingsDataFormat = function DateFormatConfig(props: { field
         };
         schema['x-component-props'] = fieldSchema['x-component-props'];
         field.componentProps = fieldSchema['x-component-props'];
-        field.query(`*.*[:500].${fieldSchema.name}`).forEach((f) => {
-          f.componentProps = fieldSchema['x-component-props'];
+        //子表格/表格区块
+        const parts = (field.path.entire as string).split('.');
+        parts.pop();
+        const modifiedString = parts.join('.');
+        field.query(`${modifiedString}.*[0:].${fieldSchema.name}`).forEach((f) => {
+          f.setComponentProps({ ...data });
         });
-
         dn.emit('patch', {
           schema,
         });
