@@ -22,7 +22,7 @@ export class Telemetry {
   constructor(options?: TelemetryOptions) {
     const { trace, metric, serviceName, version } = options || {};
     this.trace = new Trace({ tracerName: `${serviceName}-trace`, version, ...trace });
-    this.metric = new Metric({ meterName: `${serviceName}-meter`, ...metric });
+    this.metric = new Metric({ meterName: `${serviceName}-meter`, version, ...metric });
     this.serviceName = serviceName || 'nocobase';
     this.version = version || '';
   }
