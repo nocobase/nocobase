@@ -225,6 +225,11 @@ describe('ui_schema repository', () => {
     expect(s2['x-uid']).not.toEqual(s['x-uid']);
   });
 
+  it('should be null', async () => {
+    const s2 = await repository.duplicate('test-null');
+    expect(s2).toBeNull();
+  });
+
   describe('schema', () => {
     let schema;
     beforeEach(() => {
