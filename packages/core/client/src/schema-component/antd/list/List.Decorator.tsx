@@ -2,6 +2,7 @@ import { css, cx } from '@emotion/css';
 import { FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { FormContext, useField } from '@formily/react';
+import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { BlockProvider, useBlockRequestContext, useParsedFilter } from '../../../block-provider';
 import { useRecord } from '../../../record-provider';
@@ -65,6 +66,12 @@ export const ListBlockProvider = (props) => {
       filter: parsedFilter,
     };
   }, [parsedFilter, params]);
+
+  // parse filter 的过程是异步的，且一开始 parsedFilter 是一个空对象，所以当 parsedFilter 为空 params.filter 不为空时，
+  // 说明 filter 还未解析完成，此时不应该渲染，防止重复请求多次
+  if (_.isEmpty(parsedFilter) && !_.isEmpty(params?.filter)) {
+    return null;
+  }
 
   return (
     <BlockProvider name="list" {...props} params={paramsWithFilter}>

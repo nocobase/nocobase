@@ -42,6 +42,7 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import { TelemetryOptions, Telemetry } from '@nocobase/telemetry';
 
 import packageJson from '../package.json';
 
@@ -55,6 +56,10 @@ export interface ResourcerOptions {
 export interface AppLoggerOptions {
   request: RequestLoggerOptions;
   system: SystemLoggerOptions;
+}
+
+export interface AppTelemetryOptions extends TelemetryOptions {
+  enabled?: boolean;
 }
 
 export interface ApplicationOptions {
@@ -73,6 +78,7 @@ export interface ApplicationOptions {
   name?: string;
   authManager?: AuthManagerOptions;
   perfHooks?: boolean;
+  telemetry?: AppTelemetryOptions;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -249,6 +255,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._locales;
   }
 
+  protected _telemetry: Telemetry;
+
+  get telemetry() {
+    return this._telemetry;
+  }
+
   protected _version: ApplicationVersion;
 
   get version() {
@@ -352,13 +364,19 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (options?.reload) {
       this.setMaintainingMessage('app reload');
       this.log.info(`app.reload()`, { method: 'load' });
+
+      if (this.cacheManager) {
+        await this.cacheManager.close();
+      }
+
+      if (this.telemetry.started) {
+        await this.telemetry.shutdown();
+      }
+
       const oldDb = this._db;
       this.init();
       if (!oldDb.closed()) {
         await oldDb.close();
-      }
-      if (this._cacheManager) {
-        await this._cacheManager.close();
       }
     }
 
@@ -371,6 +389,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.setMaintainingMessage('emit beforeLoad');
     await this.emitAsync('beforeLoad', this, options);
+
+    // Telemetry is initialized after beforeLoad hook
+    // since some configuration may be registered in beforeLoad hook
+    this.telemetry.init();
+    if (this.options.telemetry?.enabled) {
+      // Start collecting telemetry data if enabled
+      this.telemetry.start();
+    }
 
     await this.pm.load(options);
 
@@ -588,8 +614,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.log.error(e.message, { method: 'stop', err: e.stack });
     }
 
-    if (this._cacheManager) {
-      await this._cacheManager.close();
+    if (this.cacheManager) {
+      await this.cacheManager.close();
+    }
+
+    if (this.telemetry.started) {
+      await this.telemetry.shutdown();
     }
 
     await this.emitAsync('afterStop', this, options);
@@ -748,6 +778,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._pm = new PluginManager({
       app: this,
       plugins: plugins || [],
+    });
+
+    this._telemetry = new Telemetry({
+      serviceName: `nocobase-${this.name}`,
+      version: this.getVersion(),
+      ...options.telemetry,
     });
 
     this._authManager = new AuthManager({

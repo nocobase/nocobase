@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-audit-logs",
-  "version": "0.18.0-alpha.8",
+  "version": "0.18.0-alpha.9",
   "displayName": "Audit logs",
   "displayName.zh-CN": "审计日志",
   "description": "Data addition, modification, deletion logs",

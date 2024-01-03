@@ -35,7 +35,7 @@ export const requestLogger = (appName: string, options?: RequestLoggerOptions) =
       path: ctx.url,
     };
     requestLogger.info({
-      message: 'request',
+      message: `request ${ctx.method} ${ctx.url}`,
       ...requestInfo,
       req: pick(ctx.request.toJSON(), options?.requestWhitelist || defaultRequestWhitelist),
       action: ctx.action?.toJSON?.(),
@@ -51,7 +51,7 @@ export const requestLogger = (appName: string, options?: RequestLoggerOptions) =
       const cost = Date.now() - startTime;
       const status = ctx.status;
       const info = {
-        message: 'response',
+        message: `response ${ctx.url}`,
         ...requestInfo,
         res: pick(ctx.response.toJSON(), options?.responseWhitelist || defaultResponseWhitelist),
         action: ctx.action?.toJSON?.(),
