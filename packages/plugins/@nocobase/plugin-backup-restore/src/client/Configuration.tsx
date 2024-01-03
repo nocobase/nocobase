@@ -394,7 +394,7 @@ export const BackupAndRestoreList = () => {
           loading={loading}
           columns={[
             {
-              title: t('Name'),
+              title: t('Backup file'),
               dataIndex: 'name',
               width: 400,
               onCell: (data) => {
@@ -425,7 +425,7 @@ export const BackupAndRestoreList = () => {
               },
             },
             {
-              title: t('Created at'),
+              title: t('Created at', { ns: 'client' }),
               dataIndex: 'createdAt',
               onCell: (data) => {
                 return data.inProgress
@@ -439,7 +439,7 @@ export const BackupAndRestoreList = () => {
               },
             },
             {
-              title: t('Actions'),
+              title: t('Actions', { ns: 'client' }),
               dataIndex: 'actions',
               onCell: (data) => {
                 return data.inProgress
