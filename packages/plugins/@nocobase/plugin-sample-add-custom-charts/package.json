@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-sample-add-custom-charts",
-  "version": "0.18.0-alpha.8",
+  "version": "0.18.0-alpha.9",
   "main": "dist/server/index.js",
   "devDependencies": {
     "echarts": "^5.4.3",
