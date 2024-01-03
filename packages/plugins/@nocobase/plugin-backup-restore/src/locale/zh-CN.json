@@ -37,11 +37,13 @@
   "log.title": "日志数据",
   "custom.title": "自建表数据",
   "skipped.title": "跳过的数据",
+  "unknown.title": "未知数据",
   "third-party.title": "第三方服务信息",
   "required.description": "必备数据",
   "user.description": "用户数据",
   "log.description": "日志数据",
   "custom.description": "自建表数据",
   "skipped.description": "跳过的数据",
+  "unknown.description": "没有配置备份规则的数据",
   "third-party.description": "第三方服务信息"
 }

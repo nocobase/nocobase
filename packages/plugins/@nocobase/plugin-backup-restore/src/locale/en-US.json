@@ -31,11 +31,13 @@
   "log.title": "Log data",
   "custom.title": "Custom collection data",
   "skipped.title": "Skipped data",
+  "unknown.title": "Unknown",
   "third-party.title": "Third-party service information",
   "required.description": "Required data",
   "user.description": "User data",
   "log.description": "Log data",
   "custom.description": "Custom collection data",
   "skipped.description": "Skipped data",
+  "unknown.description": "Data without configured dump rules",
   "third-party.description": "Third-party service information"
 }
