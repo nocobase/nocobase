@@ -836,5 +836,7 @@
   "Are you sure you want to perform the {{title}} action?": "你确定执行{{title}}操作吗？",
   "Sign in with another account": "登录其他账号",
   "Return to the main application": "返回主应用",
-  "Permission denied": "没有权限"
+  "Permission denied": "没有权限",
+  "Allow add new":"允许新增",
+  "Allow selection of existing records":"允许选择已有数据"
 }

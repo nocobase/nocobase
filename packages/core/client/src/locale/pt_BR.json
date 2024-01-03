@@ -708,5 +708,7 @@
   "Data template": "Modelo de dados",
   "Not found": "Não encontrado",
   "Add": "Adicionar",
-  "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects": "Excluir automaticamente objetos que dependem desta tabela, bem como objetos que dependem desses objetos"
+  "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects": "Excluir automaticamente objetos que dependem desta tabela, bem como objetos que dependem desses objetos",
+  "Allow add new":"Permitir novas adições",
+  "Allow selection of existing records":"Permitir a selecção dos registos existentes"
 }
