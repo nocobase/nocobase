@@ -28,10 +28,6 @@ export class CollectionModel extends MagicAttributeModel {
       fields: [],
     };
 
-    if (!collectionOptions.dumpRules) {
-      lodash.set(collectionOptions, 'dumpRules.group', 'custom');
-    }
-
     if (!this.db.inDialect('postgres') && collectionOptions.schema) {
       delete collectionOptions.schema;
     }
@@ -49,6 +45,10 @@ export class CollectionModel extends MagicAttributeModel {
 
       collection.updateOptions(collectionOptions);
     } else {
+      if (!collectionOptions.dumpRules) {
+        lodash.set(collectionOptions, 'dumpRules.group', 'custom');
+      }
+
       collection = this.db.collection(collectionOptions);
     }
 
