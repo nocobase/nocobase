@@ -30,7 +30,7 @@
   "Bind workflows": "绑定工作流",
   "Workflow will be triggered after submitting succeeded.": "提交成功后触发工作流。",
   "Workflow will be triggered after saving succeeded.": "保存成功后触发工作流。",
-  "Workflow will be triggered directly once the button clicked.": "按钮点击后直接触发工作流。",
+  "Workflow will be triggered directly once the button clicked, without data saving.": "按钮点击后直接触发工作流，但不会保存数据。",
   "Submit to workflow": "提交至工作流",
   "Add workflow": "添加工作流",
   "Select workflow": "选择工作流",
