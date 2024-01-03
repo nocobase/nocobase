@@ -160,6 +160,16 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
   }, [apiClient]);
   const [dataSource, setDataSource] = useState([]);
 
+  useEffect(() => {
+    setDataSource(
+      Object.keys(restoreData?.dumpableCollectionsGroupByGroup || []).map((key) => ({
+        value: key,
+        label: t(`${key}.title`),
+        disabled: ['required', 'skipped'].includes(key),
+      })),
+    );
+  }, [restoreData]);
+
   const showModal = async () => {
     setIsModalOpen(true);
     if (!upload) {
