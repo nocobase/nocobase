@@ -1,6 +1,6 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
+export default defineCollection({
   dumpRules: 'required',
   name: 'fieldsHistory',
   autoGenId: false,
@@ -71,4 +71,4 @@ export default {
       defaultValue: {},
     },
   ],
-} as CollectionOptions;
+});

@@ -6,7 +6,6 @@ export default defineCollection({
     group: 'third-party',
   },
   name: MapConfigurationCollectionName,
-  title: '{{t("Map Manager")}}',
   shared: true,
   fields: [
     {

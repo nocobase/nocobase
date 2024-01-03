@@ -1,6 +1,6 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
+export default defineCollection({
   dumpRules: 'required',
   name: 'roles',
   title: '{{t("Roles")}}',
@@ -94,4 +94,4 @@ export default {
       through: 'rolesUsers',
     },
   ],
-} as CollectionOptions;
+});

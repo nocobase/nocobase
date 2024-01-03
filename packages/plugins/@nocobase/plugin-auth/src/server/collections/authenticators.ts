@@ -1,16 +1,15 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
 /**
  * Collection for extended authentication methods,
  */
-export default {
+export default defineCollection({
   dumpRules: {
     group: 'third-party',
   },
   shared: true,
   name: 'authenticators',
   sortable: true,
-  title: '{{t("Authenticators")}}',
   model: 'AuthModel',
   createdBy: true,
   updatedBy: true,
@@ -97,4 +96,4 @@ export default {
       through: 'usersAuthenticators',
     },
   ],
-} as CollectionOptions;
+});

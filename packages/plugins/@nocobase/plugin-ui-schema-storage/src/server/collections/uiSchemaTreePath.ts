@@ -5,7 +5,6 @@ export default {
   name: 'uiSchemaTreePath',
   autoGenId: false,
   timestamps: false,
-  shared: true,
   indexes: [
     {
       fields: ['descendant'],

@@ -1,6 +1,8 @@
-export default {
-  duplicator: {
-    dataType: 'config',
+import { defineCollection } from '@nocobase/database';
+
+export default defineCollection({
+  dumpRules: {
+    group: 'third-party',
   },
   name: 'verifications_providers',
   shared: true,
@@ -27,4 +29,4 @@ export default {
       name: 'default',
     },
   ],
-};
+});

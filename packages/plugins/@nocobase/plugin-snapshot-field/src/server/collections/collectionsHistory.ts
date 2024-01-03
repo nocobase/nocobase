@@ -1,6 +1,6 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
+export default defineCollection({
   dumpRules: 'required',
   name: 'collectionsHistory',
   sortable: 'sort',
@@ -53,4 +53,4 @@ export default {
       sortBy: 'sort',
     },
   ],
-} as CollectionOptions;
+});

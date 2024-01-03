@@ -1,6 +1,6 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
+export default defineCollection({
   dumpRules: {
     group: 'user',
   },
@@ -98,4 +98,4 @@ export default {
       defaultValue: {},
     },
   ],
-} as CollectionOptions;
+});

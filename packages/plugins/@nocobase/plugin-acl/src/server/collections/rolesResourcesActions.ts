@@ -1,6 +1,6 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
+export default defineCollection({
   dumpRules: 'required',
   name: 'rolesResourcesActions',
   model: 'RoleResourceActionModel',
@@ -27,4 +27,4 @@ export default {
       onDelete: 'RESTRICT',
     },
   ],
-} as CollectionOptions;
+});

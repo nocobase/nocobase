@@ -1,11 +1,10 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
+export default defineCollection({
   dumpRules: {
     group: 'required',
   },
   name: 'localizationTexts',
-  title: '{{t("Localization Texts")}}',
   model: 'LocalizationTextModel',
   createdBy: true,
   updatedBy: true,
@@ -63,4 +62,4 @@ export default {
       fields: ['batch'],
     },
   ],
-} as CollectionOptions;
+});

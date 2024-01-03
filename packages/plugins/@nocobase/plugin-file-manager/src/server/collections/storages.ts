@@ -1,6 +1,6 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
+export default defineCollection({
   dumpRules: 'required',
   name: 'storages',
   shared: true,
@@ -61,4 +61,4 @@ export default {
       defaultValue: false,
     },
   ],
-} as CollectionOptions;
+});
