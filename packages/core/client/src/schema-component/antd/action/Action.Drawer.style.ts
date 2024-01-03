@@ -5,7 +5,6 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
 
   return {
     [componentCls]: {
-      zIndex: '1150 !important', // fix https://nocobase.height.app/T-2797
       overflow: 'hidden',
       '&.reset': {
         '&.nb-action-popup': {
