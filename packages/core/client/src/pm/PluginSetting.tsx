@@ -35,6 +35,13 @@ function matchRoute(data, url) {
 
   return null;
 }
+function replaceRouteParams(urlTemplate, location) {
+  const { state } = location;
+  return urlTemplate.replace(/:\w+/g, (match) => {
+    const paramName = match.substring(1);
+    return state?.[paramName] || match;
+  });
+}
 
 export const AdminSettingsLayout = () => {
   const { styles, theme } = useStyles();
@@ -149,7 +156,7 @@ export const AdminSettingsLayout = () => {
                   <Menu
                     style={{ marginLeft: -theme.margin }}
                     onClick={({ key }) => {
-                      navigate(app.pluginSettingsManager.getRoutePath(key));
+                      navigate(replaceRouteParams(app.pluginSettingsManager.getRoutePath(key), location), location);
                     }}
                     selectedKeys={[currentSetting?.name]}
                     mode="horizontal"
