@@ -220,13 +220,13 @@ export default function devDynamicImport(packageName: string): Promise<any> {
         ).replaceAll('-', '_');
 
         let exportStatement = '';
-        if (pluginPackageJsonPath.includes('node_modules')) {
-          exportStatement = `export { default } from '${pluginPackageJson.name}/client';`;
-        } else {
+        if (pluginPackageJsonPath.includes('packages')) {
           const pluginSrcClientPath = path
             .relative(this.packagesPath, path.join(path.dirname(pluginPackageJsonPath), 'src', 'client'))
             .replaceAll(path.sep, '/');
           exportStatement = `export { default } from '${pluginSrcClientPath}';`;
+        } else {
+          exportStatement = `export { default } from '${pluginPackageJson.name}/client';`;
         }
         return { exportStatement, pluginFileName, packageJsonName: pluginPackageJson.name };
       });
