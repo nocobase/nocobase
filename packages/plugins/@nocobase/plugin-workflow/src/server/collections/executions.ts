@@ -2,7 +2,7 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   dumpRules: {
-    dataType: 'business',
+    group: 'log',
   },
   name: 'executions',
   fields: [

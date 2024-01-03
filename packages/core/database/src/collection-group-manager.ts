@@ -1,5 +1,5 @@
-import Database from './database';
 import { BaseDumpRules, DumpRules } from './collection';
+import Database from './database';
 
 type RequiredGroup = 'required';
 type SkippedGroup = 'skipped';
