@@ -25,6 +25,7 @@ import { CollectionProvider } from '../../../collection-manager';
 import { TableSelectorParamsProvider } from '../../../block-provider/TableSelectorProvider';
 import { useCompile } from '../../hooks';
 import { useTableSelectorProps } from './InternalPicker';
+import { useCreateActionProps } from '../../../block-provider/hooks';
 
 export const SubTable: any = observer(
   (props: any) => {
@@ -212,6 +213,7 @@ export const SubTable: any = observer(
                     scope={{
                       usePickActionProps,
                       useTableSelectorProps,
+                      useCreateActionProps,
                     }}
                   >
                     <RecursionField
