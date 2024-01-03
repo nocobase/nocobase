@@ -201,10 +201,16 @@ export default function devDynamicImport(packageName: string): Promise<any> {
       absolute: true,
     });
 
+    const storagePluginFolders = glob.sync(['*/package.json', '*/*/package.json'], {
+      cwd: process.env.PLUGIN_STORAGE_PATH,
+      onlyFiles: true,
+      absolute: true,
+    });
+
     const nocobasePluginFolders = glob
       .sync(['plugin-*/package.json'], { cwd: this.nocobaseDir, onlyFiles: true, absolute: true })
       .map((item) => fs.realpathSync(item));
-    const pluginInfos = Array.from(new Set([...pluginFolders, ...nocobasePluginFolders]))
+    const pluginInfos = Array.from(new Set([...pluginFolders, ...storagePluginFolders, ...nocobasePluginFolders]))
       .filter((item) => {
         const dirname = path.dirname(item);
         const clientJs = path.join(dirname, 'client.js');
