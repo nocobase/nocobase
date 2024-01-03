@@ -4,7 +4,7 @@
   "displayName.zh-CN": "日志",
   "description": "Package and download log files",
   "description.zh-CN": "打包下载日志文件",
-  "version": "0.18.0-alpha.8",
+  "version": "0.18.0-alpha.9",
   "license": "AGPL-3.0",
   "main": "dist/server/index.js",
   "devDependencies": {

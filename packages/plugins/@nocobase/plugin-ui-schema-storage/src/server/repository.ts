@@ -445,6 +445,9 @@ export class UiSchemaRepository extends Repository {
   @transaction()
   async duplicate(uid: string, options?: Transactionable) {
     const s = await this.getJsonSchema(uid, { ...options, includeAsyncNode: true });
+    if (!s?.['x-uid']) {
+      return null;
+    }
     this.regenerateUid(s);
     return this.insert(s, options);
   }

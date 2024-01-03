@@ -4,6 +4,7 @@ import {
   Instruction,
   WorkflowVariableInput,
   WorkflowVariableJSON,
+  WorkflowVariableTextArea,
   defaultFieldNames,
 } from '@nocobase/plugin-workflow/client';
 
@@ -41,7 +42,7 @@ export default class extends Instruction {
       title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
-      'x-component': 'Input',
+      'x-component': 'WorkflowVariableTextArea',
       'x-component-props': {
         placeholder: 'https://www.nocobase.com',
       },
@@ -175,6 +176,7 @@ export default class extends Instruction {
   components = {
     ArrayItems,
     WorkflowVariableInput,
+    WorkflowVariableTextArea,
     WorkflowVariableJSON,
   };
   useVariables({ key, title }, { types, fieldNames = defaultFieldNames }) {

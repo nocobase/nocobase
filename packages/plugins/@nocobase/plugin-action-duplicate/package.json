@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-action-duplicate",
-  "version": "0.18.0-alpha.8",
+  "version": "0.18.0-alpha.9",
   "main": "dist/server/index.js",
   "displayName": "Data duplicate",
   "displayName.zh-CN": "数据复制",

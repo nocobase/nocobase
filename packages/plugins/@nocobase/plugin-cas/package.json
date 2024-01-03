@@ -4,7 +4,7 @@
   "displayName.zh-CN": "CAS 认证 - SSO 登录",
   "description": "CAS authentication for NocoBase",
   "description.zh-CN": "NocoBase 的 CAS 身份验证",
-  "version": "0.18.0-alpha.8",
+  "version": "0.18.0-alpha.9",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "peerDependencies": {
