@@ -3,7 +3,7 @@ import { css } from '@emotion/css';
 import { Layout, Menu, Result } from 'antd';
 import _, { get } from 'lodash';
 import React, { createContext, useCallback, useMemo } from 'react';
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useStyles } from './style';
 import { ADMIN_SETTINGS_PATH, PluginSettingsPageType, useApp } from '../application';
 import { useCompile } from '../schema-component';
@@ -21,6 +21,7 @@ function getMenuItems(list: PluginSettingsPageType[]) {
     };
   });
 }
+
 function matchRoute(data, url) {
   const keys = Object.keys(data);
 
@@ -35,11 +36,11 @@ function matchRoute(data, url) {
 
   return null;
 }
-function replaceRouteParams(urlTemplate, location) {
-  const { state } = location;
+function replaceRouteParams(urlTemplate, params) {
+  // 使用正则表达式替换占位符
   return urlTemplate.replace(/:\w+/g, (match) => {
     const paramName = match.substring(1);
-    return state?.[paramName] || match;
+    return params?.[paramName] || match;
   });
 }
 
@@ -48,6 +49,7 @@ export const AdminSettingsLayout = () => {
   const app = useApp();
   const navigate = useNavigate();
   const location = useLocation();
+  const params = useParams();
   const compile = useCompile();
   const settings = useMemo(() => {
     const list = app.pluginSettingsManager.getList();
@@ -156,7 +158,7 @@ export const AdminSettingsLayout = () => {
                   <Menu
                     style={{ marginLeft: -theme.margin }}
                     onClick={({ key }) => {
-                      navigate(replaceRouteParams(app.pluginSettingsManager.getRoutePath(key), location), location);
+                      navigate(replaceRouteParams(app.pluginSettingsManager.getRoutePath(key), params));
                     }}
                     selectedKeys={[currentSetting?.name]}
                     mode="horizontal"
