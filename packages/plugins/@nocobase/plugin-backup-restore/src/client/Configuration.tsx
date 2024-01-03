@@ -207,7 +207,7 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
           {upload && !restoreData && <RestoreUpload setRestoreData={setRestoreData} />}
           {(!upload || restoreData) && [
             <strong style={{ fontWeight: 600, display: 'block', margin: '16px 0 8px' }} key="info">
-              {t('Select the data to be backed up')} (
+              {t('Select the data to be restored')} (
               <LearnMore collectionsData={restoreData?.dumpableCollectionsGroupByGroup} />
               ):
             </strong>,
@@ -362,12 +362,12 @@ export const BackupAndRestoreList = () => {
   };
   const handleDestory = (fileData) => {
     modal.confirm({
-      title: t('Delete record'),
-      content: t('Are you sure you want to delete it?'),
+      title: t('Delete record', { ns: 'client' }),
+      content: t('Are you sure you want to delete it?', { ns: 'client' }),
       onOk: async () => {
         await resource.destroy({ filterByTk: fileData.name });
         await queryFieldList();
-        message.success(t('Operation succeeded'));
+        message.success(t('Deleted successfully'));
       },
     });
   };
