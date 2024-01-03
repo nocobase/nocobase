@@ -40,8 +40,10 @@ const useStyles = genStyleHook('nb-list', (token) => {
         display: 'flex',
         width: '100%',
         flexDirection: 'column',
-        padding: '4px 5px 0',
-        borderBottom: `1px solid ${token.colorBorderSecondary}`,
+
+        '&:not(:last-child)': {
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
+        },
       },
     },
   };
