@@ -33,6 +33,7 @@ storage/tmp
 storage/app.watch.ts
 storage/logs-e2e
 storage/uploads-e2e
+storage/.pm2-*
 tsconfig.paths.json
 /playwright
 /storage/playwright
