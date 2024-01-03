@@ -1,0 +1,23 @@
+{
+  "name": "@nocobase/telemetry",
+  "version": "0.18.0-alpha.8",
+  "description": "nocobase telemetry library",
+  "license": "Apache-2.0",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/telemetry"
+  },
+  "dependencies": {
+    "@nocobase/utils": "0.18.0-alpha.8",
+    "@opentelemetry/api": "^1.7.0",
+    "@opentelemetry/instrumentation": "^0.46.0",
+    "@opentelemetry/resources": "^1.19.0",
+    "@opentelemetry/sdk-metrics": "^1.19.0",
+    "@opentelemetry/sdk-trace-base": "^1.19.0",
+    "@opentelemetry/sdk-trace-node": "^1.19.0",
+    "@opentelemetry/semantic-conventions": "^1.19.0"
+  }
+}

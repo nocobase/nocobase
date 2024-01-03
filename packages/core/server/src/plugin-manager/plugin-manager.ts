@@ -83,11 +83,10 @@ export class PluginManager {
   static async getPackageName(name: string) {
     const prefixes = this.getPluginPkgPrefix();
     for (const prefix of prefixes) {
-      try {
-        await import(`${prefix}${name}`);
+      const pkg = resolve(process.env.NODE_MODULES_PATH, `${prefix}${name}`, 'package.json');
+      const exists = await fsExists(pkg);
+      if (exists) {
         return `${prefix}${name}`;
-      } catch (error) {
-        continue;
       }
     }
     throw new Error(`${name} plugin does not exist`);

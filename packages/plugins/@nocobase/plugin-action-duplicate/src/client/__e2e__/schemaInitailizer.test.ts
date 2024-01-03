@@ -14,9 +14,9 @@ test.describe('TableActionColumnInitializers & DetailsActionInitializers & ReadP
     await page.getByRole('button', { name: 'Actions' }).hover();
     await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-general').hover();
     await page.getByRole('menuitem', { name: 'Duplicate' }).click();
-    await expect(await page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0')).toBeVisible();
+    await expect(page.getByLabel('action-Action.Link-Duplicate-duplicate-general-table-0')).toBeVisible();
   });
-  test('duplication action in DetailsActionInitializers', async ({ page, mockPage, mockCollections, mockRecords }) => {
+  test('duplication action in DetailsActionInitializers', async ({ page, mockPage }) => {
     await mockPage(oneEmptyDetailsBlock).goto();
     await page.getByLabel('schema-initializer-ActionBar-DetailsActionInitializers-general').click();
     await page.getByRole('menuitem', { name: 'Duplicate' }).click();
