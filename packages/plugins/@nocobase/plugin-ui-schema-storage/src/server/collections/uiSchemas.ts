@@ -8,6 +8,7 @@ export default {
   repository: 'UiSchemaRepository',
   model: 'UiSchemaModel',
   magicAttribute: 'schema',
+  shared: true,
   fields: [
     {
       type: 'uid',

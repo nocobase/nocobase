@@ -8,6 +8,7 @@ export default {
   dumpRules: {
     group: 'user',
   },
+  shared: true,
   name: 'usersAuthenticators',
   title: '{{t("Users Authenticators")}}',
   model: 'UserAuthModel',

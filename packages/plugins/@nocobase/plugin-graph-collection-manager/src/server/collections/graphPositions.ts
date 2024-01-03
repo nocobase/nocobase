@@ -3,6 +3,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   dumpRules: 'required',
   name: 'graphPositions',
+  shared: true,
   fields: [
     {
       type: 'string',

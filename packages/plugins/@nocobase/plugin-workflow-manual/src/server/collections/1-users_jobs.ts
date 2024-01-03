@@ -5,6 +5,7 @@ export default defineCollection({
   dumpRules: {
     group: 'log',
   },
+  shared: true,
   fields: [
     {
       type: 'bigInt',

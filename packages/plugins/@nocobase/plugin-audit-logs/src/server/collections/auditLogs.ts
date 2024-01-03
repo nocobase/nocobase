@@ -8,6 +8,7 @@ export default defineCollection({
   createdBy: false,
   updatedBy: false,
   updatedAt: false,
+  shared: true,
   fields: [
     {
       type: 'date',

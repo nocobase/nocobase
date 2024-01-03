@@ -6,6 +6,7 @@ export default {
   autoGenId: false,
   model: 'FieldModel',
   timestamps: false,
+  shared: true,
   sortable: {
     name: 'sort',
     scopeKey: 'collectionName',

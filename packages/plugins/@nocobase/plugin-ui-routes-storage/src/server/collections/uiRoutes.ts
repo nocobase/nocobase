@@ -9,6 +9,7 @@ export default defineCollection({
     name: 'sort',
     scopeKey: 'parentKey',
   },
+  shared: true,
   fields: [
     {
       type: 'uid',

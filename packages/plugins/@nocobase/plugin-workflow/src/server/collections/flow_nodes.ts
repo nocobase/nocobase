@@ -3,6 +3,7 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   dumpRules: 'required',
   name: 'flow_nodes',
+  shared: true,
   fields: [
     {
       type: 'uid',

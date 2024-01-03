@@ -5,6 +5,7 @@ export default defineCollection({
     group: 'log',
   },
   name: 'verifications',
+  shared: true,
   fields: [
     {
       type: 'uuid',

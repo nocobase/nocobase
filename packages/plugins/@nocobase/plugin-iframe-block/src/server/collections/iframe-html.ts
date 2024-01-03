@@ -6,6 +6,7 @@ export default {
   name: 'iframeHtml',
   createdBy: true,
   updatedBy: true,
+  shared: true,
   fields: [
     {
       type: 'uid',

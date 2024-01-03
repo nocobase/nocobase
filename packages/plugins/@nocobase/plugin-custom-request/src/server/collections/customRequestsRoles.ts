@@ -1,8 +1,8 @@
 import { CollectionOptions } from '@nocobase/client';
 
 export default {
-  namespace: 'custom-requests',
   duplicator: 'required',
+  shared: true,
   name: 'customRequestsRoles',
   title: '{{t("Custom request")}}',
 } as CollectionOptions;

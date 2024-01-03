@@ -4,6 +4,7 @@ export default defineCollection({
   dumpRules: {
     group: 'log',
   },
+  shared: true,
   name: 'tokenBlacklist',
   model: 'TokenBlacklistModel',
   fields: [

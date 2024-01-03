@@ -4,6 +4,7 @@ export default defineCollection({
   dumpRules: 'required',
   name: 'uiSchemaTemplates',
   autoGenId: false,
+  shared: true,
   fields: [
     {
       type: 'uid',

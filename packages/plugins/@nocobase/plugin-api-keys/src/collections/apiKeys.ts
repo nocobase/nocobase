@@ -5,6 +5,7 @@ export default {
   dumpRules: {
     group: 'user',
   },
+  shared: true,
   name: 'apiKeys',
   title: '{{t("API keys", {"ns": "api-keys"})}}',
   sortable: 'sort',

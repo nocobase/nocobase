@@ -1,10 +1,10 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'file-manager.attachmentRecords',
   dumpRules: {
     group: 'user',
   },
+  shared: true,
   name: 'attachments',
   createdBy: true,
   updatedBy: true,

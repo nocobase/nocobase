@@ -6,6 +6,7 @@ export default {
   model: 'ServerHookModel',
   // autoGenId: false,
   timestamps: false,
+  shared: true,
   fields: [
     { type: 'belongsTo', name: 'uiSchema', target: 'uiSchemas', foreignKey: 'uid' },
     { type: 'string', name: 'type' },

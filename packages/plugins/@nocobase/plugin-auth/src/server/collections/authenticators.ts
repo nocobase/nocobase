@@ -7,6 +7,7 @@ export default {
   dumpRules: {
     group: 'third-party',
   },
+  shared: true,
   name: 'authenticators',
   sortable: true,
   title: '{{t("Authenticators")}}',

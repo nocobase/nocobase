@@ -4,6 +4,7 @@ export default function () {
   return {
     dumpRules: 'required',
     name: 'workflows',
+    shared: true,
     fields: [
       {
         name: 'key',

@@ -5,6 +5,7 @@ export default {
     group: 'log',
   },
   name: 'executions',
+  shared: true,
   fields: [
     {
       type: 'belongsTo',

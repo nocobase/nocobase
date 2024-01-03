@@ -11,6 +11,7 @@ export default {
   createdBy: true,
   updatedBy: true,
   logging: true,
+  shared: true,
   fields: [
     {
       name: 'id',

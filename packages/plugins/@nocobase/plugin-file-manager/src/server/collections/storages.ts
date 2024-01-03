@@ -3,6 +3,7 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   dumpRules: 'required',
   name: 'storages',
+  shared: true,
   fields: [
     {
       title: '存储引擎名称',

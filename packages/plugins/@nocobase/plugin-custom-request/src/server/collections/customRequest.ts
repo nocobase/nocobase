@@ -4,6 +4,7 @@ export default {
   duplicator: 'required',
   name: 'customRequests',
   title: '{{t("Custom request")}}',
+  shared: true,
   fields: [
     {
       type: 'uid',

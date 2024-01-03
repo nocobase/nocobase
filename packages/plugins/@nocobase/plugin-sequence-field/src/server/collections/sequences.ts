@@ -54,6 +54,7 @@ export default defineCollection({
     },
   },
   name: 'sequences',
+  shared: true,
   fields: [
     {
       name: 'collection',

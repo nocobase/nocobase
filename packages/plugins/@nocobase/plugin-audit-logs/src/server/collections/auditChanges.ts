@@ -10,6 +10,7 @@ export default defineCollection({
   updatedBy: false,
   createdAt: false,
   updatedAt: false,
+  shared: true,
   fields: [
     {
       type: 'json',

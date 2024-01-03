@@ -2,6 +2,7 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   dumpRules: 'required',
+  shared: true,
   name: 'collections',
   sortable: 'sort',
   autoGenId: false,

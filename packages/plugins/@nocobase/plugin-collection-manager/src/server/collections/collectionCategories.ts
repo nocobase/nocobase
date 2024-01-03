@@ -4,6 +4,7 @@ export default {
   dumpRules: {
     group: 'required',
   },
+  shared: true,
   name: 'collectionCategories',
   autoGenId: true,
   sortable: true,

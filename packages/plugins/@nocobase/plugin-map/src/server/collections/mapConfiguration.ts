@@ -7,6 +7,7 @@ export default defineCollection({
   },
   name: MapConfigurationCollectionName,
   title: '{{t("Map Manager")}}',
+  shared: true,
   fields: [
     {
       title: 'Access key',

@@ -9,6 +9,7 @@ export default {
   repository: 'CollectionRepository',
   timestamps: false,
   filterTargetKey: 'name',
+  shared: true,
   fields: [
     {
       type: 'uid',

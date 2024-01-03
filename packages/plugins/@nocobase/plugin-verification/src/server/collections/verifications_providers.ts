@@ -3,6 +3,7 @@ export default {
     dataType: 'config',
   },
   name: 'verifications_providers',
+  shared: true,
   fields: [
     {
       type: 'string',
