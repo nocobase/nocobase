@@ -1,32 +1,13 @@
 import { InboxOutlined, PlusOutlined, ReloadOutlined, UploadOutlined } from '@ant-design/icons';
 import { FormItem } from '@formily/antd-v5';
 import { Checkbox, DatePicker, useAPIClient, useCompile } from '@nocobase/client';
-import {
-  Alert,
-  App,
-  Button,
-  Card,
-  Divider,
-  Modal,
-  Space,
-  Spin,
-  Table,
-  Tabs,
-  TabsProps,
-  Upload,
-  UploadProps,
-  message,
-} from 'antd';
+import { Alert, App, Button, Card, Divider, Modal, Space, Spin, Table, Tabs, Upload, UploadProps, message } from 'antd';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useMemo, useState } from 'react';
-import { generateNTemplate, useDuplicatorTranslation } from './locale';
+import { useDuplicatorTranslation } from './locale';
 
 const { Dragger } = Upload;
-const options = [
-  { label: generateNTemplate('System metadata'), value: 'meta', disabled: true },
-  { label: generateNTemplate('System config'), value: 'config' },
-  { label: generateNTemplate('Business data'), value: 'business' },
-];
+
 function useUploadProps(props: UploadProps): any {
   const onChange = (param) => {
     props.onChange?.(param);
@@ -130,59 +111,25 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
       },
     },
   ];
-  const items: TabsProps['items'] = [
-    {
-      key: 'meta',
-      label: t('System metadata'),
+  const items = Object.keys(dataSource || {}).map((item) => {
+    return {
+      key: item,
+      label: t(`${item}.title`),
       children: (
         <>
-          <Alert style={{ marginBottom: 16 }} message={'占位，系统元数据说明'} />
+          <Alert style={{ marginBottom: 16 }} message={t(`${item}.description`)} />
           <Table
             pagination={{ pageSize: 100 }}
             bordered
             size={'small'}
-            dataSource={dataSource?.meta}
+            dataSource={dataSource[item]}
             columns={columns}
             scroll={{ y: 400 }}
           />
         </>
       ),
-    },
-    dataSource?.config && {
-      key: 'config',
-      label: t('System config'),
-      children: (
-        <>
-          <Alert style={{ marginBottom: 16 }} message={'占位，系统配置数据说明'} />
-          <Table
-            pagination={{ pageSize: 100 }}
-            bordered
-            size={'small'}
-            dataSource={dataSource?.config}
-            columns={columns}
-            scroll={{ y: 400 }}
-          />
-        </>
-      ),
-    },
-    dataSource?.business && {
-      key: 'bussiness',
-      label: t('Business data'),
-      children: (
-        <>
-          <Alert style={{ marginBottom: 16 }} message={'占位，系统业务数据说明'} />
-          <Table
-            pagination={{ pageSize: 100 }}
-            bordered
-            size={'small'}
-            dataSource={dataSource?.business}
-            columns={columns}
-            scroll={{ y: 400 }}
-          />
-        </>
-      ),
-    },
-  ];
+    };
+  });
 
   return (
     <>
@@ -195,7 +142,7 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
         onOk={handleOk}
         onCancel={handleCancel}
       >
-        <Tabs defaultActiveKey="meta" items={items} />
+        <Tabs defaultActiveKey="required" items={items} />
       </Modal>
     </>
   );
@@ -203,8 +150,7 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
 
 const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = false, fileData }) => {
   const { t } = useDuplicatorTranslation();
-  const [dataTypes, setDataTypes] = useState<any[]>(['meta']);
-  const compile = useCompile();
+  const [dataTypes, setDataTypes] = useState<any[]>(['required']);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [restoreData, setRestoreData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -212,12 +158,20 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
   const resource = useMemo(() => {
     return apiClient.resource('backupFiles');
   }, [apiClient]);
+  const [dataSource, setDataSource] = useState([]);
 
   const showModal = async () => {
     setIsModalOpen(true);
     if (!upload) {
       setLoading(true);
       const { data } = await resource.get({ filterByTk: fileData.name });
+      setDataSource(
+        Object.keys(data?.data?.meta?.dumpableCollectionsGroupByGroup || []).map((key) => ({
+          value: key,
+          label: t(`${key}.title`),
+          disabled: ['required', 'skipped'].includes(key),
+        })),
+      );
       setRestoreData(data?.data?.meta);
       setLoading(false);
     }
@@ -236,7 +190,7 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
   const handleCancel = () => {
     setIsModalOpen(false);
     setRestoreData(null);
-    setDataTypes(['meta']);
+    setDataTypes(['required']);
   };
   return (
     <>
@@ -253,18 +207,14 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
           {upload && !restoreData && <RestoreUpload setRestoreData={setRestoreData} />}
           {(!upload || restoreData) && [
             <strong style={{ fontWeight: 600, display: 'block', margin: '16px 0 8px' }} key="info">
-              {t('Select the data to be backed up')}，以下选中的数据表会进行全覆盖 (
-              <LearnMore collectionsData={restoreData?.dumpableCollectionsGroupByDataTypes} />
+              {t('Select the data to be backed up')} (
+              <LearnMore collectionsData={restoreData?.dumpableCollectionsGroupByGroup} />
               ):
             </strong>,
             <div style={{ lineHeight: 2, marginBottom: 8 }} key="dataType">
               <FormItem>
                 <Checkbox.Group
-                  options={compile(
-                    options.filter((v) => {
-                      return restoreData?.dataTypes?.includes?.(v.value);
-                    }),
-                  )}
+                  options={dataSource}
                   style={{ flexDirection: 'column' }}
                   value={dataTypes}
                   onChange={(checkValue) => setDataTypes(checkValue)}
@@ -281,11 +231,19 @@ const Restore: React.FC<any> = ({ ButtonComponent = Button, title, upload = fals
 const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
   const { t } = useDuplicatorTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const compile = useCompile();
-  const [dataTypes, setBackupData] = useState<any[]>(['meta']);
+  const [dataTypes, setBackupData] = useState<any[]>(['required']);
   const apiClient = useAPIClient();
+  const [dataSource, setDataSource] = useState([]);
 
-  const showModal = () => {
+  const showModal = async () => {
+    const { data } = await apiClient.resource('backupFiles').dumpableCollections();
+    setDataSource(
+      Object.keys(data || []).map((key) => ({
+        value: key,
+        label: t(`${key}.title`),
+        disabled: ['required', 'skipped'].includes(key),
+      })),
+    );
     setIsModalOpen(true);
   };
 
@@ -298,7 +256,7 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
       },
     });
     setIsModalOpen(false);
-    setBackupData(['meta']);
+    setBackupData(['required']);
     setTimeout(() => {
       refresh();
     }, 500);
@@ -306,7 +264,7 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
 
   const handleCancel = () => {
     setIsModalOpen(false);
-    setBackupData(['meta']);
+    setBackupData(['required']);
   };
 
   return (
@@ -316,13 +274,13 @@ const NewBackup: React.FC<any> = ({ ButtonComponent = Button, refresh }) => {
       </ButtonComponent>
       <Modal title={t('New backup')} width={800} open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
         <strong style={{ fontWeight: 600, display: 'block', margin: '16px 0 8px' }}>
-          {t('Select the data to be backed up')}，以下选中的数据表会进行全覆盖 (
+          {t('Select the data to be backed up')} (
           <LearnMore isBackup={true} />
           ):
         </strong>
         <div style={{ lineHeight: 2, marginBottom: 8 }}>
           <Checkbox.Group
-            options={compile(options)}
+            options={dataSource}
             style={{ flexDirection: 'column' }}
             onChange={(checkValue) => setBackupData(checkValue)}
             value={dataTypes}

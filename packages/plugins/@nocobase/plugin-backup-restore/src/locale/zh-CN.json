@@ -36,5 +36,17 @@
   "Delete Record":"删除记录",
   "Are you sure you want to delete it?":"你确定要删除吗？",
   "Operation succeeded":"操作成功",
-  "Click or drag file to this area to upload":"单击或拖动文件到此区域进行上传"
+  "Click or drag file to this area to upload":"单击或拖动文件到此区域进行上传",
+  "required.title": "必备数据",
+  "user.title": "用户数据",
+  "log.title": "日志数据",
+  "custom.title": "自建表数据",
+  "skipped.title": "跳过的数据",
+  "third-party.title": "第三方服务信息",
+  "required.description": "必备数据",
+  "user.description": "用户数据",
+  "log.description": "日志数据",
+  "custom.description": "自建表数据",
+  "skipped.description": "跳过的数据",
+  "third-party.description": "第三方服务信息"
 }
