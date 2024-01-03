@@ -29,7 +29,7 @@ import { useCreateActionProps } from '../../../block-provider/hooks';
 
 export const SubTable: any = observer(
   (props: any) => {
-    const { value, openSize } = props;
+    const { openSize } = props;
     const { field, options: collectionField } = useAssociationFieldContext<ArrayField>();
     const { t } = useTranslation();
     const [visibleSelector, setVisibleSelector] = useState(false);
@@ -57,18 +57,20 @@ export const SubTable: any = observer(
     field.move = move;
 
     const options = useMemo(() => {
-      if (value && Object.keys(value).length > 0) {
-        const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
-          const label = option?.[fieldNames.label];
-          return {
-            ...option,
-            [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
-          };
-        });
+      if (field.value && Object.keys(field.value).length > 0) {
+        const opts = (Array.isArray(field.value) ? field.value : field.value ? [field.value] : [])
+          .filter(Boolean)
+          .map((option) => {
+            const label = option?.[fieldNames.label];
+            return {
+              ...option,
+              [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
+            };
+          });
         return opts;
       }
       return [];
-    }, [value, fieldNames?.label]);
+    }, [field.value, fieldNames?.label]);
 
     const pickerProps = {
       size: 'small',
