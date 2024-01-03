@@ -13,6 +13,7 @@ export class ApplicationVersion {
         name: 'applicationVersion',
         dataType: 'meta',
         timestamps: false,
+        dumpRules: 'required',
         fields: [{ name: 'value', type: 'string' }],
       });
     }

@@ -155,12 +155,16 @@ export class Dumper extends AppMigrator {
             return options;
           } catch (e) {
             console.error(e);
-            throw new Error(`collection ${c.name} has invalid duplicator option`, { cause: e });
+            throw new Error(`collection ${c.name} has invalid dumpRules option`, { cause: e });
           }
         }),
       )
-    ).filter(({ group }) => {
-      return !!group;
+    ).map((item) => {
+      if (!item.group) {
+        item.group = 'unknown';
+      }
+
+      return item;
     });
   }
 
