@@ -1,4 +1,4 @@
-import DownloadOutlined from '@ant-design/icons/DownloadOutlined';
+import { DownloadOutlined } from '@ant-design/icons';
 import { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { isString } from '@nocobase/utils/client';
@@ -22,6 +22,7 @@ type Composed = React.FC<UploadProps> & {
 export const ReadPretty: Composed = () => null;
 
 ReadPretty.File = function File(props: UploadProps) {
+  console.log(999);
   const { t } = useTranslation();
   const record = useRecord();
   const field = useField<Field>();
@@ -39,7 +40,7 @@ ReadPretty.File = function File(props: UploadProps) {
   function closeIFrameModal() {
     setVisible(false);
   }
-
+  console.log(DownloadOutlined);
   return wrapSSR(
     <div>
       <div
