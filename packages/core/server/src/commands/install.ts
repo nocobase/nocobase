@@ -6,14 +6,7 @@ export default (app: Application) => {
     .ipc()
     .option('-f, --force')
     .option('-c, --clean')
-    .action(async (...cliArgs) => {
-      const [opts] = cliArgs;
-      await app.install({
-        cliArgs,
-        clean: opts.clean,
-        sync: {
-          force: opts.force,
-        },
-      });
+    .action(async (options) => {
+      await app.install(options);
     });
 };

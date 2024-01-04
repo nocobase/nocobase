@@ -245,20 +245,20 @@ export class CollectionManagerPlugin extends Plugin {
       });
     };
 
-    this.app.on('loadCollections', loadCollections);
+    // this.app.on('loadCollections', loadCollections);
     this.app.on('beforeStart', loadCollections);
-    this.app.on('beforeUpgrade', async () => {
-      const syncOptions = {
-        alter: {
-          drop: false,
-        },
-        force: false,
-      };
-      await this.db.getCollection('collections').sync(syncOptions);
-      await this.db.getCollection('fields').sync(syncOptions);
-      await this.db.getCollection('collectionCategories').sync(syncOptions);
-      await loadCollections();
-    });
+    // this.app.on('beforeUpgrade', async () => {
+    //   const syncOptions = {
+    //     alter: {
+    //       drop: false,
+    //     },
+    //     force: false,
+    //   };
+    //   await this.db.getCollection('collections').sync(syncOptions);
+    //   await this.db.getCollection('fields').sync(syncOptions);
+    //   await this.db.getCollection('collectionCategories').sync(syncOptions);
+    //   await loadCollections();
+    // });
 
     this.app.resourcer.use(async (ctx, next) => {
       const { resourceName, actionName } = ctx.action;

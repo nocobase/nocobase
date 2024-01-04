@@ -336,6 +336,27 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this._instanceId;
   }
 
+  createMigrator({ migrations }) {
+    const migratorOptions: any = this.options.migrator || {};
+    const context = {
+      db: this,
+      sequelize: this.sequelize,
+      queryInterface: this.sequelize.getQueryInterface(),
+      ...migratorOptions.context,
+    };
+    return new Umzug({
+      logger: migratorOptions.logger || console,
+      migrations,
+      context,
+      storage: new SequelizeStorage({
+        tableName: `${this.options.tablePrefix || ''}migrations`,
+        modelName: 'migrations',
+        ...migratorOptions.storage,
+        sequelize: this.sequelize,
+      }),
+    });
+  }
+
   setContext(context: any) {
     this.context = context;
   }

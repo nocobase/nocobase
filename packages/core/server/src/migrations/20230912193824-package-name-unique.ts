@@ -3,6 +3,8 @@ import { Migration } from '../migration';
 import { PluginManager } from '../plugin-manager';
 
 export default class extends Migration {
+  on = 'beforeLoad';
+
   async up() {
     const collection = this.db.getCollection('applicationPlugins');
     if (!collection) {

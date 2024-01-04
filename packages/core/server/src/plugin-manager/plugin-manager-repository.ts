@@ -78,33 +78,13 @@ export class PluginManagerRepository extends Repository {
   }
 
   async getItems() {
-    try {
-      // sort plugins by id
-      return await this.find({
-        sort: 'id',
-      });
-    } catch (error) {
-      await this.database.migrator.up();
-      await this.collection.sync({
-        alter: {
-          drop: false,
-        },
-        force: false,
-      });
-      return await this.find({
-        sort: 'id',
-      });
-    }
+    return await this.find({
+      sort: 'id',
+    });
   }
 
   async init() {
-    const exists = await this.collection.existsInDb();
-    if (!exists) {
-      return;
-    }
-
     const items = await this.getItems();
-
     for (const item of items) {
       const { options, ...others } = item.toJSON();
       await this.pm.add(item.get('name'), {

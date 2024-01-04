@@ -1,7 +1,5 @@
-import { Repository } from '@nocobase/database';
 import { Plugin, PluginManager } from '@nocobase/server';
 import _ from 'lodash';
-import path from 'path';
 
 export class PresetNocoBase extends Plugin {
   builtInPlugins = [
@@ -84,16 +82,16 @@ export class PresetNocoBase extends Plugin {
   }
 
   beforeLoad() {
-    this.db.addMigrations({
-      namespace: this.getName(),
-      directory: path.resolve(__dirname, './migrations'),
-      context: {
-        plugin: this,
-      },
-    });
-    this.app.on('beforeUpgrade', async () => {
-      await this.updateOrCreatePlugins();
-    });
+    // this.db.addMigrations({
+    //   namespace: this.getName(),
+    //   directory: path.resolve(__dirname, './migrations'),
+    //   context: {
+    //     plugin: this,
+    //   },
+    // });
+    // this.app.on('beforeUpgrade', async () => {
+    //   await this.updateOrCreatePlugins();
+    // });
   }
 
   async allPlugins() {
@@ -143,7 +141,7 @@ export class PresetNocoBase extends Plugin {
   }
 
   async updateOrCreatePlugins() {
-    const repository = this.app.db.getRepository<any>('applicationPlugins');
+    const repository = this.pm.repository;
     const plugins = await this.getPluginToBeUpgraded();
     await this.db.sequelize.transaction((transaction) => {
       return Promise.all(
@@ -156,11 +154,10 @@ export class PresetNocoBase extends Plugin {
         ),
       );
     });
-    await this.app.reload();
   }
 
   async createIfNotExists() {
-    const repository = this.app.db.getRepository<Repository>('applicationPlugins');
+    const repository = this.pm.repository;
     const existPlugins = await repository.find();
     const existPluginNames = existPlugins.map((item) => item.name);
     const plugins = (await this.allPlugins()).filter((item) => !existPluginNames.includes(item.name));
@@ -168,12 +165,16 @@ export class PresetNocoBase extends Plugin {
   }
 
   async install() {
-    const repository = this.db.getRepository<any>('applicationPlugins');
     await this.createIfNotExists();
-    this.log.debug('install preset plugins');
-    await repository.init();
-    await this.app.pm.load();
-    await this.app.pm.install();
+    this.log.info('install built-in plugins');
+    await this.pm.repository.init();
+    await this.pm.load();
+    await this.pm.install();
+  }
+
+  async upgrade() {
+    this.log.info('update built-in plugins');
+    await this.updateOrCreatePlugins();
   }
 }
 

@@ -2,10 +2,21 @@ import { Command } from 'commander';
 
 export class AppCommand extends Command {
   private _handleByIPCServer = false;
+  public _preload = false;
 
   ipc() {
     this._handleByIPCServer = true;
     return this;
+  }
+
+  preload() {
+    this._preload = true;
+    return this;
+  }
+
+  hasCommand(name: string) {
+    const names = this.commands.map((c) => c.name());
+    return names.includes(name);
   }
 
   isHandleByIPCServer() {

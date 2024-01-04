@@ -4,25 +4,27 @@ import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocoba
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import {
-  SystemLogger,
-  RequestLoggerOptions,
   createLogger,
+  createSystemLogger,
   getLoggerFilePath,
   LoggerOptions,
+  RequestLoggerOptions,
+  SystemLogger,
   SystemLoggerOptions,
-  createSystemLogger,
 } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
-import { applyMixins, AsyncEmitter, measureExecutionTime, Toposort, ToposortOptions } from '@nocobase/utils';
-import chalk from 'chalk';
+import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
+import { applyMixins, AsyncEmitter, importModule, Toposort, ToposortOptions } from '@nocobase/utils';
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { randomUUID } from 'crypto';
+import glob from 'glob';
 import { IncomingMessage, Server, ServerResponse } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
 import lodash from 'lodash';
 import { RecordableHistogram } from 'node:perf_hooks';
+import { basename, resolve } from 'path';
 import { createACL } from './acl';
 import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
@@ -42,7 +44,6 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { TelemetryOptions, Telemetry } from '@nocobase/telemetry';
 
 import packageJson from '../package.json';
 
@@ -120,6 +121,8 @@ interface StartOptions {
   cliArgs?: any[];
   dbSync?: boolean;
   checkInstall?: boolean;
+  quickstart?: boolean;
+  reload?: boolean;
   recover?: boolean;
 }
 
@@ -356,6 +359,34 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return (this.cli as any)._findCommand(name);
   }
 
+  async preload() {
+    // load core collections
+    // load plugin commands
+  }
+
+  async reInit() {
+    if (!this._loaded) {
+      return;
+    }
+
+    this.log.info('app reinitializing');
+
+    if (this.cacheManager) {
+      await this.cacheManager.close();
+    }
+
+    if (this.telemetry.started) {
+      await this.telemetry.shutdown();
+    }
+
+    const oldDb = this._db;
+    this.init();
+    if (!oldDb.closed()) {
+      await oldDb.close();
+    }
+    this._loaded = false;
+  }
+
   async load(options?: any) {
     if (this._loaded) {
       return;
@@ -386,9 +417,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.pm.initPlugins();
 
     this.setMaintainingMessage('start load');
-
     this.setMaintainingMessage('emit beforeLoad');
-    await this.emitAsync('beforeLoad', this, options);
+
+    if (options?.hooks !== false) {
+      await this.emitAsync('beforeLoad', this, options);
+    }
 
     // Telemetry is initialized after beforeLoad hook
     // since some configuration may be registered in beforeLoad hook
@@ -401,7 +434,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.pm.load(options);
 
     this.setMaintainingMessage('emit afterLoad');
-    await this.emitAsync('afterLoad', this, options);
+    if (options?.hooks !== false) {
+      await this.emitAsync('afterLoad', this, options);
+    }
     this._loaded = true;
   }
 
@@ -464,8 +499,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           command: this.activatedCommand,
         });
 
-        await this.authenticate();
-        await this.load();
+        if (actionCommand['_preload']) {
+          await this.authenticate();
+          await this.load();
+        }
       })
       .hook('postAction', async (_, actionCommand) => {
         if (this._maintainingStatusBeforeCommand?.error && this._started) {
@@ -480,6 +517,56 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return command;
   }
 
+  async loadMigrations(options) {
+    const { directory, context, namespace } = options;
+    const migrations = {
+      beforeLoad: [],
+      afterLoad: [],
+    };
+    const extensions = ['js', 'ts'];
+    const patten = `${directory}/*.{${extensions.join(',')}}`;
+    const files = glob.sync(patten, {
+      ignore: ['**/*.d.ts'],
+    });
+    for (const file of files) {
+      let filename = basename(file);
+      filename = filename.substring(0, filename.lastIndexOf('.')) || filename;
+      const Migration = await importModule(file);
+      const m = new Migration({ app: this, db: this.db, ...context });
+      m.name = `${filename}/${namespace}`;
+      migrations[m.on || 'afterLoad'].push(m);
+    }
+    return migrations;
+  }
+
+  async loadCoreMigrations() {
+    const migrations = await this.loadMigrations({
+      directory: resolve(__dirname, 'migrations'),
+      namespace: '@nocobase/server',
+    });
+    return {
+      beforeLoad: {
+        up: async () => {
+          this.log.debug('run core migrations(beforeLoad)');
+          const migrator = this.db.createMigrator({ migrations: migrations.beforeLoad });
+          await migrator.up();
+        },
+      },
+      afterLoad: {
+        up: async () => {
+          this.log.debug('run core migrations(afterLoad)');
+          const migrator = this.db.createMigrator({ migrations: migrations.afterLoad });
+          await migrator.up();
+        },
+      },
+    };
+  }
+
+  async loadPluginCommands() {
+    this.log.debug('load plugin commands');
+    await this.pm.loadCommands();
+  }
+
   async runAsCLI(argv = process.argv, options?: ParseOptions & { throwError?: boolean; reqId?: string }) {
     if (this.activatedCommand) {
       return;
@@ -491,6 +578,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._maintainingStatusBeforeCommand = this._maintainingCommandStatus;
 
     try {
+      const commandName = options?.from === 'user' ? argv[0] : argv[2];
+      if (!this.cli.hasCommand(commandName)) {
+        await this.pm.loadCommands();
+      }
       const command = await this.cli.parseAsync(argv, options);
 
       this.setMaintaining({
@@ -647,29 +738,45 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async install(options: InstallOptions = {}) {
-    this.setMaintainingMessage('installing app...');
-    this.log.debug('Database dialect: ' + this.db.sequelize.getDialect(), { method: 'install' });
-
-    if (options?.clean || options?.sync?.force) {
-      this.log.debug('truncate database', { method: 'install' });
+    const reinstall = options.clean || options.force;
+    if (reinstall) {
       await this.db.clean({ drop: true });
-      this.log.debug('app reloading', { method: 'install' });
-      await this.reload();
-    } else if (await this.isInstalled()) {
-      this.log.warn('app is installed', { method: 'install' });
+    }
+    if (await this.isInstalled()) {
+      this.log.warn('app is installed');
       return;
     }
-
-    this.log.debug('emit beforeInstall', { method: 'install' });
-    this.setMaintainingMessage('call beforeInstall hook...');
-    await this.emitAsync('beforeInstall', this, options);
-    this.log.debug('start install plugins', { method: 'install' });
-    await this.pm.install(options);
-    this.log.debug('update version', { method: 'install' });
+    await this.reInit();
+    await this.db.sync();
+    await this.load({ hooks: false });
+    // await app.db.sync();
+    await this.pm.install();
     await this.version.update();
-    this.log.debug('emit afterInstall', { method: 'install' });
-    this.setMaintainingMessage('call afterInstall hook...');
-    await this.emitAsync('afterInstall', this, options);
+    this.log.info(`app ${reinstall ? 'reinstalled' : 'installed'} successfully [v${this.getVersion()}]`);
+
+    // this.setMaintainingMessage('installing app...');
+    // this.log.debug('Database dialect: ' + this.db.sequelize.getDialect(), { method: 'install' });
+
+    // if (options?.clean || options?.sync?.force) {
+    //   this.log.debug('truncate database', { method: 'install' });
+    //   await this.db.clean({ drop: true });
+    //   this.log.debug('app reloading', { method: 'install' });
+    //   await this.reload();
+    // } else if (await this.isInstalled()) {
+    //   this.log.warn('app is installed', { method: 'install' });
+    //   return;
+    // }
+
+    // this.log.debug('emit beforeInstall', { method: 'install' });
+    // this.setMaintainingMessage('call beforeInstall hook...');
+    // await this.emitAsync('beforeInstall', this, options);
+    // this.log.debug('start install plugins', { method: 'install' });
+    // await this.pm.install(options);
+    // this.log.debug('update version', { method: 'install' });
+    // await this.version.update();
+    // this.log.debug('emit afterInstall', { method: 'install' });
+    // this.setMaintainingMessage('call afterInstall hook...');
+    // await this.emitAsync('afterInstall', this, options);
 
     if (this._maintainingStatusBeforeCommand?.error) {
       return;
@@ -681,32 +788,52 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async upgrade(options: any = {}) {
-    await this.emitAsync('beforeUpgrade', this, options);
-    const force = false;
-
-    await measureExecutionTime(async () => {
-      await this.db.migrator.up();
-    }, 'Migrator');
-
-    await measureExecutionTime(async () => {
-      await this.db.sync({
-        force,
-        alter: {
-          drop: force,
-        },
-      });
-    }, 'Sync');
-
-    await this.version.update();
-    await this.emitAsync('afterUpgrade', this, options);
-
-    this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
-
-    if (this._started) {
-      await measureExecutionTime(async () => {
-        await this.restart();
-      }, 'Restart');
-    }
+    this.log.info('upgrading...');
+    await this.reInit();
+    const migrator1 = await this.loadCoreMigrations();
+    await migrator1.beforeLoad.up();
+    await this.db.sync();
+    await this.pm.initPresetPlugins();
+    const migrator2 = await this.pm.loadPresetMigrations();
+    await migrator2.beforeLoad.up();
+    // load preset plugins
+    await this.pm.load();
+    // upgrade preset plugins
+    await this.pm.upgrade();
+    await this.pm.initOtherPlugins();
+    const migrator3 = await this.pm.loadOtherMigrations();
+    await migrator3.beforeLoad.up();
+    // load other plugins
+    await this.load({ hooks: false });
+    await this.db.sync();
+    // upgrade plugins
+    await this.pm.upgrade();
+    await migrator1.afterLoad.up();
+    await migrator2.afterLoad.up();
+    await migrator3.afterLoad.up();
+    this.log.info(`✨  NocoBase has been upgraded to v${this.getVersion()}`);
+    await this.restart();
+    // await this.emitAsync('beforeUpgrade', this, options);
+    // const force = false;
+    // await measureExecutionTime(async () => {
+    //   await this.db.migrator.up();
+    // }, 'Migrator');
+    // await measureExecutionTime(async () => {
+    //   await this.db.sync({
+    //     force,
+    //     alter: {
+    //       drop: force,
+    //     },
+    //   });
+    // }, 'Sync');
+    // await this.version.update();
+    // await this.emitAsync('afterUpgrade', this, options);
+    // this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
+    // if (this._started) {
+    //   await measureExecutionTime(async () => {
+    //     await this.restart();
+    //   }, 'Restart');
+    // }
   }
 
   toJSON() {
