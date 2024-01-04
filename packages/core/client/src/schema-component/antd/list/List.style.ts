@@ -7,7 +7,7 @@ const useStyles = genStyleHook('nb-list', (token) => {
     [componentCls]: {
       width: '100%',
       marginBottom: token.marginLG,
-      '.nb-action-bar': { marginTop: token.marginXS },
+      '.nb-action-bar:not(:empty)': { marginTop: token.marginXS },
       '&:hover': { '> .general-schema-designer': { display: 'block' } },
       '> .general-schema-designer': {
         position: 'absolute',
