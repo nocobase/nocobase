@@ -54,12 +54,12 @@ export const Cascader = connect(
         <Space split={'/'}>
           {labels.map((label, index) => {
             if (selectedOptions[index]) {
-              return <span key={label}>{label}</span>;
+              return <span key={index}>{label}</span>;
             }
             const item = toArr(value)
               .filter(Boolean)
               .find((item) => item[fieldNames.value] === label);
-            return <span key={label}>{item?.[fieldNames.label] || label}</span>;
+            return <span key={index}>{item?.[fieldNames.label] || label}</span>;
           })}
         </Space>
       );

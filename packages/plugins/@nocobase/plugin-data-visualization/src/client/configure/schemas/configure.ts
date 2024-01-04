@@ -312,9 +312,9 @@ export const querySchema: ISchema = {
                           overflow: 'auto',
                         },
                       },
+                      enum: '{{ filterOptions }}',
                       'x-component': 'Filter',
                       'x-component-props': {
-                        options: '{{ filterOptions }}',
                         dynamicComponent: 'FilterDynamicComponent',
                       },
                     },
