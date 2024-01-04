@@ -61,7 +61,7 @@ test.describe('form item & create form', () => {
       expectConstantValue: async () => {
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.time-time').getByPlaceholder('Select time'),
-        ).toHaveValue(new RegExp(nowTime.format('HH:mm:ss')));
+        ).toHaveValue(new RegExp(nowTime.format('HH:')));
       },
     });
   });

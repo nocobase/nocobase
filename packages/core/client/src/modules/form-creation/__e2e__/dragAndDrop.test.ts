@@ -23,11 +23,7 @@ test('fields', async ({ page, mockPage }) => {
     .dragTo(page.getByLabel('block-item-CollectionField-users-form-users.email'));
   await page.reload();
 
-  await page.getByLabel('block-item-CollectionField-users-form-users.nickname').hover();
-  const nickname = await page
-    .getByLabel('block-item-CollectionField-users-form-users.nickname')
-    .getByLabel('designer-drag')
-    .boundingBox();
+  const nickname = await page.getByLabel('block-item-CollectionField-users-form-users.nickname').boundingBox();
   const username = await page.getByLabel('block-item-CollectionField-users-form-users.username').boundingBox();
   const email = await page.getByLabel('block-item-CollectionField-users-form-users.email').boundingBox();
   const max = Math.max(username.y, nickname.y, email.y);
