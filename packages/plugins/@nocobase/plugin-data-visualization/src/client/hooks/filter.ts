@@ -432,6 +432,7 @@ export const useChartFilterSourceFields = () => {
         });
       }
     });
+    return options;
   }, [collections]);
 };
 
