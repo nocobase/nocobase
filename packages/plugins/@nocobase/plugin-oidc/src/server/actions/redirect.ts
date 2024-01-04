@@ -21,6 +21,7 @@ export const redirect = async (ctx: Context, next: Next) => {
     const { token } = await auth.signIn();
     ctx.redirect(`${prefix}/admin?authenticator=${authenticator}&token=${token}`);
   } catch (error) {
+    ctx.logger.error('OIDC auth error', { error });
     ctx.redirect(`${prefix}/signin?authenticator=${authenticator}&error=${error.message}`);
   }
   await next();
