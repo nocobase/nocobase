@@ -1,4 +1,4 @@
-import React, { memo, useContext, useEffect } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { SchemaComponentOptions } from '@nocobase/client';
 import { ChartFilterItemDesigner } from './FilterItemDesigner';
 import {
@@ -17,7 +17,7 @@ import { ArrayItems } from '@formily/antd-v5';
 import { ChartFilterFormItem } from './FilterItemInitializers';
 import { ChartFilterForm } from './FilterForm';
 
-export const ChartFilterBlockProvider: React.FC = memo((props) => {
+export const ChartFilterBlockProvider: React.FC = (props) => {
   const { t } = useChartsTranslation();
   const { setEnabled } = useContext(ChartFilterContext);
   useEffect(() => {
@@ -50,4 +50,4 @@ export const ChartFilterBlockProvider: React.FC = memo((props) => {
       </SchemaComponentOptions>
     </div>
   );
-});
+};
