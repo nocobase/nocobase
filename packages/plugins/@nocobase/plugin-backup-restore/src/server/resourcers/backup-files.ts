@@ -159,7 +159,7 @@ export default {
       const args = ['restore', '-f', filePath];
 
       for (const dataType of dataTypes) {
-        args.push('-d', dataType);
+        args.push('-g', dataType);
       }
 
       await ctx.app.runCommand(...args);
