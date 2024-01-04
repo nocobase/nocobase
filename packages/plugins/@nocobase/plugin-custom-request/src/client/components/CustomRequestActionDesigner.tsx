@@ -63,7 +63,6 @@ function CustomRequestACL() {
   const customRequestsResource = useCustomRequestsResource();
   const { message } = App.useApp();
   const { data, refresh } = useGetCustomRequest();
-  const compile = useCompile();
   const { refresh: refreshRoleCustomKeys } = useRequest<{ data: string[] }>(
     {
       url: listByCurrentRoleUrl,
@@ -74,22 +73,11 @@ function CustomRequestACL() {
     },
   );
 
-  const { data: allRoles } = useRequest<any>({
-    url: '/roles:list',
-  });
-
-  const currentRoles = useMemo(() => {
-    allRoles?.data?.map(({ name, title }) => ({ name, title: compile(title) }));
-  }, [allRoles?.data]);
-
   return (
     <>
       <SchemaSettingsActionModalItem
         title={t('Access Control')}
         schema={CustomRequestACLSchema}
-        scope={{
-          currentRoles,
-        }}
         initialValues={{
           roles: data?.data?.roles,
         }}
