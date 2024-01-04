@@ -11,6 +11,7 @@ import {
   EditTitleField,
   EditTooltip,
   EditValidationRules,
+  SetDataScope,
 } from './SchemaSettingOptions';
 
 export const filterFormItemSettings = new SchemaSettings({
@@ -43,6 +44,10 @@ export const filterFormItemSettings = new SchemaSettings({
     {
       name: 'titleField',
       Component: EditTitleField,
+    },
+    {
+      name: 'SchemaSettingsDataScope',
+      Component: SetDataScope,
     },
     {
       name: 'divider',

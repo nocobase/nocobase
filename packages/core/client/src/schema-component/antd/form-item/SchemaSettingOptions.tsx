@@ -3,20 +3,25 @@ import { Field } from '@formily/core';
 import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { removeNullCondition } from '../filter';
+import { useCollection, useCollectionManager, useCollectionFilterOptions } from '../../../collection-manager';
 import {
   SchemaSettingsModalItem,
   SchemaSettingsSelectItem,
   SchemaSettingsSwitchItem,
   isPatternDisabled,
 } from '../../../schema-settings';
+import { useLocalVariables, useVariables } from '../../../variables';
+import { DynamicComponentProps } from '../filter/DynamicComponent';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useOperatorList } from '../filter/useOperators';
 import { isFileCollection } from './FormItem';
-
+import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
+import { useRecord, DatePickerProvider } from '../../..';
+import { VariableInput, getShouldChange } from '../../../schema-settings/VariableInput/VariableInput';
 export const findFilterOperators = (schema: Schema) => {
   while (schema) {
     if (schema['x-filter-operators']) {
@@ -610,6 +615,85 @@ export const EditTitleField = () => {
           schema,
         });
         dn.refresh();
+      }}
+    />
+  ) : null;
+};
+
+export const SetDataScope = (props) => {
+  const { t } = useTranslation();
+  const compile = useCompile();
+  const { getCollectionJoinField, getCollectionFields, getAllCollectionsInheritChain } = useCollectionManager();
+  const fieldSchema = useFieldSchema();
+  const { getField } = useCollection();
+  const { form } = useFormBlockContext();
+  const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
+  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const dataSource = useCollectionFilterOptions(collectionField?.target);
+  const record = useRecord();
+  const localVariables = useLocalVariables();
+  const variables = useVariables();
+  const field = useField<Field>();
+  const { dn } = useDesignable();
+  const targetFields = collectionField?.target
+    ? getCollectionFields(collectionField?.target)
+    : getCollectionFields(collectionField?.targetCollection) ?? [];
+  const options = targetFields
+    .filter((field) => !field?.target && field.type !== 'boolean')
+    .map((field) => ({
+      value: field?.name,
+      label: compile(field?.uiSchema?.title) || field?.name,
+    }));
+  const dynamicComponent = useCallback(
+    (props: DynamicComponentProps) => {
+      return (
+        <DatePickerProvider value={{ utc: false }}>
+          <VariableInput
+            {...props}
+            form={form}
+            record={record}
+            shouldChange={getShouldChange({
+              collectionField: props.collectionField,
+              variables,
+              localVariables,
+              getAllCollectionsInheritChain,
+            })}
+          />
+        </DatePickerProvider>
+      );
+    },
+    [form, getAllCollectionsInheritChain, localVariables, record, variables],
+  );
+  return options.length > 0 && fieldSchema['x-component'] === 'CollectionField' ? (
+    <SchemaSettingsModalItem
+      title={t('Set the data scope')}
+      schema={
+        {
+          type: 'object',
+          title: t('Set the data scope'),
+          properties: {
+            filter: {
+              defaultValue: defaultFilter,
+              enum: dataSource,
+              'x-component': 'Filter',
+              'x-component-props': {
+                collectionName: collectionField?.target,
+                dynamicComponent: props.dynamicComponent || dynamicComponent,
+              },
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={({ filter }) => {
+        filter = removeNullCondition(filter);
+        _.set(field.componentProps, 'service.params.filter', filter);
+        fieldSchema['x-component-props'] = field.componentProps;
+        dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-component-props': field.componentProps,
+          },
+        });
       }}
     />
   ) : null;
