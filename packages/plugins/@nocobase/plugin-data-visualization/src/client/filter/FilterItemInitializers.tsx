@@ -232,16 +232,19 @@ export const chartFilterItemInitializers = new SchemaInitializer({
         const { getChartCollections } = useChartData();
         const { getChartFilterFields } = useChartFilter();
         const collections = getChartCollections();
-        return collections.map((name: any) => {
-          const collection = getCollection(name);
-          const fields = getChartFilterFields(collection);
-          return {
-            name: collection.key,
-            type: 'subMenu',
-            title: collection.title,
-            children: fields,
-          };
-        });
+
+        return useMemo(() => {
+          return collections.map((name: any) => {
+            const collection = getCollection(name);
+            const fields = getChartFilterFields(collection);
+            return {
+              name: collection.key,
+              type: 'subMenu',
+              title: collection.title,
+              children: fields,
+            };
+          });
+        }, [collections]);
       },
     },
     {
