@@ -1,7 +1,7 @@
 import { ArrayField } from '@formily/core';
 import { ISchema, Schema, useForm } from '@formily/react';
 import { CollectionFieldOptions, useACLRoleContext, useCollectionManager } from '@nocobase/client';
-import { useContext } from 'react';
+import { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChartConfigContext } from '../configure';
 import formatters from '../block/formatters';
@@ -51,43 +51,47 @@ export const useFieldsWithAssociation = (collection?: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
   const { t } = useTranslation();
   const fields = useFields(collection);
-  return fields.map((field) => {
-    const filterable = getInterface(field.interface)?.filterable;
-    const label = Schema.compile(field.uiSchema?.title || field.name, { t });
-    if (!(filterable && (filterable?.nested || filterable?.children?.length))) {
-      return { ...field, label };
-    }
-    let targetFields = [];
-    if (filterable?.nested) {
-      const nestedFields = (getCollectionFields(field.target) || [])
-        .filter((targetField) => {
-          return targetField.interface;
-        })
-        .map((targetField) => ({
-          ...targetField,
-          key: `${field.name}.${targetField.name}`,
-          label: `${label} / ${Schema.compile(targetField.uiSchema?.title || targetField.name, { t })}`,
-          value: `${field.name}.${targetField.name}`,
-        }));
-      targetFields = [...targetFields, ...nestedFields];
-    }
+  return useMemo(
+    () =>
+      fields.map((field) => {
+        const filterable = getInterface(field.interface)?.filterable;
+        const label = Schema.compile(field.uiSchema?.title || field.name, { t });
+        if (!(filterable && (filterable?.nested || filterable?.children?.length))) {
+          return { ...field, label };
+        }
+        let targetFields = [];
+        if (filterable?.nested) {
+          const nestedFields = (getCollectionFields(field.target) || [])
+            .filter((targetField) => {
+              return targetField.interface;
+            })
+            .map((targetField) => ({
+              ...targetField,
+              key: `${field.name}.${targetField.name}`,
+              label: `${label} / ${Schema.compile(targetField.uiSchema?.title || targetField.name, { t })}`,
+              value: `${field.name}.${targetField.name}`,
+            }));
+          targetFields = [...targetFields, ...nestedFields];
+        }
 
-    if (filterable?.children?.length) {
-      const children = filterable.children.map((child: any) => ({
-        ...child,
-        key: `${field.name}.${child.name}`,
-        label: `${label} / ${Schema.compile(child.schema?.title || child.title || child.name, { t })}`,
-        value: `${field.name}.${child.name}`,
-      }));
-      targetFields = [...targetFields, ...children];
-    }
+        if (filterable?.children?.length) {
+          const children = filterable.children.map((child: any) => ({
+            ...child,
+            key: `${field.name}.${child.name}`,
+            label: `${label} / ${Schema.compile(child.schema?.title || child.title || child.name, { t })}`,
+            value: `${field.name}.${child.name}`,
+          }));
+          targetFields = [...targetFields, ...children];
+        }
 
-    return {
-      ...field,
-      label,
-      targetFields,
-    };
-  });
+        return {
+          ...field,
+          label,
+          targetFields,
+        };
+      }),
+    [fields],
+  );
 };
 
 export const useChartFields = (fields: FieldOption[]) => (field: any) => {
@@ -139,7 +143,7 @@ export const useCollectionOptions = () => {
       value: collection.name,
       key: collection.name,
     }));
-  return Schema.compile(options, { t });
+  return useMemo(() => Schema.compile(options, { t }), [options]);
 };
 
 export const useOrderFieldsOptions = (defaultOptions: any[], fields: FieldOption[]) => (field: any) => {
