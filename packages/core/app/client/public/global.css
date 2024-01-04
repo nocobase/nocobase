@@ -63,7 +63,9 @@ body a:active {
 }
 
 /* fix https://nocobase.height.app/T-2838 */
+/* fix https://nocobase.height.app/T-2797 */
+/* fix https://nocobase.height.app/T-2868 */
 /* antd 组件的层级有问题，有的弹窗是 1000 有的是 1200，会导致弹窗被覆盖的问题。弹窗这里应该使用同一个值，是比较合理的 */
-.ant-modal-wrap, .ant-modal-mask {
+.ant-modal-wrap, .ant-modal-mask, .ant-drawer {
   z-index: 1150 !important;
 }
