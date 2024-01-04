@@ -13,7 +13,7 @@ import {
   useGlobalTheme,
   useSchemaInitializerItem,
 } from '@nocobase/client';
-import React, { useCallback, useContext, useMemo } from 'react';
+import React, { memo, useCallback, useContext, useMemo } from 'react';
 import { lang, useChartsTranslation } from '../locale';
 import { Schema, SchemaOptionsContext, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { useMemoizedFn } from 'ahooks';
@@ -92,7 +92,7 @@ export const ChartFilterFormItem = observer(
 
 export const ChartFilterCustomItemInitializer: React.FC<{
   insert?: any;
-}> = (props) => {
+}> = memo((props) => {
   const { locale } = useContext(ConfigProvider.ConfigContext);
   const { t: lang } = useChartsTranslation();
   const t = useMemoizedFn(lang);
@@ -214,7 +214,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme]);
   return <SchemaInitializerItem {...itemConfig} {...props} onClick={handleClick} />;
-};
+});
 
 export const chartFilterItemInitializers = new SchemaInitializer({
   name: 'ChartFilterItemInitializers',

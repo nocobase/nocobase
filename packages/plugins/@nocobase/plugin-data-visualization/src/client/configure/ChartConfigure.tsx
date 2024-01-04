@@ -205,8 +205,10 @@ export const ChartConfigure: React.FC<{
         });
       }}
       width={'95%'}
-      bodyStyle={{
-        background: 'rgba(128, 128, 128, 0.08)',
+      styles={{
+        body: {
+          background: 'rgba(128, 128, 128, 0.08)',
+        },
       }}
     >
       <FormProvider form={form}>
@@ -411,7 +413,8 @@ ChartConfigure.Data = function Data() {
   const error = service?.error;
   return !error ? (
     <Table
-      dataSource={data}
+      dataSource={data.map((item, index) => ({ ...item, _key: index }))}
+      rowKey="_key"
       scroll={{ x: 'max-content' }}
       columns={Object.keys(data[0] || {}).map((col) => {
         const field = getField(fields, col.split('.'));
