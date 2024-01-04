@@ -26,7 +26,7 @@ export class ErrorHandler {
       try {
         await next();
       } catch (err) {
-        ctx.log.error(err);
+        ctx.log.error(err.message, { method: 'error-handler', err: err.stack });
 
         for (const handler of self.handlers) {
           if (handler.guard(err)) {

@@ -1,8 +1,12 @@
 import { ArrayItems } from '@formily/antd-v5';
 
-import { defaultFieldNames } from '@nocobase/client';
-
-import { Instruction, WorkflowVariableInput, WorkflowVariableJSON } from '@nocobase/plugin-workflow/client';
+import {
+  Instruction,
+  WorkflowVariableInput,
+  WorkflowVariableJSON,
+  WorkflowVariableTextArea,
+  defaultFieldNames,
+} from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../locale';
 
@@ -38,7 +42,7 @@ export default class extends Instruction {
       title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
-      'x-component': 'Input',
+      'x-component': 'WorkflowVariableTextArea',
       'x-component-props': {
         placeholder: 'https://www.nocobase.com',
       },
@@ -172,6 +176,7 @@ export default class extends Instruction {
   components = {
     ArrayItems,
     WorkflowVariableInput,
+    WorkflowVariableTextArea,
     WorkflowVariableJSON,
   };
   useVariables({ key, title }, { types, fieldNames = defaultFieldNames }) {

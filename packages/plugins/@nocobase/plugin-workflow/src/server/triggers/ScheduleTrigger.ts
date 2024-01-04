@@ -103,7 +103,7 @@ ScheduleModes.set(SCHEDULE_MODE.CONSTANT, {
       }
     }
 
-    this.plugin.trigger(workflow, { date: now });
+    this.workflow.trigger(workflow, { date: now });
 
     return 1;
   },
@@ -201,7 +201,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
       this.setCache(workflow);
     };
     this.events.set(name, listener);
-    this.plugin.app.db.on(event, listener);
+    this.workflow.app.db.on(event, listener);
   },
 
   off(workflow) {
@@ -211,12 +211,12 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
     if (this.events.has(name)) {
       const listener = this.events.get(name);
       this.events.delete(name);
-      this.plugin.app.db.off(event, listener);
+      this.workflow.app.db.off(event, listener);
     }
   },
 
   async shouldCache(workflow, now) {
-    const { db } = this.plugin.app;
+    const { db } = this.workflow.app;
     const { startsOn, endsOn, repeat, collection } = workflow.config;
     const timestamp = now.getTime();
 
@@ -305,7 +305,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
         },
       });
 
-      const tsFn = DialectTimestampFnMap[this.plugin.app.db.options.dialect];
+      const tsFn = DialectTimestampFnMap[this.workflow.app.db.options.dialect];
       if (typeof repeat === 'number' && tsFn) {
         const modExp = fn(
           'MOD',
@@ -343,7 +343,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
       });
     }
 
-    const repo = this.plugin.app.db.getRepository(collection);
+    const repo = this.workflow.app.db.getRepository(collection);
     const instances = await repo.find({
       where: {
         [Op.and]: conditions,
@@ -357,7 +357,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
     });
 
     instances.forEach((item) => {
-      this.plugin.trigger(workflow, {
+      this.workflow.trigger(workflow, {
         date: now,
         data: item.toJSON(),
       });
@@ -423,10 +423,10 @@ export default class ScheduleTrigger extends Trigger {
   // caching workflows in range, default to 1min
   cacheCycle = 60_000;
 
-  constructor(plugin: Plugin) {
-    super(plugin);
+  constructor(workflow: Plugin) {
+    super(workflow);
 
-    plugin.app.on('beforeStop', () => {
+    workflow.app.on('beforeStop', () => {
       if (this.timer) {
         clearInterval(this.timer);
       }
@@ -434,7 +434,7 @@ export default class ScheduleTrigger extends Trigger {
   }
 
   init() {
-    if (this.plugin.app.getPlugin('multi-app-share-collection')?.enabled && this.plugin.app.name !== 'main') {
+    if (this.workflow.app.getPlugin('multi-app-share-collection')?.enabled && this.workflow.app.name !== 'main') {
       return;
     }
 
@@ -474,7 +474,7 @@ export default class ScheduleTrigger extends Trigger {
 
   async onTick(now) {
     // NOTE: trigger workflows in sequence when sqlite due to only one transaction
-    const isSqlite = this.plugin.app.db.options.dialect === 'sqlite';
+    const isSqlite = this.workflow.app.db.options.dialect === 'sqlite';
     return Array.from(this.cache.values()).reduce(
       (prev, workflow) => {
         if (!this.shouldTrigger(workflow, now)) {
@@ -491,7 +491,7 @@ export default class ScheduleTrigger extends Trigger {
   }
 
   async reload() {
-    const WorkflowRepo = this.plugin.app.db.getRepository('workflows');
+    const WorkflowRepo = this.workflow.app.db.getRepository('workflows');
     const workflows = await WorkflowRepo.find({
       filter: { enabled: true, type: 'schedule' },
     });
@@ -510,7 +510,7 @@ export default class ScheduleTrigger extends Trigger {
       const should = await this.shouldCache(workflow, now);
 
       if (should) {
-        this.plugin.getLogger(workflow.id).info('caching scheduled workflow will run in next minute');
+        this.workflow.getLogger(workflow.id).info('caching scheduled workflow will run in next minute');
       }
 
       this.setCache(workflow, !should);

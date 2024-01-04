@@ -253,7 +253,7 @@ export const parseVariables = async (ctx: Context, next: Next) => {
   const getUser = () => {
     return async ({ fields }) => {
       const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
-      ctx.logger?.info('filter-parse: ', { userFields });
+      ctx.logger?.info('parse filter variables', { userFields, method: 'parseVariables' });
       if (!ctx.state.currentUser) {
         return;
       }
@@ -264,8 +264,9 @@ export const parseVariables = async (ctx: Context, next: Next) => {
         filterByTk: ctx.state.currentUser.id,
         fields: userFields,
       });
-      ctx.logger?.info('filter-parse: ', {
+      ctx.logger?.info('parse filter variables', {
         $user: user?.toJSON(),
+        method: 'parseVariables',
       });
       return user;
     };
@@ -329,7 +330,6 @@ export const query = async (ctx: Context, next: Next) => {
       postProcess,
     ])(ctx, next);
   } catch (err) {
-    ctx.app.logger.error('charts query: ', err);
     ctx.throw(500, err);
   }
 };

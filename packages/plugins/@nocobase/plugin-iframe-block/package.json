@@ -4,7 +4,7 @@
   "displayName.zh-CN": "iframe",
   "description": "Create an iframe block on the page to embed and display external web pages or content",
   "description.zh-CN": "在页面上创建和管理iframe，用于嵌入和展示外部网页或内容",
-  "version": "0.18.0-alpha.1",
+  "version": "0.18.0-alpha.9",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
@@ -22,5 +22,6 @@
     "@nocobase/database": "0.x",
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
-  }
+  },
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }

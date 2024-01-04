@@ -13,7 +13,6 @@ export default class extends Plugin {
   // You can get and modify the app instance here
   async load() {
     const workflow = this.app.pm.get(WorkflowPlugin);
-    const parallelInstruction = new ParallelInstruction();
-    workflow.instructions.register(parallelInstruction.type, parallelInstruction);
+    workflow.registerInstruction('parallel', ParallelInstruction);
   }
 }

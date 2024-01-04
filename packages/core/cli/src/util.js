@@ -57,6 +57,10 @@ exports.nodeCheck = () => {
 };
 
 exports.run = (command, args, options = {}) => {
+  if (command === 'tsx') {
+    command = 'node';
+    args = ['./node_modules/tsx/dist/cli.mjs'].concat(args || []);
+  }
   return execa(command, args, {
     shell: true,
     stdio: 'inherit',
@@ -213,6 +217,9 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
       paths[`${packageJsonName}/server`] = [`${relativePath}/src/server`];
       paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];
     }
+    if (packageJsonName === '@nocobase/plugin-workflow-test') {
+      paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];
+    }
   });
 
   const tsConfigJsonPath = join(cwd, './tsconfig.paths.json');
@@ -268,7 +275,7 @@ exports.initEnv = function initEnv() {
     }
   }
 
-  if (process.argv[2] === 'e2e') {
+  if (!process.env.APP_ENV_PATH && process.argv[2] === 'e2e') {
     // 用于存放 playwright 自动生成的相关的文件
     generatePlaywrightPath();
     if (!fs.existsSync('.env.e2e') && fs.existsSync('.env.e2e.example')) {

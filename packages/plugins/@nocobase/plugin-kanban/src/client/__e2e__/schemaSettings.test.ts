@@ -36,7 +36,7 @@ test.describe('configure setting', () => {
     await page.getByRole('menuitem', { name: 'Set the data scope' }).click();
     await page.getByText('Add condition', { exact: true }).click();
     await page.getByTestId('select-filter-field').click();
-    await page.getByTitle('ID').click();
+    await page.getByRole('menuitemcheckbox', { name: 'ID', exact: true }).click();
     await page.getByRole('spinbutton').fill('1');
     const [request] = await Promise.all([
       page.waitForRequest((request) => request.url().includes('api/general:list')),

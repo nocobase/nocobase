@@ -45,6 +45,26 @@ export default class extends Plugin {
     }));
   };
 
+  registerTrigger(type: string, trigger: Trigger | { new (): Trigger }) {
+    if (typeof trigger === 'function') {
+      this.triggers.register(type, new trigger());
+    } else if (trigger) {
+      this.triggers.register(type, trigger);
+    } else {
+      throw new TypeError('invalid trigger type to register');
+    }
+  }
+
+  registerInstruction(type: string, instruction: Instruction | { new (): Instruction }) {
+    if (typeof instruction === 'function') {
+      this.instructions.register(type, new instruction());
+    } else if (instruction instanceof Instruction) {
+      this.instructions.register(type, instruction);
+    } else {
+      throw new TypeError('invalid instruction type to register');
+    }
+  }
+
   async load() {
     this.addRoutes();
     this.addScopes();
@@ -57,15 +77,15 @@ export default class extends Plugin {
       aclSnippet: 'pm.workflow.workflows',
     });
 
-    this.triggers.register('collection', new CollectionTrigger());
-    this.triggers.register('schedule', new ScheduleTrigger());
+    this.registerTrigger('collection', CollectionTrigger);
+    this.registerTrigger('schedule', ScheduleTrigger);
 
-    this.instructions.register('calculation', new CalculationInstruction());
-    this.instructions.register('condition', new ConditionInstruction());
-    this.instructions.register('query', new QueryInstruction());
-    this.instructions.register('create', new CreateInstruction());
-    this.instructions.register('update', new UpdateInstruction());
-    this.instructions.register('destroy', new DestroyInstruction());
+    this.registerInstruction('calculation', CalculationInstruction);
+    this.registerInstruction('condition', ConditionInstruction);
+    this.registerInstruction('query', QueryInstruction);
+    this.registerInstruction('create', CreateInstruction);
+    this.registerInstruction('update', UpdateInstruction);
+    this.registerInstruction('destroy', DestroyInstruction);
   }
 
   addScopes() {

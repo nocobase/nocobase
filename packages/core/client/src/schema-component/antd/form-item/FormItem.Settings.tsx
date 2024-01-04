@@ -11,7 +11,7 @@ import { Collection, useCollection, useCollectionManager } from '../../../collec
 import { useRecord } from '../../../record-provider';
 import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
 import {
-  SchemaSettingsDataFormat,
+  SchemaSettingsDateFormat,
   SchemaSettingsDataScope,
   SchemaSettingsDefaultValue,
   SchemaSettingsSortingRule,
@@ -349,7 +349,7 @@ export const formItemSettings = new SchemaSettings({
     },
     {
       name: 'popupSize',
-      type: 'item',
+      type: 'select',
       useComponentProps() {
         const { t } = useTranslation();
         const field = useField<Field>();
@@ -357,35 +357,25 @@ export const formItemSettings = new SchemaSettings({
         const { dn } = useDesignable();
         return {
           title: t('Popup size'),
-          children: (
-            <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
-              {t('Popup size')}
-              <Select
-                bordered={false}
-                options={[
-                  { label: t('Small'), value: 'small' },
-                  { label: t('Middle'), value: 'middle' },
-                  { label: t('Large'), value: 'large' },
-                ]}
-                value={
-                  fieldSchema?.['x-component-props']?.['openSize'] ??
-                  (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle')
-                }
-                onChange={(value) => {
-                  field.componentProps.openSize = value;
-                  fieldSchema['x-component-props'] = field.componentProps;
-                  dn.emit('patch', {
-                    schema: {
-                      'x-uid': fieldSchema['x-uid'],
-                      'x-component-props': fieldSchema['x-component-props'],
-                    },
-                  });
-                  dn.refresh();
-                }}
-                style={{ textAlign: 'right', minWidth: 100 }}
-              />
-            </div>
-          ),
+          options: [
+            { label: t('Small'), value: 'small' },
+            { label: t('Middle'), value: 'middle' },
+            { label: t('Large'), value: 'large' },
+          ],
+          value:
+            fieldSchema?.['x-component-props']?.['openSize'] ??
+            (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle'),
+          onChange: (value) => {
+            field.componentProps.openSize = value;
+            fieldSchema['x-component-props'] = field.componentProps;
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': fieldSchema['x-component-props'],
+              },
+            });
+            dn.refresh();
+          },
         };
       },
       useVisible() {
@@ -742,7 +732,7 @@ export const formItemSettings = new SchemaSettings({
     },
     {
       name: 'dateFormat',
-      Component: SchemaSettingsDataFormat,
+      Component: SchemaSettingsDateFormat,
       useVisible() {
         const collectionField = useCollectionField();
         const isDateField = ['datetime', 'createdAt', 'updatedAt'].includes(collectionField?.interface);

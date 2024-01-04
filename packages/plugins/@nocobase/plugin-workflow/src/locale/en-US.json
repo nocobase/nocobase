@@ -58,7 +58,7 @@
   "Null": "Null",
   "Boolean": "Boolean",
   "String": "String",
-  "Calculator": "Calculator",
+  "Operator": "Operator",
   "Arithmetic calculation": "Arithmetic calculation",
   "String operation": "String operation",
   "Executed at": "Executed at",

@@ -15,6 +15,7 @@ module.exports = (cli) => {
     .option('--client')
     .option('--server')
     .option('--db-sync')
+    .option('--inspect [port]')
     .allowUnknownOption()
     .action(async (opts) => {
       promptForTs();
@@ -33,7 +34,7 @@ module.exports = (cli) => {
         return;
       }
 
-      const { port, client, server } = opts;
+      const { port, client, server, inspect } = opts;
 
       if (port) {
         process.env.APP_PORT = opts.port;
@@ -59,8 +60,13 @@ module.exports = (cli) => {
       if (server || !client) {
         console.log('starting server', serverPort);
 
+        const filteredArgs = process.argv.filter(
+          (item, i) => !item.startsWith('--inspect') && !(process.argv[i - 1] === '--inspect' && Number.parseInt(item)),
+        );
+
         const argv = [
           'watch',
+          ...(inspect ? [`--inspect=${inspect === true ? 9229 : inspect}`] : []),
           '--ignore=./storage/plugins/**',
           '--tsconfig',
           SERVER_TSCONFIG_PATH,
@@ -68,7 +74,7 @@ module.exports = (cli) => {
           'tsconfig-paths/register',
           `${APP_PACKAGE_ROOT}/src/index.ts`,
           'start',
-          ...process.argv.slice(3),
+          ...filteredArgs.slice(3),
           `--port=${serverPort}`,
         ];
 

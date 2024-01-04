@@ -6,22 +6,14 @@ import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel } from '../types';
 
 export interface CalculationConfig {
-  dynamic?: boolean | string;
   engine?: string;
   expression?: string;
 }
 
 export class CalculationInstruction extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
-    const { dynamic = false } = <CalculationConfig>node.config || {};
-    let { engine = 'math.js', expression = '' } = node.config;
-    let scope = processor.getScope(node.id);
-    if (dynamic) {
-      const parsed = parse(dynamic)(scope) ?? {};
-      engine = parsed.engine;
-      expression = parsed.expression;
-      scope = parse(node.config.scope ?? '')(scope) ?? {};
-    }
+    const { engine = 'math.js', expression = '' } = node.config;
+    const scope = processor.getScope(node.id);
 
     const evaluator = <Evaluator | undefined>evaluators.get(engine);
 

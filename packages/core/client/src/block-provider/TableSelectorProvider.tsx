@@ -84,8 +84,8 @@ export const recursiveParent = (schema: Schema, component) => {
   return schema['x-component'] === component
     ? schema
     : schema.parent
-    ? recursiveParent(schema.parent, component)
-    : null;
+      ? recursiveParent(schema.parent, component)
+      : null;
 };
 
 const useAssociationNames = (collection) => {
@@ -256,6 +256,7 @@ export const useTableSelectorProps = () => {
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = ctx?.service?.data?.data;
+      field?.setInitialValue?.(ctx?.service?.data?.data);
       field.data = field.data || {};
       field.data.selectedRowKeys = ctx?.field?.data?.selectedRowKeys;
       field.componentProps.pagination = field.componentProps.pagination || {};

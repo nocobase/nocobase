@@ -83,12 +83,10 @@ export class PluginManager {
   static async getPackageName(name: string) {
     const prefixes = this.getPluginPkgPrefix();
     for (const prefix of prefixes) {
-      try {
-        await import(`${prefix}${name}`);
+      const pkg = resolve(process.env.NODE_MODULES_PATH, `${prefix}${name}`, 'package.json');
+      const exists = await fsExists(pkg);
+      if (exists) {
         return `${prefix}${name}`;
-      } catch (error) {
-        // console.log(error);
-        continue;
       }
     }
     throw new Error(`${name} plugin does not exist`);
@@ -125,6 +123,7 @@ export class PluginManager {
   }
 
   static clearCache(packageName: string) {
+    return;
     const packageNamePath = packageName.replace('/', sep);
     Object.keys(require.cache).forEach((key) => {
       if (key.includes(packageNamePath)) {
@@ -231,7 +230,7 @@ export class PluginManager {
       console.error(error);
       // empty
     }
-    this.app.log.debug(`adding plugin [${options.name}]...`);
+    this.app.log.debug(`adding plugin...`, { method: 'add', submodule: 'plugin-manager', name: options.name });
     let P: any;
     try {
       P = await PluginManager.resolvePlugin(options.packageName || plugin, isUpgrade, !!options.packageName);
@@ -280,7 +279,7 @@ export class PluginManager {
       if (!plugin.enabled) {
         continue;
       }
-      this.app.logger.debug(`before load plugin [${name}]...`);
+      this.app.logger.debug(`before load plugin...`, { submodule: 'plugin-manager', method: 'load', name });
       await plugin.beforeLoad();
     }
 
@@ -299,11 +298,11 @@ export class PluginManager {
       }
 
       await this.app.emitAsync('beforeLoadPlugin', plugin, options);
-      this.app.logger.debug(`loading plugin [${name}]...`);
+      this.app.logger.debug(`loading plugin...`, { submodule: 'plugin-manager', method: 'load', name });
       await plugin.load();
       plugin.state.loaded = true;
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
-      this.app.logger.debug(`after load plugin [${name}]...`);
+      this.app.logger.debug(`after load plugin...`, { submodule: 'plugin-manager', method: 'load', name });
     }
 
     this.app.setMaintainingMessage('loaded plugins');
@@ -527,11 +526,11 @@ export class PluginManager {
     await plugin.beforeLoad();
 
     await this.app.emitAsync('beforeLoadPlugin', plugin, {});
-    this.app.logger.debug(`loading plugin [${name}]...`);
+    this.app.logger.debug(`loading plugin...`, { submodule: 'plugin-manager', method: 'loadOne', name });
     await plugin.load();
     plugin.state.loaded = true;
     await this.app.emitAsync('afterLoadPlugin', plugin, {});
-    this.app.logger.debug(`after load plugin [${name}]...`);
+    this.app.logger.debug(`after load plugin...`, { submodule: 'plugin-manager', method: 'loadOne', name });
 
     this.app.setMaintainingMessage(`loaded plugin ${plugin.name}`);
   }

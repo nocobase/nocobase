@@ -100,8 +100,8 @@ function ButtonEditor(props) {
               default: fieldSchema?.['x-component-props']?.danger
                 ? 'danger'
                 : fieldSchema?.['x-component-props']?.type === 'primary'
-                ? 'primary'
-                : 'default',
+                  ? 'primary'
+                  : 'default',
               enum: [
                 { value: 'default', label: '{{t("Default")}}' },
                 { value: 'primary', label: '{{t("Highlight")}}' },
@@ -509,7 +509,10 @@ function WorkflowConfig() {
   const description = {
     submit: t('Workflow will be triggered after submitting succeeded.', { ns: 'workflow' }),
     'customize:save': t('Workflow will be triggered after saving succeeded.', { ns: 'workflow' }),
-    'customize:triggerWorkflows': t('Workflow will be triggered directly once the button clicked.', { ns: 'workflow' }),
+    'customize:triggerWorkflows': t(
+      'Workflow will be triggered directly once the button clicked, without data saving.',
+      { ns: 'workflow' },
+    ),
   }[fieldSchema?.['x-action']];
 
   return (
