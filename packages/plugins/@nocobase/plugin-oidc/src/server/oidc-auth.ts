@@ -74,7 +74,7 @@ export class OIDCAuth extends BaseAuth {
       return null;
     }
     const client = await this.createOIDCClient();
-    const { userInfoMethod = 'GET', accessTokenVia } = this.getOptions();
+    const { userInfoMethod = 'GET', accessTokenVia = 'header' } = this.getOptions();
     const tokens = await client.callback(
       this.getRedirectUri(),
       {
