@@ -34,5 +34,6 @@
   "Where to put the access token when calling the user info endpoint": "Where to put the access token when calling the user info endpoint",
   "Header": "Header",
   "Body (Use with POST method)": "Body (Use with POST method)",
-  "Query parameters (Use with GET method)": "Query parameters (Use with GET method)"
+  "Query parameters (Use with GET method)": "Query parameters (Use with GET method)",
+  "Parameter name": "Parameter name"
 }

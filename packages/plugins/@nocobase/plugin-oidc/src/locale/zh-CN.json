@@ -22,5 +22,6 @@
   "Where to put the access token when calling the user info endpoint": "访问获取用户信息的 API 时 access_token 的传递方式",
   "Header": "请求头 (Header, 默认)",
   "Body (Use with POST method)": "请求体（Body, 配合 POST 方法使用）",
-  "Query parameters (Use with GET method)": "请求 URL 参数（Query, 配合 GET 方法使用）"
+  "Query parameters (Use with GET method)": "请求 URL 参数（Query, 配合 GET 方法使用）",
+  "Parameter name": "参数名"
 }
