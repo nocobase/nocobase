@@ -1,7 +1,6 @@
 import { ArrayTable } from '@formily/antd-v5';
 import { observer, useField } from '@formily/react';
 import {
-  CollectionManagerContext,
   CollectionManagerProvider,
   FormProvider,
   SchemaComponent,
@@ -462,7 +461,7 @@ AuditLogs.Decorator = observer(
   (props: any) => {
     const parent = useCollection();
     const record = useRecord();
-    const { interfaces } = useContext(CollectionManagerContext);
+    const { interfaces } = useCollectionManager();
     let filter = props?.params?.filter;
     if (parent.name) {
       const filterByTk = record?.[parent.filterTargetKey || 'id'];

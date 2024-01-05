@@ -61,11 +61,12 @@ export interface CollectionOptionsV2 {
 
   template?: string;
 
-  foreignKeyFields?: CollectionFieldOptionsV2[];
-
   isThrough?: boolean;
   autoCreate?: boolean;
   resource?: string;
+  collectionName?: string;
+  sourceKey?: string;
+  uiSchema?: any;
 
   [key: string]: any;
 }
@@ -107,6 +108,9 @@ export class CollectionV2 {
   }
   get inherit() {
     return this.options.inherit;
+  }
+  get targetKey() {
+    return this.options.targetKey;
   }
   getPrimaryKey(): string {
     if (this.primaryKey) {
@@ -167,10 +171,6 @@ export class CollectionV2 {
 
   get tree() {
     return this.options.tree;
-  }
-
-  get foreignKeyFields() {
-    return this.options.foreignKeyFields || [];
   }
 
   get isThrough() {

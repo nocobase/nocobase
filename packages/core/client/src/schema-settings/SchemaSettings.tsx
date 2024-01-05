@@ -41,7 +41,7 @@ import {
   APIClientProvider,
   ActionContextProvider,
   CollectionFieldOptions,
-  CollectionManagerContext,
+  CollectionManagerProviderV2,
   CollectionProvider,
   DatePickerProvider,
   Designable,
@@ -58,6 +58,7 @@ import {
   useBlockRequestContext,
   useCollection,
   useCollectionManager,
+  useCollectionManagerV2,
   useCompile,
   useDesignable,
   useFilterBlock,
@@ -953,7 +954,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
-  const cm = useContext(CollectionManagerContext);
+  const cm = useCollectionManagerV2();
   const collection = useCollection();
   const apiClient = useAPIClient();
   const { theme } = useGlobalTheme();
@@ -978,8 +979,8 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
               <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
                 <Router location={location} navigator={null}>
                   <BlockRequestContext.Provider value={ctx}>
-                    <CollectionManagerContext.Provider value={cm}>
-                      <CollectionProvider collection={collection}>
+                    <CollectionManagerProviderV2 collectionManager={cm}>
+                      <CollectionProvider name={collection.name}>
                         <SchemaComponentOptions scope={options.scope} components={options.components}>
                           <FormLayout
                             layout={'vertical'}
@@ -1003,7 +1004,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                           </FormLayout>
                         </SchemaComponentOptions>
                       </CollectionProvider>
-                    </CollectionManagerContext.Provider>
+                    </CollectionManagerProviderV2>
                   </BlockRequestContext.Provider>
                 </Router>
               </FormActiveFieldsProvider>

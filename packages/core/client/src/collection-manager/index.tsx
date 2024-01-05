@@ -22,3 +22,4 @@ export * from './templates/types';
 export * from './types';
 export * from './CollectionHistoryProvider';
 export * from './interfaces/properties';
+export * from './collectionPlugin';

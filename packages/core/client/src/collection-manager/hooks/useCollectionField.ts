@@ -1,8 +1,6 @@
-import { useContext } from 'react';
 import { useAPIClient } from '../../api-client';
 import { useRecord } from '../../record-provider';
 import { useCompile } from '../../schema-component';
-import { CollectionFieldContext } from '../context';
 import { useCollection } from './useCollection';
 
 export const useCollectionField = () => {
@@ -10,7 +8,7 @@ export const useCollectionField = () => {
   const record = useRecord();
   const api = useAPIClient();
   const compile = useCompile();
-  const ctx = useContext(CollectionFieldContext);
+  const ctx = useCollection();
   if (!ctx) {
     return {} as any;
   }

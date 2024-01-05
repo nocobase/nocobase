@@ -4,7 +4,8 @@ import {
   Action,
   CurrentAppInfoProvider,
   SchemaComponentOptions,
-  CollectionManagerContext,
+  useCollectionManagerV2,
+  CollectionManagerProviderV2,
 } from '@nocobase/client';
 import { Kanban } from './Kanban';
 import { KanbanCard } from './Kanban.Card';
@@ -27,14 +28,13 @@ Kanban.Designer = KanbanDesigner;
 const KanbanV2 = Kanban;
 
 const KanbanPluginProvider = React.memo((props) => {
-  const ctx = useContext(CollectionManagerContext);
   return (
     <CurrentAppInfoProvider>
       <SchemaComponentOptions
         components={{ Kanban, KanbanBlockProvider, KanbanV2, KanbanBlockInitializer }}
         scope={{ useKanbanBlockProps }}
       >
-        <CollectionManagerContext.Provider value={{ ...ctx }}>{props.children}</CollectionManagerContext.Provider>
+        {props.children}
       </SchemaComponentOptions>
     </CurrentAppInfoProvider>
   );

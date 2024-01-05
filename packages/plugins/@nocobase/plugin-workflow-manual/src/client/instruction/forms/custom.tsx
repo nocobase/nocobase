@@ -7,8 +7,7 @@ import { useField, useFieldSchema, useForm } from '@formily/react';
 
 import {
   ActionContextProvider,
-  CollectionContext,
-  CollectionProvider,
+  CollectionContextV2,
   FormBlockContext,
   RecordProvider,
   SchemaComponent,
@@ -17,6 +16,7 @@ import {
   SchemaInitializerItemType,
   SchemaInitializerItems,
   gridRowColWrap,
+  useCollection,
   useCollectionManager,
   useRecord,
   useSchemaInitializer,
@@ -46,8 +46,8 @@ function CustomFormBlockProvider(props) {
   );
 
   return !userJob.status || values ? (
-    <CollectionProvider
-      collection={{
+    <CollectionContextV2.Provider
+      value={{
         ...props.collection,
         fields,
       }}
@@ -63,7 +63,7 @@ function CustomFormBlockProvider(props) {
           {props.children}
         </FormBlockContext.Provider>
       </RecordProvider>
-    </CollectionProvider>
+    </CollectionContextV2.Provider>
   ) : null;
 }
 
@@ -206,7 +206,7 @@ const CustomItemsComponent = (props) => {
   const [interfaceOptions, setInterface] = useState<any>(null);
   const [insert, setCallback] = useState<any>();
   const items = useCommonInterfaceInitializers();
-  const collection = useContext(CollectionContext);
+  const collection = useCollection();
   const { setCollectionFields } = useContext(FormBlockContext);
 
   return (

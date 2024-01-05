@@ -196,7 +196,7 @@ const MenuEditor = (props) => {
 export const InternalAdminLayout = (props: any) => {
   const sideMenuRef = useRef<HTMLDivElement>();
   const result = useSystemSettings();
-  const { service } = useCollectionManager();
+  // const { service } = useCollectionManager();
   const params = useParams<any>();
   const { token } = useToken();
   const { render } = useAppSpin();
@@ -344,7 +344,8 @@ export const InternalAdminLayout = (props: any) => {
             pointer-events: none;
           `}
         ></header>
-        {service.contentLoading ? render() : <Outlet />}
+        <Outlet />
+        {/* {service.contentLoading ? render() : <Outlet />} */}
       </Layout.Content>
     </Layout>
   );

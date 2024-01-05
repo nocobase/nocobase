@@ -585,7 +585,6 @@ function Drawer() {
 }
 
 function Decorator({ params = {}, children }) {
-  const { collections, ...cm } = useCollectionManager();
   const blockProps = {
     collection: 'users_jobs',
     resource: 'users_jobs',
@@ -603,10 +602,7 @@ function Decorator({ params = {}, children }) {
   };
 
   return (
-    <CollectionManagerProvider
-      {...cm}
-      collections={[...collections, nodeCollection, workflowCollection, todoCollection]}
-    >
+    <CollectionManagerProvider collections={[nodeCollection, workflowCollection, todoCollection]}>
       <TableBlockProvider name="workflow-todo" {...blockProps}>
         {children}
       </TableBlockProvider>

@@ -94,7 +94,7 @@ const OperationButton: any = React.memo((props: any) => {
           node={node}
           handelOpenPorts={() => handelOpenPorts(true)}
         >
-          <SchemaComponent
+          {/* <SchemaComponent
             scope={useCancelAction}
             schema={{
               type: 'object',
@@ -121,7 +121,7 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      __parent: collectionData.current,
+                      // __parent: collectionData.current,
                     },
                   },
                 },
@@ -156,7 +156,7 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      __parent: collectionData.current,
+                      // __parent: collectionData.current,
                       targetCollection: name,
                     },
                   },
@@ -171,7 +171,7 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      __parent: collectionData.current,
+                      // __parent: collectionData.current,
                     },
                   },
                 },
@@ -184,14 +184,14 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      __parent: collectionData.current,
+                      // __parent: collectionData.current,
                     },
                     targetGraph,
                   },
                 },
               },
             }}
-          />
+          /> */}
         </CollectionNodeProvder>
       </SchemaComponentProvider>
     </div>
@@ -378,7 +378,7 @@ const Entity: React.FC<{
   const collectionData = useRef();
   const categoryData = useContext(CollectionCategroriesContext);
   collectionData.current = { ...item, title, inherits: item.inherits && new Proxy(item.inherits, {}) };
-  const { category } = item;
+  const { category = [] } = item;
   const compile = useCompile();
   const loadCollections = async (field: any) => {
     return targetGraph.collections?.map((collection: any) => ({
@@ -404,7 +404,7 @@ const Entity: React.FC<{
       className={styles.entityContainer}
       style={{ boxShadow: attrs?.boxShadow, border: select ? '2px dashed #f5a20a' : 0 }}
     >
-      {category.map((v, index) => {
+      {category?.map((v, index) => {
         return (
           <Badge.Ribbon
             key={index}
@@ -451,7 +451,7 @@ const Entity: React.FC<{
                         'x-visible': '{{actived}}',
                         'x-component': 'ConnectParentAction',
                         'x-component-props': {
-                          item: collectionData.current,
+                          // item: collectionData.current,
                           targetGraph,
                         },
                       },
@@ -459,7 +459,7 @@ const Entity: React.FC<{
                         type: 'void',
                         'x-component': 'ConnectChildAction',
                         'x-component-props': {
-                          item: collectionData.current,
+                          // item: collectionData.current,
                           targetGraph,
                         },
                         'x-visible': '{{actived}}',
@@ -470,7 +470,7 @@ const Entity: React.FC<{
                         'x-component': 'EditCollectionAction',
                         'x-component-props': {
                           type: 'primary',
-                          item: collectionData.current,
+                          // item: collectionData.current,
                           className: 'btn-edit-in-head',
                         },
                       },
@@ -481,7 +481,7 @@ const Entity: React.FC<{
                         'x-component-props': {
                           className: 'btn-del',
                           getContainer: getPopupContainer,
-                          item: collectionData.current,
+                          // item: collectionData.current,
                           useAction: () => {
                             return useDestroyActionAndRefreshCM({ name, id });
                           },
@@ -495,7 +495,7 @@ const Entity: React.FC<{
           </SchemaComponentProvider>
         </div>
       </div>
-      <PortsCom {...portsProps} />
+      {/* <PortsCom {...portsProps} /> */}
     </div>
   );
 };

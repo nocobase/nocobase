@@ -20,7 +20,7 @@ export const CollectionFieldProviderV2: FC<CollectionFieldProviderProps> = (prop
   const field = collection.getField(name);
 
   if (!field) {
-    return <DeletedPlaceholder />;
+    return <DeletedPlaceholder type="Field" name={name} />;
   }
 
   return <CollectionFieldContextV2.Provider value={field}>{children}</CollectionFieldContextV2.Provider>;

@@ -13,7 +13,7 @@ const CustomRequestProvider: React.FC = (props) => {
       }}
       components={{ CustomRequestAction, CustomRequestInitializer }}
     >
-      <CollectionManagerProvider>{props.children}</CollectionManagerProvider>
+      {props.children}
     </SchemaComponentOptions>
   );
 };

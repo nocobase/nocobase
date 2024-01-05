@@ -1,9 +1,8 @@
-import { cloneDeep, merge } from 'lodash';
 import { ISchema } from '@formily/react';
 import { CollectionFieldOptionsV2 } from './Collection';
-import { MenuProps } from 'antd';
+import { IField } from '../../collection-manager';
 
-export interface CollectionFieldInterfaceOptions extends ISchema {
+export class CollectionFieldInterfaceV2 implements IField {
   name: string;
   description?: string;
   group: string;
@@ -17,7 +16,6 @@ export interface CollectionFieldInterfaceOptions extends ISchema {
   availableTypes?: string[];
   hasDefaultValue?: boolean;
   isAssociation?: boolean;
-  schemaInitialize?: (schema: ISchema, data: any) => void;
   validateSchema?: (fieldSchema: ISchema) => Record<string, ISchema>;
   usePathOptions?: (field: CollectionFieldOptionsV2) => any;
   operators?: any[];
@@ -39,79 +37,4 @@ export interface CollectionFieldInterfaceOptions extends ISchema {
   // NOTE: set to `true` means field could be used as a title field
   titleUsable?: boolean;
   [key: string]: any;
-}
-export class CollectionFieldInterfaceV2 {
-  protected options: CollectionFieldInterfaceOptions;
-
-  constructor(options: CollectionFieldInterfaceOptions) {
-    this.options = options;
-  }
-
-  get name() {
-    return this.options.name;
-  }
-
-  get group() {
-    return this.options.group;
-  }
-
-  get title() {
-    return this.options.title;
-  }
-
-  get description() {
-    return this.options.description;
-  }
-
-  get default() {
-    return this.options.default;
-  }
-
-  get sortable() {
-    return this.options.sortable;
-  }
-
-  get filterable() {
-    return this.options.filterable;
-  }
-
-  get titleUsable() {
-    return this.options.titleUsable;
-  }
-
-  get availableTypes() {
-    return this.options.availableTypes;
-  }
-
-  get hasDefaultValue() {
-    return this.options.hasDefaultValue;
-  }
-
-  get isAssociation() {
-    return this.options.isAssociation;
-  }
-
-  get schemaInitialize() {
-    return this.options.schemaInitialize;
-  }
-
-  get validateSchema() {
-    return this.options.validateSchema;
-  }
-
-  get usePathOptions() {
-    return this.options.usePathOptions;
-  }
-
-  getOption<K extends keyof CollectionFieldInterfaceOptions>(key: K): CollectionFieldInterfaceOptions[K] {
-    return this.options[key];
-  }
-
-  getOptions(): CollectionFieldInterfaceOptions {
-    return cloneDeep(this.options);
-  }
-
-  setOptions(options: CollectionFieldInterfaceOptions) {
-    merge(this.options, options);
-  }
 }

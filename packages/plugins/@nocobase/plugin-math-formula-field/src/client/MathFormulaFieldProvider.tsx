@@ -1,5 +1,5 @@
-import { CollectionManagerContext, registerField, SchemaComponentOptions } from '@nocobase/client';
-import React, { useContext } from 'react';
+import { CollectionManagerProvider, registerField, SchemaComponentOptions } from '@nocobase/client';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { mathFormula } from './math-formula';
 import { MathFormula } from './MathFormula';
@@ -7,7 +7,6 @@ import { MathFormula } from './MathFormula';
 registerField(mathFormula.group, 'mathFormula', mathFormula);
 
 export const MathFormulaFieldProvider = React.memo((props) => {
-  const ctx = useContext(CollectionManagerContext);
   const { t } = useTranslation();
   return (
     <SchemaComponentOptions
@@ -23,9 +22,7 @@ export const MathFormulaFieldProvider = React.memo((props) => {
       }}
       components={{ MathFormula }}
     >
-      <CollectionManagerContext.Provider value={{ ...ctx, interfaces: { ...ctx.interfaces, mathFormula } }}>
-        {props.children}
-      </CollectionManagerContext.Provider>
+      <CollectionManagerProvider interfaces={{ mathFormula }}>{props.children}</CollectionManagerProvider>
     </SchemaComponentOptions>
   );
 });

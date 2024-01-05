@@ -1,55 +1,36 @@
 import { SchemaKey } from '@formily/react';
-import { reduce, unionBy } from 'lodash';
-import { useContext } from 'react';
 import { useAPIClient } from '../../api-client';
-import { CollectionContext } from '../context';
-import { CollectionFieldOptions } from '../types';
-import { useCollectionManager } from './useCollectionManager';
+import { useCollectionV2 } from '../../application';
+import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
+import { useCallback, useMemo } from 'react';
 
 export type Collection = ReturnType<typeof useCollection>;
 
 export const useCollection = () => {
-  const collection = useContext(CollectionContext);
+  const collection = useCollectionV2<InheritanceCollectionMixin>();
   const api = useAPIClient();
   const resource = api?.resource(collection?.name);
-  const { getInheritCollections, getCurrentCollectionFields } = useCollectionManager();
-  const currentFields = collection?.fields || [];
-  const inheritKeys = getInheritCollections(collection?.name) || [];
-  const inheritedFields = reduce(
-    inheritKeys,
-    (result, value) => {
-      const arr = result;
-      return arr.concat(getCurrentCollectionFields(value));
+  const currentFields = useMemo(() => collection?.fields || [], [collection]);
+  const inheritedFields = useMemo(() => collection?.getInheritedFields() || [], [collection]);
+  const totalFields = useMemo(() => collection?.getAllFields() || [], [collection]);
+  const foreignKeyFields = useMemo(() => collection?.getForeignKeyFields() || [], [collection]);
+  const getTreeParentField = useMemo(() => collection?.getAllFields((field) => field.treeParent), [collection]);
+  const getField = useCallback(
+    (name: SchemaKey) => {
+      return collection?.getField(name);
     },
-    [],
+    [collection],
   );
-  const totalFields = unionBy(currentFields?.concat(inheritedFields), 'name').filter((v) => {
-    return !v.isForeignKey;
-  });
-
-  const foreignKeyFields = unionBy(currentFields?.concat(inheritedFields), 'name').filter((v) => {
-    return v.isForeignKey;
-  });
-
+  const getPrimaryKey = useCallback(() => {
+    return collection?.getPrimaryKey();
+  }, [collection]);
   return {
-    ...collection,
+    ...collection?.getOptions(),
     resource,
-    getField(name: SchemaKey): CollectionFieldOptions | undefined {
-      const fields = totalFields as any[];
-      return fields?.find((field) => field.name === name);
-    },
-    getTreeParentField() {
-      const fields = totalFields;
-      return fields?.find((field) => field.treeParent);
-    },
+    getTreeParentField,
     fields: totalFields,
-    getPrimaryKey: () => {
-      if (collection.targetKey || collection.filterTargetKey) {
-        return collection.targetKey || collection.filterTargetKey;
-      }
-      const field = currentFields.find((field) => field.primaryKey);
-      return field ? field.name : 'id';
-    },
+    getField,
+    getPrimaryKey,
     currentFields,
     inheritedFields,
     foreignKeyFields,

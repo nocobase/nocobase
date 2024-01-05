@@ -1,5 +1,6 @@
 import { ISchema } from '@formily/react';
 import { ReactNode } from 'react';
+import { CollectionManagerV2, CollectionV2 } from '../application';
 
 type dumpable = 'required' | 'optional' | 'skip';
 type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
@@ -55,7 +56,9 @@ export interface CollectionManagerOptions {
   interfaces?: any;
   collections?: CollectionOptions[];
   templates?: any;
-  refreshCM?: () => Promise<void>;
+  // refreshCM?: () => Promise<void>;
+  reloadCallback?: (collection: CollectionV2[]) => void;
+  cm?: CollectionManagerV2;
   children?: ReactNode;
   updateCollection?: (collection: any) => void;
 }

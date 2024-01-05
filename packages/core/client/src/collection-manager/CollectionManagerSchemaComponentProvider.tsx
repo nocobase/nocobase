@@ -1,12 +1,12 @@
 import React from 'react';
-import { SchemaComponentOptions } from '../';
+import { SchemaComponentOptions } from '..';
 import {
   CollectionField,
   CollectionFieldProvider,
   CollectionProvider,
   ResourceActionProvider,
   useDataSourceFromRAC,
-} from './';
+} from '.';
 import * as hooks from './action-hooks';
 import { DataSourceProvider, ds, SubFieldDataSourceProvider } from './sub-table';
 

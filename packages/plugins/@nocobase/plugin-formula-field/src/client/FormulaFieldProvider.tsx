@@ -1,7 +1,7 @@
-import { CollectionManagerContext, css, i18n, registerField, SchemaComponentOptions } from '@nocobase/client';
+import { CollectionManagerProvider, css, i18n, registerField, SchemaComponentOptions } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry } from '@nocobase/utils/client';
-import React, { useContext } from 'react';
+import React from 'react';
 import { Formula } from './components';
 import formulaField from './interfaces/formula';
 import { NAMESPACE } from './locale';
@@ -33,7 +33,6 @@ function renderExpressionDescription(key: string) {
 }
 
 export const FormulaFieldProvider = React.memo((props) => {
-  const ctx = useContext(CollectionManagerContext);
   return (
     <SchemaComponentOptions
       components={{
@@ -44,18 +43,7 @@ export const FormulaFieldProvider = React.memo((props) => {
         renderExpressionDescription,
       }}
     >
-      <CollectionManagerContext.Provider
-        value={{
-          ...ctx,
-          interfaces: {
-            ...ctx.interfaces,
-            formula: formulaField,
-            // expression: expressionField
-          },
-        }}
-      >
-        {props.children}
-      </CollectionManagerContext.Provider>
+      <CollectionManagerProvider interfaces={{ formula: formulaField }}>{props.children}</CollectionManagerProvider>
     </SchemaComponentOptions>
   );
 });

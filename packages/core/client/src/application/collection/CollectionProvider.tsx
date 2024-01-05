@@ -18,10 +18,8 @@ export const CollectionProviderV2: FC<CollectionProviderProps> = (props) => {
   const { name, ns, children, allowNull } = props;
   const collectionManager = useCollectionManagerV2();
   const collection = useMemo(() => collectionManager.getCollection(name, { ns }), [collectionManager, name, ns]);
-
   if (!collection && allowNull) return <>{props.children}</>;
-  if (!collection && !allowNull) return <DeletedPlaceholder />;
-
+  if (!collection && !allowNull) return <DeletedPlaceholder type="Collection" name={name} />;
   return <CollectionContextV2.Provider value={collection}>{children}</CollectionContextV2.Provider>;
 };
 

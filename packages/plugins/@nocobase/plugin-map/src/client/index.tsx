@@ -1,5 +1,5 @@
-import { CollectionManagerContext, CurrentAppInfoProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
-import React, { useContext } from 'react';
+import { CollectionManagerProvider, CurrentAppInfoProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
+import React from 'react';
 import { MapBlockOptions } from './block';
 import { mapActionInitializers } from './block/MapActionInitializers';
 import { Configuration, Map } from './components';
@@ -9,15 +9,12 @@ import { generateNTemplate } from './locale';
 import { NAMESPACE } from './locale';
 
 const MapProvider = React.memo((props) => {
-  const ctx = useContext(CollectionManagerContext);
   return (
     <CurrentAppInfoProvider>
       <MapInitializer>
         <SchemaComponentOptions components={{ Map }}>
           <MapBlockOptions>
-            <CollectionManagerContext.Provider value={{ ...ctx, interfaces: { ...ctx.interfaces, ...interfaces } }}>
-              {props.children}
-            </CollectionManagerContext.Provider>
+            <CollectionManagerProvider interfaces={interfaces}>{props.children}</CollectionManagerProvider>
           </MapBlockOptions>
         </SchemaComponentOptions>
       </MapInitializer>

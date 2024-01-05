@@ -1,23 +1,19 @@
-import React, { FC, useContext } from 'react';
+import React, { FC } from 'react';
 
-import { registerField, CollectionManagerContext, SchemaComponentOptions } from '@nocobase/client';
+import { CollectionManagerProvider, registerField, SchemaComponentOptions } from '@nocobase/client';
 
 import { RuleConfigForm, sequence } from './sequence';
 
 registerField(sequence.group, 'sequence', sequence);
 
 export const SequenceFieldProvider: FC = (props) => {
-  const ctx = useContext(CollectionManagerContext);
-
   return (
     <SchemaComponentOptions
       components={{
         RuleConfigForm,
       }}
     >
-      <CollectionManagerContext.Provider value={{ ...ctx, interfaces: { ...ctx.interfaces, sequence } }}>
-        {props.children}
-      </CollectionManagerContext.Provider>
+      <CollectionManagerProvider interfaces={{ sequence }}>{props.children}</CollectionManagerProvider>
     </SchemaComponentOptions>
   );
 };

@@ -11,10 +11,8 @@ import {
   APIClientProvider,
   CollectionCategroriesContext,
   CollectionCategroriesProvider,
-  CollectionManagerContext,
   CollectionManagerProvider,
   CurrentAppInfoContext,
-  SchemaComponent,
   SchemaComponentOptions,
   Select,
   collection,
@@ -25,6 +23,8 @@ import {
   useGlobalTheme,
   useApp,
   ApplicationContext,
+  useCollectionManagerV2,
+  SchemaComponent,
 } from '@nocobase/client';
 import { App, Button, ConfigProvider, Layout, Spin, Switch, Tooltip } from 'antd';
 import dagre from 'dagre';
@@ -356,14 +356,14 @@ export const GraphDrawPage = React.memo(() => {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedCollections = searchParams.get('collections');
   const options = useContext(SchemaOptionsContext);
-  const ctx = useContext(CollectionManagerContext);
   const api = useAPIClient();
   const compile = useCompile();
   const { t } = useGCMTranslation();
   const [collectionData, setCollectionData] = useState<any>([]);
   const [collectionList, setCollectionList] = useState<any>([]);
   const [loading, setLoading] = useState(false);
-  const { refreshCM, collections } = useCollectionManager();
+  const { collections } = useCollectionManager();
+  const cm = useCollectionManagerV2();
   const currentAppInfo = useCurrentAppInfo();
   const app = useApp();
   const {
@@ -372,7 +372,6 @@ export const GraphDrawPage = React.memo(() => {
   const categoryCtx = useContext(CollectionCategroriesContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
-
   const saveGraphPositionAction = async (data) => {
     await api.resource('graphPositions').create({ values: data });
     await refreshPositions();
@@ -403,8 +402,8 @@ export const GraphDrawPage = React.memo(() => {
       refreshPositions();
     }
   };
-  const refreshGM = async (collections?) => {
-    const data = collections?.length > 0 ? collections : await refreshCM();
+  const reloadCallback = async (collections) => {
+    const data = collections.map((item) => item?.getOptions() || item);
     targetGraph.collections = data;
     targetGraph.updatePositionAction = updatePositionAction;
     const currentNodes = targetGraph.getNodes();
@@ -496,9 +495,9 @@ export const GraphDrawPage = React.memo(() => {
               <SchemaComponentOptions inherit scope={scope} components={components}>
                 <CollectionCategroriesProvider {...categoryCtx}>
                   <CollectionManagerProvider
-                    collections={targetGraph?.collections}
-                    refreshCM={refreshGM}
-                    interfaces={ctx.interfaces}
+                    // collections={targetGraph?.collections}
+                    reloadCallback={reloadCallback}
+                    cm={cm}
                   >
                     {/* TODO: 因为画布中的卡片是一次性注册进 Graph 的，这里的 theme 是存在闭包里的，因此当主题动态变更时，并不会触发卡片的重新渲染 */}
                     <ConfigProvider theme={theme}>
@@ -1067,7 +1066,7 @@ export const GraphDrawPage = React.memo(() => {
     setLoading(true);
     refreshPositions()
       .then(async () => {
-        await refreshGM(collections);
+        await reloadCallback(collections);
         setLoading(false);
       })
       .catch((err) => {
@@ -1101,7 +1100,7 @@ export const GraphDrawPage = React.memo(() => {
     <Layout>
       <div className={styles.graphCollectionContainerClass}>
         <Spin spinning={loading}>
-          <CollectionManagerProvider collections={targetGraph?.collections} refreshCM={refreshGM}>
+          <CollectionManagerProvider cm={cm} reloadCallback={reloadCallback}>
             <CollapsedContext.Provider value={{ collectionList, handleSearchCollection }}>
               <div className={cx(styles.collectionListClass)}>
                 <SchemaComponent
