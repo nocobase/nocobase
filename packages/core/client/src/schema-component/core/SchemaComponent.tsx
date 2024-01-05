@@ -35,8 +35,8 @@ const RecursionSchemaComponent = (props: ISchemaFieldProps & SchemaComponentOnCh
       value={{
         ...ctx,
         refresh: () => {
-          ctx.refresh();
-          props.onChange(s);
+          ctx.refresh?.();
+          props.onChange?.(s);
         },
       }}
     >
