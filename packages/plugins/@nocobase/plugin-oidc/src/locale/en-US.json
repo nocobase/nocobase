@@ -35,5 +35,6 @@
   "Header": "Header",
   "Body (Use with POST method)": "Body (Use with POST method)",
   "Query parameters (Use with GET method)": "Query parameters (Use with GET method)",
-  "Parameter name": "Parameter name"
+  "Parameter name": "Parameter name",
+  "The state token helps prevent CSRF attacks. It's recommended to leave it blank for automatic random generation.": "The state token helps prevent CSRF attacks. It's recommended to leave it blank for automatic random generation."
 }

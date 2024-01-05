@@ -67,14 +67,14 @@ export class OIDCAuth extends BaseAuth {
   async validate() {
     const ctx = this.ctx;
     const { params: values } = ctx.action;
-    const token = ctx.cookies.get(cookieName);
+    const { userInfoMethod = 'GET', accessTokenVia = 'header', stateToken } = this.getOptions();
+    const token = stateToken || ctx.cookies.get(cookieName);
     const search = new URLSearchParams(decodeURIComponent(values.state));
     if (search.get('token') !== token) {
       ctx.logger.error('nocobase_oidc state mismatch', { method: 'validate' });
       return null;
     }
     const client = await this.createOIDCClient();
-    const { userInfoMethod = 'GET', accessTokenVia = 'header' } = this.getOptions();
     const tokens = await client.callback(
       this.getRedirectUri(),
       {

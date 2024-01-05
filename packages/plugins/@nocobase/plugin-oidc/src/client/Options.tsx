@@ -191,6 +191,15 @@ const schema = {
                     },
                   },
                 },
+                stateToken: {
+                  type: 'string',
+                  title: '{{t("State token")}}',
+                  'x-component': 'Input',
+                  'x-decorator': 'FormItem',
+                  description: lang(
+                    "The state token helps prevent CSRF attacks. It's recommended to leave it blank for automatic random generation.",
+                  ),
+                },
                 exchangeBodyKeys: {
                   type: 'array',
                   title: '{{t("Pass parameters in the authorization code grant exchange")}}',

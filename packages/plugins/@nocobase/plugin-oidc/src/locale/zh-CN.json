@@ -23,5 +23,6 @@
   "Header": "请求头 (Header, 默认)",
   "Body (Use with POST method)": "请求体（Body, 配合 POST 方法使用）",
   "Query parameters (Use with GET method)": "请求 URL 参数（Query, 配合 GET 方法使用）",
-  "Parameter name": "参数名"
+  "Parameter name": "参数名",
+  "The state token helps prevent CSRF attacks. It's recommended to leave it blank for automatic random generation.": "state token 用于防止 CSRF 攻击，建议留空使用自动生成的随机值。"
 }
