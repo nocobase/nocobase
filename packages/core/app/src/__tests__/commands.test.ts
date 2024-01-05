@@ -1,6 +1,9 @@
+import { mockDatabase } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
 import axios from 'axios';
 import execa from 'execa';
+import { resolve } from 'path';
+import { getPortPromise } from 'portfinder';
 
 const delay = (timeout) => {
   return new Promise((resolve) => {
@@ -10,10 +13,11 @@ const delay = (timeout) => {
   });
 };
 
-const checkServer = async (duration = 1000, max = 60 * 10) => {
+const checkServer = async (port?: number, duration = 1000, max = 60 * 10) => {
   return new Promise((resolve, reject) => {
     let count = 0;
-    const url = `${process.env.APP_BASE_URL}/api/__health_check`;
+    const baseURL = `http://127.0.0.1:${port}`;
+    const url = `${baseURL}/api/__health_check`;
     console.log('url', url);
     const timer = setInterval(async () => {
       if (count++ > max) {
@@ -31,7 +35,7 @@ const checkServer = async (duration = 1000, max = 60 * 10) => {
         })
         .catch((error) => {
           const data = error?.response?.data?.error;
-          // console.error('Request error:', error?.response?.data?.error);
+          console.error('Request error:', error?.response?.data?.error);
           if (data?.code === 'APP_NOT_INSTALLED_ERROR') {
             resolve(data?.code);
           }
@@ -47,152 +51,184 @@ const run = (command, args, options) => {
   });
 };
 
-describe.skip('cli', () => {
+const createDatabase = async () => {
+  if (process.env.DB_DIALECT === 'sqlite') {
+    return 'nocobase';
+  }
+  const db = mockDatabase();
+  const name = `d_${uid()}`;
+  await db.sequelize.query(`CREATE DATABASE ${name}`);
+  await db.close();
+  return name;
+};
+
+describe('cli', () => {
   test('install', async () => {
-    console.log(process.env.DB_DIALECT);
-    const dbFile = `storage/db/nocobase-${uid()}.sqlite`;
+    const database = await createDatabase();
+    const port = await getPortPromise({
+      port: 13000,
+    });
+    console.log(process.env.DB_DIALECT, port);
+    const dbFile = `storage/tests/db/nocobase-${uid()}.sqlite`;
+    const env = {
+      ...process.env,
+      APP_PORT: `${port}`,
+      DB_STORAGE: dbFile,
+      DB_DATABASE: database,
+      SOCKET_PATH: `storage/tests/gateway-e2e-${uid()}.sock`,
+      PM2_HOME: resolve(process.cwd(), `storage/tests/.pm2-${uid()}`),
+    };
     const subprocess1 = await execa('yarn', ['nocobase', 'install'], {
-      env: {
-        DB_STORAGE: dbFile,
-      },
+      env,
     });
     expect(subprocess1.stdout.includes('app installed successfully')).toBeTruthy();
     const subprocess2 = await execa('yarn', ['nocobase', 'install'], {
-      env: {
-        DB_STORAGE: dbFile,
-      },
+      env,
     });
     expect(subprocess2.stdout.includes('app is installed')).toBeTruthy();
     const subprocess3 = await execa('yarn', ['nocobase', 'install', '-f'], {
-      env: {
-        DB_STORAGE: dbFile,
-      },
+      env,
     });
     expect(subprocess3.stdout.includes('app reinstalled successfully')).toBeTruthy();
   });
 
   test('start + install', async () => {
     console.log(process.env.DB_DIALECT);
-    const dbFile = `storage/db/nocobase-${uid()}.sqlite`;
-    const subprocess1 = execa('yarn', ['nocobase', 'dev', '--server'], {
-      env: {
-        ...process.env,
-        // DB_DIALECT: 'sqlite',
-        DB_STORAGE: dbFile,
-      },
+    const database = await createDatabase();
+    const port = await getPortPromise({
+      port: 13000,
     });
-    process.env.APP_BASE_URL = `http://127.0.0.1:${process.env.APP_PORT}`;
-    const code = await checkServer();
+    const dbFile = `storage/tests/db/nocobase-${uid()}.sqlite`;
+    const env = {
+      ...process.env,
+      APP_PORT: `${port}`,
+      DB_STORAGE: dbFile,
+      DB_DATABASE: database,
+      SOCKET_PATH: `storage/tests/gateway-e2e-${uid()}.sock`,
+      PM2_HOME: resolve(process.cwd(), `storage/tests/.pm2-${uid()}`),
+    };
+    const subprocess1 = execa('yarn', ['nocobase', 'dev', '--server'], {
+      env,
+    });
+    const code = await checkServer(port);
     console.log(code);
     expect(code).toBe('APP_NOT_INSTALLED_ERROR');
     execa('yarn', ['nocobase', 'install'], {
-      env: {
-        ...process.env,
-        // DB_DIALECT: 'sqlite',
-        DB_STORAGE: dbFile,
-      },
+      env,
     });
     await delay(5000);
-    const data2 = await checkServer();
+    const data2 = await checkServer(port);
     expect(data2).toBe(true);
     subprocess1.cancel();
   });
 
   test('install + start', async () => {
     console.log(process.env.DB_DIALECT);
-    const dbFile = `storage/db/nocobase-${uid()}.sqlite`;
+    const database = await createDatabase();
+    const port = await getPortPromise({
+      port: 13000,
+    });
+    const dbFile = `storage/tests/db/nocobase-${uid()}.sqlite`;
+    const env = {
+      ...process.env,
+      APP_PORT: `${port}`,
+      DB_STORAGE: dbFile,
+      DB_DATABASE: database,
+      SOCKET_PATH: `storage/tests/gateway-e2e-${uid()}.sock`,
+      PM2_HOME: resolve(process.cwd(), `storage/tests/.pm2-${uid()}`),
+    };
     await execa('yarn', ['nocobase', 'install'], {
-      env: {
-        ...process.env,
-        // DB_DIALECT: 'sqlite',
-        DB_STORAGE: dbFile,
-      },
+      env,
     });
     const subprocess1 = execa('yarn', ['nocobase', 'dev', '--server'], {
-      env: {
-        ...process.env,
-        // DB_DIALECT: 'sqlite',
-        DB_STORAGE: dbFile,
-      },
+      env,
     });
-    process.env.APP_BASE_URL = `http://127.0.0.1:${process.env.APP_PORT}`;
-    const code = await checkServer();
+    const code = await checkServer(port);
     expect(code).toBe(true);
     subprocess1.cancel();
   });
 
   test('quickstart', async () => {
     console.log(process.env.DB_DIALECT);
-    process.env.APP_BASE_URL = `http://127.0.0.1:${process.env.APP_PORT}`;
-    const dbFile = `storage/db/nocobase-${uid()}.sqlite`;
+    const database = await createDatabase();
+    const port = await getPortPromise({
+      port: 13000,
+    });
+    const dbFile = `storage/tests/db/nocobase-${uid()}.sqlite`;
+    const env = {
+      ...process.env,
+      APP_PORT: `${port}`,
+      DB_STORAGE: dbFile,
+      DB_DATABASE: database,
+      SOCKET_PATH: `storage/tests/gateway-e2e-${uid()}.sock`,
+      PM2_HOME: resolve(process.cwd(), `storage/tests/.pm2-${uid()}`),
+    };
     console.log('DB_STORAGE:', dbFile);
     const subprocess1 = execa('yarn', ['nocobase', 'dev', '--server', '--quickstart'], {
-      env: {
-        ...process.env,
-        // DB_DIALECT: 'sqlite',
-        DB_STORAGE: dbFile,
-      },
+      env,
     });
-    const code = await checkServer();
+    const code = await checkServer(port);
     expect(code).toBe(true);
     subprocess1.cancel();
     const subprocess2 = execa('yarn', ['nocobase', 'dev', '--server', '--quickstart'], {
-      env: {
-        ...process.env,
-        DB_DIALECT: 'sqlite',
-        DB_STORAGE: dbFile,
-      },
+      env,
     });
-    const code2 = await checkServer();
+    const code2 = await checkServer(port);
     expect(code2).toBe(true);
     subprocess2.cancel();
   });
 
   test('install + upgrade', async () => {
     console.log(process.env.DB_DIALECT);
-    process.env.APP_BASE_URL = `http://127.0.0.1:${process.env.APP_PORT}`;
-    const dbFile = `storage/db/nocobase-${uid()}.sqlite`;
+    const database = await createDatabase();
+    const port = await getPortPromise({
+      port: 13000,
+    });
+    const dbFile = `storage/tests/db/nocobase-${uid()}.sqlite`;
+    const env = {
+      ...process.env,
+      APP_PORT: `${port}`,
+      DB_STORAGE: dbFile,
+      DB_DATABASE: database,
+      SOCKET_PATH: `storage/tests/gateway-e2e-${uid()}.sock`,
+      PM2_HOME: resolve(process.cwd(), `storage/tests/.pm2-${uid()}`),
+    };
     console.log('DB_STORAGE:', dbFile);
     await execa('yarn', ['nocobase', 'install'], {
-      env: {
-        ...process.env,
-        // DB_DIALECT: 'sqlite',
-        DB_STORAGE: dbFile,
-      },
+      env,
     });
     const subprocess2 = await execa('yarn', ['nocobase', 'upgrade'], {
-      env: {
-        ...process.env,
-        // DB_DIALECT: 'sqlite',
-        DB_STORAGE: dbFile,
-      },
+      env,
     });
     expect(subprocess2.stdout.includes('NocoBase has been upgraded')).toBe(true);
   });
 
   test('quickstart + upgrade', async () => {
     console.log(process.env.DB_DIALECT);
-    process.env.APP_BASE_URL = `http://127.0.0.1:${process.env.APP_PORT}`;
-    const dbFile = `storage/db/nocobase-${uid()}.sqlite`;
+    const database = await createDatabase();
+    const port = await getPortPromise({
+      port: 13000,
+    });
+    const dbFile = `storage/tests/db/nocobase-${uid()}.sqlite`;
+    const env = {
+      ...process.env,
+      APP_PORT: `${port}`,
+      DB_STORAGE: dbFile,
+      DB_DATABASE: database,
+      SOCKET_PATH: `storage/tests/gateway-e2e-${uid()}.sock`,
+      PM2_HOME: resolve(process.cwd(), `storage/tests/.pm2-${uid()}`),
+    };
     console.log('DB_STORAGE:', dbFile);
     const subprocess1 = execa('yarn', ['nocobase', 'dev', '--server', '--quickstart'], {
-      env: {
-        ...process.env,
-        // DB_DIALECT: 'sqlite',
-        DB_STORAGE: dbFile,
-      },
+      env,
     });
-    const code = await checkServer();
+    const code = await checkServer(port);
     expect(code).toBe(true);
     await execa('yarn', ['nocobase', 'upgrade'], {
-      env: {
-        ...process.env,
-        // DB_DIALECT: 'sqlite',
-        DB_STORAGE: dbFile,
-      },
+      env,
     });
     await delay(5000);
-    const code2 = await checkServer();
+    const code2 = await checkServer(port);
     expect(code2).toBe(true);
     subprocess1.cancel();
   });
