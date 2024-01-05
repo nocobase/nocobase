@@ -809,8 +809,7 @@ test.describe('creation form block schema settings', () => {
     await page.getByLabel('block-item-CardItem-users-form').hover();
 
     //保存模板后当前区块为引用区块
-    const titleTag = await page.getByLabel('block-item-CardItem-users-form').locator('.title-tag').nth(1).innerText();
-    expect(titleTag).toContain('Reference template');
+    await expect(page.getByLabel('block-item-CardItem-users-form')).toHaveText(/Reference template/);
 
     // using block template
     await mockPage({
@@ -1112,14 +1111,16 @@ test.describe('creation form block schema settings', () => {
     await page.getByRole('menuitem', { name: 'Users' }).hover();
     await page.getByRole('menuitem', { name: 'Duplicate template' }).hover();
     await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).click();
+    await page.mouse.move(300, 0);
     await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
 
     //在新建操作中使用引用模板
     await page.getByLabel('action-Action-Add new-create-users-table').click();
-    await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-users').click();
-    await page.getByRole('menuitem', { name: 'form Form' }).hover();
+    await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-users').hover();
+    await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
     await page.getByRole('menuitem', { name: 'Reference template' }).hover();
     await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).click();
+    await page.mouse.move(300, 0);
     await page.getByLabel('schema-initializer-Grid-CreateFormBlockInitializers-users').hover();
     await expect(page.locator('.ant-drawer').getByLabel('block-item-CardItem-users-form')).toBeVisible();
     await page.locator('.ant-drawer-mask').click();
@@ -1127,13 +1128,13 @@ test.describe('creation form block schema settings', () => {
     //在编辑操作中使用引用模板
     await page.getByLabel('action-Action.Link-Edit-update-users-table-0').click();
     await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-users').click();
-    await page.getByRole('menuitem', { name: 'form Form' }).hover();
+    await page.getByRole('menuitem', { name: 'form Form' }).first().hover();
     await page.getByRole('menuitem', { name: 'Reference template' }).hover();
     await page.getByRole('menuitem', { name: 'Users_Form (Fields only)' }).click();
-    await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-users').hover();
+    await page.mouse.move(300, 0);
 
     //修改引用模板
-    await page.locator('.ant-drawer').getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
+    await page.locator('.ant-drawer').getByLabel('schema-initializer-Grid-FormItemInitializers-users').hover();
     await page.getByRole('menuitem', { name: 'Phone' }).click();
     await page.locator('.ant-drawer-mask').click();
     //复制模板不同步，引用模板同步

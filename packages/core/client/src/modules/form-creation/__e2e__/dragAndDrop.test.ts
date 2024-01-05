@@ -2,13 +2,13 @@ import { expect, oneFormBlockBasedOnUsers, test } from '@nocobase/test/e2e';
 
 test('fields', async ({ page, mockPage }) => {
   await mockPage(oneFormBlockBasedOnUsers).goto();
-  await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
+  await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').hover();
   await page.getByRole('menuitem', { name: 'Nickname' }).click();
   await page.getByRole('menuitem', { name: 'Username' }).click();
   await page.getByRole('menuitem', { name: 'Email' }).click();
+  await page.mouse.move(300, 0);
 
   await page.getByLabel('block-item-CollectionField-users-form-users.nickname').hover();
-  await page.getByLabel('block-item-CollectionField-users-form-users.nickname').getByLabel('designer-drag').hover();
   await page
     .getByLabel('block-item-CollectionField-users-form-users.nickname')
     .getByLabel('designer-drag')
@@ -16,7 +16,6 @@ test('fields', async ({ page, mockPage }) => {
   await page.reload();
 
   await page.getByLabel('block-item-CollectionField-users-form-users.nickname').hover();
-  await page.getByLabel('block-item-CollectionField-users-form-users.nickname').getByLabel('designer-drag').hover();
   await page
     .getByLabel('block-item-CollectionField-users-form-users.nickname')
     .getByLabel('designer-drag')
