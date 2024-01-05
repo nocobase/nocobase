@@ -326,8 +326,6 @@ export class Gateway extends EventEmitter {
 
     const mainApp = AppSupervisor.getInstance().bootMainApp(options.mainAppOptions);
 
-    await mainApp.authenticate();
-
     mainApp
       .runAsCLI(process.argv, {
         throwError: true,

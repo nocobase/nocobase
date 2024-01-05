@@ -199,7 +199,7 @@ export function mockServer(options: ApplicationOptions = {}) {
   }
 
   Gateway.getInstance().reset();
-  AppSupervisor.getInstance().reset();
+  // AppSupervisor.getInstance().reset();
 
   // @ts-ignore
   if (!PluginManager.findPackagePatched) {

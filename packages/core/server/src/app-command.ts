@@ -9,7 +9,13 @@ export class AppCommand extends Command {
     return this;
   }
 
+  auth() {
+    this['_authenticate'] = true;
+    return this;
+  }
+
   preload() {
+    this['_authenticate'] = true;
     this._preload = true;
     return this;
   }

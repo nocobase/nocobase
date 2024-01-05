@@ -4,6 +4,7 @@ import { ApplicationNotInstall } from '../errors/application-not-install';
 export default (app: Application) => {
   app
     .command('start')
+    .auth()
     .option('--db-sync')
     .option('--quickstart')
     .action(async (...cliArgs) => {

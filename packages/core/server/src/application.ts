@@ -499,8 +499,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           command: this.activatedCommand,
         });
 
-        if (actionCommand['_preload']) {
+        if (actionCommand['_authenticate']) {
           await this.authenticate();
+        }
+
+        if (actionCommand['_preload']) {
           await this.load();
         }
       })
@@ -675,6 +678,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       return;
     }
 
+    this.log.info('restarting...');
+
     this._started = false;
     await this.emitAsync('beforeStop');
     await this.reload(options);
@@ -755,8 +760,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     // await app.db.sync();
     await this.pm.install();
     await this.version.update();
-    this.log.info(`app ${reinstall ? 'reinstalled' : 'installed'} successfully [v${this.getVersion()}]`);
-
     // this.setMaintainingMessage('installing app...');
     // this.log.debug('Database dialect: ' + this.db.sequelize.getDialect(), { method: 'install' });
 
