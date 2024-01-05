@@ -78,6 +78,10 @@ export class PluginManagerRepository extends Repository {
   }
 
   async getItems() {
+    const exists = await this.collection.existsInDb();
+    if (!exists) {
+      return [];
+    }
     return await this.find({
       sort: 'id',
     });

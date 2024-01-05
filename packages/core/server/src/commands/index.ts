@@ -1,4 +1,5 @@
 import Application from '../application';
+import dbAuth from './db-auth';
 import dbClean from './db-clean';
 import dbSync from './db-sync';
 import destroy from './destroy';
@@ -11,7 +12,7 @@ import upgrade from './upgrade';
 
 export function registerCli(app: Application) {
   // console(app);
-  // dbAuth(app);
+  dbAuth(app);
   dbClean(app);
   dbSync(app);
   install(app);

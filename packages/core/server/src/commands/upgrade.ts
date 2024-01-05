@@ -9,5 +9,6 @@ export default (app: Application) => {
     .ipc()
     .action(async (options) => {
       await app.upgrade(options);
+      app.log.info(`✨  NocoBase has been upgraded to v${app.getVersion()}`);
     });
 };

@@ -749,6 +749,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.reInit();
     await this.db.sync();
     await this.load({ hooks: false });
+    this.log.debug('emit beforeInstall', { method: 'install' });
+    this.setMaintainingMessage('call beforeInstall hook...');
+    await this.emitAsync('beforeInstall', this, options);
     // await app.db.sync();
     await this.pm.install();
     await this.version.update();
@@ -767,16 +770,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     //   return;
     // }
 
-    // this.log.debug('emit beforeInstall', { method: 'install' });
-    // this.setMaintainingMessage('call beforeInstall hook...');
-    // await this.emitAsync('beforeInstall', this, options);
     // this.log.debug('start install plugins', { method: 'install' });
     // await this.pm.install(options);
     // this.log.debug('update version', { method: 'install' });
     // await this.version.update();
-    // this.log.debug('emit afterInstall', { method: 'install' });
-    // this.setMaintainingMessage('call afterInstall hook...');
-    // await this.emitAsync('afterInstall', this, options);
+    this.log.debug('emit afterInstall', { method: 'install' });
+    this.setMaintainingMessage('call afterInstall hook...');
+    await this.emitAsync('afterInstall', this, options);
 
     if (this._maintainingStatusBeforeCommand?.error) {
       return;
@@ -811,7 +811,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await migrator1.afterLoad.up();
     await migrator2.afterLoad.up();
     await migrator3.afterLoad.up();
-    this.log.info(`✨  NocoBase has been upgraded to v${this.getVersion()}`);
+    await this.version.update();
     await this.restart();
     // await this.emitAsync('beforeUpgrade', this, options);
     // const force = false;
@@ -826,8 +826,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     //     },
     //   });
     // }, 'Sync');
-    // await this.version.update();
-    // await this.emitAsync('afterUpgrade', this, options);
+    await this.emitAsync('afterUpgrade', this, options);
     // this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
     // if (this._started) {
     //   await measureExecutionTime(async () => {
