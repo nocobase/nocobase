@@ -129,7 +129,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
           }
         });
         if (inherits) {
-          inherits.forEach((v) => {
+          inherits.forEach((v: any) => {
             sortKeyArr.push(v);
             const parentCollection = getCollection(v);
             parentCollection.fields.map((k) => {

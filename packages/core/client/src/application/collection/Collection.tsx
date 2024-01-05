@@ -67,7 +67,6 @@ export interface CollectionOptionsV2 {
   collectionName?: string;
   sourceKey?: string;
   uiSchema?: any;
-
   [key: string]: any;
 }
 

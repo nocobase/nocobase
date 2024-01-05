@@ -196,7 +196,7 @@ export const AddFieldAction = (props) => {
   }, []);
   const getFieldOptions = useCallback(() => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
-    const { exclude, include } = availableFieldInterfaces || {};
+    const { exclude, include } = (availableFieldInterfaces || {}) as any;
     const optionArr = [];
     getOptions().forEach((v) => {
       if (v.key === 'systemInfo') {

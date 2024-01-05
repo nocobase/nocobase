@@ -143,7 +143,7 @@ export const EditCollectionAction = (props) => {
         <a
           {...otherProps}
           onClick={async () => {
-            const templateConf = getTemplate(record.template);
+            const templateConf: any = getTemplate(record.template);
             const schema = getSchema(
               {
                 ...templateConf,

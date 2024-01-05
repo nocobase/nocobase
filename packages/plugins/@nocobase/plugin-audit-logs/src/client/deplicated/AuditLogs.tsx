@@ -6,6 +6,7 @@ import {
   SchemaComponent,
   TableBlockProvider,
   useCollection,
+  useCollectionManager,
   useCompile,
   useRecord,
 } from '@nocobase/client';

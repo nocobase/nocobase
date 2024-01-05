@@ -14,7 +14,7 @@ export const useCollection = () => {
   const inheritedFields = useMemo(() => collection?.getInheritedFields() || [], [collection]);
   const totalFields = useMemo(() => collection?.getAllFields() || [], [collection]);
   const foreignKeyFields = useMemo(() => collection?.getForeignKeyFields() || [], [collection]);
-  const getTreeParentField = useMemo(() => collection?.getAllFields((field) => field.treeParent), [collection]);
+  const getTreeParentField = useCallback(() => collection?.getAllFields((field) => field.treeParent)[0], [collection]);
   const getField = useCallback(
     (name: SchemaKey) => {
       return collection?.getField(name);
