@@ -73,7 +73,7 @@ test.describe('configure params in gantt block', () => {
     await page.getByRole('option', { name: 'End date time2' }).locator('div').click();
     await page.mouse.move(300, 0);
     await page.getByRole('button', { name: 'Actions' }).click();
-    await page.locator('.bar').hover();
+    await page.locator('.bar').hover({ position: { x: 20, y: 10 } });
     await expect(page.getByLabel('nb-gantt-tooltip')).toHaveText(
       new RegExp(String(getYmd(new Date(mockData['endDatetime2'])))),
     );

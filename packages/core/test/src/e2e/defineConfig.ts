@@ -27,7 +27,7 @@ export const defineConfig = (config?: PlaywrightTestConfig) => {
     // workers: process.env.CI ? 1 : undefined,
     workers: 1,
 
-    maxFailures: 1,
+    maxFailures: 0,
 
     // Reporter to use
     reporter: process.env.PLAYWRIGHT_SKIP_REPORTER

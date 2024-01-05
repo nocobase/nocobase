@@ -90,7 +90,7 @@ test.describe('form item & create form', () => {
           .getByLabel('block-item-CollectionField-general-form-general.time-time')
           .getByPlaceholder('Select time')
           .click();
-        await page.getByText('Now').click();
+        await page.getByText('Now', { exact: true }).click();
       },
       expectReadonly: async () => {
         await expect(

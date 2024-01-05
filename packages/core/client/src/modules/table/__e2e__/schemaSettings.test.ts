@@ -41,7 +41,7 @@ test.describe('table block schema settings', () => {
     await expect(page.getByRole('menuitem', { name: 'Fix block' }).getByRole('switch')).toBeChecked();
 
     // 等待页面重新渲染
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(1000);
     const fixedTableSize = await page.getByLabel('block-item-CardItem-general-table').boundingBox();
     expect(fixedTableSize.height).toBeGreaterThan(570);
     expect(fixedTableSize.height).toBeLessThan(575);
