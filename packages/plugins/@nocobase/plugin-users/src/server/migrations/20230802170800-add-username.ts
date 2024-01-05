@@ -1,6 +1,7 @@
 import { Migration } from '@nocobase/server';
 
 export default class AddUserNameMigration extends Migration {
+  appVersion = '<0.13.0-alpha.1';
   async up() {
     const match = await this.app.version.satisfies('<=0.12.0-alpha.4');
     if (!match) {

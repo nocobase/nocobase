@@ -25,6 +25,7 @@ import compose from 'koa-compose';
 import lodash from 'lodash';
 import { RecordableHistogram } from 'node:perf_hooks';
 import { basename, resolve } from 'path';
+import semver from 'semver';
 import { createACL } from './acl';
 import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
@@ -531,13 +532,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     const files = glob.sync(patten, {
       ignore: ['**/*.d.ts'],
     });
+    const appVersion = await this.version.get();
     for (const file of files) {
       let filename = basename(file);
       filename = filename.substring(0, filename.lastIndexOf('.')) || filename;
       const Migration = await importModule(file);
       const m = new Migration({ app: this, db: this.db, ...context });
-      m.name = `${filename}/${namespace}`;
-      migrations[m.on || 'afterLoad'].push(m);
+      if (!m.appVersion || semver.satisfies(appVersion, m.appVersion, { includePrerelease: true })) {
+        m.name = `${filename}/${namespace}`;
+        migrations[m.on || 'afterLoad'].push(m);
+      }
     }
     return migrations;
   }

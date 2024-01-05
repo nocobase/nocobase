@@ -1,4 +1,5 @@
 import Application from '../application';
+import createMigration from './create-migration';
 import dbAuth from './db-auth';
 import dbClean from './db-clean';
 import dbSync from './db-sync';
@@ -13,6 +14,7 @@ import upgrade from './upgrade';
 export function registerCli(app: Application) {
   // console(app);
   dbAuth(app);
+  createMigration(app);
   dbClean(app);
   dbSync(app);
   install(app);

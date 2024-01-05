@@ -1,6 +1,7 @@
 import { Migration } from '@nocobase/server';
 
 export default class AddUsersPhoneMigration extends Migration {
+  appVersion = '<0.7.5-alpha.1';
   async up() {
     const match = await this.app.version.satisfies('<=0.7.4-alpha.7');
     if (!match) {
