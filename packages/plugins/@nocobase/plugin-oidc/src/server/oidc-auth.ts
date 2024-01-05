@@ -24,6 +24,22 @@ export class OIDCAuth extends BaseAuth {
     return this.options?.oidc || {};
   }
 
+  getExchangeBody() {
+    const options = this.getOptions();
+    const { exchangeBodyKeys } = options;
+    if (!exchangeBodyKeys) {
+      return {};
+    }
+    const body = {};
+    exchangeBodyKeys
+      .filter((item: { enabled: boolean }) => item.enabled)
+      .forEach((item: { paramName: string; optionsKey: string }) => {
+        const name = item.paramName || item.optionsKey;
+        body[name] = options[item.optionsKey];
+      });
+    return body;
+  }
+
   mapField(userInfo: { [source: string]: any }) {
     const { fieldMap } = this.getOptions();
     if (!fieldMap) {
@@ -58,8 +74,7 @@ export class OIDCAuth extends BaseAuth {
       return null;
     }
     const client = await this.createOIDCClient();
-    const { clientId, clientSecret } = this.getOptions();
-    console.log(values.iss);
+    const { userInfoMethod = 'GET', accessTokenVia } = this.getOptions();
     const tokens = await client.callback(
       this.getRedirectUri(),
       {
@@ -67,9 +82,18 @@ export class OIDCAuth extends BaseAuth {
         iss: values.iss,
       },
       {},
-      { exchangeBody: { client_id: clientId, client_secret: clientSecret } },
+      { exchangeBody: this.getExchangeBody() },
     );
-    const userInfo: { [key: string]: any } = await client.userinfo(tokens.access_token);
+    const userInfo: { [key: string]: any } = await client.userinfo(tokens, {
+      method: userInfoMethod,
+      via: accessTokenVia !== 'query' ? accessTokenVia : 'header',
+      params:
+        accessTokenVia === 'query'
+          ? {
+              access_token: tokens.access_token,
+            }
+          : {},
+    });
     const mappedUserInfo = this.mapField(userInfo);
     const { nickname, username, name, sub, email, phone } = mappedUserInfo;
     const authenticator = this.authenticator as AuthModel;
