@@ -126,7 +126,7 @@ export class Dumper extends AppMigrator {
             if (origin.startsWith('plugin:')) {
               const plugin = this.app.pm.get(origin.replace(/^plugin:/, ''));
               const pluginInfo = await plugin.toJSON({
-                withOutLastUpdated: true,
+                withOutOpenFile: true,
               });
 
               originTitle = pluginInfo.displayName;

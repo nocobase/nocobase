@@ -130,25 +130,26 @@ export abstract class Plugin<O = any> implements PluginInterface {
       };
     }
 
-    const file = await fs.promises.realpath(
-      resolve(process.env.NODE_MODULES_PATH || resolve(process.cwd(), 'node_modules'), packageName),
-    );
-
-    const others = await checkAndGetCompatible(packageName);
-
     const results = {
       ...this.options,
-      ...others,
       readmeUrl: getExposeReadmeUrl(packageName, locale),
       changelogUrl: getExposeChangelogUrl(packageName),
-      file,
-      updatable: file.startsWith(process.env.PLUGIN_STORAGE_PATH),
       displayName: packageJson[`displayName.${locale}`] || packageJson.displayName || name,
       description: packageJson[`description.${locale}`] || packageJson.description,
     };
 
-    if (!options.withOutLastUpdated) {
-      results['lastUpdated'] = (await fs.promises.stat(file)).ctime;
+    if (!options.withOutOpenFile) {
+      const file = await fs.promises.realpath(
+        resolve(process.env.NODE_MODULES_PATH || resolve(process.cwd(), 'node_modules'), packageName),
+      );
+
+      return {
+        ...results,
+        ...(await checkAndGetCompatible(packageName)),
+        lastUpdated: (await fs.promises.stat(file)).ctime,
+        file,
+        updatable: file.startsWith(process.env.PLUGIN_STORAGE_PATH),
+      };
     }
 
     return results;
