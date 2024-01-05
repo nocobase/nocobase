@@ -3,16 +3,17 @@ import send from 'koa-send';
 import path from 'path';
 import supertest from 'supertest';
 
-import plugin from '../';
-
 export async function getApp(options = {}): Promise<MockServer> {
   const app = mockServer({
     ...options,
     cors: {
       origin: '*',
     },
+    plugins: ['file-manager'],
     acl: false,
   });
+
+  await app.runCommand('install', '-f');
 
   app.use(async (ctx, next) => {
     if (ctx.path.startsWith('/storage/uploads')) {
@@ -22,15 +23,11 @@ export async function getApp(options = {}): Promise<MockServer> {
     await next();
   });
 
-  await app.cleanDb();
-
-  app.plugin(plugin);
-
-  app.db.import({
+  await app.db.import({
     directory: path.resolve(__dirname, './tables'),
   });
 
-  await app.loadAndInstall();
+  await app.db.sync();
 
   return app;
 }

@@ -1,6 +1,6 @@
 import { Context } from '@nocobase/actions';
 import Database, { Repository } from '@nocobase/database';
-import { MockServer, mockServer, supertest } from '@nocobase/test';
+import { MockServer, mockServer } from '@nocobase/test';
 
 describe('actions', () => {
   let app: MockServer;
@@ -16,7 +16,8 @@ describe('actions', () => {
       plugins: ['users', 'auth', 'acl', 'custom-request'],
     });
 
-    await app.loadAndInstall({ clean: true });
+    await app.runCommand('install', '-f');
+    await app.runCommand('start');
     db = app.db;
     repo = db.getRepository('customRequests');
     agent = app.agent();
