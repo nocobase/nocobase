@@ -214,7 +214,9 @@ export const TaskGanttContent: React.FC<TaskGanttContentProps> = ({
       }
     } else if (action === 'mouseleave') {
       if (ganttEvent.action === 'mouseenter') {
-        setGanttEvent({ action: '' });
+        setTimeout(() => {
+          setGanttEvent({ action: '' });
+        }, 300);
       }
     } else if (action === 'dblclick') {
       !!onDoubleClick && onDoubleClick(task);
