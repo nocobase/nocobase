@@ -125,7 +125,10 @@ export class Dumper extends AppMigrator {
             // plugin collections
             if (origin.startsWith('plugin:')) {
               const plugin = this.app.pm.get(origin.replace(/^plugin:/, ''));
-              const pluginInfo = await plugin.toJSON();
+              const pluginInfo = await plugin.toJSON({
+                withOutLastUpdated: true,
+              });
+
               originTitle = pluginInfo.displayName;
               origin = pluginInfo.packageName;
             }
@@ -209,7 +212,9 @@ export class Dumper extends AppMigrator {
 
       return filesData.map((fileData) => fileData.filePath);
     } catch (error) {
-      console.error('Error reading directory:', error);
+      if (!error.message.includes('no such file or directory')) {
+        console.error('Error reading directory:', error);
+      }
       return [];
     }
   }
