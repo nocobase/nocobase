@@ -3,7 +3,6 @@ import {
   ClculationNode,
   CollectionTriggerNode,
   ConditionBranchNode,
-  ConditionYesNode,
   QueryRecordNode,
   apiCreateWorkflow,
   apiCreateWorkflowNode,
@@ -418,7 +417,7 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   const conditionNode = new ConditionBranchNode(page, conditionNodeName);
   const conditionNodeId = await conditionNode.node.locator('.workflow-node-id').innerText();
   await conditionNode.nodeConfigure.click();
-  await conditionNode.formulaRadio.click();
+  await conditionNode.formulaRadio.check();
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();

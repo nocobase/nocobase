@@ -12,7 +12,7 @@ test.describe('data will be updated && Assign field values && after successful s
     await page.getByLabel('action-Action-Bulk update-customize:bulkUpdate-general-table').hover();
     await page.getByLabel('designer-schema-settings-Action-Action.Designer-general').hover();
     //默认是选中的数据
-    await expect(await page.getByTitle('Data will be updated').getByText('Selected')).toBeVisible();
+    await expect(page.getByTitle('Data will be updated').getByText('Selected')).toBeVisible();
     await page.getByRole('menuitem', { name: 'Data will be updated' }).click();
     //切换为全部数据
     await page.getByRole('option', { name: 'All' }).click();
@@ -30,7 +30,7 @@ test.describe('data will be updated && Assign field values && after successful s
     await page.getByLabel('Redirect to').check();
     await page.locator('input[type="text"]').click();
     await page.locator('input[type="text"]').fill('/admin/pm/list/local/');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page.getByLabel('action-Action-Bulk update-customize:bulkUpdate-general-table').click();
     const [request] = await Promise.all([
       page.waitForRequest((request) => request.url().includes('api/general:update')),

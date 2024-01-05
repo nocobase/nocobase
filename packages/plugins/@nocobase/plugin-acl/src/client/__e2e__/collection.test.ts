@@ -100,7 +100,7 @@ test.describe('create', () => {
     }, roleData);
     await page.reload();
     await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
-    await expect(await page.getByLabel('action-Action-Add new-create-general-table')).not.toBeVisible();
+    await expect(page.getByLabel('action-Action-Add new-create-general-table')).not.toBeVisible();
     await updateRole({
       name: roleData.name,
       strategy: {
@@ -108,7 +108,7 @@ test.describe('create', () => {
       },
     });
     await page.reload();
-    await expect(await page.getByLabel('action-Action-Add new-create-general-table')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Add new-create-general-table')).toBeVisible();
   });
   test('individual collection permission', async ({ page, mockPage, mockRole, updateRole }) => {
     await mockPage(oneTableBlock).goto();
@@ -136,7 +136,7 @@ test.describe('create', () => {
     await page.reload();
     await mockPage(oneTableBlock).goto();
     await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
-    await expect(await page.getByLabel('action-Action-Add new-create-general-table')).not.toBeVisible();
+    await expect(page.getByLabel('action-Action-Add new-create-general-table')).not.toBeVisible();
     await updateRole({
       name: roleData.name,
       resources: [
@@ -153,7 +153,7 @@ test.describe('create', () => {
       ],
     });
     await page.reload();
-    await expect(await page.getByLabel('action-Action-Add new-create-general-table')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Add new-create-general-table')).toBeVisible();
   });
   test('individual collection permission width fields', async ({ page, mockPage, mockRole }) => {
     await mockPage(oneTableBlock).goto();
@@ -184,8 +184,8 @@ test.describe('create', () => {
     }, roleData);
     await page.reload();
     await mockPage(oneTableBlock).goto();
-    await expect(await page.getByLabel('action-Action-Add new-create-general-table')).toBeVisible();
-    await await page.getByLabel('action-Action-Add new-create-general-table').click();
+    await expect(page.getByLabel('action-Action-Add new-create-general-table')).toBeVisible();
+    await page.getByLabel('action-Action-Add new-create-general-table').click();
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.singleLineText')).toBeVisible();
   });
 });
@@ -206,7 +206,7 @@ test.describe('update', () => {
       window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
     }, roleData);
     await page.reload();
-    await expect(await page.getByLabel('action-Action.Link-Edit')).not.toBeVisible();
+    await expect(page.getByLabel('action-Action.Link-Edit')).not.toBeVisible();
     await updateRole({
       name: roleData.name,
       strategy: {
@@ -214,7 +214,7 @@ test.describe('update', () => {
       },
     });
     await page.reload();
-    await expect(await page.getByLabel('action-Action.Link-Edit')).toBeVisible();
+    await expect(page.getByLabel('action-Action.Link-Edit')).toBeVisible();
   });
   test('individual collection permission', async ({ page, mockPage, mockRole, mockRecord, updateRole }) => {
     await mockPage(oneTableBlock).goto();
@@ -239,7 +239,7 @@ test.describe('update', () => {
     await page.reload();
     await mockPage(oneTableBlock).goto();
     await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
-    await expect(await page.getByLabel('action-Action.Link-Edit')).not.toBeVisible();
+    await expect(page.getByLabel('action-Action.Link-Edit')).not.toBeVisible();
     await updateRole({
       name: roleData.name,
       resources: [
@@ -256,7 +256,7 @@ test.describe('update', () => {
       ],
     });
     await page.reload();
-    await expect(await page.getByLabel('action-Action.Link-Edit')).toBeVisible();
+    await expect(page.getByLabel('action-Action.Link-Edit')).toBeVisible();
   });
   test('individual collection permission with fields', async ({ page, mockPage, mockRole, mockRecord }) => {
     await mockPage(oneTableBlock).goto();
@@ -277,7 +277,7 @@ test.describe('update', () => {
     }, roleData);
     await page.reload();
     await mockPage(oneTableBlock).goto();
-    await expect(await page.getByLabel('action-Action.Link-Edit')).toBeVisible();
+    await expect(page.getByLabel('action-Action.Link-Edit')).toBeVisible();
     await page.getByLabel('action-Action.Link-Edit').click();
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.singleLineText')).toBeVisible();
     await expect(page.getByLabel('block-item-CollectionField-general-form-general.phone')).toBeVisible();
@@ -301,7 +301,7 @@ test.describe('destroy', () => {
       window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
     }, roleData);
     await page.reload();
-    await expect(await page.getByLabel('action-Action-Delete-destroy-general-table')).not.toBeVisible();
+    await expect(page.getByLabel('action-Action-Delete-destroy-general-table')).not.toBeVisible();
     await updateRole({
       name: roleData.name,
       strategy: {
@@ -309,7 +309,7 @@ test.describe('destroy', () => {
       },
     });
     await page.reload();
-    await expect(await page.getByLabel('action-Action-Delete-destroy-general-table')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Delete-destroy-general-table')).toBeVisible();
   });
   test('individual collection permission', async ({ page, mockPage, mockRole, updateRole }) => {
     await mockPage().goto();
@@ -333,7 +333,7 @@ test.describe('destroy', () => {
     await page.reload();
     await mockPage(oneTableBlock).goto();
     await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
-    await expect(await page.getByLabel('action-Action-Delete-destroy-general-table')).not.toBeVisible();
+    await expect(page.getByLabel('action-Action-Delete-destroy-general-table')).not.toBeVisible();
     await updateRole({
       name: roleData.name,
       resources: [
@@ -350,7 +350,7 @@ test.describe('destroy', () => {
       ],
     });
     await page.reload();
-    await expect(await page.getByLabel('action-Action-Delete-destroy-general-table')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Delete-destroy-general-table')).toBeVisible();
   });
 });
 
@@ -369,7 +369,7 @@ test.describe('export', () => {
       window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
     }, roleData);
     await page.reload();
-    await expect(await page.getByLabel('action-Action-Export')).not.toBeVisible();
+    await expect(page.getByLabel('action-Action-Export')).not.toBeVisible();
     await updateRole({
       name: roleData.name,
       strategy: {
@@ -377,7 +377,7 @@ test.describe('export', () => {
       },
     });
     await page.reload();
-    await expect(await page.getByLabel('action-Action-Export')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Export')).toBeVisible();
   });
   test('individual collection permission', async ({ page, mockPage, mockRole }) => {
     await mockPage().goto();
@@ -403,7 +403,7 @@ test.describe('export', () => {
     }, roleData);
     await page.reload();
     await mockPage(oneTableBlock).goto();
-    await expect(await page.getByLabel('action-Action-Export')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Export')).toBeVisible();
   });
 });
 
@@ -422,7 +422,7 @@ test.describe('import', () => {
       window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
     }, roleData);
     await page.reload();
-    await expect(await page.getByLabel('action-Action-Import')).not.toBeVisible();
+    await expect(page.getByLabel('action-Action-Import')).not.toBeVisible();
     await updateRole({
       name: roleData.name,
       strategy: {
@@ -430,7 +430,7 @@ test.describe('import', () => {
       },
     });
     await page.reload();
-    await expect(await page.getByLabel('action-Action-Import')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Import')).toBeVisible();
   });
   test('individual collection permission', async ({ page, mockPage, mockRole }) => {
     await mockPage().goto();
@@ -456,6 +456,6 @@ test.describe('import', () => {
     }, roleData);
     await page.reload();
     await mockPage(oneTableBlock).goto();
-    await expect(await page.getByLabel('action-Action-Import')).toBeVisible();
+    await expect(page.getByLabel('action-Action-Import')).toBeVisible();
   });
 });
