@@ -133,6 +133,7 @@ test.describe('configure columns', () => {
 
     // 点击开关，删除创建的字段
     await configureColumnButton.hover();
+    await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).not.toBeChecked();
     await page.mouse.move(300, 0);

@@ -117,6 +117,7 @@ test.describe('table block schema settings', () => {
       .dragTo(page.getByLabel('table-index-1').getByRole('img', { name: 'menu' }));
 
     await page.reload();
+    await page.waitForLoadState('networkidle');
 
     email1 = await page.getByText(records[0].email).boundingBox();
     email2 = await page.getByText(records[1].email).boundingBox();

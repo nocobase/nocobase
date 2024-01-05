@@ -30,7 +30,7 @@ test.describe('data will be updated && Assign field values && after successful s
     await page.getByLabel('Redirect to').check();
     await page.locator('input[type="text"]').click();
     await page.locator('input[type="text"]').fill('/admin/pm/list/local/');
-    await page.getByRole('button', { name: 'OK' }).click();
+    await page.getByRole('button', { name: 'OK', exact: true }).click();
     await page.getByLabel('action-Action-Bulk update-customize:bulkUpdate-general-table').click();
     const [request] = await Promise.all([
       page.waitForRequest((request) => request.url().includes('api/general:update')),
