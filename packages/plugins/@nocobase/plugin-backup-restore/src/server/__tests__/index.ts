@@ -6,6 +6,7 @@ export default async function createApp() {
   });
 
   await app.runCommand('install', '-f');
+  await app.runCommand('start');
 
   return app;
 }
