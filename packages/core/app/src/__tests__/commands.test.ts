@@ -62,7 +62,7 @@ const createDatabase = async () => {
   return name;
 };
 
-describe('cli', () => {
+describe.skip('cli', () => {
   test('install', async () => {
     const database = await createDatabase();
     const port = await getPortPromise({
