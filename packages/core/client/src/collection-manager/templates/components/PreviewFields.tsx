@@ -1,6 +1,6 @@
 import { useField, useForm } from '@formily/react';
 import { Cascader, Input, Select, Spin, Table, Tag } from 'antd';
-import { last } from 'lodash';
+import { last, omit } from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResourceActionContext, useCompile } from '../../../';
@@ -207,7 +207,7 @@ const PreviewCom = (props) => {
             defaultValue={item?.uiSchema?.title || text}
             onChange={(e) =>
               handleFieldChange(
-                { ...item, uiSchema: { ...item?.uiSchema, title: e.target.value, rawTitle: e.target.value } },
+                { ...item, uiSchema: { ...omit(item?.uiSchema, 'rawTitle'), title: e.target.value } },
                 index,
               )
             }
