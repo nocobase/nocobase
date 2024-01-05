@@ -2,13 +2,10 @@ import { mockServer } from '@nocobase/test';
 
 export default async function createApp() {
   const app = mockServer({
-    plugins: ['nocobase'],
+    plugins: ['nocobase', 'backup-restore'],
   });
 
-  await app.cleanDb();
-  app.plugin((await import('../server')).default, { name: 'duplicator' });
-
-  await app.loadAndInstall({ clean: true });
+  await app.runCommand('install', '-f');
 
   return app;
 }

@@ -1,10 +1,10 @@
+import { Database } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
-import createApp from './index';
+import fs from 'fs';
+import path from 'path';
 import { Dumper } from '../dumper';
 import { Restorer } from '../restorer';
-import path from 'path';
-import fs from 'fs';
-import { Database } from '@nocobase/database';
+import createApp from './index';
 
 describe('dumper', () => {
   let app: MockServer;
