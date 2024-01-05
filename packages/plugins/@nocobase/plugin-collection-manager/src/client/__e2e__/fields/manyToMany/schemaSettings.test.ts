@@ -278,12 +278,12 @@ test.describe('form item & create form', () => {
     ).toBeVisible();
 
     // 选择 Sub-form(Popover)
-    await (async (page: Page, fieldName: string) => {
-      await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-      await page
-        .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-        .hover();
-    })(page, 'manyToMany');
+    await page.getByLabel(`block-item-CollectionField-general-form-general.manyToMany-manyToMany`).hover();
+    await page
+      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.manyToMany`)
+      .hover();
+    // 加上这个延迟会使测试更稳定
+    await page.waitForTimeout(100);
     await page.getByRole('menuitem', { name: 'Field component' }).click();
     await page.getByRole('option', { name: 'Sub-form(Popover)', exact: true }).click();
     await page

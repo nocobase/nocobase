@@ -67,6 +67,8 @@ test.describe('form item & edit form', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
+        // 等待弹窗内容渲染完成
+        await page.waitForTimeout(1000);
         await page
           .getByLabel(`block-item-CollectionField-general-form-general.attachment-attachment`, { exact: true })
           .hover();
@@ -86,29 +88,25 @@ test.describe('form item & edit form', () => {
     await testPattern({
       page,
       gotoPage: async () => {
-        record = await (async (mockPage, mockRecord) => {
-          const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndMediaFields).waitForInit();
-          const record = await mockRecord('general');
-          await nocoPage.goto();
-
-          return record;
-        })(mockPage, mockRecord);
+        const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndMediaFields).waitForInit();
+        record = await mockRecord('general');
+        await nocoPage.goto();
       },
-      openDialog: () =>
-        (async (page: Page) => {
-          await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
-        })(page),
-      showMenu: () =>
-        (async (page: Page, fieldName: string) => {
-          await page
-            .getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`, { exact: true })
-            .hover();
-          await page
-            .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`, {
-              exact: true,
-            })
-            .hover();
-        })(page, 'attachment'),
+      openDialog: async () => {
+        await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
+        // 等待弹窗内容渲染完成
+        await page.waitForTimeout(1000);
+      },
+      showMenu: async () => {
+        await page
+          .getByLabel(`block-item-CollectionField-general-form-general.attachment-attachment`, { exact: true })
+          .hover();
+        await page
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.attachment`, {
+            exact: true,
+          })
+          .hover();
+      },
       expectEditable: async () => {
         await expect(
           page
@@ -172,14 +170,13 @@ test.describe('form item & view form', () => {
   });
 
   test('size', async ({ page, mockPage, mockRecord }) => {
-    const record = await (async (mockPage, mockRecord) => {
-      const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndMediaFields).waitForInit();
-      const record = await mockRecord('general');
-      await nocoPage.goto();
+    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndMediaFields).waitForInit();
+    const record = await mockRecord('general');
+    await nocoPage.goto();
 
-      return record;
-    })(mockPage, mockRecord);
     await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
+    // 这里是为了等弹窗中的内容渲染稳定后，再去 hover，防止错位导致测试报错
+    await page.waitForTimeout(1000);
 
     // 默认尺寸
     // 这里的尺寸不稳定，所以用 try catch 来处理

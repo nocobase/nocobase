@@ -41,7 +41,7 @@ test.describe('table block schema settings', () => {
     await expect(page.getByRole('menuitem', { name: 'Fix block' }).getByRole('switch')).toBeChecked();
 
     // 等待页面重新渲染
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(1000);
     const fixedTableSize = await page.getByLabel('block-item-CardItem-general-table').boundingBox();
     expect(fixedTableSize.height).toBeGreaterThan(570);
     expect(fixedTableSize.height).toBeLessThan(575);
@@ -116,8 +116,8 @@ test.describe('table block schema settings', () => {
       .getByRole('img', { name: 'menu' })
       .dragTo(page.getByLabel('table-index-1').getByRole('img', { name: 'menu' }));
 
-    // 等待表格刷新
-    await page.waitForTimeout(3000);
+    await page.reload();
+    await page.waitForLoadState('networkidle');
 
     email1 = await page.getByText(records[0].email).boundingBox();
     email2 = await page.getByText(records[1].email).boundingBox();

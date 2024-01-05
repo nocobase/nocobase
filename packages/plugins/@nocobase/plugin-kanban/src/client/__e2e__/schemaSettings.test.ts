@@ -12,6 +12,8 @@ test.describe('configure setting', () => {
     await page.getByLabel('block-item-CardItem-general-kanban').hover();
     await page.getByLabel('designer-schema-settings-CardItem-Kanban.Designer-general').hover();
     await page.getByRole('menuitem', { name: 'Fix block' }).click();
+    // 等待重渲染完成
+    await page.waitForTimeout(1000);
     const kanbanBoard = page.getByLabel('block-item-CardItem-general-kanban');
     const kanbanBoardHeight = await kanbanBoard.evaluate((element) => {
       const computedStyle = window.getComputedStyle(element);
@@ -21,8 +23,6 @@ test.describe('configure setting', () => {
       return window.innerHeight;
     });
     const expectedHeight = windowHeight - 147;
-    await page.waitForTimeout(1000);
-    // 断言高度为预期值
     expect(kanbanBoardHeight).toBe(expectedHeight);
   });
   test('set the data scope', async ({ page, mockPage, mockRecords }) => {
