@@ -12,6 +12,16 @@
       "internalConsoleOptions": "neverOpen"
     },
     {
+      "address": "localhost",
+      "localRoot": "${workspaceFolder}",
+      "name": "Attach to debug server (remote)",
+      "port": 9229,
+      "remoteRoot": "${workspaceFolder}",
+      "request": "attach",
+      "skipFiles": ["<node_internals>/**"],
+      "type": "node"
+    },
+    {
       "type": "node",
       "request": "launch",
       "name": "Debug Tests",

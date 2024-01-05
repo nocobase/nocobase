@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-calendar",
-  "version": "0.18.0-alpha.8",
+  "version": "0.18.0-alpha.9",
   "displayName": "Calendar",
   "displayName.zh-CN": "日历",
   "description": "Provide calendar template and block",

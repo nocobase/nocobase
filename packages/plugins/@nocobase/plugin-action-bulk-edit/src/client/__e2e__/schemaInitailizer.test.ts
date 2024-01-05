@@ -8,7 +8,7 @@ test.describe('TableActionInitializers & GanttActionInitializers & MapActionInit
     await page.getByRole('menuitem', { name: 'Customize right' }).click();
     await page.getByRole('menuitem', { name: 'Bulk edit' }).click();
     await page.mouse.move(300, 0);
-    await expect(await page.getByLabel('Bulk edit')).toBeVisible();
+    await expect(page.getByLabel('Bulk edit')).toBeVisible();
   });
   test('bulk edit in GanttActionInitializers', async ({ page, mockPage, mockRecords }) => {
     const nocoPage = await mockPage(oneEmptyGantt).waitForInit();
@@ -17,6 +17,6 @@ test.describe('TableActionInitializers & GanttActionInitializers & MapActionInit
     await page.getByLabel('schema-initializer-ActionBar-GanttActionInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Customize right' }).click();
     await page.getByRole('menuitem', { name: 'Bulk edit' }).click();
-    await expect(await page.getByLabel('Bulk edit')).toBeVisible();
+    await expect(page.getByLabel('Bulk edit')).toBeVisible();
   });
 });
