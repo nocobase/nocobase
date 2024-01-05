@@ -4,13 +4,13 @@ import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocoba
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import {
-  SystemLogger,
-  RequestLoggerOptions,
   createLogger,
+  createSystemLogger,
   getLoggerFilePath,
   LoggerOptions,
+  RequestLoggerOptions,
+  SystemLogger,
   SystemLoggerOptions,
-  createSystemLogger,
 } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, measureExecutionTime, Toposort, ToposortOptions } from '@nocobase/utils';
@@ -42,7 +42,7 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { TelemetryOptions, Telemetry } from '@nocobase/telemetry';
+import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
 
 import packageJson from '../package.json';
 
@@ -372,7 +372,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         await this.telemetry.shutdown();
       }
 
-      const oldDb = this._db;
       const oldDb = this.getDb();
 
       this.init();
