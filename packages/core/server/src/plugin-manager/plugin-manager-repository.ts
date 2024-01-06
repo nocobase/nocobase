@@ -1,7 +1,6 @@
 import { Repository } from '@nocobase/database';
 import lodash from 'lodash';
 import { PluginManager } from './plugin-manager';
-import { PluginData } from './types';
 
 export class PluginManagerRepository extends Repository {
   pm: PluginManager;
@@ -48,13 +47,13 @@ export class PluginManagerRepository extends Repository {
     return pluginNames;
   }
 
-  async upgrade(name: string, data: PluginData) {
-    return this.update({
-      filter: {
-        name,
-      },
-      values: data,
-    });
+  async updateVersions() {
+    const items = await this.find();
+    for (const item of items) {
+      const json = await PluginManager.getPackageJson(item.packageName);
+      item.set('version', json.version);
+      await item.save();
+    }
   }
 
   async disable(name: string | string[]) {

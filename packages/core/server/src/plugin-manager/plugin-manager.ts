@@ -843,6 +843,7 @@ export class PluginManager {
 
   async upgrade() {
     this.app.log.info('run upgrade');
+    const toBeUpdated = [];
     for (const [P, plugin] of this.getPlugins()) {
       if (plugin.state.upgraded) {
         continue;
@@ -853,11 +854,20 @@ export class PluginManager {
       if (!plugin.isPreset && !plugin.installed) {
         this.app.log.info(`install built-in plugin [${plugin.name}]`);
         await plugin.install();
+        toBeUpdated.push(plugin.name);
       }
       this.app.log.debug(`upgrade plugin [${plugin.name}]`);
       await plugin.upgrade();
       plugin.state.upgraded = true;
     }
+    await this.repository.update({
+      filter: {
+        name: toBeUpdated,
+      },
+      values: {
+        installed: true,
+      },
+    });
   }
 
   async initOtherPlugins() {

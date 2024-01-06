@@ -831,6 +831,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await migrator1.afterLoad.up();
     await migrator2.afterLoad.up();
     await migrator3.afterLoad.up();
+    await this.pm.repository.updateVersions();
     await this.version.update();
     // await this.emitAsync('beforeUpgrade', this, options);
     // const force = false;
