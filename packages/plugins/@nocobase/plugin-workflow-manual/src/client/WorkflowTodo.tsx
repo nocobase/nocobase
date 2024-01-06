@@ -265,69 +265,13 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
               useProps: '{{ useTableBlockProps }}',
             },
             properties: {
-              node: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
-                properties: {
-                  node: {
-                    'x-component': 'NodeColumn',
-                    'x-read-pretty': true,
-                  },
-                },
-              },
-              workflow: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
-                properties: {
-                  workflow: {
-                    'x-component': 'WorkflowColumn',
-                    'x-read-pretty': true,
-                  },
-                },
-              },
-              createdAt: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                properties: {
-                  createdAt: {
-                    type: 'string',
-                    'x-component': 'CollectionField',
-                    'x-read-pretty': true,
-                  },
-                },
-              },
-              user: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                title: `{{t("Assignee", { ns: "${NAMESPACE}" })}}`,
-                properties: {
-                  user: {
-                    'x-component': 'UserColumn',
-                    'x-read-pretty': true,
-                  },
-                },
-              },
-              status: {
-                type: 'void',
-                'x-decorator': 'TableV2.Column.Decorator',
-                'x-component': 'TableV2.Column',
-                properties: {
-                  status: {
-                    'x-component': 'CollectionField',
-                    'x-read-pretty': true,
-                  },
-                },
-              },
               actions: {
                 type: 'void',
                 'x-decorator': 'TableV2.Column.Decorator',
                 'x-component': 'TableV2.Column',
+                'x-component-props': {
+                  width: 60,
+                },
                 title: '{{t("Actions")}}',
                 properties: {
                   view: {
@@ -339,6 +283,81 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
                         'x-component': 'WorkflowTodo.Drawer',
                       },
                     },
+                  },
+                },
+              },
+              node: {
+                type: 'void',
+                'x-decorator': 'TableV2.Column.Decorator',
+                'x-component': 'TableV2.Column',
+                'x-component-props': {
+                  width: null,
+                },
+                title: `{{t("Task node", { ns: "${NAMESPACE}" })}}`,
+                properties: {
+                  node: {
+                    'x-component': 'NodeColumn',
+                    'x-read-pretty': true,
+                  },
+                },
+              },
+              workflow: {
+                type: 'void',
+                'x-decorator': 'TableV2.Column.Decorator',
+                'x-component': 'TableV2.Column',
+                'x-component-props': {
+                  width: null,
+                },
+                title: `{{t("Workflow", { ns: "workflow" })}}`,
+                properties: {
+                  workflow: {
+                    'x-component': 'WorkflowColumn',
+                    'x-read-pretty': true,
+                  },
+                },
+              },
+              status: {
+                type: 'void',
+                'x-decorator': 'TableV2.Column.Decorator',
+                'x-component': 'TableV2.Column',
+                'x-component-props': {
+                  width: 100,
+                },
+                title: `{{t("Status", { ns: "workflow" })}}`,
+                properties: {
+                  status: {
+                    'x-component': 'CollectionField',
+                    'x-read-pretty': true,
+                  },
+                },
+              },
+              user: {
+                type: 'void',
+                'x-decorator': 'TableV2.Column.Decorator',
+                'x-component': 'TableV2.Column',
+                'x-component-props': {
+                  width: 140,
+                },
+                title: `{{t("Assignee", { ns: "${NAMESPACE}" })}}`,
+                properties: {
+                  user: {
+                    'x-component': 'UserColumn',
+                    'x-read-pretty': true,
+                  },
+                },
+              },
+              createdAt: {
+                type: 'void',
+                'x-decorator': 'TableV2.Column.Decorator',
+                'x-component': 'TableV2.Column',
+                'x-component-props': {
+                  width: 160,
+                },
+                properties: {
+                  createdAt: {
+                    type: 'string',
+                    'x-component': 'CollectionField',
+                    'x-read-pretty': true,
                   },
                 },
               },

@@ -29,19 +29,17 @@ test.describe('configure fields', () => {
     await page.getByLabel('designer-schema-initializer-Kanban.Card-Kanban.Card.Designer-general').hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await page.getByRole('menuitem', { name: 'Single line text' }).click();
-    expect(await page.getByLabel('block-item-CollectionField-general-kanban-general.singleLineText').innerText()).toBe(
-      'singleLineText',
+    await expect(page.getByLabel('block-item-CollectionField-general-kanban-general.singleLineText')).toHaveText(
+      /singleLineText/,
     );
-    expect(await page.getByLabel('block-item-CollectionField-general-kanban-general.id').innerText()).toBe('1');
+    await expect(page.getByLabel('block-item-CollectionField-general-kanban-general.id')).toHaveText(/1/);
     //移除字段
     await page.getByLabel('block-item-Kanban.Card-general-kanban').hover();
     await page.getByLabel('designer-schema-initializer-Kanban.Card-Kanban.Card.Designer-general').hover();
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await page.getByRole('menuitem', { name: 'Single line text' }).click();
-    await expect(
-      await page.getByLabel('block-item-CollectionField-general-kanban-general.singleLineText'),
-    ).not.toBeVisible();
-    await expect(await page.getByLabel('block-item-CollectionField-general-kanban-general.id')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-general-kanban-general.singleLineText')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-general-kanban-general.id')).not.toBeVisible();
   });
   test('configure association field', async ({ page, mockPage, mockRecord }) => {
     const nocoPage = await mockPage(oneEmptyKanbanBlock).waitForInit();
@@ -59,8 +57,8 @@ test.describe('configure fields', () => {
     // 解析查询参数
     const queryParams = new URLSearchParams(new URL(requestUrl).search);
     const appends = queryParams.get('appends[]');
-    await expect(appends).toContain('manyToOne');
-    await expect(await page.getByLabel('block-item-CollectionField-general-kanban-general.manyToOne')).toBeVisible();
+    expect(appends).toContain('manyToOne');
+    await expect(page.getByLabel('block-item-CollectionField-general-kanban-general.manyToOne')).toBeVisible();
     //修改标题字段
     await page.getByLabel('schema-initializer-ActionBar-KanbanActionInitializers-general').click();
     await page.getByLabel('block-item-CollectionField-general-kanban-general.manyToOne').hover();
@@ -70,9 +68,7 @@ test.describe('configure fields', () => {
     await page.getByText('Title field').click();
     await page.getByRole('option', { name: 'Username' }).click();
     //显示新的标题字段符合预期
-    expect(await page.getByLabel('block-item-CollectionField-general-kanban-general.manyToOne').innerText()).toBe(
-      'nocobase',
-    );
+    await expect(page.getByLabel('block-item-CollectionField-general-kanban-general.manyToOne')).toHaveText(/nocobase/);
   });
 });
 
@@ -112,6 +108,6 @@ test.describe('configure actions', () => {
     await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
     await page.getByRole('menuitem', { name: 'Created at' }).getByRole('switch').click();
     await page.getByRole('menuitem', { name: 'Single Select' }).getByRole('switch').click();
-    await expect(await page.getByLabel('block-item-Kanban.Card-general-kanban')).toBeVisible();
+    await expect(page.getByLabel('block-item-Kanban.Card-general-kanban')).toBeVisible();
   });
 });

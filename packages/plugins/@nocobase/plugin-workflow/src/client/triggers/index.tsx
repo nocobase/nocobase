@@ -40,7 +40,7 @@ function useUpdateConfigAction() {
         return;
       }
       await form.submit();
-      await api.resource('workflows').update?.({
+      await api.resource('workflows').update({
         filterByTk: workflow.id,
         values: {
           config: form.values,
@@ -151,23 +151,22 @@ export const TriggerConfig = () => {
   const compile = useCompile();
   const trigger = useTrigger();
 
-  const { title, executed } = workflow;
   const typeTitle = compile(trigger.title);
   const { fieldset, scope, components } = trigger;
-  const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
+  const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
   const titleText = lang('Trigger');
 
   useEffect(() => {
     if (workflow) {
-      setEditingTitle(workflow.title ?? typeTitle);
+      setEditingTitle(workflow.triggerTitle ?? workflow.title ?? typeTitle);
     }
   }, [workflow]);
 
   const form = useMemo(() => {
-    const values = cloneDeep(workflow?.config);
+    const values = cloneDeep(workflow.config);
     return createForm({
       initialValues: values,
-      disabled: workflow?.executed,
+      disabled: workflow.executed,
     });
   }, [workflow]);
 
@@ -185,13 +184,13 @@ export const TriggerConfig = () => {
     async function (next) {
       const t = next || typeTitle;
       setEditingTitle(t);
-      if (t === title) {
+      if (t === workflow.triggerTitle) {
         return;
       }
-      await api.resource('workflows').update?.({
+      await api.resource('workflows').update({
         filterByTk: workflow.id,
         values: {
-          title: t,
+          triggerTitle: t,
         },
       });
       refresh();
@@ -298,7 +297,7 @@ export const TriggerConfig = () => {
                       properties: fieldset,
                     },
                     actions: {
-                      ...(executed
+                      ...(workflow.executed
                         ? {}
                         : {
                             type: 'void',

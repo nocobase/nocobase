@@ -1,5 +1,4 @@
 import {
-  Page,
   expect,
   expectSettingsMenu,
   oneTableBlockWithAddNewAndViewAndEditAndMediaFields,
@@ -138,7 +137,10 @@ test.describe('form item & edit form', () => {
     const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndMediaFields).waitForInit();
     await mockRecord('general');
     await nocoPage.goto();
+
     await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
+    // 等待弹窗内容渲染完成
+    await page.waitForTimeout(1000);
     await page.getByLabel(`block-item-CollectionField-general-form-general.markdown-markdown`, { exact: true }).hover();
     await page
       .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.markdown`, {
@@ -167,29 +169,25 @@ test.describe('form item & edit form', () => {
     await testPattern({
       page,
       gotoPage: async () => {
-        record = await (async (mockPage, mockRecord) => {
-          const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndMediaFields).waitForInit();
-          const record = await mockRecord('general');
-          await nocoPage.goto();
-
-          return record;
-        })(mockPage, mockRecord);
+        const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndMediaFields).waitForInit();
+        record = await mockRecord('general');
+        await nocoPage.goto();
       },
-      openDialog: () =>
-        (async (page: Page) => {
-          await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
-        })(page),
-      showMenu: () =>
-        (async (page: Page, fieldName: string) => {
-          await page
-            .getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`, { exact: true })
-            .hover();
-          await page
-            .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`, {
-              exact: true,
-            })
-            .hover();
-        })(page, 'markdown'),
+      openDialog: async () => {
+        await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
+        // 等待弹窗内容渲染完成
+        await page.waitForTimeout(1000);
+      },
+      showMenu: async () => {
+        await page
+          .getByLabel(`block-item-CollectionField-general-form-general.markdown-markdown`, { exact: true })
+          .hover();
+        await page
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.markdown`, {
+            exact: true,
+          })
+          .hover();
+      },
       expectEditable: async () => {
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.markdown-markdown').getByRole('textbox'),
@@ -214,29 +212,26 @@ test.describe('form item & edit form', () => {
   test('Set validation rules', async ({ page, mockPage, mockRecord }) => {
     await testSetValidationRules({
       page,
-      gotoPage: () =>
-        (async (mockPage, mockRecord) => {
-          const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndMediaFields).waitForInit();
-          const record = await mockRecord('general');
-          await nocoPage.goto();
-
-          return record;
-        })(mockPage, mockRecord),
-      openDialog: () =>
-        (async (page: Page) => {
-          await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
-        })(page),
-      showMenu: () =>
-        (async (page: Page, fieldName: string) => {
-          await page
-            .getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`, { exact: true })
-            .hover();
-          await page
-            .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`, {
-              exact: true,
-            })
-            .hover();
-        })(page, 'markdown'),
+      gotoPage: async () => {
+        const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndMediaFields).waitForInit();
+        await mockRecord('general');
+        await nocoPage.goto();
+      },
+      openDialog: async () => {
+        await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
+        // 等待弹窗内容渲染完成
+        await page.waitForTimeout(1000);
+      },
+      showMenu: async () => {
+        await page
+          .getByLabel(`block-item-CollectionField-general-form-general.markdown-markdown`, { exact: true })
+          .hover();
+        await page
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.markdown`, {
+            exact: true,
+          })
+          .hover();
+      },
     });
   });
 });
