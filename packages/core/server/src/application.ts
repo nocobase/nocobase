@@ -823,7 +823,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await migrator3.beforeLoad.up();
     // load other plugins
     // TODO：改成约定式
-    await this.load({ hooks: false });
+    await this.load();
     await this.db.sync();
     await migrator3.afterSync.up();
     // upgrade plugins
