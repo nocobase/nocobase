@@ -346,7 +346,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     };
     return new Umzug({
       logger: migratorOptions.logger || console,
-      migrations,
+      migrations: Array.isArray(migrations) ? lodash.sortBy(migrations, (m) => m.name) : migrations,
       context,
       storage: new SequelizeStorage({
         tableName: `${this.options.tablePrefix || ''}migrations`,

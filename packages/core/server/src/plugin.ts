@@ -125,7 +125,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
   async loadMigrations() {
     this.app.log.debug(`load plugin migrations [${this.name}]`);
     if (!this.options.packageName) {
-      return { beforeLoad: [], afterLoad: [] };
+      return { beforeLoad: [], afterSync: [], afterLoad: [] };
     }
     const directory = resolve(
       process.env.NODE_MODULES_PATH,

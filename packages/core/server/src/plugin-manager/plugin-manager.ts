@@ -756,14 +756,16 @@ export class PluginManager {
   async loadPresetMigrations() {
     const migrations = {
       beforeLoad: [],
+      afterSync: [],
       afterLoad: [],
     };
     for (const [P, plugin] of this.getPlugins()) {
       if (!plugin.isPreset) {
         continue;
       }
-      const { beforeLoad, afterLoad } = await plugin.loadMigrations();
+      const { beforeLoad, afterSync, afterLoad } = await plugin.loadMigrations();
       migrations.beforeLoad.push(...beforeLoad);
+      migrations.afterSync.push(...afterSync);
       migrations.afterLoad.push(...afterLoad);
     }
     return {
@@ -771,6 +773,13 @@ export class PluginManager {
         up: async () => {
           this.app.log.debug('run preset migrations(beforeLoad)');
           const migrator = this.app.db.createMigrator({ migrations: migrations.beforeLoad });
+          await migrator.up();
+        },
+      },
+      afterSync: {
+        up: async () => {
+          this.app.log.debug('run preset migrations(afterSync)');
+          const migrator = this.app.db.createMigrator({ migrations: migrations.afterSync });
           await migrator.up();
         },
       },
@@ -787,6 +796,7 @@ export class PluginManager {
   async loadOtherMigrations() {
     const migrations = {
       beforeLoad: [],
+      afterSync: [],
       afterLoad: [],
     };
     for (const [P, plugin] of this.getPlugins()) {
@@ -796,8 +806,9 @@ export class PluginManager {
       if (!plugin.enabled) {
         continue;
       }
-      const { beforeLoad, afterLoad } = await plugin.loadMigrations();
+      const { beforeLoad, afterSync, afterLoad } = await plugin.loadMigrations();
       migrations.beforeLoad.push(...beforeLoad);
+      migrations.afterSync.push(...afterSync);
       migrations.afterLoad.push(...afterLoad);
     }
     return {
@@ -805,6 +816,13 @@ export class PluginManager {
         up: async () => {
           this.app.log.debug('run others migrations(beforeLoad)');
           const migrator = this.app.db.createMigrator({ migrations: migrations.beforeLoad });
+          await migrator.up();
+        },
+      },
+      afterSync: {
+        up: async () => {
+          this.app.log.debug('run others migrations(afterSync)');
+          const migrator = this.app.db.createMigrator({ migrations: migrations.afterSync });
           await migrator.up();
         },
       },

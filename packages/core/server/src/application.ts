@@ -525,6 +525,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     const { directory, context, namespace } = options;
     const migrations = {
       beforeLoad: [],
+      afterSync: [],
       afterLoad: [],
     };
     const extensions = ['js', 'ts'];
@@ -556,6 +557,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         up: async () => {
           this.log.debug('run core migrations(beforeLoad)');
           const migrator = this.db.createMigrator({ migrations: migrations.beforeLoad });
+          await migrator.up();
+        },
+      },
+      afterSync: {
+        up: async () => {
+          this.log.debug('run core migrations(afterSync)');
+          const migrator = this.db.createMigrator({ migrations: migrations.afterSync });
           await migrator.up();
         },
       },
@@ -800,26 +808,30 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     const migrator1 = await this.loadCoreMigrations();
     await migrator1.beforeLoad.up();
     await this.db.sync();
+    await migrator1.afterSync.up();
     await this.pm.initPresetPlugins();
     const migrator2 = await this.pm.loadPresetMigrations();
     await migrator2.beforeLoad.up();
     // load preset plugins
     await this.pm.load();
+    await this.db.sync();
+    await migrator2.afterSync.up();
     // upgrade preset plugins
     await this.pm.upgrade();
     await this.pm.initOtherPlugins();
     const migrator3 = await this.pm.loadOtherMigrations();
     await migrator3.beforeLoad.up();
     // load other plugins
+    // TODO：改成约定式
     await this.load({ hooks: false });
     await this.db.sync();
+    await migrator3.afterSync.up();
     // upgrade plugins
     await this.pm.upgrade();
     await migrator1.afterLoad.up();
     await migrator2.afterLoad.up();
     await migrator3.afterLoad.up();
     await this.version.update();
-    await this.restart();
     // await this.emitAsync('beforeUpgrade', this, options);
     // const force = false;
     // await measureExecutionTime(async () => {
@@ -834,6 +846,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     //   });
     // }, 'Sync');
     await this.emitAsync('afterUpgrade', this, options);
+    await this.restart();
     // this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
     // if (this._started) {
     //   await measureExecutionTime(async () => {

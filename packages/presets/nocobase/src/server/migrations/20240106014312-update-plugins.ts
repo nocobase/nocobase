@@ -5,7 +5,7 @@ export default class extends Migration {
   appVersion = '<0.18.0-alpha.10';
 
   async up() {
-    await this.app.pm.repository.update({
+    await this.pm.repository.update({
       values: {
         name: 'backup-restore',
         packageName: '@nocobase/plugin-backup-restore',
