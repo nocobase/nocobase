@@ -1,20 +1,20 @@
 import { MenuOutlined } from '@ant-design/icons';
 import { ISchema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import {
+  SchemaInitializer,
+  SchemaInitializerOpenModeSchemaItems,
+  createDesignable,
+  useAPIClient,
+  useAssociatedFormItemInitializerFields,
+  useDesignable,
+  useFormItemInitializerFields,
+  useGetAriaLabelOfDesigner,
+  useSchemaInitializerRender,
+} from '@nocobase/client';
 import { Space } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  useAPIClient,
-  useSchemaInitializerRender,
-  SchemaInitializer,
-  createDesignable,
-  useDesignable,
-  useAssociatedFormItemInitializerFields,
-  useFormItemInitializerFields,
-  SchemaInitializerOpenModeSchemaItems,
-  useGetAriaLabelOfDesigner,
-} from '@nocobase/client';
 
 const gridRowColWrap = (schema: ISchema) => {
   schema['x-read-pretty'] = true;
@@ -60,7 +60,7 @@ export const KanbanCardDesigner = () => {
   );
 };
 
-export const kanbanCardInitializers = new SchemaInitializer({
+export const kanbanCardInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'KanbanCardInitializers',
   wrap: gridRowColWrap,
   useInsert() {

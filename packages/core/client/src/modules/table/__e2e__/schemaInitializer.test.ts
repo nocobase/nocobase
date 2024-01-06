@@ -98,9 +98,13 @@ test.describe('configure columns', () => {
     await page.getByRole('menuitem', { name: 'One to one (has one)' }).first().click();
     await page.getByRole('menuitem', { name: 'Many to one' }).first().click();
     await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'One to one (belongs to)' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'One to one (has one)' }).getByRole('switch')).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Many to one' }).getByRole('switch')).toBeChecked();
+    await expect(
+      page.getByRole('menuitem', { name: 'One to one (belongs to)' }).first().getByRole('switch'),
+    ).toBeChecked();
+    await expect(
+      page.getByRole('menuitem', { name: 'One to one (has one)' }).first().getByRole('switch'),
+    ).toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'Many to one' }).first().getByRole('switch')).toBeChecked();
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'ID', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'One to one (belongs to)', exact: true })).toBeVisible();
@@ -114,9 +118,13 @@ test.describe('configure columns', () => {
     await page.getByRole('menuitem', { name: 'One to one (has one)' }).first().click();
     await page.getByRole('menuitem', { name: 'Many to one' }).first().click();
     await expect(page.getByRole('menuitem', { name: 'ID', exact: true }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'One to one (belongs to)' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'One to one (has one)' }).getByRole('switch')).not.toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Many to one' }).getByRole('switch')).not.toBeChecked();
+    await expect(
+      page.getByRole('menuitem', { name: 'One to one (belongs to)' }).first().getByRole('switch'),
+    ).not.toBeChecked();
+    await expect(
+      page.getByRole('menuitem', { name: 'One to one (has one)' }).first().getByRole('switch'),
+    ).not.toBeChecked();
+    await expect(page.getByRole('menuitem', { name: 'Many to one' }).first().getByRole('switch')).not.toBeChecked();
     await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'ID', exact: true })).not.toBeVisible();
     await expect(page.getByRole('button', { name: 'One to one (belongs to)', exact: true })).not.toBeVisible();

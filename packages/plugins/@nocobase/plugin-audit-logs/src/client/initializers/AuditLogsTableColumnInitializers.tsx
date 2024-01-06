@@ -44,7 +44,7 @@ const AssociatedFields = () => {
   return <SchemaInitializerChildren>{schema}</SchemaInitializerChildren>;
 };
 
-export const auditLogsTableColumnInitializers = new SchemaInitializer({
+export const auditLogsTableColumnInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'AuditLogsTableColumnInitializers',
   insertPosition: 'beforeEnd',
   icon: 'SettingOutlined',
