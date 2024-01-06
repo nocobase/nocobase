@@ -61,7 +61,7 @@ describe('gateway with multiple apps', () => {
       },
     });
 
-    await waitSecond();
+    await waitSecond(3000);
     console.log(wsClient.messages);
     const lastMessage = wsClient.lastMessage();
 
