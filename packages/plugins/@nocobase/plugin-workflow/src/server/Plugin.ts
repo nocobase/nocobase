@@ -30,7 +30,7 @@ type Pending = [ExecutionModel, JobModel?];
 
 type CachedEvent = [WorkflowModel, any, { context?: any }];
 
-export default class WorkflowPlugin extends Plugin {
+export default class PluginWorkflowServer extends Plugin {
   instructions: Registry<InstructionInterface> = new Registry();
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<CustomFunction> = new Registry();
