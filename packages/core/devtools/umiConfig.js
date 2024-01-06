@@ -107,7 +107,13 @@ function resolveNocobasePackagesAlias(config) {
   }
 }
 
+function getNodeModulesPath(packageDir) {
+  const node_modules_dir = path.join(process.cwd(), 'node_modules');
+  return path.join(node_modules_dir, packageDir);
+}
 class IndexGenerator {
+  nocobaseDir = getNodeModulesPath('@nocobase');
+
   constructor(outputPath, pluginsPath) {
     this.outputPath = outputPath;
     this.pluginsPath = pluginsPath;
@@ -189,23 +195,45 @@ export default function devDynamicImport(packageName: string): Promise<any> {
   }
 
   getContent(pluginsPath) {
-    const pluginFolders = glob
-      .sync(['*/package.json', '*/*/package.json'], { cwd: pluginsPath, onlyFiles: true, absolute: true })
-      .map((item) => path.dirname(item));
-    const pluginInfos = pluginFolders
-      .filter((folder) => {
-        const pluginPackageJsonPath = path.join(folder, 'package.json');
-        const pluginSrcClientPath = path.join(folder, 'src', 'client');
-        return fs.existsSync(pluginPackageJsonPath) && fs.existsSync(pluginSrcClientPath);
+    const pluginFolders = glob.sync(['*/package.json', '*/*/package.json'], {
+      cwd: pluginsPath,
+      onlyFiles: true,
+      absolute: true,
+    });
+
+    const storagePluginFolders = glob.sync(['*/package.json', '*/*/package.json'], {
+      cwd: process.env.PLUGIN_STORAGE_PATH,
+      onlyFiles: true,
+      absolute: true,
+    });
+
+    const nocobasePluginFolders = glob
+      .sync(['plugin-*/package.json'], { cwd: this.nocobaseDir, onlyFiles: true, absolute: true })
+      .map((item) => fs.realpathSync(item));
+    const pluginInfos = Array.from(new Set([...pluginFolders, ...storagePluginFolders, ...nocobasePluginFolders]))
+      .filter((item) => {
+        const dirname = path.dirname(item);
+        const clientJs = path.join(dirname, 'client.js');
+        return fs.existsSync(clientJs);
       })
-      .map((folder) => {
-        const pluginPackageJsonPath = path.join(folder, 'package.json');
+      .map((pluginPackageJsonPath) => {
         const pluginPackageJson = require(pluginPackageJsonPath);
-        const pluginSrcClientPath = path
-          .relative(this.packagesPath, path.join(folder, 'src', 'client'))
-          .replaceAll('\\', '/');
-        const pluginFileName = `${path.basename(pluginsPath)}_${path.basename(folder).replaceAll('-', '_')}`;
-        const exportStatement = `export { default } from '${pluginSrcClientPath}';`;
+        const pluginPathArr = pluginPackageJsonPath.replaceAll(path.sep, '/').split('/');
+        const hasNamespace = pluginPathArr[pluginPathArr.length - 3].startsWith('@');
+        const pluginFileName = (hasNamespace
+          ? `${pluginPathArr[pluginPathArr.length - 3].replace('@', '')}_${pluginPathArr[pluginPathArr.length - 2]}`
+          : pluginPathArr[pluginPathArr.length - 2]
+        ).replaceAll('-', '_');
+
+        let exportStatement = '';
+        if (pluginPackageJsonPath.includes('packages')) {
+          const pluginSrcClientPath = path
+            .relative(this.packagesPath, path.join(path.dirname(pluginPackageJsonPath), 'src', 'client'))
+            .replaceAll(path.sep, '/');
+          exportStatement = `export { default } from '${pluginSrcClientPath}';`;
+        } else {
+          exportStatement = `export { default } from '${pluginPackageJson.name}/client';`;
+        }
         return { exportStatement, pluginFileName, packageJsonName: pluginPackageJson.name };
       });
 
