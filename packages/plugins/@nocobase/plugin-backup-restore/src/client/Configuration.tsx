@@ -136,7 +136,7 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
       <a onClick={showModal}>{t('Learn more')}</a>
       <Modal
         title={t('Backup instructions')}
-        width={800}
+        width={'80vw'}
         open={isModalOpen}
         footer={null}
         onOk={handleOk}
