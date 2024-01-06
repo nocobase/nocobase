@@ -1,3 +1,4 @@
+import { Application } from '../Application';
 import { CollectionOptionsV2, CollectionV2 } from './Collection';
 import { ISchema } from '@formily/react';
 
@@ -39,7 +40,7 @@ interface CollectionOptions {
 export interface CollectionTemplateV2Options {
   name: string;
   Collection?: typeof CollectionV2;
-  transform?: (collection: CollectionV2) => void;
+  transform?: (collection: CollectionOptionsV2, app: Application) => CollectionOptionsV2;
   title?: string;
   color?: string;
   /** 排序 */
@@ -64,7 +65,7 @@ export interface CollectionTemplateV2Options {
 export class CollectionTemplateV2 implements CollectionTemplateV2Options {
   name: string;
   Collection?: typeof CollectionV2;
-  transform?: (collection: CollectionV2) => void;
+  transform?: (collection: CollectionOptionsV2, app: Application) => CollectionOptionsV2;
   title?: string;
   color?: string;
   /** 排序 */

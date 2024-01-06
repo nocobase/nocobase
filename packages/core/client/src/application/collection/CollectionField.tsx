@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { concat } from 'lodash';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { CollectionFieldProviderV2, useCollectionFieldV2 } from './CollectionFieldProvider';
 import { useCompile, useComponent } from '../../schema-component';
 import { useFormBlockContext } from '../../block-provider';
@@ -15,11 +15,12 @@ type Props = {
 // TODO: 初步适配
 const InternalField: React.FC = (props: Props) => {
   const { component } = props;
+  const compile = useCompile();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { uiSchema, defaultValue } = useCollectionFieldV2();
+  const { uiSchema: uiSchemaOrigin, defaultValue } = useCollectionFieldV2();
+  const uiSchema = useMemo(() => compile(uiSchemaOrigin), [JSON.stringify(uiSchemaOrigin)]);
   const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
-  const compile = useCompile();
   const setFieldProps = (key, value) => {
     field[key] = typeof field[key] === 'undefined' ? value : field[key];
   };

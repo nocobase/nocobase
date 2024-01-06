@@ -55,10 +55,11 @@ export class CollectionManagerV2<Mixins = {}> {
   constructor(options: CollectionManagerOptionsV2 = {}, app: Application) {
     this.options = options;
     this.app = app;
+    this.init(options);
   }
 
   init(options: CollectionManagerOptionsV2) {
-    Object.assign(this.collectionMixins, options.collectionMixins || []);
+    this.collectionMixins.push(...(options.collectionMixins || []));
     this.addCollectionTemplates(options.collectionTemplates || []);
     this.addCollectionFieldInterfaces(options.collectionFieldInterfaces || []);
     this.addCollectionNamespaces(options.collectionNamespaces || {});
@@ -98,19 +99,14 @@ export class CollectionManagerV2<Mixins = {}> {
 
     collections
       .map((collection) => {
-        if (collection instanceof CollectionV2) {
-          return collection;
-        }
         const collectionTemplateInstance = this.getCollectionTemplate(collection.template);
         const Cls = collectionTemplateInstance?.Collection || CollectionV2;
+        const transform = collectionTemplateInstance?.transform || ((collection) => collection);
+        const transformedCollection = transform(collection, this.app);
         // eslint-disable-next-line prettier/prettier
         class CombinedClass extends Cls { }
         applyMixins(CombinedClass, this.collectionMixins);
-        const instance = new CombinedClass(collection, this);
-
-        if (collectionTemplateInstance && collectionTemplateInstance.transform) {
-          collectionTemplateInstance.transform(instance);
-        }
+        const instance = new CombinedClass(transformedCollection, this);
         return instance;
       })
       .forEach((collectionInstance) => {

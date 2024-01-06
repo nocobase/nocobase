@@ -6,6 +6,7 @@ import {
   BlockSchemaComponentProvider,
   CollectionField,
   CollectionManagerProvider,
+  CollectionPlugin,
   CurrentUserProvider,
   FormBlockProvider,
   FormItem,
@@ -96,26 +97,33 @@ const schema: ISchema = {
   },
 };
 
-const Root = () => {
+const Demo = () => {
   return (
-    <APIClientProvider apiClient={apiClient}>
-      <CurrentUserProvider>
-        <CollectionManagerProvider collections={collections}>
-          <SchemaComponentProvider
-            components={{ FormBlockProvider, FormItem, CollectionField, Input, Action, FormV2, Password, Grid }}
-          >
-            <BlockSchemaComponentProvider>
-              <SchemaComponent schema={schema} />
-            </BlockSchemaComponentProvider>
-          </SchemaComponentProvider>
-        </CollectionManagerProvider>
-      </CurrentUserProvider>
-    </APIClientProvider>
+    <CurrentUserProvider>
+      <BlockSchemaComponentProvider>
+        <SchemaComponent schema={schema} />
+      </BlockSchemaComponentProvider>
+    </CurrentUserProvider>
   );
 };
 
 const app = new Application({
-  providers: [Root],
+  apiClient,
+  collectionManager: {
+    collections: collections as any,
+  },
+  plugins: [CollectionPlugin],
+  components: {
+    FormBlockProvider,
+    FormItem,
+    CollectionField,
+    Input,
+    Action,
+    FormV2,
+    Password,
+    Grid,
+  },
+  providers: [Demo],
 });
 
 export default app.getRootComponent();

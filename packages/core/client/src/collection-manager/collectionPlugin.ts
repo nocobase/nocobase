@@ -112,27 +112,6 @@ export class CollectionPlugin extends Plugin {
       },
     });
 
-    const collections = (service?.data?.data || []).map(({ rawTitle, title, fields, ...collection }) => ({
-      ...collection,
-      title: rawTitle ? title : this.app.i18n.t(title),
-      rawTitle: rawTitle || title,
-      fields: fields.map(({ uiSchema, ...field }) => {
-        if (uiSchema?.title) {
-          const title = uiSchema.title;
-          uiSchema.title = uiSchema.rawTitle ? title : this.app.i18n.t(title);
-          uiSchema.rawTitle = uiSchema.rawTitle || title;
-        }
-        if (uiSchema?.enum) {
-          uiSchema.enum = uiSchema.enum.map((item) => ({
-            ...item,
-            value: item?.value || item,
-            label: item.rawLabel ? item.label : this.app.i18n.t(item.label),
-            rawLabel: item.rawLabel || item.label,
-          }));
-        }
-        return { uiSchema, ...field };
-      }),
-    }));
-    return collections;
+    return service?.data?.data || [];
   }
 }

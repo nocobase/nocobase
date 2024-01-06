@@ -10,7 +10,7 @@ export interface CollectionFieldOptionsV2 {
   name?: any;
   collectionName?: string;
   sourceKey?: string; // association field
-  uiSchema?: ISchema;
+  uiSchema?: any;
   target?: string;
 
   [key: string]: any;
@@ -87,7 +87,8 @@ export class CollectionV2 {
     this.collectionManager = collectionManager;
     this.init(options);
   }
-  init(options: CollectionOptionsV2) {
+  init(_options: CollectionOptionsV2 | CollectionV2) {
+    const options = _options instanceof CollectionV2 ? _options.getOptions() : _options;
     this.options = options;
     this.fields = this.options.fields || [];
     this.allFields = this.getAllFields();

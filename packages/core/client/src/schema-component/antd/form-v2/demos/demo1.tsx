@@ -2,8 +2,10 @@ import { ISchema, useForm } from '@formily/react';
 import {
   APIClientProvider,
   Action,
+  Application,
   CollectionField,
   CollectionManagerProvider,
+  CollectionPlugin,
   CurrentUserProvider,
   FormBlockProvider,
   FormItem,
@@ -83,16 +85,29 @@ const schema: ISchema = {
   },
 };
 
-export default () => {
+const Demo = () => {
   return (
-    <APIClientProvider apiClient={apiClient}>
-      <CurrentUserProvider>
-        <CollectionManagerProvider collections={collections}>
-          <SchemaComponentProvider components={{ FormBlockProvider, FormV2, FormItem, CollectionField, Action, Input }}>
-            <SchemaComponent schema={schema} />
-          </SchemaComponentProvider>
-        </CollectionManagerProvider>
-      </CurrentUserProvider>
-    </APIClientProvider>
+    <CurrentUserProvider>
+      <SchemaComponent schema={schema} />
+    </CurrentUserProvider>
   );
 };
+
+const app = new Application({
+  apiClient,
+  collectionManager: {
+    collections: collections as any,
+  },
+  plugins: [CollectionPlugin],
+  components: {
+    FormBlockProvider,
+    FormV2,
+    FormItem,
+    CollectionField,
+    Action,
+    Input,
+  },
+  providers: [Demo],
+});
+
+export default app.getRootComponent();
