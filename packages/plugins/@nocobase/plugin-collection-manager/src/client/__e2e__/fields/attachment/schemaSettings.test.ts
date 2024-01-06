@@ -45,7 +45,11 @@ test.describe('form item & create form', () => {
           .hover();
       },
       expectEditable: async () => {
-        await expect(page.getByRole('button', { name: 'plus Upload' })).toBeVisible();
+        await expect(
+          page
+            .getByLabel('block-item-CollectionField-general-form-general.attachment-attachment')
+            .locator('.ant-upload-select'),
+        ).toBeVisible();
       },
       expectReadonly: async () => {
         await expect(page.getByRole('button', { name: 'plus Upload' })).not.toBeVisible();
