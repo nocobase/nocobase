@@ -342,6 +342,7 @@ export class PluginManager {
 
       await this.app.emitAsync('beforeLoadPlugin', plugin, options);
       this.app.logger.debug(`load plugin [${name}] `, { submodule: 'plugin-manager', method: 'load', name });
+      await plugin.loadCollections();
       await plugin.load();
       plugin.state.loaded = true;
       await this.app.emitAsync('afterLoadPlugin', plugin, options);

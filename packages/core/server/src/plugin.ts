@@ -1,6 +1,6 @@
 import { Model } from '@nocobase/database';
 import { LoggerOptions } from '@nocobase/logger';
-import { importModule } from '@nocobase/utils';
+import { fsExists, importModule } from '@nocobase/utils';
 import fs from 'fs';
 import glob from 'glob';
 import type { TFuncKey, TOptions } from 'i18next';
@@ -165,10 +165,25 @@ export abstract class Plugin<O = any> implements PluginInterface {
   async afterRemove() {}
 
   async importCollections(collectionsPath: string) {
-    await this.db.import({
-      directory: collectionsPath,
-      from: `plugin:${this.getName()}`,
-    });
+    // await this.db.import({
+    //   directory: collectionsPath,
+    //   from: `plugin:${this.getName()}`,
+    // });
+  }
+
+  async loadCollections() {
+    const directory = resolve(
+      process.env.NODE_MODULES_PATH,
+      this.options.packageName,
+      this._sourceDir,
+      'server/collections',
+    );
+    if (await fsExists(directory)) {
+      await this.db.import({
+        directory,
+        from: `plugin:${this.getName()}`,
+      });
+    }
   }
 
   requiredPlugins() {

@@ -277,7 +277,7 @@ export class Dumper extends AppMigrator {
 
     for (const collectionName of dumpedCollections) {
       const collection = this.app.db.getCollection(collectionName);
-      if (lodash.get(collection.options, 'duplicator.delayRestore')) {
+      if (lodash.get(collection.options, 'dumpRules.delayRestore')) {
         delayCollections.add(collectionName);
       }
 
