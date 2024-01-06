@@ -2,9 +2,9 @@ import React, { FC } from 'react';
 import {
   SchemaComponent,
   useDataBlockRequestV2,
-  useBlockSettingsV2,
-  withSchemaComponentProps,
+  withDynamicSchemaProps,
   UseDataBlockProps,
+  useDataBlockV2,
 } from '@nocobase/client';
 import { createApp } from './createApp';
 import { Switch, Table, TableProps } from 'antd';
@@ -13,8 +13,8 @@ interface DemoTableRecordType {
   name: string;
 }
 type DemoTableProps = TableProps<DemoTableRecordType>;
-const DemoTable: FC<DemoTableProps> = withSchemaComponentProps((props) => {
-  const { dn } = useBlockSettingsV2();
+const DemoTable: FC<DemoTableProps> = withDynamicSchemaProps((props) => {
+  const { dn } = useDataBlockV2();
   return (
     <>
       <Switch
@@ -35,7 +35,7 @@ const DemoTable: FC<DemoTableProps> = withSchemaComponentProps((props) => {
 
 function useDemoTableProps(): DemoTableProps {
   const { data, loading } = useDataBlockRequestV2<{ data: DemoTableRecordType[]; total: number }>();
-  const { props, changeSchemaProps } = useBlockSettingsV2<{
+  const { props, dn } = useDataBlockV2<{
     rowKey?: string;
     params?: Record<string, any>;
     bordered?: boolean;
@@ -60,18 +60,20 @@ function useDemoTableProps(): DemoTableProps {
       },
     ],
     loading,
-    dataSource: data?.data || [],
+    dataSource: data?.data.data || [],
     rowKey,
     bordered,
     pagination: {
       pageSize: params.pageSize || 5,
       current: params.page || 1,
-      total: data?.total,
+      total: data?.data.total,
       onChange(page, pageSize) {
-        changeSchemaProps({
-          params: {
-            pageSize,
-            page,
+        dn.deepMerge({
+          'x-decorator-props': {
+            params: {
+              pageSize,
+              page,
+            },
           },
         });
       },

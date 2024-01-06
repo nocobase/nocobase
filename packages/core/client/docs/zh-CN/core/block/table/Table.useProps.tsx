@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDataBlockRequestV2, useBlockSettingsV2, useDesignable, useSchemaInitializerRender } from '@nocobase/client';
+import { useDataBlockRequestV2, useDataBlockV2, useDesignable, useSchemaInitializerRender } from '@nocobase/client';
 import { ISchema, RecursionField, Schema, useFieldSchema } from '@formily/react';
 import { TableProps } from 'antd';
 
@@ -66,7 +66,7 @@ const useTableColumns = () => {
 
 export function useTableProps(): TableProps<any> {
   const { data, loading } = useDataBlockRequestV2<TableRequest>();
-  const { props, dn } = useBlockSettingsV2<{
+  const { props, dn } = useDataBlockV2<{
     rowKey?: string;
     params?: Record<string, any>;
     bordered?: boolean;
@@ -76,13 +76,13 @@ export function useTableProps(): TableProps<any> {
   return {
     columns,
     loading,
-    dataSource: data?.data || [],
+    dataSource: data?.data.data || [],
     rowKey,
     bordered,
     pagination: {
       pageSize: params.pageSize || 5,
       current: params.page || 1,
-      total: data?.meta?.count,
+      total: data?.data.meta?.count,
       onChange(page, pageSize) {
         dn.deepMerge({
           'x-decorator-props': {

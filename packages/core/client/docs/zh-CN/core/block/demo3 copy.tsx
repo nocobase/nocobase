@@ -4,8 +4,8 @@ import {
   RecordProviderV2,
   SchemaComponent,
   useDataBlockRequestV2,
-  useBlockSettingsV2,
-  withSchemaComponentProps,
+  useDataBlockRequestV2,
+  withDynamicSchemaProps,
   useDesignable,
 } from '@nocobase/client';
 import { createApp } from './createApp';
@@ -15,7 +15,7 @@ interface DemoTableRecordType {
   name: string;
 }
 type DemoTableProps = TableProps<DemoTableRecordType>;
-const DemoTable: FC<DemoTableProps> = withSchemaComponentProps((props) => {
+const DemoTable: FC<DemoTableProps> = withDynamicSchemaProps((props) => {
   const { dn } = useDesignable();
   return (
     <>
@@ -37,7 +37,7 @@ const DemoTable: FC<DemoTableProps> = withSchemaComponentProps((props) => {
 
 function useDemoTableProps(): DemoTableProps {
   const { data, loading } = useDataBlockRequestV2<{ data: DemoTableRecordType[]; total: number }>();
-  const { rowKey, params, bordered } = useBlockSettingsV2<{ rowKey?: string; params?: Record<string, any> }>();
+  const { rowKey, params, bordered } = useDataBlockRequestV2<{ rowKey?: string; params?: Record<string, any> }>();
   const { dn } = useDesignable();
   return {
     columns: [

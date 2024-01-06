@@ -3,7 +3,7 @@ import {
   RecordProviderV2,
   SchemaComponent,
   useDataBlockRequestV2,
-  withSchemaComponentProps,
+  withDynamicSchemaProps,
   UseDataBlockProps,
   useRecordDataV2,
 } from '@nocobase/client';
@@ -17,7 +17,7 @@ interface DemoFormFieldType {
   age: number;
 }
 type DemoFormProps = FormProps<DemoFormFieldType>;
-const DemoForm: FC<DemoFormProps> = withSchemaComponentProps((props) => {
+const DemoForm: FC<DemoFormProps> = withDynamicSchemaProps((props) => {
   return (
     <Form labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} style={{ maxWidth: 600 }} autoComplete="off" {...props}>
       <Form.Item<DemoFormFieldType>

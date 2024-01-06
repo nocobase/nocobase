@@ -1,5 +1,5 @@
 import React, { FC } from 'react';
-import { SchemaComponent, useDataBlockResourceV2, withSchemaComponentProps } from '@nocobase/client';
+import { SchemaComponent, useDataBlockResourceV2, withDynamicSchemaProps } from '@nocobase/client';
 import { createApp } from './createApp';
 import { Button, Form, Input, InputNumber } from 'antd';
 import { FormProps } from 'antd/lib';
@@ -10,7 +10,7 @@ interface DemoFormFieldType {
   age: number;
 }
 type DemoFormProps = FormProps<DemoFormFieldType>;
-const DemoForm: FC<DemoFormProps> = withSchemaComponentProps((props) => {
+const DemoForm: FC<DemoFormProps> = withDynamicSchemaProps((props) => {
   return (
     <Form labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} style={{ maxWidth: 600 }} autoComplete="off" {...props}>
       <Form.Item<DemoFormFieldType>

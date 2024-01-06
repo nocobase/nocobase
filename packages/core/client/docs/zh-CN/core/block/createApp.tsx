@@ -1,22 +1,17 @@
-import { Application, ApplicationOptions, CollectionManagerProvider } from '@nocobase/client';
+import { Application, ApplicationOptions } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
-import React, { ComponentType } from 'react';
+import { ComponentType } from 'react';
 import collections from './collections.json';
 
 export function createApp(Demo: ComponentType<any>, options: ApplicationOptions, mocks: Record<string, any> = {}) {
-  const Provider = () => {
-    return (
-      <CollectionManagerProvider collections={collections as any}>
-        <Demo />
-      </CollectionManagerProvider>
-    );
-  };
-
   const app = new Application({
     apiClient: {
       baseURL: 'http://localhost:8000',
     },
-    providers: [Provider],
+    providers: [Demo],
+    collectionManager: {
+      collections: collections as any,
+    },
     ...options,
   });
 

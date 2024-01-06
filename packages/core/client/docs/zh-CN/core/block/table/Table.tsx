@@ -1,4 +1,4 @@
-import { withSchemaComponentProps } from '@nocobase/client';
+import { withDynamicSchemaProps } from '@nocobase/client';
 import { Table } from 'antd';
 
-export const NocoBaseTable = withSchemaComponentProps(Table);
+export const NocoBaseTable = withDynamicSchemaProps(Table);

@@ -2,7 +2,7 @@ import React, { FC, useEffect } from 'react';
 import {
   RecordProviderV2,
   SchemaComponent,
-  withSchemaComponentProps,
+  withDynamicSchemaProps,
   UseDataBlockProps,
   useRecordV2,
   useRecordDataV2,
@@ -17,7 +17,7 @@ interface DemoFormFieldType {
   age: number;
 }
 type DemoFormProps = FormProps<DemoFormFieldType>;
-const DemoForm: FC<DemoFormProps> = withSchemaComponentProps((props) => {
+const DemoForm: FC<DemoFormProps> = withDynamicSchemaProps((props) => {
   return (
     <Form labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} style={{ maxWidth: 600 }} autoComplete="off" {...props}>
       <Form.Item<DemoFormFieldType>

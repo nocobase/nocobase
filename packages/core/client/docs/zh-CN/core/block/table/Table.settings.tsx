@@ -1,4 +1,4 @@
-import { SchemaSettings, useBlockSettingsV2 } from '@nocobase/client';
+import { SchemaSettings, useDataBlockRequestV2 } from '@nocobase/client';
 
 export const tableSettings = new SchemaSettings({
   name: 'tableSettings',
@@ -7,7 +7,7 @@ export const tableSettings = new SchemaSettings({
       name: 'bordered',
       type: 'switch',
       useComponentProps() {
-        const { dn, props } = useBlockSettingsV2<{ bordered?: boolean }>();
+        const { dn, props } = useDataBlockRequestV2<{ bordered?: boolean }>();
         return {
           title: 'Bordered',
           checked: !!props.bordered,
