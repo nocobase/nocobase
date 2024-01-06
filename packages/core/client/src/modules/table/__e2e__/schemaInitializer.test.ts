@@ -101,6 +101,7 @@ test.describe('configure columns', () => {
     await expect(page.getByRole('menuitem', { name: 'One to one (belongs to)' }).getByRole('switch')).toBeChecked();
     await expect(page.getByRole('menuitem', { name: 'One to one (has one)' }).getByRole('switch')).toBeChecked();
     await expect(page.getByRole('menuitem', { name: 'Many to one' }).getByRole('switch')).toBeChecked();
+    await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'ID', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'One to one (belongs to)', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'One to one (has one)', exact: true })).toBeVisible();
@@ -124,26 +125,19 @@ test.describe('configure columns', () => {
 
     // display association fields -------------------------------------------------------------
     await configureColumnButton.hover();
-
-    await page.getByText('Display collection fields', { exact: true }).hover();
-    await page.mouse.wheel(0, 300);
-
     await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).nth(1).hover();
     await page.getByRole('menuitem', { name: 'Nickname' }).click();
+    await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).toBeChecked();
+    await page.mouse.move(300, 0);
     await expect(page.getByRole('button', { name: 'Nickname', exact: true })).toBeVisible();
 
-    // 开关应该是开启状态
-    await configureColumnButton.hover();
-    await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).nth(1).hover();
-    await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).toBeChecked();
-
     // 点击开关，删除创建的字段
-    await page.getByRole('menuitem', { name: 'Nickname' }).click();
-    await expect(page.getByRole('button', { name: 'Nickname', exact: true })).not.toBeVisible();
-    // 开关应该是关闭状态
     await configureColumnButton.hover();
     await page.getByRole('menuitem', { name: 'One to one (belongs to)' }).nth(1).hover();
+    await page.getByRole('menuitem', { name: 'Nickname' }).click();
     await expect(page.getByRole('menuitem', { name: 'Nickname' }).getByRole('switch')).not.toBeChecked();
+    await page.mouse.move(300, 0);
+    await expect(page.getByRole('button', { name: 'Nickname', exact: true })).not.toBeVisible();
   });
 
   test.pgOnly('display inherit fields', async ({ page, mockPage }) => {});

@@ -33,7 +33,7 @@ import { useTriggerWorkflowsActionProps } from './hooks/useTriggerWorkflowAction
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './constant';
 import { NAMESPACE } from './locale';
 
-export default class extends Plugin {
+export default class PluginWorkflowClient extends Plugin {
   triggers = new Registry<Trigger>();
   instructions = new Registry<Instruction>();
   getTriggersOptions = () => {

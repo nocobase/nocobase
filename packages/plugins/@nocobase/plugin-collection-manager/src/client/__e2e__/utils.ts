@@ -154,6 +154,7 @@ export async function testPattern({
 
   // 更改为 Easy-reading
   await showMenu();
+  await page.waitForTimeout(100);
   await expect(page.getByText('PatternReadonly')).toBeVisible();
   await page.getByRole('menuitem', { name: 'Pattern' }).click();
   await page.getByRole('option', { name: 'Easy-reading' }).click();

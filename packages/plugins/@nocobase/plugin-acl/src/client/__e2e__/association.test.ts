@@ -32,7 +32,7 @@ test.describe('view', () => {
     await expect(page.getByRole('button', { name: 'phone' })).not.toBeVisible();
     await page.getByLabel('action-Action.Link-Association block-customize:popup-general-table').click();
     //关系区块不可见
-    await expect(await page.getByLabel('block-item-CardItem-users-form')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-form')).not.toBeVisible();
   });
   //关系字段有权限，关系目标表个别字段有权限
   test('association field accept,  target collection accept with fields', async ({
@@ -70,9 +70,9 @@ test.describe('view', () => {
     await expect(page.getByRole('button', { name: 'phone' })).not.toBeVisible();
     await page.getByLabel('action-Action.Link-Association block-customize:popup-general-table').click();
     //关系区块可见,个别字段可见
-    await expect(await page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
-    await expect(await page.getByLabel('block-item-CollectionField-users-form-users.nickname')).not.toBeVisible();
-    await expect(await page.getByLabel('block-item-CollectionField-users-form-users.email')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-users-form')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.nickname')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.email')).toBeVisible();
   });
 });
 
@@ -107,10 +107,8 @@ test.describe('update', () => {
     await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
     await page.getByLabel('action-Action.Link-Association field-customize:popup-general-table').click();
     //关系字段组件可见，子表单/子表格中字段不可见
-    await expect(
-      await page.getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo'),
-    ).toBeVisible();
-    await expect(await page.getByLabel('block-item-CollectionField-users-form-users.email-Email')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.email-Email')).not.toBeVisible();
   });
   //关系字段有权限，关系目标表个别字段有权限
   test('association field accept, target collection accept with fields', async ({
@@ -148,11 +146,9 @@ test.describe('update', () => {
     await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
     await page.getByLabel('action-Action.Link-Association field-customize:popup-general-table').click();
     //关系字段组件可见，子表单/子表格中个别字段可见
-    await expect(
-      await page.getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo'),
-    ).toBeVisible();
-    await expect(await page.getByLabel('block-item-CollectionField-users-form-users.email')).toBeVisible();
-    await expect(await page.getByLabel('block-item-CollectionField-users-form-users.phone')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.email')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.phone')).not.toBeVisible();
   });
 });
 
@@ -188,12 +184,10 @@ test.describe('create', () => {
     await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
     await page.getByLabel('action-Action-Add new-create').click();
     //关系字段组件可见，子表单/子表格中字段不可见
-    await expect(
-      await page.getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo'),
-    ).toBeVisible();
-    await expect(await page.getByLabel('block-item-CollectionField-users-form-users.email')).not.toBeVisible();
-    await expect(await page.getByLabel('block-item-CollectionField-users-form-users.phone')).not.toBeVisible();
-    await expect(await page.getByLabel('block-item-CollectionField-users-form-users.username')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.email')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.phone')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.username')).not.toBeVisible();
   });
   //关系字段有权限，关系目标表个别字段有权限
   test('association field accept, target collection accept with fields', async ({
@@ -232,11 +226,9 @@ test.describe('create', () => {
     await expect(page.getByLabel('block-item-CardItem-general-table')).toBeVisible();
     await page.getByLabel('action-Action-Add new-create').click();
     //关系字段组件可见，子表单/子表格中个别字段可见
-    await expect(
-      await page.getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo'),
-    ).toBeVisible();
-    await expect(await page.getByLabel('block-item-CollectionField-users-form-users.email')).toBeVisible();
-    await expect(await page.getByLabel('block-item-CollectionField-users-form-users.phone')).not.toBeVisible();
-    await expect(await page.getByLabel('block-item-CollectionField-users-form-users.username')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.email')).toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.phone')).not.toBeVisible();
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.username')).not.toBeVisible();
   });
 });

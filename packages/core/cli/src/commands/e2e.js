@@ -3,6 +3,7 @@ const { run, isPortReachable } = require('../util');
 const { execSync } = require('node:child_process');
 const axios = require('axios');
 const { pTest } = require('./p-test');
+const os = require('os');
 
 /**
  * 检查服务是否启动成功
@@ -205,7 +206,7 @@ module.exports = (cli) => {
   e2e
     .command('p-test')
     .option('--stop-on-error')
-    .option('--concurrency [concurrency]', '', 3)
+    .option('--concurrency [concurrency]', '', os.cpus().length)
     .action(async (opts) => {
       await pTest(opts);
     });

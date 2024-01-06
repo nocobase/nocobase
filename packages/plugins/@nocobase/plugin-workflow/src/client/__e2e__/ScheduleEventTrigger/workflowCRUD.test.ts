@@ -1,18 +1,6 @@
 import { faker } from '@faker-js/faker';
-import {
-  CreateWorkFlow,
-  EditWorkFlow,
-  ScheduleTriggerNode,
-  WorkflowListRecords,
-  apiCreateWorkflow,
-  apiDeleteWorkflow,
-  apiGetWorkflow,
-  apiUpdateWorkflowTrigger,
-  appendJsonCollectionName,
-  generalWithNoRelationalFields,
-} from '@nocobase/plugin-workflow-test/e2e';
+import { CreateWorkFlow, EditWorkFlow, apiCreateWorkflow, apiDeleteWorkflow } from '@nocobase/plugin-workflow-test/e2e';
 import { expect, test } from '@nocobase/test/e2e';
-import { dayjs } from '@nocobase/utils';
 
 test.describe('Filter', () => {
   test('filter workflow name', async ({ page }) => {
@@ -161,6 +149,7 @@ test.describe('Duplicate', () => {
     await page.getByLabel(`action-Action-Submit-workflows-${workFlowName}`).click();
 
     // 3、预期结果：列表中出现筛选的工作流
+    await page.reload();
     await expect(page.getByText(`${workFlowName} copy`)).toBeAttached();
 
     // 4、后置处理：删除工作流
