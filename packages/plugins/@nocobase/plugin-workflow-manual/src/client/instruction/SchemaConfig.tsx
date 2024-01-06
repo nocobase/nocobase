@@ -1,8 +1,8 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { FormProvider, ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { Alert, Button, Modal, Space } from 'antd';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -33,15 +33,15 @@ import {
   useSchemaInitializerItem,
   useSchemaOptionsContext,
 } from '@nocobase/client';
-import { Registry, lodash } from '@nocobase/utils/client';
 import WorkflowPlugin, {
-  useAvailableUpstreams,
-  useNodeContext,
-  useFlowContext,
   JOB_STATUS,
+  useAvailableUpstreams,
+  useFlowContext,
+  useNodeContext,
   useTrigger,
   useWorkflowVariableOptions,
 } from '@nocobase/plugin-workflow/client';
+import { Registry, lodash } from '@nocobase/utils/client';
 
 import { NAMESPACE, useLang } from '../../locale';
 import { DetailsBlockProvider } from './DetailsBlockProvider';
@@ -122,7 +122,7 @@ function SimpleDesigner() {
   );
 }
 
-export const addBlockButton = new SchemaInitializer({
+export const addBlockButton: SchemaInitializer = new SchemaInitializer({
   name: 'AddBlockButton',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',
@@ -364,7 +364,7 @@ function ActionInitializer() {
   );
 }
 
-export const addActionButton = new SchemaInitializer({
+export const addActionButton: SchemaInitializer = new SchemaInitializer({
   name: 'AddActionButton',
   title: '{{t("Configure actions")}}',
   items: [

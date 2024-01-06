@@ -1,7 +1,7 @@
 import { CaretRightOutlined, ExpandOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import type { ThemeConfig } from '@nocobase/client';
 import { StablePopover } from '@nocobase/client';
 import { Button, Checkbox, Collapse, ConfigProvider, Switch, Tooltip, Typography } from 'antd';
-import type { ThemeConfig } from 'antd/es/config-provider/context';
 import seed from 'antd/es/theme/themes/seed';
 import classNames from 'classnames';
 import type { FC } from 'react';
