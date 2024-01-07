@@ -1343,7 +1343,6 @@ export const createTableBlockSchema = (options) => {
     tableActionColumnInitializers,
     tableBlockProvider,
     disableTemplate,
-    TableBlockDesigner,
     blockType,
     pageSize = 20,
     ...others
@@ -1366,7 +1365,7 @@ export const createTableBlockSchema = (options) => {
       blockType,
       ...others,
     },
-    'x-designer': TableBlockDesigner ?? 'TableBlockDesigner',
+    'x-settings': 'tableBlockSettings',
     'x-component': 'CardItem',
     'x-filter-targets': [],
     properties: {
@@ -1467,7 +1466,7 @@ export const createTableSelectorSchema = (options) => {
       rowKey,
       ...others,
     },
-    'x-designer': 'TableSelectorDesigner',
+    'x-settings': 'dataSelectorBlockSettings',
     'x-component': 'CardItem',
     properties: {
       actions: {
