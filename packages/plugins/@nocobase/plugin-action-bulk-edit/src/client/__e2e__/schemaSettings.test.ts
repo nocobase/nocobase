@@ -9,7 +9,7 @@ test.describe('bulk edit action setting', () => {
     await page.getByLabel('Bulk edit').hover();
     await page.getByLabel('designer-schema-settings-Action-Action.Designer-general').hover();
     //默认是选中的数据
-    await expect(await page.getByTitle('Data will be updated').getByText('Selected')).toBeVisible();
+    await expect(page.getByTitle('Data will be updated').getByText('Selected')).toBeVisible();
     await page.getByRole('menuitem', { name: 'Data will be updated' }).click();
     //切换为全部数据
     await page.getByRole('option', { name: 'All' }).click();

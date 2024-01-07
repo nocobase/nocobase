@@ -26,6 +26,8 @@ test.describe('form item & edit form', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('action-Action.Link-Edit record-update-general-table-0').click();
+        // 等待弹窗内容渲染完成
+        await page.waitForTimeout(1000);
         await page.getByLabel('schema-initializer-Grid-FormItemInitializers-general').hover();
       },
       supportedOptions: ['markdown', 'richtext', 'attachment'],
@@ -43,6 +45,8 @@ test.describe('form item & view form', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('action-Action.Link-View record-view-general-table-0').click();
+        // 等待弹窗内容渲染完成
+        await page.waitForTimeout(1000);
         await page.getByLabel('schema-initializer-Grid-ReadPrettyFormItemInitializers-general').hover();
       },
       supportedOptions: ['markdown', 'richtext', 'attachment'],
