@@ -1,6 +1,6 @@
 import Database, { BelongsToManyRepository } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
-import { MockServer, mockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 import jwt from 'jsonwebtoken';
 
 describe('role', () => {
@@ -10,11 +10,9 @@ describe('role', () => {
   let usersPlugin: UsersPlugin;
 
   beforeEach(async () => {
-    api = mockServer({
+    api = await createMockServer({
       plugins: ['users', 'acl', 'auth'],
     });
-    await api.runCommand('install', '-f');
-
     db = api.db;
     usersPlugin = api.getPlugin('users');
   });

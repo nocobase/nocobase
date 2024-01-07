@@ -69,7 +69,7 @@ export const defineConfig = (config = {}) => {
             ],
             testTimeout: 300000,
             hookTimeout: 300000,
-            bail: 1,
+            // bail: 1,
             // 在 GitHub Actions 中不输出日志
             silent: !!process.env.GITHUB_ACTIONS,
             // poolOptions: {

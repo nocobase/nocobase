@@ -1,17 +1,14 @@
-import { mockServer } from '@nocobase/test';
+import { createMockServer, startMockServer } from '@nocobase/test';
 
 describe('collections repository', () => {
   it('case 1', async () => {
-    const app1 = mockServer({
+    const app1 = await createMockServer({
       database: {
         tablePrefix: 'through_',
       },
       acl: false,
       plugins: ['error-handler', 'collection-manager'],
     });
-
-    await app1.runCommand('install', '-f');
-    await app1.runCommand('start');
 
     await app1
       .agent()
@@ -114,7 +111,7 @@ describe('collections repository', () => {
     });
     await app1.destroy();
 
-    const app2 = mockServer({
+    const app2 = await startMockServer({
       plugins: ['error-handler', 'collection-manager'],
       database: {
         tablePrefix: 'through_',
@@ -123,7 +120,6 @@ describe('collections repository', () => {
       },
     });
 
-    await app2.runCommand('start');
     await app2.db.sync({
       force: true,
     });

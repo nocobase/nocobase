@@ -1,14 +1,13 @@
 import Database from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 describe('createdBy/updatedBy', () => {
   let api: MockServer;
   let db: Database;
 
   beforeEach(async () => {
-    api = mockServer({
+    api = await createMockServer({
       plugins: ['acl', 'users'],
     });
-    await api.runCommand('install', '-f');
     db = api.db;
   });
 

@@ -1,6 +1,6 @@
 import { Database } from '@nocobase/database';
 import UiSchemaStoragePlugin, { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
-import { mockServer, MockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
 describe('server hooks', () => {
@@ -54,11 +54,10 @@ describe('server hooks', () => {
   });
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
       plugins: ['ui-schema-storage', 'collection-manager', 'error-handler'],
     });
-    await app.runCommand('install', '-f');
 
     db = app.db;
 

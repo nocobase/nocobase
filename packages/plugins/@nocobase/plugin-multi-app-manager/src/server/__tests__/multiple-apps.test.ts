@@ -1,6 +1,6 @@
 import { Database } from '@nocobase/database';
 import { AppSupervisor, Gateway } from '@nocobase/server';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { vi } from 'vitest';
 import { PluginMultiAppManager } from '../server';
@@ -12,11 +12,9 @@ describe('multiple apps', () => {
   let db: Database;
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       plugins: ['multi-app-manager'],
     });
-    await app.runCommand('install', '-f');
-    await app.runCommand('start');
     db = app.db;
   });
 

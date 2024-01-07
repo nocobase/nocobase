@@ -1,5 +1,5 @@
 import { AppSupervisor, Gateway } from '@nocobase/server';
-import { MockServer, createWsClient, mockServer, startServerWithRandomPort, waitSecond } from '@nocobase/test';
+import { MockServer, createMockServer, createWsClient, startServerWithRandomPort, waitSecond } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 
 describe('gateway with multiple apps', () => {
@@ -10,11 +10,9 @@ describe('gateway with multiple apps', () => {
   beforeEach(async () => {
     gateway = Gateway.getInstance();
 
-    app = mockServer({
+    app = await createMockServer({
       plugins: ['multi-app-manager'],
     });
-
-    await app.runCommand('install', '-f');
   });
 
   afterEach(async () => {

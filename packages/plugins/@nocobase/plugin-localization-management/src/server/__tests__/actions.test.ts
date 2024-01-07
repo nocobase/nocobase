@@ -1,5 +1,5 @@
 import Database, { Repository } from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 
 describe('actions', () => {
   describe('localizations', () => {
@@ -18,11 +18,9 @@ describe('actions', () => {
     };
 
     beforeAll(async () => {
-      app = mockServer({
+      app = await createMockServer({
         plugins: ['localization-management'],
       });
-      await app.runCommand('install', '-f');
-      await app.runCommand('start');
       db = app.db;
       repo = db.getRepository('localizationTexts');
       agent = app.agent();

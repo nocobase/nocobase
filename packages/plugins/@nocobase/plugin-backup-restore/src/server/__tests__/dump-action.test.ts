@@ -1,11 +1,11 @@
-import { mockServer, MockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
+import { MockServer, createMockServer } from '@nocobase/test';
+import fsPromises from 'fs/promises';
 import * as os from 'os';
 import path from 'path';
-import fsPromises from 'fs/promises';
 import { Dumper } from '../dumper';
-import { readLines } from '../utils';
 import { Restorer } from '../restorer';
+import { readLines } from '../utils';
 
 describe('dump', () => {
   let app: MockServer;
@@ -15,10 +15,9 @@ describe('dump', () => {
   beforeEach(async () => {
     testDir = path.resolve(os.tmpdir(), `nocobase-dump-${Date.now()}`);
     await fsPromises.mkdir(testDir, { recursive: true });
-    app = mockServer();
+    app = await createMockServer();
 
     db = app.db;
-    await app.cleanDb();
 
     app.db.collection({
       name: 'users',

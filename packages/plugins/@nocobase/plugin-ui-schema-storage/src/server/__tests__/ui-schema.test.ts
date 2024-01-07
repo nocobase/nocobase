@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/json-schema';
 import { Database } from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 import { UiSchemaRepository } from '..';
 
 describe('ui-schema', () => {
@@ -14,11 +14,10 @@ describe('ui-schema', () => {
   });
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
       plugins: ['ui-schema-storage'],
     });
-    await app.runCommand('install', '-f');
     db = app.db;
     uiSchemaRepository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
   });

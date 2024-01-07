@@ -1,5 +1,5 @@
 import { Collection, Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import { UiSchemaRepository } from '..';
 
 describe('ui schema model', () => {
@@ -13,12 +13,10 @@ describe('ui schema model', () => {
   });
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
       plugins: ['ui-schema-storage'],
     });
-
-    await app.runCommand('install', '-f');
 
     db = app.db;
     RelatedCollection = db.collection({

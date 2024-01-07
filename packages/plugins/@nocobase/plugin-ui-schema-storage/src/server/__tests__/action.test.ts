@@ -1,17 +1,15 @@
 import { Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 
 describe('action test', () => {
   let app: MockServer;
   let db: Database;
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
       plugins: ['ui-schema-storage'],
     });
-    await app.runCommand('install', '-f');
-    await app.runCommand('start');
     db = app.db;
   });
 

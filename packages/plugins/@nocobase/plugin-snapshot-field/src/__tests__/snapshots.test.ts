@@ -1,4 +1,4 @@
-import { mockServer, MockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 import { field_linkto } from './data/field_linkto';
 import { field_m2m } from './data/field_m2m';
 import { field_o2m } from './data/field_o2m';
@@ -15,12 +15,11 @@ describe('actions', () => {
   let app: MockServer;
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
       acl: false,
       plugins: ['error-handler', 'users', 'ui-schema-storage', 'collection-manager', 'snapshot-field'],
     });
-    await app.runCommand('install', '-f');
   });
 
   afterEach(async () => {

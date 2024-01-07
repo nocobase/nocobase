@@ -1,5 +1,5 @@
 import { Collection, Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import { SchemaNode } from '../dao/ui_schema_node_dao';
 import UiSchemaRepository from '../repository';
 
@@ -15,12 +15,10 @@ describe('ui_schema repository', () => {
   });
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
       plugins: ['ui-schema-storage'],
     });
-
-    await app.runCommand('install', '-f');
 
     db = app.db;
     repository = db.getCollection('uiSchemas').repository as UiSchemaRepository;

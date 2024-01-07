@@ -1,5 +1,5 @@
 import { Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import dayjs from 'dayjs';
 import { SequenceField } from '..';
 
@@ -8,11 +8,9 @@ describe('sequence field', () => {
   let db: Database;
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       plugins: ['sequence-field'],
     });
-    await app.runCommand('install', '-f');
-    await app.runCommand('start');
     db = app.db;
   });
 

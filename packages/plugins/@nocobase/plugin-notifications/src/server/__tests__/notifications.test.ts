@@ -1,5 +1,5 @@
 import Database from '@nocobase/database';
-import { mockServer } from '@nocobase/test';
+import { createMockServer } from '@nocobase/test';
 import nodemailerMock from 'nodemailer-mock';
 import { Notification, NotificationService } from '../models';
 
@@ -8,10 +8,9 @@ describe('notifications', () => {
 
   let app;
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       plugins: ['notifications'],
     });
-    await app.runCommand('install', '-f');
     db = app.db;
     NotificationService.createTransport = nodemailerMock.createTransport;
   });

@@ -1,7 +1,7 @@
-import { startMockServer } from '@nocobase/test';
+import { createMockServer } from '@nocobase/test';
 
 export default async function createApp() {
-  const app = await startMockServer({
+  const app = await createMockServer({
     plugins: ['nocobase'],
   });
   return app;

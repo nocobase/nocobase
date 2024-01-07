@@ -1,8 +1,8 @@
-import { vi } from 'vitest';
 import { MockServer, mockServer } from '@nocobase/test';
-const formatter = await import('../actions/formatter');
-import { cacheMiddleware, parseBuilder, parseFieldAndAssociations } from '../actions/query';
 import compose from 'koa-compose';
+import { vi } from 'vitest';
+import { cacheMiddleware, parseBuilder, parseFieldAndAssociations } from '../actions/query';
+const formatter = await import('../actions/formatter');
 describe('query', () => {
   describe('parseBuilder', () => {
     const sequelize = {

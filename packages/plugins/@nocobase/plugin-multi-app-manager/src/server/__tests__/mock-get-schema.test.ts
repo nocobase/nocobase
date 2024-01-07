@@ -1,5 +1,5 @@
 import { AppSupervisor, Plugin, PluginManager } from '@nocobase/server';
-import { mockServer, startMockServer } from '@nocobase/test';
+import { createMockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { vi } from 'vitest';
 
@@ -34,7 +34,7 @@ describe('test with start', () => {
       return resolvePlugin.bind(this)(name, ...args);
     };
 
-    const app = await startMockServer({
+    const app = await createMockServer({
       plugins: ['multi-app-manager'],
     });
 
@@ -64,12 +64,9 @@ describe('test with start', () => {
   });
 
   it('should install into difference database', async () => {
-    const app = mockServer({
+    const app = await createMockServer({
       plugins: ['multi-app-manager'],
     });
-
-    await app.runCommand('install', '-f');
-    await app.runCommand('start');
 
     const db = app.db;
 

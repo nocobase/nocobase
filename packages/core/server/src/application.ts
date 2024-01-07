@@ -313,6 +313,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return packageJson.version;
   }
 
+  /**
+   * @deprecated
+   */
   plugin<O = any>(pluginClass: any, options?: O) {
     this.log.debug(`add plugin`, { method: 'plugin', name: pluginClass.name });
     this.pm.addPreset(pluginClass, options);
@@ -459,6 +462,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.log.debug(`finish reload`, { method: 'reload' });
   }
 
+  /**
+   * @deprecated
+   */
   getPlugin<P extends Plugin>(name: string | typeof Plugin) {
     return this.pm.get(name) as P;
   }

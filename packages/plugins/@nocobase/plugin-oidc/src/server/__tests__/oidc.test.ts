@@ -1,5 +1,5 @@
 import { Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 import { authType } from '../../constants';
 import { OIDCAuth } from '../oidc-auth';
@@ -11,11 +11,9 @@ describe('oidc', () => {
   let authenticator;
 
   beforeAll(async () => {
-    app = mockServer({
+    app = await createMockServer({
       plugins: ['users', 'auth', 'oidc'],
     });
-    await app.runCommand('install', '-f');
-
     db = app.db;
     agent = app.agent();
 

@@ -1,6 +1,6 @@
 import { Context } from '@nocobase/actions';
 import Database, { Repository } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 
 describe('actions', () => {
   let app: MockServer;
@@ -10,14 +10,11 @@ describe('actions', () => {
   let resource: ReturnType<ReturnType<MockServer['agent']>['resource']>;
 
   beforeAll(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
       acl: true,
       plugins: ['users', 'auth', 'acl', 'custom-request'],
     });
-
-    await app.runCommand('install', '-f');
-    await app.runCommand('start');
     db = app.db;
     repo = db.getRepository('customRequests');
     agent = app.agent();

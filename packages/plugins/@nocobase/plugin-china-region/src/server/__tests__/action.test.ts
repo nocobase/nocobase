@@ -1,16 +1,13 @@
 import { Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 
 describe('actions test', () => {
   let app: MockServer;
   let db: Database;
   beforeEach(async () => {
-    app = mockServer({
-      registerActions: true,
+    app = await createMockServer({
       plugins: ['china-region'],
     });
-
-    await app.runCommand('install', '-f');
 
     db = app.db;
   });

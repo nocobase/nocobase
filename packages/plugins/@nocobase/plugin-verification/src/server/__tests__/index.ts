@@ -1,4 +1,4 @@
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import path from 'path';
 
 import { ApplicationOptions } from '@nocobase/server';
@@ -14,13 +14,10 @@ interface MockAppOptions extends ApplicationOptions {
 }
 
 export async function getApp(options: MockAppOptions = {}): Promise<MockServer> {
-  const app = mockServer({
+  const app = await createMockServer({
     ...options,
     plugins: ['verification'],
   });
-
-  await app.runCommand('install', '-f');
-  await app.runCommand('start');
 
   await app.db.import({
     directory: path.resolve(__dirname, './collections'),

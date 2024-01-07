@@ -1,7 +1,7 @@
 import Migration from '../../migrations/20230330214649-filter-form-block';
 
 import { Database } from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 import { UiSchemaRepository } from '../..';
 
 describe.skip('migration-20230330214649-filter-form-block', () => {
@@ -15,11 +15,10 @@ describe.skip('migration-20230330214649-filter-form-block', () => {
   });
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
       plugins: ['ui-schema-storage'],
     });
-    await app.runCommand('install', '-f');
     db = app.db;
     uiSchemaRepository = db.getCollection('uiSchemas').repository as UiSchemaRepository;
   });

@@ -227,9 +227,30 @@ export async function startMockServer(options: ApplicationOptions = {}) {
   return app;
 }
 
-export async function createMockServer(options: ApplicationOptions = {}) {
-  const app = mockServer(options);
-  await app.runCommand('install', '-f');
+type BeforeInstallFn = (app) => Promise<void>;
+
+export async function createMockServer(
+  options: ApplicationOptions & {
+    version?: string;
+    beforeInstall?: BeforeInstallFn;
+    skipInstall?: boolean;
+    skipStart?: boolean;
+  } = {},
+) {
+  const { version, beforeInstall, skipInstall, skipStart, ...others } = options;
+  const app = mockServer(others);
+  if (!skipInstall) {
+    if (beforeInstall) {
+      await beforeInstall(app);
+    }
+    await app.runCommand('install', '-f');
+  }
+  if (version) {
+    await app.version.update(version);
+  }
+  if (!skipStart) {
+    await app.runCommand('start');
+  }
   return app;
 }
 

@@ -1,6 +1,6 @@
 import { BelongsToManyRepository, Database } from '@nocobase/database';
 import UiSchemaStoragePlugin, { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 
 describe('server hooks', () => {
   let app: MockServer;
@@ -13,7 +13,7 @@ describe('server hooks', () => {
   });
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
       plugins: ['ui-schema-storage', 'collection-manager', 'error-handler', 'users', 'acl'],
     });

@@ -1,5 +1,5 @@
 import { Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import compose from 'koa-compose';
 import { parseBuilder, parseFieldAndAssociations, queryData } from '../actions/query';
 
@@ -8,11 +8,10 @@ describe('api', () => {
   let db: Database;
 
   beforeAll(async () => {
-    app = mockServer({
+    app = await createMockServer({
       acl: true,
       plugins: ['users', 'auth', 'data-visualization'],
     });
-    await app.runCommand('install', '-f');
     db = app.db;
 
     db.collection({

@@ -1,10 +1,10 @@
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import send from 'koa-send';
 import path from 'path';
 import supertest from 'supertest';
 
 export async function getApp(options = {}): Promise<MockServer> {
-  const app = mockServer({
+  const app = await createMockServer({
     ...options,
     cors: {
       origin: '*',
@@ -12,8 +12,6 @@ export async function getApp(options = {}): Promise<MockServer> {
     plugins: ['file-manager'],
     acl: false,
   });
-
-  await app.runCommand('install', '-f');
 
   app.use(async (ctx, next) => {
     if (ctx.path.startsWith('/storage/uploads')) {
