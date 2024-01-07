@@ -908,6 +908,7 @@ export const createDetailsBlockSchema = (options) => {
     association,
     resource,
     template,
+    settings,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -927,7 +928,7 @@ export const createDetailsBlockSchema = (options) => {
       // useParams: '{{ useParamsFromRecord }}',
       ...others,
     },
-    'x-designer': 'DetailsDesigner',
+    'x-settings': settings,
     'x-component': 'CardItem',
     properties: {
       [uid()]: {
