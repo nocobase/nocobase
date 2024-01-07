@@ -57,9 +57,9 @@ class MockAPI {
   }
 
   async start() {
-    this.port = getRandomPort();
     return new Promise((resolve) => {
-      this.server = this.app.listen(this.port, () => {
+      this.server = this.app.listen(0, () => {
+        this.port = this.server.address()['port'];
         resolve(true);
       });
     });
