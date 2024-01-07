@@ -5,7 +5,7 @@ import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { isArr } from '@formily/shared';
 import { Button } from 'antd';
-import { unionBy, uniqBy } from 'lodash';
+import { omit, unionBy, uniqBy } from 'lodash';
 import React, { useState, useMemo, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormActiveFieldsProvider } from '../../../block-provider';
@@ -92,7 +92,10 @@ export const SubTable: any = observer(
         onClick() {
           const selectData = unionBy(selectedRows, options, collectionField?.targetKey || 'id');
           const data = field.value || [];
-          field.value = uniqBy(data.concat(selectData), collectionField?.targetKey || 'id');
+          const result = uniqBy(data.concat(selectData), collectionField?.targetKey || 'id');
+          field.value = result.map((v) => {
+            return omit(v, collectionField.foreignKey);
+          });
           field.onInput(field.value);
           setVisible(false);
         },
