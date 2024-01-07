@@ -1,7 +1,7 @@
 import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
 import { NAMESPACE } from '../../locale';
 
-export const snapshotBlockInitializers = new SchemaInitializer({
+export const snapshotBlockInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'SnapshotBlockInitializers',
   wrap: gridRowColWrap,
   title: `{{t("Add block", { ns: "${NAMESPACE}" })}}`,

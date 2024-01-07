@@ -1,7 +1,7 @@
 import { useFieldSchema } from '@formily/react';
-import { useCollection, SchemaInitializer } from '@nocobase/client';
+import { SchemaInitializer, useCollection } from '@nocobase/client';
 
-export const GanttActionInitializers = new SchemaInitializer({
+export const GanttActionInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'GanttActionInitializers',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',

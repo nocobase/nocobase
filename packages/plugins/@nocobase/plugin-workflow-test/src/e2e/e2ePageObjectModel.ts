@@ -510,6 +510,29 @@ export class ConditionBranchNode {
   }
 }
 
+export class SQLNode {
+  readonly page: Page;
+  node: Locator;
+  nodeTitle: Locator;
+  nodeConfigure: Locator;
+  sqlEditBox: Locator;
+  submitButton: Locator;
+  cancelButton: Locator;
+  addNodeButton: Locator;
+  constructor(page: Page, nodeName: string) {
+    this.page = page;
+    this.node = page.getByLabel(`SQL action-${nodeName}`, { exact: true });
+    this.nodeTitle = page.getByLabel(`SQL action-${nodeName}`, { exact: true }).getByRole('textbox');
+    this.nodeConfigure = page
+      .getByLabel(`SQL action-${nodeName}`, { exact: true })
+      .getByRole('button', { name: 'Configure' });
+    this.sqlEditBox = page.getByLabel('block-item-WorkflowVariableRawTextArea-workflows-SQL').getByRole('textbox');
+    this.submitButton = page.getByLabel('action-Action-Submit-workflows');
+    this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
+    this.addNodeButton = page.getByLabel(`add-button-sql-${nodeName}`, { exact: true });
+  }
+}
+
 export default module.exports = {
   CreateWorkFlow,
   EditWorkFlow,
@@ -529,4 +552,5 @@ export default module.exports = {
   ManualNode,
   ConditionYesNode,
   ConditionBranchNode,
+  SQLNode,
 };

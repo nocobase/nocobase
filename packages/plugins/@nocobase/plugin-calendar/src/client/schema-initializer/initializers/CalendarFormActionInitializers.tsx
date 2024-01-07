@@ -2,7 +2,7 @@ import { SchemaInitializer, useCollection } from '@nocobase/client';
 import { generateNTemplate } from '../../../locale';
 
 // 表单的操作配置
-export const CalendarFormActionInitializers = new SchemaInitializer({
+export const CalendarFormActionInitializers: SchemaInitializer = new SchemaInitializer({
   title: generateNTemplate('Configure actions'),
   name: 'CalendarFormActionInitializers',
   icon: 'SettingOutlined',
