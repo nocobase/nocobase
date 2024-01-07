@@ -12,15 +12,26 @@ import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { RequestConfig } from '../RequestInstruction';
 
 const HOST = 'localhost';
-const PORT = 12345;
 
-const URL_DATA = `http://${HOST}:${PORT}/api/data`;
-const URL_400 = `http://${HOST}:${PORT}/api/400`;
-const URL_TIMEOUT = `http://${HOST}:${PORT}/api/timeout`;
+function getRandomPort() {
+  const minPort = 1024;
+  const maxPort = 49151;
+  return Math.floor(Math.random() * (maxPort - minPort + 1)) + minPort;
+}
 
 class MockAPI {
   app: Koa;
   server: Server;
+  port: number;
+  get URL_DATA() {
+    return `http://${HOST}:${this.port}/api/data`;
+  }
+  get URL_400() {
+    return `http://${HOST}:${this.port}/api/400`;
+  }
+  get URL_TIMEOUT() {
+    return `http://${HOST}:${this.port}/api/timeout`;
+  }
   constructor() {
     this.app = new Koa();
     this.app.use(bodyParser());
@@ -46,8 +57,9 @@ class MockAPI {
   }
 
   async start() {
+    this.port = getRandomPort();
     return new Promise((resolve) => {
-      this.server = this.app.listen(PORT, () => {
+      this.server = this.app.listen(this.port, () => {
         resolve(true);
       });
     });
@@ -108,7 +120,7 @@ describe('workflow > instructions > request', () => {
       await workflow.createNode({
         type: 'request',
         config: {
-          url: URL_DATA,
+          url: api.URL_DATA,
           method: 'GET',
         } as RequestConfig,
       });
@@ -128,7 +140,7 @@ describe('workflow > instructions > request', () => {
       await workflow.createNode({
         type: 'request',
         config: {
-          url: URL_TIMEOUT,
+          url: api.URL_TIMEOUT,
           method: 'GET',
           timeout: 250,
         } as RequestConfig,
@@ -157,7 +169,7 @@ describe('workflow > instructions > request', () => {
       await workflow.createNode({
         type: 'request',
         config: {
-          url: URL_TIMEOUT,
+          url: api.URL_TIMEOUT,
           method: 'GET',
           timeout: 250,
           ignoreFail: true,
@@ -183,7 +195,7 @@ describe('workflow > instructions > request', () => {
       await workflow.createNode({
         type: 'request',
         config: {
-          url: URL_400,
+          url: api.URL_400,
           method: 'GET',
           ignoreFail: false,
         } as RequestConfig,
@@ -203,7 +215,7 @@ describe('workflow > instructions > request', () => {
       await workflow.createNode({
         type: 'request',
         config: {
-          url: URL_400,
+          url: api.URL_400,
           method: 'GET',
           timeout: 1000,
           ignoreFail: true,
@@ -224,7 +236,7 @@ describe('workflow > instructions > request', () => {
       const n1 = await workflow.createNode({
         type: 'request',
         config: {
-          url: URL_DATA,
+          url: api.URL_DATA,
           method: 'POST',
           data: { title: '{{$context.data.title}}' },
         } as RequestConfig,
@@ -245,7 +257,7 @@ describe('workflow > instructions > request', () => {
       const n1 = await workflow.createNode({
         type: 'request',
         config: {
-          url: URL_DATA,
+          url: api.URL_DATA,
           method: 'POST',
           data: { title: '{{$context.data.title}}' },
         } as RequestConfig,
@@ -277,7 +289,7 @@ describe('workflow > instructions > request', () => {
         upstreamId: n1.id,
         branchIndex: 0,
         config: {
-          url: URL_DATA,
+          url: api.URL_DATA,
           method: 'GET',
         },
       });
