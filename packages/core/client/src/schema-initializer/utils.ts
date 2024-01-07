@@ -979,6 +979,7 @@ export const createListBlockSchema = (options) => {
     association,
     resource,
     template,
+    settings,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -999,7 +1000,7 @@ export const createListBlockSchema = (options) => {
       ...others,
     },
     'x-component': 'CardItem',
-    'x-designer': 'List.Designer',
+    'x-settings': settings,
     properties: {
       actionBar: {
         type: 'void',

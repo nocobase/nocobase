@@ -1,9 +1,9 @@
-import React from 'react';
 import { OrderedListOutlined } from '@ant-design/icons';
+import React from 'react';
+import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import { useCollectionManager } from '../../collection-manager';
 import { createListBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
-import { useCollectionManager } from '../../collection-manager';
-import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 export const ListBlockInitializer = () => {
   const { getCollection } = useCollectionManager();
@@ -19,6 +19,7 @@ export const ListBlockInitializer = () => {
         const schema = createListBlockSchema({
           collection: item.name,
           rowKey: collection.filterTargetKey || 'id',
+          settings: 'listBlockSettings',
         });
         insert(schema);
       }}
