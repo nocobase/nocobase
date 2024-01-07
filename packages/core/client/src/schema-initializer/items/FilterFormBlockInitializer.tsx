@@ -17,13 +17,17 @@ export const FilterFormBlockInitializer = (props) => {
         const s = createFilterFormBlockSchema({
           template: templateSchema,
           collection: item.collectionName,
+          settings: 'filterFormBlockSettings',
         });
         if (item.template && item.mode === 'reference') {
           s['x-template-key'] = item.template.key;
         }
         return s;
       }}
-      createBlockSchema={createFilterFormBlockSchema}
+      createBlockSchema={(options) => {
+        options = { ...options, settings: 'filterFormBlockSettings' };
+        return createFilterFormBlockSchema(options);
+      }}
       items={items}
     />
   );

@@ -1222,6 +1222,7 @@ export const createFilterFormBlockSchema = (options) => {
     association,
     action,
     template,
+    settings,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -1235,7 +1236,7 @@ export const createFilterFormBlockSchema = (options) => {
       collection,
       association,
     },
-    'x-designer': 'FormV2.FilterDesigner',
+    ...(settings ? { 'x-settings': settings } : { 'x-designer': 'FormV2.FilterDesigner' }),
     'x-component': 'CardItem',
     // 保存当前筛选区块所能过滤的数据区块
     'x-filter-targets': [],
