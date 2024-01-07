@@ -1,11 +1,11 @@
-import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
+import React from 'react';
 
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useBlockAssociationContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 // TODO: `SchemaInitializerItem` items
 export const CreateFormBlockInitializer = () => {
@@ -28,6 +28,7 @@ export const CreateFormBlockInitializer = () => {
               association,
               collection: collection.name,
               template: s,
+              settings: 'creationFormBlockSettings',
             });
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
@@ -42,6 +43,7 @@ export const CreateFormBlockInitializer = () => {
               actionInitializers: 'CreateFormActionInitializers',
               association,
               collection: collection.name,
+              settings: 'creationFormBlockSettings',
             }),
           );
         }

@@ -253,7 +253,13 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
         if (onCreateBlockSchema) {
           onCreateBlockSchema({ item });
         } else if (createBlockSchema) {
-          insert(createBlockSchema({ collection: item.collectionName || item.name, isCusomeizeCreate }));
+          insert(
+            createBlockSchema({
+              collection: item.collectionName || item.name,
+              isCusomeizeCreate,
+              settings: 'creationFormBlockSettings',
+            }),
+          );
         }
       }
     },
