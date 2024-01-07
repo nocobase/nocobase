@@ -25,7 +25,7 @@ describe('gateway with multiple apps', () => {
 
   it('should boot main app with sub apps', async () => {
     const mainStatus = AppSupervisor.getInstance().getAppStatus('main');
-    expect(mainStatus).toEqual('initialized');
+    expect(mainStatus).toEqual('running');
 
     const subAppName = `td_${uid()}`;
 

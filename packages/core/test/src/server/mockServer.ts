@@ -222,7 +222,7 @@ export function mockServer(options: ApplicationOptions = {}) {
 }
 
 export async function startMockServer(options: ApplicationOptions = {}) {
-  const app = await createMockServer(options);
+  const app = mockServer(options);
   await app.runCommand('start');
   return app;
 }
