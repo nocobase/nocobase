@@ -6,13 +6,11 @@ import { MockServer, mockServer } from '@nocobase/test';
 import functions from './functions';
 import instructions from './instructions';
 
-interface MockServerOptions extends ApplicationOptions {
-  autoStart?: boolean;
+export interface MockServerOptions extends ApplicationOptions {
   collectionsPath?: string;
-  cleanDb?: boolean;
 }
 
-async function createMockServer({ ...options }: MockServerOptions) {
+async function createMockServer(options: MockServerOptions) {
   const app = mockServer(options);
   await app.cleanDb();
   await app.runCommand('start', '--quickstart');
