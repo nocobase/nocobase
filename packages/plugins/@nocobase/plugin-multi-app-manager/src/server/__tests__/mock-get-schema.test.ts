@@ -1,5 +1,5 @@
 import { AppSupervisor, Plugin, PluginManager } from '@nocobase/server';
-import { mockServer } from '@nocobase/test';
+import { mockServer, startMockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { vi } from 'vitest';
 
@@ -13,6 +13,10 @@ describe('test with start', () => {
         return 'test-package';
       }
 
+      get name() {
+        return 'test-package';
+      }
+
       async load(): Promise<void> {
         loadFn();
       }
@@ -23,20 +27,16 @@ describe('test with start', () => {
     }
 
     const resolvePlugin = PluginManager.resolvePlugin;
-
-    PluginManager.resolvePlugin = async (name) => {
+    PluginManager.resolvePlugin = function (name, ...args) {
       if (name === 'test-package') {
         return TestPlugin;
       }
-      return resolvePlugin(name);
+      return resolvePlugin.bind(this)(name, ...args);
     };
 
-    const app = mockServer({
+    const app = await startMockServer({
       plugins: ['multi-app-manager'],
     });
-
-    await app.runCommand('install', '-f');
-    await app.runCommand('start');
 
     const db = app.db;
 
