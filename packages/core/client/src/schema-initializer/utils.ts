@@ -1284,6 +1284,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
     association,
     resource,
     template,
+    settings,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -1300,7 +1301,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
       useParams: '{{ useParamsFromRecord }}',
       ...others,
     },
-    'x-designer': 'FormV2.ReadPrettyDesigner',
+    'x-settings': settings,
     'x-component': 'CardItem',
     properties: {
       [uid()]: {
