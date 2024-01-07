@@ -46,35 +46,26 @@ type QueryParams = Partial<{
 }>;
 
 export const postProcess = async (ctx: Context, next: Next) => {
-  const { sequelize } = ctx.db;
-  const dialect = sequelize.getDialect();
   const { data, fieldMap } = ctx.action.params.values as {
     data: any[];
     fieldMap: { [source: string]: { type?: string } };
   };
-  switch (dialect) {
-    case 'postgres':
-      // https://github.com/sequelize/sequelize/issues/4550
-      ctx.body = data.map((record) => {
-        const result = {};
-        Object.entries(record).forEach(([key, value]) => {
-          const { type } = fieldMap[key] || {};
-          switch (type) {
-            case 'bigInt':
-            case 'integer':
-            case 'float':
-            case 'double':
-              value = Number(value);
-              break;
-          }
-          result[key] = value;
-        });
-        return result;
-      });
-      break;
-    default:
-      ctx.body = data;
-  }
+  ctx.body = data.map((record) => {
+    const result = {};
+    Object.entries(record).forEach(([key, value]) => {
+      const { type } = fieldMap[key] || {};
+      switch (type) {
+        case 'bigInt':
+        case 'integer':
+        case 'float':
+        case 'double':
+          value = Number(value);
+          break;
+      }
+      result[key] = value;
+    });
+    return result;
+  });
   await next();
 };
 

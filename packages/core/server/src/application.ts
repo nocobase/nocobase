@@ -4,13 +4,13 @@ import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocoba
 import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import {
-  SystemLogger,
-  RequestLoggerOptions,
   createLogger,
+  createSystemLogger,
   getLoggerFilePath,
   LoggerOptions,
+  RequestLoggerOptions,
+  SystemLogger,
   SystemLoggerOptions,
-  createSystemLogger,
 } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { applyMixins, AsyncEmitter, measureExecutionTime, Toposort, ToposortOptions } from '@nocobase/utils';
@@ -42,7 +42,7 @@ import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { TelemetryOptions, Telemetry } from '@nocobase/telemetry';
+import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
 
 import packageJson from '../package.json';
 
@@ -153,6 +153,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintainingCommandStatus: MaintainingCommandStatus;
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
+  private _databases: Map<string, Database> = new Map();
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -181,10 +182,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._cronJobManager;
   }
 
-  protected _db: Database;
-
   get db() {
-    return this._db;
+    return this.getDb();
   }
 
   protected _logger: SystemLogger;
@@ -373,8 +372,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         await this.telemetry.shutdown();
       }
 
-      const oldDb = this._db;
+      const oldDb = this.getDb();
+
       this.init();
+
       if (!oldDb.closed()) {
         await oldDb.close();
       }
@@ -735,6 +736,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
   }
 
+  getDb(name = 'main') {
+    return this._databases.get(name);
+  }
+
+  setDb(db: Database, name = 'main') {
+    this._databases.set(name, db);
+  }
+
   protected init() {
     const options = this.options;
 
@@ -757,17 +766,19 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._cronJobManager = new CronJobManager(this);
 
-    if (this._db) {
+    if (this.getDb()) {
       // MaxListenersExceededWarning
-      this._db.removeAllListeners();
+      this.getDb().removeAllListeners();
     }
 
-    this._db = this.createDatabase(options);
+    this.setDb(this.createDatabase(options));
 
     this._resourcer = createResourcer(options);
     this._cli = this.createCli();
     this._i18n = createI18n(options);
-    this.context.db = this._db;
+    this.context.db = this.getDb();
+    this.context.getDb = this.getDb;
+
     // this.context.logger = this._logger;
     this.context.resourcer = this._resourcer;
     this.context.cacheManager = this._cacheManager;

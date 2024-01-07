@@ -1,6 +1,6 @@
-import { useCollection, SchemaInitializer } from '@nocobase/client';
+import { SchemaInitializer, useCollection } from '@nocobase/client';
 
-export const kanbanActionInitializers = new SchemaInitializer({
+export const kanbanActionInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'KanbanActionInitializers',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',

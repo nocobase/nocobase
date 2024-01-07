@@ -35,7 +35,7 @@ async function runApp(dir, index = 0) {
   await client.query(`DROP DATABASE IF EXISTS "${database}"`);
   await client.query(`CREATE DATABASE "${database}";`);
   await client.end();
-  return execa('yarn', ['nocobase', 'e2e', 'test', dir, '-x', '--skip-reporter'], {
+  return execa('yarn', ['nocobase', 'e2e', 'test', dir, '--skip-reporter'], {
     shell: true,
     stdio: 'inherit',
     env: {
@@ -59,11 +59,11 @@ exports.pTest = async (options) => {
     root: process.cwd(),
   });
 
-  const commands = splitArrayIntoParts(files, options.concurrency || 3).map((v, i) => {
+  const commands = splitArrayIntoParts(_.shuffle(files), options.concurrency || 4).map((v, i) => {
     return () => runApp(v.join(' '), i);
   });
 
-  await pAll(commands, { concurrency: 3, stopOnError: false, ...options });
+  await pAll(commands, { concurrency: 4, stopOnError: false, ...options });
 };
 
 function splitArrayIntoParts(array, parts) {

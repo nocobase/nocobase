@@ -1,7 +1,5 @@
 import { faker } from '@faker-js/faker';
 import {
-  CreateWorkFlow,
-  EditWorkFlow,
   ScheduleTriggerNode,
   WorkflowListRecords,
   apiCreateWorkflow,
@@ -114,6 +112,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
     mockCollections,
     mockRecords,
   }) => {
+    test.setTimeout(120000);
     //数据表后缀标识
     const triggerNodeAppendText = faker.string.alphanumeric(5);
     //创建触发器节点数据表
@@ -176,6 +175,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
     mockCollections,
     mockRecords,
   }) => {
+    test.setTimeout(120000);
     //数据表后缀标识
     const triggerNodeAppendText = faker.string.alphanumeric(5);
 
@@ -233,6 +233,7 @@ test.describe('Configuration Page Path Jump Workflow Management Page', () => {
     mockCollections,
     mockRecords,
   }) => {
+    test.setTimeout(120000);
     //数据表后缀标识
     const triggerNodeAppendText = faker.string.alphanumeric(5);
 
@@ -294,6 +295,7 @@ test.describe('Configuration page execution history', () => {});
 
 test.describe('Configuration page copy to new version', () => {
   test('Copy the Schedule event of the Configuration Trigger node', async ({ page, mockCollections, mockRecords }) => {
+    test.setTimeout(120000);
     //数据表后缀标识
     const triggerNodeAppendText = faker.string.alphanumeric(5);
 

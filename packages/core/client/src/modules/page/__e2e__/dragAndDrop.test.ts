@@ -3,19 +3,18 @@ import { expect, test, twoTabsPage } from '@nocobase/test/e2e';
 test('tabs', async ({ page, mockPage }) => {
   await mockPage(twoTabsPage).goto();
 
-  const sourceElement = page.locator('span:has-text("tab 2")');
-  await sourceElement.hover();
-  const source = page.getByRole('button', { name: 'drag' });
-  await source.hover();
-  const targetElement = page.locator('span:has-text("tab 1")');
-  const sourceBoundingBox = await sourceElement.boundingBox();
-  const targetBoundingBox = await targetElement.boundingBox();
+  let tab1Box = await page.getByText('tab 1').boundingBox();
+  let tab2Box = await page.getByText('tab 2').boundingBox();
   //拖拽标签调整排序 拖拽前 1-2
-  expect(targetBoundingBox.x).toBeLessThan(sourceBoundingBox.x);
-  await source.dragTo(targetElement);
-  await sourceElement.dragTo(targetElement);
-  const tab2 = await page.locator('span:has-text("tab 2")').boundingBox();
-  const tab1 = await page.locator('span:has-text("tab 1")').boundingBox();
+  expect(tab1Box.x).toBeLessThan(tab2Box.x);
+
+  await page.getByText('tab 1').hover();
+  await page.getByRole('button', { name: 'designer-drag-handler-Page-tab' }).dragTo(page.getByText('tab 2'));
+  await expect(page.getByText('tab 1')).toBeVisible();
+
+  tab1Box = await page.getByText('tab 1').boundingBox();
+  tab2Box = await page.getByText('tab 2').boundingBox();
+
   //拖拽后 2-1
-  expect(tab2.x).toBeLessThan(tab1.x);
+  expect(tab2Box.x).toBeLessThan(tab1Box.x);
 });

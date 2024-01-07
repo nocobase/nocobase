@@ -45,9 +45,9 @@ test.describe('configure params in gantt block', () => {
     await page.getByRole('option', { name: 'Single line text2' }).locator('div').click();
     await page.getByRole('button', { name: 'Actions' }).click();
     await page.mouse.move(300, 0);
-    const barLabel = await page.getByLabel('block-item-gantt').locator('.barLabel');
+    const barLabel = page.getByLabel('block-item-gantt').locator('.barLabel');
     await barLabel.hover();
-    expect(await barLabel.textContent()).toBe(mockData['singleLineText2']);
+    await expect(barLabel).toHaveText(mockData['singleLineText2']);
   });
   test('set start date field ', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
@@ -58,9 +58,10 @@ test.describe('configure params in gantt block', () => {
     await page.getByRole('option', { name: 'Start date time2' }).locator('div').click();
     await page.mouse.move(300, 0);
     await page.getByRole('button', { name: 'Actions' }).click();
-    await page.locator('.bar').hover();
-    const tooltip2 = await page.getByLabel('nb-gantt-tooltip');
-    await expect(await tooltip2.innerText()).toContain(getYmd(new Date(mockData['startDatetime2'])));
+    await page.locator('.bar').hover({ position: { x: 20, y: 10 } });
+    await expect(page.getByLabel('nb-gantt-tooltip')).toHaveText(
+      new RegExp(String(getYmd(new Date(mockData['startDatetime2'])))),
+    );
   });
   test('set end date field ', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
@@ -72,9 +73,10 @@ test.describe('configure params in gantt block', () => {
     await page.getByRole('option', { name: 'End date time2' }).locator('div').click();
     await page.mouse.move(300, 0);
     await page.getByRole('button', { name: 'Actions' }).click();
-    await page.locator('.bar').hover();
-    const tooltip2 = await page.getByLabel('nb-gantt-tooltip');
-    await expect(await tooltip2.innerText()).toContain(getYmd(new Date(mockData['endDatetime2'])));
+    await page.locator('.bar').hover({ position: { x: 20, y: 10 } });
+    await expect(page.getByLabel('nb-gantt-tooltip')).toHaveText(
+      new RegExp(String(getYmd(new Date(mockData['endDatetime2'])))),
+    );
   });
   test('set time scale ', async ({ page, mockPage, mockRecord }) => {
     await mockPage(oneEmptyGantt).goto();
@@ -87,7 +89,7 @@ test.describe('configure params in gantt block', () => {
     await page.getByRole('menuitem', { name: 'Time scale' }).hover();
     await page.mouse.move(300, 0);
     await page.getByRole('button', { name: 'Actions' }).click();
-    await page.locator('.bar').hover();
-    await expect(await page.locator('.calendarBottomText').first().textContent()).toContain('W');
+    await page.locator('.bar').hover({ position: { x: 20, y: 10 } });
+    await expect(page.locator('.calendarBottomText').first()).toHaveText(/W/);
   });
 });
