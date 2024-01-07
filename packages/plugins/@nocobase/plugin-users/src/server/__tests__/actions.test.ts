@@ -1,8 +1,5 @@
 import Database from '@nocobase/database';
-import AuthPlugin from '@nocobase/plugin-auth';
 import { mockServer, MockServer } from '@nocobase/test';
-import PluginUsers from '..';
-import { userPluginConfig } from './utils';
 
 describe('actions', () => {
   let app: MockServer;
@@ -13,14 +10,13 @@ describe('actions', () => {
   let pluginUser;
 
   beforeEach(async () => {
-    app = mockServer();
-    await app.cleanDb();
+    app = mockServer({
+      plugins: ['auth', 'users'],
+    });
     process.env.INIT_ROOT_EMAIL = 'test@nocobase.com';
     process.env.INIT_ROOT_PASSWORD = '123456';
     process.env.INIT_ROOT_NICKNAME = 'Test';
-    app.plugin(PluginUsers, userPluginConfig);
-    app.plugin(AuthPlugin);
-    await app.loadAndInstall();
+    await app.runCommand('install', '-f');
     db = app.db;
 
     pluginUser = app.getPlugin('users');

@@ -1,9 +1,8 @@
-import { vi } from 'vitest';
 import { Database } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
 import { SAML } from '@node-saml/node-saml';
+import { vi } from 'vitest';
 import { authType } from '../../constants';
-import SAMLPlugin from '../index';
 
 describe('saml', () => {
   let app: MockServer;
@@ -13,10 +12,9 @@ describe('saml', () => {
 
   beforeAll(async () => {
     app = mockServer({
-      plugins: ['users', 'auth'],
+      plugins: ['users', 'auth', 'saml'],
     });
-    app.plugin(SAMLPlugin);
-    await app.loadAndInstall({ clean: true });
+    await app.runCommand('install', '-f');
     db = app.db;
     agent = app.agent();
 

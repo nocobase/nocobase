@@ -7,9 +7,8 @@ describe('create with exception', () => {
       acl: false,
       plugins: ['error-handler'],
     });
-    // app.plugin(PluginErrorHandler, { name: 'error-handler' });
-    await app.loadAndInstall({ clean: true });
-    await app.start();
+    await app.runCommand('install', '-f');
+    await app.runCommand('start');
   });
 
   afterEach(async () => {

@@ -1,10 +1,10 @@
 import path from 'path';
 
-import { Plugin, ApplicationOptions } from '@nocobase/server';
+import { ApplicationOptions, Plugin } from '@nocobase/server';
 import { MockServer, mockServer } from '@nocobase/test';
 
-import instructions from './instructions';
 import functions from './functions';
+import instructions from './instructions';
 
 interface MockServerOptions extends ApplicationOptions {
   autoStart?: boolean;
@@ -12,30 +12,10 @@ interface MockServerOptions extends ApplicationOptions {
   cleanDb?: boolean;
 }
 
-async function createMockServer({ autoStart, collectionsPath, cleanDb, ...options }: MockServerOptions) {
+async function createMockServer({ ...options }: MockServerOptions) {
   const app = mockServer(options);
-
-  if (cleanDb) {
-    await app.cleanDb();
-  }
-
-  await app.load();
-
-  if (collectionsPath) {
-    await app.db.import({ directory: collectionsPath });
-  }
-
-  try {
-    await app.db.sync();
-  } catch (error) {
-    console.error(error);
-  }
-
-  if (autoStart) {
-    await app.start();
-    // await app.runCommand('start', '--quickstart');
-  }
-
+  await app.cleanDb();
+  await app.runCommand('start', '--quickstart');
   return app;
 }
 
@@ -45,16 +25,17 @@ export function sleep(ms: number) {
   });
 }
 
-export async function getApp({
-  autoStart = true,
-  cleanDb = true,
-  plugins = [],
-  ...options
-}: MockServerOptions = {}): Promise<MockServer> {
+export async function getApp(options: MockServerOptions = {}): Promise<MockServer> {
+  const { plugins = [], collectionsPath, ...others } = options;
+  class TestCollectionPlugin extends Plugin {
+    async load() {
+      if (collectionsPath) {
+        await this.db.import({ directory: collectionsPath });
+      }
+    }
+  }
   return createMockServer({
-    ...options,
-    autoStart,
-    cleanDb,
+    ...others,
     plugins: [
       [
         'workflow',
@@ -64,6 +45,7 @@ export async function getApp({
         },
       ],
       WorkflowTestPlugin,
+      TestCollectionPlugin,
       ...plugins,
     ],
   });
@@ -71,6 +53,8 @@ export async function getApp({
 
 export default class WorkflowTestPlugin extends Plugin {
   async load() {
-    await this.importCollections(path.resolve(__dirname, 'collections'));
+    await this.db.import({
+      directory: path.resolve(__dirname, 'collections'),
+    });
   }
 }

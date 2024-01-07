@@ -1,9 +1,9 @@
 import path from 'path';
 
 import Database from '@nocobase/database';
-import { Application } from '@nocobase/server';
 import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import { Application } from '@nocobase/server';
 
 import Plugin from '..';
 

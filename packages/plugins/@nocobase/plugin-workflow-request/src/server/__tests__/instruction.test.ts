@@ -1,13 +1,14 @@
+import { Server } from 'http';
 import jwt from 'jsonwebtoken';
+import Koa from 'koa';
+import bodyParser from 'koa-bodyparser';
 
-import { Gateway } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 
 import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
-import Plugin from '..';
 import { RequestConfig } from '../RequestInstruction';
 
 const HOST = 'localhost';
@@ -17,25 +18,14 @@ const URL_DATA = `http://${HOST}:${PORT}/api/data`;
 const URL_400 = `http://${HOST}:${PORT}/api/400`;
 const URL_TIMEOUT = `http://${HOST}:${PORT}/api/timeout`;
 
-describe('workflow > instructions > request', () => {
-  let app: MockServer;
-  let db: Database;
-  let PostRepo;
-  let PostCollection;
-  let ReplyRepo;
-  let WorkflowModel;
-  let workflow;
+class MockAPI {
+  app: Koa;
+  server: Server;
+  constructor() {
+    this.app = new Koa();
+    this.app.use(bodyParser());
 
-  beforeEach(async () => {
-    app = await getApp({
-      plugins: ['users', 'auth', Plugin],
-      resourcer: {
-        prefix: '/api',
-      },
-      autoStart: false,
-    });
-
-    app.use(async (ctx, next) => {
+    this.app.use(async (ctx, next) => {
       if (ctx.path === '/api/400') {
         return ctx.throw(400);
       }
@@ -46,7 +36,6 @@ describe('workflow > instructions > request', () => {
       }
       if (ctx.path === '/api/data') {
         await sleep(100);
-        ctx.withoutDataWrapping = true;
         ctx.body = {
           meta: { title: ctx.query.title },
           data: { title: ctx.request.body['title'] },
@@ -54,13 +43,44 @@ describe('workflow > instructions > request', () => {
       }
       await next();
     });
+  }
 
-    Gateway.getInstance().start({
-      port: PORT,
-      host: HOST,
+  async start() {
+    return new Promise((resolve) => {
+      this.server = this.app.listen(PORT, () => {
+        resolve(true);
+      });
     });
+  }
 
-    await app.start();
+  async close() {
+    return new Promise((resolve) => {
+      this.server.close(() => {
+        resolve(true);
+      });
+    });
+  }
+}
+
+describe('workflow > instructions > request', () => {
+  let app: MockServer;
+  let db: Database;
+  let PostRepo;
+  let PostCollection;
+  let ReplyRepo;
+  let WorkflowModel;
+  let workflow;
+  let api: MockAPI;
+
+  beforeEach(async () => {
+    api = new MockAPI();
+    api.start();
+    app = await getApp({
+      resourcer: {
+        prefix: '/api',
+      },
+      plugins: ['users', 'auth', 'workflow-request'],
+    });
 
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
@@ -78,7 +98,10 @@ describe('workflow > instructions > request', () => {
     });
   });
 
-  afterEach(() => app.destroy());
+  afterEach(async () => {
+    await api.close();
+    await app.destroy();
+  });
 
   describe('request static app routes', () => {
     it('get data', async () => {
@@ -286,10 +309,14 @@ describe('workflow > instructions > request', () => {
         },
       );
 
+      const server = app.listen(12346, () => {});
+
+      await sleep(1000);
+
       const n1 = await workflow.createNode({
         type: 'request',
         config: {
-          url: `http://localhost:${PORT}/api/categories`,
+          url: `http://localhost:12346/api/categories`,
           method: 'POST',
           headers: [{ name: 'Authorization', value: `Bearer ${token}` }],
         } as RequestConfig,
@@ -306,6 +333,8 @@ describe('workflow > instructions > request', () => {
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.RESOLVED);
       expect(job.result.data).toMatchObject({});
+
+      server.close();
     });
   });
 });

@@ -221,6 +221,16 @@ export function mockServer(options: ApplicationOptions = {}) {
   return app;
 }
 
-export function createMockServer() {}
+export async function startMockServer(options: ApplicationOptions = {}) {
+  const app = await createMockServer(options);
+  await app.runCommand('start');
+  return app;
+}
+
+export async function createMockServer(options: ApplicationOptions = {}) {
+  const app = mockServer(options);
+  await app.runCommand('install', '-f');
+  return app;
+}
 
 export default mockServer;

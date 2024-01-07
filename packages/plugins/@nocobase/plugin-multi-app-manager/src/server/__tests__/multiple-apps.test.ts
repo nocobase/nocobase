@@ -1,8 +1,8 @@
-import { vi } from 'vitest';
 import { Database } from '@nocobase/database';
 import { AppSupervisor, Gateway } from '@nocobase/server';
 import { MockServer, mockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
+import { vi } from 'vitest';
 import { PluginMultiAppManager } from '../server';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -12,13 +12,12 @@ describe('multiple apps', () => {
   let db: Database;
 
   beforeEach(async () => {
-    app = mockServer({});
-    db = app.db;
-    await app.cleanDb();
-    app.plugin(PluginMultiAppManager);
-
-    await app.runCommand('install');
+    app = mockServer({
+      plugins: ['multi-app-manager'],
+    });
+    await app.runCommand('install', '-f');
     await app.runCommand('start');
+    db = app.db;
   });
 
   afterEach(async () => {

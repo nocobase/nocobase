@@ -1,6 +1,4 @@
-import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { mockServer } from '@nocobase/test';
-import Plugin from '../server';
 
 describe('collections repository', () => {
   it('case 1', async () => {
@@ -9,11 +7,11 @@ describe('collections repository', () => {
         tablePrefix: 'through_',
       },
       acl: false,
+      plugins: ['error-handler', 'collection-manager'],
     });
-    app1.plugin(PluginErrorHandler, { name: 'error-handler' });
-    app1.plugin(Plugin, { name: 'collection-manager' });
-    await app1.loadAndInstall({ clean: true });
-    await app1.start();
+
+    await app1.runCommand('install', '-f');
+    await app1.runCommand('start');
 
     await app1
       .agent()
@@ -117,6 +115,7 @@ describe('collections repository', () => {
     await app1.destroy();
 
     const app2 = mockServer({
+      plugins: ['error-handler', 'collection-manager'],
       database: {
         tablePrefix: 'through_',
         database: app1.db.options.database,
@@ -124,14 +123,11 @@ describe('collections repository', () => {
       },
     });
 
-    app2.plugin(PluginErrorHandler, { name: 'error-handler' });
-    app2.plugin(Plugin, { name: 'collection-manager' });
-    await app2.load();
-    await app2.start();
-
+    await app2.runCommand('start');
     await app2.db.sync({
       force: true,
     });
+
     const job = await app2.db.getRepository('jobs').create({});
     await app2.db.getRepository('resumes').create({
       values: {

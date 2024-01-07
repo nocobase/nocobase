@@ -1,6 +1,6 @@
 import { BelongsToManyRepository, Database } from '@nocobase/database';
 import { AppSupervisor } from '@nocobase/server';
-import { isPg, MockServer, mockServer } from '@nocobase/test';
+import { MockServer, isPg, mockServer } from '@nocobase/test';
 import * as process from 'process';
 
 describe.runIf(isPg())('enable plugin', () => {
@@ -13,11 +13,8 @@ describe.runIf(isPg())('enable plugin', () => {
       plugins: ['nocobase'],
     });
 
-    await app.load();
-
-    await app.install({
-      clean: true,
-    });
+    await app.runCommand('install', '-f');
+    await app.runCommand('start');
 
     mainApp = app;
 
@@ -50,16 +47,11 @@ describe.runIf(isPg())('collection sync after main', () => {
       plugins: ['nocobase'],
     });
 
-    await app.load();
     await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub1 CASCADE`);
     await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub2 CASCADE`);
 
-    await app.install({
-      clean: true,
-    });
-
-    await app.start();
-
+    await app.runCommand('install', '-f');
+    await app.runCommand('start');
     mainApp = app;
   });
 

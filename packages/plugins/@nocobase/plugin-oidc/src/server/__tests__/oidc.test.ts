@@ -1,7 +1,6 @@
-import { vi } from 'vitest';
 import { Database } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
-import OIDCPlugin from '../index';
+import { vi } from 'vitest';
 import { authType } from '../../constants';
 import { OIDCAuth } from '../oidc-auth';
 
@@ -13,10 +12,10 @@ describe('oidc', () => {
 
   beforeAll(async () => {
     app = mockServer({
-      plugins: ['users', 'auth'],
+      plugins: ['users', 'auth', 'oidc'],
     });
-    app.plugin(OIDCPlugin);
-    await app.loadAndInstall({ clean: true });
+    await app.runCommand('install', '-f');
+
     db = app.db;
     agent = app.agent();
 

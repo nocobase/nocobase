@@ -172,6 +172,9 @@ export abstract class Plugin<O = any> implements PluginInterface {
   }
 
   async loadCollections() {
+    if (!this.options.packageName) {
+      return;
+    }
     const directory = resolve(
       process.env.NODE_MODULES_PATH,
       this.options.packageName,

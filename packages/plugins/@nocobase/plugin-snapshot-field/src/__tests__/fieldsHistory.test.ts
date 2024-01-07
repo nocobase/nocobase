@@ -1,5 +1,4 @@
 import { mockServer, MockServer } from '@nocobase/test';
-import SnapshotFieldPlugin from '../server';
 
 describe('actions', () => {
   let app: MockServer;
@@ -8,12 +7,9 @@ describe('actions', () => {
     app = mockServer({
       registerActions: true,
       acl: false,
-      plugins: ['error-handler', 'users', 'ui-schema-storage', 'collection-manager'],
+      plugins: ['error-handler', 'users', 'ui-schema-storage', 'collection-manager', 'snapshot-field'],
     });
-
-    app.plugin(SnapshotFieldPlugin, { name: 'snapshot-field' });
-
-    await app.loadAndInstall({ clean: true });
+    await app.runCommand('install', '-f');
   });
 
   afterEach(async () => {

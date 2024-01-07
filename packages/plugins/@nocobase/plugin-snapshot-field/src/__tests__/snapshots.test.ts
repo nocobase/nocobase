@@ -1,5 +1,4 @@
 import { mockServer, MockServer } from '@nocobase/test';
-import SnapshotFieldPlugin from '../server';
 import { field_linkto } from './data/field_linkto';
 import { field_m2m } from './data/field_m2m';
 import { field_o2m } from './data/field_o2m';
@@ -19,16 +18,12 @@ describe('actions', () => {
     app = mockServer({
       registerActions: true,
       acl: false,
-      plugins: ['error-handler', 'users', 'ui-schema-storage', 'collection-manager'],
+      plugins: ['error-handler', 'users', 'ui-schema-storage', 'collection-manager', 'snapshot-field'],
     });
-
-    app.plugin(SnapshotFieldPlugin, { name: 'snapshot-field' });
-
-    await app.loadAndInstall({ clean: true });
+    await app.runCommand('install', '-f');
   });
 
   afterEach(async () => {
-    await app.cleanDb();
     await app.destroy();
   });
 

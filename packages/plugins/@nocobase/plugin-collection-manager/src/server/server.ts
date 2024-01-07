@@ -34,6 +34,10 @@ export class CollectionManagerPlugin extends Plugin {
       this.schema = process.env.COLLECTION_MANAGER_SCHEMA || this.db.options.schema || 'public';
     }
 
+    this.app.db.registerRepositories({
+      CollectionRepository,
+    });
+
     this.app.db.registerModels({
       CollectionModel,
       FieldModel,
@@ -45,10 +49,6 @@ export class CollectionManagerPlugin extends Plugin {
       context: {
         plugin: this,
       },
-    });
-
-    this.app.db.registerRepositories({
-      CollectionRepository,
     });
 
     this.app.acl.registerSnippet({

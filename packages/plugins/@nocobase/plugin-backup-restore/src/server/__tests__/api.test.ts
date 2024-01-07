@@ -1,6 +1,6 @@
 import { MockServer, waitSecond } from '@nocobase/test';
-import createApp from './index';
 import { Dumper } from '../dumper';
+import createApp from './index';
 
 describe('backup files', () => {
   let app: MockServer;

@@ -1,8 +1,7 @@
-import { vi } from 'vitest';
 import { AppSupervisor, Plugin, PluginManager } from '@nocobase/server';
 import { mockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
-import { PluginMultiAppManager } from '../server';
+import { vi } from 'vitest';
 
 describe('test with start', () => {
   it('should load subApp on create', async () => {
@@ -25,19 +24,19 @@ describe('test with start', () => {
 
     const resolvePlugin = PluginManager.resolvePlugin;
 
-    PluginManager.resolvePlugin = (name) => {
+    PluginManager.resolvePlugin = async (name) => {
       if (name === 'test-package') {
         return TestPlugin;
       }
       return resolvePlugin(name);
     };
 
-    const app = mockServer();
+    const app = mockServer({
+      plugins: ['multi-app-manager'],
+    });
 
-    app.plugin(PluginMultiAppManager);
-
-    await app.loadAndInstall({ clean: true });
-    await app.start();
+    await app.runCommand('install', '-f');
+    await app.runCommand('start');
 
     const db = app.db;
 
@@ -65,11 +64,12 @@ describe('test with start', () => {
   });
 
   it('should install into difference database', async () => {
-    const app = mockServer();
-    app.plugin(PluginMultiAppManager);
+    const app = mockServer({
+      plugins: ['multi-app-manager'],
+    });
 
-    await app.loadAndInstall({ clean: true });
-    await app.start();
+    await app.runCommand('install', '-f');
+    await app.runCommand('start');
 
     const db = app.db;
 

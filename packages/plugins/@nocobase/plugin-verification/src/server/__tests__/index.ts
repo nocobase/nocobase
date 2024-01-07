@@ -2,7 +2,6 @@ import { MockServer, mockServer } from '@nocobase/test';
 import path from 'path';
 
 import { ApplicationOptions } from '@nocobase/server';
-import Plugin from '..';
 
 export function sleep(ms: number) {
   return new Promise((resolve) => {
@@ -14,13 +13,14 @@ interface MockAppOptions extends ApplicationOptions {
   manual?: boolean;
 }
 
-export async function getApp({ manual, ...options }: MockAppOptions = {}): Promise<MockServer> {
-  const app = mockServer(options);
+export async function getApp(options: MockAppOptions = {}): Promise<MockServer> {
+  const app = mockServer({
+    ...options,
+    plugins: ['verification'],
+  });
 
-  await app.cleanDb();
-  app.plugin(Plugin, { name: 'verification' });
-
-  await app.load();
+  await app.runCommand('install', '-f');
+  await app.runCommand('start');
 
   await app.db.import({
     directory: path.resolve(__dirname, './collections'),
@@ -30,10 +30,6 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
     await app.db.sync();
   } catch (error) {
     console.error(error);
-  }
-
-  if (!manual) {
-    await app.start();
   }
 
   return app;

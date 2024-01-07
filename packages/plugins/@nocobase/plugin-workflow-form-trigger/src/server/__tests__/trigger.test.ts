@@ -1,7 +1,7 @@
 import Database from '@nocobase/database';
-import { MockServer } from '@nocobase/test';
 import { EXECUTION_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import { MockServer } from '@nocobase/test';
 
 import Plugin from '..';
 
@@ -29,8 +29,8 @@ describe('workflow > instructions > sql', () => {
     UserModel = db.getCollection('users').model;
 
     users = await UserModel.bulkCreate([
-      { id: 1, nickname: 'a' },
-      { id: 2, nickname: 'b' },
+      { id: 2, nickname: 'a' },
+      { id: 3, nickname: 'b' },
     ]);
 
     userAgents = users.map((user) => app.agent().login(user));
