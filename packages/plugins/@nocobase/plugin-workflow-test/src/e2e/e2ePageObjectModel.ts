@@ -377,6 +377,7 @@ export class AggregateNode {
   linkedDataTableDataRadio: Locator;
   collectionDropDown: Locator;
   aggregatedFieldDropDown: Locator;
+  distinctCheckBox: Locator;
   submitButton: Locator;
   cancelButton: Locator;
   addNodeButton: Locator;
@@ -399,6 +400,9 @@ export class AggregateNode {
     this.aggregatedFieldDropDown = page.locator(
       'input.ant-select-selection-search-input[role="combobox"][aria-haspopup="listbox"]',
     );
+    this.distinctCheckBox = page
+      .getByLabel('block-item-Checkbox-workflows-Distinct')
+      .locator('input.ant-checkbox-input[type="checkbox"]');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = page.getByLabel(`add-button-aggregate-${nodeName}`, { exact: true });
