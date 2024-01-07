@@ -375,6 +375,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       const oldDb = this.getDb();
 
       this.init();
+
       if (!oldDb.closed()) {
         await oldDb.close();
       }
