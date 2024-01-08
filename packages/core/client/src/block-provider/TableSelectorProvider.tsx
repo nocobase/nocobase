@@ -1,5 +1,6 @@
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
+import { omit } from 'lodash';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
@@ -253,10 +254,17 @@ export const useTableSelectorContext = () => {
 export const useTableSelectorProps = () => {
   const field = useField<ArrayField>();
   const ctx = useTableSelectorContext();
+  const fieldSchema = useFieldSchema();
+  const { getCollectionJoinField } = useCollectionManager();
+  const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
+  const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
   useEffect(() => {
     if (!ctx?.service?.loading) {
-      field.value = ctx?.service?.data?.data;
-      field?.setInitialValue?.(ctx?.service?.data?.data);
+      const data = ctx?.service?.data?.data.map((v) => {
+        return omit(v, collectionField?.foreignKey);
+      });
+      field.value = data;
+      field?.setInitialValue?.(data);
       field.data = field.data || {};
       field.data.selectedRowKeys = ctx?.field?.data?.selectedRowKeys;
       field.componentProps.pagination = field.componentProps.pagination || {};

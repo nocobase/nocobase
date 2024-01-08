@@ -92,10 +92,7 @@ export const SubTable: any = observer(
         onClick() {
           const selectData = unionBy(selectedRows, options, collectionField?.targetKey || 'id');
           const data = field.value || [];
-          const result = uniqBy(data.concat(selectData), collectionField?.targetKey || 'id');
-          field.value = result.map((v) => {
-            return omit(v, collectionField.foreignKey);
-          });
+          field.value = uniqBy(data.concat(selectData), collectionField?.targetKey || 'id');
           field.onInput(field.value);
           setVisible(false);
         },
