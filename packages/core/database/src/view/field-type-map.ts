@@ -25,6 +25,7 @@ const postgres = {
   path: 'lineString',
   polygon: 'polygon',
   circle: 'circle',
+  uuid: 'string',
 };
 
 const mysql = {
