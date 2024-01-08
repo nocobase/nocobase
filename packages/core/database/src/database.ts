@@ -308,7 +308,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       autoGenId: false,
       timestamps: false,
       dumpRules: 'required',
-      origin: 'core',
+      origin: '@nocobase/database',
       fields: [{ type: 'string', name: 'name', primaryKey: true }],
     });
 
@@ -334,6 +334,27 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   get instanceId() {
     return this._instanceId;
+  }
+
+  createMigrator({ migrations }) {
+    const migratorOptions: any = this.options.migrator || {};
+    const context = {
+      db: this,
+      sequelize: this.sequelize,
+      queryInterface: this.sequelize.getQueryInterface(),
+      ...migratorOptions.context,
+    };
+    return new Umzug({
+      logger: migratorOptions.logger || console,
+      migrations: Array.isArray(migrations) ? lodash.sortBy(migrations, (m) => m.name) : migrations,
+      context,
+      storage: new SequelizeStorage({
+        tableName: `${this.options.tablePrefix || ''}migrations`,
+        modelName: 'migrations',
+        ...migratorOptions.storage,
+        sequelize: this.sequelize,
+      }),
+    });
   }
 
   setContext(context: any) {

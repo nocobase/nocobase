@@ -1,10 +1,10 @@
+import { Database } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
-import createApp from './index';
+import fs from 'fs';
+import path from 'path';
 import { Dumper } from '../dumper';
 import { Restorer } from '../restorer';
-import path from 'path';
-import fs from 'fs';
-import { Database } from '@nocobase/database';
+import createApp from './index';
 
 describe('dumper', () => {
   let app: MockServer;
@@ -701,10 +701,7 @@ describe('dumper', () => {
     const dumpableCollections = await dumper.dumpableCollections();
     const applicationPlugins = dumpableCollections.find(({ name }) => name === 'applicationPlugins');
 
-    expect(applicationPlugins.origin).toMatchObject({
-      title: 'core',
-      name: 'core',
-    });
+    expect(applicationPlugins.origin).toBe('@nocobase/server');
   });
 
   it('should get custom collections group', async () => {

@@ -1,7 +1,9 @@
+import { SystemLogger, createSystemLogger, getLoggerFilePath } from '@nocobase/logger';
 import { Registry, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
 import compression from 'compression';
+import { randomUUID } from 'crypto';
 import { EventEmitter } from 'events';
 import fs from 'fs';
 import http, { IncomingMessage, ServerResponse } from 'http';
@@ -19,8 +21,6 @@ import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
 import { WSServer } from './ws-server';
-import { Logger, SystemLogger, createSystemLogger, getLoggerFilePath } from '@nocobase/logger';
-import { randomUUID } from 'crypto';
 
 const compress = promisify(compression());
 
@@ -332,6 +332,11 @@ export class Gateway extends EventEmitter {
       .runAsCLI(process.argv, {
         throwError: true,
         from: 'node',
+      })
+      .then(async () => {
+        if (!await mainApp.isStarted()) {
+          await mainApp.stop();
+        }
       })
       .catch((e) => {
         console.error(e);
