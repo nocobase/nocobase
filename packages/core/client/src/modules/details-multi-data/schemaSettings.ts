@@ -1,7 +1,7 @@
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { SchemaSettings } from '../../application';
+import { SchemaSettings } from '../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../block-provider';
 import { useDetailsBlockContext } from '../../block-provider/DetailsBlockProvider';
 import { useCollection, useSortFields } from '../../collection-manager';

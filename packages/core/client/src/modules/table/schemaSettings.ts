@@ -3,7 +3,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
-import { SchemaSettings } from '../../application';
+import { SchemaSettings } from '../../application/schema-settings/SchemaSettings';
 import { mergeFilter, useFormBlockContext, useTableBlockContext } from '../../block-provider';
 import { useCollection, useCollectionManager, useSortFields } from '../../collection-manager';
 import { FilterBlockType } from '../../filter-provider';

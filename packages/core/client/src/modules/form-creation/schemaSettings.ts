@@ -1,5 +1,5 @@
 import { useFieldSchema } from '@formily/react';
-import { SchemaSettings } from '../../application';
+import { SchemaSettings } from '../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import {
