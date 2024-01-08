@@ -1,9 +1,9 @@
 import React, { useContext, useMemo, useState } from 'react';
 
-import lodash from 'lodash';
 import { ArrayTable } from '@formily/antd-v5';
 import { Field, createForm } from '@formily/core';
 import { useField, useFieldSchema, useForm } from '@formily/react';
+import lodash from 'lodash';
 
 import {
   ActionContextProvider,
@@ -22,12 +22,12 @@ import {
   useSchemaInitializer,
   useSchemaInitializerItem,
 } from '@nocobase/client';
-import { merge, uid } from '@nocobase/utils/client';
 import { JOB_STATUS } from '@nocobase/plugin-workflow/client';
+import { merge, uid } from '@nocobase/utils/client';
 
+import { NAMESPACE, useLang } from '../../../locale';
 import { ManualFormType } from '../SchemaConfig';
 import { findSchema } from '../utils';
-import { NAMESPACE, useLang } from '../../../locale';
 
 function CustomFormBlockProvider(props) {
   const [fields, setCollectionFields] = useState(props.collection?.fields ?? []);
@@ -320,7 +320,7 @@ const CustomItemsComponent = (props) => {
   );
 };
 
-export const addCustomFormField = new SchemaInitializer({
+export const addCustomFormField: SchemaInitializer = new SchemaInitializer({
   name: 'AddCustomFormField',
   wrap: gridRowColWrap,
   insertPosition: 'beforeEnd',

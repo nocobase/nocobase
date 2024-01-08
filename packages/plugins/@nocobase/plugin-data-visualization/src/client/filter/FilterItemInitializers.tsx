@@ -1,3 +1,8 @@
+import { css, cx } from '@emotion/css';
+import { FormItem, FormLayout } from '@formily/antd-v5';
+import { Field, onFieldValueChange } from '@formily/core';
+import { Schema, SchemaOptionsContext, observer, useField, useFieldSchema, useForm } from '@formily/react';
+import { uid } from '@formily/shared';
 import {
   ACLCollectionFieldProvider,
   BlockItem,
@@ -13,19 +18,13 @@ import {
   useGlobalTheme,
   useSchemaInitializerItem,
 } from '@nocobase/client';
-import React, { memo, useCallback, useContext, useMemo } from 'react';
-import { lang, useChartsTranslation } from '../locale';
-import { Schema, SchemaOptionsContext, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { useMemoizedFn } from 'ahooks';
-import { FormLayout, FormItem } from '@formily/antd-v5';
-import { uid } from '@formily/shared';
-import { useChartData, useChartFilter, useChartFilterSourceFields, useFieldComponents } from '../hooks/filter';
-import { Alert, Typography } from 'antd';
-import { getPropsSchemaByComponent } from './utils';
-import { Field, onFieldValueChange } from '@formily/core';
-import { css, cx } from '@emotion/css';
-import { ConfigProvider } from 'antd';
+import { Alert, ConfigProvider, Typography } from 'antd';
+import React, { memo, useCallback, useContext, useMemo } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { useChartData, useChartFilter, useChartFilterSourceFields, useFieldComponents } from '../hooks/filter';
+import { lang, useChartsTranslation } from '../locale';
+import { getPropsSchemaByComponent } from './utils';
 const { Paragraph, Text } = Typography;
 
 const FieldComponentProps: React.FC = observer((props) => {
@@ -216,7 +215,7 @@ export const ChartFilterCustomItemInitializer: React.FC<{
   return <SchemaInitializerItem {...itemConfig} {...props} onClick={handleClick} />;
 });
 
-export const chartFilterItemInitializers = new SchemaInitializer({
+export const chartFilterItemInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'ChartFilterItemInitializers',
   'data-testid': 'configure-fields-button-of-chart-filter-item',
   wrap: gridRowColWrap,

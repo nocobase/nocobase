@@ -147,9 +147,11 @@ test.describe('Duplicate', () => {
     await page.waitForLoadState('networkidle');
     await page.getByLabel(`action-Action.Link-Duplicate-workflows-${workFlowName}`).click();
     await page.getByLabel(`action-Action-Submit-workflows-${workFlowName}`).click();
-
+    await page.waitForLoadState('networkidle');
     // 3、预期结果：列表中出现筛选的工作流
-    await page.reload();
+    await page.getByLabel('action-Filter.Action-Filter-filter-workflows').click();
+    await page.getByRole('textbox').fill(workFlowName);
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
     await expect(page.getByText(`${workFlowName} copy`)).toBeAttached();
 
     // 4、后置处理：删除工作流
