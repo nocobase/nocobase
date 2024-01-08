@@ -124,11 +124,6 @@ test.describe('Edit', () => {
     // 编辑工作流
     await page.goto('/admin/settings/workflow');
     await page.waitForLoadState('networkidle');
-    // 筛选工作流
-    await page.getByLabel('action-Filter.Action-Filter-filter-workflows').click();
-    await page.getByRole('textbox').fill(workFlowName);
-    await page.getByRole('button', { name: 'Submit' }).click();
-
     await page.getByLabel(`action-Action.Link-Edit-workflows-${workFlowName}`).click();
     const editWorkFlow = new EditWorkFlow(page, workFlowName);
     workFlowName = faker.string.alphanumeric(5) + triggerNodeAppendText;
