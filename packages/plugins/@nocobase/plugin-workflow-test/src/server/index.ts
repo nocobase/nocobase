@@ -42,7 +42,7 @@ export async function getApp(options: MockServerOptions = {}): Promise<MockServe
           functions,
         },
       ],
-      WorkflowTestPlugin,
+      'workflow-test',
       TestCollectionPlugin,
       ...plugins,
     ],
