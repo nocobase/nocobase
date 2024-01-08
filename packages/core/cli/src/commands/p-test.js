@@ -47,14 +47,20 @@ async function runApp(dir, index = 0) {
       APP_ENV: 'production',
       APP_PORT: 20000 + index,
       DB_DATABASE: `nocobase${index}`,
-      SOCKET_PATH: `storage/gateway-e2e-${index}.sock`,
-      PM2_HOME: resolve(process.cwd(), `storage/.pm2-${index}`),
+      SOCKET_PATH: `storage/e2e/gateway-e2e-${index}.sock`,
+      PM2_HOME: resolve(process.cwd(), `storage/e2e/.pm2-${index}`),
       PLAYWRIGHT_AUTH_FILE: resolve(process.cwd(), `storage/playwright/.auth/admin-${index}.json`),
     },
   });
 }
 
 exports.pTest = async (options) => {
+  const dir = resolve(process.cwd(), 'storage/e2e');
+
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
   const files = glob.sync('packages/**/__e2e__/**/*.test.ts', {
     root: process.cwd(),
   });
