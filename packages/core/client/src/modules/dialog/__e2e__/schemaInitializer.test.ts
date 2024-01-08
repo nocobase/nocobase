@@ -84,12 +84,12 @@ test.describe('where to open a popup and what can be added to it', () => {
     // 删除已创建的 blocks，腾出页面空间
     // delete details block
     await page.getByText('GeneralConfigure actionsConfigure fields').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-FormV2.ReadPrettyDesigner-general').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-singleDataDetailsBlockSettings-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     // delete form block
     await page.getByLabel('block-item-CardItem-general-form').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-editFormBlockSettings-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     // delete markdown block
@@ -173,12 +173,12 @@ test.describe('where to open a popup and what can be added to it', () => {
     // 删除已创建的 blocks，腾出页面空间
     // delete details block
     await page.getByText('GeneralConfigure actionsConfigure fields').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-FormV2.ReadPrettyDesigner-general').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-singleDataDetailsBlockSettings-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     // delete form block
     await page.getByLabel('block-item-CardItem-general-form').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-FormV2.Designer-general').hover();
+    await page.getByLabel('designer-schema-settings-CardItem-editFormBlockSettings-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     // delete markdown block

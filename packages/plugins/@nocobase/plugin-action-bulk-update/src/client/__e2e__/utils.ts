@@ -422,7 +422,6 @@ export const oneEmptyTableBlockWithCustomizeUpdate: PageConfig = {
                             version: '2.0',
                             'x-align': 'right',
                             'x-action': 'customize:bulkUpdate',
-                            'x-designer': 'Action.Designer',
                             'x-settings': 'ActionSettings:customize:bulkUpdate',
                             'x-component': 'Action',
                             'x-decorator': 'ACLActionProvider',

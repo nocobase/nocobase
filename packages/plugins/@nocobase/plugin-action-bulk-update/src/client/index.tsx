@@ -1,6 +1,6 @@
 import { Plugin, useCollection } from '@nocobase/client';
-import { BulkUpdatePluginProvider } from './BulkUpdatePluginProvider';
 import { bulkUpdateActionSettings } from './BulkUpdateAction.Settings';
+import { BulkUpdatePluginProvider } from './BulkUpdatePluginProvider';
 export class BulkUpdatePlugin extends Plugin {
   async load() {
     this.app.use(BulkUpdatePluginProvider);
@@ -17,7 +17,6 @@ export class BulkUpdatePlugin extends Plugin {
         'x-align': 'right',
         'x-acl-action': 'update',
         'x-decorator': 'ACLActionProvider',
-        'x-designer': 'Action.Designer',
         'x-acl-action-props': {
           skipScopeCheck: true,
         },
