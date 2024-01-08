@@ -2,7 +2,7 @@ import { Database, IDatabaseOptions, Transactionable } from '@nocobase/database'
 import Application, { AppSupervisor, Gateway, Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
-import path, { resolve } from 'path';
+import path from 'path';
 import { ApplicationModel } from '../server';
 
 export type AppDbCreator = (app: Application, options?: Transactionable & { context?: any }) => Promise<void>;

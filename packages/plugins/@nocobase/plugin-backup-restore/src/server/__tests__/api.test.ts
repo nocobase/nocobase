@@ -1,6 +1,6 @@
 import { MockServer, waitSecond } from '@nocobase/test';
-import createApp from './index';
 import { Dumper } from '../dumper';
+import createApp from './index';
 
 describe('backup files', () => {
   let app: MockServer;
@@ -169,9 +169,7 @@ describe('backup files', () => {
       name: 'test',
       title: '测试',
       group: 'custom',
-      origin: {
-        name: '@nocobase/plugin-collection-manager',
-      },
+      origin:'@nocobase/plugin-collection-manager',
     });
   });
 });

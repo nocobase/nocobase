@@ -119,25 +119,6 @@ export class Dumper extends AppMigrator {
         [...this.app.db.collections.values()].map(async (c) => {
           try {
             const dumpRules = DBCollectionGroupManager.unifyDumpRules(c.options.dumpRules);
-            let origin = c.origin;
-            let originTitle = origin;
-
-            // plugin collections
-            if (origin.startsWith('plugin:')) {
-              const plugin = this.app.pm.get(origin.replace(/^plugin:/, ''));
-              const pluginInfo = await plugin.toJSON({
-                withOutOpenFile: true,
-              });
-
-              originTitle = pluginInfo.displayName;
-              origin = pluginInfo.packageName;
-            }
-
-            // user collections
-            if (origin === 'collection-manager') {
-              originTitle = 'user';
-              origin = 'user';
-            }
 
             const options: any = {
               name: c.name,
@@ -145,10 +126,7 @@ export class Dumper extends AppMigrator {
               options: c.options,
               group: dumpRules?.group,
               isView: c.isView(),
-              origin: {
-                name: origin,
-                title: originTitle,
-              },
+              origin: c.origin,
             };
 
             if (c.options.inherits && c.options.inherits.length > 0) {
@@ -277,7 +255,7 @@ export class Dumper extends AppMigrator {
 
     for (const collectionName of dumpedCollections) {
       const collection = this.app.db.getCollection(collectionName);
-      if (lodash.get(collection.options, 'duplicator.delayRestore')) {
+      if (lodash.get(collection.options, 'dumpRules.delayRestore')) {
         delayCollections.add(collectionName);
       }
 

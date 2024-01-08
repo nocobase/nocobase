@@ -368,7 +368,7 @@ export class PluginACL extends Plugin {
 
     // sync database role data to acl
     this.app.on('afterLoad', writeRolesToACL);
-    this.app.on('afterInstall', writeRolesToACL);
+    // this.app.on('afterInstall', writeRolesToACL);
 
     this.app.on('afterInstallPlugin', async (plugin) => {
       if (plugin.getName() !== 'users') {
@@ -895,7 +895,7 @@ export class PluginACL extends Plugin {
     this.db.extendCollection({
       name: 'rolesUischemas',
       dumpRules: 'required',
-      origin: `plugin:${this.name}`,
+      origin: this.options.packageName,
     });
   }
 }

@@ -1,11 +1,7 @@
-import path from 'path';
-
 import Database from '@nocobase/database';
-import { Application } from '@nocobase/server';
 import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
-
-import Plugin from '..';
+import { Application } from '@nocobase/server';
 
 describe('workflow > instructions > delay', () => {
   let app: Application;
@@ -17,8 +13,7 @@ describe('workflow > instructions > delay', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: [Plugin],
-      collectionPath: path.join(__dirname, './collections'),
+      plugins: ['workflow-delay'],
     });
     plugin = app.pm.get('workflow');
 

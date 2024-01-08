@@ -2,6 +2,7 @@ import { Migration } from '@nocobase/server';
 import { CollectionsGraph } from '@nocobase/utils';
 
 export default class extends Migration {
+  appVersion = '<0.9.3-alpha.1';
   async up() {
     const result = await this.app.version.satisfies('<0.9.3-alpha.1');
 

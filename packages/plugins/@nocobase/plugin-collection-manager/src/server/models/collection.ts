@@ -22,8 +22,7 @@ export class CollectionModel extends MagicAttributeModel {
     let collection: Collection;
 
     const collectionOptions = {
-      namespace: 'collections.business',
-      origin: 'plugin:collection-manager',
+      origin: '@nocobase/plugin-collection-manager',
       ...this.get(),
       fields: [],
     };

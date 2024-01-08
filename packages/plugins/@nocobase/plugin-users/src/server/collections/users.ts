@@ -1,6 +1,7 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
+  origin: '@nocobase/plugin-users',
   dumpRules: {
     group: 'user',
   },

@@ -10,13 +10,13 @@ import {
   Transactionable,
   Utils,
 } from 'sequelize';
+import { BuiltInGroup } from './collection-group-manager';
 import { Database } from './database';
 import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { AdjacencyListRepository } from './repositories/tree-repository/adjacency-list-repository';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
-import { BuiltInGroup } from './collection-group-manager';
 
 export type RepositoryType = typeof Repository;
 
@@ -75,16 +75,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   name: string;
   title?: string;
   namespace?: string;
-  /**
-   * Used for @nocobase/plugin-duplicator
-   * @see packages/core/database/src/collection-group-manager.tss
-   *
-   * @prop {'required' | 'optional' | 'skip'} dumpable - Determine whether the collection is dumped
-   * @prop {string[] | string} [with] - Collections dumped with this collection
-   * @prop {any} [delayRestore] - A function to execute after all collections are restored
-   */
   dumpRules?: DumpRules;
-
   tableName?: string;
   inherits?: string[] | string;
   viewName?: string;

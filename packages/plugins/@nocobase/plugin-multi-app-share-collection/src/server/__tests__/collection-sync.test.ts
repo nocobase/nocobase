@@ -1,6 +1,6 @@
 import { BelongsToManyRepository, Database } from '@nocobase/database';
 import { AppSupervisor } from '@nocobase/server';
-import { isPg, MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer, isPg } from '@nocobase/test';
 import * as process from 'process';
 
 describe.runIf(isPg())('enable plugin', () => {
@@ -8,15 +8,9 @@ describe.runIf(isPg())('enable plugin', () => {
   let mainApp: MockServer;
 
   beforeEach(async () => {
-    const app = mockServer({
+    const app = await createMockServer({
       acl: false,
       plugins: ['nocobase'],
-    });
-
-    await app.load();
-
-    await app.install({
-      clean: true,
     });
 
     mainApp = app;
@@ -45,21 +39,14 @@ describe.runIf(isPg())('collection sync after main', () => {
   let mainApp: MockServer;
 
   beforeEach(async () => {
-    const app = mockServer({
+    const app = await createMockServer({
       acl: false,
       plugins: ['nocobase'],
+      async beforeInstall(app) {
+        await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub1 CASCADE`);
+        await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub2 CASCADE`);
+      },
     });
-
-    await app.load();
-    await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub1 CASCADE`);
-    await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub2 CASCADE`);
-
-    await app.install({
-      clean: true,
-    });
-
-    await app.start();
-
     mainApp = app;
   });
 
@@ -114,23 +101,17 @@ describe.runIf(isPg())('collection sync', () => {
   let mainApp: MockServer;
 
   beforeEach(async () => {
-    const app = mockServer({
+    const app = await createMockServer({
       acl: false,
       plugins: ['nocobase'],
-    });
-
-    await app.load();
-    await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub1 CASCADE`);
-    await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub2 CASCADE`);
-
-    await app.install({
-      clean: true,
+      async beforeInstall(app) {
+        await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub1 CASCADE`);
+        await app.db.sequelize.query(`DROP SCHEMA IF EXISTS sub2 CASCADE`);
+      },
     });
 
     await app.pm.enable('multi-app-manager');
     await app.pm.enable('multi-app-share-collection');
-
-    await app.start();
 
     mainApp = app;
 
