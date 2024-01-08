@@ -928,6 +928,7 @@ export const createDetailsBlockSchema = (options) => {
       // useParams: '{{ useParamsFromRecord }}',
       ...others,
     },
+    'x-toolbar': 'BlockSchemaToolbar',
     'x-settings': settings,
     'x-component': 'CardItem',
     properties: {
@@ -1000,6 +1001,7 @@ export const createListBlockSchema = (options) => {
       ...others,
     },
     'x-component': 'CardItem',
+    'x-toolbar': 'BlockSchemaToolbar',
     'x-settings': settings,
     properties: {
       actionBar: {
@@ -1177,6 +1179,7 @@ export const createFormBlockSchema = (options) => {
       // action: 'get',
       // useParams: '{{ useParamsFromRecord }}',
     },
+    'x-toolbar': 'BlockSchemaToolbar',
     ...(settings ? { 'x-settings': settings } : { 'x-designer': designer }),
     'x-component': 'CardItem',
     'x-component-props': {
@@ -1238,6 +1241,7 @@ export const createFilterFormBlockSchema = (options) => {
       collection,
       association,
     },
+    'x-toolbar': 'BlockSchemaToolbar',
     ...(settings ? { 'x-settings': settings } : { 'x-designer': 'FormV2.FilterDesigner' }),
     'x-component': 'CardItem',
     // 保存当前筛选区块所能过滤的数据区块
@@ -1302,6 +1306,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
       useParams: '{{ useParamsFromRecord }}',
       ...others,
     },
+    'x-toolbar': 'BlockSchemaToolbar',
     'x-settings': settings,
     'x-component': 'CardItem',
     properties: {
@@ -1370,6 +1375,7 @@ export const createTableBlockSchema = (options) => {
       blockType,
       ...others,
     },
+    'x-toolbar': 'BlockSchemaToolbar',
     'x-settings': 'tableBlockSettings',
     'x-component': 'CardItem',
     'x-filter-targets': [],
@@ -1471,6 +1477,7 @@ export const createTableSelectorSchema = (options) => {
       rowKey,
       ...others,
     },
+    'x-toolbar': 'BlockSchemaToolbar',
     'x-settings': 'dataSelectorBlockSettings',
     'x-component': 'CardItem',
     properties: {

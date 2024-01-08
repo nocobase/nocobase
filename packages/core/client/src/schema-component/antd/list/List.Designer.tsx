@@ -20,6 +20,9 @@ import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 
+/**
+ * @deprecated - 已使用 SchemaSettings 替代
+ */
 export const ListDesigner = () => {
   const { name, title } = useCollection();
   const template = useSchemaTemplate();

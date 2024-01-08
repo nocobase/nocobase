@@ -21,7 +21,6 @@ export const dataSelectorBlockSettings = new SchemaSettings({
         const fieldSchema = useFieldSchema();
         const { form } = useFormBlockContext();
         const { service, extraFilter } = useTableSelectorContext();
-        const { t } = useTranslation();
         const { dn } = useDesignable();
         const onDataScopeSubmit = useCallback(
           ({ filter }) => {
