@@ -22,7 +22,7 @@
     "@nocobase/plugin-collection-manager": "0.18.0-alpha.9",
     "@nocobase/plugin-custom-request": "0.18.0-alpha.9",
     "@nocobase/plugin-data-visualization": "0.18.0-alpha.9",
-    "@nocobase/plugin-duplicator": "0.18.0-alpha.9",
+    "@nocobase/plugin-backup-restore": "0.18.0-alpha.9",
     "@nocobase/plugin-error-handler": "0.18.0-alpha.9",
     "@nocobase/plugin-excel-formula-field": "0.18.0-alpha.9",
     "@nocobase/plugin-export": "0.18.0-alpha.9",

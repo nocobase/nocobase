@@ -4,7 +4,7 @@ import fs from 'fs';
 import type { TFuncKey, TOptions } from 'i18next';
 import { resolve } from 'path';
 import { Application } from './application';
-import { InstallOptions, getExposeChangelogUrl, getExposeReadmeUrl } from './plugin-manager';
+import { getExposeChangelogUrl, getExposeReadmeUrl, InstallOptions } from './plugin-manager';
 import { checkAndGetCompatible } from './plugin-manager/utils';
 
 export interface PluginInterface {
@@ -109,7 +109,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
   async importCollections(collectionsPath: string) {
     await this.db.import({
       directory: collectionsPath,
-      from: this.getName(),
+      from: `plugin:${this.getName()}`,
     });
   }
 
@@ -129,20 +129,30 @@ export abstract class Plugin<O = any> implements PluginInterface {
         ...this.options,
       };
     }
-    const file = await fs.promises.realpath(resolve(process.env.NODE_MODULES_PATH, packageName));
-    const lastUpdated = (await fs.promises.stat(file)).ctime;
-    const others = await checkAndGetCompatible(packageName);
-    return {
+
+    const results = {
       ...this.options,
-      ...others,
       readmeUrl: getExposeReadmeUrl(packageName, locale),
       changelogUrl: getExposeChangelogUrl(packageName),
-      lastUpdated,
-      file,
-      updatable: file.startsWith(process.env.PLUGIN_STORAGE_PATH),
       displayName: packageJson[`displayName.${locale}`] || packageJson.displayName || name,
       description: packageJson[`description.${locale}`] || packageJson.description,
     };
+
+    if (!options.withOutOpenFile) {
+      const file = await fs.promises.realpath(
+        resolve(process.env.NODE_MODULES_PATH || resolve(process.cwd(), 'node_modules'), packageName),
+      );
+
+      return {
+        ...results,
+        ...(await checkAndGetCompatible(packageName)),
+        lastUpdated: (await fs.promises.stat(file)).ctime,
+        file,
+        updatable: file.startsWith(process.env.PLUGIN_STORAGE_PATH),
+      };
+    }
+
+    return results;
   }
 }
 

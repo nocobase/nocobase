@@ -34,9 +34,7 @@ export default class ApiKeysPlugin extends Plugin<ApiKeysPluginConfig> {
   }
 
   async load() {
-    await this.db.import({
-      directory: resolve(__dirname, '../collections'),
-    });
+    await this.importCollections(resolve(__dirname, '../collections'));
 
     this.app.resourcer.use(async (ctx, next) => {
       const { resourceName, actionName } = ctx.action.params;

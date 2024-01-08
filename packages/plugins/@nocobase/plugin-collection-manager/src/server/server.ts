@@ -361,8 +361,8 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.extendCollection({
       name: 'collectionCategory',
-      namespace: 'collection-manager',
-      duplicator: 'required',
+      dumpRules: 'required',
+      origin: `plugin:${this.name}`,
     });
   }
 }

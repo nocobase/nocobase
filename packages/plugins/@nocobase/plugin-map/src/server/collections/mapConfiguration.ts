@@ -1,11 +1,12 @@
-import { CollectionOptions } from '@nocobase/client';
+import { defineCollection } from '@nocobase/database';
 import { MapConfigurationCollectionName } from '../constants';
 
-export default {
-  namespace: 'map.mapConfiguration',
-  duplicator: 'optional',
+export default defineCollection({
+  dumpRules: {
+    group: 'third-party',
+  },
   name: MapConfigurationCollectionName,
-  title: '{{t("Map Manager")}}',
+  shared: true,
   fields: [
     {
       title: 'Access key',
@@ -26,4 +27,4 @@ export default {
       type: 'string',
     },
   ],
-} as CollectionOptions;
+});

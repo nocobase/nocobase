@@ -1,8 +1,10 @@
-import { CollectionOptions } from '@nocobase/client';
+import { defineCollection } from '@nocobase/database';
 
-export default {
-  namespace: 'auth.token-black',
-  duplicator: 'optional',
+export default defineCollection({
+  dumpRules: {
+    group: 'log',
+  },
+  shared: true,
   name: 'tokenBlacklist',
   model: 'TokenBlacklistModel',
   fields: [
@@ -16,4 +18,4 @@ export default {
       name: 'expiration',
     },
   ],
-} as CollectionOptions;
+});
