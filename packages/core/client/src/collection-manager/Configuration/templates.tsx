@@ -13,11 +13,3 @@ Object.keys(types).forEach((type) => {
   const schema = types[type];
   registerTemplate(schema.name || 'others', { order: 0, ...schema });
 });
-export const templateOptions = () =>
-  Object.keys(collectionTemplates)
-    .sort((a, b) => {
-      return collectionTemplates[a].order - collectionTemplates[b].order;
-    })
-    .map((template) => {
-      return collectionTemplates[template];
-    });

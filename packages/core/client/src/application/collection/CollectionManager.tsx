@@ -17,6 +17,31 @@ function applyMixins(derivedCtor: CollectionMixinConstructor, baseCtors: Collect
   });
 }
 
+const defaultCollectionTransform = (collection: CollectionOptionsV2, app: Application) => {
+  const { rawTitle, title, fields, ...rest } = collection;
+  return {
+    ...rest,
+    title: rawTitle ? title : app.i18n.t(title),
+    rawTitle: rawTitle || title,
+    fields: fields.map(({ uiSchema, ...field }) => {
+      if (uiSchema?.title) {
+        const title = uiSchema.title;
+        uiSchema.title = uiSchema.rawTitle ? title : app.i18n.t(title, { ns: 'lm-collections' });
+        uiSchema.rawTitle = uiSchema.rawTitle || title;
+      }
+      if (Array.isArray(uiSchema?.enum)) {
+        uiSchema.enum = uiSchema.enum.map((item) => ({
+          ...item,
+          value: item?.value || item,
+          label: item.rawLabel ? item.label : app.i18n.t(item.label, { ns: 'lm-collections' }),
+          rawLabel: item.rawLabel || item.label,
+        }));
+      }
+      return { uiSchema, ...field };
+    }),
+  };
+};
+
 export const DEFAULT_COLLECTION_NAMESPACE_TITLE = '{{t("main")}}';
 export const DEFAULT_COLLECTION_NAMESPACE_NAME = 'main';
 
@@ -101,7 +126,7 @@ export class CollectionManagerV2<Mixins = {}> {
       .map((collection) => {
         const collectionTemplateInstance = this.getCollectionTemplate(collection.template);
         const Cls = collectionTemplateInstance?.Collection || CollectionV2;
-        const transform = collectionTemplateInstance?.transform || ((collection) => collection);
+        const transform = collectionTemplateInstance?.transform || defaultCollectionTransform;
         const transformedCollection = transform(collection, this.app);
         // eslint-disable-next-line prettier/prettier
         class CombinedClass extends Cls { }
@@ -266,26 +291,19 @@ export class CollectionManagerV2<Mixins = {}> {
   getCollectionFieldInterfaces() {
     return Object.values(this.collectionFieldInterfaceInstances);
   }
-  // getCollectionFieldInterfaceGroups(): { name: string; children: CollectionFieldInterfaceV2[] }[] {
-  //   return Object.values(
-  //     Object.values(this.collectionFieldInterfaceInstances).reduce<
-  //       Record<string, { name: string; children: CollectionFieldInterfaceV2[] }>
-  //     >((memo, fieldInterface) => {
-  //       const group = fieldInterface.group || 'basic';
-  //       if (!memo[group]) {
-  //         memo[group] = {
-  //           name: group,
-  //           children: [],
-  //         };
-  //       }
-  //       memo[group].children.push(fieldInterface);
-  //       return memo;
-  //     }, {}),
-  //   ).map((item) => {
-  //     item.children = item.children.sort((a, b) => (a.order || 0) - (b.order || 0));
-  //     return item;
-  //   });
-  // }
+  getCollectionFieldInterfaceGroups(): Record<string, CollectionFieldInterfaceV2[]> {
+    return Object.values(this.collectionFieldInterfaceInstances).reduce<Record<string, CollectionFieldInterfaceV2[]>>(
+      (memo, fieldInterface) => {
+        const group = fieldInterface.group || 'basic';
+        if (!memo[group]) {
+          memo[group] = [];
+        }
+        memo[group].push(fieldInterface);
+        return memo;
+      },
+      {},
+    );
+  }
   getCollectionFieldInterface(name: string) {
     return this.collectionFieldInterfaceInstances[name];
   }

@@ -46,21 +46,21 @@ registerGroup('advanced', '{{t("Advanced type")}}');
 registerGroup('systemInfo', '{{t("System info")}}');
 registerGroup('others', '{{t("Others")}}');
 
-export const getOptions = () => {
+export const getOptions = (collectionFieldInterfaces) => {
   return Object.keys(groups)
     .map((groupName) => {
       const group = groups[groupName];
       return {
         ...group,
         key: groupName,
-        children: Object.keys(fields[groupName] || {})
+        children: Object.keys(collectionFieldInterfaces[groupName] || {})
           .map((type) => {
-            const field = fields[groupName][type];
+            const field = collectionFieldInterfaces[groupName][type];
             return {
               value: type,
               label: field.title,
               name: type,
-              ...fields[groupName][type],
+              ...collectionFieldInterfaces[groupName][type],
             };
           })
           .sort((a, b) => a.order - b.order),
@@ -68,5 +68,3 @@ export const getOptions = () => {
     })
     .sort((a, b) => a.order - b.order);
 };
-
-export const options = getOptions();

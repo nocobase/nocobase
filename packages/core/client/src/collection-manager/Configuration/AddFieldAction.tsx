@@ -178,7 +178,7 @@ export const AddCollectionField = (props) => {
 
 export const AddFieldAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align, database } = props;
-  const { getInterface, getTemplate, collections } = useCollectionManager();
+  const { getInterface, getTemplate, collections, interfaces } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});
@@ -198,7 +198,7 @@ export const AddFieldAction = (props) => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
     const { exclude, include } = (availableFieldInterfaces || {}) as any;
     const optionArr = [];
-    getOptions().forEach((v) => {
+    getOptions(interfaces).forEach((v) => {
       if (v.key === 'systemInfo') {
         optionArr.push({
           ...v,

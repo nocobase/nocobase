@@ -13,12 +13,8 @@ export class InheritanceCollectionMixin extends CollectionV2 {
   protected inheritCollectionsChain: string[];
   protected foreignKeyFields: CollectionFieldOptionsV2[];
 
-  get inherits() {
-    return this.options.inherits;
-  }
-
   getParentCollectionsName() {
-    if (this.parentCollections) {
+    if (this.parentCollections?.length) {
       return this.parentCollections;
     }
     const parents: string[] = [];
@@ -48,7 +44,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
   }
 
   getChildrenCollectionsName(isSupportView = false) {
-    if (this.childrenCollections) {
+    if (this.childrenCollections?.length) {
       return this.childrenCollections;
     }
 
@@ -132,7 +128,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
   }
 
   getAllCollectionsInheritChain() {
-    if (this.allCollectionsInheritChain) {
+    if (this.allCollectionsInheritChain?.length) {
       return this.allCollectionsInheritChain;
     }
 
@@ -174,7 +170,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
   }
 
   getInheritCollectionsChain() {
-    if (this.inheritCollectionsChain) {
+    if (this.inheritCollectionsChain?.length) {
       return this.inheritCollectionsChain;
     }
     const collectionsInheritChain = [this.name];
@@ -203,7 +199,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
 
   // override CollectionV2
   getAllFields(predicate?: GetCollectionFieldPredicate) {
-    if (this.allFields) {
+    if (this.allFields?.length) {
       return this.allFields;
     }
     const currentFields = this.getCurrentFields();
@@ -218,7 +214,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
   }
 
   getForeignKeyFields() {
-    if (this.foreignKeyFields) {
+    if (this.foreignKeyFields?.length) {
       return this.foreignKeyFields;
     }
     const currentFields = this.getCurrentFields();

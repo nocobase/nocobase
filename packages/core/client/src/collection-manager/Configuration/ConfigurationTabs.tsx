@@ -13,7 +13,7 @@ import { RecursionField, observer } from '@formily/react';
 import { uid } from '@formily/shared';
 import { App, Badge, Card, Dropdown, Space, Tabs } from 'antd';
 import _ from 'lodash';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
 import { SchemaComponent, SchemaComponentOptions, useCompile } from '../../schema-component';
@@ -21,6 +21,7 @@ import { useResourceActionContext } from '../ResourceActionProvider';
 import { CollectionCategroriesContext } from '../context';
 import { CollectionFields } from './CollectionFields';
 import { collectionTableSchema } from './schemas/collections';
+import useUrlState from '@ahooksjs/use-url-state';
 
 function Draggable(props) {
   const { attributes, listeners, setNodeRef } = useDraggable({
@@ -123,34 +124,42 @@ export const ConfigurationTabs = () => {
   const { t } = useTranslation();
   const { data, refresh } = useContext(CollectionCategroriesContext);
   const { refresh: refreshCM, run, defaultRequest, setState } = useResourceActionContext();
-  const [key, setKey] = useState('all');
-  const [activeKey, setActiveKey] = useState('all');
+  const [activeKey, setActiveKey] = useUrlState({ tab: 'all' });
+  const [key, setKey] = useState(activeKey.tab);
   const compile = useCompile();
   const api = useAPIClient();
   const { modal } = App.useApp();
 
-  if (!data) return null;
-
-  const tabsItems = data
-    .sort((a, b) => b.sort - a.sort)
-    .concat()
-    .map((v) => {
-      return {
-        ...v,
+  const tabsItems = useMemo(() => {
+    if (!data) return [];
+    const res = data
+      .sort((a, b) => b.sort - a.sort)
+      .concat()
+      .map((v) => {
+        return {
+          ...v,
+          schema: collectionTableSchema,
+        };
+      });
+    !res.find((v) => v.id === 'all') &&
+      res.unshift({
+        name: '{{t("All collections")}}',
+        id: 'all',
+        sort: 0,
+        closable: false,
         schema: collectionTableSchema,
-      };
-    });
-  !tabsItems.find((v) => v.id === 'all') &&
-    tabsItems.unshift({
-      name: '{{t("All collections")}}',
-      id: 'all',
-      sort: 0,
-      closable: false,
-      schema: collectionTableSchema,
-    });
+      });
+    return res;
+  }, [data]);
+
+  useEffect(() => {
+    if (activeKey.tab !== 'all') {
+      onChange(activeKey.tab);
+    }
+  }, []);
 
   const onChange = (key: string) => {
-    setActiveKey(key);
+    setActiveKey({ tab: key });
     setKey(uid());
     if (key !== 'all') {
       const prevFilter = defaultRequest?.params?.filter;
@@ -173,7 +182,7 @@ export const ConfigurationTabs = () => {
             id: key,
           },
         });
-        key === +activeKey && setActiveKey('all');
+        key === +activeKey.tab && setActiveKey({ tab: 'all' });
         await refresh();
         await refreshCM();
       },
@@ -216,7 +225,7 @@ export const ConfigurationTabs = () => {
       ],
     };
   });
-
+  if (!data) return null;
   return (
     <DndProvider>
       <Tabs
@@ -238,7 +247,7 @@ export const ConfigurationTabs = () => {
           />
         }
         onChange={onChange}
-        defaultActiveKey="all"
+        defaultActiveKey={activeKey.tab || 'all'}
         type="editable-card"
         destroyInactiveTabPane={true}
         tabBarStyle={{ marginBottom: '0px' }}
@@ -252,7 +261,7 @@ export const ConfigurationTabs = () => {
               ) : (
                 compile(item.name)
               ),
-            key: item.id,
+            key: String(item.id),
             closable: item.closable,
             closeIcon: (
               <Dropdown menu={menu(item)}>

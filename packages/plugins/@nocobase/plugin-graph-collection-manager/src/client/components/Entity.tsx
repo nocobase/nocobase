@@ -17,7 +17,7 @@ import {
 } from '@nocobase/client';
 import { Badge, Tag } from 'antd';
 import lodash from 'lodash';
-import React, { useContext, useRef, useState } from 'react';
+import React, { useContext, useMemo, useRef, useState } from 'react';
 import {
   useAsyncDataSource,
   useCancelAction,
@@ -377,8 +377,9 @@ const Entity: React.FC<{
   } = useCurrentAppInfo();
   const collectionData = useRef();
   const categoryData = useContext(CollectionCategroriesContext);
-  collectionData.current = { ...item.getOptions(), title, inherits: item.inherits && new Proxy(item.inherits, {}) };
-  const { category = [] } = item;
+  const itemData = useMemo(() => (item.getOptions ? item.getOptions() : item), [item]);
+  collectionData.current = { ...itemData, title, inherits: itemData.inherits && new Proxy(itemData.inherits, {}) };
+  const { category = [] } = itemData;
   const compile = useCompile();
   const loadCollections = async (field: any) => {
     return targetGraph.collections?.map((collection: any) => ({

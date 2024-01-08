@@ -81,10 +81,11 @@ export const FieldsConfigure = observer(() => {
   const field: ArrayField = useField();
   const { data: curFields } = useContext(ResourceActionContext);
   const compile = useCompile();
-  const { getInterface, getCollectionField } = useCollectionManager();
+  const { getInterface, getCollectionField, interfaces } = useCollectionManager();
+
   const interfaceOptions = useMemo(
     () =>
-      getOptions()
+      getOptions(interfaces)
         .filter((v) => !['relation'].includes(v.key))
         .map((options, index) => ({
           ...options,

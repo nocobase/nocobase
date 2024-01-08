@@ -8,7 +8,7 @@ import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin
 
 export const useCollectionManager = () => {
   const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
-  const interfaces = useMemo(() => cm?.getCollectionFieldInterfaces(), [cm]);
+  const interfaces = useMemo(() => cm?.getCollectionFieldInterfaceGroups(), [cm]);
   const templates = useMemo(() => cm?.getCollectionTemplates(), [cm]);
   const collections = useMemo(() => cm?.getCollections(), [cm]);
   const { refresh } = useSchemaComponentContext();
@@ -19,7 +19,7 @@ export const useCollectionManager = () => {
   const compile = useCompile();
   const getInheritedFields = useCallback(
     (name: string) => {
-      return cm?.getCollection(name).getInheritedFields();
+      return cm?.getCollection(name)?.getInheritedFields() || [];
     },
     [cm],
   );
@@ -27,7 +27,7 @@ export const useCollectionManager = () => {
   const getCollectionFields = useCallback(
     (name: any): CollectionFieldOptions[] => {
       if (!name) return [];
-      return cm?.getCollection(name).getAllFields();
+      return cm?.getCollection(name)?.getAllFields() || [];
     },
     [cm],
   );
@@ -41,7 +41,7 @@ export const useCollectionManager = () => {
   const getInheritCollections = useCallback(
     (name) => {
       if (!name) return [];
-      return cm?.getCollection(name).getParentCollectionsName();
+      return cm?.getCollection(name)?.getParentCollectionsName() || [];
     },
     [cm],
   );
@@ -49,14 +49,14 @@ export const useCollectionManager = () => {
   const getChildrenCollections = useCallback(
     (name: string, isSupportView = false) => {
       if (!name) return [];
-      return cm?.getCollection(name).getChildrenCollections(isSupportView);
+      return cm?.getCollection(name)?.getChildrenCollections(isSupportView) || [];
     },
     [cm],
   );
   const getCurrentCollectionFields = useCallback(
     (name: string) => {
       if (!name) return [];
-      return cm?.getCollection(name).getCurrentFields();
+      return cm?.getCollection(name)?.getCurrentFields() || [];
     },
     [cm],
   );
@@ -173,7 +173,7 @@ export const useCollectionManager = () => {
   // 获取当前 collection 继承链路上的所有 collection
   const getAllCollectionsInheritChain = useCallback(
     (collectionName: string) => {
-      return cm?.getCollection(collectionName).getAllCollectionsInheritChain();
+      return cm?.getCollection(collectionName)?.getAllCollectionsInheritChain();
     },
     [cm],
   );
@@ -185,7 +185,7 @@ export const useCollectionManager = () => {
    */
   const getInheritCollectionsChain = useCallback(
     (collectionName: string) => () => {
-      return cm?.getCollection(collectionName).getInheritCollectionsChain();
+      return cm?.getCollection(collectionName)?.getInheritCollectionsChain();
     },
     [cm],
   );
@@ -203,7 +203,7 @@ export const useCollectionManager = () => {
   };
 
   const getParentCollectionFields = (parentCollection, currentCollection) => {
-    return cm?.getCollection(currentCollection).getParentCollectionFields(parentCollection);
+    return cm?.getCollection(currentCollection)?.getParentCollectionFields(parentCollection);
   };
 
   const getTemplate = useCallback(

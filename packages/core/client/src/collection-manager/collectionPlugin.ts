@@ -38,8 +38,9 @@ import { InheritanceCollectionMixin } from './mixins/InheritanceCollectionMixin'
 //   updatedBy,
 //   url,
 // } from './interfaces';
-import { general, expression, sql, tree, view } from './templates';
+// import { general, expression, sql, tree, view } from './templates';
 import { interfaces } from './Configuration/interfaces';
+import { collectionTemplates } from './Configuration/templates';
 
 export class CollectionPlugin extends Plugin {
   async load() {
@@ -93,7 +94,8 @@ export class CollectionPlugin extends Plugin {
   }
 
   addCollectionTemplates() {
-    this.app.collectionManager.addCollectionTemplates([expression, general, sql, tree, view]);
+    this.app.collectionManager.addCollectionTemplates(Object.values(collectionTemplates));
+    // this.app.collectionManager.addCollectionTemplates([expression, general, sql, tree, view]);
   }
 
   async reloadCollections() {

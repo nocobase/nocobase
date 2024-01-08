@@ -14,7 +14,6 @@ import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import * as components from './components';
 import { TemplateSummary } from './components/TemplateSummary';
-import { templateOptions } from './templates';
 
 const getSchema = (schema, category, compile): ISchema => {
   if (!schema) {
@@ -243,12 +242,11 @@ export const AddCollection = (props) => {
 
 export const AddCollectionAction = (props) => {
   const { scope, getContainer, item: record, children, trigger, align } = props;
-  const { getTemplate } = useCollectionManager();
+  const { getTemplate, templates: collectionTemplates } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
-  const collectionTemplates = useMemo(templateOptions, []);
   const items = useMemo(() => {
     const result = [];
     collectionTemplates.forEach((item) => {

@@ -8,7 +8,8 @@ import { useCollectionHistory } from './CollectionHistoryProvider';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 import { InheritanceCollectionMixin } from './mixins/InheritanceCollectionMixin';
 import { interfaces as defaultInterfaces } from './Configuration/interfaces';
-import { general, expression, sql, tree, view } from './templates';
+// import { general, expression, sql, tree, view } from './templates';
+import { collectionTemplates } from './Configuration/templates';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
   const { interfaces, reloadCallback, cm, collections = [], templates } = props;
@@ -21,7 +22,7 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
         {
           collectionMixins: [InheritanceCollectionMixin],
           collectionFieldInterfaces: defaultInterfaces as any,
-          collectionTemplates: [general, expression, sql, tree, view] as any,
+          collectionTemplates: Object.values(collectionTemplates) as any,
         },
         app,
       );

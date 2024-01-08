@@ -6,6 +6,8 @@ import { CalendarBlockProvider, useCalendarBlockProps } from './schema-initializ
 import { CalendarActionInitializers, CalendarFormActionInitializers } from './schema-initializer/initializers';
 import { CalendarBlockInitializer, RecordAssociationCalendarBlockInitializer } from './schema-initializer/items';
 
+registerTemplate('calendar', calendar);
+
 export class PluginCalendarClient extends Plugin {
   async load() {
     this.app.schemaInitializerManager.addItem('BlockInitializers', 'dataBlocks.calendar', {
@@ -21,7 +23,6 @@ export class PluginCalendarClient extends Plugin {
     this.app.addScopes({ useCalendarBlockProps });
     this.app.schemaInitializerManager.add(CalendarActionInitializers);
     this.app.schemaInitializerManager.add(CalendarFormActionInitializers);
-    registerTemplate('calendar', calendar);
   }
 }
 
