@@ -1,29 +1,30 @@
 import { expect, oneFormBlockBasedOnUsers, test } from '@nocobase/test/e2e';
 
 test('fields', async ({ page, mockPage }) => {
-  // 在 CI 中多进程跑的时候，可能需要等待更长的时间
-  test.slow();
   await mockPage(oneFormBlockBasedOnUsers).goto();
-  await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').click();
+  await page.getByLabel('schema-initializer-Grid-FormItemInitializers-users').hover();
   await page.getByRole('menuitem', { name: 'Nickname' }).click();
   await page.getByRole('menuitem', { name: 'Username' }).click();
   await page.getByRole('menuitem', { name: 'Email' }).click();
+  await page.mouse.move(300, 0);
 
-  const sourceElement = page.getByLabel('block-item-CollectionField-users-form-users.nickname');
-  await sourceElement.hover();
-  const source = sourceElement.getByLabel('designer-drag');
-  await source.hover();
-  const targetElement = page.getByLabel('block-item-CollectionField-users-form-users.username');
-  await source.dragTo(targetElement);
+  await page.getByLabel('block-item-CollectionField-users-form-users.nickname').hover();
+  await page
+    .getByLabel('block-item-CollectionField-users-form-users.nickname')
+    .getByLabel('designer-drag')
+    .dragTo(page.getByLabel('block-item-CollectionField-users-form-users.username'));
+  await page.reload();
 
-  const targetElement2 = page.getByLabel('block-item-CollectionField-users-form-users.email');
-  await source.hover();
-  await source.dragTo(targetElement2);
+  await page.getByLabel('block-item-CollectionField-users-form-users.nickname').hover();
+  await page
+    .getByLabel('block-item-CollectionField-users-form-users.nickname')
+    .getByLabel('designer-drag')
+    .dragTo(page.getByLabel('block-item-CollectionField-users-form-users.email'));
+  await page.reload();
 
-  await sourceElement.hover();
-  const nickname = await source.boundingBox();
-  const username = await targetElement.boundingBox();
-  const email = await targetElement2.boundingBox();
+  const nickname = await page.getByLabel('block-item-CollectionField-users-form-users.nickname').boundingBox();
+  const username = await page.getByLabel('block-item-CollectionField-users-form-users.username').boundingBox();
+  const email = await page.getByLabel('block-item-CollectionField-users-form-users.email').boundingBox();
   const max = Math.max(username.y, nickname.y, email.y);
   //拖拽调整排序符合预期
   expect(nickname.y).toBe(max);

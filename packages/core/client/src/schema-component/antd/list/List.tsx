@@ -60,6 +60,7 @@ const InternalList = (props) => {
     >
       <SortableItem className={cx('nb-list', componentCls, hashId)}>
         <AntdList
+          {...props}
           pagination={
             !meta || meta.count <= meta.pageSize
               ? false
@@ -72,17 +73,19 @@ const InternalList = (props) => {
           }
           loading={service?.loading}
         >
-          {field.value?.map((item, index) => {
-            return (
-              <RecursionField
-                basePath={field.address}
-                key={index}
-                name={index}
-                onlyRenderProperties
-                schema={getSchema(index)}
-              ></RecursionField>
-            );
-          })}
+          {field.value?.length
+            ? field.value.map((item, index) => {
+                return (
+                  <RecursionField
+                    basePath={field.address}
+                    key={index}
+                    name={index}
+                    onlyRenderProperties
+                    schema={getSchema(index)}
+                  ></RecursionField>
+                );
+              })
+            : null}
         </AntdList>
         <Designer />
       </SortableItem>

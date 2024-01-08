@@ -1,3 +1,4 @@
+import { DownOutlined } from '@ant-design/icons';
 import { useForm } from '@formily/react';
 import {
   Action,
@@ -9,9 +10,8 @@ import {
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useChartFilter } from '../hooks/filter';
-import { ChartFilterContext } from './FilterProvider';
 import { useChartsTranslation } from '../locale';
-import { DownOutlined } from '@ant-design/icons';
+import { ChartFilterContext } from './FilterProvider';
 
 export const useChartFilterActionProps = () => {
   const { filter } = useChartFilter();
@@ -124,7 +124,7 @@ const ChartFilterCollapseInitializer = (props) => {
   return <ActionInitializer {...props} schema={schema} />;
 };
 
-export const chartFilterActionInitializers = new SchemaInitializer({
+export const chartFilterActionInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'ChartFilterActionInitializers',
   'data-testid': 'configure-actions-button-of-chart-filter',
   title: '{{t("Configure actions")}}',

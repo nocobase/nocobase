@@ -30,7 +30,11 @@ export default function () {
         required: true,
       },
       {
-        type: 'json',
+        type: 'string',
+        name: 'triggerTitle',
+      },
+      {
+        type: 'jsonb',
         name: 'config',
         required: true,
         defaultValue: {},
