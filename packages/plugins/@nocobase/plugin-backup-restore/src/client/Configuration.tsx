@@ -85,30 +85,22 @@ const LearnMore: any = (props: { collectionsData?: any; isBackup?: boolean }) =>
       dataIndex: 'collection',
       key: 'collection',
       render: (_, data) => {
-        return (
+        const title = compile(data.title);
+        const name = data.name
+        return name === title ? title : (
           <div>
-            {compile(data.title)}
-            <br />
-            <div style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>{data.name}</div>
+            {data.name}
+            {' '}
+            <span style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>({compile(data.title)})</span>
           </div>
         );
       },
     },
     {
       title: t('Origin'),
-      dataIndex: 'plugin',
+      dataIndex: 'origin',
       key: 'origin',
       width: '50%',
-      render: (_, data) => {
-        const { origin } = data;
-        return (
-          <div>
-            {origin.title}
-            <br />
-            <div style={{ color: 'rgba(0, 0, 0, 0.3)', fontSize: '0.9em' }}>{origin.name}</div>
-          </div>
-        );
-      },
     },
   ];
   const items = Object.keys(dataSource || {}).map((item) => {

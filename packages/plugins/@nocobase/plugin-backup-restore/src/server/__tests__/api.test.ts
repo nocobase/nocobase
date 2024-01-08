@@ -169,9 +169,7 @@ describe('backup files', () => {
       name: 'test',
       title: '测试',
       group: 'custom',
-      origin: {
-        name: '@nocobase/plugin-collection-manager',
-      },
+      origin:'@nocobase/plugin-collection-manager',
     });
   });
 });

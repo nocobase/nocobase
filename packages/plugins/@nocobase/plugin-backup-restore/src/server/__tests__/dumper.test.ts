@@ -701,10 +701,7 @@ describe('dumper', () => {
     const dumpableCollections = await dumper.dumpableCollections();
     const applicationPlugins = dumpableCollections.find(({ name }) => name === 'applicationPlugins');
 
-    expect(applicationPlugins.origin).toMatchObject({
-      title: 'core',
-      name: 'core',
-    });
+    expect(applicationPlugins.origin).toBe('@nocobase/server');
   });
 
   it('should get custom collections group', async () => {

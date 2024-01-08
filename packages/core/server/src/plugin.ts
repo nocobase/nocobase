@@ -184,7 +184,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     if (await fsExists(directory)) {
       await this.db.import({
         directory,
-        from: `plugin:${this.getName()}`,
+        from: this.options.packageName,
       });
     }
   }

@@ -331,6 +331,11 @@ export class Gateway extends EventEmitter {
         throwError: true,
         from: 'node',
       })
+      .then(async () => {
+        if (!await mainApp.isStarted()) {
+          await mainApp.stop();
+        }
+      })
       .catch((e) => {
         console.error(e);
       });

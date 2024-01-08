@@ -710,7 +710,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.setMaintainingMessage('stopping app...');
 
     if (this.stopped) {
-      this.log.warn(`Application ${this.name} already stopped`, { method: 'stop' });
+      this.log.warn(`app is stopped`, { method: 'stop' });
       return;
     }
 
@@ -738,7 +738,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterStop', this, options);
 
     this.stopped = true;
-    this.log.info(`${this.name} is stopped`, { method: 'stop' });
+    this.log.info(`app has stopped`, { method: 'stop' });
     this._started = false;
   }
 

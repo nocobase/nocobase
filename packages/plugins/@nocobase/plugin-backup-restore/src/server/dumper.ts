@@ -119,25 +119,6 @@ export class Dumper extends AppMigrator {
         [...this.app.db.collections.values()].map(async (c) => {
           try {
             const dumpRules = DBCollectionGroupManager.unifyDumpRules(c.options.dumpRules);
-            let origin = c.origin;
-            let originTitle = origin;
-
-            // plugin collections
-            if (origin.startsWith('plugin:')) {
-              const plugin = this.app.pm.get(origin.replace(/^plugin:/, ''));
-              const pluginInfo = await plugin.toJSON({
-                withOutOpenFile: true,
-              });
-
-              originTitle = pluginInfo.displayName;
-              origin = pluginInfo.packageName;
-            }
-
-            // user collections
-            if (origin === 'collection-manager') {
-              originTitle = 'user';
-              origin = 'user';
-            }
 
             const options: any = {
               name: c.name,
@@ -145,10 +126,7 @@ export class Dumper extends AppMigrator {
               options: c.options,
               group: dumpRules?.group,
               isView: c.isView(),
-              origin: {
-                name: origin,
-                title: originTitle,
-              },
+              origin: c.origin,
             };
 
             if (c.options.inherits && c.options.inherits.length > 0) {
@@ -339,7 +317,7 @@ export class Dumper extends AppMigrator {
     const metaObj = {
       version: await this.app.version.get(),
       dialect: this.app.db.sequelize.getDialect(),
-      DB_UNDERSCORED: process.env.DB_UNDERSCORED,
+      DB_UNDERSCORED: process.env.DB_UNDERSCORED === 'true' ? true : false,
       DB_TABLE_PREFIX: process.env.DB_TABLE_PREFIX,
       DB_SCHEMA: process.env.DB_SCHEMA,
       COLLECTION_MANAGER_SCHEMA: process.env.COLLECTION_MANAGER_SCHEMA,

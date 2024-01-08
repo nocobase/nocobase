@@ -4,6 +4,7 @@ export default defineCollection({
   name: 'applicationPlugins',
   dumpRules: 'required',
   repository: 'PluginManagerRepository',
+  origin: '@nocobase/server',
   fields: [
     { type: 'string', name: 'name', unique: true },
     { type: 'string', name: 'packageName', unique: true },

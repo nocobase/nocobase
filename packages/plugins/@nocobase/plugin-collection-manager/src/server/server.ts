@@ -362,7 +362,7 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.db.extendCollection({
       name: 'collectionCategory',
       dumpRules: 'required',
-      origin: `plugin:${this.name}`,
+      origin: this.options.packageName,
     });
   }
 }

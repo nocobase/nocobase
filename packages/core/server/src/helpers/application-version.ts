@@ -9,6 +9,7 @@ export class ApplicationVersion {
   constructor(app: Application) {
     this.app = app;
     app.db.collection({
+      origin: '@nocobase/server',
       name: 'applicationVersion',
       dataType: 'meta',
       timestamps: false,
