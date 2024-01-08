@@ -1,4 +1,4 @@
-import { LineChartOutlined, BarChartOutlined } from '@ant-design/icons';
+import { BarChartOutlined, LineChartOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import {
   DataBlockInitializer,
@@ -11,8 +11,8 @@ import {
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { ChartConfigContext } from '../configure';
-import { lang } from '../locale';
 import { FilterBlockInitializer } from '../filter';
+import { lang } from '../locale';
 
 const ChartInitializer = () => {
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
@@ -46,7 +46,7 @@ const ChartInitializer = () => {
   );
 };
 
-export const chartInitializers = new SchemaInitializer({
+export const chartInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'ChartInitializers',
   icon: 'PlusOutlined',
   title: '{{t("Add block")}}',

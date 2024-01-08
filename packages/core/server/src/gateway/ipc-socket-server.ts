@@ -1,5 +1,6 @@
 import net from 'net';
 import fs from 'fs';
+import path from 'path';
 import { AppSupervisor } from '../app-supervisor';
 import { writeJSON } from './ipc-socket-client';
 import { randomUUID } from 'crypto';
@@ -15,6 +16,12 @@ export class IPCSocketServer {
     // try to unlink the socket from a previous run
     if (fs.existsSync(socketPath)) {
       fs.unlinkSync(socketPath);
+    }
+
+    const dir = path.dirname(socketPath);
+
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
     }
 
     const socketServer = net.createServer((c) => {
