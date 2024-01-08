@@ -1,9 +1,9 @@
 import { BelongsToManyRepository, Database } from '@nocobase/database';
 import { AppSupervisor } from '@nocobase/server';
-import { MockServer, mockServer, pgOnly } from '@nocobase/test';
+import { isPg, MockServer, mockServer } from '@nocobase/test';
 import * as process from 'process';
 
-pgOnly()('enable plugin', () => {
+describe.runIf(isPg())('enable plugin', () => {
   let mainDb: Database;
   let mainApp: MockServer;
 
@@ -41,7 +41,7 @@ pgOnly()('enable plugin', () => {
   });
 });
 
-pgOnly()('collection sync after main', () => {
+describe.runIf(isPg())('collection sync after main', () => {
   let mainApp: MockServer;
 
   beforeEach(async () => {
@@ -109,7 +109,7 @@ pgOnly()('collection sync after main', () => {
   });
 });
 
-pgOnly()('collection sync', () => {
+describe.runIf(isPg())('collection sync', () => {
   let mainDb: Database;
   let mainApp: MockServer;
 

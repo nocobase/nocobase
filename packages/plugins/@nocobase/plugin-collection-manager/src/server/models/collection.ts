@@ -22,9 +22,15 @@ export class CollectionModel extends MagicAttributeModel {
     let collection: Collection;
 
     const collectionOptions = {
+      namespace: 'collections.business',
+      origin: 'plugin:collection-manager',
       ...this.get(),
       fields: [],
     };
+
+    if (!this.db.inDialect('postgres') && collectionOptions.schema) {
+      delete collectionOptions.schema;
+    }
 
     if (this.db.hasCollection(name)) {
       collection = this.db.getCollection(name);
@@ -39,6 +45,10 @@ export class CollectionModel extends MagicAttributeModel {
 
       collection.updateOptions(collectionOptions);
     } else {
+      if (!collectionOptions.dumpRules) {
+        lodash.set(collectionOptions, 'dumpRules.group', 'custom');
+      }
+
       collection = this.db.collection(collectionOptions);
     }
 

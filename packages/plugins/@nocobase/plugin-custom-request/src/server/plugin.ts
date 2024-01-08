@@ -24,9 +24,7 @@ export class CustomRequestPlugin extends Plugin {
   }
 
   async load() {
-    await this.db.import({
-      directory: resolve(__dirname, './collections'),
-    });
+    await this.importCollections(resolve(__dirname, 'collections'));
 
     this.app.resource({
       name: 'customRequests',

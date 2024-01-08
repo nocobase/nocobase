@@ -1,24 +1,25 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'sequence-field.sequences',
-  duplicator: {
-    dumpable: 'required',
+  dumpRules: {
+    group: 'required',
     async delayRestore(restorer) {
       const app = restorer.app;
       const importedCollections = restorer.importedCollections;
 
       const sequenceFields = importedCollections
-        .map((collection) =>
-          [...app.db.getCollection(collection).fields.values()].filter((field) => field.type === 'sequence'),
-        )
+        .map((collection) => {
+          const collectionInstance = app.db.getCollection(collection);
+          if (!collectionInstance) throw new Error(`Collection ${collection} not found`);
+          return [...collectionInstance.fields.values()].filter((field) => field.type === 'sequence');
+        })
         .flat()
         .filter(Boolean);
 
       // a single sequence field refers to a single row in sequences table
       const sequencesAttributes = sequenceFields
         .map((field) => {
-          const patterns = field.get('patterns').filter((pattern) => pattern.type === 'integer');
+          const patterns = field.get('patterns');
 
           return patterns.map((pattern) => {
             return {
@@ -28,7 +29,8 @@ export default defineCollection({
             };
           });
         })
-        .flat();
+        .flat()
+        .filter((attr) => attr.collection && attr.field && attr.key);
 
       if (sequencesAttributes.length > 0) {
         await app.db.getRepository('sequences').destroy({
@@ -42,18 +44,17 @@ export default defineCollection({
         name: 'sequences',
         clear: false,
         rowCondition(row) {
-          const results = sequencesAttributes.some((attributes) => {
+          return sequencesAttributes.some((attributes) => {
             return (
               row.collection === attributes.collection && row.field === attributes.field && row.key === attributes.key
             );
           });
-
-          return results;
         },
       });
     },
   },
   name: 'sequences',
+  shared: true,
   fields: [
     {
       name: 'collection',

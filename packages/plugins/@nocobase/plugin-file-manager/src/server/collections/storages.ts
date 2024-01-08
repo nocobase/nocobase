@@ -1,10 +1,9 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
-  namespace: 'file-manager.storageSetting',
-  duplicator: 'optional',
+export default defineCollection({
+  dumpRules: 'required',
   name: 'storages',
-  title: '存储引擎',
+  shared: true,
   fields: [
     {
       title: '存储引擎名称',
@@ -62,4 +61,4 @@ export default {
       defaultValue: false,
     },
   ],
-} as CollectionOptions;
+});

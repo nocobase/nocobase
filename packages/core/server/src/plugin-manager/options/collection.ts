@@ -2,8 +2,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'applicationPlugins',
-  namespace: 'core.applicationPlugins',
-  duplicator: 'required',
+  dumpRules: 'required',
   repository: 'PluginManagerRepository',
   fields: [
     { type: 'string', name: 'name', unique: true },

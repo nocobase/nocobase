@@ -152,8 +152,10 @@ export abstract class Field {
 
   toSequelize(): any {
     const opts = _.omit(this.options, ['name']);
+
     if (this.dataType) {
-      Object.assign(opts, { type: this.dataType });
+      // @ts-ignore
+      Object.assign(opts, { type: this.database.sequelize.normalizeDataType(this.dataType) });
     }
 
     return opts;
