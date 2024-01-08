@@ -377,7 +377,7 @@ const Entity: React.FC<{
   } = useCurrentAppInfo();
   const collectionData = useRef();
   const categoryData = useContext(CollectionCategroriesContext);
-  collectionData.current = { ...item, title, inherits: item.inherits && new Proxy(item.inherits, {}) };
+  collectionData.current = { ...item.getOptions(), title, inherits: item.inherits && new Proxy(item.inherits, {}) };
   const { category = [] } = item;
   const compile = useCompile();
   const loadCollections = async (field: any) => {
@@ -451,7 +451,7 @@ const Entity: React.FC<{
                         'x-visible': '{{actived}}',
                         'x-component': 'ConnectParentAction',
                         'x-component-props': {
-                          // item: collectionData.current,
+                          item: collectionData.current,
                           targetGraph,
                         },
                       },
@@ -459,7 +459,7 @@ const Entity: React.FC<{
                         type: 'void',
                         'x-component': 'ConnectChildAction',
                         'x-component-props': {
-                          // item: collectionData.current,
+                          item: collectionData.current,
                           targetGraph,
                         },
                         'x-visible': '{{actived}}',
@@ -470,7 +470,7 @@ const Entity: React.FC<{
                         'x-component': 'EditCollectionAction',
                         'x-component-props': {
                           type: 'primary',
-                          // item: collectionData.current,
+                          item: collectionData.current,
                           className: 'btn-edit-in-head',
                         },
                       },
@@ -481,7 +481,7 @@ const Entity: React.FC<{
                         'x-component-props': {
                           className: 'btn-del',
                           getContainer: getPopupContainer,
-                          // item: collectionData.current,
+                          item: collectionData.current,
                           useAction: () => {
                             return useDestroyActionAndRefreshCM({ name, id });
                           },
@@ -495,7 +495,7 @@ const Entity: React.FC<{
           </SchemaComponentProvider>
         </div>
       </div>
-      {/* <PortsCom {...portsProps} /> */}
+      <PortsCom {...portsProps} />
     </div>
   );
 };
