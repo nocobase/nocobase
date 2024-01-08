@@ -31,6 +31,11 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
   protected _changedWithAssociations = new Set();
   protected _previousDataValuesWithAssociations = {};
 
+  public get db(): Database {
+    // @ts-ignore
+    return this.constructor.database;
+  }
+
   static async sync(options) {
     if (this.collection.isView()) {
       return;
