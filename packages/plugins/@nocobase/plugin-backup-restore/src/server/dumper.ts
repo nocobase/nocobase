@@ -317,7 +317,7 @@ export class Dumper extends AppMigrator {
     const metaObj = {
       version: await this.app.version.get(),
       dialect: this.app.db.sequelize.getDialect(),
-      DB_UNDERSCORED: process.env.DB_UNDERSCORED === 'true' ? true : false,
+      DB_UNDERSCORED: process.env.DB_UNDERSCORED,
       DB_TABLE_PREFIX: process.env.DB_TABLE_PREFIX,
       DB_SCHEMA: process.env.DB_SCHEMA,
       COLLECTION_MANAGER_SCHEMA: process.env.COLLECTION_MANAGER_SCHEMA,
