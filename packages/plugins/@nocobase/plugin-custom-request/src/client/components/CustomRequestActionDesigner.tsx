@@ -6,10 +6,9 @@ import {
   SchemaSettingsActionModalItem,
   actionSettingsItems,
   useCollection,
-  useCompile,
   useRequest,
 } from '@nocobase/client';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { CustomRequestACLSchema, CustomRequestConfigurationFieldsSchema } from '../schemas';
 import { useCustomRequestVariableOptions, useGetCustomRequest } from '../hooks';
 import { App } from 'antd';
@@ -32,6 +31,7 @@ function CustomRequestSettingsItem() {
         components={{
           ArrayItems,
         }}
+        beforeOpen={() => !data && refresh()}
         scope={{ useCustomRequestVariableOptions }}
         schema={CustomRequestConfigurationFieldsSchema}
         initialValues={{
@@ -81,6 +81,7 @@ function CustomRequestACL() {
         initialValues={{
           roles: data?.data?.roles,
         }}
+        beforeOpen={() => !data && refresh()}
         onSubmit={async ({ roles }) => {
           await customRequestsResource.updateOrCreate({
             values: {
