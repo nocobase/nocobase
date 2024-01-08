@@ -72,10 +72,11 @@ test('Collection event add data trigger, Math engine, determine trigger node int
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await page.getByLabel('textbox').focus();
+  await conditionNode.conditionExpressionEditBox.click({ clickCount: 3 });
+  await page.keyboard.press('ArrowRight');
   const conditionalRightConstant = faker.number.int();
   await page.keyboard.type(`==${conditionalRightConstant}`);
-  await expect(page.getByLabel('textbox')).toHaveText(
+  await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}==${conditionalRightConstant}`,
   );
   await conditionNode.submitButton.click();
@@ -156,10 +157,11 @@ test('Collection event Add Data Trigger, Math engine, determines that the trigge
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await page.getByLabel('textbox').focus();
+  await conditionNode.conditionExpressionEditBox.click({ clickCount: 3 });
+  await page.keyboard.press('ArrowRight');
   const conditionalRightConstant = faker.number.int();
   await page.keyboard.type(`==${conditionalRightConstant}`);
-  await expect(page.getByLabel('textbox')).toHaveText(
+  await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}==${conditionalRightConstant}`,
   );
   await conditionNode.submitButton.click();
@@ -239,10 +241,11 @@ test('Collection event Add Data Trigger, Math engine, determines that the trigge
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await page.getByLabel('textbox').focus();
+  await conditionNode.conditionExpressionEditBox.click({ clickCount: 3 });
+  await page.keyboard.press('ArrowRight');
   const conditionalRightConstant = faker.number.int();
   await page.keyboard.type(`!=${conditionalRightConstant}`);
-  await expect(page.getByLabel('textbox')).toHaveText(
+  await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!=${conditionalRightConstant}`,
   );
   await conditionNode.submitButton.click();
@@ -322,10 +325,11 @@ test('Collection event add data trigger, Math engine, determines that the trigge
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await page.getByLabel('textbox').focus();
+  await conditionNode.conditionExpressionEditBox.click({ clickCount: 3 });
+  await page.keyboard.press('ArrowRight');
   const conditionalRightConstant = faker.number.int();
   await page.keyboard.type(`!=${conditionalRightConstant}`);
-  await expect(page.getByLabel('textbox')).toHaveText(
+  await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!=${conditionalRightConstant}`,
   );
   await conditionNode.submitButton.click();

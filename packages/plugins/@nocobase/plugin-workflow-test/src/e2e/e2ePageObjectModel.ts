@@ -454,6 +454,7 @@ export class ConditionYesNode {
   basicRadio: Locator;
   mathRadio: Locator;
   formulaRadio: Locator;
+  conditionExpressionEditBox: Locator;
   submitButton: Locator;
   cancelButton: Locator;
   addNodeButton: Locator;
@@ -464,6 +465,9 @@ export class ConditionYesNode {
     this.nodeConfigure = page
       .getByLabel(`Condition-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
+    this.conditionExpressionEditBox = page
+      .getByLabel('block-item-WorkflowVariableRawTextArea-workflows-Condition')
+      .getByLabel('textbox');
     // await page.getByLabel('variable-constant').first().click();
     // await page.getByLabel('variable-button').first().click();
     // await page.getByLabel('select-operator-calc').first().click();
@@ -487,6 +491,7 @@ export class ConditionBranchNode {
   basicRadio: Locator;
   mathRadio: Locator;
   formulaRadio: Locator;
+  conditionExpressionEditBox: Locator;
   submitButton: Locator;
   cancelButton: Locator;
   addNoBranchNode: Locator;
@@ -499,6 +504,9 @@ export class ConditionBranchNode {
     this.nodeConfigure = page
       .getByLabel(`Condition-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
+    this.conditionExpressionEditBox = page
+      .getByLabel('block-item-WorkflowVariableRawTextArea-workflows-Condition')
+      .getByLabel('textbox');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = page.getByLabel(`add-button-condition-${nodeName}`, { exact: true });
