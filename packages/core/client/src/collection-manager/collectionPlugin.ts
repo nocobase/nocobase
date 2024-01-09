@@ -41,6 +41,7 @@ import { InheritanceCollectionMixin } from './mixins/InheritanceCollectionMixin'
 // import { general, expression, sql, tree, view } from './templates';
 import { interfaces } from './Configuration/interfaces';
 import { collectionTemplates } from './Configuration/templates';
+import { collection } from './Configuration/schemas/collections';
 
 export class CollectionPlugin extends Plugin {
   async load() {
@@ -114,6 +115,6 @@ export class CollectionPlugin extends Plugin {
       },
     });
 
-    return service?.data?.data || [];
+    return [...(service?.data?.data || []), collection];
   }
 }

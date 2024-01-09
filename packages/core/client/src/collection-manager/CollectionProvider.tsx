@@ -20,17 +20,18 @@ export const CollectionProvider: FC<{
   const collectionName = getCollectionName(name || collection);
   const cm = useCollectionManagerV2();
   const hasCollection = cm.getCollection(collectionName);
-  if (hasCollection || allowNull)
+  if (hasCollection || (allowNull && !collection))
     return (
       <CollectionProviderV2 allowNull={allowNull} name={collectionName}>
         {children}
       </CollectionProviderV2>
     );
-  if (typeof collection === 'object')
+  if (typeof collection === 'object') {
     return (
       <CollectionManagerProvider collections={[collection]}>
         <CollectionProviderV2 name={collection.name}>{children}</CollectionProviderV2>
       </CollectionManagerProvider>
     );
+  }
   return <DeletedPlaceholder type="Collection" name={name} />;
 };
