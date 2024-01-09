@@ -11071,6 +11071,329 @@ export const oneTableBlockWithAddNewAndViewAndEditAndAssociationFields: PageConf
 };
 
 /**
+ * 页面中有一个 filter form 区块，包含所有关系字段类型的字段
+ */
+export const oneFilterFormBlockWithAllAssociationFields: PageConfig = {
+  collections: generalWithAssociation,
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      wwjstoiggum: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'BlockInitializers',
+        properties: {
+          oogm3hoka7c: {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            properties: {
+              '5zbwfzh1742': {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                properties: {
+                  pwm2ca6igf0: {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-decorator': 'FilterFormBlockProvider',
+                    'x-decorator-props': {
+                      resource: 'general',
+                      collection: 'general',
+                    },
+                    'x-designer': 'FormV2.FilterDesigner',
+                    'x-component': 'CardItem',
+                    'x-filter-targets': [],
+                    'x-filter-operators': {},
+                    properties: {
+                      j2u0whpedfr: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-component': 'FormV2',
+                        'x-component-props': {
+                          useProps: '{{ useFormBlockProps }}',
+                        },
+                        properties: {
+                          grid: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-component': 'Grid',
+                            'x-initializer': 'FilterFormItemInitializers',
+                            properties: {
+                              y5gw4zxp20e: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-component': 'Grid.Row',
+                                properties: {
+                                  yflpc1gga26: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Grid.Col',
+                                    properties: {
+                                      oneToOneBelongsTo: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'string',
+                                        required: false,
+                                        'x-designer': 'FormItem.FilterFormDesigner',
+                                        'x-component': 'CollectionField',
+                                        'x-decorator': 'FormItem',
+                                        'x-collection-field': 'general.oneToOneBelongsTo',
+                                        'x-component-props': {
+                                          multiple: false,
+                                          fieldNames: {
+                                            label: 'id',
+                                            value: 'id',
+                                          },
+                                        },
+                                        'x-uid': '36aeb1yw2yy',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': '4hc93v9beuk',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': 'u7avxnfj90q',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                              t2podb2p9ts: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-component': 'Grid.Row',
+                                properties: {
+                                  udslfw0t5vy: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Grid.Col',
+                                    properties: {
+                                      oneToOneHasOne: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'string',
+                                        required: false,
+                                        'x-designer': 'FormItem.FilterFormDesigner',
+                                        'x-component': 'CollectionField',
+                                        'x-decorator': 'FormItem',
+                                        'x-collection-field': 'general.oneToOneHasOne',
+                                        'x-component-props': {
+                                          multiple: false,
+                                          fieldNames: {
+                                            label: 'id',
+                                            value: 'id',
+                                          },
+                                        },
+                                        'x-uid': '945t8dkn7ab',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'alfh40hld9g',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': 'p0lrhxcpc30',
+                                'x-async': false,
+                                'x-index': 2,
+                              },
+                              zzfk0g3yfjw: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-component': 'Grid.Row',
+                                properties: {
+                                  f2dxs9mqnhu: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Grid.Col',
+                                    properties: {
+                                      oneToMany: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'string',
+                                        required: false,
+                                        'x-designer': 'FormItem.FilterFormDesigner',
+                                        'x-component': 'CollectionField',
+                                        'x-decorator': 'FormItem',
+                                        'x-collection-field': 'general.oneToMany',
+                                        'x-component-props': {
+                                          multiple: true,
+                                          fieldNames: {
+                                            label: 'id',
+                                            value: 'id',
+                                          },
+                                        },
+                                        'x-uid': '8j8w5rtdhux',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'zvua8m975ql',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': 'bo6emdzi0ug',
+                                'x-async': false,
+                                'x-index': 3,
+                              },
+                              '0klgdlg66ay': {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-component': 'Grid.Row',
+                                properties: {
+                                  '12wu3wvgdhp': {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Grid.Col',
+                                    properties: {
+                                      manyToOne: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'string',
+                                        required: false,
+                                        'x-designer': 'FormItem.FilterFormDesigner',
+                                        'x-component': 'CollectionField',
+                                        'x-decorator': 'FormItem',
+                                        'x-collection-field': 'general.manyToOne',
+                                        'x-component-props': {
+                                          multiple: false,
+                                          fieldNames: {
+                                            label: 'id',
+                                            value: 'id',
+                                          },
+                                        },
+                                        'x-uid': 'wcsgutero19',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': '0zebcqxbskn',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': 'bc7dwbg9thk',
+                                'x-async': false,
+                                'x-index': 4,
+                              },
+                              b7cs1das1cq: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-component': 'Grid.Row',
+                                properties: {
+                                  fza3rz9m06z: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Grid.Col',
+                                    properties: {
+                                      manyToMany: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'string',
+                                        required: false,
+                                        'x-designer': 'FormItem.FilterFormDesigner',
+                                        'x-component': 'CollectionField',
+                                        'x-decorator': 'FormItem',
+                                        'x-collection-field': 'general.manyToMany',
+                                        'x-component-props': {
+                                          multiple: true,
+                                          fieldNames: {
+                                            label: 'id',
+                                            value: 'id',
+                                          },
+                                        },
+                                        'x-uid': 'a04jfxgru7s',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'z0hmplugqhq',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': 'kmdbr7xi8xt',
+                                'x-async': false,
+                                'x-index': 5,
+                              },
+                            },
+                            'x-uid': 'qiaicku011z',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                          actions: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-initializer': 'FilterFormActionInitializers',
+                            'x-component': 'ActionBar',
+                            'x-component-props': {
+                              layout: 'one-column',
+                              style: {
+                                float: 'right',
+                              },
+                            },
+                            'x-uid': '1d1t3jlg0sq',
+                            'x-async': false,
+                            'x-index': 2,
+                          },
+                        },
+                        'x-uid': 'sesnb8danbq',
+                        'x-async': false,
+                        'x-index': 1,
+                      },
+                    },
+                    'x-uid': '652vjaqp29u',
+                    'x-async': false,
+                    'x-index': 1,
+                  },
+                },
+                'x-uid': 'crpdy0e3icr',
+                'x-async': false,
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'rzvgkigetmc',
+            'x-async': false,
+            'x-index': 1,
+          },
+        },
+        'x-uid': '9gdo96vyjl8',
+        'x-async': false,
+        'x-index': 1,
+      },
+    },
+    'x-uid': '19vrqfukj5j',
+    'x-async': true,
+    'x-index': 1,
+  },
+};
+
+/**
  * 1. 一个 Table 区块
  * 2. 点击 Add new 有一个 Form 区块
  * 3. 点击 View 有一个 Details 区块

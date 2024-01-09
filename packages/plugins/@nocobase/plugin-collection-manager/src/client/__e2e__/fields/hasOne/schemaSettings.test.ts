@@ -2,6 +2,7 @@ import {
   Page,
   expect,
   expectSettingsMenu,
+  oneFilterFormBlockWithAllAssociationFields,
   oneTableBlockWithAddNewAndViewAndEditAndAssociationFields,
   test,
 } from '@nocobase/test/e2e';
@@ -515,6 +516,29 @@ test.describe('form item & view form', () => {
     })(page, 'oneToOneHasOne');
 
     await expect(page.getByRole('menuitem', { name: 'Enable link' }).getByRole('switch')).toBeChecked();
+  });
+});
+
+test.describe('form item & filter form', () => {
+  test('supported options', async ({ page, mockPage }) => {
+    const nocoPage = await mockPage(oneFilterFormBlockWithAllAssociationFields).waitForInit();
+    await nocoPage.goto();
+
+    await expectSettingsMenu({
+      page,
+      showMenu: async () => {
+        await page.getByLabel('block-item-CollectionField-general-filter-form-general.oneToOneHasOne-').hover();
+        await page.getByRole('button', { name: 'designer-schema-settings-CollectionField' }).hover();
+      },
+      supportedOptions: [
+        'Edit field title',
+        'Edit description',
+        'Set the data scope',
+        'Field component',
+        'Title field',
+        'Delete',
+      ],
+    });
   });
 });
 
