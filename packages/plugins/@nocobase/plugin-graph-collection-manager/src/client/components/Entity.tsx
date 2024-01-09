@@ -128,16 +128,16 @@ const OperationButton: any = React.memo((props: any) => {
                 delete: {
                   type: 'void',
                   'x-action': 'destroy',
-                  'x-component': 'Action',
+                  'x-component': 'Action.Link',
                   'x-visible': '{{isInheritField}}',
                   'x-component-props': {
                     component: DeleteOutlined,
                     icon: 'DeleteOutlined',
                     className: 'btn-del',
                     confirm: {
-                      title: "{{t('Delete record')}}",
                       getContainer: getPopupContainer,
-                      collectionConten: "{{t('Are you sure you want to delete it?')}}",
+                      title: "{{t('Delete record')}}",
+                      content: "{{t('Are you sure you want to delete it?')}}",
                     },
                     useAction: () =>
                       useDestroyFieldActionAndRefreshCM({
