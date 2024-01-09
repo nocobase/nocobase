@@ -962,11 +962,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
             group: 'required',
           });
         } catch (e) {
-          if (e.message.includes('does not exist')) {
-            return;
-          } else {
-            throw e;
-          }
+          this.app.logger.error(e);
+          return;
         }
         return;
       },
