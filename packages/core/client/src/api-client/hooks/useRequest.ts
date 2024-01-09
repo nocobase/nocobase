@@ -15,6 +15,7 @@ export type ResourceActionOptions<P = any> = {
   resourceOf?: any;
   action?: string;
   params?: P;
+  url?: string;
 };
 
 export function useRequest<P>(
@@ -31,9 +32,9 @@ export function useRequest<P>(
     tempService = service;
   } else if (service) {
     tempService = async (params = {}) => {
-      const { resource } = service as ResourceActionOptions;
+      const { resource, url } = service as ResourceActionOptions;
       let args = cloneDeep(service);
-      if (resource) {
+      if (resource || url) {
         args.params = args.params || {};
         assign(args.params, params);
       } else {
