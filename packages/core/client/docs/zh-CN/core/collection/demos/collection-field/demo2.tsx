@@ -4,11 +4,10 @@ import {
   CollectionProviderV2,
   Form,
   FormItem,
+  InheritanceCollectionMixin,
   Input,
   SchemaComponent,
   SchemaSettings,
-  useCollectionFieldV2,
-  useDesignable,
 } from '@nocobase/client';
 import React from 'react';
 
@@ -81,6 +80,7 @@ const app = new Application({
   components: { Form, Input, FormItem },
   collectionManager: {
     collections: [collection],
+    collectionMixins: [InheritanceCollectionMixin],
   },
   schemaSettings: [formSettings],
   designable: true,

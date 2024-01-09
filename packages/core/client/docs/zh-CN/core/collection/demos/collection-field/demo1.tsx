@@ -6,6 +6,7 @@ import {
   Form,
   SchemaComponent,
   FormItem,
+  InheritanceCollectionMixin,
   Input,
   SchemaComponentOptions,
 } from '@nocobase/client';
@@ -128,6 +129,7 @@ const app = new Application({
   components: { Action, Form, Input, FormItem },
   collectionManager: {
     collections: [collection],
+    collectionMixins: [InheritanceCollectionMixin],
   },
 });
 
