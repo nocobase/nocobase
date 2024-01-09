@@ -1,6 +1,7 @@
 import net from 'net';
 import fs from 'fs';
 import path from 'path';
+import xpipe from 'xpipe';
 import { AppSupervisor } from '../app-supervisor';
 import { writeJSON } from './ipc-socket-client';
 import { randomUUID } from 'crypto';
@@ -64,7 +65,7 @@ export class IPCSocketServer {
       });
     });
 
-    socketServer.listen(socketPath, () => {
+    socketServer.listen(xpipe.eq(socketPath), () => {
       console.log(`Gateway IPC Server running at ${socketPath}`);
     });
 

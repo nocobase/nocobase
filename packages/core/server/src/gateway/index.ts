@@ -13,7 +13,6 @@ import { resolve } from 'path';
 import qs from 'qs';
 import handler from 'serve-handler';
 import { parse } from 'url';
-import xpipe from 'xpipe';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions } from '../application';
 import { getPackageDirByExposeUrl, getPackageNameByExposeUrl, PLUGIN_STATICS_PATH } from '../plugin-manager';
@@ -59,7 +58,7 @@ export class Gateway extends EventEmitter {
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
   private host = '0.0.0.0';
   private wsServer: WSServer;
-  private socketPath = xpipe.eq(resolve(process.cwd(), 'storage', 'gateway.sock'));
+  private socketPath = resolve(process.cwd(), 'storage', 'gateway.sock');
 
   loggers = new Registry<SystemLogger>();
 
@@ -67,7 +66,7 @@ export class Gateway extends EventEmitter {
     super();
     this.reset();
     if (process.env.SOCKET_PATH) {
-      this.socketPath = xpipe.eq(resolve(process.cwd(), process.env.SOCKET_PATH));
+      this.socketPath = resolve(process.cwd(), process.env.SOCKET_PATH);
     }
   }
 
