@@ -969,6 +969,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
       condition: (options) => {
         return options.sql;
       },
+
+      async onDump(dumper, collection: Collection) {
+        return;
+      },
     });
   }
 }
