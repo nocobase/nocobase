@@ -420,7 +420,7 @@ describe('dumper', () => {
   it('should dump with view that not exists', async () => {
     await db.getRepository('collections').create({
       values: {
-        name: 'view-that-not-exists',
+        name: 'view_not_exists',
         view: true,
         schema: db.inDialect('postgres') ? 'public' : undefined,
         fields: [
