@@ -1,8 +1,17 @@
-import { SchemaSettings } from '../../../application/schema-settings';
-import { useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { SchemaSettings } from '../../../application/schema-settings';
+import { useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useRecord } from '../../../record-provider';
+import { SchemaSettingsDataScope, VariableInput, getShouldChange } from '../../../schema-settings';
+import { useLocalVariables, useVariables } from '../../../variables';
+import { useDesignable } from '../../hooks';
+import { removeNullCondition } from '../filter';
+import { DynamicComponentProps } from '../filter/DynamicComponent';
+import { useIsFormReadPretty, useIsSelectFieldMode } from './FormItem.Settings';
 import {
   EditComponent,
   EditDescription,
@@ -31,6 +40,60 @@ export const filterFormItemSettings = new SchemaSettings({
     {
       name: 'validationRules',
       Component: EditValidationRules,
+    },
+    {
+      name: 'setDataScope',
+      Component: SchemaSettingsDataScope,
+      useVisible() {
+        const isSelectFieldMode = useIsSelectFieldMode();
+        const isFormReadPretty = useIsFormReadPretty();
+        return isSelectFieldMode && !isFormReadPretty;
+      },
+      useComponentProps() {
+        const { getCollectionJoinField, getAllCollectionsInheritChain } = useCollectionManager();
+        const { getField } = useCollection();
+        const { form } = useFormBlockContext();
+        const record = useRecord();
+        const field = useField();
+        const fieldSchema = useFieldSchema();
+        const collectionField =
+          getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+        const variables = useVariables();
+        const localVariables = useLocalVariables();
+        const { dn } = useDesignable();
+        return {
+          collectionName: collectionField?.target,
+          defaultFilter: fieldSchema?.['x-component-props']?.service?.params?.filter || {},
+          form,
+          dynamicComponent: (props: DynamicComponentProps) => {
+            return (
+              <VariableInput
+                {...props}
+                form={form}
+                collectionField={props.collectionField}
+                record={record}
+                shouldChange={getShouldChange({
+                  collectionField: props.collectionField,
+                  variables,
+                  localVariables,
+                  getAllCollectionsInheritChain,
+                })}
+              />
+            );
+          },
+          onSubmit: ({ filter }) => {
+            filter = removeNullCondition(filter);
+            _.set(field.componentProps, 'service.params.filter', filter);
+            fieldSchema['x-component-props'] = field.componentProps;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-component-props': field.componentProps,
+              },
+            });
+          },
+        };
+      },
     },
     {
       name: 'fieldMode',
