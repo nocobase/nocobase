@@ -28,6 +28,7 @@ export const datetime: IField = {
     'uiSchema.x-component-props.gmt': {
       type: 'boolean',
       title: '{{t("GMT")}}',
+      'x-hidden': true,
       'x-component': 'Checkbox',
       'x-content': '{{t("Use the same time zone (GMT) for all users")}}',
       'x-decorator': 'FormItem',
