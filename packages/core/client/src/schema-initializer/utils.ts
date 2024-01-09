@@ -1446,7 +1446,8 @@ export const createCollapseBlockSchema = (options) => {
       },
       name: 'filter-collapse',
     },
-    'x-designer': 'AssociationFilter.BlockDesigner',
+    'x-toolbar': 'BlockSchemaToolbar',
+    'x-settings': 'filterCollapseBlockSettings',
     'x-component': 'CardItem',
     'x-filter-targets': [],
     properties: {
