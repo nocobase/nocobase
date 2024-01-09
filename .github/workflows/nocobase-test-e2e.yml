@@ -55,7 +55,10 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
-
+      - name: yarn nocobase clean
+        run: yarn nocobase clean
+        env:
+          APP_ENV: development
       - run: yarn install
       - name: yarn build
         run: yarn build
