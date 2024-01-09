@@ -11,7 +11,7 @@ export * from './CollectionManagerSchemaComponentProvider';
 export * from './CollectionManagerShortcut';
 export * from './CollectionProvider';
 export * from './Configuration';
-export { registerField, registerGroup, registerGroupLabel, getOptions } from './Configuration/interfaces';
+export { registerField, registerGroup, registerGroupLabel, useFieldInterfaceOptions } from './Configuration/interfaces';
 export * from './context';
 export * from './hooks';
 export * as interfacesProperties from './interfaces/properties';

@@ -15,7 +15,7 @@ import { useCollectionManager } from '../hooks';
 import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
 import * as components from './components';
-import { getOptions } from './interfaces';
+import { useFieldInterfaceOptions } from './interfaces';
 
 const getSchema = (schema: IField, record: any, compile) => {
   if (!schema) {
@@ -185,6 +185,7 @@ export const AddFieldAction = (props) => {
   const compile = useCompile();
   const { t } = useTranslation();
   const { isDialect } = useDialect();
+  const options = useFieldInterfaceOptions();
 
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
@@ -198,7 +199,7 @@ export const AddFieldAction = (props) => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
     const { exclude, include } = (availableFieldInterfaces || {}) as any;
     const optionArr = [];
-    getOptions(interfaces).forEach((v) => {
+    options.forEach((v) => {
       if (v.key === 'systemInfo') {
         optionArr.push({
           ...v,

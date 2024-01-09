@@ -27,7 +27,7 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
         app,
       );
     return ctx.inherit({
-      collections,
+      collections: collections as any,
       collectionFieldInterfaces: interfaces,
       collectionTemplates: templates,
       reloadCallback,

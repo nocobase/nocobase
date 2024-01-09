@@ -10,9 +10,9 @@ import { useRequest } from '../../api-client';
 import { RecordProvider } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCollectionManager } from '../hooks';
-import { useOptions } from '../hooks/useOptions';
 import { IField } from '../interfaces/types';
 import * as components from './components';
+import { useFieldInterfaceOptions } from './interfaces';
 
 const getSchema = (schema: IField): ISchema => {
   if (!schema) {
@@ -99,7 +99,7 @@ export const AddSubFieldAction = () => {
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
   const compile = useCompile();
-  const options = useOptions();
+  const options = useFieldInterfaceOptions();
   const { t } = useTranslation();
   const items = useMemo(() => {
     return options.map((option) => {

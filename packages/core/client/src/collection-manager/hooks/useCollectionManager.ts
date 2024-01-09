@@ -10,7 +10,7 @@ import { uid } from '@formily/shared';
 export const useCollectionManager = () => {
   const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
   const [random, setRandom] = useState(uid());
-  const interfaces = useMemo(() => cm?.getCollectionFieldInterfaceGroups(), [cm, random]);
+  const interfaces = useMemo(() => cm?.getCollectionFieldInterfaces(), [cm, random]);
   const templates = useMemo(() => cm?.getCollectionTemplates(), [cm, random]);
   const collections = useMemo(
     () =>

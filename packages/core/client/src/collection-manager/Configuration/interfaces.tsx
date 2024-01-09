@@ -1,6 +1,8 @@
 import { ISchema } from '@formily/react';
 import set from 'lodash/set';
 import * as types from '../interfaces';
+import { CollectionFieldInterfaceV2, useCollectionManagerV2 } from '../../application';
+import { useMemo } from 'react';
 
 export const interfaces = new Map<string, ISchema>();
 
@@ -46,7 +48,7 @@ registerGroup('advanced', '{{t("Advanced type")}}');
 registerGroup('systemInfo', '{{t("System info")}}');
 registerGroup('others', '{{t("Others")}}');
 
-export const getOptions = (collectionFieldInterfaces) => {
+export const getOptions = (collectionFieldInterfaces: Record<string, CollectionFieldInterfaceV2[]>) => {
   return Object.keys(groups)
     .map((groupName) => {
       const group = groups[groupName];
@@ -67,4 +69,12 @@ export const getOptions = (collectionFieldInterfaces) => {
       };
     })
     .sort((a, b) => a.order - b.order);
+};
+
+export const useFieldInterfaceOptions = () => {
+  const cm = useCollectionManagerV2();
+
+  return useMemo(() => {
+    return getOptions(cm.getCollectionFieldInterfaceGroups());
+  }, [cm]);
 };

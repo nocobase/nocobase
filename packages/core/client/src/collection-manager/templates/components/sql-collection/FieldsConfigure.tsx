@@ -4,7 +4,7 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Cascader, Input, Select, Spin, Table, Tag } from 'antd';
 import { observer, useField, useForm } from '@formily/react';
 import { ArrayField } from '@formily/core';
-import { getOptions } from '../../../Configuration/interfaces';
+import { useFieldInterfaceOptions } from '../../../Configuration/interfaces';
 import { useCompile } from '../../../../schema-component';
 import { useCollectionManager } from '../../../hooks';
 import dayjs from 'dayjs';
@@ -81,11 +81,12 @@ export const FieldsConfigure = observer(() => {
   const field: ArrayField = useField();
   const { data: curFields } = useContext(ResourceActionContext);
   const compile = useCompile();
-  const { getInterface, getCollectionField, interfaces } = useCollectionManager();
+  const { getInterface, getCollectionField } = useCollectionManager();
+  const options = useFieldInterfaceOptions();
 
   const interfaceOptions = useMemo(
     () =>
-      getOptions(interfaces)
+      options
         .filter((v) => !['relation'].includes(v.key))
         .map((options, index) => ({
           ...options,

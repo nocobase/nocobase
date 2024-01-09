@@ -5,7 +5,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResourceActionContext, useCompile } from '../../../';
 import { useAPIClient } from '../../../api-client';
-import { getOptions } from '../../Configuration/interfaces';
+import { useFieldInterfaceOptions } from '../../Configuration/interfaces';
 import { useCollectionManager } from '../../hooks/useCollectionManager';
 
 const getInterfaceOptions = (data, type) => {
@@ -31,16 +31,11 @@ const PreviewCom = (props) => {
   const [sourceCollections, setSourceCollections] = useState(sources);
   const field: any = useField();
   const form = useForm();
-  const {
-    interfaces,
-    getCollection,
-    getInterface,
-    getCollectionFields,
-    getInheritCollections,
-    getParentCollectionFields,
-  } = useCollectionManager();
+  const { getCollection, getInterface, getCollectionFields, getInheritCollections, getParentCollectionFields } =
+    useCollectionManager();
   const compile = useCompile();
-  const initOptions = getOptions(interfaces).filter((v) => !['relation', 'systemInfo'].includes(v.key));
+  const options = useFieldInterfaceOptions();
+  const initOptions = options.filter((v) => !['relation', 'systemInfo'].includes(v.key));
   useEffect(() => {
     const data = [];
     sourceCollections.forEach((item) => {

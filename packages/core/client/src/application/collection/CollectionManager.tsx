@@ -289,7 +289,7 @@ export class CollectionManagerV2<Mixins = {}> {
     Object.assign(this.collectionFieldInterfaceInstances, newCollectionFieldInterfaces);
   }
   getCollectionFieldInterfaces() {
-    return Object.values(this.collectionFieldInterfaceInstances);
+    return this.collectionFieldInterfaceInstances;
   }
   getCollectionFieldInterfaceGroups(): Record<string, CollectionFieldInterfaceV2[]> {
     return Object.values(this.collectionFieldInterfaceInstances).reduce<Record<string, CollectionFieldInterfaceV2[]>>(
