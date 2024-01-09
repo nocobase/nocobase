@@ -16,7 +16,6 @@ import {
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useOperatorList } from '../filter/useOperators';
 import { isFileCollection } from './FormItem';
-
 export const findFilterOperators = (schema: Schema) => {
   while (schema) {
     if (schema['x-filter-operators']) {
