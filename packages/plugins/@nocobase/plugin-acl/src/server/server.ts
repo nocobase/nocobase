@@ -1,5 +1,6 @@
 import { NoPermissionError } from '@nocobase/acl';
 import { Context, utils as actionUtils } from '@nocobase/actions';
+import { Cache } from '@nocobase/cache';
 import { Collection, RelationField, snakeCase } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
@@ -13,7 +14,6 @@ import { setCurrentRole } from './middlewares/setCurrentRole';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
-import { Cache } from '@nocobase/cache';
 
 export interface AssociationFieldAction {
   associationActions: string[];
@@ -368,7 +368,7 @@ export class PluginACL extends Plugin {
 
     // sync database role data to acl
     this.app.on('afterLoad', writeRolesToACL);
-    this.app.on('afterInstall', writeRolesToACL);
+    // this.app.on('afterInstall', writeRolesToACL);
 
     this.app.on('afterInstallPlugin', async (plugin) => {
       if (plugin.getName() !== 'users') {
@@ -891,10 +891,11 @@ export class PluginACL extends Plugin {
 
   async load() {
     await this.importCollections(resolve(__dirname, 'collections'));
+
     this.db.extendCollection({
       name: 'rolesUischemas',
-      namespace: 'acl.acl',
-      duplicator: 'required',
+      dumpRules: 'required',
+      origin: this.options.packageName,
     });
   }
 }

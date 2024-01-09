@@ -8,8 +8,9 @@ NocoBase 正处在早期开发阶段，可能变动频繁，请谨慎用于生�
 
 ## 最近重要更新
 
-- [v0.18：建立健全的测试体系](https://blog-cn.nocobase.com/posts/release-v018/)
-- [v0.17：全新的 SchemaInitializer 和 SchemaSettings](https://blog-cn.nocobase.com/posts/release-v017/)
+- [v0.19：应用流程优化 - 2024/01/08](https://blog-cn.nocobase.com/posts/release-v019/)
+- [v0.18：建立健全的测试体系 - 2023/12/21](https://blog-cn.nocobase.com/posts/release-v018/)
+- [v0.17：全新的 SchemaInitializer 和 SchemaSettings - 2023/12/11](https://blog-cn.nocobase.com/posts/release-v017/)
 - [v0.16：全新的缓存模块 - 2023/11/20](https://blog-cn.nocobase.com/posts/release-v016/)
 - [v0.15：全新的插件设置中心 - 2023/11/13](https://blog-cn.nocobase.com/posts/release-v015/)
 - [v0.14：全新的插件管理器，支持通过界面添加插件 - 2023/09/11](https://blog-cn.nocobase.com/posts/release-v014/)

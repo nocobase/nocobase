@@ -3,6 +3,7 @@ import { Migration } from '@nocobase/server';
 import { FieldModel } from '../models';
 
 export default class extends Migration {
+  appVersion = '<0.10.0-alpha.3';
   async up() {
     const transaction = await this.db.sequelize.transaction();
 

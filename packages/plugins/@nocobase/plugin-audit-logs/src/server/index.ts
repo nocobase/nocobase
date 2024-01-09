@@ -10,9 +10,7 @@ export default class PluginActionLogs extends Plugin {
   }
 
   async load() {
-    await this.db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, 'collections'));
 
     this.db.addMigrations({
       namespace: 'audit-logs',

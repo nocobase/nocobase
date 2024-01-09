@@ -1,10 +1,11 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
-  namespace: 'file-manager.attachmentRecords',
-  duplicator: 'optional',
+export default defineCollection({
+  dumpRules: {
+    group: 'user',
+  },
+  shared: true,
   name: 'attachments',
-  title: '文件管理器',
   createdBy: true,
   updatedBy: true,
   template: 'file',
@@ -62,4 +63,4 @@ export default {
       // formula: '{{ storage.baseUrl }}{{ path }}/{{ filename }}'
     },
   ],
-} as CollectionOptions;
+});

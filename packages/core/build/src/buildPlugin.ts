@@ -127,14 +127,22 @@ const pluginPrefix = (
 
 const target_dir = 'dist';
 
-export function deleteJsFiles(cwd: string, log: PkgLog) {
-  log('delete babel js files');
-  const jsFiles = fg.globSync(['**/*', '!**/*.d.ts', '!node_modules'], {
+export function deleteServerFiles(cwd: string, log: PkgLog) {
+  log('delete server files');
+  const files = fg.globSync(['*'], {
     cwd: path.join(cwd, target_dir),
     absolute: true,
+    deep: 1,
+    onlyFiles: true,
   });
-  jsFiles.forEach((item) => {
-    fs.unlinkSync(item);
+  const dirs = fg.globSync(['*', '!client', '!node_modules'], {
+    cwd: path.join(cwd, target_dir),
+    absolute: true,
+    deep: 1,
+    onlyDirectories: true,
+  });
+  [...files, ...dirs].forEach((item) => {
+    fs.removeSync(item);
   });
 }
 
@@ -254,6 +262,8 @@ export async function buildPluginServer(cwd: string, userConfig: UserConfig, sou
   if (otherExts.length) {
     log('%s will not be processed, only be copied to the dist directory.', chalk.yellow(otherExts.join(',')));
   }
+
+  deleteServerFiles(cwd, log);
 
   await tsupBuild(userConfig.modifyTsupConfig({
     entry: serverFiles,

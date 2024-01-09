@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "0.18.0-alpha.9",
+  "version": "0.19.0-alpha.3",
   "displayName": "File manager",
   "displayName.zh-CN": "文件管理器",
   "description": "Provides file storage services, and extended the file collection template and the attachment field",

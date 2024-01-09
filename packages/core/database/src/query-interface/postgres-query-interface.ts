@@ -2,10 +2,76 @@ import lodash from 'lodash';
 import { Collection } from '../collection';
 import sqlParser from '../sql-parser/postgres';
 import QueryInterface, { TableInfo } from './query-interface';
+import { Transaction } from 'sequelize';
 
 export default class PostgresQueryInterface extends QueryInterface {
   constructor(db) {
     super(db);
+  }
+
+  async setAutoIncrementVal(options: {
+    tableInfo: TableInfo;
+    columnName: string;
+    seqName?: string;
+    currentVal?: number;
+    transaction?: Transaction;
+  }): Promise<void> {
+    const { tableInfo, columnName, seqName, currentVal, transaction } = options;
+    if (!seqName) {
+      throw new Error('seqName is required to set auto increment val in postgres');
+    }
+
+    await this.db.sequelize.query(
+      `alter table ${this.db.utils.quoteTable({
+        tableName: tableInfo.tableName,
+        schema: tableInfo.schema,
+      })}
+            alter column "${columnName}" set default nextval('${seqName}')`,
+      {
+        transaction,
+      },
+    );
+
+    if (currentVal) {
+      await this.db.sequelize.query(`select setval('${seqName}', ${currentVal})`, {
+        transaction,
+      });
+    }
+  }
+
+  async getAutoIncrementInfo(options: {
+    tableInfo: TableInfo;
+    fieldName: string;
+  }): Promise<{ seqName?: string; currentVal: number }> {
+    const fieldName = options.fieldName || 'id';
+    const tableInfo = options.tableInfo;
+
+    const sequenceNameResult = await this.db.sequelize.query(
+      `SELECT column_default
+           FROM information_schema.columns
+           WHERE table_name = '${tableInfo.tableName}'
+             and table_schema = '${tableInfo.schema || 'public'}'
+             and "column_name" = '${fieldName}';`,
+    );
+
+    const columnDefault = sequenceNameResult[0][0]['column_default'];
+
+    const regex = new RegExp(/nextval\('(.*)'::regclass\)/);
+    const match = regex.exec(columnDefault);
+
+    const sequenceName = match[1];
+
+    const sequenceCurrentValResult = await this.db.sequelize.query(
+      `select last_value
+           from ${sequenceName}`,
+    );
+
+    const sequenceCurrentVal = parseInt(sequenceCurrentValResult[0][0]['last_value']);
+
+    return {
+      seqName: sequenceName,
+      currentVal: sequenceCurrentVal,
+    };
   }
 
   async collectionTableExists(collection: Collection, options?) {
