@@ -5,6 +5,27 @@ import { CollectionManagerV2, CollectionV2 } from '../application';
 type dumpable = 'required' | 'optional' | 'skip';
 type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
 
+type MetaDataType = 'meta';
+type ConfigDataType = 'config';
+type BusinessDataType = 'business';
+
+type DumpDataType = MetaDataType | ConfigDataType | BusinessDataType;
+type Dumpable = 'required' | 'optional' | 'skip';
+
+type BaseDuplicatorObject = {
+  with?: string[] | string;
+  delayRestore?: any;
+};
+
+type Duplicator =
+  | Dumpable
+  | ({
+      dumpable?: Dumpable;
+    } & BaseDuplicatorObject)
+  | ({
+      dataType?: DumpDataType;
+    } & BaseDuplicatorObject);
+
 export interface CollectionOptions {
   name: string;
   title?: string;
@@ -17,14 +38,7 @@ export interface CollectionOptions {
    * @prop {string[] | string} [with] - Collections dumped with this collection
    * @prop {any} [delayRestore] - A function to execute after all collections are restored
    */
-  duplicator?:
-    | dumpable
-    | {
-        dumpable: dumpable;
-        with?: string[] | string;
-        delayRestore?: any;
-      };
-
+  duplicator?: Duplicator;
   tableName?: string;
   inherits?: string[] | string;
   viewName?: string;

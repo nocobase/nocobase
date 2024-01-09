@@ -45,9 +45,7 @@ export class ShopPlugin extends Plugin {
   }
 
   async load() {
-    await this.db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, 'collections'));
 
     this.db.on('orders.afterCreate', async (order, options) => {
       const product = await order.getProduct({

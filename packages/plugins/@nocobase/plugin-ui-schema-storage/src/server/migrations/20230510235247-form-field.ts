@@ -4,6 +4,7 @@ import { uid } from '@nocobase/utils';
 import UiSchemaRepository from '../repository';
 
 export default class extends Migration {
+  appVersion = '<0.9.3-alpha.1';
   async up() {
     const result = await this.app.version.satisfies('<0.9.2-alpha.5');
     if (!result) {

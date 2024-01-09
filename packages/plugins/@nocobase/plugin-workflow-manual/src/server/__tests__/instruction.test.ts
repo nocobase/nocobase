@@ -1,9 +1,7 @@
 import Database from '@nocobase/database';
-import { MockServer } from '@nocobase/test';
 import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
-
-import Plugin from '..';
+import { MockServer } from '@nocobase/test';
 
 // NOTE: skipped because time is not stable on github ci, but should work in local
 describe('workflow > instructions > manual', () => {
@@ -21,9 +19,9 @@ describe('workflow > instructions > manual', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: ['users', 'auth', Plugin],
+      plugins: ['users', 'auth', 'workflow-manual'],
     });
-    await app.getPlugin('auth').install();
+    // await app.getPlugin('auth').install();
     agent = app.agent();
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
@@ -33,8 +31,8 @@ describe('workflow > instructions > manual', () => {
     UserJobModel = db.getModel('users_jobs');
 
     users = await UserModel.bulkCreate([
-      { id: 1, nickname: 'a' },
-      { id: 2, nickname: 'b' },
+      { id: 2, nickname: 'a' },
+      { id: 3, nickname: 'b' },
     ]);
 
     userAgents = users.map((user) => app.agent().login(user));

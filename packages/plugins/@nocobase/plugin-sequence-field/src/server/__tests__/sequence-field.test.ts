@@ -1,27 +1,17 @@
 import { Database } from '@nocobase/database';
-import { Application } from '@nocobase/server';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import dayjs from 'dayjs';
-import Plugin, { SequenceField } from '..';
+import { SequenceField } from '..';
 
 describe('sequence field', () => {
   let app: MockServer;
   let db: Database;
 
   beforeEach(async () => {
-    app = mockServer();
-    await app.cleanDb();
-    app.plugin(Plugin);
-    db = app.db;
-
-    await db.sync({
-      force: true,
-      alter: {
-        drop: true,
-      },
+    app = await createMockServer({
+      plugins: ['sequence-field'],
     });
-    await app.load();
-    await app.start();
+    db = app.db;
   });
 
   afterEach(async () => {

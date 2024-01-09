@@ -199,7 +199,7 @@ export function mockServer(options: ApplicationOptions = {}) {
   }
 
   Gateway.getInstance().reset();
-  AppSupervisor.getInstance().reset();
+  // AppSupervisor.getInstance().reset();
 
   // @ts-ignore
   if (!PluginManager.findPackagePatched) {
@@ -221,6 +221,37 @@ export function mockServer(options: ApplicationOptions = {}) {
   return app;
 }
 
-export function createMockServer() {}
+export async function startMockServer(options: ApplicationOptions = {}) {
+  const app = mockServer(options);
+  await app.runCommand('start');
+  return app;
+}
+
+type BeforeInstallFn = (app) => Promise<void>;
+
+export async function createMockServer(
+  options: ApplicationOptions & {
+    version?: string;
+    beforeInstall?: BeforeInstallFn;
+    skipInstall?: boolean;
+    skipStart?: boolean;
+  } = {},
+) {
+  const { version, beforeInstall, skipInstall, skipStart, ...others } = options;
+  const app = mockServer(others);
+  if (!skipInstall) {
+    if (beforeInstall) {
+      await beforeInstall(app);
+    }
+    await app.runCommand('install', '-f');
+  }
+  if (version) {
+    await app.version.update(version);
+  }
+  if (!skipStart) {
+    await app.runCommand('start');
+  }
+  return app;
+}
 
 export default mockServer;

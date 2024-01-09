@@ -232,10 +232,10 @@ export class Application {
         });
       }
       loadFailed = true;
+      const others = error?.response?.data?.error || error?.response?.data?.errors?.[0] || error;
       this.error = {
         code: 'LOAD_ERROR',
-        message: error.message,
-        ...error,
+        ...others,
       };
       console.error(this.error);
     }

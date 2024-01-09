@@ -1,12 +1,14 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'audit-logs.auditLogs',
-  duplicator: 'optional',
+  dumpRules: {
+    group: 'log',
+  },
   name: 'auditLogs',
   createdBy: false,
   updatedBy: false,
   updatedAt: false,
+  shared: true,
   fields: [
     {
       type: 'date',

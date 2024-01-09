@@ -1,16 +1,15 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'ui-routes-storage.uiRoutes',
-  duplicator: 'required',
+  dumpRules: 'required',
   name: 'uiRoutes',
-  title: '前端路由表',
   model: 'MagicAttributeModel',
   autoGenId: false,
   sortable: {
     name: 'sort',
     scopeKey: 'parentKey',
   },
+  shared: true,
   fields: [
     {
       type: 'uid',

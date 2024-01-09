@@ -27,11 +27,13 @@ export class ImporterReader {
     const files = await readdir(this.directory, {
       encoding: 'utf-8',
     });
+
     const modules = files
       .filter((fileName) => {
         if (fileName.endsWith('.d.ts')) {
           return false;
         }
+
         const ext = path.parse(fileName).ext.replace('.', '');
         return this.extensions.has(ext);
       })
