@@ -1068,6 +1068,7 @@ export const createGridCardBlockSchema = (options) => {
     association,
     resource,
     template,
+    settings,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -1091,7 +1092,8 @@ export const createGridCardBlockSchema = (options) => {
     'x-component-props': {
       useProps: '{{ useGridCardBlockItemProps }}',
     },
-    'x-designer': 'GridCard.Designer',
+    'x-toolbar': 'BlockSchemaToolbar',
+    'x-settings': settings,
     properties: {
       actionBar: {
         type: 'void',

@@ -1,10 +1,10 @@
-import React from 'react';
 import { TableOutlined } from '@ant-design/icons';
+import React from 'react';
 
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useCollectionManager } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createGridCardBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 export const RecordAssociationGridCardBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -31,6 +31,7 @@ export const RecordAssociationGridCardBlockInitializer = () => {
               collection: field.target,
               resource,
               association: resource,
+              settings: 'gridCardBlockSettings',
             }),
           );
         }
