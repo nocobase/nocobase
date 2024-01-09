@@ -403,18 +403,17 @@ export const GraphDrawPage = React.memo(() => {
     }
   };
   const reloadCallback = async (collections) => {
-    const data = collections.map((item) => item?.getOptions() || item);
-    targetGraph.collections = data;
+    targetGraph.collections = collections;
     targetGraph.updatePositionAction = updatePositionAction;
     const currentNodes = targetGraph.getNodes();
-    setCollectionData(data);
-    setCollectionList(data);
+    setCollectionData(collections);
+    setCollectionList(collections);
     if (!currentNodes.length) {
       if (!selectedCollections) {
-        renderInitGraphCollection(data);
+        renderInitGraphCollection(collections);
       }
     } else {
-      renderDiffGraphCollection(data);
+      renderDiffGraphCollection(collections);
     }
   };
   const initGraphCollections = () => {

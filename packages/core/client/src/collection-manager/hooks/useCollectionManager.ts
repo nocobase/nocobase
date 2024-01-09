@@ -1,20 +1,36 @@
 import { CascaderProps } from 'antd';
 import _ from 'lodash';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useCompile, useSchemaComponentContext } from '../../schema-component';
 import { CollectionFieldOptions, CollectionOptions } from '../types';
 import { useCollectionManagerV2 } from '../../application';
 import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
+import { uid } from '@formily/shared';
 
 export const useCollectionManager = () => {
   const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
-  const interfaces = useMemo(() => cm?.getCollectionFieldInterfaceGroups(), [cm]);
-  const templates = useMemo(() => cm?.getCollectionTemplates(), [cm]);
-  const collections = useMemo(() => cm?.getCollections().filter((item) => !item.isLocal), [cm]);
+  const [random, setRandom] = useState(uid());
+  const interfaces = useMemo(() => cm?.getCollectionFieldInterfaceGroups(), [cm, random]);
+  const templates = useMemo(() => cm?.getCollectionTemplates(), [cm, random]);
+  const collections = useMemo(
+    () =>
+      cm
+        ?.getCollections()
+        .filter((item) => !item.isLocal)
+        .map((item) => item.getOptions()),
+    [cm, random],
+  );
   const { refresh } = useSchemaComponentContext();
   const service = useCallback(() => cm?.reload(refresh), [cm]);
   const updateCollection = cm?.setCollections.bind(cm);
-  const refreshCM = useCallback(() => cm?.reload(refresh), [cm]);
+  const refreshCM = useCallback(
+    () =>
+      cm?.reload(() => {
+        refresh();
+        setRandom(uid());
+      }),
+    [cm],
+  );
 
   const compile = useCompile();
   const getInheritedFields = useCallback(

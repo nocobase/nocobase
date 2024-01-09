@@ -52,48 +52,46 @@ export const formatData = (data) => {
   const edgeData = [];
   const targetTablekeys = [];
 
-  const tableData = data
-    .map((item) => (item instanceof CollectionV2 ? item.getOptions() : item))
-    .map((item) => {
-      const ports = [];
-      const totalFields = [...item.fields];
-      const inheritCollections = getInheritCollections(data, item.name);
-      const inheritedFields = reduce(
-        inheritCollections,
-        (result, value) => {
-          const arr = result;
-          const parentFields = data
-            .find((k) => k.name === value)
-            ?.fields.map((v) => {
-              return { ...v, sourceCollectionName: item.name };
-            });
-          return parentFields ? arr.concat(parentFields) : arr;
-        },
-        [],
-      );
-      uniqBy(totalFields.concat(inheritedFields), 'name').forEach((field) => {
-        field.uiSchema &&
-          ports.push({
-            id: field.name,
-            group: 'list',
-            ...field,
+  const tableData = data.map((item) => {
+    const ports = [];
+    const totalFields = [...item.fields];
+    const inheritCollections = getInheritCollections(data, item.name);
+    const inheritedFields = reduce(
+      inheritCollections,
+      (result, value) => {
+        const arr = result;
+        const parentFields = data
+          .find((k) => k.name === value)
+          ?.fields.map((v) => {
+            return { ...v, sourceCollectionName: item.name };
           });
-        ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(field.interface) && edgeData.push(field);
-      });
-
-      targetTablekeys.push(item.name);
-      const portsData = formatPortData(ports);
-      return {
-        id: item.name,
-        shape: shape.ER,
-        name: item.name,
-        title: item.title,
-        width: 250,
-        // height: 40 * portsData.initPorts?.length || 40,
-        ports: [...(portsData.initPorts || []), ...(portsData.morePorts || [])],
-        item: item,
-      };
+        return parentFields ? arr.concat(parentFields) : arr;
+      },
+      [],
+    );
+    uniqBy(totalFields.concat(inheritedFields), 'name').forEach((field) => {
+      field.uiSchema &&
+        ports.push({
+          id: field.name,
+          group: 'list',
+          ...field,
+        });
+      ['obo', 'oho', 'o2o', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(field.interface) && edgeData.push(field);
     });
+
+    targetTablekeys.push(item.name);
+    const portsData = formatPortData(ports);
+    return {
+      id: item.name,
+      shape: shape.ER,
+      name: item.name,
+      title: item.title,
+      width: 250,
+      // height: 40 * portsData.initPorts?.length || 40,
+      ports: [...(portsData.initPorts || []), ...(portsData.morePorts || [])],
+      item: item,
+    };
+  });
   const edges = formatRelationEdgeData(edgeData, targetTablekeys, tableData);
   const inheritEdges = formatInheritEdgeData(data);
   return { nodesData: tableData, edgesData: edges, inheritEdges };
