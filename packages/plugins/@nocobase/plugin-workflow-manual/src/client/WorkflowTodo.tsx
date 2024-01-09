@@ -35,6 +35,7 @@ import { NAMESPACE } from '../locale';
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
+  isLocal: true,
   name: 'flow_nodes',
   fields: [
     {
@@ -76,6 +77,7 @@ const nodeCollection = {
 
 const workflowCollection = {
   title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
+  isLocal: true,
   name: 'workflows',
   fields: [
     {
@@ -95,6 +97,7 @@ const workflowCollection = {
 const todoCollection = {
   title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
   name: 'users_jobs',
+  isLocal: true,
   fields: [
     {
       type: 'belongsTo',

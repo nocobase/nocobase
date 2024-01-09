@@ -94,7 +94,7 @@ const OperationButton: any = React.memo((props: any) => {
           node={node}
           handelOpenPorts={() => handelOpenPorts(true)}
         >
-          {/* <SchemaComponent
+          <SchemaComponent
             scope={useCancelAction}
             schema={{
               type: 'object',
@@ -121,7 +121,7 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      // __parent: collectionData.current,
+                      __parent: collectionData.current,
                     },
                   },
                 },
@@ -156,7 +156,7 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      // __parent: collectionData.current,
+                      __parent: collectionData.current,
                       targetCollection: name,
                     },
                   },
@@ -171,7 +171,7 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      // __parent: collectionData.current,
+                      __parent: collectionData.current,
                     },
                   },
                 },
@@ -184,14 +184,14 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      // __parent: collectionData.current,
+                      __parent: collectionData.current,
                     },
                     targetGraph,
                   },
                 },
               },
             }}
-          /> */}
+          />
         </CollectionNodeProvder>
       </SchemaComponentProvider>
     </div>
@@ -377,9 +377,8 @@ const Entity: React.FC<{
   } = useCurrentAppInfo();
   const collectionData = useRef();
   const categoryData = useContext(CollectionCategroriesContext);
-  const itemData = useMemo(() => (item.getOptions ? item.getOptions() : item), [item]);
-  collectionData.current = { ...itemData, title, inherits: itemData.inherits && new Proxy(itemData.inherits, {}) };
-  const { category = [] } = itemData;
+  collectionData.current = { ...item, title, inherits: item.inherits && new Proxy(item.inherits, {}) };
+  const { category = [] } = item;
   const compile = useCompile();
   const loadCollections = async (field: any) => {
     return targetGraph.collections?.map((collection: any) => ({

@@ -10,7 +10,7 @@ export const useCollectionManager = () => {
   const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
   const interfaces = useMemo(() => cm?.getCollectionFieldInterfaceGroups(), [cm]);
   const templates = useMemo(() => cm?.getCollectionTemplates(), [cm]);
-  const collections = useMemo(() => cm?.getCollections(), [cm]);
+  const collections = useMemo(() => cm?.getCollections().filter((item) => !item.isLocal), [cm]);
   const { refresh } = useSchemaComponentContext();
   const service = useCallback(() => cm?.reload(refresh), [cm]);
   const updateCollection = cm?.setCollections.bind(cm);

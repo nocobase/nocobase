@@ -3,6 +3,7 @@ import { generateNTemplate } from '../locale';
 
 export default {
   namespace: 'api-keys',
+  isLocal: true,
   duplicator: 'optional',
   name: 'apiKeys',
   title: '{{t("API keys", {"ns": "api-keys"})}}',
