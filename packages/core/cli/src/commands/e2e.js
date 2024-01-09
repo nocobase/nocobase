@@ -33,7 +33,7 @@ const checkServer = async (duration = 1000, max = 60 * 10) => {
           }
         })
         .catch((error) => {
-          console.error('Request error:', error.message);
+          console.error('Request error:', error?.response?.data?.error);
         });
     }, duration);
   });
