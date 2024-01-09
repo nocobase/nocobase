@@ -55,19 +55,15 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
-      - run: yarn install
-      - name: yarn nocobase clean
-        run: yarn nocobase clean
-        env:
-          APP_ENV: development
+
       - run: yarn install
       - name: yarn build
         run: yarn build
         env:
           __E2E__: true
-      # - run: npx playwright install chromium --with-deps
+      - run: npx playwright install chromium --with-deps
       - name: Test with postgres
-        run: yarn nocobase install
+        run: yarn e2e p-test --stop-on-error
         env:
           __E2E__: true
           APP_ENV: production
