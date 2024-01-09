@@ -1,7 +1,8 @@
-import { Migration } from '@nocobase/server';
 import { Repository } from '@nocobase/database';
+import { Migration } from '@nocobase/server';
 
 export default class RenameChartTypeMigration extends Migration {
+  appVersion = '<0.14.0-alpha.7';
   async up() {
     const result = await this.app.version.satisfies('<=0.14.0-alpha.7');
 

@@ -1,8 +1,7 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
-  namespace: 'acl.acl',
-  duplicator: 'required',
+export default defineCollection({
+  dumpRules: 'required',
   name: 'rolesResources',
   model: 'RoleResourceModel',
   indexes: [
@@ -30,4 +29,4 @@ export default {
       target: 'rolesResourcesActions',
     },
   ],
-} as CollectionOptions;
+});

@@ -10,6 +10,7 @@ import {
   Transactionable,
   Utils,
 } from 'sequelize';
+import { BuiltInGroup } from './collection-group-manager';
 import { Database } from './database';
 import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
@@ -19,9 +20,16 @@ import { checkIdentifier, md5, snakeCase } from './utils';
 
 export type RepositoryType = typeof Repository;
 
-export type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
+export type CollectionSortable =
+  | string
+  | boolean
+  | {
+      name?: string;
+      scopeKey?: string;
+    };
 
 type dumpable = 'required' | 'optional' | 'skip';
+type dumpableType = 'meta' | 'business' | 'config';
 
 function EnsureAtomicity(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
   const originalMethod = descriptor.value;
@@ -53,26 +61,21 @@ function EnsureAtomicity(target: any, propertyKey: string, descriptor: PropertyD
   return descriptor;
 }
 
+export type BaseDumpRules = {
+  delayRestore?: any;
+};
+
+export type DumpRules =
+  | BuiltInGroup
+  | ({ required: true } & BaseDumpRules)
+  | ({ skipped: true } & BaseDumpRules)
+  | ({ group: BuiltInGroup | string } & BaseDumpRules);
+
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
   title?: string;
   namespace?: string;
-  /**
-   * Used for @nocobase/plugin-duplicator
-   * @see packages/core/database/src/collection-group-manager.tss
-   *
-   * @prop {'required' | 'optional' | 'skip'} dumpable - Determine whether the collection is dumped
-   * @prop {string[] | string} [with] - Collections dumped with this collection
-   * @prop {any} [delayRestore] - A function to execute after all collections are restored
-   */
-  duplicator?:
-    | dumpable
-    | {
-        dumpable: dumpable;
-        with?: string[] | string;
-        delayRestore?: any;
-      };
-
+  dumpRules?: DumpRules;
   tableName?: string;
   inherits?: string[] | string;
   viewName?: string;
@@ -91,10 +94,18 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    * @default 'options'
    */
   magicAttribute?: string;
-
   tree?: string;
-
   template?: string;
+
+  /**
+   * where is the collection from
+   *
+   * values
+   * - 'plugin' - collection is from plugin
+   * - 'core' - collection is from core
+   * - 'user' - collection is from user
+   */
+  origin?: string;
 
   [key: string]: any;
 }
@@ -150,6 +161,10 @@ export class Collection<
 
   get name() {
     return this.options.name;
+  }
+
+  get origin() {
+    return this.options.origin || 'core';
   }
 
   get titleField() {
@@ -564,7 +579,16 @@ export class Collection<
     this.setField(options.name || name, options);
   }
 
-  addIndex(index: string | string[] | { fields: string[]; unique?: boolean; [key: string]: any }) {
+  addIndex(
+    index:
+      | string
+      | string[]
+      | {
+          fields: string[];
+          unique?: boolean;
+          [key: string]: any;
+        },
+  ) {
     if (!index) {
       return;
     }

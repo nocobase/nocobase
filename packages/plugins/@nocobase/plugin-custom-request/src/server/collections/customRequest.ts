@@ -1,10 +1,8 @@
-import { CollectionOptions } from '@nocobase/client';
+import { defineCollection } from '@nocobase/database';
 
-export default {
-  namespace: 'custom-requests',
-  duplicator: 'optional',
+export default defineCollection({
+  dumpRules: 'required',
   name: 'customRequests',
-  title: '{{t("Custom request")}}',
   fields: [
     {
       type: 'uid',
@@ -27,4 +25,4 @@ export default {
       name: 'options', // 配置的请求参数都放这里
     },
   ],
-} as CollectionOptions;
+});
