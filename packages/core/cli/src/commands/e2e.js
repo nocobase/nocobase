@@ -128,6 +128,12 @@ const filterArgv = () => {
     if (element === '--skip-reporter') {
       continue;
     }
+    if (element === '--build') {
+      continue;
+    }
+    if (element === '--production') {
+      continue;
+    }
     argv.push(element);
   }
   return argv;
@@ -150,8 +156,12 @@ module.exports = (cli) => {
     .option('--url [url]')
     .option('--skip-reporter')
     .option('--build')
+    .option('--production')
     .action(async (options) => {
       process.env.__E2E__ = true;
+      if (options.production) {
+        process.env.APP_ENV = 'production';
+      }
       if (options.build) {
         process.env.APP_ENV = 'production';
         await run('yarn', ['build']);
@@ -225,6 +235,6 @@ module.exports = (cli) => {
         process.env.APP_ENV = 'production';
         await run('yarn', ['build']);
       }
-      await pTest(options);
+      await pTest({ ...options, concurrency: 1 * options.concurrency });
     });
 };
