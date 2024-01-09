@@ -415,6 +415,36 @@ describe('dumper', () => {
     expect(res2.get('count')).toEqual(usersCount);
   });
 
+  it('should dump with view that not exists', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'view-that-not-exists',
+        view: true,
+        schema: db.inDialect('postgres') ? 'public' : undefined,
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const dumper = new Dumper(app);
+    const result = await dumper.dump({
+      groups: new Set(['required', 'custom']),
+    });
+
+    const restorer = new Restorer(app, {
+      backUpFilePath: result.filePath,
+    });
+
+    await restorer.restore({
+      groups: new Set(['required', 'custom']),
+    });
+  });
+
   it('should dump and restore with view collection', async () => {
     await db.getRepository('collections').create({
       values: {
