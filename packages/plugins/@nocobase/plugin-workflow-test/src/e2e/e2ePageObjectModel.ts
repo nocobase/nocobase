@@ -504,9 +504,7 @@ export class ConditionBranchNode {
     this.nodeConfigure = page
       .getByLabel(`Condition-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
-    this.conditionExpressionEditBox = page
-      .getByLabel('block-item-WorkflowVariableRawTextArea-workflows-Condition')
-      .getByLabel('textbox');
+    this.conditionExpressionEditBox = page.getByLabel('textbox');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = page.getByLabel(`add-button-condition-${nodeName}`, { exact: true });
