@@ -3,6 +3,7 @@ const { run, isPortReachable } = require('../util');
 const { execSync } = require('node:child_process');
 const axios = require('axios');
 const { pTest } = require('./p-test');
+const os = require('os');
 
 /**
  * 检查服务是否启动成功
@@ -148,7 +149,13 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .option('--url [url]')
     .option('--skip-reporter')
+    .option('--build')
     .action(async (options) => {
+      process.env.__E2E__ = true;
+      if (options.build) {
+        process.env.APP_ENV = 'production';
+        await run('yarn', ['build']);
+      }
       if (options.skipReporter) {
         process.env.PLAYWRIGHT_SKIP_REPORTER = true;
       }
@@ -183,8 +190,13 @@ module.exports = (cli) => {
   e2e
     .command('start-app')
     .option('--production')
+    .option('--build')
     .option('--port [port]')
     .action(async (options) => {
+      process.env.__E2E__ = true;
+      if (options.build) {
+        await run('yarn', ['build']);
+      }
       if (options.production) {
         process.env.APP_ENV = 'production';
       }
@@ -205,8 +217,14 @@ module.exports = (cli) => {
   e2e
     .command('p-test')
     .option('--stop-on-error')
-    .option('--concurrency [concurrency]', '', 3)
-    .action(async (opts) => {
-      await pTest(opts);
+    .option('--build')
+    .option('--concurrency [concurrency]', '', os.cpus().length)
+    .action(async (options) => {
+      process.env.__E2E__ = true;
+      if (options.build) {
+        process.env.APP_ENV = 'production';
+        await run('yarn', ['build']);
+      }
+      await pTest(options);
     });
 };

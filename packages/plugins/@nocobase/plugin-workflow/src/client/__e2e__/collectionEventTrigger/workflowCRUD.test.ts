@@ -161,6 +161,9 @@ test.describe('Duplicate', () => {
     await page.getByLabel(`action-Action-Submit-workflows-${workFlowName}`).click();
 
     // 3、预期结果：列表中出现筛选的工作流
+    await page.getByLabel('action-Filter.Action-Filter-filter-workflows').click();
+    await page.getByRole('textbox').fill(workFlowName);
+    await page.getByRole('button', { name: 'Submit' }).click();
     await expect(page.getByText(`${workFlowName} copy`)).toBeAttached();
 
     // 4、后置处理：删除工作流

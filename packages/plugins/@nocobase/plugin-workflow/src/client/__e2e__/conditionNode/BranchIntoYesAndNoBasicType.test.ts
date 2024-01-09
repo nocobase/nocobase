@@ -3,7 +3,6 @@ import {
   ClculationNode,
   CollectionTriggerNode,
   ConditionBranchNode,
-  ConditionYesNode,
   QueryRecordNode,
   apiCreateWorkflow,
   apiCreateWorkflowNode,

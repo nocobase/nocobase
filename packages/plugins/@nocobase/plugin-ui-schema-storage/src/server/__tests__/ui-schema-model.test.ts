@@ -1,6 +1,6 @@
 import { Collection, Database } from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
-import PluginUiSchema, { UiSchemaRepository } from '..';
+import { MockServer, createMockServer } from '@nocobase/test';
+import { UiSchemaRepository } from '..';
 
 describe('ui schema model', () => {
   let app: MockServer;
@@ -13,17 +13,12 @@ describe('ui schema model', () => {
   });
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
+      plugins: ['ui-schema-storage'],
     });
 
     db = app.db;
-
-    await db.clean({ drop: true });
-    app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
-
-    await app.load();
-
     RelatedCollection = db.collection({
       name: 'hasUiSchemaCollection',
       fields: [
@@ -35,7 +30,7 @@ describe('ui schema model', () => {
       ],
     });
 
-    await db.sync({ force: true, alter: { drop: false } });
+    await db.sync();
   });
 
   it('should create schema tree after ui_schema created', async () => {

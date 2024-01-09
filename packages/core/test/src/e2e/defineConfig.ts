@@ -15,7 +15,7 @@ export const defineConfig = (config?: PlaywrightTestConfig) => {
     testMatch: /(.*\/e2e\/|.*\/__e2e__\/).+\.test\.[tj]sx*$/,
 
     // Run all tests in parallel.
-    fullyParallel: true,
+    fullyParallel: false,
 
     // Fail the build on CI if you accidentally left test.only in the source code.
     forbidOnly: !!process.env.CI,
@@ -27,7 +27,7 @@ export const defineConfig = (config?: PlaywrightTestConfig) => {
     // workers: process.env.CI ? 1 : undefined,
     workers: 1,
 
-    maxFailures: 1,
+    maxFailures: 0,
 
     // Reporter to use
     reporter: process.env.PLAYWRIGHT_SKIP_REPORTER

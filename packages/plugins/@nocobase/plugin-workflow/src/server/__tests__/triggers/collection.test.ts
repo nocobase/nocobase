@@ -1,6 +1,6 @@
-import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import { Application } from '@nocobase/server';
 import { EXECUTION_STATUS } from '../../constants';
 
 describe('workflow > triggers > collection', () => {
@@ -79,17 +79,7 @@ describe('workflow > triggers > collection', () => {
       const e1 = await workflow.getExecutions();
       expect(e1.length).toBe(1);
 
-      await app.destroy();
-
-      app = await getApp({
-        plugins: ['error-handler', 'collection-manager'],
-        database: {
-          tablePrefix: db.options.tablePrefix,
-          storage: db.options.storage,
-          database: db.options.database,
-        },
-        cleanDb: false,
-      });
+      await app.restart();
 
       db = app.db;
 

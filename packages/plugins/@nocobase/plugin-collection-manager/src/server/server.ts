@@ -34,6 +34,10 @@ export class CollectionManagerPlugin extends Plugin {
       this.schema = process.env.COLLECTION_MANAGER_SCHEMA || this.db.options.schema || 'public';
     }
 
+    this.app.db.registerRepositories({
+      CollectionRepository,
+    });
+
     this.app.db.registerModels({
       CollectionModel,
       FieldModel,
@@ -45,10 +49,6 @@ export class CollectionManagerPlugin extends Plugin {
       context: {
         plugin: this,
       },
-    });
-
-    this.app.db.registerRepositories({
-      CollectionRepository,
     });
 
     this.app.acl.registerSnippet({
@@ -245,20 +245,20 @@ export class CollectionManagerPlugin extends Plugin {
       });
     };
 
-    this.app.on('loadCollections', loadCollections);
+    // this.app.on('loadCollections', loadCollections);
     this.app.on('beforeStart', loadCollections);
-    this.app.on('beforeUpgrade', async () => {
-      const syncOptions = {
-        alter: {
-          drop: false,
-        },
-        force: false,
-      };
-      await this.db.getCollection('collections').sync(syncOptions);
-      await this.db.getCollection('fields').sync(syncOptions);
-      await this.db.getCollection('collectionCategories').sync(syncOptions);
-      await loadCollections();
-    });
+    // this.app.on('beforeUpgrade', async () => {
+    //   const syncOptions = {
+    //     alter: {
+    //       drop: false,
+    //     },
+    //     force: false,
+    //   };
+    //   await this.db.getCollection('collections').sync(syncOptions);
+    //   await this.db.getCollection('fields').sync(syncOptions);
+    //   await this.db.getCollection('collectionCategories').sync(syncOptions);
+    //   await loadCollections();
+    // });
 
     this.app.resourcer.use(async (ctx, next) => {
       const { resourceName, actionName } = ctx.action;
@@ -361,8 +361,8 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.extendCollection({
       name: 'collectionCategory',
-      namespace: 'collection-manager',
-      duplicator: 'required',
+      dumpRules: 'required',
+      origin: this.options.packageName,
     });
   }
 }

@@ -2,9 +2,9 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default function () {
   return {
-    namespace: 'workflow.workflowConfig',
-    duplicator: 'required',
+    dumpRules: 'required',
     name: 'workflows',
+    shared: true,
     fields: [
       {
         name: 'key',
@@ -30,7 +30,11 @@ export default function () {
         required: true,
       },
       {
-        type: 'json',
+        type: 'string',
+        name: 'triggerTitle',
+      },
+      {
+        type: 'jsonb',
         name: 'config',
         required: true,
         defaultValue: {},

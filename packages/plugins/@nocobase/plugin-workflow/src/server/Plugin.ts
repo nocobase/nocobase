@@ -30,7 +30,7 @@ type Pending = [ExecutionModel, JobModel?];
 
 type CachedEvent = [WorkflowModel, any, { context?: any }];
 
-export default class WorkflowPlugin extends Plugin {
+export default class PluginWorkflowServer extends Plugin {
   instructions: Registry<InstructionInterface> = new Registry();
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<CustomFunction> = new Registry();
@@ -192,9 +192,7 @@ export default class WorkflowPlugin extends Plugin {
 
     this.app.acl.allow('workflows', ['trigger'], 'loggedIn');
 
-    await db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, 'collections'));
 
     this.db.addMigrations({
       namespace: this.name,

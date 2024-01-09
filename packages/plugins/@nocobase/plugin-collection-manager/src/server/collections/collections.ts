@@ -1,10 +1,9 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'collection-manager.collections',
-  duplicator: 'required',
+  dumpRules: 'required',
+  shared: true,
   name: 'collections',
-  title: '数据表配置',
   sortable: 'sort',
   autoGenId: false,
   model: 'CollectionModel',
