@@ -380,10 +380,12 @@ describe('dumper', () => {
   });
 
   it('should dump and restore with sql collection', async () => {
+    const userCollection = db.getCollection('users');
+
     await db.getRepository('collections').create({
       values: {
         name: 'tests',
-        sql: 'select count(*) as count from users',
+        sql: `select count(*) as count from ${userCollection.getTableNameWithSchemaAsString()}`,
         fields: [
           {
             type: 'integer',
