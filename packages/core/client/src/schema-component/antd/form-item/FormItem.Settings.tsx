@@ -1,7 +1,6 @@
 import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { Select } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,8 +10,8 @@ import { Collection, useCollection, useCollectionManager } from '../../../collec
 import { useRecord } from '../../../record-provider';
 import { generalSettingsItems } from '../../../schema-items/GeneralSettings';
 import {
-  SchemaSettingsDateFormat,
   SchemaSettingsDataScope,
+  SchemaSettingsDateFormat,
   SchemaSettingsDefaultValue,
   SchemaSettingsSortingRule,
   isPatternDisabled,
@@ -862,7 +861,7 @@ function isFileCollection(collection: Collection) {
   return collection?.template === 'file';
 }
 
-function useIsFormReadPretty() {
+export function useIsFormReadPretty() {
   const { form } = useFormBlockContext();
   return !!form?.readPretty;
 }
@@ -901,7 +900,7 @@ function useFieldMode() {
   return fieldMode;
 }
 
-function useIsSelectFieldMode() {
+export function useIsSelectFieldMode() {
   const fieldMode = useFieldMode();
   const isAssociationField = useIsAssociationField();
   const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
