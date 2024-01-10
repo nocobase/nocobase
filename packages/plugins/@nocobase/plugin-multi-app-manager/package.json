@@ -11,6 +11,7 @@
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
     "antd": "5.x",
+    "antd-style": "3.x",
     "async-mutex": "^0.3.2",
     "mysql2": "^2.3.3",
     "pg": "^8.7.3",
