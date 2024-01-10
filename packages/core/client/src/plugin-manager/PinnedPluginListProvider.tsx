@@ -31,7 +31,7 @@ export const PinnedPluginList = () => {
           width: 46px;
           border-radius: 0;
           background: none;
-          color: rgba(255, 255, 255, 0.65);
+          color: rgba(255, 255, 255, 0.65) !important;
           &:hover {
             background: rgba(255, 255, 255, 0.1);
           }
