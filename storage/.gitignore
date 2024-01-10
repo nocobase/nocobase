@@ -1,3 +1,4 @@
 .pm2
 tmp
 app.watch.ts
+/e2e

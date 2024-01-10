@@ -12,9 +12,7 @@ export class ShopPlugin extends Plugin {
   }
 
   async load() {
-    await this.db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, 'collections'));
 
     this.app.i18n.addResources('zh-CN', ns, zhCN);
 

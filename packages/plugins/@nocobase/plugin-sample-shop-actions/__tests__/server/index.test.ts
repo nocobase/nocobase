@@ -1,5 +1,4 @@
-import { mockServer } from '@nocobase/test';
-import Plugin from '../../src/server';
+import { createMockServer } from '@nocobase/test';
 
 describe('shop actions', () => {
   let app;
@@ -7,15 +6,12 @@ describe('shop actions', () => {
   let db;
 
   beforeEach(async () => {
-    app = mockServer();
-
-    await app.cleanDb();
-    app.plugin(Plugin);
+    app = await createMockServer({
+      plugins: ['sample-shop-actions'],
+    });
+    await app.runCommand('install', '-f');
     agent = app.agent();
     db = app.db;
-
-    await app.load();
-    await db.sync();
   });
 
   afterEach(async () => {
