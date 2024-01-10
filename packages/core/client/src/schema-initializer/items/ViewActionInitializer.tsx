@@ -7,7 +7,8 @@ export const ViewActionInitializer = (props) => {
     type: 'void',
     title: '{{ t("View") }}',
     'x-action': 'view',
-    'x-designer': 'Action.Designer',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:view',
     'x-component': 'Action',
     'x-component-props': {
       openMode: 'drawer',

@@ -16,6 +16,7 @@ import {
   filterActionSettings,
   refreshActionSettings,
   tableBlockSettings,
+  viewActionSettings,
 } from '../modules/table/schemaSettings';
 
 export class SchemaSettingsPlugin extends Plugin {
@@ -37,6 +38,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(addNewActionSettings);
     this.schemaSettingsManager.add(filterActionSettings);
     this.schemaSettingsManager.add(refreshActionSettings);
+    this.schemaSettingsManager.add(viewActionSettings);
     this.schemaSettingsManager.add(bulkDeleteActionSettings);
     this.schemaSettingsManager.add(customizeAddRecordActionSettings);
   }

@@ -18,6 +18,7 @@ import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsConnectDataBlocks,
   SchemaSettingsDataScope,
+  SchemaSettingsLinkageRules,
   SchemaSettingsTemplate,
 } from '../../schema-settings';
 
@@ -583,7 +584,43 @@ export const customizeAddRecordActionSettings = new SchemaSettings({
   ],
 });
 
-export const viewActionSettings = new SchemaSettings({});
+export const viewActionSettings = new SchemaSettings({
+  name: 'actionSettings:view',
+  items: [
+    {
+      name: 'editButton',
+      Component: ButtonEditor,
+      useComponentProps() {
+        const { buttonEditorProps } = useSchemaToolbar();
+        return buttonEditorProps;
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection();
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+          collectionName: name,
+        };
+      },
+    },
+    {
+      name: 'openMode',
+      Component: SchemaSettingOpenModeSchemaItems,
+      componentProps: {
+        openMode: true,
+        openSize: true,
+      },
+    },
+    {
+      name: 'delete',
+      type: 'remove',
+    },
+  ],
+});
 
 export const editActionSettings = new SchemaSettings({});
 
