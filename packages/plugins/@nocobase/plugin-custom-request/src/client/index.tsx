@@ -1,9 +1,10 @@
 import { CollectionManagerProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
-import { CustomRequestConfigurationFieldsSchema } from './schemas';
 import { CustomRequestAction } from './components';
-import { CustomRequestInitializer } from './initializer';
 import { customRequestActionSettings } from './components/CustomRequestActionDesigner';
+import { CustomRequestInitializer } from './initializer';
+import { customizeCustomRequestActionSettings } from './schemaSettings';
+import { CustomRequestConfigurationFieldsSchema } from './schemas';
 
 const CustomRequestProvider: React.FC = (props) => {
   return (
@@ -21,6 +22,9 @@ const CustomRequestProvider: React.FC = (props) => {
 export class CustomRequestPlugin extends Plugin {
   async load() {
     this.app.use(CustomRequestProvider);
+    this.app.schemaSettingsManager.add(customizeCustomRequestActionSettings);
+
+    // @deprecated
     this.app.schemaSettingsManager.add(customRequestActionSettings);
   }
 }

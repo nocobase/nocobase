@@ -304,7 +304,7 @@ export function AssignedFieldValues() {
   );
 }
 
-function RequestSettings() {
+export function RequestSettings() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
