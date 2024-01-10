@@ -8,7 +8,13 @@ import { SchemaSettings } from '../../application/schema-settings/SchemaSettings
 import { mergeFilter, useFormBlockContext, useTableBlockContext } from '../../block-provider';
 import { useCollection, useCollectionManager, useSortFields } from '../../collection-manager';
 import { FilterBlockType } from '../../filter-provider';
-import { ButtonEditor, RemoveButton, SecondConFirm } from '../../schema-component/antd/action/Action.Designer';
+import {
+  AfterSuccess,
+  AssignedFieldValues,
+  ButtonEditor,
+  RemoveButton,
+  SecondConFirm,
+} from '../../schema-component/antd/action/Action.Designer';
 import { FilterableFieldsSchemaSettingsItem } from '../../schema-component/antd/filter/Filter.Action.Designer';
 import { removeNullCondition } from '../../schema-component/antd/filter/useFilterActionProps';
 import { FixedBlockDesignerItem } from '../../schema-component/antd/page/FixedBlock';
@@ -751,4 +757,58 @@ export const customizePopupActionSettings = new SchemaSettings({
   ],
 });
 
-export const customizeUpdateRecordActionSettings = new SchemaSettings({});
+export const customizeUpdateRecordActionSettings = new SchemaSettings({
+  name: 'actionSettings:customize:updateRecord',
+  items: [
+    {
+      name: 'title',
+      type: 'itemGroup',
+      componentProps: {
+        title: 'Customize > Update record',
+      },
+      children: [
+        {
+          name: 'editButton',
+          Component: ButtonEditor,
+          useComponentProps() {
+            const { buttonEditorProps } = useSchemaToolbar();
+            return buttonEditorProps;
+          },
+        },
+        {
+          name: 'linkageRules',
+          Component: SchemaSettingsLinkageRules,
+          useComponentProps() {
+            const { name } = useCollection();
+            const { linkageRulesProps } = useSchemaToolbar();
+            return {
+              ...linkageRulesProps,
+              collectionName: name,
+            };
+          },
+        },
+        {
+          name: 'secondConFirm',
+          Component: SecondConFirm,
+        },
+        {
+          name: 'assignFieldValues',
+          Component: AssignedFieldValues,
+        },
+        {
+          name: 'afterSuccessfulSubmission',
+          Component: AfterSuccess,
+        },
+        {
+          name: 'delete',
+          sort: 100,
+          Component: RemoveButton as any,
+          useComponentProps() {
+            const { removeButtonProps } = useSchemaToolbar();
+            return removeButtonProps;
+          },
+        },
+      ],
+    },
+  ],
+});

@@ -14,6 +14,7 @@ import {
   bulkDeleteActionSettings,
   customizeAddRecordActionSettings,
   customizePopupActionSettings,
+  customizeUpdateRecordActionSettings,
   deleteActionSettings,
   editActionSettings,
   filterActionSettings,
@@ -47,5 +48,6 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(bulkDeleteActionSettings);
     this.schemaSettingsManager.add(customizeAddRecordActionSettings);
     this.schemaSettingsManager.add(customizePopupActionSettings);
+    this.schemaSettingsManager.add(customizeUpdateRecordActionSettings);
   }
 }

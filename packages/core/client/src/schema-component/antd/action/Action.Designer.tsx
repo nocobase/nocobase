@@ -248,7 +248,7 @@ const getAllkeys = (data, result) => {
   return result;
 };
 
-function AssignedFieldValues() {
+export function AssignedFieldValues() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
@@ -351,7 +351,7 @@ function SkipValidation() {
     />
   );
 }
-function AfterSuccess() {
+export function AfterSuccess() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();

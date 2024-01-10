@@ -242,7 +242,8 @@ export const tableActionColumnInitializers = new SchemaInitializer({
             'x-action': 'customize:update',
             'x-decorator': 'ACLActionProvider',
             'x-acl-action': 'update',
-            'x-designer': 'Action.Designer',
+            'x-toolbar': 'ActionSchemaToolbar',
+            'x-settings': 'actionSettings:customize:updateRecord',
             'x-action-settings': {
               assignedValues: {},
               onSuccess: {
