@@ -43,7 +43,7 @@ export const useCollectionManager = () => {
   const getCollectionFields = useCallback(
     (name: any): CollectionFieldOptions[] => {
       if (!name) return [];
-      return cm?.getCollection(name)?.getAllFields() || [];
+      return cm?.getCollection(typeof name === 'object' ? name.name : name)?.getAllFields() || [];
     },
     [cm],
   );

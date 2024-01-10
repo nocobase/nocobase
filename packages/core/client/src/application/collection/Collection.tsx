@@ -214,6 +214,19 @@ export class CollectionV2 {
     return this.options.fields || [];
   }
   getField(name: SchemaKey) {
+    if (String(name).split('.').length > 1) {
+      const [fieldName, ...others] = String(name).split('.');
+      const field = this.fieldsMap[fieldName];
+      if (!field) return null;
+
+      const collectionName = field?.target;
+      if (!collectionName) return null;
+
+      const collection = this.collectionManager.getCollection(collectionName);
+      if (!collection) return null;
+
+      return collection.getField(others.join('.'));
+    }
     return this.fieldsMap[name];
   }
   hasField(name: SchemaKey) {

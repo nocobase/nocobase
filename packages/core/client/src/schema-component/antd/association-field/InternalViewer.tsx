@@ -12,7 +12,7 @@ import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import { transformNestedData } from './InternalCascadeSelect';
 import schema from './schema';
-import { getLabelFormatValue, useLabelUiSchema } from './util';
+import { getLabelFormatValue, useLabelUiSchemaV2 } from './util';
 
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
@@ -46,6 +46,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const targetCollection = getCollection(collectionField?.target);
     const isTreeCollection = targetCollection?.template === 'tree';
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
+    const getLabelUiSchema = useLabelUiSchemaV2();
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
         const value = record?.[fieldNames?.label || 'label'];
@@ -57,7 +58,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
             ? JSON.stringify(value)
             : value;
         const val = toValue(compile(label), 'N/A');
-        const labelUiSchema = useLabelUiSchema(
+        const labelUiSchema = getLabelUiSchema(
           record?.__collection || collectionField?.target,
           fieldNames?.label || 'label',
         );

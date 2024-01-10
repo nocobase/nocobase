@@ -6,6 +6,18 @@ import dayjs from 'dayjs';
 import React from 'react';
 import { CollectionFieldOptions, useCollectionManager } from '../../../collection-manager';
 
+export const useLabelUiSchemaV2 = () => {
+  const { getCollectionJoinField } = useCollectionManager();
+
+  return (collectionName: string, label: string): ISchema => {
+    if (!collectionName) {
+      return;
+    }
+    const labelField = getCollectionJoinField(`${collectionName}.${label}`) as CollectionFieldOptions;
+    return labelField?.uiSchema;
+  };
+};
+
 export const useLabelUiSchema = (collectionName: string, label: string): ISchema => {
   const { getCollectionJoinField } = useCollectionManager();
   if (!collectionName) {

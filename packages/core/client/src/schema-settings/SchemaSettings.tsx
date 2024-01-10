@@ -980,7 +980,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                 <Router location={location} navigator={null}>
                   <BlockRequestContext.Provider value={ctx}>
                     <CollectionManagerProviderV2 collectionManager={cm}>
-                      <CollectionProvider name={collection.name}>
+                      <CollectionProvider allowNull name={collection.name}>
                         <SchemaComponentOptions scope={options.scope} components={options.components}>
                           <FormLayout
                             layout={'vertical'}
@@ -1756,6 +1756,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
     targetField,
     variables,
   ]);
+
   const handleSubmit: (values: any) => void = useCallback(
     (v) => {
       const schema: ISchema = {

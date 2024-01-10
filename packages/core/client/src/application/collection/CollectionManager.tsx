@@ -211,19 +211,14 @@ export class CollectionManagerV2<Mixins = {}> {
     if (arr.length < 2) {
       throw new Error(`[@nocobase/client]: CollectionManager.getCollectionField() path "${path}" is invalid`);
     }
-    const [collectionName, fieldName, ...otherFieldNames] = String(path).split('.');
+    const [collectionName, ...fieldNames] = String(path).split('.');
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options || {};
     this.checkNamespace(ns);
     const collection = this.getCollection(collectionName, { ns });
     if (!collection) {
       return;
     }
-    const field = collection.getField(fieldName);
-    if (!field) return;
-    if (otherFieldNames.length === 0) {
-      return field;
-    }
-    return this.getCollectionField(`${field.target}.${otherFieldNames.join('.')}`, { ns });
+    return collection.getField(fieldNames.join('.'));
   }
 
   // collectionNamespaces

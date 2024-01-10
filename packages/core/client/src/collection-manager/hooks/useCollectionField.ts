@@ -1,4 +1,5 @@
 import { useAPIClient } from '../../api-client';
+import { useCollectionFieldV2 } from '../../application';
 import { useRecord } from '../../record-provider';
 import { useCompile } from '../../schema-component';
 import { useCollection } from './useCollection';
@@ -8,7 +9,7 @@ export const useCollectionField = () => {
   const record = useRecord();
   const api = useAPIClient();
   const compile = useCompile();
-  const ctx = useCollection();
+  const ctx = useCollectionFieldV2();
   if (!ctx) {
     return {} as any;
   }

@@ -13,7 +13,7 @@ type Props = {
 };
 
 // TODO: 初步适配
-const InternalField: React.FC = (props: Props) => {
+export const CollectionFieldInternalFieldV2: React.FC = (props: Props) => {
   const { component } = props;
   const compile = useCompile();
   const field = useField<Field>();
@@ -77,7 +77,9 @@ export const CollectionFieldV2 = connect((props) => {
   const fieldSchema = useFieldSchema();
   return (
     <CollectionFieldProviderV2 name={fieldSchema.name}>
-      <InternalField {...props} />
+      <CollectionFieldInternalFieldV2 {...props} />
     </CollectionFieldProviderV2>
   );
 });
+
+CollectionFieldV2.displayName = 'CollectionFieldV2';
