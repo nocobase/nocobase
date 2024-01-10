@@ -412,6 +412,38 @@ export const addNewActionSettings = new SchemaSettings({
 
 export const refreshActionSettings = new SchemaSettings({
   name: 'actionSettings:refresh',
+  items: [],
+});
+
+export const bulkDeleteActionSettings = new SchemaSettings({
+  name: 'actionSettings:bulkDelete',
+  items: [
+    {
+      name: 'editButton',
+      Component: ButtonEditor,
+      useComponentProps() {
+        const { buttonEditorProps } = useSchemaToolbar();
+        return buttonEditorProps;
+      },
+    },
+    {
+      name: 'secondConFirm',
+      Component: SecondConFirm,
+    },
+    {
+      name: 'remove',
+      sort: 100,
+      Component: RemoveButton as any,
+      useComponentProps() {
+        const { removeButtonProps } = useSchemaToolbar();
+        return removeButtonProps;
+      },
+    },
+  ],
+});
+
+export const filterActionSettings = new SchemaSettings({
+  name: 'actionSettings:filter',
   items: [
     {
       name: 'FilterableFields',
@@ -488,35 +520,6 @@ export const refreshActionSettings = new SchemaSettings({
     },
   ],
 });
-
-export const bulkDeleteActionSettings = new SchemaSettings({
-  name: 'actionSettings:bulkDelete',
-  items: [
-    {
-      name: 'editButton',
-      Component: ButtonEditor,
-      useComponentProps() {
-        const { buttonEditorProps } = useSchemaToolbar();
-        return buttonEditorProps;
-      },
-    },
-    {
-      name: 'secondConFirm',
-      Component: SecondConFirm,
-    },
-    {
-      name: 'remove',
-      sort: 100,
-      Component: RemoveButton as any,
-      useComponentProps() {
-        const { removeButtonProps } = useSchemaToolbar();
-        return removeButtonProps;
-      },
-    },
-  ],
-});
-
-export const filterActionSettings = new SchemaSettings({});
 
 export const customizeAddRecordActionSettings = new SchemaSettings({});
 

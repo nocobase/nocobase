@@ -12,7 +12,7 @@ import { dataSelectorBlockSettings } from '../modules/table-data-selector/schema
 import {
   addNewActionSettings,
   bulkDeleteActionSettings,
-  refreshActionSettings,
+  filterActionSettings,
   tableBlockSettings,
 } from '../modules/table/schemaSettings';
 
@@ -33,7 +33,7 @@ export class SchemaSettingsPlugin extends Plugin {
 
     // action settings
     this.schemaSettingsManager.add(addNewActionSettings);
-    this.schemaSettingsManager.add(refreshActionSettings);
+    this.schemaSettingsManager.add(filterActionSettings);
     this.schemaSettingsManager.add(bulkDeleteActionSettings);
   }
 }
