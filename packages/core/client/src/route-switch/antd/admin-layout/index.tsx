@@ -1,7 +1,6 @@
 import { css } from '@emotion/css';
 import { useSessionStorageState } from 'ahooks';
 import { App, Layout } from 'antd';
-import { createGlobalStyle } from 'antd-style';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useMatch, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -194,44 +193,6 @@ const MenuEditor = (props) => {
   );
 };
 
-/**
- * 鼠标悬浮在顶部“更多”按钮时显示的子菜单的样式
- */
-const GlobalStyleForAdminLayout = createGlobalStyle`
-  .ant-menu.ant-menu-submenu.ant-menu-submenu-popup {
-    .ant-menu.ant-menu-sub.ant-menu-vertical {
-      background-color: ${(p) => {
-        // @ts-ignore
-        return p.theme.colorBgHeader + ' !important';
-      }};
-      color: ${(p) => {
-        // @ts-ignore
-        return p.theme.colorTextHeaderMenu + ' !important';
-      }};
-      .ant-menu-item:hover {
-        color: ${(p) => {
-          // @ts-ignore
-          return p.theme.colorTextHeaderMenuHover + ' !important';
-        }};
-        background-color: ${(p) => {
-          // @ts-ignore
-          return p.theme.colorBgHeaderMenuHover + ' !important';
-        }};
-      }
-      .ant-menu-item.ant-menu-item-selected {
-        color: ${(p) => {
-          // @ts-ignore
-          return p.theme.colorTextHeaderMenuActive + ' !important';
-        }};
-        background-color: ${(p) => {
-          // @ts-ignore
-          return p.theme.colorBgHeaderMenuActive + ' !important';
-        }};
-      }
-    }
-  }
-`;
-
 export const InternalAdminLayout = (props: any) => {
   const sideMenuRef = useRef<HTMLDivElement>();
   const result = useSystemSettings();
@@ -242,18 +203,17 @@ export const InternalAdminLayout = (props: any) => {
 
   return (
     <Layout>
-      <GlobalStyleForAdminLayout />
       <Layout.Header
         className={css`
           .ant-menu.ant-menu-dark .ant-menu-item-selected,
           .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected,
           .ant-menu-submenu-horizontal.ant-menu-submenu-selected {
-            background-color: ${token.colorBgHeaderMenuActive} !important;
-            color: ${token.colorTextHeaderMenuActive} !important;
+            background-color: ${token.colorBgHeaderMenuActive};
+            color: ${token.colorTextHeaderMenuActive};
           }
           .ant-menu-dark.ant-menu-horizontal > .ant-menu-item:hover {
-            background-color: ${token.colorBgHeaderMenuHover} !important;
-            color: ${token.colorTextHeaderMenuHover} !important;
+            background-color: ${token.colorBgHeaderMenuHover};
+            color: ${token.colorTextHeaderMenuHover};
           }
 
           position: fixed;
@@ -263,15 +223,14 @@ export const InternalAdminLayout = (props: any) => {
           line-height: var(--nb-header-height);
           padding: 0;
           z-index: 100;
-          background-color: ${token.colorBgHeader} !important;
+          background-color: ${token.colorBgHeader};
 
           .ant-menu {
             background-color: transparent;
           }
 
-          .ant-menu-item,
-          .ant-menu-submenu-horizontal {
-            color: ${token.colorTextHeaderMenu} !important;
+          .ant-menu-item {
+            color: ${token.colorTextHeaderMenu};
           }
         `}
       >

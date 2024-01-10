@@ -3,11 +3,9 @@ import { Button, Dropdown } from 'antd';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { AppNameInput } from './AppNameInput';
-import { useStyles } from './MultiAppManagerProvider.style';
 import { usePluginUtils } from './utils';
 
 const MultiAppManager = () => {
-  const { styles } = useStyles();
   const { data, run } = useRequest<{
     data: any[];
   }>(
@@ -48,7 +46,7 @@ const MultiAppManager = () => {
       }}
       menu={{ items }}
     >
-      <Button className={styles.button} title={'Apps'} icon={<Icon type={'AppstoreOutlined'} />} />
+      <Button title={'Apps'} icon={<Icon type={'AppstoreOutlined'} />} />
     </Dropdown>
   );
 };
