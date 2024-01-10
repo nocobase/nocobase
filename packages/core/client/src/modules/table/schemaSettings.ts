@@ -616,8 +616,13 @@ export const viewActionSettings = new SchemaSettings({
       },
     },
     {
-      name: 'delete',
-      type: 'remove',
+      name: 'remove',
+      sort: 100,
+      Component: RemoveButton as any,
+      useComponentProps() {
+        const { removeButtonProps } = useSchemaToolbar();
+        return removeButtonProps;
+      },
     },
   ],
 });
@@ -694,8 +699,56 @@ export const deleteActionSettings = new SchemaSettings({
   ],
 });
 
-export const duplicateActionSettings = new SchemaSettings({});
-
-export const customizePopupActionSettings = new SchemaSettings({});
+export const customizePopupActionSettings = new SchemaSettings({
+  name: 'actionSettings:customize:popup',
+  items: [
+    {
+      name: 'title',
+      type: 'itemGroup',
+      componentProps: {
+        title: 'Customize > Popup',
+      },
+      children: [
+        {
+          name: 'editButton',
+          Component: ButtonEditor,
+          useComponentProps() {
+            const { buttonEditorProps } = useSchemaToolbar();
+            return buttonEditorProps;
+          },
+        },
+        {
+          name: 'linkageRules',
+          Component: SchemaSettingsLinkageRules,
+          useComponentProps() {
+            const { name } = useCollection();
+            const { linkageRulesProps } = useSchemaToolbar();
+            return {
+              ...linkageRulesProps,
+              collectionName: name,
+            };
+          },
+        },
+        {
+          name: 'openMode',
+          Component: SchemaSettingOpenModeSchemaItems,
+          componentProps: {
+            openMode: true,
+            openSize: true,
+          },
+        },
+        {
+          name: 'remove',
+          sort: 100,
+          Component: RemoveButton as any,
+          useComponentProps() {
+            const { removeButtonProps } = useSchemaToolbar();
+            return removeButtonProps;
+          },
+        },
+      ],
+    },
+  ],
+});
 
 export const customizeUpdateRecordActionSettings = new SchemaSettings({});

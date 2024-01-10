@@ -188,7 +188,8 @@ export const tableActionColumnInitializers = new SchemaInitializer({
             type: 'void',
             title: '{{ t("Popup") }}',
             'x-action': 'customize:popup',
-            'x-designer': 'Action.Designer',
+            'x-toolbar': 'ActionSchemaToolbar',
+            'x-settings': 'actionSettings:customize:popup',
             'x-component': 'Action.Link',
             'x-component-props': {
               openMode: 'drawer',
