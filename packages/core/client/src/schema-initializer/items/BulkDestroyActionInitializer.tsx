@@ -9,6 +9,7 @@ export const BulkDestroyActionInitializer = (props) => {
     title: '{{ t("Delete") }}',
     'x-action': 'destroy',
     'x-component': 'Action',
+    'x-toolbar': 'ActionSchemaToolbar',
     'x-settings': 'actionSettings:bulkDelete',
     'x-decorator': 'ACLActionProvider',
     'x-acl-action-props': {

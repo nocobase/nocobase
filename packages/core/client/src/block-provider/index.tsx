@@ -1,6 +1,5 @@
 export * from './BlockProvider';
 export * from './BlockSchemaComponentProvider';
-export * from './BlockSchemaToolbar';
 export * from './FilterFormBlockProvider';
 export * from './FormBlockProvider';
 export * from './FormFieldProvider';

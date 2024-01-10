@@ -1,6 +1,6 @@
 import { Plugin } from '@nocobase/client';
-import { PrintActionPluginProvider } from './PrintActionPluginProvider';
 import { printActionSettings } from './PrintAction.Settings';
+import { PrintActionPluginProvider } from './PrintActionPluginProvider';
 export class PrintPlugin extends Plugin {
   async load() {
     this.app.use(PrintActionPluginProvider);
@@ -11,6 +11,7 @@ export class PrintPlugin extends Plugin {
       Component: 'PrintActionInitializer',
       schema: {
         'x-component': 'Action',
+        'x-toolbar': 'ActionSchemaToolbar',
         'x-settings': 'ActionSettings:print',
         'x-action': 'print',
       },

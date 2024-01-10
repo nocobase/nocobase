@@ -521,7 +521,45 @@ export const filterActionSettings = new SchemaSettings({
   ],
 });
 
-export const customizeAddRecordActionSettings = new SchemaSettings({});
+export const customizeAddRecordActionSettings = new SchemaSettings({
+  name: 'actionSettings:customize:addRecord',
+  items: [
+    {
+      name: 'title',
+      type: 'itemGroup',
+      componentProps: {
+        title: 'Customize > Add record',
+      },
+      children: [
+        {
+          name: 'editButton',
+          Component: ButtonEditor,
+          useComponentProps() {
+            const { buttonEditorProps } = useSchemaToolbar();
+            return buttonEditorProps;
+          },
+        },
+        {
+          name: 'openMode',
+          Component: SchemaSettingOpenModeSchemaItems,
+          componentProps: {
+            openMode: true,
+            openSize: true,
+          },
+        },
+        {
+          name: 'delete',
+          sort: 100,
+          Component: RemoveButton as any,
+          useComponentProps() {
+            const { removeButtonProps } = useSchemaToolbar();
+            return removeButtonProps;
+          },
+        },
+      ],
+    },
+  ],
+});
 
 export const viewActionSettings = new SchemaSettings({});
 

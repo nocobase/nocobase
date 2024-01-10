@@ -1,8 +1,8 @@
 import { Plugin, useCollection } from '@nocobase/client';
-import { BulkEditPluginProvider } from './BulkEditPluginProvider';
-import { BulkEditFormItemInitializers } from './BulkEditFormItemInitializers';
-import { CreateFormBulkEditBlockInitializers } from './CreateFormBulkEditBlockInitializers';
 import { bulkEditactionSettings } from './BulkEditAction.Settings';
+import { BulkEditFormItemInitializers } from './BulkEditFormItemInitializers';
+import { BulkEditPluginProvider } from './BulkEditPluginProvider';
+import { CreateFormBulkEditBlockInitializers } from './CreateFormBulkEditBlockInitializers';
 export class BulkEditPlugin extends Plugin {
   async load() {
     this.app.use(BulkEditPluginProvider);
@@ -18,8 +18,8 @@ export class BulkEditPlugin extends Plugin {
       schema: {
         'x-align': 'right',
         'x-decorator': 'ACLActionProvider',
-        'x-designer': 'Action.Designer',
         'x-action': 'customize:bulkEdit',
+        'x-toolbar': 'ActionSchemaToolbar',
         'x-settings': 'ActionSettings:customize:bulkEdit',
         'x-acl-action': 'update',
         'x-acl-action-props': {

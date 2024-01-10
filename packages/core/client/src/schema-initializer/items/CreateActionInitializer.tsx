@@ -8,6 +8,7 @@ export const CreateActionInitializer = () => {
     'x-action': 'create',
     'x-acl-action': 'create',
     title: "{{t('Add new')}}",
+    'x-toolbar': 'ActionSchemaToolbar',
     'x-settings': 'actionSettings:addNew',
     'x-component': 'Action',
     'x-decorator': 'ACLActionProvider',

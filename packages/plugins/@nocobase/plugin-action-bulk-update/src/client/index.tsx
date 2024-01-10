@@ -21,6 +21,7 @@ export class BulkUpdatePlugin extends Plugin {
           skipScopeCheck: true,
         },
         'x-action': 'customize:bulkUpdate',
+        'x-toolbar': 'ActionSchemaToolbar',
         'x-settings': 'ActionSettings:customize:bulkUpdate',
         'x-action-settings': {
           assignedValues: {},

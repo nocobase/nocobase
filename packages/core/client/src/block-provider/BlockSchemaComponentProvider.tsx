@@ -1,8 +1,9 @@
 import React from 'react';
 import { Plugin } from '../application/Plugin';
+import { ActionSchemaToolbar } from '../modules/table/ActionSchemaToolbar';
+import { BlockSchemaToolbar } from '../modules/table/BlockSchemaToolbar';
 import { SchemaComponentOptions } from '../schema-component';
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
-import { BlockSchemaToolbar } from './BlockSchemaToolbar';
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';
 import { FilterFormBlockProvider } from './FilterFormBlockProvider';
 import { FormBlockProvider, useFormBlockProps } from './FormBlockProvider';
@@ -61,6 +62,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       DetailsBlockProvider,
       RecordLink,
       BlockSchemaToolbar,
+      ActionSchemaToolbar,
     });
   }
 

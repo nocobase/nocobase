@@ -1,12 +1,13 @@
 import React from 'react';
-import { BlockInitializer } from './BlockInitializer';
 import { useSchemaInitializerItem } from '../../application';
+import { BlockInitializer } from './BlockInitializer';
 
 export const CustomizeAddRecordActionInitializer = () => {
   const schema = {
     type: 'void',
     title: '{{t("Add record")}}',
-    'x-designer': 'Action.Designer',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:customize:addRecord',
     'x-component': 'Action',
     'x-action': 'customize:create',
     'x-component-props': {

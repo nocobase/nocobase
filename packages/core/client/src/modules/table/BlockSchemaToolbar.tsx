@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection } from '../collection-manager';
-import { SchemaToolbar } from '../schema-settings/GeneralSchemaDesigner';
-import { useSchemaTemplate } from '../schema-templates';
+import { useCollection } from '../../collection-manager';
+import { SchemaToolbar } from '../../schema-settings/GeneralSchemaDesigner';
+import { useSchemaTemplate } from '../../schema-templates';
 
 export const BlockSchemaToolbar = (props) => {
   const { t } = useTranslation();
