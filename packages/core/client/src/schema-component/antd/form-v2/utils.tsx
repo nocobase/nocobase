@@ -99,7 +99,7 @@ export const collectFieldStateOfLinkageRules = ({
 
             try {
               // 2. TODO: 需要把里面解析变量的逻辑删除，因为在上一步已经解析过了
-              const result = evaluate(exp, { ...values, now: () => new Date().toString(), ...expScope });
+              const result = evaluate(exp, { now: () => new Date().toString(), ...expScope });
               return result;
             } catch (error) {
               console.error(error);
