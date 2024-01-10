@@ -9,6 +9,7 @@ import { mergeFilter, useFormBlockContext, useTableBlockContext } from '../../bl
 import { useCollection, useCollectionManager, useSortFields } from '../../collection-manager';
 import { FilterBlockType } from '../../filter-provider';
 import { ButtonEditor, RemoveButton } from '../../schema-component/antd/action/Action.Designer';
+import { FilterableFieldsSchemaSettingsItem } from '../../schema-component/antd/filter/Filter.Action.Designer';
 import { removeNullCondition } from '../../schema-component/antd/filter/useFilterActionProps';
 import { FixedBlockDesignerItem } from '../../schema-component/antd/page/FixedBlock';
 import { useDesignable } from '../../schema-component/hooks';
@@ -408,3 +409,100 @@ export const addNewActionSettings = new SchemaSettings({
     },
   ],
 });
+
+export const refreshActionSettings = new SchemaSettings({
+  name: 'actionSettings:refresh',
+  items: [
+    {
+      name: 'FilterableFields',
+      Component: FilterableFieldsSchemaSettingsItem,
+    },
+    {
+      name: 'divider',
+      type: 'divider',
+    },
+    {
+      name: 'EditButton',
+      type: 'modal',
+      useComponentProps() {
+        const field = useField();
+        const fieldSchema = useFieldSchema();
+        const { dn } = useDesignable();
+        const { t } = useTranslation();
+
+        return {
+          title: t('Edit button'),
+          schema: {
+            type: 'object',
+            title: t('Edit button'),
+            properties: {
+              title: {
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                title: t('Button title'),
+                default: fieldSchema.title,
+                'x-component-props': {},
+              },
+              icon: {
+                'x-decorator': 'FormItem',
+                'x-component': 'IconPicker',
+                title: t('Button icon'),
+                default: fieldSchema?.['x-component-props']?.icon,
+                'x-component-props': {},
+              },
+            },
+          } as ISchema,
+          onSubmit: ({ title, icon }) => {
+            fieldSchema.title = title;
+            field.title = title;
+            field.componentProps.icon = icon;
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props'].icon = icon;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                title,
+                'x-component-props': {
+                  ...fieldSchema['x-component-props'],
+                },
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'divider',
+      type: 'divider',
+    },
+    {
+      name: 'delete',
+      type: 'remove',
+      componentProps: {
+        removeParentsIfNoChildren: true,
+        breakRemoveOn: (s) => {
+          return s['x-component'] === 'Space' || s['x-component'] === 'ActionBar';
+        },
+      },
+    },
+  ],
+});
+
+export const bulkDeleteActionSettings = new SchemaSettings({});
+
+export const filterActionSettings = new SchemaSettings({});
+
+export const customizeAddRecordActionSettings = new SchemaSettings({});
+
+export const viewActionSettings = new SchemaSettings({});
+
+export const editActionSettings = new SchemaSettings({});
+
+export const DeleteActionSettings = new SchemaSettings({});
+
+export const duplicateActionSettings = new SchemaSettings({});
+
+export const customizePopupActionSettings = new SchemaSettings({});
+
+export const customizeUpdateRecordActionSettings = new SchemaSettings({});
