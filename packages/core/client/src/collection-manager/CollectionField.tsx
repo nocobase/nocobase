@@ -1,6 +1,6 @@
 import React from 'react';
 import { connect, useFieldSchema } from '@formily/react';
-import { CollectionFieldInternalFieldV2, CollectionFieldV2 } from '../application';
+import { CollectionFieldInternalFieldV2 } from '../application';
 import { CollectionFieldProvider } from './CollectionFieldProvider';
 
 export const CollectionField = connect((props) => {
@@ -12,5 +12,3 @@ export const CollectionField = connect((props) => {
     </CollectionFieldProvider>
   );
 });
-
-CollectionFieldV2.displayName = 'CollectionFieldV2';

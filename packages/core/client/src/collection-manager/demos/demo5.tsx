@@ -7,8 +7,8 @@ import {
   AntdSchemaComponentProvider,
   Application,
   CardItem,
-  CollectionManagerContext,
   CollectionManagerProvider,
+  CollectionManagerProviderV2,
   CollectionProvider,
   FormItem,
   Grid,
@@ -21,6 +21,7 @@ import {
   SchemaInitializer,
   SchemaInitializerItem,
   useCollectionManager,
+  useCollectionManagerV2,
   useSchemaInitializer,
   useSchemaInitializerItem,
 } from '@nocobase/client';
@@ -71,7 +72,7 @@ const FormItemInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { getInterface } = useCollectionManager();
   const schemaOptions = useContext(SchemaOptionsContext);
-  const cm = useContext(CollectionManagerContext);
+  const cm = useCollectionManagerV2();
   const { insert } = useSchemaInitializer();
   return (
     <SchemaInitializerItem
@@ -90,7 +91,7 @@ const FormItemInitializer = () => {
 
         await FormDrawer('Add field', () => {
           return (
-            <CollectionManagerContext.Provider value={cm}>
+            <CollectionManagerProviderV2 collectionManager={cm}>
               <AntdSchemaComponentProvider>
                 <SchemaComponentOptions scope={schemaOptions.scope} components={schemaOptions.components}>
                   <FormLayout layout={'vertical'}>
@@ -102,7 +103,7 @@ const FormItemInitializer = () => {
                   </FormLayout>
                 </SchemaComponentOptions>
               </AntdSchemaComponentProvider>
-            </CollectionManagerContext.Provider>
+            </CollectionManagerProviderV2>
           );
         }).open({
           initialValues: {},
