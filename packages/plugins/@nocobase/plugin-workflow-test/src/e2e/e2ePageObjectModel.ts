@@ -465,9 +465,7 @@ export class ConditionYesNode {
     this.nodeConfigure = page
       .getByLabel(`Condition-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
-    this.conditionExpressionEditBox = page
-      .getByLabel('block-item-WorkflowVariableRawTextArea-workflows-Condition')
-      .getByLabel('textbox');
+    this.conditionExpressionEditBox = page.getByLabel('textbox');
     // await page.getByLabel('variable-constant').first().click();
     // await page.getByLabel('variable-button').first().click();
     // await page.getByLabel('select-operator-calc').first().click();
