@@ -14,6 +14,7 @@ import {
   bulkDeleteActionSettings,
   customizeAddRecordActionSettings,
   filterActionSettings,
+  refreshActionSettings,
   tableBlockSettings,
 } from '../modules/table/schemaSettings';
 
@@ -35,6 +36,7 @@ export class SchemaSettingsPlugin extends Plugin {
     // action settings
     this.schemaSettingsManager.add(addNewActionSettings);
     this.schemaSettingsManager.add(filterActionSettings);
+    this.schemaSettingsManager.add(refreshActionSettings);
     this.schemaSettingsManager.add(bulkDeleteActionSettings);
     this.schemaSettingsManager.add(customizeAddRecordActionSettings);
   }

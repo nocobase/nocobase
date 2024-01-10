@@ -412,7 +412,29 @@ export const addNewActionSettings = new SchemaSettings({
 
 export const refreshActionSettings = new SchemaSettings({
   name: 'actionSettings:refresh',
-  items: [],
+  items: [
+    {
+      name: 'editButton',
+      Component: ButtonEditor,
+      useComponentProps() {
+        const { buttonEditorProps } = useSchemaToolbar();
+        return buttonEditorProps;
+      },
+    },
+    {
+      name: 'secondConFirm',
+      Component: SecondConFirm,
+    },
+    {
+      name: 'delete',
+      sort: 100,
+      Component: RemoveButton as any,
+      useComponentProps() {
+        const { removeButtonProps } = useSchemaToolbar();
+        return removeButtonProps;
+      },
+    },
+  ],
 });
 
 export const bulkDeleteActionSettings = new SchemaSettings({
