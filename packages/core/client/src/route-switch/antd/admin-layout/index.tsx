@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { useSessionStorageState } from 'ahooks';
-import { App, Layout } from 'antd';
+import { App, ConfigProvider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useMatch, useNavigate, useParams } from 'react-router-dom';
@@ -198,39 +198,67 @@ const MenuEditor = (props) => {
  * 鼠标悬浮在顶部“更多”按钮时显示的子菜单的样式
  */
 const GlobalStyleForAdminLayout = createGlobalStyle`
-  .ant-menu.ant-menu-submenu.ant-menu-submenu-popup {
-    .ant-menu.ant-menu-sub.ant-menu-vertical {
-      background-color: ${(p) => {
-        // @ts-ignore
-        return p.theme.colorBgHeader + ' !important';
-      }};
-      color: ${(p) => {
-        // @ts-ignore
-        return p.theme.colorTextHeaderMenu + ' !important';
-      }};
-      .ant-menu-item:hover {
-        color: ${(p) => {
-          // @ts-ignore
-          return p.theme.colorTextHeaderMenuHover + ' !important';
-        }};
+  .nb-container-of-header-submenu {
+    .ant-menu.ant-menu-submenu.ant-menu-submenu-popup {
+      .ant-menu.ant-menu-sub.ant-menu-vertical {
         background-color: ${(p) => {
           // @ts-ignore
-          return p.theme.colorBgHeaderMenuHover + ' !important';
+          return p.theme.colorBgHeader + ' !important';
         }};
-      }
-      .ant-menu-item.ant-menu-item-selected {
         color: ${(p) => {
           // @ts-ignore
-          return p.theme.colorTextHeaderMenuActive + ' !important';
+          return p.theme.colorTextHeaderMenu + ' !important';
         }};
-        background-color: ${(p) => {
-          // @ts-ignore
-          return p.theme.colorBgHeaderMenuActive + ' !important';
-        }};
+        .ant-menu-item:hover {
+          color: ${(p) => {
+            // @ts-ignore
+            return p.theme.colorTextHeaderMenuHover + ' !important';
+          }};
+          background-color: ${(p) => {
+            // @ts-ignore
+            return p.theme.colorBgHeaderMenuHover + ' !important';
+          }};
+        }
+        .ant-menu-item.ant-menu-item-selected {
+          color: ${(p) => {
+            // @ts-ignore
+            return p.theme.colorTextHeaderMenuActive + ' !important';
+          }};
+          background-color: ${(p) => {
+            // @ts-ignore
+            return p.theme.colorBgHeaderMenuActive + ' !important';
+          }};
+        }
       }
     }
   }
 `;
+
+/**
+ * 确保顶部菜单的子菜单的主题样式正确
+ * @param param0
+ * @returns
+ */
+const SetThemeOfHeaderSubmenu = ({ children }) => {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    containerRef.current = document.createElement('div');
+    containerRef.current.classList.add('nb-container-of-header-submenu');
+    document.body.appendChild(containerRef.current);
+
+    return () => {
+      document.body.removeChild(containerRef.current);
+    };
+  }, []);
+
+  return (
+    <>
+      <GlobalStyleForAdminLayout />
+      <ConfigProvider getPopupContainer={() => containerRef.current}>{children}</ConfigProvider>
+    </>
+  );
+};
 
 export const InternalAdminLayout = (props: any) => {
   const sideMenuRef = useRef<HTMLDivElement>();
@@ -318,7 +346,9 @@ export const InternalAdminLayout = (props: any) => {
                 width: 0;
               `}
             >
-              <MenuEditor sideMenuRef={sideMenuRef} />
+              <SetThemeOfHeaderSubmenu>
+                <MenuEditor sideMenuRef={sideMenuRef} />
+              </SetThemeOfHeaderSubmenu>
             </div>
           </div>
           <div
