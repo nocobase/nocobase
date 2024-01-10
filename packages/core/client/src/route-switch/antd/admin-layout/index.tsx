@@ -270,18 +270,17 @@ export const InternalAdminLayout = (props: any) => {
 
   return (
     <Layout>
-      <GlobalStyleForAdminLayout />
       <Layout.Header
         className={css`
           .ant-menu.ant-menu-dark .ant-menu-item-selected,
           .ant-menu-submenu-popup.ant-menu-dark .ant-menu-item-selected,
           .ant-menu-submenu-horizontal.ant-menu-submenu-selected {
-            background-color: ${token.colorBgHeaderMenuActive} !important;
-            color: ${token.colorTextHeaderMenuActive} !important;
+            background-color: ${token.colorBgHeaderMenuActive};
+            color: ${token.colorTextHeaderMenuActive};
           }
           .ant-menu-dark.ant-menu-horizontal > .ant-menu-item:hover {
-            background-color: ${token.colorBgHeaderMenuHover} !important;
-            color: ${token.colorTextHeaderMenuHover} !important;
+            background-color: ${token.colorBgHeaderMenuHover};
+            color: ${token.colorTextHeaderMenuHover};
           }
 
           position: fixed;
@@ -291,15 +290,14 @@ export const InternalAdminLayout = (props: any) => {
           line-height: var(--nb-header-height);
           padding: 0;
           z-index: 100;
-          background-color: ${token.colorBgHeader} !important;
+          background-color: ${token.colorBgHeader};
 
           .ant-menu {
             background-color: transparent;
           }
 
-          .ant-menu-item,
-          .ant-menu-submenu-horizontal {
-            color: ${token.colorTextHeaderMenu} !important;
+          .ant-menu-item {
+            color: ${token.colorTextHeaderMenu};
           }
         `}
       >
