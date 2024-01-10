@@ -622,7 +622,43 @@ export const viewActionSettings = new SchemaSettings({
   ],
 });
 
-export const editActionSettings = new SchemaSettings({});
+export const editActionSettings = new SchemaSettings({
+  name: 'actionSettings:edit',
+  items: [
+    {
+      name: 'editButton',
+      Component: ButtonEditor,
+      useComponentProps() {
+        const { buttonEditorProps } = useSchemaToolbar();
+        return buttonEditorProps;
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection();
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+          collectionName: name,
+        };
+      },
+    },
+    {
+      name: 'openMode',
+      Component: SchemaSettingOpenModeSchemaItems,
+      componentProps: {
+        openMode: true,
+        openSize: true,
+      },
+    },
+    {
+      name: 'delete',
+      type: 'remove',
+    },
+  ],
+});
 
 export const DeleteActionSettings = new SchemaSettings({});
 

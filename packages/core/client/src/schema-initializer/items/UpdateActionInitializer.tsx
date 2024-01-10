@@ -7,7 +7,8 @@ export const UpdateActionInitializer = (props) => {
     type: 'void',
     title: '{{ t("Edit") }}',
     'x-action': 'update',
-    'x-designer': 'Action.Designer',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:edit',
     'x-component': 'Action',
     'x-component-props': {
       openMode: 'drawer',
