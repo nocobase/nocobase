@@ -787,7 +787,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
     ],
   },
 ];
-function SecondConFirm() {
+export function SecondConFirm() {
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();

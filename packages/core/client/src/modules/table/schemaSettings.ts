@@ -8,7 +8,7 @@ import { SchemaSettings } from '../../application/schema-settings/SchemaSettings
 import { mergeFilter, useFormBlockContext, useTableBlockContext } from '../../block-provider';
 import { useCollection, useCollectionManager, useSortFields } from '../../collection-manager';
 import { FilterBlockType } from '../../filter-provider';
-import { ButtonEditor, RemoveButton } from '../../schema-component/antd/action/Action.Designer';
+import { ButtonEditor, RemoveButton, SecondConFirm } from '../../schema-component/antd/action/Action.Designer';
 import { FilterableFieldsSchemaSettingsItem } from '../../schema-component/antd/filter/Filter.Action.Designer';
 import { removeNullCondition } from '../../schema-component/antd/filter/useFilterActionProps';
 import { FixedBlockDesignerItem } from '../../schema-component/antd/page/FixedBlock';
@@ -489,7 +489,32 @@ export const refreshActionSettings = new SchemaSettings({
   ],
 });
 
-export const bulkDeleteActionSettings = new SchemaSettings({});
+export const bulkDeleteActionSettings = new SchemaSettings({
+  name: 'actionSettings:bulkDelete',
+  items: [
+    {
+      name: 'editButton',
+      Component: ButtonEditor,
+      useComponentProps() {
+        const { buttonEditorProps } = useSchemaToolbar();
+        return buttonEditorProps;
+      },
+    },
+    {
+      name: 'secondConFirm',
+      Component: SecondConFirm,
+    },
+    {
+      name: 'remove',
+      sort: 100,
+      Component: RemoveButton as any,
+      useComponentProps() {
+        const { removeButtonProps } = useSchemaToolbar();
+        return removeButtonProps;
+      },
+    },
+  ],
+});
 
 export const filterActionSettings = new SchemaSettings({});
 
