@@ -13,6 +13,7 @@ import {
   addNewActionSettings,
   bulkDeleteActionSettings,
   customizeAddRecordActionSettings,
+  deleteActionSettings,
   editActionSettings,
   filterActionSettings,
   refreshActionSettings,
@@ -41,6 +42,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(refreshActionSettings);
     this.schemaSettingsManager.add(viewActionSettings);
     this.schemaSettingsManager.add(editActionSettings);
+    this.schemaSettingsManager.add(deleteActionSettings);
     this.schemaSettingsManager.add(bulkDeleteActionSettings);
     this.schemaSettingsManager.add(customizeAddRecordActionSettings);
   }

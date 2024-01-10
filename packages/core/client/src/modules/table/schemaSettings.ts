@@ -660,7 +660,39 @@ export const editActionSettings = new SchemaSettings({
   ],
 });
 
-export const DeleteActionSettings = new SchemaSettings({});
+export const deleteActionSettings = new SchemaSettings({
+  name: 'actionSettings:delete',
+  items: [
+    {
+      name: 'editButton',
+      Component: ButtonEditor,
+      useComponentProps() {
+        const { buttonEditorProps } = useSchemaToolbar();
+        return buttonEditorProps;
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { name } = useCollection();
+        const { linkageRulesProps } = useSchemaToolbar();
+        return {
+          ...linkageRulesProps,
+          collectionName: name,
+        };
+      },
+    },
+    {
+      name: 'secondConFirm',
+      Component: SecondConFirm,
+    },
+    {
+      name: 'delete',
+      type: 'remove',
+    },
+  ],
+});
 
 export const duplicateActionSettings = new SchemaSettings({});
 

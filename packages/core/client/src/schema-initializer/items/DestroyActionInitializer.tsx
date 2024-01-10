@@ -7,7 +7,8 @@ export const DestroyActionInitializer = (props) => {
     title: '{{ t("Delete") }}',
     'x-action': 'destroy',
     'x-component': 'Action',
-    'x-designer': 'Action.Designer',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:delete',
     'x-component-props': {
       icon: 'DeleteOutlined',
       confirm: {
