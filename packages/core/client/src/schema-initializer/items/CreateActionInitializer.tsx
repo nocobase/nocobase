@@ -1,6 +1,6 @@
 import React from 'react';
-import { ActionInitializer } from './ActionInitializer';
 import { useSchemaInitializerItem } from '../../application';
+import { ActionInitializer } from './ActionInitializer';
 
 export const CreateActionInitializer = () => {
   const schema = {
@@ -8,7 +8,7 @@ export const CreateActionInitializer = () => {
     'x-action': 'create',
     'x-acl-action': 'create',
     title: "{{t('Add new')}}",
-    'x-designer': 'Action.Designer',
+    'x-settings': 'actionSettings:addNew',
     'x-component': 'Action',
     'x-decorator': 'ACLActionProvider',
     'x-component-props': {

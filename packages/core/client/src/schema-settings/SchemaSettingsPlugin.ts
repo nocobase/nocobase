@@ -9,10 +9,11 @@ import { gridCardBlockSettings } from '../modules/grid-card/schemaSettings';
 import { listBlockSettings } from '../modules/list/schemaSettings';
 import { markdownBlockSettings } from '../modules/markdown/schemaSettings';
 import { dataSelectorBlockSettings } from '../modules/table-data-selector/schemaSettings';
-import { tableBlockSettings } from '../modules/table/schemaSettings';
+import { addNewActionSettings, tableBlockSettings } from '../modules/table/schemaSettings';
 
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
+    // block settings
     this.schemaSettingsManager.add(tableBlockSettings);
     this.schemaSettingsManager.add(creationFormBlockSettings);
     this.schemaSettingsManager.add(editFormBlockSettings);
@@ -24,5 +25,8 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(gridCardBlockSettings);
     this.schemaSettingsManager.add(filterCollapseBlockSettings);
     this.schemaSettingsManager.add(markdownBlockSettings);
+
+    // action settings
+    this.schemaSettingsManager.add(addNewActionSettings);
   }
 }

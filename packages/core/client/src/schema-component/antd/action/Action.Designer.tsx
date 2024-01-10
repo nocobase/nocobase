@@ -61,7 +61,7 @@ const MenuGroup = (props) => {
   );
 };
 
-function ButtonEditor(props) {
+export function ButtonEditor(props) {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -419,7 +419,7 @@ function AfterSuccess() {
     />
   );
 }
-function RemoveButton(
+export function RemoveButton(
   props: {
     onConfirmOk?: ModalProps['onOk'];
   } = {},

@@ -3,13 +3,16 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
+import { useSchemaToolbar } from '../../application';
 import { SchemaSettings } from '../../application/schema-settings/SchemaSettings';
 import { mergeFilter, useFormBlockContext, useTableBlockContext } from '../../block-provider';
 import { useCollection, useCollectionManager, useSortFields } from '../../collection-manager';
 import { FilterBlockType } from '../../filter-provider';
+import { ButtonEditor, RemoveButton } from '../../schema-component/antd/action/Action.Designer';
 import { removeNullCondition } from '../../schema-component/antd/filter/useFilterActionProps';
 import { FixedBlockDesignerItem } from '../../schema-component/antd/page/FixedBlock';
 import { useDesignable } from '../../schema-component/hooks';
+import { SchemaSettingOpenModeSchemaItems } from '../../schema-items';
 import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsConnectDataBlocks,
@@ -370,6 +373,37 @@ export const tableBlockSettings = new SchemaSettings({
             'x-component': 'Grid',
           },
         };
+      },
+    },
+  ],
+});
+
+export const addNewActionSettings = new SchemaSettings({
+  name: 'actionSettings:addNew',
+  items: [
+    {
+      name: 'editButton',
+      Component: ButtonEditor,
+      useComponentProps() {
+        const { buttonEditorProps } = useSchemaToolbar();
+        return buttonEditorProps;
+      },
+    },
+    {
+      name: 'openMode',
+      Component: SchemaSettingOpenModeSchemaItems,
+      componentProps: {
+        openMode: true,
+        openSize: true,
+      },
+    },
+    {
+      name: 'delete',
+      sort: 100,
+      Component: RemoveButton as any,
+      useComponentProps() {
+        const { removeButtonProps } = useSchemaToolbar();
+        return removeButtonProps;
       },
     },
   ],
