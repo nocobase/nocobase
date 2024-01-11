@@ -1,6 +1,9 @@
 import lodash from 'lodash';
 import { ACL } from './acl';
+
 type StrategyValue = false | '*' | string | string[];
+
+export const NOCOBASE_MAIN_NAMESPACE = 'nocobase-main';
 
 export interface AvailableStrategyOptions {
   displayName?: string;
@@ -21,7 +24,11 @@ export const predicate = {
 export class ACLAvailableStrategy {
   acl: ACL;
   options: AvailableStrategyOptions;
-  actionsAsObject: { [key: string]: string };
+  actionsAsObject: {
+    [namespace: string]: {
+      [action: string]: string;
+    };
+  };
 
   allowConfigure: boolean;
 
@@ -37,20 +44,28 @@ export class ACLAvailableStrategy {
 
     if (lodash.isArray(actions)) {
       this.actionsAsObject = actions.reduce((carry, action) => {
-        const [actionName, predicate] = action.split(':');
-        carry[actionName] = predicate;
+        const splitResult = this.splitActionString(action);
+        const { namespace, action: actionName, predicate } = splitResult;
+
+        if (!carry[namespace]) {
+          carry[namespace] = {};
+        }
+
+        carry[namespace][actionName] = predicate;
         return carry;
       }, {});
     }
   }
 
-  matchAction(actionName: string) {
+  matchAction(resourceName, actionName: string) {
     if (this.options.actions == '*') {
       return true;
     }
 
-    if (this.actionsAsObject?.hasOwnProperty(actionName)) {
-      const predicateName = this.actionsAsObject[actionName];
+    const namespace = this.getNamespace(resourceName);
+
+    if (Object.prototype.hasOwnProperty.call(this.actionsAsObject?.[namespace] || {}, actionName)) {
+      const predicateName = this.actionsAsObject[namespace][actionName];
       if (predicateName) {
         return lodash.cloneDeep(predicate[predicateName]);
       }
@@ -62,6 +77,37 @@ export class ACLAvailableStrategy {
   }
 
   allow(resourceName: string, actionName: string) {
-    return this.matchAction(this.acl.resolveActionAlias(actionName));
+    return this.matchAction(resourceName, this.acl.resolveActionAlias(actionName));
+  }
+
+  private splitActionString(actionString: string): {
+    namespace: string;
+    action: string;
+    predicate?: string;
+  } {
+    // namespace|action:predicate
+
+    let [namespace, actionWithPredicate] = actionString.split('|');
+    if (!actionWithPredicate) {
+      actionWithPredicate = namespace;
+      namespace = NOCOBASE_MAIN_NAMESPACE;
+    }
+
+    const [action, predicate] = actionWithPredicate.split(':');
+
+    return {
+      namespace,
+      action,
+      predicate,
+    };
+  }
+  private getNamespace(resourceName: string) {
+    const [namespace, resource] = resourceName.split('|');
+
+    if (resource) {
+      return namespace;
+    }
+
+    return NOCOBASE_MAIN_NAMESPACE;
   }
 }
