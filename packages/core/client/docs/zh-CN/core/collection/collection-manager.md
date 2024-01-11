@@ -37,10 +37,10 @@ class CollectionManagerV2 {
   removeCollection(path: string, options?: GetCollectionOptions): void;
   getCollectionField(path: string, options?: GetCollectionOptions): Promise<CollectionFieldOptions | undefined>;
 
-  addCollectionFieldInterfaces(interfaces:CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[]): void;
-  getCollectionFieldInterfaces(): CollectionFieldInterfaceV2[]
+  addFieldInterfaces(interfaces:CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[]): void;
+  getFieldInterfaces(): CollectionFieldInterfaceV2[]
   getCollectionFieldInterfaceGroups(): { name: string; children: CollectionFieldInterfaceV2[] }[]
-  getCollectionFieldInterface(name: string): CollectionFieldInterfaceV2
+  getFieldInterface(name: string): CollectionFieldInterfaceV2
 }
 ```
 
@@ -179,7 +179,7 @@ class MyPlugin extends Plugin {
     });
 
     this.app.collectionManager.addCollectionTemplates([ treeCollectionTemplate, sqlCollectionTemplate ]);
-    this.app.collectionManager.addCollectionFieldInterfaces([checkboxCollectionFieldInterface]);
+    this.app.collectionManager.addFieldInterfaces([checkboxCollectionFieldInterface]);
 
     const collections = await this.app.apiClient.request({ url: 'collections:list' })
       .then((res) => res.data.data);
@@ -491,7 +491,7 @@ collectionManager.getCollectionField('users.username'); // { name: 'username', t
 collectionManager.getCollectionField('users.roles.name'); // 获取 roles 关联字段对应的 roles 表中的 name 字段
 ```
 
-### cm.addCollectionFieldInterfaces(interfaces)
+### cm.addFieldInterfaces(interfaces)
 
 添加数据表字段接口。
 
@@ -499,7 +499,7 @@ collectionManager.getCollectionField('users.roles.name'); // 获取 roles 关联
 
 ```tsx | pure
 class CollectionManagerV2 {
-  addCollectionFieldInterfaces(interfaces:CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[]): void;
+  addFieldInterfaces(interfaces:CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[]): void;
 }
 ```
 
@@ -515,12 +515,12 @@ const checkboxCollectionFieldInterface = new CollectionFieldInterface({
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.collectionManager.addCollectionFieldInterfaces([checkboxCollectionFieldInterface]);
+    this.app.collectionManager.addFieldInterfaces([checkboxCollectionFieldInterface]);
   }
 }
 ```
 
-### cm.getCollectionFieldInterfaces()
+### cm.getFieldInterfaces()
 
 获取数据表字段接口。
 
@@ -528,14 +528,14 @@ class MyPlugin extends Plugin {
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollectionFieldInterfaces(): CollectionFieldInterfaceV2[]
+  getFieldInterfaces(): CollectionFieldInterfaceV2[]
 }
 ```
 
 - 示例
 
 ```tsx | pure
-collectionManager.getCollectionFieldInterfaces(); // [ checkboxCollectionFieldInterface ]
+collectionManager.getFieldInterfaces(); // [ checkboxCollectionFieldInterface ]
 ```
 
 ### cm.getCollectionFieldInterfaceGroups()
@@ -556,7 +556,7 @@ class CollectionManagerV2 {
 collectionManager.getCollectionFieldInterfaceGroups(); // [ { name: '基础', children: [ checkboxCollectionFieldInterface ] } ]
 ```
 
-### cm.getCollectionFieldInterface(name)
+### cm.getFieldInterface(name)
 
 获取数据表字段接口。
 
@@ -564,12 +564,12 @@ collectionManager.getCollectionFieldInterfaceGroups(); // [ { name: '基础', ch
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollectionFieldInterface(name: string): CollectionFieldInterfaceV2
+  getFieldInterface(name: string): CollectionFieldInterfaceV2
 }
 ```
 
 - 示例
 
 ```tsx | pure
-collectionManager.getCollectionFieldInterface('checkbox'); // checkboxCollectionFieldInterface
+collectionManager.getFieldInterface('checkbox'); // checkboxCollectionFieldInterface
 ```

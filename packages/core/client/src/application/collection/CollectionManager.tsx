@@ -60,10 +60,8 @@ export interface CollectionManagerOptionsV2 {
 export class CollectionManagerV2<Mixins = {}> {
   public app: Application;
   protected collections: Record<string, Record<string, CollectionV2>> = {};
-  // protected collectionTemplateClasses: typeof CollectionTemplateV2[] = [];
   protected collectionTemplateInstances: Record<string, CollectionTemplateV2> = {};
-  // protected collectionFieldInterfaceClasses: typeof CollectionFieldInterfaceV2[] = [];
-  protected collectionFieldInterfaceInstances: Record<string, CollectionFieldInterfaceV2> = {};
+  protected fieldInterfaceInstances: Record<string, CollectionFieldInterfaceV2> = {};
   protected collectionMixins: CollectionMixinConstructor[] = [];
   protected collectionNamespaces: Record<string, string> = {
     [DEFAULT_COLLECTION_NAMESPACE_NAME]: DEFAULT_COLLECTION_NAMESPACE_TITLE,
@@ -86,7 +84,7 @@ export class CollectionManagerV2<Mixins = {}> {
   init(options: CollectionManagerOptionsV2) {
     this.collectionMixins.push(...(options.collectionMixins || []));
     this.addCollectionTemplates(options.collectionTemplates || []);
-    this.addCollectionFieldInterfaces(options.collectionFieldInterfaces || []);
+    this.addFieldInterfaces(options.collectionFieldInterfaces || []);
     this.addCollectionNamespaces(options.collectionNamespaces || {});
     if (Array.isArray(options.collections)) {
       this.addCollections(options.collections);
@@ -235,7 +233,6 @@ export class CollectionManagerV2<Mixins = {}> {
       | (CollectionTemplateV2Options | typeof CollectionTemplateV2)[]
       | Record<string, CollectionTemplateV2Options>,
   ) {
-    // this.collectionTemplateClasses = [...this.collectionTemplateClasses, ...templateClasses];
     const newCollectionTemplateInstances =
       typeof templateClasses === 'object' && !Array.isArray(templateClasses)
         ? templateClasses
@@ -269,10 +266,9 @@ export class CollectionManagerV2<Mixins = {}> {
   }
 
   // field interface
-  addCollectionFieldInterfaces(interfaces: (IField | typeof CollectionFieldInterfaceV2)[] | Record<string, IField>) {
-    // this.collectionFieldInterfaceClasses = [...this.collectionFieldInterfaceClasses, ...interfaces];
+  addFieldInterfaces(interfaces: (IField | typeof CollectionFieldInterfaceV2)[] | Record<string, IField>) {
     if (typeof interfaces === 'object' && !Array.isArray(interfaces)) {
-      Object.assign(this.collectionFieldInterfaceInstances, interfaces);
+      Object.assign(this.fieldInterfaceInstances, interfaces);
       return;
     }
     const newCollectionFieldInterfaces = interfaces.reduce((acc, Interface) => {
@@ -281,13 +277,13 @@ export class CollectionManagerV2<Mixins = {}> {
       return acc;
     }, {});
 
-    Object.assign(this.collectionFieldInterfaceInstances, newCollectionFieldInterfaces);
+    Object.assign(this.fieldInterfaceInstances, newCollectionFieldInterfaces);
   }
-  getCollectionFieldInterfaces() {
-    return this.collectionFieldInterfaceInstances;
+  getFieldInterfaces() {
+    return this.fieldInterfaceInstances;
   }
-  getCollectionFieldInterface(name: string) {
-    return this.collectionFieldInterfaceInstances[name];
+  getFieldInterface(name: string) {
+    return this.fieldInterfaceInstances[name];
   }
 
   setReloadFn(fn: (...args: any[]) => Promise<any>, namespace: string = DEFAULT_COLLECTION_NAMESPACE_NAME) {
@@ -302,6 +298,7 @@ export class CollectionManagerV2<Mixins = {}> {
       const collections = await this.reloadFns[namespace]();
       this.setCollections(collections);
       callback && callback(collections);
+      this.reloadCallbacks[namespace]?.forEach((cb) => cb(collections));
     }
   }
 
@@ -316,10 +313,8 @@ export class CollectionManagerV2<Mixins = {}> {
   private getInheritData() {
     return {
       collections: this.collections,
-      // collectionTemplateClasses: this.collectionTemplateClasses,
       collectionTemplateInstances: this.collectionTemplateInstances,
-      // collectionFieldInterfaceClasses: this.collectionFieldInterfaceClasses,
-      collectionFieldInterfaceInstances: this.collectionFieldInterfaceInstances,
+      fieldInterfaceInstances: this.fieldInterfaceInstances,
       collectionMixins: this.collectionMixins,
       collectionNamespaces: this.collectionNamespaces,
       reloadFns: this.reloadFns,

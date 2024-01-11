@@ -25,7 +25,7 @@ export class MapPlugin extends Plugin {
   async load() {
     this.app.use(MapProvider);
 
-    this.app.collectionManager.addCollectionFieldInterfaces(fields);
+    this.app.collectionManager.addFieldInterfaces(fields);
     this.app.schemaInitializerManager.add(mapActionInitializers);
 
     const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');

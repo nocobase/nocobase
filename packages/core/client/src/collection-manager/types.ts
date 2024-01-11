@@ -67,9 +67,7 @@ export interface CollectionOptions {
 
 export interface CollectionManagerOptions {
   service?: any;
-  interfaces?: any;
   collections?: CollectionOptions[];
-  templates?: any;
   // refreshCM?: () => Promise<void>;
   reloadCallback?: (collection: CollectionV2[]) => void;
   cm?: CollectionManagerV2;

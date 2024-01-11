@@ -10,7 +10,7 @@ import { uid } from '@formily/shared';
 export const useCollectionManager = () => {
   const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
   const [random, setRandom] = useState(uid());
-  const interfaces = useMemo(() => cm?.getCollectionFieldInterfaces(), [cm, random]);
+  const interfaces = useMemo(() => cm?.getFieldInterfaces(), [cm, random]);
   const templates = useMemo(() => cm?.getCollectionTemplates(), [cm, random]);
   const collections = useMemo(
     () =>
@@ -208,7 +208,7 @@ export const useCollectionManager = () => {
 
   const getInterface = useCallback(
     (name: string) => {
-      return cm?.getCollectionFieldInterface(name);
+      return cm?.getFieldInterface(name);
     },
     [cm],
   );

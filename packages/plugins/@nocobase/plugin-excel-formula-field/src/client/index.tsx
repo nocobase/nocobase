@@ -5,7 +5,7 @@ import { excelFormula } from './excel-formula';
 export class ExcelFormulaFieldPlugin extends Plugin {
   async load() {
     this.app.use(ExcelFormulaFieldProvider);
-    this.app.collectionManager.addCollectionFieldInterfaces([excelFormula]);
+    this.app.collectionManager.addFieldInterfaces([excelFormula]);
   }
 }
 

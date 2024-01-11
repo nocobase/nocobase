@@ -39,7 +39,7 @@ const email = new CollectionFieldInterfaceV2({
 
 class MyPlugin extends Plugin {
   load() {
-    this.app.addCollectionFieldInterfaces([ email ]);
+    this.app.addFieldInterfaces([ email ]);
   }
 }
 ```
@@ -119,7 +119,7 @@ import { useCollectionManagerV2 } from '@nocobase/client';
 const Demo = () => {
   const collectionManager = useCollectionManagerV2();
   const options = useMemo(() => {
-    const email = collectionManager.getCollectionFieldInterface('email');
+    const email = collectionManager.getFieldInterface('email');
     const options = email.getOptions();
   }, [collectionManager]);
 
@@ -147,7 +147,7 @@ import { Plugin } from '@nocobase/client';
 class MyPlugin extends Plugin {
   load() {
     const collectionManager = this.app.collectionManager.getCollectionManager();
-    const email = collectionManager.getCollectionFieldInterface('email');
+    const email = collectionManager.getFieldInterface('email');
 
     // deep merge
     email.setOptions({
@@ -175,7 +175,7 @@ const Demo = () => {
   const collectionManager = useCollectionManagerV2();
   const compile = useCompile();
   const title = useMemo(() => {
-    const email = collectionManager.getCollectionFieldInterface('email');
+    const email = collectionManager.getFieldInterface('email');
     const title = email.getOption('title');
   }, [collectionManager]);
 

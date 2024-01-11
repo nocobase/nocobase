@@ -46,16 +46,16 @@ import { collection } from './Configuration/schemas/collections';
 export class CollectionPlugin extends Plugin {
   async load() {
     this.collectionManager.addCollectionMixins([InheritanceCollectionMixin]);
-    this.addCollectionFieldInterfaces();
+    this.addFieldInterfaces();
     this.addCollectionTemplates();
 
     this.collectionManager.setReloadFn(this.reloadCollections.bind(this));
     // await this.collectionManager.reload();
   }
 
-  addCollectionFieldInterfaces() {
-    this.app.collectionManager.addCollectionFieldInterfaces([...interfaces.values()]);
-    // this.app.collectionManager.addCollectionFieldInterfaces([
+  addFieldInterfaces() {
+    this.app.collectionManager.addFieldInterfaces([...interfaces.values()]);
+    // this.app.collectionManager.addFieldInterfaces([
     //   checkbox,
     //   checkboxGroup,
     //   chinaRegion,

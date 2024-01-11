@@ -104,5 +104,5 @@ export function getCollectionFieldsOptions(
 }
 
 export const isTitleField = (cm: CollectionManagerV2, field: CollectionFieldOptionsV2) => {
-  return !field.isForeignKey && cm.getCollectionFieldInterface(field.interface)?.titleUsable;
+  return !field.isForeignKey && cm.getFieldInterface(field.interface)?.titleUsable;
 };

@@ -59,7 +59,7 @@ export interface ApplicationOptions {
   designable?: boolean;
   loadRemotePlugins?: boolean;
   devDynamicImport?: DevDynamicImport;
-  collectionManager?: CollectionManagerV2 | CollectionManagerOptionsV2;
+  collectionManager?: CollectionManagerOptionsV2;
 }
 
 export class Application {

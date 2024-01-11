@@ -12,7 +12,7 @@ import { interfaces as defaultInterfaces } from './Configuration/interfaces';
 import { collectionTemplates } from './Configuration/templates';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
-  const { interfaces, reloadCallback, cm, collections = [], templates } = props;
+  const { reloadCallback, cm, collections = [] } = props;
   const cmContext = useCollectionManagerV2();
   const app = useApp();
   const newCm = useMemo(() => {
@@ -28,8 +28,6 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
       );
     return ctx.inherit({
       collections: collections as any,
-      collectionFieldInterfaces: interfaces,
-      collectionTemplates: templates,
       reloadCallback,
     });
   }, [cm]);
