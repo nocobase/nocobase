@@ -12,7 +12,8 @@ const formTriggerWorkflowActionInitializerV2: SchemaInitializerItemType = {
     'x-component-props': {
       useProps: '{{ useTriggerWorkflowsActionProps }}',
     },
-    'x-designer': 'Action.Designer',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:customize:submitToWorkflow',
     'x-action-settings': {
       assignedValues: {},
       skipValidator: false,

@@ -5,6 +5,7 @@ import { singleDataDetailsBlockSettings } from '../modules/details-single-data/s
 import {
   creationFormBlockSettings,
   customizeSaveRecordActionSettings,
+  customizeSubmitToWorkflowActionSettings,
   submitActionSettings,
 } from '../modules/form-creation/schemaSettings';
 import { editFormBlockSettings } from '../modules/form-edit/schemaSettings';
@@ -55,5 +56,6 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(customizeUpdateRecordActionSettings);
     this.schemaSettingsManager.add(submitActionSettings);
     this.schemaSettingsManager.add(customizeSaveRecordActionSettings);
+    this.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);
   }
 }
