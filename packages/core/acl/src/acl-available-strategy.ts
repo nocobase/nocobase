@@ -69,7 +69,7 @@ export class ACLAvailableStrategy {
 
     const namespace = this.getNamespace(resourceName);
 
-    if (Object.prototype.hasOwnProperty.call(this.actionsAsObject?.[namespace], actionName)) {
+    if (Object.prototype.hasOwnProperty.call(this.actionsAsObject?.[namespace] || {}, actionName)) {
       const predicateName = this.actionsAsObject[namespace][actionName];
       if (predicateName) {
         return lodash.cloneDeep(predicate[predicateName]);
