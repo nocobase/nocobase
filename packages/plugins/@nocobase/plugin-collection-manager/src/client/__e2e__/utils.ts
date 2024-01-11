@@ -392,7 +392,7 @@ export type FieldInterface =
   | 'Formula'
   | 'Sequence'
   | 'JSON'
-  | 'Collection'
+  | 'Collection selector'
   | 'ID'
   | 'Table OID'
   | 'Created at'
