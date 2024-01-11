@@ -18,9 +18,9 @@ import { createDesignable, DndContext, SortableItem, useDesignable, useDesigner 
 import { Icon, useAPIClient, useSchemaInitializerRender } from '../../../';
 import { useCollectMenuItems, useMenuItem } from '../../../hooks/useMenuItem';
 import { useProps } from '../../hooks/useProps';
+import { useMenuTranslation } from './locale';
 import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
-import { useMenuTranslation } from './locale';
 
 const subMenuDesignerCss = css`
   position: relative;

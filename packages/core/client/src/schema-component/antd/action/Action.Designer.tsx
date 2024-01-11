@@ -663,7 +663,6 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         name: 'linkageRules',
         Component: SchemaSettingsLinkageRules,
         useVisible() {
-          const fieldSchema = useFieldSchema();
           const isAction = useLinkageAction();
           const { linkageAction } = useSchemaToolbar();
           return linkageAction || isAction;

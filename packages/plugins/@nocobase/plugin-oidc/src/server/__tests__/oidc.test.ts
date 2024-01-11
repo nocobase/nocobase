@@ -52,7 +52,7 @@ describe('oidc', () => {
     } as any);
     const res = await agent.set('X-Authenticator', 'oidc-auth').resource('oidc').getAuthUrl();
     expect(res.body.data).toBeDefined();
-    const search = new URLSearchParams(res.body.data);
+    const search = new URLSearchParams(decodeURIComponent(res.body.data));
     expect(search.get('token')).toBeDefined();
     expect(search.get('name')).toBe('oidc-auth');
     expect(res.headers['set-cookie']).toBeDefined();

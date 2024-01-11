@@ -55,6 +55,8 @@
   "Delete": "Delete",
   "UI editor": "UI editor",
   "Collection": "Collection",
+  "Collection selector": "Collection selector",
+  "Providing certain collections as options for users, typically used in polymorphic or inheritance scenarios": "Providing certain collections as options for users, typically used in polymorphic or inheritance scenarios",
   "Collections & Fields": "Collections & Fields",
   "All collections": "All collections",
   "Add category": "Add category",
