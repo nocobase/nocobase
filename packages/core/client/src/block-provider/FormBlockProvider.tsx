@@ -85,7 +85,7 @@ export const useFormBlockType = () => {
 
 export const useIsDetailBlock = () => {
   const ctx = useFormBlockContext();
-  return ctx.type === 'update';
+  return ctx.type !== 'create';
 };
 
 export const FormBlockProvider = (props) => {
