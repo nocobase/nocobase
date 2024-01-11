@@ -1,5 +1,5 @@
+import { mockDatabase } from '@nocobase/database';
 import { vi } from 'vitest';
-import { DataTypes, mockDatabase } from '@nocobase/database';
 import Application, { ApplicationOptions } from '../application';
 
 const mockServer = (options?: ApplicationOptions) => {
@@ -21,8 +21,7 @@ describe('app command', () => {
 
   beforeEach(async () => {
     app = mockServer();
-    await app.load();
-    await app.install();
+    await app.runCommand('install');
   });
 
   it('should test command should handle by IPC Server or not', () => {

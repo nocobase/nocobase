@@ -1,13 +1,13 @@
 {
   "name": "@nocobase/devtools",
-  "version": "0.18.0-alpha.9",
+  "version": "0.19.0-alpha.3",
   "description": "",
   "license": "Apache-2.0",
   "main": "./src/index.js",
   "dependencies": {
-    "@nocobase/build": "0.18.0-alpha.9",
-    "@nocobase/client": "0.18.0-alpha.9",
-    "@nocobase/test": "0.18.0-alpha.9",
+    "@nocobase/build": "0.19.0-alpha.3",
+    "@nocobase/client": "0.19.0-alpha.3",
+    "@nocobase/test": "0.19.0-alpha.3",
     "@types/koa": "^2.13.4",
     "@types/koa-bodyparser": "^4.3.4",
     "@types/lodash": "^4.14.177",

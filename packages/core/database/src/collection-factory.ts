@@ -5,6 +5,7 @@ import { Model } from './model';
 type CollectionTypeOptions = {
   condition: (options: CollectionOptions) => boolean;
   onSync?: (model: typeof Model, options: any) => Promise<void>;
+  onDump?: (dumper: any, collection: Collection) => Promise<void>;
 };
 
 export class CollectionFactory {

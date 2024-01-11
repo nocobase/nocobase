@@ -1,6 +1,7 @@
 import { Migration } from '@nocobase/server';
 
-export default class DropForeignKeysMigration extends Migration {
+export default class extends Migration {
+  appVersion = '<=0.7.1-alpha.7';
   async up() {
     const result = await this.app.version.satisfies('<=0.7.1-alpha.7');
     if (!result) {

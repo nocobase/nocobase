@@ -4,6 +4,7 @@ import { getTextsFromDB, getTextsFromMenu } from '../actions/localization';
 import { NAMESPACE_COLLECTIONS, NAMESPACE_MENUS } from '../constans';
 
 export default class FixModuleMigration extends Migration {
+  appVersion = '<0.17.0-alpha.3';
   async up() {
     const result = await this.app.version.satisfies('<=0.17.0-alpha.4');
 

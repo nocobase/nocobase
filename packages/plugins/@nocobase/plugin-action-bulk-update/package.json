@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-action-bulk-update",
-  "version": "0.18.0-alpha.9",
+  "version": "0.19.0-alpha.3",
   "main": "dist/server/index.js",
   "displayName": "Bulk update action",
   "displayName.zh-CN": "批量更新操作",

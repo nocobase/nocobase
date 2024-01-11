@@ -4,7 +4,7 @@
   "displayName.zh-CN": "关系快照字段",
   "description": "",
   "description.zh-CN": "",
-  "version": "0.18.0-alpha.9",
+  "version": "0.19.0-alpha.3",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {

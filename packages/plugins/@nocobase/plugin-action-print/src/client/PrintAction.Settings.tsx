@@ -3,7 +3,6 @@ import {
   ActionDesigner,
   useSchemaToolbar,
   SchemaSettingsLinkageRules,
-  useLinkageAction,
   useCollection,
 } from '@nocobase/client';
 
