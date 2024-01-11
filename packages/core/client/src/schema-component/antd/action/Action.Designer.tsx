@@ -328,7 +328,7 @@ export function RequestSettings() {
   );
 }
 
-function SkipValidation() {
+export function SkipValidation() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
