@@ -7,8 +7,8 @@ export const getAuthUrl = async (ctx: Context, next: Next) => {
   const app = ctx.app.name;
   const auth = ctx.auth as OIDCAuth;
   const client = await auth.createOIDCClient();
-  const { scope } = auth.getOptions();
-  const token = nanoid(15);
+  const { scope, stateToken } = auth.getOptions();
+  const token = stateToken || nanoid(15);
   ctx.cookies.set(cookieName, token, {
     httpOnly: true,
     domain: ctx.hostname,
@@ -17,7 +17,7 @@ export const getAuthUrl = async (ctx: Context, next: Next) => {
     response_type: 'code',
     scope: scope || 'openid email profile',
     redirect_uri: auth.getRedirectUri(),
-    state: `token=${token}&name=${ctx.headers['x-authenticator']}&app=${app}`,
+    state: encodeURIComponent(`token=${token}&name=${ctx.headers['x-authenticator']}&app=${app}`),
   });
 
   return next();
