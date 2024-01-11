@@ -163,7 +163,6 @@ test.describe('actions schema settings', () => {
       },
       supportedOptions: [
         'Edit button',
-        'Linkage rules',
         'Assign field values',
         'Skip required validation',
         'After successful submission',
