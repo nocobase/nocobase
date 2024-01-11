@@ -2,7 +2,11 @@ import { Plugin } from '../application/Plugin';
 import { filterCollapseBlockSettings } from '../modules/collapse-filter/schemaSettings';
 import { multiDataDetailsBlockSettings } from '../modules/details-multi-data/schemaSettings';
 import { singleDataDetailsBlockSettings } from '../modules/details-single-data/schemaSettings';
-import { creationFormBlockSettings } from '../modules/form-creation/schemaSettings';
+import {
+  creationFormBlockSettings,
+  customizeSaveRecordActionSettings,
+  submitActionSettings,
+} from '../modules/form-creation/schemaSettings';
 import { editFormBlockSettings } from '../modules/form-edit/schemaSettings';
 import { filterFormBlockSettings } from '../modules/form-filter/schemaSettings';
 import { gridCardBlockSettings } from '../modules/grid-card/schemaSettings';
@@ -49,5 +53,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(customizeAddRecordActionSettings);
     this.schemaSettingsManager.add(customizePopupActionSettings);
     this.schemaSettingsManager.add(customizeUpdateRecordActionSettings);
+    this.schemaSettingsManager.add(submitActionSettings);
+    this.schemaSettingsManager.add(customizeSaveRecordActionSettings);
   }
 }

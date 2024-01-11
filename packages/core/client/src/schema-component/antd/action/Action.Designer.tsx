@@ -495,7 +495,7 @@ function WorkflowSelect({ types, ...props }) {
   );
 }
 
-function WorkflowConfig() {
+export function WorkflowConfig() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
