@@ -44,18 +44,13 @@ export class ACLAvailableStrategy {
 
     if (lodash.isArray(actions)) {
       this.actionsAsObject = actions.reduce((carry, action) => {
-        let [namespace, actionString] = action.split('.');
-
-        if (!actionString) {
-          actionString = namespace;
-          namespace = NOCOBASE_MAIN_NAMESPACE;
-        }
+        const splitResult = this.splitActionString(action);
+        const { namespace, action: actionName, predicate } = splitResult;
 
         if (!carry[namespace]) {
           carry[namespace] = {};
         }
 
-        const [actionName, predicate] = actionString.split(':');
         carry[namespace][actionName] = predicate;
         return carry;
       }, {});
@@ -85,8 +80,30 @@ export class ACLAvailableStrategy {
     return this.matchAction(resourceName, this.acl.resolveActionAlias(actionName));
   }
 
+  private splitActionString(actionString: string): {
+    namespace: string;
+    action: string;
+    predicate?: string;
+  } {
+    // namespace|action:predicate
+
+    let [namespace, actionWithPredicate] = actionString.split('|');
+    if (!actionWithPredicate) {
+      actionWithPredicate = namespace;
+      namespace = NOCOBASE_MAIN_NAMESPACE;
+    }
+
+    const [action, predicate] = actionWithPredicate.split(':');
+
+    return {
+      namespace,
+      action,
+      predicate,
+    };
+  }
   private getNamespace(resourceName: string) {
-    const [namespace, resource] = resourceName.split('.');
+    const [namespace, resource] = resourceName.split('|');
+
     if (resource) {
       return namespace;
     }
