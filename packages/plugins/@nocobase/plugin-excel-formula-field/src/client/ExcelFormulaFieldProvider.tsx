@@ -1,10 +1,7 @@
-import { CollectionManagerProvider, registerField, SchemaComponentOptions } from '@nocobase/client';
+import { SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { excelFormula } from './excel-formula';
 import { ExcelFormula } from './ExcelFormula';
-
-registerField(excelFormula.group, 'excelFormula', excelFormula);
 
 export const ExcelFormulaFieldProvider = React.memo((props) => {
   const { t } = useTranslation();
@@ -25,7 +22,7 @@ export const ExcelFormulaFieldProvider = React.memo((props) => {
         ExcelFormula,
       }}
     >
-      <CollectionManagerProvider interfaces={{ excelFormula }}>{props.children}</CollectionManagerProvider>
+      {props.children}
     </SchemaComponentOptions>
   );
 });

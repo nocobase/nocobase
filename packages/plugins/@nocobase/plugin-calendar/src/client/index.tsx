@@ -1,4 +1,4 @@
-import { Plugin, registerTemplate } from '@nocobase/client';
+import { Plugin } from '@nocobase/client';
 import { generateNTemplate } from '../locale';
 import { CalendarV2 } from './calendar';
 import { calendar } from './collection-templates/calendar';
@@ -6,10 +6,9 @@ import { CalendarBlockProvider, useCalendarBlockProps } from './schema-initializ
 import { CalendarActionInitializers, CalendarFormActionInitializers } from './schema-initializer/initializers';
 import { CalendarBlockInitializer, RecordAssociationCalendarBlockInitializer } from './schema-initializer/items';
 
-registerTemplate('calendar', calendar);
-
 export class PluginCalendarClient extends Plugin {
   async load() {
+    this.app.collectionManager.addCollectionTemplates([calendar]);
     this.app.schemaInitializerManager.addItem('BlockInitializers', 'dataBlocks.calendar', {
       title: generateNTemplate('Calendar'),
       Component: 'CalendarBlockInitializer',

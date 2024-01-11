@@ -1,12 +1,9 @@
-import { CollectionManagerProvider, css, i18n, registerField, SchemaComponentOptions } from '@nocobase/client';
+import { css, i18n, SchemaComponentOptions } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry } from '@nocobase/utils/client';
 import React from 'react';
 import { Formula } from './components';
-import formulaField from './interfaces/formula';
 import { NAMESPACE } from './locale';
-
-registerField(formulaField.group, 'formula', formulaField);
 
 function renderExpressionDescription(key: string) {
   const engine = (evaluators as Registry<Evaluator>).get(key);
@@ -43,7 +40,7 @@ export const FormulaFieldProvider = React.memo((props) => {
         renderExpressionDescription,
       }}
     >
-      <CollectionManagerProvider interfaces={{ formula: formulaField }}>{props.children}</CollectionManagerProvider>
+      {props.children}
     </SchemaComponentOptions>
   );
 });

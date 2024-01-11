@@ -1,10 +1,8 @@
 import React, { FC } from 'react';
 
-import { CollectionManagerProvider, registerField, SchemaComponentOptions } from '@nocobase/client';
+import { SchemaComponentOptions } from '@nocobase/client';
 
-import { RuleConfigForm, sequence } from './sequence';
-
-registerField(sequence.group, 'sequence', sequence);
+import { RuleConfigForm } from './sequence';
 
 export const SequenceFieldProvider: FC = (props) => {
   return (
@@ -13,7 +11,7 @@ export const SequenceFieldProvider: FC = (props) => {
         RuleConfigForm,
       }}
     >
-      <CollectionManagerProvider interfaces={{ sequence }}>{props.children}</CollectionManagerProvider>
+      {props.children}
     </SchemaComponentOptions>
   );
 };

@@ -3,11 +3,16 @@ import { FileManagerProvider } from './FileManagerProvider';
 import { FileStoragePane } from './FileStorage';
 import { NAMESPACE } from './locale';
 import { storageTypes } from './schemas/storageTypes';
+import { attachment } from './interfaces/attachment';
+import { fileCollectionTemplate } from './templates';
 
 export class FileManagerPlugin extends Plugin {
   storageTypes = new Map();
 
   async load() {
+    this.app.collectionManager.addCollectionFieldInterfaces([attachment]);
+    this.app.collectionManager.addCollectionTemplates([fileCollectionTemplate]);
+
     this.app.use(FileManagerProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("File manager", { ns: "${NAMESPACE}" })}}`,

@@ -2,7 +2,7 @@ import { getConfigurableProperties } from '@nocobase/client';
 import { CollectionOptions } from '@nocobase/database';
 import { NAMESPACE } from '../locale';
 
-export const file = {
+export const fileCollectionTemplate = {
   name: 'file',
   title: `{{t("File collection", { ns: "${NAMESPACE}" })}}`,
   order: 3,

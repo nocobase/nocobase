@@ -1,4 +1,4 @@
-import { getConfigurableProperties, ICollectionTemplate, Plugin, registerTemplate } from '@nocobase/client';
+import { getConfigurableProperties, ICollectionTemplate, Plugin } from '@nocobase/client';
 
 const myCollectionTemplate: ICollectionTemplate = {
   name: 'myCollection',
@@ -44,10 +44,10 @@ const myCollectionTemplate: ICollectionTemplate = {
   },
 };
 
-registerTemplate('myCollection', myCollectionTemplate);
-
 class CustomCollectionPlugin extends Plugin {
-  async load() {}
+  async load() {
+    this.app.collectionManager.addCollectionTemplates([myCollectionTemplate]);
+  }
 }
 
 export default CustomCollectionPlugin;
