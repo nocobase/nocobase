@@ -1,11 +1,11 @@
-import { getConfigurableProperties, ICollectionTemplate, Plugin } from '@nocobase/client';
+import { CollectionTemplateV2, getConfigurableProperties, Plugin } from '@nocobase/client';
 
-const myCollectionTemplate: ICollectionTemplate = {
-  name: 'myCollection',
-  title: '{{t("Custom template")}}',
-  order: 6,
-  color: 'blue',
-  default: {
+class MyCollectionTemplate extends CollectionTemplateV2 {
+  name = 'myCollection';
+  title = '{{t("Custom template")}}';
+  order = 6;
+  color = 'blue';
+  default = {
     fields: [
       {
         name: 'uuid',
@@ -16,9 +16,9 @@ const myCollectionTemplate: ICollectionTemplate = {
         interface: 'input',
       },
     ],
-  },
-  configurableProperties: getConfigurableProperties('title', 'name', 'inherits', 'createdAt', 'updatedAt'),
-  availableFieldInterfaces: {
+  };
+  configurableProperties = getConfigurableProperties('title', 'name', 'inherits', 'createdAt', 'updatedAt');
+  availableFieldInterfaces = {
     include: [
       'input',
       {
@@ -41,12 +41,12 @@ const myCollectionTemplate: ICollectionTemplate = {
       },
     ],
     // exclude: ['input', 'linkTo'],
-  },
-};
+  };
+}
 
 class CustomCollectionPlugin extends Plugin {
   async load() {
-    this.app.collectionManager.addCollectionTemplates([myCollectionTemplate]);
+    this.app.collectionManager.addCollectionTemplates([MyCollectionTemplate]);
   }
 }
 

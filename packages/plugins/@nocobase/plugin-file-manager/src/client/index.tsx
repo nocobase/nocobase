@@ -4,14 +4,14 @@ import { FileStoragePane } from './FileStorage';
 import { NAMESPACE } from './locale';
 import { storageTypes } from './schemas/storageTypes';
 import { attachment } from './interfaces/attachment';
-import { fileCollectionTemplate } from './templates';
+import { FileCollectionTemplate } from './templates';
 
 export class FileManagerPlugin extends Plugin {
   storageTypes = new Map();
 
   async load() {
     this.app.collectionManager.addFieldInterfaces([attachment]);
-    this.app.collectionManager.addCollectionTemplates([fileCollectionTemplate]);
+    this.app.collectionManager.addCollectionTemplates([FileCollectionTemplate]);
 
     this.app.use(FileManagerProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {

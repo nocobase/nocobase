@@ -38,7 +38,13 @@ import {
   updatedBy,
   url,
 } from './interfaces';
-import { general, expression, sql, tree, view } from './templates';
+import {
+  GeneralCollectionTemplate,
+  ExpressionCollectionTemplate,
+  SqlCollectionTemplate,
+  TreeCollectionTemplate,
+  ViewCollectionTemplate,
+} from './templates';
 import { collection as collectionData } from './Configuration/schemas/collections';
 
 export class CollectionPlugin extends Plugin {
@@ -121,7 +127,13 @@ export class CollectionPlugin extends Plugin {
   }
 
   addCollectionTemplates() {
-    this.app.collectionManager.addCollectionTemplates([expression, general, sql, tree, view]);
+    this.app.collectionManager.addCollectionTemplates([
+      GeneralCollectionTemplate,
+      ExpressionCollectionTemplate,
+      SqlCollectionTemplate,
+      TreeCollectionTemplate,
+      ViewCollectionTemplate,
+    ]);
   }
 
   async reloadCollections() {

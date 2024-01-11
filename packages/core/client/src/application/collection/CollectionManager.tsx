@@ -222,19 +222,12 @@ export class CollectionManagerV2<Mixins = {}> {
   }
 
   // CollectionTemplates
-  addCollectionTemplates(
-    templateClasses:
-      | (CollectionTemplateV2Options | typeof CollectionTemplateV2)[]
-      | Record<string, CollectionTemplateV2Options>,
-  ) {
-    const newCollectionTemplateInstances =
-      typeof templateClasses === 'object' && !Array.isArray(templateClasses)
-        ? templateClasses
-        : templateClasses.reduce((acc, Template) => {
-            const instance = typeof Template === 'function' ? new Template() : Template;
-            acc[instance.name] = instance;
-            return acc;
-          }, {});
+  addCollectionTemplates(templateClasses: (typeof CollectionTemplateV2)[]) {
+    const newCollectionTemplateInstances = templateClasses.reduce((acc, Template) => {
+      const instance = new Template(this.app);
+      acc[instance.name] = instance;
+      return acc;
+    }, {});
     Object.assign(this.collectionTemplateInstances, newCollectionTemplateInstances);
 
     // 重新添加数据表

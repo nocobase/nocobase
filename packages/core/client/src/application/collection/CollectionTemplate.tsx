@@ -1,6 +1,7 @@
 import { Application } from '../Application';
 import { CollectionOptionsV2, CollectionV2 } from './Collection';
 import { ISchema } from '@formily/react';
+import { CollectionManagerV2 } from './CollectionManager';
 
 interface AvailableFieldInterfacesInclude {
   include?: any[];
@@ -63,6 +64,12 @@ export interface CollectionTemplateV2Options {
 }
 
 export class CollectionTemplateV2 implements CollectionTemplateV2Options {
+  app: Application;
+  collectionManager: CollectionManagerV2;
+  constructor(app: Application) {
+    this.app = app;
+    this.collectionManager = app.collectionManager;
+  }
   name: string;
   Collection?: typeof CollectionV2;
   transform?: (collection: CollectionOptionsV2, app: Application) => CollectionOptionsV2;
