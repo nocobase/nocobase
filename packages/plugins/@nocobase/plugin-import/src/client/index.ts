@@ -8,6 +8,7 @@ export * from './useImportAction';
 
 import { Plugin, useCollection } from '@nocobase/client';
 import { ImportPluginProvider } from './ImportPluginProvider';
+import { importActionSchemaSettings } from './schemaSettings';
 
 export class ImportPlugin extends Plugin {
   async load() {
@@ -37,6 +38,7 @@ export class ImportPlugin extends Plugin {
     const tableActionInitializers = this.app.schemaInitializerManager.get('TableActionInitializers');
     tableActionInitializers?.add('enableActions.import', initializerData);
     this.app.schemaInitializerManager.addItem('GanttActionInitializers', 'enableActions.import', initializerData);
+    this.app.schemaSettingsManager.add(importActionSchemaSettings);
   }
 }
 

@@ -59,7 +59,8 @@ export const ImportActionInitializer = () => {
     'x-action-settings': {
       importSettings: { importColumns: [], explain: '' },
     },
-    'x-designer': 'ImportDesigner',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:import',
     'x-component': 'Action',
     'x-component-props': {
       icon: 'CloudUploadOutlined',
