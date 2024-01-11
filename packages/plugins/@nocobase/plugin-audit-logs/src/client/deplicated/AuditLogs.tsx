@@ -463,7 +463,6 @@ AuditLogs.Decorator = observer(
   (props: any) => {
     const parent = useCollection();
     const record = useRecord();
-    const { interfaces } = useCollectionManager();
     let filter = props?.params?.filter;
     if (parent.name) {
       const filterByTk = record?.[parent.filterTargetKey || 'id'];
@@ -501,7 +500,7 @@ AuditLogs.Decorator = observer(
     };
     return (
       <IsAssociationBlock.Provider value={!!parent.name}>
-        <CollectionManagerProvider collections={[collection]} interfaces={interfaces}>
+        <CollectionManagerProvider collections={[collection]}>
           <TableBlockProvider {...defaults}>{props.children}</TableBlockProvider>
         </CollectionManagerProvider>
       </IsAssociationBlock.Provider>

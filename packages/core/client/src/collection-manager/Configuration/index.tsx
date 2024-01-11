@@ -4,7 +4,6 @@ export * from './AddFieldAction';
 export * from './ConfigurationTable';
 export * from './EditFieldAction';
 export * from './components';
-export * from './templates';
 export * from './CollectionFieldsTable';
 export * from './schemas/collections';
 export * from './OverridingCollectionField';

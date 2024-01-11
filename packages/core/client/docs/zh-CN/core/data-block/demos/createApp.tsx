@@ -3,8 +3,8 @@ import {
   ApplicationOptions,
   CardItem,
   CollectionManagerOptionsV2,
+  CollectionPlugin,
   DataBlockProviderV2,
-  InheritanceCollectionMixin,
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 import { ComponentType } from 'react';
@@ -55,7 +55,6 @@ export function createApp(
 ) {
   const collectionManager = {
     collections: collections as any,
-    collectionMixins: [InheritanceCollectionMixin],
     ...(options.collectionManager as CollectionManagerOptionsV2),
   };
   const app = new Application({
@@ -70,6 +69,7 @@ export function createApp(
       DataBlockProviderV2,
       CardItem,
     },
+    plugins: [CollectionPlugin],
     designable: true,
   });
 

@@ -8,7 +8,7 @@
 interface CollectionManagerOptionsV2 {
   collections?: Record<string, CollectionV2[] | CollectionOptions[]> | CollectionV2[] | CollectionOptions[];
   collectionTemplates?: CollectionTemplateV2[] | CollectionTemplateOptions[];
-  collectionFieldInterfaces?: CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[];
+  fieldInterfaces?: CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[];
   collectionNamespaces?: Record<string, string>;
 }
 
@@ -34,7 +34,6 @@ class CollectionManagerV2 {
   getCollections(ns?: string, predicate?: (collection: CollectionV2) => boolean): CollectionV2[]
   getCollection(path: string, options?: GetCollectionOptions): Promise<CollectionV2 | undefined>
   getCollectionName(path: string, options?: GetCollectionOptions): Promise<string | undefined>;
-  removeCollection(path: string, options?: GetCollectionOptions): void;
   getCollectionField(path: string, options?: GetCollectionOptions): Promise<CollectionFieldOptions | undefined>;
 
   addFieldInterfaces(interfaces:CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[]): void;
@@ -80,14 +79,14 @@ const collections = collectionManager.getCollections('db2');
 interface CollectionManagerOptionsV2 {
   collections?: Record<string, CollectionV2[] | CollectionOptions[]> | CollectionV2[] | CollectionOptions[];
   collectionTemplates?: CollectionTemplateV2[] | CollectionTemplateOptions[];
-  collectionFieldInterfaces?: CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[];
+  fieldInterfaces?: CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[];
   collectionNamespaces?: Record<string, string>;
 }
 ```
 
 - 参数说明
 
-1. `collections`、`collectionTemplates`、`collectionFieldInterfaces` 既支持对应的实例，也支持构造函数参数。例如：
+1. `collections`、`collectionTemplates`、`fieldInterfaces` 既支持对应的实例，也支持构造函数参数。例如：
 
 ```tsx | pure
 const userCollectionOptions = {
@@ -117,7 +116,7 @@ const checkboxCollectionFieldInterfaceOptions = {
 const collectionManager1 = new CollectionManagerV2({
   collections: [userCollectionOptions],
   collectionTemplates: [treeCollectionTemplateOptions],
-  collectionFieldInterfaces: [checkboxCollectionFieldInterfaceOptions],
+  fieldInterfaces: [checkboxCollectionFieldInterfaceOptions],
   collectionNamespaces: {
     "db2": "DB2"
   }
@@ -131,7 +130,7 @@ const checkboxCollectionFieldInterface = new CollectionFieldInterface(checkboxCo
 const collectionManager2 = new CollectionManagerV2({
   collections: [userCollection],
   collectionTemplates: [treeCollectionTemplate],
-  collectionFieldInterfaces: [checkboxCollectionFieldInterface],
+  fieldInterfaces: [checkboxCollectionFieldInterface],
   collectionNamespaces: {
     "db2": "DB2"
   }
@@ -453,23 +452,6 @@ collectionManager.getCollectionName('users'); // 'users'
 collectionManager.getCollectionName('users.profileId'); // 'profiles'
 ```
 
-### cm.removeCollection(path, options?)
-
-移除数据表。
-
-- 类型
-
-```tsx | pure
-class CollectionManagerV2 {
-  removeCollection(path: string, options?: GetCollectionOptions): void;
-}
-```
-
-- 示例
-
-```tsx | pure
-collectionManager.removeCollection('users');
-```
 
 ### cm.getCollectionField(path, options?)
 

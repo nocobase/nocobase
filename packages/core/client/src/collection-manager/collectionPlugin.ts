@@ -1,102 +1,127 @@
 import { Plugin } from '../application/Plugin';
 
 import { InheritanceCollectionMixin } from './mixins/InheritanceCollectionMixin';
-// import {
-//   checkbox,
-//   checkboxGroup,
-//   chinaRegion,
-//   collection,
-//   color,
-//   createdAt,
-//   createdBy,
-//   datetime,
-//   email,
-//   icon,
-//   id,
-//   input,
-//   integer,
-//   json,
-//   linkTo,
-//   m2m,
-//   m2o,
-//   markdown,
-//   multipleSelect,
-//   number,
-//   o2m,
-//   o2o,
-//   password,
-//   percent,
-//   phone,
-//   radioGroup,
-//   richText,
-//   select,
-//   subTable,
-//   tableoid,
-//   textarea,
-//   time,
-//   updatedAt,
-//   updatedBy,
-//   url,
-// } from './interfaces';
-// import { general, expression, sql, tree, view } from './templates';
-import { interfaces } from './Configuration/interfaces';
-import { collectionTemplates } from './Configuration/templates';
-import { collection } from './Configuration/schemas/collections';
+import {
+  checkbox,
+  checkboxGroup,
+  chinaRegion,
+  collection,
+  color,
+  createdAt,
+  createdBy,
+  datetime,
+  email,
+  icon,
+  id,
+  input,
+  integer,
+  json,
+  linkTo,
+  m2m,
+  m2o,
+  markdown,
+  multipleSelect,
+  number,
+  o2m,
+  o2o,
+  password,
+  percent,
+  phone,
+  radioGroup,
+  richText,
+  select,
+  subTable,
+  tableoid,
+  textarea,
+  time,
+  updatedAt,
+  updatedBy,
+  url,
+} from './interfaces';
+import { general, expression, sql, tree, view } from './templates';
+import { collection as collectionData } from './Configuration/schemas/collections';
 
 export class CollectionPlugin extends Plugin {
   async load() {
     this.collectionManager.addCollectionMixins([InheritanceCollectionMixin]);
     this.addFieldInterfaces();
     this.addCollectionTemplates();
+    this.addFieldInterfaces();
 
     this.collectionManager.setReloadFn(this.reloadCollections.bind(this));
-    // await this.collectionManager.reload();
+  }
+
+  addFieldGroups() {
+    this.collectionManager.addFieldGroups({
+      basic: {
+        label: '{{t("Basic")}}',
+      },
+      choices: {
+        label: '{{t("Choices")}}',
+      },
+      media: {
+        label: '{{t("Media")}}',
+      },
+      datetime: {
+        label: '{{t("Date & Time")}}',
+      },
+      relation: {
+        label: '{{t("Relation")}}',
+      },
+      advanced: {
+        label: '{{t("Advanced type")}}',
+      },
+      systemInfo: {
+        label: '{{t("System info")}}',
+      },
+      others: {
+        label: '{{t("Others")}}',
+      },
+    });
   }
 
   addFieldInterfaces() {
-    this.app.collectionManager.addFieldInterfaces([...interfaces.values()]);
-    // this.app.collectionManager.addFieldInterfaces([
-    //   checkbox,
-    //   checkboxGroup,
-    //   chinaRegion,
-    //   collection,
-    //   color,
-    //   createdAt,
-    //   createdBy,
-    //   datetime,
-    //   email,
-    //   icon,
-    //   id,
-    //   input,
-    //   integer,
-    //   json,
-    //   linkTo,
-    //   m2m,
-    //   m2o,
-    //   markdown,
-    //   multipleSelect,
-    //   number,
-    //   o2m,
-    //   o2o,
-    //   password,
-    //   percent,
-    //   phone,
-    //   radioGroup,
-    //   richText,
-    //   select,
-    //   subTable,
-    //   tableoid,
-    //   textarea,
-    //   time,
-    //   updatedAt,
-    //   updatedBy,
-    //   url,
-    // ]);
+    this.app.collectionManager.addFieldInterfaces([
+      checkbox,
+      checkboxGroup,
+      chinaRegion,
+      collection,
+      color,
+      createdAt,
+      createdBy,
+      datetime,
+      email,
+      icon,
+      id,
+      input,
+      integer,
+      json,
+      linkTo,
+      m2m,
+      m2o,
+      markdown,
+      multipleSelect,
+      number,
+      o2m,
+      o2o,
+      password,
+      percent,
+      phone,
+      radioGroup,
+      richText,
+      select,
+      subTable,
+      tableoid,
+      textarea,
+      time,
+      updatedAt,
+      updatedBy,
+      url,
+    ]);
   }
 
   addCollectionTemplates() {
-    this.app.collectionManager.addCollectionTemplates(Object.values(collectionTemplates));
-    // this.app.collectionManager.addCollectionTemplates([expression, general, sql, tree, view]);
+    this.app.collectionManager.addCollectionTemplates([expression, general, sql, tree, view]);
   }
 
   async reloadCollections() {
@@ -115,6 +140,6 @@ export class CollectionPlugin extends Plugin {
       },
     });
 
-    return [...(service?.data?.data || []), collection];
+    return [...(service?.data?.data || []), collectionData];
   }
 }

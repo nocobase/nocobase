@@ -3,29 +3,15 @@ import { useAPIClient, useRequest } from '../api-client';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
 import { CollectionCategroriesContext } from './context';
 import { CollectionManagerOptions } from './types';
-import { CollectionManagerProviderV2, CollectionManagerV2, useApp, useCollectionManagerV2 } from '../application';
+import { CollectionManagerProviderV2, useCollectionManagerV2 } from '../application';
 import { useCollectionHistory } from './CollectionHistoryProvider';
 import { useAppSpin } from '../application/hooks/useAppSpin';
-import { InheritanceCollectionMixin } from './mixins/InheritanceCollectionMixin';
-import { interfaces as defaultInterfaces } from './Configuration/interfaces';
-// import { general, expression, sql, tree, view } from './templates';
-import { collectionTemplates } from './Configuration/templates';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
   const { reloadCallback, cm, collections = [] } = props;
   const cmContext = useCollectionManagerV2();
-  const app = useApp();
   const newCm = useMemo(() => {
-    let ctx = cm || cmContext;
-    if (!ctx)
-      ctx = new CollectionManagerV2(
-        {
-          collectionMixins: [InheritanceCollectionMixin],
-          collectionFieldInterfaces: defaultInterfaces as any,
-          collectionTemplates: Object.values(collectionTemplates) as any,
-        },
-        app,
-      );
+    const ctx = cm || cmContext;
     return ctx.inherit({
       collections: collections as any,
       reloadCallback,

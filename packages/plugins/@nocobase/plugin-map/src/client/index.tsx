@@ -4,18 +4,15 @@ import { MapBlockOptions } from './block';
 import { mapActionInitializers } from './block/MapActionInitializers';
 import { Configuration, Map } from './components';
 import { fields } from './fields';
-import { MapInitializer } from './initialize';
 import { generateNTemplate } from './locale';
 import { NAMESPACE } from './locale';
 
 const MapProvider = React.memo((props) => {
   return (
     <CurrentAppInfoProvider>
-      <MapInitializer>
-        <SchemaComponentOptions components={{ Map }}>
-          <MapBlockOptions>{props.children}</MapBlockOptions>
-        </SchemaComponentOptions>
-      </MapInitializer>
+      <SchemaComponentOptions components={{ Map }}>
+        <MapBlockOptions>{props.children}</MapBlockOptions>
+      </SchemaComponentOptions>
     </CurrentAppInfoProvider>
   );
 });
@@ -26,6 +23,12 @@ export class MapPlugin extends Plugin {
     this.app.use(MapProvider);
 
     this.app.collectionManager.addFieldInterfaces(fields);
+    this.app.collectionManager.addFieldGroups({
+      map: {
+        label: generateNTemplate('Map-based geometry'),
+        order: 51,
+      },
+    });
     this.app.schemaInitializerManager.add(mapActionInitializers);
 
     const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');

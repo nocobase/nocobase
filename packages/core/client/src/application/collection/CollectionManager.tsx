@@ -52,7 +52,8 @@ export interface GetCollectionOptions {
 export interface CollectionManagerOptionsV2 {
   collections?: Record<string, CollectionOptionsV2[]> | CollectionOptionsV2[];
   collectionTemplates?: (typeof CollectionTemplateV2)[];
-  collectionFieldInterfaces?: (typeof CollectionFieldInterfaceV2)[];
+  fieldInterfaces?: (typeof CollectionFieldInterfaceV2)[];
+  fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionNamespaces?: Record<string, string>;
   collectionMixins?: CollectionMixinConstructor[];
 }
@@ -66,6 +67,7 @@ export class CollectionManagerV2<Mixins = {}> {
   protected collectionNamespaces: Record<string, string> = {
     [DEFAULT_COLLECTION_NAMESPACE_NAME]: DEFAULT_COLLECTION_NAMESPACE_TITLE,
   };
+  protected collectionFieldGroups: Record<string, { label: string; order?: number }> = {};
   protected reloadFns?: {
     [key: string]: (...args: any[]) => Promise<any>;
   } = {};
@@ -84,7 +86,8 @@ export class CollectionManagerV2<Mixins = {}> {
   init(options: CollectionManagerOptionsV2) {
     this.collectionMixins.push(...(options.collectionMixins || []));
     this.addCollectionTemplates(options.collectionTemplates || []);
-    this.addFieldInterfaces(options.collectionFieldInterfaces || []);
+    this.addFieldInterfaces(options.fieldInterfaces || []);
+    this.addFieldGroups(options.fieldGroups || {});
     this.addCollectionNamespaces(options.collectionNamespaces || {});
     if (Array.isArray(options.collections)) {
       this.addCollections(options.collections);
@@ -105,7 +108,8 @@ export class CollectionManagerV2<Mixins = {}> {
 
   addCollectionMixins(mixins: CollectionMixinConstructor[]) {
     if (mixins.length === 0) return;
-    this.collectionMixins.push(...mixins);
+    const newMixins = mixins.filter((mixin) => !this.collectionMixins.includes(mixin));
+    this.collectionMixins.push(...newMixins);
 
     // 重新添加数据表
     Object.keys(this.collections).forEach((ns) => {
@@ -150,7 +154,7 @@ export class CollectionManagerV2<Mixins = {}> {
   }
   getCollections(predicate?: (collection: CollectionV2) => boolean, options: GetCollectionOptions = {}) {
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
-    if (!predicate && this.collectionArr[ns]) {
+    if (!predicate && this.collectionArr[ns]?.length) {
       return this.collectionArr[ns];
     }
 
@@ -169,7 +173,7 @@ export class CollectionManagerV2<Mixins = {}> {
    */
   getCollection(path: string, options: GetCollectionOptions = {}): (Mixins & CollectionV2) | undefined {
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
-    if (!path) return undefined;
+    if (!path || typeof path !== 'string') return undefined;
     this.checkNamespace(ns);
     if (path.split('.').length > 1) {
       // 获取到关联字段
@@ -183,17 +187,6 @@ export class CollectionManagerV2<Mixins = {}> {
     const res = this.getCollection(path, options);
     return res?.name;
   }
-  removeCollection(path: string, options: GetCollectionOptions = {}) {
-    const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
-    this.checkNamespace(ns);
-    if (path.split('.').length > 1) {
-      // 获取到关联字段
-      const associationField = this.getCollectionField(path);
-
-      return this.removeCollection(associationField.target, { ns });
-    }
-    delete this.collections[ns]?.[path];
-  }
 
   getCollectionFields(collectionName: string, options: GetCollectionOptions = {}): CollectionFieldOptionsV2[] {
     return this.getCollection(collectionName, options)?.getFields() || [];
@@ -205,9 +198,10 @@ export class CollectionManagerV2<Mixins = {}> {
    * getCollection('a.b.c'); // 获取 a 表的 b 字段的关联表，然后 b.target 表对应的 c 字段
    */
   getCollectionField(path: SchemaKey, options: GetCollectionOptions = {}): CollectionFieldOptionsV2 | undefined {
-    const arr = String(path).split('.');
-    if (arr.length < 2) {
-      throw new Error(`[@nocobase/client]: CollectionManager.getCollectionField() path "${path}" is invalid`);
+    if (!path) return;
+    if (typeof path === 'object' || String(path).split('.').length < 2) {
+      console.error(`[@nocobase/client]: CollectionManager.getCollectionField() path "${path}" is invalid`);
+      return;
     }
     const [collectionName, ...fieldNames] = String(path).split('.');
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options || {};
@@ -284,6 +278,16 @@ export class CollectionManagerV2<Mixins = {}> {
   }
   getFieldInterface(name: string) {
     return this.fieldInterfaceInstances[name];
+  }
+
+  addFieldGroups(fieldGroups: Record<string, { label: string; order?: number }>) {
+    Object.assign(this.collectionFieldGroups, fieldGroups);
+  }
+  getFieldGroups() {
+    return this.collectionFieldGroups;
+  }
+  getFieldGroup(name: string) {
+    return this.collectionFieldGroups[name];
   }
 
   setReloadFn(fn: (...args: any[]) => Promise<any>, namespace: string = DEFAULT_COLLECTION_NAMESPACE_NAME) {
