@@ -75,6 +75,17 @@ export const useFieldInterfaceOptions = () => {
   const cm = useCollectionManagerV2();
 
   return useMemo(() => {
-    return getOptions(cm.getCollectionFieldInterfaceGroups());
+    const collectionFieldInterfaceInstances = cm.getCollectionFieldInterfaces();
+    const groups = Object.values(collectionFieldInterfaceInstances).reduce<
+      Record<string, CollectionFieldInterfaceV2[]>
+    >((memo, fieldInterface) => {
+      const group = fieldInterface.group || 'basic';
+      if (!memo[group]) {
+        memo[group] = [];
+      }
+      memo[group].push(fieldInterface);
+      return memo;
+    }, {});
+    return getOptions(groups);
   }, [cm]);
 };

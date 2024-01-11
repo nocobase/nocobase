@@ -286,19 +286,6 @@ export class CollectionManagerV2<Mixins = {}> {
   getCollectionFieldInterfaces() {
     return this.collectionFieldInterfaceInstances;
   }
-  getCollectionFieldInterfaceGroups(): Record<string, CollectionFieldInterfaceV2[]> {
-    return Object.values(this.collectionFieldInterfaceInstances).reduce<Record<string, CollectionFieldInterfaceV2[]>>(
-      (memo, fieldInterface) => {
-        const group = fieldInterface.group || 'basic';
-        if (!memo[group]) {
-          memo[group] = [];
-        }
-        memo[group].push(fieldInterface);
-        return memo;
-      },
-      {},
-    );
-  }
   getCollectionFieldInterface(name: string) {
     return this.collectionFieldInterfaceInstances[name];
   }
