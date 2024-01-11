@@ -1,11 +1,11 @@
 import { Plugin } from '@nocobase/client';
 import { FormulaFieldProvider } from './FormulaFieldProvider';
-import formulaField from './interfaces/formula';
+import { FormulaFieldInterface } from './interfaces/formula';
 
 export class FormulaFieldPlugin extends Plugin {
   async load() {
     this.app.use(FormulaFieldProvider);
-    this.app.collectionManager.addFieldInterfaces([formulaField]);
+    this.app.collectionManager.addFieldInterfaces([FormulaFieldInterface]);
   }
 }
 

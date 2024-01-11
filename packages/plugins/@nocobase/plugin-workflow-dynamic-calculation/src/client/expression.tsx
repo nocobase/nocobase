@@ -1,10 +1,10 @@
-import { IField, interfacesProperties } from '@nocobase/client';
+import { CollectionFieldInterfaceV2, IField, interfacesProperties } from '@nocobase/client';
 
 import { NAMESPACE } from '../locale';
 
 const { defaultProps } = interfacesProperties;
 
-export default {
+export const expression = {
   name: 'expression',
   type: 'string',
   group: 'advanced',
@@ -22,3 +22,22 @@ export default {
     ...defaultProps,
   },
 } as IField;
+
+export class ExpressionFieldInterface extends CollectionFieldInterfaceV2 {
+  name = 'expression';
+  type = 'string';
+  group = 'advanced';
+  order = 1;
+  title = `{{t("Expression", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("An expression for calculation in each rows", { ns: "${NAMESPACE}" })}}`;
+  sortable = true;
+  default = {
+    type: 'text',
+    uiSchema: {
+      'x-component': 'DynamicExpression',
+    },
+  };
+  properties = {
+    ...defaultProps,
+  };
+}

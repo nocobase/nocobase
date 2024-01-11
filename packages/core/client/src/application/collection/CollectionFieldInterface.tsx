@@ -1,11 +1,13 @@
 import { ISchema } from '@formily/react';
 import { CollectionFieldOptionsV2 } from './Collection';
 import { IField } from '../../collection-manager';
+import { Application } from '../Application';
+import { CollectionManagerV2 } from './CollectionManager';
 
-export class CollectionFieldInterfaceV2 implements IField {
+export interface CollectionFieldInterfaceV2Options extends IField {
   name: string;
-  description?: string;
   group: string;
+  description?: string;
   order?: number;
   default?: {
     type: string;
@@ -37,4 +39,15 @@ export class CollectionFieldInterfaceV2 implements IField {
   // NOTE: set to `true` means field could be used as a title field
   titleUsable?: boolean;
   [key: string]: any;
+}
+
+export class CollectionFieldInterfaceV2 implements CollectionFieldInterfaceV2Options {
+  name: string;
+  group: string;
+  app: Application;
+  collectionManager: CollectionManagerV2;
+  constructor(app: Application) {
+    this.app = app;
+    this.collectionManager = app.collectionManager;
+  }
 }

@@ -1,11 +1,11 @@
 import { Plugin } from '@nocobase/client';
 import { SequenceFieldProvider } from './SequenceFieldProvider';
-import { sequence } from './sequence';
+import { SequenceFieldInterface } from './sequence';
 
 export class SequenceFieldPlugin extends Plugin {
   async load() {
     this.app.use(SequenceFieldProvider);
-    this.app.collectionManager.addFieldInterfaces([sequence]);
+    this.app.collectionManager.addFieldInterfaces([SequenceFieldInterface]);
   }
 }
 

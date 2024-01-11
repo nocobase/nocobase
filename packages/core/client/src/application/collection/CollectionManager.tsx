@@ -253,13 +253,9 @@ export class CollectionManagerV2<Mixins = {}> {
   }
 
   // field interface
-  addFieldInterfaces(interfaces: (IField | typeof CollectionFieldInterfaceV2)[] | Record<string, IField>) {
-    if (typeof interfaces === 'object' && !Array.isArray(interfaces)) {
-      Object.assign(this.fieldInterfaceInstances, interfaces);
-      return;
-    }
+  addFieldInterfaces(interfaces: (typeof CollectionFieldInterfaceV2)[]) {
     const newCollectionFieldInterfaces = interfaces.reduce((acc, Interface) => {
-      const instance = typeof Interface === 'function' ? new Interface() : Interface;
+      const instance = new Interface(this.app);
       acc[instance.name] = instance;
       return acc;
     }, {});

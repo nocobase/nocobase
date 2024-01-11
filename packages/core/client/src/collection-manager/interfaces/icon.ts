@@ -1,3 +1,4 @@
+import { CollectionFieldInterfaceV2 } from '../../application';
 import { defaultProps } from './properties';
 import { IField } from './types';
 
@@ -22,3 +23,23 @@ export const icon: IField = {
     ...defaultProps,
   },
 };
+
+export class IconFieldInterface extends CollectionFieldInterfaceV2 {
+  name = 'icon';
+  type = 'object';
+  group = 'basic';
+  order = 10;
+  title = '{{t("Icon")}}';
+  default = {
+    type: 'string',
+    uiSchema: {
+      type: 'string',
+      'x-component': 'IconPicker',
+    },
+  };
+  availableTypes = ['string'];
+  hasDefaultValue = true;
+  properties = {
+    ...defaultProps,
+  };
+}
