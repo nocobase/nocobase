@@ -102,7 +102,7 @@ test.describe('actions schema settings', () => {
         await page.getByLabel('action-Action-Reset-general-filter-form').hover();
         await page.getByRole('button', { name: 'designer-schema-settings-Action' }).hover();
       },
-      supportedOptions: ['Edit button', 'Linkage rules', 'Delete'],
+      supportedOptions: ['Edit button', 'Delete'],
     });
   });
 });
