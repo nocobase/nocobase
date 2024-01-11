@@ -13,6 +13,8 @@ export class DuplicatePlugin extends Plugin {
       schema: {
         'x-component': 'Action',
         'x-action': 'duplicate',
+        'x-toolbar': 'ActionSchemaToolbar',
+        'x-settings': 'ActionSettings:duplicate',
         'x-decorator': 'ACLActionProvider',
         'x-component-props': {
           type: 'primary',

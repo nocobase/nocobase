@@ -61,7 +61,8 @@ export const readPrettyFormActionInitializers = new SchemaInitializer({
             type: 'void',
             title: '{{ t("Popup") }}',
             'x-action': 'customize:popup',
-            'x-designer': 'Action.Designer',
+            'x-toolbar': 'ActionSchemaToolbar',
+            'x-settings': 'actionSettings:customize:popup',
             'x-component': 'Action',
             'x-component-props': {
               openMode: 'drawer',
@@ -110,7 +111,8 @@ export const readPrettyFormActionInitializers = new SchemaInitializer({
           schema: {
             title: '{{ t("Update record") }}',
             'x-component': 'Action',
-            'x-designer': 'Action.Designer',
+            'x-toolbar': 'ActionSchemaToolbar',
+            'x-settings': 'actionSettings:customize:updateRecord',
             'x-action': 'customize:update',
             'x-decorator': 'ACLActionProvider',
             'x-acl-action': 'update',
