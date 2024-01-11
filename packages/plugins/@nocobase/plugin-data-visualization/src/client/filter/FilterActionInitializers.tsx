@@ -90,6 +90,7 @@ const ChartFilterActionInitializer = (props) => {
     'x-component': 'Action',
     'x-designer': 'ChartFilterActionDesigner',
     'x-component-props': {
+      htmlType: 'submit',
       type: 'primary',
       useProps: '{{ useChartFilterActionProps }}',
     },
