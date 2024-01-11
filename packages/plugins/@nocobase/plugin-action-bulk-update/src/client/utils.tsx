@@ -68,8 +68,11 @@ export const useCustomizeBulkUpdateActionProps = () => {
       await Promise.all(waitList);
 
       modal.confirm({
-        title: t('Bulk update'),
-        content: updateMode === 'selected' ? t('Update selected data?') : t('Update all data?'),
+        title: t('Bulk update', { ns: 'client' }),
+        content:
+          updateMode === 'selected'
+            ? t('Update selected data?', { ns: 'client' })
+            : t('Update all data?', { ns: 'client' }),
         async onOk() {
           const { filter } = service.params?.[0] ?? {};
           const updateData: { filter?: any; values: any; forceUpdate: boolean } = {
