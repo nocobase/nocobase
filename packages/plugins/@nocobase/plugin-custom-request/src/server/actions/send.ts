@@ -84,7 +84,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
 
   ctx.withoutDataWrapping = true;
 
-  const { collectionName, url, headers = [], params = [], data = {}, ...options } = requestConfig.options;
+  const { collectionName, url, headers = [], params = [], data = {}, ...options } = requestConfig.options || {};
   if (!url) {
     return ctx.throw(400, ctx.t('Please configure the request settings first'));
   }
