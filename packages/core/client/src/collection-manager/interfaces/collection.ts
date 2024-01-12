@@ -39,7 +39,7 @@ export const collection: IField = {
   },
 };
 
-export class CollectionFieldInterface extends CollectionFieldInterface {
+export class CollectionSelectFieldInterface extends CollectionFieldInterface {
   name = 'collection';
   type = 'string';
   group = 'advanced';

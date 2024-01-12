@@ -1,8 +1,7 @@
 import { CollectionFieldInterface } from './CollectionFieldInterface';
-import { CollectionTemplate, CollectionTemplateV2Options } from './CollectionTemplate';
+import { CollectionTemplate } from './CollectionTemplate';
 import { CollectionFieldOptionsV2, CollectionOptionsV2, CollectionV2 } from './Collection';
 import type { Application } from '../Application';
-import { IField } from '../../collection-manager';
 import { SchemaKey } from '@formily/react';
 
 export type CollectionMixinConstructor<T = {}> = new (...args: any[]) => T;

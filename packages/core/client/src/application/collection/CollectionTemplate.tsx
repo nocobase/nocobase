@@ -11,7 +11,7 @@ interface AvailableFieldInterfacesExclude {
   exclude?: any[];
 }
 
-interface CollectionOptions {
+interface CollectionTemplateDefaultOptions {
   /**
    * 自动生成 id
    * @default true
@@ -38,32 +38,7 @@ interface CollectionOptions {
   [key: string]: any;
 }
 
-export interface CollectionTemplateV2Options {
-  name: string;
-  Collection?: typeof CollectionV2;
-  transform?: (collection: CollectionOptionsV2, app: Application) => CollectionOptionsV2;
-  title?: string;
-  color?: string;
-  /** 排序 */
-  order?: number;
-  /** 默认配置 */
-  default?: CollectionOptions;
-  events?: any;
-  /** UI 可配置的 CollectionOptions 参数（添加或编辑的 Collection 表单的字段） */
-  configurableProperties?: Record<string, ISchema>;
-  /** 当前模板可用的字段类型 */
-  availableFieldInterfaces?: AvailableFieldInterfacesInclude | AvailableFieldInterfacesExclude;
-  /** 是否分割线 */
-  divider?: boolean;
-  /** 模板描述 */
-  description?: string;
-  /**配置字段中的操作按钮 */
-  configureActions?: Record<string, ISchema>;
-  //是否禁止删除字段
-  forbidDeletion?: boolean;
-}
-
-export class CollectionTemplate implements CollectionTemplateV2Options {
+export class CollectionTemplate {
   app: Application;
   collectionManager: CollectionManagerV2;
   constructor(app: Application) {
@@ -78,7 +53,7 @@ export class CollectionTemplate implements CollectionTemplateV2Options {
   /** 排序 */
   order?: number;
   /** 默认配置 */
-  default?: CollectionOptions;
+  default?: CollectionTemplateDefaultOptions;
   events?: any;
   /** UI 可配置的 CollectionOptions 参数（添加或编辑的 Collection 表单的字段） */
   configurableProperties?: Record<string, ISchema>;

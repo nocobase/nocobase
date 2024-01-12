@@ -1,4 +1,4 @@
-import { ISchema, SchemaKey } from '@formily/react';
+import { SchemaKey } from '@formily/react';
 import { filter } from 'lodash';
 
 import type { CollectionManagerV2 } from './CollectionManager';
