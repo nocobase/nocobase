@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { collectionDataSource, defaultProps, operators } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterface } from '../../application';
+import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
 
 export const collection: IField = {
   name: 'collection',

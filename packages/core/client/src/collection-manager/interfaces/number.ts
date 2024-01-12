@@ -1,4 +1,4 @@
-import { CollectionFieldInterface } from '../../application';
+import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
 import { i18n } from '../../i18n';
 import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';

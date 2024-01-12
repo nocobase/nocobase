@@ -1,4 +1,4 @@
-import { CollectionTemplate } from '../../application';
+import { CollectionTemplate } from '../../application/collection/CollectionTemplate';
 import { PreviewFields } from './components/PreviewFields';
 import { PreviewTable } from './components/PreviewTable';
 import { getConfigurableProperties } from './properties';

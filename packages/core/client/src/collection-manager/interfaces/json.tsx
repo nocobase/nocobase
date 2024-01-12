@@ -3,7 +3,7 @@ import { registerValidateRules } from '@formily/core';
 import React from 'react';
 import { defaultProps, operators } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterface } from '../../application';
+import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
 
 registerValidateRules({
   json(value) {

@@ -1,4 +1,5 @@
-import { CollectionTemplate, CollectionV2 } from '../../application';
+import { CollectionV2 } from '../../application/collection/Collection';
+import { CollectionTemplate } from '../../application/collection/CollectionTemplate';
 import { getConfigurableProperties } from './properties';
 import { ICollectionTemplate } from './types';
 
