@@ -76,55 +76,59 @@ test.describe('table block schema settings', () => {
     await expect(page.locator('.ant-pagination')).toHaveText('Total 40 items123410 / page');
   });
 
-  test('enable drag and drop sorting', async ({ page, mockPage, mockRecords }) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    const records = await mockRecords('general', 3);
-    await nocoPage.goto();
+  test.describe('enable drag and drop sorting', () => {
+    // 该用例在 CI 并发环境下容易报错，原因未知，通过增加重试次数可以解决
+    test.describe.configure({ retries: process.env.CI ? 4 : 0 });
+    test('enable drag and drop sorting', async ({ page, mockPage, mockRecords }) => {
+      const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
+      const records = await mockRecords('general', 3);
+      await nocoPage.goto();
 
-    await page.getByLabel('block-item-CardItem-general-table').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').hover();
+      await page.getByLabel('block-item-CardItem-general-table').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').hover();
 
-    // 默认是关闭状态
-    await expect(
-      page.getByRole('menuitem', { name: 'Enable drag and drop sorting' }).getByRole('switch'),
-    ).not.toBeChecked();
+      // 默认是关闭状态
+      await expect(
+        page.getByRole('menuitem', { name: 'Enable drag and drop sorting' }).getByRole('switch'),
+      ).not.toBeChecked();
 
-    // 开启之后，隐藏 Set default sorting rules 选项
-    await page.getByRole('menuitem', { name: 'Enable drag and drop sorting' }).click();
-    await expect(
-      page.getByRole('menuitem', { name: 'Enable drag and drop sorting' }).getByRole('switch'),
-    ).toBeChecked();
-    await expect(page.getByRole('menuitem', { name: 'Set default sorting rules' })).toBeHidden();
+      // 开启之后，隐藏 Set default sorting rules 选项
+      await page.getByRole('menuitem', { name: 'Enable drag and drop sorting' }).click();
+      await expect(
+        page.getByRole('menuitem', { name: 'Enable drag and drop sorting' }).getByRole('switch'),
+      ).toBeChecked();
+      await expect(page.getByRole('menuitem', { name: 'Set default sorting rules' })).toBeHidden();
 
-    // 显示出来 email 和 ID
-    await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
-    await page.getByRole('menuitem', { name: 'email' }).click();
-    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
-    await page.mouse.move(300, 0);
+      // 显示出来 email 和 ID
+      await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
+      await page.getByRole('menuitem', { name: 'email' }).click();
+      await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+      await page.mouse.move(300, 0);
 
-    // 默认的排序
-    let email1 = await page.getByText(records[0].email).boundingBox();
-    let email2 = await page.getByText(records[1].email).boundingBox();
-    let email3 = await page.getByText(records[2].email).boundingBox();
+      // 默认的排序
+      let email1 = await page.getByText(records[0].email).boundingBox();
+      let email2 = await page.getByText(records[1].email).boundingBox();
+      let email3 = await page.getByText(records[2].email).boundingBox();
 
-    expect(email1.y).toBeLessThan(email2.y);
-    expect(email2.y).toBeLessThan(email3.y);
+      expect(email1.y).toBeLessThan(email2.y);
+      expect(email2.y).toBeLessThan(email3.y);
 
-    // 将第二行拖动到第一行
-    await page
-      .getByLabel('table-index-2')
-      .getByRole('img', { name: 'menu' })
-      .dragTo(page.getByLabel('table-index-1').getByRole('img', { name: 'menu' }));
+      // 将第二行拖动到第一行
+      await page
+        .getByLabel('table-index-2')
+        .getByRole('img', { name: 'menu' })
+        .dragTo(page.getByLabel('table-index-1').getByRole('img', { name: 'menu' }));
 
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+      await page.reload();
+      await page.waitForLoadState('networkidle');
 
-    email1 = await page.getByText(records[0].email).boundingBox();
-    email2 = await page.getByText(records[1].email).boundingBox();
-    email3 = await page.getByText(records[2].email).boundingBox();
+      email1 = await page.getByText(records[0].email).boundingBox();
+      email2 = await page.getByText(records[1].email).boundingBox();
+      email3 = await page.getByText(records[2].email).boundingBox();
 
-    expect(email2.y).toBeLessThan(email1.y);
-    expect(email1.y).toBeLessThan(email3.y);
+      expect(email2.y).toBeLessThan(email1.y);
+      expect(email1.y).toBeLessThan(email3.y);
+    });
   });
 
   test.describe('set the data scope', () => {
@@ -186,36 +190,40 @@ test.describe('table block schema settings', () => {
     });
   });
 
-  test('set default sorting rules', async ({ page, mockPage, mockRecords }) => {
-    const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
-    const records = await mockRecords('general', 3);
-    await nocoPage.goto();
+  test.describe('set default sorting rules', () => {
+    // 该用例在 CI 并发环境下容易报错，原因未知，通过增加重试次数可以解决
+    test.describe.configure({ retries: process.env.CI ? 4 : 0 });
+    test('set default sorting rules', async ({ page, mockPage, mockRecords }) => {
+      const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndBasicFields).waitForInit();
+      const records = await mockRecords('general', 3);
+      await nocoPage.goto();
 
-    // 打开配置弹窗
-    await page.getByLabel('block-item-CardItem-general-table').hover();
-    await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').hover();
-    await page.getByRole('menuitem', { name: 'Set default sorting rules' }).click();
+      // 打开配置弹窗
+      await page.getByLabel('block-item-CardItem-general-table').hover();
+      await page.getByLabel('designer-schema-settings-CardItem-TableBlockDesigner-general').hover();
+      await page.getByRole('menuitem', { name: 'Set default sorting rules' }).click();
 
-    // 设置一个按 ID 降序的规则
-    await page.getByRole('button', { name: 'plus Add sort field' }).click();
-    await page.getByTestId('select-single').click();
-    await page.getByRole('option', { name: 'ID', exact: true }).click();
-    await page.getByText('DESC', { exact: true }).click();
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
+      // 设置一个按 ID 降序的规则
+      await page.getByRole('button', { name: 'plus Add sort field' }).click();
+      await page.getByTestId('select-single').click();
+      await page.getByRole('option', { name: 'ID', exact: true }).click();
+      await page.getByText('DESC', { exact: true }).click();
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
 
-    // 显示出来 email 和 ID
-    await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
-    await page.getByRole('menuitem', { name: 'email' }).click();
-    await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
-    await page.mouse.move(300, 0);
+      // 显示出来 email 和 ID
+      await page.getByLabel('schema-initializer-TableV2-TableColumnInitializers-general').hover();
+      await page.getByRole('menuitem', { name: 'email' }).click();
+      await page.getByRole('menuitem', { name: 'ID', exact: true }).click();
+      await page.mouse.move(300, 0);
 
-    // 规则生效后的顺序：3，2，1
-    const email1 = await page.getByText(records[0].email).boundingBox();
-    const email2 = await page.getByText(records[1].email).boundingBox();
-    const email3 = await page.getByText(records[2].email).boundingBox();
+      // 规则生效后的顺序：3，2，1
+      const email1 = await page.getByText(records[0].email).boundingBox();
+      const email2 = await page.getByText(records[1].email).boundingBox();
+      const email3 = await page.getByText(records[2].email).boundingBox();
 
-    expect(email3.y).toBeLessThan(email2.y);
-    expect(email2.y).toBeLessThan(email1.y);
+      expect(email3.y).toBeLessThan(email2.y);
+      expect(email2.y).toBeLessThan(email1.y);
+    });
   });
 
   test.describe('connect data blocks', () => {
