@@ -286,3 +286,8 @@ export const gridCardBlockSettings = new SchemaSettings({
     },
   ],
 });
+
+export const gridCardBlockFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:gridCardBlock',
+  items: [],
+});

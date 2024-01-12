@@ -41,3 +41,8 @@ export const singleDataDetailsBlockSettings = new SchemaSettings({
     },
   ],
 });
+
+export const detailsBlockFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:detailsBlock',
+  items: [],
+});

@@ -220,3 +220,8 @@ export const listBlockSettings = new SchemaSettings({
     },
   ],
 });
+
+export const listBlockFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:listBlock',
+  items: [],
+});

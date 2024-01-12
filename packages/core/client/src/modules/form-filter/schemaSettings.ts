@@ -68,3 +68,8 @@ export const filterFormBlockSettings = new SchemaSettings({
     },
   ],
 });
+
+export const filterFormBlockFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:filterFormBlock',
+  items: [],
+});

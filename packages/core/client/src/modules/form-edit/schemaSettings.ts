@@ -74,3 +74,8 @@ export const editFormBlockSettings = new SchemaSettings({
     },
   ],
 });
+
+export const editFormBlockFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:editFormBlock',
+  items: [],
+});

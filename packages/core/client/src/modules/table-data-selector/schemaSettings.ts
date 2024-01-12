@@ -273,3 +273,8 @@ export const dataSelectorBlockSettings = new SchemaSettings({
     },
   ],
 });
+
+export const dataSelectorBlockFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:dataSelectorBlock',
+  items: [],
+});

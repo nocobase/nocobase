@@ -812,3 +812,8 @@ export const customizeUpdateRecordActionSettings = new SchemaSettings({
     },
   ],
 });
+
+export const tableBlockFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:tableBlock',
+  items: [],
+});

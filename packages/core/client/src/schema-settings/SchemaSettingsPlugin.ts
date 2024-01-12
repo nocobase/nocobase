@@ -3,10 +3,16 @@ import { filterCollapseBlockSettings } from '../modules/collapse-filter/schemaSe
 import { multiDataDetailsBlockSettings } from '../modules/details-multi-data/schemaSettings';
 import { singleDataDetailsBlockSettings } from '../modules/details-single-data/schemaSettings';
 import {
+  creationFormBlockFieldSettings,
   creationFormBlockSettings,
   customizeSaveRecordActionSettings,
   customizeSubmitToWorkflowActionSettings,
+  recordPickerComponentFieldSettings,
+  selectComponentFieldSettings,
+  subformComponentFieldSettings,
+  subformPopoverComponentFieldSettings,
   submitActionSettings,
+  subtablePopoverComponentFieldSettings,
 } from '../modules/form-creation/schemaSettings';
 import { editFormBlockSettings } from '../modules/form-edit/schemaSettings';
 import { filterFormBlockSettings } from '../modules/form-filter/schemaSettings';
@@ -57,5 +63,13 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(submitActionSettings);
     this.schemaSettingsManager.add(customizeSaveRecordActionSettings);
     this.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);
+
+    // field settings
+    this.schemaSettingsManager.add(creationFormBlockFieldSettings);
+    this.schemaSettingsManager.add(selectComponentFieldSettings);
+    this.schemaSettingsManager.add(recordPickerComponentFieldSettings);
+    this.schemaSettingsManager.add(subformComponentFieldSettings);
+    this.schemaSettingsManager.add(subformPopoverComponentFieldSettings);
+    this.schemaSettingsManager.add(subtablePopoverComponentFieldSettings);
   }
 }

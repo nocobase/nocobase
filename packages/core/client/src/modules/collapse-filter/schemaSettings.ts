@@ -61,3 +61,8 @@ export const filterCollapseBlockSettings = new SchemaSettings({
     },
   ],
 });
+
+export const filterCollapseBlockFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:filterCollapseBlock',
+  items: [],
+});
