@@ -1096,7 +1096,7 @@ export const GraphDrawPage = React.memo(() => {
     return () => {
       cleanGraphContainer();
     };
-  }, [searchParams, collectionList]);
+  }, [searchParams]);
 
   const loadCollections = async () => {
     return targetGraph.collections?.map((collection: any) => ({
