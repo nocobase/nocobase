@@ -1,7 +1,7 @@
 import cors from '@koa/cors';
 import Database from '@nocobase/database';
 import { Resourcer } from '@nocobase/resourcer';
-import { postPerfHooksWrap, prePerfHooksWrap, uid } from '@nocobase/utils';
+import { uid } from '@nocobase/utils';
 import { Command } from 'commander';
 import fs from 'fs';
 import i18next from 'i18next';
@@ -46,7 +46,9 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     app.context.reqId = randomUUID();
     await next();
   });
+
   app.use(requestLogger(app.name, options.logger?.request), { tag: 'logger' });
+
   app.use(
     cors({
       exposeHeaders: ['content-disposition'],

@@ -7,6 +7,7 @@ import { ResourceType } from './resource';
 export interface ParseRequest {
   path: string;
   method: string;
+  namespace?: string;
   // 资源类型
   type?: ResourceType;
 }
@@ -184,6 +185,10 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
     if (actionName) {
       params.resourceName = resourceName;
       params.actionName = actionName;
+    }
+
+    if (request.namespace) {
+      params.resourceName = `${request.namespace}@${params.resourceName}`;
     }
   }
 
