@@ -267,17 +267,25 @@ export default class PluginWorkflowServer extends Plugin {
     }
   }
 
-  public trigger(workflow: WorkflowModel, context: object, options: { context?: any } = {}): void {
+  public trigger(
+    workflow: WorkflowModel,
+    context: object,
+    options: { context?: any } = {},
+  ): void | Promise<Processor | null> {
     const logger = this.getLogger(workflow.id);
     if (!this.ready) {
       logger.warn(`app is not ready, event of workflow ${workflow.id} will be ignored`);
-      logger.debug(`ignored event data:`, { data: context });
+      logger.debug(`ignored event data:`, context);
       return;
     }
     // `null` means not to trigger
     if (context == null) {
       logger.warn(`workflow ${workflow.id} event data context is null, event will be ignored`);
       return;
+    }
+
+    if (this.triggers.get(workflow.type).sync ?? workflow.options.sync) {
+      return this.triggerSync(workflow, context, options);
     }
 
     this.events.push([workflow, context, options]);
@@ -296,6 +304,27 @@ export default class PluginWorkflowServer extends Plugin {
     setTimeout(this.prepare);
   }
 
+  private async triggerSync(
+    workflow: WorkflowModel,
+    context: object,
+    options: { context?: any } = {},
+  ): Promise<Processor | null> {
+    let execution;
+    try {
+      execution = await this.createExecution(workflow, context, options);
+    } catch (err) {
+      this.getLogger(workflow.id).error(`creating execution failed: ${err.message}`, err);
+      return null;
+    }
+
+    try {
+      return this.process(execution);
+    } catch (err) {
+      this.getLogger(execution.workflowId).error(`execution (${execution.id}) error: ${err.message}`, err);
+    }
+    return null;
+  }
+
   public async resume(job) {
     if (!job.execution) {
       job.execution = await job.getExecution();
@@ -311,9 +340,7 @@ export default class PluginWorkflowServer extends Plugin {
     return new Processor(execution, { ...options, plugin: this });
   }
 
-  private async createExecution(event: CachedEvent): Promise<ExecutionModel | null> {
-    const [workflow, context, options] = event;
-
+  private async createExecution(workflow: WorkflowModel, context, options): Promise<ExecutionModel | null> {
     if (options.context?.executionId) {
       // NOTE: no transaction here for read-uncommitted execution
       const existed = await workflow.countExecutions({
@@ -379,7 +406,7 @@ export default class PluginWorkflowServer extends Plugin {
     logger.info(`preparing execution for event`);
 
     try {
-      const execution = await this.createExecution(event);
+      const execution = await this.createExecution(...event);
       // NOTE: cache first execution for most cases
       if (!this.executing && !this.pending.length) {
         this.pending.push([execution]);
@@ -442,7 +469,7 @@ export default class PluginWorkflowServer extends Plugin {
     })();
   }
 
-  private async process(execution: ExecutionModel, job?: JobModel) {
+  private async process(execution: ExecutionModel, job?: JobModel): Promise<Processor> {
     if (execution.status === EXECUTION_STATUS.QUEUEING) {
       await execution.update({ status: EXECUTION_STATUS.STARTED });
     }
@@ -462,5 +489,7 @@ export default class PluginWorkflowServer extends Plugin {
     } catch (err) {
       this.getLogger(execution.workflowId).error(`execution (${execution.id}) error: ${err.message}`, err);
     }
+
+    return processor;
   }
 }

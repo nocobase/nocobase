@@ -70,7 +70,7 @@ export default class extends Instruction {
     },
     endStatus: {
       type: 'number',
-      title: `{{t("End Status", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("End status", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
       enum: [

@@ -1,4 +1,4 @@
-import { DeleteOutlined } from '@ant-design/icons';
+import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
 import { App, Button, Dropdown, Input, Tag, Tooltip, message } from 'antd';
@@ -53,6 +53,7 @@ export abstract class Instruction {
   useScopeVariables?(node, options?): VariableOption[];
   useInitializers?(node): SchemaInitializerItemType | null;
   isAvailable?(ctx: NodeAvailableContext): boolean;
+  end?: boolean;
 }
 
 function useUpdateAction() {
@@ -121,13 +122,19 @@ export function Node({ data }) {
   const { styles } = useStyles();
   const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
   const workflowPlugin = usePlugin(WorkflowPlugin);
-  const { Component = NodeDefaultView } = workflowPlugin.instructions.get(data.type);
+  const { Component = NodeDefaultView, end } = workflowPlugin.instructions.get(data.type);
 
   return (
     <NodeContext.Provider value={data}>
       <div className={cx(styles.nodeBlockClass)}>
         <Component data={data} />
-        <AddButton aria-label={getAriaLabel()} upstream={data} />
+        {end ? (
+          <div className="end-sign">
+            <CloseOutlined />
+          </div>
+        ) : (
+          <AddButton aria-label={getAriaLabel()} upstream={data} />
+        )}
       </div>
     </NodeContext.Provider>
   );

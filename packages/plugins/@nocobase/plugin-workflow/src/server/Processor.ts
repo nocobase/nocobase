@@ -29,6 +29,7 @@ export default class Processor {
   nodesMap = new Map<number, FlowNodeModel>();
   jobsMap = new Map<number, JobModel>();
   jobsMapByNodeKey: { [key: string]: any } = {};
+  lastSavedJob: JobModel | null = null;
 
   constructor(
     public execution: ExecutionModel,
@@ -125,7 +126,13 @@ export default class Processor {
       job = {
         result:
           err instanceof Error
-            ? { message: err.message, stack: process.env.NODE_ENV === 'production' ? [] : err.stack }
+            ? {
+                message: err.message,
+                stack:
+                  process.env.NODE_ENV === 'production'
+                    ? 'Error stack will not be shown under "production" environment, please check logs.'
+                    : err.stack,
+              }
             : err,
         status: JOB_STATUS.ERROR,
       };
@@ -224,6 +231,7 @@ export default class Processor {
 
     const node = this.nodesMap.get(job.nodeId);
     this.jobsMapByNodeKey[node.key] = job.result;
+    this.lastSavedJob = job;
 
     return job;
   }
