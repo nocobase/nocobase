@@ -12,14 +12,13 @@ export const useCollectionManager = () => {
   const [random, setRandom] = useState(uid());
   const interfaces = useMemo(() => cm?.getFieldInterfaces(), [cm, random]);
   const templates = useMemo(() => cm?.getCollectionTemplates(), [cm, random]);
-  const collections = useMemo(
-    () =>
-      cm
-        ?.getCollections()
-        .filter((item) => !item.isLocal)
-        .map((item) => item.getOptions()),
-    [cm, random],
-  );
+  const getCollections = useCallback(() => {
+    return cm
+      ?.getCollections()
+      .filter((item) => !item.isLocal)
+      .map((item) => item.getOptions());
+  }, [cm]);
+  const collections = useMemo(() => getCollections(), [cm, random]);
   const { refresh } = useSchemaComponentContext();
   const service = useCallback(() => cm?.reload(refresh), [cm]);
   const updateCollection = cm?.setCollections.bind(cm);
@@ -236,6 +235,7 @@ export const useCollectionManager = () => {
     templates,
     getTemplate,
     getInterface,
+    getCollections,
     getParentCollectionFields,
     getInheritCollections,
     getChildrenCollections,

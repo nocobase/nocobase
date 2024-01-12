@@ -305,6 +305,8 @@ export class CollectionManagerV2<Mixins = {}> {
   private getInheritData() {
     return {
       collections: this.collections,
+      collectionFieldGroups: this.collectionFieldGroups,
+      reloadCallbacks: this.reloadCallbacks,
       collectionTemplateInstances: this.collectionTemplateInstances,
       fieldInterfaceInstances: this.fieldInterfaceInstances,
       collectionMixins: this.collectionMixins,

@@ -372,7 +372,7 @@ export const GraphDrawPage = React.memo(() => {
   const [collectionData, setCollectionData] = useState<any>([]);
   const [collectionList, setCollectionList] = useState<any>([]);
   const [loading, setLoading] = useState(false);
-  const { collections } = useCollectionManager();
+  const { collections, getCollections } = useCollectionManager();
   const cm = useCollectionManagerV2();
   const currentAppInfo = useCurrentAppInfo();
   const app = useApp();
@@ -412,7 +412,9 @@ export const GraphDrawPage = React.memo(() => {
       refreshPositions();
     }
   };
-  const reloadCallback = async (collections) => {
+  const reloadCallback = async () => {
+    const collections = getCollections();
+    if (!targetGraph) return;
     targetGraph.collections = collections;
     targetGraph.updatePositionAction = updatePositionAction;
     targetGraph.saveGraphPositionAction = saveGraphPositionAction;
@@ -1072,7 +1074,7 @@ export const GraphDrawPage = React.memo(() => {
     setLoading(true);
     refreshPositions()
       .then(async () => {
-        await reloadCallback(collections);
+        await reloadCallback();
         setLoading(false);
       })
       .catch((err) => {

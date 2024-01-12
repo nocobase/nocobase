@@ -55,6 +55,7 @@ export class CollectionPlugin extends Plugin {
     this.addFieldInterfaces();
     this.addCollectionTemplates();
     this.addFieldInterfaces();
+    this.addFieldGroups();
 
     this.collectionManager.setReloadFn(this.reloadCollections.bind(this));
   }
