@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { FC, ReactNode, useMemo } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
 import { CollectionCategroriesContext } from './context';
 import { CollectionManagerOptions } from './types';
-import { CollectionManagerProviderV2, useCollectionManagerV2 } from '../application';
+import { CollectionManagerProviderV2, CollectionOptionsV2, useCollectionManagerV2 } from '../application';
 import { useCollectionHistory } from './CollectionHistoryProvider';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 
@@ -22,6 +22,14 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
       <CollectionManagerSchemaComponentProvider>{props.children}</CollectionManagerSchemaComponentProvider>
     </CollectionManagerProviderV2>
   );
+};
+
+export const CollectionExtendsProvider: FC<{ collections: CollectionOptionsV2[]; children?: ReactNode }> = ({
+  children,
+  collections,
+}) => {
+  const localCollections = collections.map((item) => ({ ...item, isLocal: true }));
+  return <CollectionManagerProvider collections={localCollections}>{children}</CollectionManagerProvider>;
 };
 
 export const RemoteCollectionManagerProvider = (props: any) => {

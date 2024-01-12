@@ -4,8 +4,8 @@ import {
   Application,
   SchemaComponent,
   DataBlockProviderV2,
-  CollectionManagerProvider,
   TableCollectionFieldInitializer,
+  CollectionManagerProvider,
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 import requestData from './requestData.json';

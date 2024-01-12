@@ -3,17 +3,14 @@ import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
 
-import { css, usePlugin } from '@nocobase/client';
+import { CollectionExtendsProvider, css, useCompile, usePlugin } from '@nocobase/client';
 
 import {
-  CollectionManagerProvider,
   SchemaComponent,
   SchemaComponentContext,
   TableBlockProvider,
   useAPIClient,
   useActionContext,
-  useCollectionManager,
-  useCompile,
   useCurrentUserContext,
   useFormBlockContext,
   useRecord,
@@ -624,11 +621,11 @@ function Decorator({ params = {}, children }) {
   };
 
   return (
-    <CollectionManagerProvider collections={[nodeCollection, workflowCollection, todoCollection]}>
+    <CollectionExtendsProvider collections={[nodeCollection, workflowCollection, todoCollection]}>
       <TableBlockProvider name="workflow-todo" {...blockProps}>
         {children}
       </TableBlockProvider>
-    </CollectionManagerProvider>
+    </CollectionExtendsProvider>
   );
 }
 

@@ -1,5 +1,5 @@
 import { RecursionField } from '@formily/react';
-import { CollectionManagerProvider, SchemaComponentOptions, useCurrentRoles } from '@nocobase/client';
+import { CollectionExtendsProvider, SchemaComponentOptions, useCurrentRoles } from '@nocobase/client';
 import React from 'react';
 import apiKeysCollection from '../../collections/apiKeys';
 import { ExpiresSelect } from './ExpiresSelect';
@@ -9,10 +9,10 @@ export const Configuration = () => {
   const currentRoles = useCurrentRoles();
 
   return (
-    <CollectionManagerProvider collections={[apiKeysCollection]}>
+    <CollectionExtendsProvider collections={[apiKeysCollection]}>
       <SchemaComponentOptions scope={{ currentRoles }} components={{ ExpiresSelect }}>
         <RecursionField schema={configurationSchema} />
       </SchemaComponentOptions>
-    </CollectionManagerProvider>
+    </CollectionExtendsProvider>
   );
 };

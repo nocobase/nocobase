@@ -32,7 +32,7 @@ function useTargetCollectionField() {
   const providedCollection = useCollection();
   const { getCollection, getCollectionField } = useCollectionManager();
   const paths = (fieldSchema.name as string).split('.');
-  let collection: CollectionOptions = providedCollection;
+  let collection: any = providedCollection;
   for (let i = 0; i < paths.length - 1; i++) {
     const field = collection.getField(paths[i]);
     collection = getCollection(field.target);

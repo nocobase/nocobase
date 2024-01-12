@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import {
   AntdSchemaComponentProvider,
-  CollectionManagerProvider,
+  CollectionExtendsProvider,
   SchemaComponent,
   SchemaComponentProvider,
 } from '@nocobase/client';
@@ -155,9 +155,9 @@ export default () => {
   return (
     <SchemaComponentProvider>
       <AntdSchemaComponentProvider>
-        <CollectionManagerProvider collections={collections}>
+        <CollectionExtendsProvider collections={collections}>
           <SchemaComponent schema={schema} />
-        </CollectionManagerProvider>
+        </CollectionExtendsProvider>
       </AntdSchemaComponentProvider>
     </SchemaComponentProvider>
   );

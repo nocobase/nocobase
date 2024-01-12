@@ -455,7 +455,7 @@ function WorkflowSelect({ types, ...props }) {
   const [workflowCollection, setWorkflowCollection] = useState(baseCollection.name);
   useFormEffects(() => {
     onFieldValueChange(`group[${index}].context`, (field) => {
-      let collection: CollectionOptions = baseCollection;
+      let collection: any = baseCollection;
       if (field.value) {
         const paths = field.value.split('.');
         for (let i = 0; i < paths.length && collection; i++) {

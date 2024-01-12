@@ -1,12 +1,11 @@
 import { ArrayTable } from '@formily/antd-v5';
 import { observer, useField } from '@formily/react';
 import {
-  CollectionManagerProvider,
+  CollectionExtendsProvider,
   FormProvider,
   SchemaComponent,
   TableBlockProvider,
   useCollection,
-  useCollectionManager,
   useCompile,
   useRecord,
 } from '@nocobase/client';
@@ -500,9 +499,9 @@ AuditLogs.Decorator = observer(
     };
     return (
       <IsAssociationBlock.Provider value={!!parent.name}>
-        <CollectionManagerProvider collections={[collection]}>
+        <CollectionExtendsProvider collections={[collection]}>
           <TableBlockProvider {...defaults}>{props.children}</TableBlockProvider>
-        </CollectionManagerProvider>
+        </CollectionExtendsProvider>
       </IsAssociationBlock.Provider>
     );
   },

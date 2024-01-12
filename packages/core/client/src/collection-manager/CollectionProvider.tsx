@@ -3,7 +3,7 @@ import { CollectionProviderV2, useCollectionManagerV2 } from '../application';
 import { CollectionOptions } from './types';
 import React from 'react';
 import { DeletedPlaceholder } from '../application/collection/DeletedPlaceholder';
-import { CollectionManagerProvider } from './CollectionManagerProvider';
+import { CollectionExtendsProvider } from './CollectionManagerProvider';
 
 function getCollectionName(name?: string | CollectionOptions): string {
   if (!name) return undefined;
@@ -28,9 +28,9 @@ export const CollectionProvider: FC<{
     );
   if (typeof collection === 'object') {
     return (
-      <CollectionManagerProvider collections={[collection]}>
+      <CollectionExtendsProvider collections={[collection]}>
         <CollectionProviderV2 name={collection.name}>{children}</CollectionProviderV2>
-      </CollectionManagerProvider>
+      </CollectionExtendsProvider>
     );
   }
   return <DeletedPlaceholder type="Collection" name={name} />;

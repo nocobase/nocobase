@@ -504,11 +504,7 @@ export const GraphDrawPage = React.memo(() => {
             <APIClientProvider apiClient={api}>
               <SchemaComponentOptions inherit scope={scope} components={components}>
                 <CollectionCategroriesProvider {...categoryCtx}>
-                  <CollectionManagerProvider
-                    // collections={targetGraph?.collections}
-                    reloadCallback={reloadCallback}
-                    cm={cm}
-                  >
+                  <CollectionManagerProvider reloadCallback={reloadCallback} cm={cm}>
                     {/* TODO: 因为画布中的卡片是一次性注册进 Graph 的，这里的 theme 是存在闭包里的，因此当主题动态变更时，并不会触发卡片的重新渲染 */}
                     <ConfigProvider theme={theme as any}>
                       <div style={{ height: 'auto' }}>
