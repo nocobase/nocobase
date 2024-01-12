@@ -1,9 +1,9 @@
 import { Context, Next } from '@nocobase/actions';
 import { parse } from '@nocobase/utils';
 
+import { appendArrayColumn } from '@nocobase/evaluators';
 import axios from 'axios';
 import CustomRequestPlugin from '../plugin';
-import { appendArrayColumn } from '@nocobase/evaluators';
 
 const getHeaders = (headers: Record<string, any>) => {
   return Object.keys(headers).reduce((hds, key) => {
@@ -86,7 +86,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
 
   const { collectionName, url, headers = [], params = [], data = {}, ...options } = requestConfig.options || {};
   if (!url) {
-    return ctx.throw(400, ctx.t('Please configure the request settings first'));
+    return ctx.throw(400, ctx.t('Please configure the request settings first', { ns: 'custom-request' }));
   }
   let currentRecordValues = {};
   if (collectionName && typeof currentRecord.id !== 'undefined') {
