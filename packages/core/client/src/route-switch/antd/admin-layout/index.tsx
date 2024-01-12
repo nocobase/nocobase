@@ -268,7 +268,6 @@ export const InternalAdminLayout = (props: any) => {
   const params = useParams<any>();
   const { token } = useToken();
   const { render } = useAppSpin();
-  console.log(params);
   return (
     <Layout>
       <GlobalStyleForAdminLayout />
