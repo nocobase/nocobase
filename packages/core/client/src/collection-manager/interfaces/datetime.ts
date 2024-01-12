@@ -1,4 +1,4 @@
-import { CollectionFieldInterfaceV2 } from '../../application';
+import { CollectionFieldInterface } from '../../application';
 import { dateTimeProps, defaultProps, operators } from './properties';
 import { IField } from './types';
 
@@ -42,7 +42,7 @@ export const datetime: IField = {
   titleUsable: true,
 };
 
-export class DatetimeFieldInterface extends CollectionFieldInterfaceV2 {
+export class DatetimeFieldInterface extends CollectionFieldInterface {
   name = 'datetime';
   type = 'object';
   group = 'datetime';

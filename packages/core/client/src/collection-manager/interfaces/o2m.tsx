@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceV2 } from '../../application';
+import { CollectionFieldInterface } from '../../application';
 
 export const o2m: IField = {
   name: 'o2m',
@@ -202,7 +202,7 @@ export const o2m: IField = {
   },
 };
 
-export class O2MFieldInterface extends CollectionFieldInterfaceV2 {
+export class O2MFieldInterface extends CollectionFieldInterface {
   name = 'o2m';
   type = 'object';
   group = 'relation';

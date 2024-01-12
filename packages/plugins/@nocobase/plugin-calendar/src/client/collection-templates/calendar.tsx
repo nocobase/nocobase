@@ -1,4 +1,4 @@
-import { CollectionTemplateV2, getConfigurableProperties } from '@nocobase/client';
+import { CollectionTemplate, getConfigurableProperties } from '@nocobase/client';
 import { generateNTemplate } from '../../locale';
 
 // export const calendar: ICollectionTemplate = {
@@ -54,7 +54,7 @@ import { generateNTemplate } from '../../locale';
 //   configurableProperties: getConfigurableProperties('title', 'name', 'inherits', 'category', 'description'),
 // };
 
-export class CalendarCollectionTemplate extends CollectionTemplateV2 {
+export class CalendarCollectionTemplate extends CollectionTemplate {
   name = 'calendar';
   title = generateNTemplate('Calendar collection');
   order = 2;

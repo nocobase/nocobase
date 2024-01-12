@@ -1,6 +1,6 @@
-import { CollectionTemplateV2, getConfigurableProperties, Plugin } from '@nocobase/client';
+import { CollectionTemplate, getConfigurableProperties, Plugin } from '@nocobase/client';
 
-class MyCollectionTemplate extends CollectionTemplateV2 {
+class MyCollectionTemplate extends CollectionTemplate {
   name = 'myCollection';
   title = '{{t("Custom template")}}';
   order = 6;

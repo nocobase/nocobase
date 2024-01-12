@@ -1,5 +1,5 @@
-import { CollectionFieldInterfaceV2 } from './CollectionFieldInterface';
-import { CollectionTemplateV2, CollectionTemplateV2Options } from './CollectionTemplate';
+import { CollectionFieldInterface } from './CollectionFieldInterface';
+import { CollectionTemplate, CollectionTemplateV2Options } from './CollectionTemplate';
 import { CollectionFieldOptionsV2, CollectionOptionsV2, CollectionV2 } from './Collection';
 import type { Application } from '../Application';
 import { IField } from '../../collection-manager';
@@ -51,8 +51,8 @@ export interface GetCollectionOptions {
 
 export interface CollectionManagerOptionsV2 {
   collections?: Record<string, CollectionOptionsV2[]> | CollectionOptionsV2[];
-  collectionTemplates?: (typeof CollectionTemplateV2)[];
-  fieldInterfaces?: (typeof CollectionFieldInterfaceV2)[];
+  collectionTemplates?: (typeof CollectionTemplate)[];
+  fieldInterfaces?: (typeof CollectionFieldInterface)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionNamespaces?: Record<string, string>;
   collectionMixins?: CollectionMixinConstructor[];
@@ -61,8 +61,8 @@ export interface CollectionManagerOptionsV2 {
 export class CollectionManagerV2<Mixins = {}> {
   public app: Application;
   protected collections: Record<string, Record<string, CollectionV2>> = {};
-  protected collectionTemplateInstances: Record<string, CollectionTemplateV2> = {};
-  protected fieldInterfaceInstances: Record<string, CollectionFieldInterfaceV2> = {};
+  protected collectionTemplateInstances: Record<string, CollectionTemplate> = {};
+  protected fieldInterfaceInstances: Record<string, CollectionFieldInterface> = {};
   protected collectionMixins: CollectionMixinConstructor[] = [];
   protected collectionNamespaces: Record<string, string> = {
     [DEFAULT_COLLECTION_NAMESPACE_NAME]: DEFAULT_COLLECTION_NAMESPACE_TITLE,
@@ -222,7 +222,7 @@ export class CollectionManagerV2<Mixins = {}> {
   }
 
   // CollectionTemplates
-  addCollectionTemplates(templateClasses: (typeof CollectionTemplateV2)[]) {
+  addCollectionTemplates(templateClasses: (typeof CollectionTemplate)[]) {
     const newCollectionTemplateInstances = templateClasses.reduce((acc, Template) => {
       const instance = new Template(this.app);
       acc[instance.name] = instance;
@@ -248,12 +248,12 @@ export class CollectionManagerV2<Mixins = {}> {
   getCollectionTemplates() {
     return Object.values(this.collectionTemplateInstances).sort((a, b) => (a.order || 0) - (b.order || 0));
   }
-  getCollectionTemplate(name: string) {
-    return this.collectionTemplateInstances[name];
+  getCollectionTemplate<T extends CollectionTemplate>(name: string) {
+    return this.collectionTemplateInstances[name] as T;
   }
 
   // field interface
-  addFieldInterfaces(interfaces: (typeof CollectionFieldInterfaceV2)[]) {
+  addFieldInterfaces(interfaces: (typeof CollectionFieldInterface)[]) {
     const newCollectionFieldInterfaces = interfaces.reduce((acc, Interface) => {
       const instance = new Interface(this.app);
       acc[instance.name] = instance;
@@ -265,8 +265,8 @@ export class CollectionManagerV2<Mixins = {}> {
   getFieldInterfaces() {
     return this.fieldInterfaceInstances;
   }
-  getFieldInterface(name: string) {
-    return this.fieldInterfaceInstances[name];
+  getFieldInterface<T extends CollectionFieldInterface>(name: string) {
+    return this.fieldInterfaceInstances[name] as T;
   }
 
   addFieldGroups(fieldGroups: Record<string, { label: string; order?: number }>) {

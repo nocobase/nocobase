@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
 import { defaultProps, operators } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceV2 } from '../../application';
+import { CollectionFieldInterface } from '../../application';
 
 export const textarea: IField = {
   name: 'textarea',
@@ -76,7 +76,7 @@ export const textarea: IField = {
   },
 };
 
-export class TextareaFieldInterface extends CollectionFieldInterfaceV2 {
+export class TextareaFieldInterface extends CollectionFieldInterface {
   name = 'textarea';
   type = 'object';
   group = 'basic';

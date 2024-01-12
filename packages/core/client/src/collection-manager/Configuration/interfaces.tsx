@@ -1,8 +1,8 @@
-import { CollectionFieldInterfaceV2, useCollectionManagerV2 } from '../../application';
+import { CollectionFieldInterface, useCollectionManagerV2 } from '../../application';
 import { useMemo } from 'react';
 
 export const getOptions = (
-  fieldInterfaces: Record<string, CollectionFieldInterfaceV2[]>,
+  fieldInterfaces: Record<string, CollectionFieldInterface[]>,
   fieldGroups: Record<string, { label: string; order?: number }>,
 ) => {
   return Object.keys(fieldGroups)
@@ -34,7 +34,7 @@ export const useFieldInterfaceOptions = () => {
     const fieldInterfaceInstances = cm.getFieldInterfaces();
     const fieldGroups = cm.getFieldGroups();
     const fieldInterfaceInstancesByGroups = Object.values(fieldInterfaceInstances).reduce<
-      Record<string, CollectionFieldInterfaceV2[]>
+      Record<string, CollectionFieldInterface[]>
     >((memo, fieldInterface) => {
       const group = fieldInterface.group || 'basic';
       if (!memo[group]) {

@@ -63,7 +63,7 @@ export interface CollectionTemplateV2Options {
   forbidDeletion?: boolean;
 }
 
-export class CollectionTemplateV2 implements CollectionTemplateV2Options {
+export class CollectionTemplate implements CollectionTemplateV2Options {
   app: Application;
   collectionManager: CollectionManagerV2;
   constructor(app: Application) {

@@ -41,7 +41,7 @@ export interface CollectionFieldInterfaceV2Options extends IField {
   [key: string]: any;
 }
 
-export class CollectionFieldInterfaceV2 implements CollectionFieldInterfaceV2Options {
+export class CollectionFieldInterface implements CollectionFieldInterfaceV2Options {
   app: Application;
   collectionManager: CollectionManagerV2;
   constructor(app: Application) {

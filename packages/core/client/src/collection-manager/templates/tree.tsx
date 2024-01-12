@@ -1,4 +1,4 @@
-import { CollectionTemplateV2 } from '../../application';
+import { CollectionTemplate } from '../../application';
 import { getConfigurableProperties } from './properties';
 import { ICollectionTemplate } from './types';
 
@@ -83,7 +83,7 @@ export const tree: ICollectionTemplate = {
   ),
 };
 
-export class TreeCollectionTemplate extends CollectionTemplateV2 {
+export class TreeCollectionTemplate extends CollectionTemplate {
   name = 'tree';
   title = '{{t("Tree collection")}}';
   order = 3;

@@ -5,7 +5,7 @@
 ![](./images/collection-template.png)
 
 ```ts
-class CollectionTemplateV2 {
+class CollectionTemplate {
   constructor(options: CollectionTemplateOptions) {}
   name: string;
   Collection: typeof CollectionV2;
@@ -20,7 +20,7 @@ class CollectionTemplateV2 {
 其需要结合 [CollectionManager](/core/collection/collection-manager#cmaddcollectiontemplatestemplates) 使用。
 
 ```ts
-import { Plugin, CollectionV2, CollectionTemplateV2 } from '@nocobase/client';
+import { Plugin, CollectionV2, CollectionTemplate } from '@nocobase/client';
 
 class SqlCollection extends CollectionV2 {
   otherMethods() {
@@ -28,7 +28,7 @@ class SqlCollection extends CollectionV2 {
   }
 }
 
-const sqlCollectionTemplate = new CollectionTemplateV2({
+const sqlCollectionTemplate = new CollectionTemplate({
   name: 'sql',
   Collection: SqlCollection,
   title: '{{t("SQL collection")}}',
@@ -94,7 +94,7 @@ class SqlCollection extends CollectionV2 {
   }
 }
 
-const sqlCollectionTemplate = new CollectionTemplateV2({
+const sqlCollectionTemplate = new CollectionTemplate({
   name: 'sql',
   Collection: SqlCollection,
   // ...
@@ -111,7 +111,7 @@ const sqlCollectionTemplate = new CollectionTemplateV2({
 ![](./images//collection-template-form.png)
 
 ```ts
-const sqlCollectionTemplate = new CollectionTemplateV2({
+const sqlCollectionTemplate = new CollectionTemplate({
   name: 'sql',
   // ...
   configurableProperties: {
@@ -252,7 +252,7 @@ const getConfigurableProperties: (...keys: DefaultConfigurableKeys[]) => Record<
 ```tsx | pure
 import { getConfigurableProperties } from '@nocobase/client';
 
-const sqlCollectionTemplate = new CollectionTemplateV2({
+const sqlCollectionTemplate = new CollectionTemplate({
   name: 'sql',
   // ...
   configurableProperties: {

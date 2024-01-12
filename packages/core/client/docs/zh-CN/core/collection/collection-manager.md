@@ -7,8 +7,8 @@
 ```tsx | pure
 interface CollectionManagerOptionsV2 {
   collections?: Record<string, CollectionV2[] | CollectionOptions[]> | CollectionV2[] | CollectionOptions[];
-  collectionTemplates?: CollectionTemplateV2[] | CollectionTemplateOptions[];
-  fieldInterfaces?: CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[];
+  collectionTemplates?: CollectionTemplate[] | CollectionTemplateOptions[];
+  fieldInterfaces?: CollectionFieldInterface[] | CollectionFieldInterfaceOptions[];
   collectionNamespaces?: Record<string, string>;
 }
 
@@ -24,9 +24,9 @@ class CollectionManagerV2 {
   addCollectionNamespaces(collectionNamespaces: Record<string, string>): void;
   getCollectionNamespaces(): { name: string; title: string }[];
 
-  addCollectionTemplates(templates: CollectionTemplateV2[] | CollectionTemplateOptions[]): void;
-  getCollectionTemplates(): CollectionTemplateV2[];
-  getCollectionTemplate(name?: string): CollectionTemplateV2
+  addCollectionTemplates(templates: CollectionTemplate[] | CollectionTemplateOptions[]): void;
+  getCollectionTemplates(): CollectionTemplate[];
+  getCollectionTemplate(name?: string): CollectionTemplate
 
   addCollections(collections: (CollectionOptions | CollectionV2)[], options?: GetCollectionOptions): void
   setCollections(collections: (CollectionOptions | CollectionV2)[], options?: GetCollectionOptions): void
@@ -36,10 +36,10 @@ class CollectionManagerV2 {
   getCollectionName(path: string, options?: GetCollectionOptions): Promise<string | undefined>;
   getCollectionField(path: string, options?: GetCollectionOptions): Promise<CollectionFieldOptions | undefined>;
 
-  addFieldInterfaces(interfaces:CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[]): void;
-  getFieldInterfaces(): CollectionFieldInterfaceV2[]
-  getCollectionFieldInterfaceGroups(): { name: string; children: CollectionFieldInterfaceV2[] }[]
-  getFieldInterface(name: string): CollectionFieldInterfaceV2
+  addFieldInterfaces(interfaces:CollectionFieldInterface[] | CollectionFieldInterfaceOptions[]): void;
+  getFieldInterfaces(): CollectionFieldInterface[]
+  getCollectionFieldInterfaceGroups(): { name: string; children: CollectionFieldInterface[] }[]
+  getFieldInterface(name: string): CollectionFieldInterface
 }
 ```
 
@@ -78,8 +78,8 @@ const collections = collectionManager.getCollections('db2');
 ```tsx | pure
 interface CollectionManagerOptionsV2 {
   collections?: Record<string, CollectionV2[] | CollectionOptions[]> | CollectionV2[] | CollectionOptions[];
-  collectionTemplates?: CollectionTemplateV2[] | CollectionTemplateOptions[];
-  fieldInterfaces?: CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[];
+  collectionTemplates?: CollectionTemplate[] | CollectionTemplateOptions[];
+  fieldInterfaces?: CollectionFieldInterface[] | CollectionFieldInterfaceOptions[];
   collectionNamespaces?: Record<string, string>;
 }
 ```
@@ -240,7 +240,7 @@ collectionManager.getCollectionNamespaces(); // [ { name: 'main', title: '主数
 - 类型
 
 ```tsx | pure
-collectionManager.addCollectionTemplates(templates: CollectionTemplateV2[] | CollectionTemplateOptions[]): void;
+collectionManager.addCollectionTemplates(templates: CollectionTemplate[] | CollectionTemplateOptions[]): void;
 ```
 
 - 示例
@@ -279,7 +279,7 @@ class MyPlugin extends Plugin {
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollectionTemplates(): CollectionTemplateV2[];
+  getCollectionTemplates(): CollectionTemplate[];
 }
 ```
 
@@ -297,7 +297,7 @@ collectionManager.getCollectionTemplates(); // [ treeCollectionTemplate, sqlColl
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollectionTemplate(name: string): CollectionTemplateV2
+  getCollectionTemplate(name: string): CollectionTemplate
 }
 ```
 
@@ -481,7 +481,7 @@ collectionManager.getCollectionField('users.roles.name'); // 获取 roles 关联
 
 ```tsx | pure
 class CollectionManagerV2 {
-  addFieldInterfaces(interfaces:CollectionFieldInterfaceV2[] | CollectionFieldInterfaceOptions[]): void;
+  addFieldInterfaces(interfaces:CollectionFieldInterface[] | CollectionFieldInterfaceOptions[]): void;
 }
 ```
 
@@ -510,7 +510,7 @@ class MyPlugin extends Plugin {
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getFieldInterfaces(): CollectionFieldInterfaceV2[]
+  getFieldInterfaces(): CollectionFieldInterface[]
 }
 ```
 
@@ -528,7 +528,7 @@ collectionManager.getFieldInterfaces(); // [ checkboxCollectionFieldInterface ]
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollectionFieldInterfaceGroups(): { name: string; children: CollectionFieldInterfaceV2[] }[]
+  getCollectionFieldInterfaceGroups(): { name: string; children: CollectionFieldInterface[] }[]
 }
 ```
 
@@ -546,7 +546,7 @@ collectionManager.getCollectionFieldInterfaceGroups(); // [ { name: '基础', ch
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getFieldInterface(name: string): CollectionFieldInterfaceV2
+  getFieldInterface(name: string): CollectionFieldInterface
 }
 ```
 

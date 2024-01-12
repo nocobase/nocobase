@@ -5,7 +5,7 @@
 ![](./images/collection-field-interface.png)
 
 ```ts
-class CollectionFieldInterfaceV2 {
+class CollectionFieldInterface {
   constructor(options: CollectionFieldInterfaceOptions): {}
   name: SchemaKey;
   group: string;
@@ -20,7 +20,7 @@ class CollectionFieldInterfaceV2 {
 其需要结合 [CollectionManager](/core/collection/collection-manager#cmaddcollectionfieldinterfacesinterfaces) 使用。
 
 ```ts
-const email = new CollectionFieldInterfaceV2({
+const email = new CollectionFieldInterface({
   name: 'email',
   type: 'object',
   group: 'basic',
@@ -134,7 +134,7 @@ const Demo = () => {
 - 类型
 
 ```tsx | pure
-class CollectionFieldInterfaceV2 {
+class CollectionFieldInterface {
   setOptions(options: CollectionFieldInterfaceOptions): void;
 }
 ```

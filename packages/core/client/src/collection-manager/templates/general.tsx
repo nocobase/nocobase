@@ -1,4 +1,4 @@
-import { CollectionTemplateV2, CollectionV2 } from '../../application';
+import { CollectionTemplate, CollectionV2 } from '../../application';
 import { getConfigurableProperties } from './properties';
 import { ICollectionTemplate } from './types';
 
@@ -21,7 +21,7 @@ export const general: ICollectionTemplate = {
   ),
 };
 
-export class GeneralCollectionTemplate extends CollectionTemplateV2 {
+export class GeneralCollectionTemplate extends CollectionTemplate {
   name = 'general';
   Collection = CollectionV2;
   title = '{{t("General collection")}}';

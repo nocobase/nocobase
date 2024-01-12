@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import { defaultProps, operators, recordPickerViewer } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceV2 } from '../../application';
+import { CollectionFieldInterface } from '../../application';
 
 export const updatedBy: IField = {
   name: 'updatedBy',
@@ -67,7 +67,7 @@ export const updatedBy: IField = {
   },
 };
 
-export class UpdatedByFieldInterface extends CollectionFieldInterfaceV2 {
+export class UpdatedByFieldInterface extends CollectionFieldInterface {
   name = 'updatedBy';
   type = 'object';
   group = 'systemInfo';

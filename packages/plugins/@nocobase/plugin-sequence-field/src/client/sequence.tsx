@@ -2,7 +2,7 @@ import { ArrayTable, FormButtonGroup, FormDrawer, FormLayout, Submit } from '@fo
 import { onFieldValueChange } from '@formily/core';
 import { ISchema, SchemaOptionsContext, useForm, useFormEffects } from '@formily/react';
 import {
-  CollectionFieldInterfaceV2,
+  CollectionFieldInterface,
   Cron,
   IField,
   SchemaComponent,
@@ -418,7 +418,7 @@ export const sequence: IField = {
   },
 };
 
-export class SequenceFieldInterface extends CollectionFieldInterfaceV2 {
+export class SequenceFieldInterface extends CollectionFieldInterface {
   name = 'sequence';
   type = 'object';
   group = 'advanced';

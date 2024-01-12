@@ -1,7 +1,7 @@
 import { getOptions } from '@nocobase/evaluators/client';
 import { getConfigurableProperties } from './properties';
 import { ICollectionTemplate } from './types';
-import { CollectionTemplateV2 } from '../../application';
+import { CollectionTemplate } from '../../application';
 
 export const expression: ICollectionTemplate = {
   name: 'expression',
@@ -58,7 +58,7 @@ export const expression: ICollectionTemplate = {
   configurableProperties: getConfigurableProperties('title', 'name', 'inherits', 'category', 'description'),
 };
 
-export class ExpressionCollectionTemplate extends CollectionTemplateV2 {
+export class ExpressionCollectionTemplate extends CollectionTemplate {
   name = 'expression';
   title = '{{t("Expression collection")}}';
   order = 4;

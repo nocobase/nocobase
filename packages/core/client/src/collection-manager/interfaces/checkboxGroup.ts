@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { dataSource, defaultProps, operators } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceV2 } from '../../application';
+import { CollectionFieldInterface } from '../../application';
 
 export const checkboxGroup: IField = {
   name: 'checkboxGroup',
@@ -36,7 +36,7 @@ export const checkboxGroup: IField = {
   },
 };
 
-export class CheckboxGroupFieldInterface extends CollectionFieldInterfaceV2 {
+export class CheckboxGroupFieldInterface extends CollectionFieldInterface {
   name = 'checkboxGroup';
   type = 'object';
   group = 'choices';

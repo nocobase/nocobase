@@ -1,7 +1,7 @@
 import { uid } from '@formily/shared';
 import { defaultProps, operators } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceV2 } from '../../application';
+import { CollectionFieldInterface } from '../../application';
 
 export const chinaRegion: IField = {
   name: 'chinaRegion',
@@ -92,7 +92,7 @@ export const chinaRegion: IField = {
   },
 };
 
-export class ChinaRegionFieldInterface extends CollectionFieldInterfaceV2 {
+export class ChinaRegionFieldInterface extends CollectionFieldInterface {
   name = 'chinaRegion';
   type = 'object';
   group = 'choices';

@@ -1,4 +1,4 @@
-import { CollectionFieldInterfaceV2 } from '../../application';
+import { CollectionFieldInterface } from '../../application';
 import { dataSource, defaultProps, operators } from './properties';
 import { IField } from './types';
 
@@ -30,7 +30,7 @@ export const radioGroup: IField = {
   titleUsable: true,
 };
 
-export class RadioGroupFieldInterface extends CollectionFieldInterfaceV2 {
+export class RadioGroupFieldInterface extends CollectionFieldInterface {
   name = 'radioGroup';
   type = 'object';
   group = 'choices';

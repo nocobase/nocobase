@@ -1,4 +1,4 @@
-import { CollectionTemplateV2 } from '../../application';
+import { CollectionTemplate } from '../../application';
 import { PreviewFields } from './components/PreviewFields';
 import { PreviewTable } from './components/PreviewTable';
 import { getConfigurableProperties } from './properties';
@@ -141,7 +141,7 @@ export const view: ICollectionTemplate = {
   },
 };
 
-export class ViewCollectionTemplate extends CollectionTemplateV2 {
+export class ViewCollectionTemplate extends CollectionTemplate {
   name = 'view';
   title = '{{t("Connect to database view")}}';
   order = 4;

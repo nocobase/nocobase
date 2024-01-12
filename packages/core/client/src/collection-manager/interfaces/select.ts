@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { dataSource, defaultProps, operators } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceV2 } from '../../application';
+import { CollectionFieldInterface } from '../../application';
 
 export const select: IField = {
   name: 'select',
@@ -43,7 +43,7 @@ export const select: IField = {
   },
 };
 
-export class SelectFieldInterface extends CollectionFieldInterfaceV2 {
+export class SelectFieldInterface extends CollectionFieldInterface {
   name = 'select';
   type = 'object';
   group = 'choices';

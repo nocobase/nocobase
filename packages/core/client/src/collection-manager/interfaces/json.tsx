@@ -3,7 +3,7 @@ import { registerValidateRules } from '@formily/core';
 import React from 'react';
 import { defaultProps, operators } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceV2 } from '../../application';
+import { CollectionFieldInterface } from '../../application';
 
 registerValidateRules({
   json(value) {
@@ -65,7 +65,7 @@ export const json: IField = {
   },
 };
 
-export class JsonFieldInterface extends CollectionFieldInterfaceV2 {
+export class JsonFieldInterface extends CollectionFieldInterface {
   name = 'json';
   type = 'object';
   group = 'advanced';
