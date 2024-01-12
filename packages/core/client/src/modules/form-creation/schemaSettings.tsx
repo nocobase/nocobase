@@ -8,11 +8,12 @@ import { useTranslation } from 'react-i18next';
 import { useApp, useSchemaToolbar } from '../../application';
 import { SchemaSettings } from '../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../block-provider';
-import { useCollection, useCollectionField, useCollectionManager } from '../../collection-manager';
+import { useCollection, useCollectionManager } from '../../collection-manager';
 import { useOptions } from '../../collection-manager/hooks/useOptions';
 import { useRecord } from '../../record-provider';
 import {
   removeNullCondition,
+  useCollectionField,
   useDesignable,
   useFieldComponentName,
   useFieldModeOptions,
@@ -875,6 +876,10 @@ const quickCreate: any = {
 const allowMultiple: any = {
   name: 'allowMultiple',
   type: 'switch',
+  useVisible() {
+    const collectionField = useCollectionField();
+    return ['hasMany', 'belongsToMany'].includes(collectionField?.type);
+  },
   useComponentProps() {
     const { t } = useTranslation();
     const field = useField<Field>();

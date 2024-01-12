@@ -871,7 +871,11 @@ function useIsFieldReadPretty() {
   return field.readPretty;
 }
 
-function useCollectionField() {
+/**
+ * 获取字段相关的配置信息
+ * @returns
+ */
+export function useCollectionField() {
   const { getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
   const fieldSchema = useFieldSchema();
