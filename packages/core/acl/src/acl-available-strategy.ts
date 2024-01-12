@@ -87,7 +87,7 @@ export class ACLAvailableStrategy {
   } {
     // namespace|action:predicate
 
-    let [namespace, actionWithPredicate] = actionString.split('|');
+    let [namespace, actionWithPredicate] = actionString.split('@');
     if (!actionWithPredicate) {
       actionWithPredicate = namespace;
       namespace = NOCOBASE_MAIN_NAMESPACE;
@@ -102,7 +102,7 @@ export class ACLAvailableStrategy {
     };
   }
   private getNamespace(resourceName: string) {
-    const [namespace, resource] = resourceName.split('|');
+    const [namespace, resource] = resourceName.split('@');
 
     if (resource) {
       return namespace;

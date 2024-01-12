@@ -265,10 +265,13 @@ export class Resourcer {
   restApiMiddleware({ prefix, accessors }: KoaMiddlewareOptions = {}) {
     return async (ctx: ResourcerContext, next: () => Promise<any>) => {
       ctx.resourcer = this;
+      const databaseName = ctx.get('x-database');
+
       let params = parseRequest(
         {
           path: ctx.request.path,
           method: ctx.request.method,
+          namespace: databaseName,
         },
         {
           prefix: this.options.prefix || prefix,
@@ -279,6 +282,7 @@ export class Resourcer {
       if (!params) {
         return next();
       }
+
       try {
         const resource = this.getResource(getNameByParams(params));
 

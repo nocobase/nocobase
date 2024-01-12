@@ -11,14 +11,14 @@ describe('acl with namespace', () => {
     acl.define({
       role: 'admin',
       strategy: {
-        actions: ['db1|edit', 'db2|create', 'view', 'db1|destroy:own'],
+        actions: ['db1@edit', 'db2@create', 'view', 'db1@destroy:own'],
       },
     });
 
     const canResult = acl.can({ role: 'admin', resource: 'posts', action: 'edit' });
     expect(canResult).toBeFalsy();
 
-    const canResult2 = acl.can({ role: 'admin', resource: 'db1|posts', action: 'edit' });
+    const canResult2 = acl.can({ role: 'admin', resource: 'db1@posts', action: 'edit' });
     expect(canResult2).toBeTruthy();
   });
 
