@@ -5,7 +5,6 @@ export default {
   dumpRules: {
     group: 'user',
   },
-  isLocal: true,
   shared: true,
   name: 'apiKeys',
   sortable: 'sort',

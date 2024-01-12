@@ -4,7 +4,6 @@ export const uiSchemaTemplatesCollection: CollectionOptions = {
   name: 'uiSchemaTemplates',
   filterTargetKey: 'key',
   targetKey: 'key',
-  isLocal: true,
   fields: [
     {
       type: 'integer',

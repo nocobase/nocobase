@@ -15,7 +15,6 @@ import { AuditLogsDesigner } from './AuditLogsDesigner';
 const collection = {
   name: 'auditLogs',
   title: '{{t("Audit logs")}}',
-  isLocal: true,
   fields: [
     {
       name: 'createdAt',

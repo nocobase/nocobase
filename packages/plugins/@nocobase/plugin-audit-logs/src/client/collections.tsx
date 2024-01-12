@@ -3,7 +3,6 @@ import { useAuditLogsTranslation } from './locale';
 export const useAuditLogsCollection = () => {
   return {
     name: 'auditLogs',
-    isLocal: true,
     title: '{{t("Audit logs")}}',
     fields: [
       {
@@ -102,7 +101,6 @@ export const useAuditLogsCollection = () => {
 export const useAuditChangesCollection = () => {
   return {
     name: 'auditChanges',
-    isLocal: true,
     title: '{{t("Audit Changes")}}',
     fields: [
       {
@@ -139,7 +137,6 @@ export const useAuditChangesCollection = () => {
 export const useCollectionsCollection = () => {
   return {
     name: 'collections',
-    isLocal: true,
     title: '{{t("Collections")}}',
     fields: [
       {
