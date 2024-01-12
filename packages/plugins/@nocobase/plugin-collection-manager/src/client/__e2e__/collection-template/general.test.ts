@@ -227,7 +227,7 @@ test.describe('configure fields', () => {
     // JSON
     await addField('JSON');
     // Collection
-    await addField('Collection');
+    await addField('Collection selector');
 
     async function addField(fieldType: FieldInterface) {
       const value = uid();

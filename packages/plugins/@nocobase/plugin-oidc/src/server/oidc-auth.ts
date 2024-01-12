@@ -24,6 +24,22 @@ export class OIDCAuth extends BaseAuth {
     return this.options?.oidc || {};
   }
 
+  getExchangeBody() {
+    const options = this.getOptions();
+    const { exchangeBodyKeys } = options;
+    if (!exchangeBodyKeys) {
+      return {};
+    }
+    const body = {};
+    exchangeBodyKeys
+      .filter((item: { enabled: boolean }) => item.enabled)
+      .forEach((item: { paramName: string; optionsKey: string }) => {
+        const name = item.paramName || item.optionsKey;
+        body[name] = options[item.optionsKey];
+      });
+    return body;
+  }
+
   mapField(userInfo: { [source: string]: any }) {
     const { fieldMap } = this.getOptions();
     if (!fieldMap) {
@@ -51,18 +67,33 @@ export class OIDCAuth extends BaseAuth {
   async validate() {
     const ctx = this.ctx;
     const { params: values } = ctx.action;
-    const token = ctx.cookies.get(cookieName);
-    const search = new URLSearchParams(values.state);
+    const { userInfoMethod = 'GET', accessTokenVia = 'header', stateToken } = this.getOptions();
+    const token = stateToken || ctx.cookies.get(cookieName);
+    const search = new URLSearchParams(decodeURIComponent(values.state));
     if (search.get('token') !== token) {
       ctx.logger.error('nocobase_oidc state mismatch', { method: 'validate' });
       return null;
     }
     const client = await this.createOIDCClient();
-    const tokens = await client.callback(this.getRedirectUri(), {
-      code: values.code,
-      iss: values.iss,
+    const tokens = await client.callback(
+      this.getRedirectUri(),
+      {
+        code: values.code,
+        iss: values.iss,
+      },
+      {},
+      { exchangeBody: this.getExchangeBody() },
+    );
+    const userInfo: { [key: string]: any } = await client.userinfo(tokens, {
+      method: userInfoMethod,
+      via: accessTokenVia !== 'query' ? accessTokenVia : 'header',
+      params:
+        accessTokenVia === 'query'
+          ? {
+              access_token: tokens.access_token,
+            }
+          : {},
     });
-    const userInfo: { [key: string]: any } = await client.userinfo(tokens.access_token);
     const mappedUserInfo = this.mapField(userInfo);
     const { nickname, username, name, sub, email, phone } = mappedUserInfo;
     const authenticator = this.authenticator as AuthModel;

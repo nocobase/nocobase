@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 import { useAssociationNames } from '../../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../../collection-manager';
 import { useFlag } from '../../../../flag-provider';
+import { useRecord } from '../../../../record-provider';
 import { useVariables } from '../../../../variables';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 import { useSubFormValue } from '../../association-field/hooks';
@@ -21,6 +22,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const { name } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
   const form = useForm();
+  const record = useRecord();
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const field = useField<Field>();
@@ -48,7 +50,13 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   useEffect(() => {
     // 如果 schemaName 中是以 `.` 分割的，说明是一个关联字段，需要去获取关联字段的值；
     // 在数据表管理页面，也存在 `a.b` 之类的 schema name，其 collectionName 为 fields，所以在这里排除一下 `name === 'fields'` 的情况
-    if (!isDisplayField(schemaName) || !variables || name === 'fields' || !collectionFieldRef.current) {
+    if (
+      !isDisplayField(schemaName) ||
+      !variables ||
+      name === 'fields' ||
+      !collectionFieldRef.current ||
+      hasPreload(record, schemaName)
+    ) {
       return;
     }
 
@@ -90,3 +98,13 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
 };
 
 export default useLazyLoadDisplayAssociationFieldsOfForm;
+
+/**
+ * 数据是否已被预加载
+ * @param record
+ * @param path
+ * @returns
+ */
+function hasPreload(record: Record<string, any>, path: string) {
+  return _.get(record, path) != null;
+}
