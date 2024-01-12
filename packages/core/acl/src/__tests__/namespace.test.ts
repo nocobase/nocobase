@@ -30,7 +30,7 @@ describe('acl with namespace', () => {
           testParams1: true,
         },
 
-        'db1|posts:edit': {
+        'db1@posts:edit': {
           testParams2: true,
         },
       },
@@ -47,10 +47,10 @@ describe('acl with namespace', () => {
       },
     });
 
-    const canResult2 = acl.can({ role: 'admin', resource: 'db1|posts', action: 'edit' });
+    const canResult2 = acl.can({ role: 'admin', resource: 'db1@posts', action: 'edit' });
     expect(canResult2).toMatchObject({
       role: 'admin',
-      resource: 'db1|posts',
+      resource: 'db1@posts',
       action: 'edit',
       params: {
         testParams2: true,
