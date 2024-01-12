@@ -1,6 +1,6 @@
-import { extend } from '@nocobase/database';
+import { extendCollection } from '@nocobase/database';
 
-export default extend({
+export default extendCollection({
   name: 'users',
   fields: [
     {

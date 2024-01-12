@@ -2,6 +2,7 @@ import {
   Page,
   expect,
   expectSettingsMenu,
+  oneFilterFormBlockWithAllAssociationFields,
   oneTableBlockWithAddNewAndViewAndEditAndAssociationFields,
   test,
 } from '@nocobase/test/e2e';
@@ -278,12 +279,12 @@ test.describe('form item & create form', () => {
     ).toBeVisible();
 
     // 选择 Sub-form(Popover)
-    await (async (page: Page, fieldName: string) => {
-      await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-      await page
-        .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-        .hover();
-    })(page, 'manyToMany');
+    await page.getByLabel(`block-item-CollectionField-general-form-general.manyToMany-manyToMany`).hover();
+    await page
+      .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.manyToMany`)
+      .hover();
+    // 加上这个延迟会使测试更稳定
+    await page.waitForTimeout(100);
     await page.getByRole('menuitem', { name: 'Field component' }).click();
     await page.getByRole('option', { name: 'Sub-form(Popover)', exact: true }).click();
     await page
@@ -741,6 +742,29 @@ test.describe('form item & view form', () => {
         .locator('a')
         .filter({ hasText: record.manyToMany[0].id }),
     ).toBeVisible();
+  });
+});
+
+test.describe('form item & filter form', () => {
+  test('supported options', async ({ page, mockPage }) => {
+    const nocoPage = await mockPage(oneFilterFormBlockWithAllAssociationFields).waitForInit();
+    await nocoPage.goto();
+
+    await expectSettingsMenu({
+      page,
+      showMenu: async () => {
+        await page.getByLabel('block-item-CollectionField-general-filter-form-general.manyToMany-manyToMany').hover();
+        await page.getByRole('button', { name: 'designer-schema-settings-CollectionField' }).hover();
+      },
+      supportedOptions: [
+        'Edit field title',
+        'Edit description',
+        'Set the data scope',
+        'Field component',
+        'Title field',
+        'Delete',
+      ],
+    });
   });
 });
 

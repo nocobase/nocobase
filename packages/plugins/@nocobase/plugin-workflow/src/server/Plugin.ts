@@ -30,7 +30,7 @@ type Pending = [ExecutionModel, JobModel?];
 
 type CachedEvent = [WorkflowModel, any, { context?: any }];
 
-export default class WorkflowPlugin extends Plugin {
+export default class PluginWorkflowServer extends Plugin {
   instructions: Registry<InstructionInterface> = new Registry();
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<CustomFunction> = new Registry();
@@ -39,8 +39,10 @@ export default class WorkflowPlugin extends Plugin {
   private executing: Promise<void> | null = null;
   private pending: Pending[] = [];
   private events: CachedEvent[] = [];
+  private eventsCount = 0;
 
   private loggerCache: LRUCache<string, Logger>;
+  private meter = null;
 
   getLogger(workflowId: ID): Logger {
     const now = new Date();
@@ -165,6 +167,12 @@ export default class WorkflowPlugin extends Plugin {
       },
     });
 
+    this.meter = this.app.telemetry.metric.getMeter();
+    const counter = this.meter.createObservableGauge('workflow.events.counter');
+    counter.addCallback((result) => {
+      result.observe(this.eventsCount);
+    });
+
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.workflows`,
       actions: [
@@ -184,9 +192,7 @@ export default class WorkflowPlugin extends Plugin {
 
     this.app.acl.allow('workflows', ['trigger'], 'loggedIn');
 
-    await db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, 'collections'));
 
     this.db.addMigrations({
       namespace: this.name,
@@ -275,6 +281,7 @@ export default class WorkflowPlugin extends Plugin {
     }
 
     this.events.push([workflow, context, options]);
+    this.eventsCount = this.events.length;
 
     logger.info(`new event triggered, now events: ${this.events.length}`);
     logger.debug(`event data:`, {
@@ -324,7 +331,7 @@ export default class WorkflowPlugin extends Plugin {
       }
     }
 
-    const execution = await this.db.sequelize.transaction(async (transaction) => {
+    return this.db.sequelize.transaction(async (transaction) => {
       const execution = await workflow.createExecution(
         {
           context,
@@ -333,6 +340,8 @@ export default class WorkflowPlugin extends Plugin {
         },
         { transaction },
       );
+
+      this.getLogger(workflow.id).info(`execution of workflow ${workflow.id} created as ${execution.id}`);
 
       await workflow.increment(['executed', 'allExecuted'], { transaction });
       // NOTE: https://sequelize.org/api/v6/class/src/model.js~model#instance-method-increment
@@ -356,19 +365,11 @@ export default class WorkflowPlugin extends Plugin {
 
       return execution;
     });
-
-    this.getLogger(workflow.id).info(`execution of workflow ${workflow.id} created as ${execution.id}`);
-
-    // NOTE: cache first execution for most cases
-    if (!this.executing && !this.pending.length) {
-      this.pending.push([execution]);
-    }
-
-    return execution;
   }
 
   private prepare = async () => {
     const event = this.events.shift();
+    this.eventsCount = this.events.length;
     if (!event) {
       this.getLogger('dispatcher').warn(`events queue is empty, no need to prepare`);
       return;
@@ -378,7 +379,11 @@ export default class WorkflowPlugin extends Plugin {
     logger.info(`preparing execution for event`);
 
     try {
-      await this.createExecution(event);
+      const execution = await this.createExecution(event);
+      // NOTE: cache first execution for most cases
+      if (!this.executing && !this.pending.length) {
+        this.pending.push([execution]);
+      }
     } catch (err) {
       logger.error(`failed to create execution: ${err.message}`, err);
       // this.events.push(event); // NOTE: retry will cause infinite loop

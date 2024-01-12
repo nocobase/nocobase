@@ -1,30 +1,39 @@
 import Application from '../application';
+import { ApplicationNotInstall } from '../errors/application-not-install';
 
 export default (app: Application) => {
   app
     .command('start')
+    .auth()
     .option('--db-sync')
     .option('--quickstart')
     .action(async (...cliArgs) => {
-      const [opts] = cliArgs;
-
-      if (app.db.closed()) {
-        await app.db.reconnect();
-      }
-
-      if (opts.quickstart) {
+      const [options] = cliArgs;
+      console.log('options', options);
+      if (options.quickstart) {
         if (await app.isInstalled()) {
-          app.log.debug('installed....');
           await app.upgrade();
         } else {
           await app.install();
         }
+        app['_started'] = true;
+        await app.restart();
+        app.log.info('app has been started');
+        return;
       }
-
+      if (!(await app.isInstalled())) {
+        app['_started'] = true;
+        throw new ApplicationNotInstall(
+          `Application ${app.name} is not installed, Please run 'yarn nocobase install' command first`,
+        );
+      }
+      await app.load();
       await app.start({
-        dbSync: opts?.dbSync,
+        dbSync: options?.dbSync,
+        quickstart: options.quickstart,
         cliArgs,
         checkInstall: true,
       });
+      app.log.info('app has been started');
     });
 };

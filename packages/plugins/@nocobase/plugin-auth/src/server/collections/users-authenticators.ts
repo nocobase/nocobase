@@ -1,20 +1,15 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
 /**
  * Collection for user information of extended authentication methods,
  * such as saml, oicd, oauth, sms, etc.
  */
-export default {
-  namespace: 'auth.auth',
-  duplicator: {
-    dumpable: 'optional',
-    /**
-     * When dump this collection, the users collection is required to be dumped.
-     */
-    with: 'users',
+export default defineCollection({
+  dumpRules: {
+    group: 'user',
   },
+  shared: true,
   name: 'usersAuthenticators',
-  title: '{{t("Users Authenticators")}}',
   model: 'UserAuthModel',
   createdBy: true,
   updatedBy: true,
@@ -70,4 +65,4 @@ export default {
       defaultValue: {},
     },
   ],
-} as CollectionOptions;
+});

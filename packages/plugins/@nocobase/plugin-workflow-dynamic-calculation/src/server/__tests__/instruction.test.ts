@@ -1,8 +1,8 @@
 import path from 'path';
 
-import { MockServer } from '@nocobase/test';
 import { MockDatabase } from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import { MockServer } from '@nocobase/test';
 
 import Plugin from '..';
 

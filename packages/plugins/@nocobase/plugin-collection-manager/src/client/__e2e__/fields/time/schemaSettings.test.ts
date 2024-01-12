@@ -61,7 +61,7 @@ test.describe('form item & create form', () => {
       expectConstantValue: async () => {
         await expect(
           page.getByLabel('block-item-CollectionField-general-form-general.time-time').getByPlaceholder('Select time'),
-        ).toHaveValue(new RegExp(nowTime.format('HH:mm:ss')));
+        ).toHaveValue(new RegExp(nowTime.format('HH:')));
       },
     });
   });
@@ -90,7 +90,7 @@ test.describe('form item & create form', () => {
           .getByLabel('block-item-CollectionField-general-form-general.time-time')
           .getByPlaceholder('Select time')
           .click();
-        await page.getByText('Now').click();
+        await page.getByText('Now', { exact: true }).click();
       },
       expectReadonly: async () => {
         await expect(

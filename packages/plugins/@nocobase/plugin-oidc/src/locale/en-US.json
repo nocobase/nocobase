@@ -21,5 +21,20 @@
   "Use this field to bind the user": "Use this field to bind the user",
   "Sign up automatically when the user does not exist": "Sign up automatically when the user does not exist",
   "Username must be 2-16 characters in length (excluding @.<>\"'/)": "Username must be 2-16 characters in length (excluding @.<>\"'/)",
-  "User not found": "User not found"
+  "User not found": "User not found",
+  "Basic configuration": "Basic configuration",
+  "Field mapping": "Field mapping",
+  "Advanced configuration": "Advanced configuration",
+  "Usage": "Usage",
+  "Redirect URL": "Redirect URL",
+  "Check if NocoBase is running on HTTP protocol": "Check if NocoBase is running on HTTP protocol",
+  "The port number of the NocoBase service if it is not 80 or 443": "The port number of the NocoBase service if it is not 80 or 443",
+  "Pass parameters in the authorization code grant exchange": "Pass parameters in the authorization code grant exchange",
+  "Method to call the user info endpoint": "Method to call the user info endpoint",
+  "Where to put the access token when calling the user info endpoint": "Where to put the access token when calling the user info endpoint",
+  "Header": "Header",
+  "Body (Use with POST method)": "Body (Use with POST method)",
+  "Query parameters (Use with GET method)": "Query parameters (Use with GET method)",
+  "Parameter name": "Parameter name",
+  "The state token helps prevent CSRF attacks. It's recommended to leave it blank for automatic random generation.": "The state token helps prevent CSRF attacks. It's recommended to leave it blank for automatic random generation."
 }

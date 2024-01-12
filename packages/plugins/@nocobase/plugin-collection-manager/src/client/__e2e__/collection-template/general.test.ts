@@ -227,7 +227,7 @@ test.describe('configure fields', () => {
     // JSON
     await addField('JSON');
     // Collection
-    await addField('Collection');
+    await addField('Collection selector');
 
     async function addField(fieldType: FieldInterface) {
       const value = uid();
@@ -236,6 +236,22 @@ test.describe('configure fields', () => {
       await fieldSettings.submit();
       await expect(page.getByRole('cell', { name: value, exact: true })).toBeVisible();
     }
+  });
+
+  // https://nocobase.height.app/T-2868
+  test('sequence rules: z-index of configure drawer', async ({ page, mockCollections }) => {
+    const collectionManagerPage = new CollectionManagerPage(page);
+    await collectionManagerPage.goto();
+    const fieldsSettings = await collectionManagerPage.configureFields('users');
+    await fieldsSettings.addField('Sequence');
+
+    await page.getByRole('button', { name: 'plus Add rule' }).click();
+    await page.getByRole('button', { name: 'Configure', exact: true }).click();
+    await expect(page.getByLabel('block-item-InputNumber-Digits')).toBeVisible();
+
+    // 即使 drawer 被遮挡，toBeVisible 也能通过，所以这里在通过点击按钮来关闭 drawer 进行测试
+    await page.getByRole('button', { name: 'Submit', exact: true }).first().click();
+    await expect(page.getByLabel('block-item-InputNumber-Digits')).not.toBeVisible();
   });
 });
 

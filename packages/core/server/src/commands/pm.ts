@@ -14,6 +14,7 @@ export default (app: Application) => {
 
   pm.command('add')
     .ipc()
+    .preload()
     .argument('<pkg>')
     .option('--registry [registry]')
     .option('--auth-token [authToken]')
@@ -47,6 +48,7 @@ export default (app: Application) => {
 
   pm.command('enable')
     .ipc()
+    .preload()
     .arguments('<plugins...>')
     .action(async (plugins) => {
       try {
@@ -58,6 +60,7 @@ export default (app: Application) => {
 
   pm.command('disable')
     .ipc()
+    .preload()
     .arguments('<plugins...>')
     .action(async (plugins) => {
       try {
@@ -69,6 +72,7 @@ export default (app: Application) => {
 
   pm.command('remove')
     .ipc()
+    .preload()
     .arguments('<plugins...>')
     .action(async (plugins) => {
       await app.pm.remove(plugins);

@@ -1,6 +1,7 @@
 import { Migration } from '@nocobase/server';
 
 export default class AddTranslationToRoleTitleMigration extends Migration {
+  appVersion = '<0.11.1-alpha.1';
   async up() {
     const repo = this.context.db.getRepository('fields');
     const field = await repo.findOne({

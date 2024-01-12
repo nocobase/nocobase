@@ -2,6 +2,7 @@ import {
   Page,
   expect,
   expectSettingsMenu,
+  oneFilterFormBlockWithAllAssociationFields,
   oneTableBlockWithAddNewAndViewAndEditAndAssociationFields,
   test,
 } from '@nocobase/test/e2e';
@@ -65,25 +66,21 @@ test.describe('form item & create form', () => {
     await testPattern({
       page,
       gotoPage: async () => {
-        records = await (async (mockPage, mockRecords) => {
-          const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
-          const recordsOfUser = await mockRecords('users', 3);
-          await nocoPage.goto();
-
-          return recordsOfUser;
-        })(mockPage, mockRecords);
+        const nocoPage = await mockPage(oneTableBlockWithAddNewAndViewAndEditAndAssociationFields).waitForInit();
+        records = await mockRecords('users', 3);
+        await nocoPage.goto();
       },
-      openDialog: () =>
-        (async (page: Page) => {
-          await page.getByRole('button', { name: 'Add new' }).click();
-        })(page),
-      showMenu: () =>
-        (async (page: Page, fieldName: string) => {
-          await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-          await page
-            .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-            .hover();
-        })(page, 'oneToOneBelongsTo'),
+      openDialog: async () => {
+        await page.getByRole('button', { name: 'Add new' }).click();
+      },
+      showMenu: async () => {
+        await page
+          .getByLabel(`block-item-CollectionField-general-form-general.oneToOneBelongsTo-oneToOneBelongsTo`)
+          .hover();
+        await page
+          .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.oneToOneBelongsTo`)
+          .hover();
+      },
       expectEditable: async () => {
         await page
           .getByLabel('block-item-CollectionField-general-form-general.oneToOneBelongsTo-oneToOneBelongsTo')
@@ -98,7 +95,7 @@ test.describe('form item & create form', () => {
             .getByTestId(/select-object/),
         ).toHaveClass(/ant-select-disabled/);
         // 在这里等待一下，防止因闪烁导致下面的断言失败
-        await page.waitForTimeout(100);
+        // await page.waitForTimeout(100);
       },
       expectEasyReading: async () => {
         await expect(
@@ -520,6 +517,29 @@ test.describe('form item & view form', () => {
     })(page, 'oneToOneBelongsTo');
 
     await expect(page.getByRole('menuitem', { name: 'Enable link' }).getByRole('switch')).toBeChecked();
+  });
+});
+
+test.describe('form item & filter form', () => {
+  test('supported options', async ({ page, mockPage }) => {
+    const nocoPage = await mockPage(oneFilterFormBlockWithAllAssociationFields).waitForInit();
+    await nocoPage.goto();
+
+    await expectSettingsMenu({
+      page,
+      showMenu: async () => {
+        await page.getByLabel('block-item-CollectionField-general-filter-form-general.oneToOneBelongsTo-').hover();
+        await page.getByRole('button', { name: 'designer-schema-settings-CollectionField' }).hover();
+      },
+      supportedOptions: [
+        'Edit field title',
+        'Edit description',
+        'Set the data scope',
+        'Field component',
+        'Title field',
+        'Delete',
+      ],
+    });
   });
 });
 

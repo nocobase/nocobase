@@ -1,10 +1,9 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
-  namespace: 'users.users',
-  duplicator: {
-    dumpable: 'optional',
-    with: 'rolesUsers',
+export default defineCollection({
+  origin: '@nocobase/plugin-users',
+  dumpRules: {
+    group: 'user',
   },
   name: 'users',
   title: '{{t("Users")}}',
@@ -13,6 +12,7 @@ export default {
   createdBy: true,
   updatedBy: true,
   logging: true,
+  shared: true,
   fields: [
     {
       name: 'id',
@@ -99,4 +99,4 @@ export default {
       defaultValue: {},
     },
   ],
-} as CollectionOptions;
+});

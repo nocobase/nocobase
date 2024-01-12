@@ -1,5 +1,4 @@
 import { Plugin } from '@nocobase/server';
-import fs from 'fs';
 import { resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
@@ -72,12 +71,6 @@ export class ClientPlugin extends Plugin {
       actions: ['app:restart', 'app:clearCache'],
     });
     const dialect = this.app.db.sequelize.getDialect();
-    const restartMark = resolve(process.cwd(), 'storage', 'restart');
-    this.app.on('beforeStart', async () => {
-      if (fs.existsSync(restartMark)) {
-        fs.unlinkSync(restartMark);
-      }
-    });
 
     this.app.resource({
       name: 'app',

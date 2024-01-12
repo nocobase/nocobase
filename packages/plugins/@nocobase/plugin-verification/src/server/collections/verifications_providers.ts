@@ -1,7 +1,11 @@
-export default {
-  namespace: 'verification.verificationProviders',
-  duplicator: 'optional',
+import { defineCollection } from '@nocobase/database';
+
+export default defineCollection({
+  dumpRules: {
+    group: 'third-party',
+  },
   name: 'verifications_providers',
+  shared: true,
   fields: [
     {
       type: 'string',
@@ -25,4 +29,4 @@ export default {
       name: 'default',
     },
   ],
-};
+});

@@ -377,6 +377,7 @@ export class AggregateNode {
   linkedDataTableDataRadio: Locator;
   collectionDropDown: Locator;
   aggregatedFieldDropDown: Locator;
+  distinctCheckBox: Locator;
   submitButton: Locator;
   cancelButton: Locator;
   addNodeButton: Locator;
@@ -399,6 +400,9 @@ export class AggregateNode {
     this.aggregatedFieldDropDown = page.locator(
       'input.ant-select-selection-search-input[role="combobox"][aria-haspopup="listbox"]',
     );
+    this.distinctCheckBox = page
+      .getByLabel('block-item-Checkbox-workflows-Distinct')
+      .locator('input.ant-checkbox-input[type="checkbox"]');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = page.getByLabel(`add-button-aggregate-${nodeName}`, { exact: true });
@@ -450,6 +454,7 @@ export class ConditionYesNode {
   basicRadio: Locator;
   mathRadio: Locator;
   formulaRadio: Locator;
+  conditionExpressionEditBox: Locator;
   submitButton: Locator;
   cancelButton: Locator;
   addNodeButton: Locator;
@@ -460,6 +465,7 @@ export class ConditionYesNode {
     this.nodeConfigure = page
       .getByLabel(`Condition-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
+    this.conditionExpressionEditBox = page.getByLabel('textbox');
     // await page.getByLabel('variable-constant').first().click();
     // await page.getByLabel('variable-button').first().click();
     // await page.getByLabel('select-operator-calc').first().click();
@@ -483,6 +489,7 @@ export class ConditionBranchNode {
   basicRadio: Locator;
   mathRadio: Locator;
   formulaRadio: Locator;
+  conditionExpressionEditBox: Locator;
   submitButton: Locator;
   cancelButton: Locator;
   addNoBranchNode: Locator;
@@ -495,6 +502,7 @@ export class ConditionBranchNode {
     this.nodeConfigure = page
       .getByLabel(`Condition-${nodeName}`, { exact: true })
       .getByRole('button', { name: 'Configure' });
+    this.conditionExpressionEditBox = page.getByLabel('textbox');
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = page.getByLabel(`add-button-condition-${nodeName}`, { exact: true });
@@ -503,6 +511,29 @@ export class ConditionBranchNode {
     this.formulaRadio = page.getByLabel('Formula.js');
     this.addNoBranchNode = page.getByLabel(`add-button-condition-${nodeName}-0`);
     this.addYesBranchNode = page.getByLabel(`add-button-condition-${nodeName}-1`);
+  }
+}
+
+export class SQLNode {
+  readonly page: Page;
+  node: Locator;
+  nodeTitle: Locator;
+  nodeConfigure: Locator;
+  sqlEditBox: Locator;
+  submitButton: Locator;
+  cancelButton: Locator;
+  addNodeButton: Locator;
+  constructor(page: Page, nodeName: string) {
+    this.page = page;
+    this.node = page.getByLabel(`SQL action-${nodeName}`, { exact: true });
+    this.nodeTitle = page.getByLabel(`SQL action-${nodeName}`, { exact: true }).getByRole('textbox');
+    this.nodeConfigure = page
+      .getByLabel(`SQL action-${nodeName}`, { exact: true })
+      .getByRole('button', { name: 'Configure' });
+    this.sqlEditBox = page.getByLabel('block-item-WorkflowVariableRawTextArea-workflows-SQL').getByRole('textbox');
+    this.submitButton = page.getByLabel('action-Action-Submit-workflows');
+    this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
+    this.addNodeButton = page.getByLabel(`add-button-sql-${nodeName}`, { exact: true });
   }
 }
 
@@ -525,4 +556,5 @@ export default module.exports = {
   ManualNode,
   ConditionYesNode,
   ConditionBranchNode,
+  SQLNode,
 };

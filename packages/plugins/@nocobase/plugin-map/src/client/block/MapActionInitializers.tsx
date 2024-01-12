@@ -1,7 +1,7 @@
 import { SchemaInitializer, useCollection } from '@nocobase/client';
 
 // 表格操作配置
-export const mapActionInitializers = new SchemaInitializer({
+export const mapActionInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'MapActionInitializers',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',

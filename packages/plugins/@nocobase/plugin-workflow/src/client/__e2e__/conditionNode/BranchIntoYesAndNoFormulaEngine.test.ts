@@ -3,7 +3,6 @@ import {
   ClculationNode,
   CollectionTriggerNode,
   ConditionBranchNode,
-  ConditionYesNode,
   QueryRecordNode,
   apiCreateWorkflow,
   apiCreateWorkflowNode,
@@ -72,10 +71,9 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await page.getByLabel('textbox').focus();
   const conditionalRightConstant = faker.lorem.words();
   await page.keyboard.type(`=='${conditionalRightConstant}'`);
-  await expect(page.getByLabel('textbox')).toHaveText(
+  await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}=='${conditionalRightConstant}'`,
   );
   await conditionNode.submitButton.click();
@@ -189,10 +187,9 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await page.getByLabel('textbox').focus();
   const conditionalRightConstant = faker.lorem.words();
   await page.keyboard.type(`=='${conditionalRightConstant}'`);
-  await expect(page.getByLabel('textbox')).toHaveText(
+  await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}=='${conditionalRightConstant}'`,
   );
   await conditionNode.submitButton.click();
@@ -306,10 +303,9 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await page.getByLabel('textbox').focus();
   const conditionalRightConstant = faker.lorem.words();
   await page.keyboard.type(`!='${conditionalRightConstant}'`);
-  await expect(page.getByLabel('textbox')).toHaveText(
+  await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );
   await conditionNode.submitButton.click();
@@ -418,15 +414,14 @@ test('Collection event Add Data Trigger, determines that the trigger node single
   const conditionNode = new ConditionBranchNode(page, conditionNodeName);
   const conditionNodeId = await conditionNode.node.locator('.workflow-node-id').innerText();
   await conditionNode.nodeConfigure.click();
-  await conditionNode.formulaRadio.click();
+  await conditionNode.formulaRadio.check();
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await page.getByLabel('textbox').focus();
   const conditionalRightConstant = faker.lorem.words();
   await page.keyboard.type(`!='${conditionalRightConstant}'`);
-  await expect(page.getByLabel('textbox')).toHaveText(
+  await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );
   await conditionNode.submitButton.click();
@@ -564,13 +559,12 @@ test('Collection event add data trigger, determine the trigger node integer vari
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await page.getByLabel('textbox').focus();
   await page.keyboard.type('==');
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
   await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await expect(page.getByLabel('textbox')).toHaveText(
+  await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}==Node result / ${preQueryRecordNodeTitle} / ${triggerNodeFieldDisplayName}`,
   );
   await conditionNode.submitButton.click();
@@ -715,13 +709,12 @@ test('Collection event add data trigger, determine trigger node integer variable
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await page.getByLabel('textbox').focus();
   await page.keyboard.type('==');
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
   await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await expect(page.getByLabel('textbox')).toHaveText(
+  await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}==Node result / ${preQueryRecordNodeTitle} / ${triggerNodeFieldDisplayName}`,
   );
   await conditionNode.submitButton.click();
@@ -856,13 +849,12 @@ test('Collection event add data trigger, determine trigger node integer variable
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await page.getByLabel('textbox').focus();
   await page.keyboard.type('!=');
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Node result' }).click();
   await page.getByRole('menuitemcheckbox', { name: preQueryRecordNodeTitle }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await expect(page.getByLabel('textbox')).toHaveText(
+  await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!=Node result / ${preQueryRecordNodeTitle} / ${triggerNodeFieldDisplayName}`,
   );
   await conditionNode.submitButton.click();
@@ -1000,10 +992,9 @@ test('Collection event add data trigger, determine the trigger node integer vari
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
-  await page.getByLabel('textbox').focus();
   const conditionalRightConstant = faker.lorem.words();
   await page.keyboard.type(`!='${conditionalRightConstant}'`);
-  await expect(page.getByLabel('textbox')).toHaveText(
+  await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!='${conditionalRightConstant}'`,
   );
   await conditionNode.submitButton.click();

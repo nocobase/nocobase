@@ -2,6 +2,7 @@ import {
   Page,
   expect,
   expectSettingsMenu,
+  oneFilterFormBlockWithAllAssociationFields,
   oneTableBlockWithAddNewAndViewAndEditAndAssociationFields,
   test,
 } from '@nocobase/test/e2e';
@@ -317,7 +318,7 @@ test.describe('form item & edit form', () => {
             .getByTestId('select-object-multiple'),
         ).toHaveClass(/ant-select-disabled/);
         // 在这里等待一下，防止因闪烁导致下面的断言失败
-        await page.waitForTimeout(100);
+        // await page.waitForTimeout(100);
       },
       expectEasyReading: async () => {
         await expect(page.getByLabel('block-item-CollectionField-general-form-general.oneToMany-oneToMany')).toHaveText(
@@ -560,6 +561,29 @@ test.describe('form item & view form', () => {
     })(page, 'oneToMany');
 
     await expect(page.getByRole('menuitem', { name: 'Enable link' }).getByRole('switch')).toBeChecked();
+  });
+});
+
+test.describe('form item & filter form', () => {
+  test('supported options', async ({ page, mockPage }) => {
+    const nocoPage = await mockPage(oneFilterFormBlockWithAllAssociationFields).waitForInit();
+    await nocoPage.goto();
+
+    await expectSettingsMenu({
+      page,
+      showMenu: async () => {
+        await page.getByLabel('block-item-CollectionField-general-filter-form-general.oneToMany-oneToMany').hover();
+        await page.getByRole('button', { name: 'designer-schema-settings-CollectionField' }).hover();
+      },
+      supportedOptions: [
+        'Edit field title',
+        'Edit description',
+        'Set the data scope',
+        'Field component',
+        'Title field',
+        'Delete',
+      ],
+    });
   });
 });
 

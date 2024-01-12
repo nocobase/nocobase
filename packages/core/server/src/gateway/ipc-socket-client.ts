@@ -1,5 +1,6 @@
 import net from 'net';
 import * as events from 'events';
+import xpipe from 'xpipe';
 import { Logger, createConsoleLogger } from '@nocobase/logger';
 
 export const writeJSON = (socket: net.Socket, data: object) => {
@@ -34,7 +35,7 @@ export class IPCSocketClient extends events.EventEmitter {
 
   static async getConnection(serverPath: string) {
     return new Promise<IPCSocketClient>((resolve, reject) => {
-      const client = net.createConnection({ path: serverPath }, () => {
+      const client = net.createConnection({ path: xpipe.eq(serverPath) }, () => {
         // 'connect' listener.
         resolve(new IPCSocketClient(client));
       });

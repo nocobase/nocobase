@@ -21,7 +21,7 @@ test.describe('multi data details block schema settings', () => {
         'Edit block title',
         'Set the data scope',
         'Set default sorting rules',
-        'Save as block template',
+        'Save as template',
         'Delete',
       ],
     });
