@@ -312,7 +312,7 @@ export const formItemSettings = new SchemaSettings({
         const { dn } = useDesignable();
         const fieldModeOptions = useFieldModeOptions();
         const isAddNewForm = useIsAddNewForm();
-        const fieldMode = useFieldComponentName();
+        const fieldMode = useFieldMode();
 
         return {
           title: t('Field component'),
@@ -391,7 +391,7 @@ export const formItemSettings = new SchemaSettings({
       useVisible() {
         const readPretty = useIsFieldReadPretty();
         const isAssociationField = useIsAssociationField();
-        const fieldMode = useFieldComponentName();
+        const fieldMode = useFieldMode();
         return !readPretty && isAssociationField && ['Picker'].includes(fieldMode);
       },
       useComponentProps() {
@@ -446,7 +446,7 @@ export const formItemSettings = new SchemaSettings({
       useVisible() {
         const readPretty = useIsFieldReadPretty();
         const isAssociationField = useIsAssociationField();
-        const fieldMode = useFieldComponentName();
+        const fieldMode = useFieldMode();
         return !readPretty && isAssociationField && ['Select'].includes(fieldMode);
       },
       useComponentProps() {
@@ -694,7 +694,7 @@ export const formItemSettings = new SchemaSettings({
       useVisible() {
         const options = useOptions();
         const isAssociationField = useIsAssociationField();
-        const fieldMode = useFieldComponentName();
+        const fieldMode = useFieldMode();
         return options.length > 0 && isAssociationField && fieldMode !== 'SubTable';
       },
       useComponentProps() {
@@ -791,7 +791,7 @@ export const formItemSettings = new SchemaSettings({
       type: 'select',
       useVisible() {
         const isAssociationField = useIsAssociationField();
-        const fieldMode = useFieldComponentName();
+        const fieldMode = useFieldMode();
         return isAssociationField && ['Tag'].includes(fieldMode);
       },
       useComponentProps() {
@@ -889,7 +889,7 @@ function useIsAssociationField() {
   return isAssociationField;
 }
 
-function useIsFileField() {
+export function useIsFileField() {
   const { getCollection } = useCollectionManager();
   const collectionField = useCollectionField();
   const targetCollection = getCollection(collectionField?.target);
@@ -897,17 +897,15 @@ function useIsFileField() {
   return isFileField;
 }
 
-export function useFieldComponentName(): string {
+function useFieldMode() {
   const field = useField<Field>();
-  const collectionField = useCollectionField();
   const isFileField = useIsFileField();
-  const fieldComponentName =
-    field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : '') || collectionField?.uiSchema?.['x-component'];
-  return fieldComponentName;
+  const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
+  return fieldMode;
 }
 
 export function useIsSelectFieldMode() {
-  const fieldMode = useFieldComponentName();
+  const fieldMode = useFieldMode();
   const isAssociationField = useIsAssociationField();
   const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
   return isSelectFieldMode;

@@ -15,7 +15,6 @@ import {
   removeNullCondition,
   useCollectionField,
   useDesignable,
-  useFieldComponentName,
   useFieldModeOptions,
   useIsAddNewForm,
   useValidateSchema,
@@ -31,6 +30,7 @@ import {
 } from '../../schema-component/antd/action/Action.Designer';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
+import { useIsFileField } from '../../schema-component/antd/form-item/FormItem.Settings';
 import { getTempFieldState } from '../../schema-component/antd/form-v2/utils';
 import { useColorFields } from '../../schema-component/antd/table-v2/Table.Column.Designer';
 import {
@@ -718,12 +718,12 @@ const fieldComponent: any = {
     const { dn } = useDesignable();
     const fieldModeOptions = useFieldModeOptions();
     const isAddNewForm = useIsAddNewForm();
-    const fieldMode = useFieldComponentName();
+    const fieldComponentName = useFieldComponentName();
 
     return {
       title: t('Field component'),
       options: fieldModeOptions,
-      value: fieldMode,
+      value: fieldComponentName,
       onChange(mode) {
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
@@ -1233,3 +1233,21 @@ export const tagComponentFieldSettings = new SchemaSettings({
     enableLink,
   ],
 });
+
+export const cascadeSelectComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:CascadeSelect',
+  items: [fieldComponent, titleField],
+});
+
+function useFieldComponentName(): string {
+  const field = useField<Field>();
+  const collectionField = useCollectionField();
+  const isFileField = useIsFileField();
+  const map = {
+    // AssociationField 的 mode 默认值是 Select
+    AssociationField: 'Select',
+  };
+  const fieldComponentName =
+    field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : '') || collectionField?.uiSchema?.['x-component'];
+  return map[fieldComponentName] || fieldComponentName;
+}

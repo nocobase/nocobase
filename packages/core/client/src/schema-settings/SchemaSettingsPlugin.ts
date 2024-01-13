@@ -3,6 +3,7 @@ import { filterCollapseBlockSettings } from '../modules/collapse-filter/schemaSe
 import { multiDataDetailsBlockSettings } from '../modules/details-multi-data/schemaSettings';
 import { singleDataDetailsBlockSettings } from '../modules/details-single-data/schemaSettings';
 import {
+  cascadeSelectComponentFieldSettings,
   creationFormBlockFieldSettings,
   creationFormBlockSettings,
   customizeSaveRecordActionSettings,
@@ -77,5 +78,6 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(datePickerComponentFieldSettings);
     this.schemaSettingsManager.add(fileManagerComponentFieldSettings);
     this.schemaSettingsManager.add(tagComponentFieldSettings);
+    this.schemaSettingsManager.add(cascadeSelectComponentFieldSettings);
   }
 }
