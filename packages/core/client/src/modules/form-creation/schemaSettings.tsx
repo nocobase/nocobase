@@ -452,6 +452,10 @@ export const creationFormBlockFieldSettings = new SchemaSettings({
           },
           {
             name: 'setDefaultValue',
+            useVisible() {
+              const collectionField = useCollectionField();
+              return !['o2m', 'obo', 'oho', 'o2o'].includes(collectionField?.interface);
+            },
             Component: SchemaSettingsDefaultValue,
           },
           {
@@ -1239,7 +1243,7 @@ export const cascadeSelectComponentFieldSettings = new SchemaSettings({
   items: [fieldComponent, titleField],
 });
 
-function useFieldComponentName(): string {
+export function useFieldComponentName(): string {
   const field = useField<Field>();
   const collectionField = useCollectionField();
   const isFileField = useIsFileField();
