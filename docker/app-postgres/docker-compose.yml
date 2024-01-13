@@ -4,16 +4,16 @@ networks:
     driver: bridge
 services:
   app:
-    image: nocobase/nocobase:main
+    image: nocobase/nocobase:latest
     networks:
       - nocobase
     environment:
+      - APP_KEY=your-secret-key # Replace it with your own app key
       - DB_DIALECT=postgres
       - DB_HOST=postgres
       - DB_DATABASE=nocobase
       - DB_USER=nocobase
       - DB_PASSWORD=nocobase
-      - LOCAL_STORAGE_BASE_URL=/storage/uploads
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
