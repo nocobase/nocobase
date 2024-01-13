@@ -899,9 +899,11 @@ function useIsFileField() {
 
 export function useFieldComponentName(): string {
   const field = useField<Field>();
+  const collectionField = useCollectionField();
   const isFileField = useIsFileField();
-  const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
-  return fieldMode;
+  const fieldComponentName =
+    field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : '') || collectionField?.uiSchema?.['x-component'];
+  return fieldComponentName;
 }
 
 export function useIsSelectFieldMode() {

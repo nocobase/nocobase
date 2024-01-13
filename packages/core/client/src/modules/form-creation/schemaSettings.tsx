@@ -677,18 +677,8 @@ export const creationFormBlockFieldSettings = new SchemaSettings({
       useChildren() {
         const app = useApp();
         const fieldComponentName = useFieldComponentName();
-        const map = {
-          Select: 'select',
-          Picker: 'recordPicker',
-          Nester: 'subform',
-          PopoverNester: 'subformPopover',
-          SubTable: 'subtable',
-        };
-        const componentSettings = app.schemaSettingsManager.get(
-          `fieldSettings:component:${map[fieldComponentName] || fieldComponentName}`,
-        );
-        const items = componentSettings?.items || [];
-        return [fieldComponent, ...items];
+        const componentSettings = app.schemaSettingsManager.get(`fieldSettings:component:${fieldComponentName}`);
+        return componentSettings?.items || [];
       },
     },
     {
@@ -947,13 +937,14 @@ const titleField: any = {
 };
 
 export const selectComponentFieldSettings = new SchemaSettings({
-  name: 'fieldSettings:component:select',
-  items: [setTheDataScope, setDefaultSortingRules, quickCreate, allowMultiple, titleField],
+  name: 'fieldSettings:component:Select',
+  items: [fieldComponent, setTheDataScope, setDefaultSortingRules, quickCreate, allowMultiple, titleField],
 });
 
 export const recordPickerComponentFieldSettings = new SchemaSettings({
-  name: 'fieldSettings:component:recordPicker',
+  name: 'fieldSettings:component:Picker',
   items: [
+    fieldComponent,
     {
       name: 'popupSize',
       type: 'select',
@@ -1041,8 +1032,9 @@ export const recordPickerComponentFieldSettings = new SchemaSettings({
 });
 
 export const subformComponentFieldSettings = new SchemaSettings({
-  name: 'fieldSettings:component:subform',
+  name: 'fieldSettings:component:Nester',
   items: [
+    fieldComponent,
     allowMultiple,
     {
       name: 'allowDissociate',
@@ -1078,11 +1070,11 @@ export const subformComponentFieldSettings = new SchemaSettings({
 });
 
 export const subformPopoverComponentFieldSettings = new SchemaSettings({
-  name: 'fieldSettings:component:subformPopover',
-  items: [allowMultiple],
+  name: 'fieldSettings:component:PopoverNester',
+  items: [fieldComponent, allowMultiple],
 });
 
 export const subtablePopoverComponentFieldSettings = new SchemaSettings({
-  name: 'fieldSettings:component:subtable',
-  items: [],
+  name: 'fieldSettings:component:SubTable',
+  items: [fieldComponent],
 });
