@@ -15,6 +15,7 @@ import {
   subformPopoverComponentFieldSettings,
   submitActionSettings,
   subtablePopoverComponentFieldSettings,
+  tagComponentFieldSettings,
 } from '../modules/form-creation/schemaSettings';
 import { editFormBlockSettings } from '../modules/form-edit/schemaSettings';
 import { filterFormBlockSettings } from '../modules/form-filter/schemaSettings';
@@ -75,5 +76,6 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(subtablePopoverComponentFieldSettings);
     this.schemaSettingsManager.add(datePickerComponentFieldSettings);
     this.schemaSettingsManager.add(fileManagerComponentFieldSettings);
+    this.schemaSettingsManager.add(tagComponentFieldSettings);
   }
 }

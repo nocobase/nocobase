@@ -32,6 +32,7 @@ import {
 import { isSubMode } from '../../schema-component/antd/association-field/util';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
 import { getTempFieldState } from '../../schema-component/antd/form-v2/utils';
+import { useColorFields } from '../../schema-component/antd/table-v2/Table.Column.Designer';
 import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsDataScope,
@@ -937,9 +938,44 @@ const titleField: any = {
   },
 };
 
+const enableLink = {
+  name: 'enableLink',
+  type: 'switch',
+  useVisible() {
+    const field = useField();
+    return field.readPretty;
+  },
+  useComponentProps() {
+    const { t } = useTranslation();
+    const field = useField<Field>();
+    const fieldSchema = useFieldSchema();
+    const { dn } = useDesignable();
+    return {
+      title: t('Enable link'),
+      checked: fieldSchema['x-component-props']?.enableLink !== false,
+      onChange(flag) {
+        fieldSchema['x-component-props'] = {
+          ...fieldSchema?.['x-component-props'],
+          enableLink: flag,
+        };
+        field.componentProps['enableLink'] = flag;
+        dn.emit('patch', {
+          schema: {
+            'x-uid': fieldSchema['x-uid'],
+            'x-component-props': {
+              ...fieldSchema?.['x-component-props'],
+            },
+          },
+        });
+        dn.refresh();
+      },
+    };
+  },
+};
+
 export const selectComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Select',
-  items: [fieldComponent, setTheDataScope, setDefaultSortingRules, quickCreate, allowMultiple, titleField],
+  items: [fieldComponent, setTheDataScope, setDefaultSortingRules, quickCreate, allowMultiple, titleField, enableLink],
 });
 
 export const recordPickerComponentFieldSettings = new SchemaSettings({
@@ -1155,5 +1191,45 @@ export const fileManagerComponentFieldSettings = new SchemaSettings({
       },
     },
     titleField,
+  ],
+});
+
+export const tagComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:Tag',
+  items: [
+    fieldComponent,
+    {
+      name: 'tagColorField',
+      type: 'select',
+      useComponentProps() {
+        const { t } = useTranslation();
+        const field = useField<Field>();
+        const fieldSchema = useFieldSchema();
+        const { dn } = useDesignable();
+        const collectionField = useCollectionField();
+        const colorFieldOptions = useColorFields(collectionField?.target ?? collectionField?.targetCollection);
+        return {
+          title: t('Tag color field'),
+          options: colorFieldOptions,
+          value: field?.componentProps?.tagColorField,
+          onChange(tagColorField) {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['tagColorField'] = tagColorField;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps.tagColorField = tagColorField;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    titleField,
+    enableLink,
   ],
 });
