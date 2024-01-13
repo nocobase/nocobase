@@ -7,18 +7,20 @@ export const getWebSocketURL = () => {
   }
   const subApp = getSubAppName();
   const queryString = subApp ? `?__appName=${subApp}` : '';
+  const wsPath = process.env.WS_PATH || '/ws';
   if (process.env.WEBSOCKET_URL) {
     const url = new URL(process.env.WEBSOCKET_URL);
     if (url.hostname === 'localhost') {
-      return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:${url.port}/ws${queryString}`;
+      const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+      return `${protocol}://${location.hostname}:${url.port}${wsPath}${queryString}`;
     }
     return `${process.env.WEBSOCKET_URL}${queryString}`;
   }
   try {
     const url = new URL(process.env.API_BASE_URL);
-    return `${url.protocol === 'https:' ? 'wss' : 'ws'}://${url.host}/ws${queryString}`;
+    return `${url.protocol === 'https:' ? 'wss' : 'ws'}://${url.host}${wsPath}${queryString}`;
   } catch (error) {
-    return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws${queryString}`;
+    return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}${wsPath}${queryString}`;
   }
 };
 
