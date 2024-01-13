@@ -8,6 +8,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
   protected childrenCollections: string[];
   protected inheritsFields: CollectionFieldOptionsV2[];
   protected currentFields: CollectionFieldOptionsV2[];
+  protected allFields: CollectionFieldOptionsV2[];
   protected parentCollectionFields: Record<string, CollectionFieldOptionsV2[]> = {};
   protected allCollectionsInheritChain: string[];
   protected inheritCollectionsChain: string[];
@@ -83,7 +84,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
   }
 
   getInheritedFields() {
-    if (this.inheritsFields) {
+    if (this.inheritsFields?.length) {
       return this.inheritsFields;
     }
 
@@ -96,11 +97,24 @@ export class InheritanceCollectionMixin extends CollectionV2 {
     return this.inheritsFields;
   }
 
+  // override CollectionV2
+  getFieldsMap() {
+    if (!this.fieldsMap) {
+      this.fieldsMap = this.getAllFields().reduce((memo, field) => {
+        memo[field.name] = field;
+        return memo;
+      }, {});
+    }
+    return this.fieldsMap;
+  }
   getCurrentFields(predicate?: GetCollectionFieldPredicate) {
     return super.getFields(predicate);
   }
 
   getParentCollectionFields(parentCollectionName: string) {
+    if (!this.parentCollectionFields) {
+      this.parentCollectionFields = {};
+    }
     if (this.parentCollectionFields[parentCollectionName]) {
       return this.parentCollectionFields[parentCollectionName];
     }
@@ -197,7 +211,6 @@ export class InheritanceCollectionMixin extends CollectionV2 {
     return this.inheritCollectionsChain;
   }
 
-  // override CollectionV2
   getAllFields(predicate?: GetCollectionFieldPredicate) {
     if (this.allFields?.length) {
       return this.allFields;

@@ -78,25 +78,18 @@ export type GetCollectionFieldPredicate =
 
 export class CollectionV2 {
   protected options: CollectionOptionsV2;
-  protected fieldsMap: Record<string, CollectionFieldOptionsV2> = {};
+  protected fieldsMap: Record<string, CollectionFieldOptionsV2>;
   protected primaryKey: string;
   public collectionManager: CollectionManagerV2;
-  public allFields: CollectionFieldOptionsV2[];
   public fields: CollectionFieldOptionsV2[];
 
-  constructor(options: CollectionOptionsV2, collectionManager: CollectionManagerV2) {
+  constructor(options: CollectionOptionsV2 | CollectionV2, collectionManager: CollectionManagerV2) {
     this.collectionManager = collectionManager;
     this.init(options);
   }
-  init(_options: CollectionOptionsV2 | CollectionV2) {
-    const options = _options instanceof CollectionV2 ? _options.getOptions() : _options;
-    this.options = options;
+  init(options: CollectionOptionsV2 | CollectionV2) {
+    this.options = options instanceof CollectionV2 ? options.getOptions() : options;
     this.fields = this.options.fields || [];
-    this.allFields = this.getAllFields();
-    this.fieldsMap = this.allFields.reduce((memo, field) => {
-      memo[field.name] = field;
-      return memo;
-    }, {});
   }
   get name() {
     return this.options.name;
@@ -210,13 +203,21 @@ export class CollectionV2 {
   getFields(predicate?: GetCollectionFieldPredicate) {
     return predicate ? filter(this.fields, predicate) : this.fields;
   }
-  getAllFields() {
-    return this.options.fields || [];
+  getFieldsMap() {
+    if (!this.fieldsMap) {
+      this.fieldsMap = this.getFields().reduce((memo, field) => {
+        memo[field.name] = field;
+        return memo;
+      }, {});
+    }
+    return this.fieldsMap;
   }
   getField(name: SchemaKey) {
+    const fieldsMap = this.getFieldsMap();
+
     if (String(name).split('.').length > 1) {
       const [fieldName, ...others] = String(name).split('.');
-      const field = this.fieldsMap[fieldName];
+      const field = fieldsMap[fieldName];
       if (!field) return null;
 
       const collectionName = field?.target;
@@ -227,7 +228,7 @@ export class CollectionV2 {
 
       return collection.getField(others.join('.'));
     }
-    return this.fieldsMap[name];
+    return fieldsMap[name];
   }
   hasField(name: SchemaKey) {
     return !!this.getField(name);
