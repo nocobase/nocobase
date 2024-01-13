@@ -7,6 +7,7 @@ import {
   creationFormBlockSettings,
   customizeSaveRecordActionSettings,
   customizeSubmitToWorkflowActionSettings,
+  datePickerComponentFieldSettings,
   recordPickerComponentFieldSettings,
   selectComponentFieldSettings,
   subformComponentFieldSettings,
@@ -71,5 +72,6 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(subformComponentFieldSettings);
     this.schemaSettingsManager.add(subformPopoverComponentFieldSettings);
     this.schemaSettingsManager.add(subtablePopoverComponentFieldSettings);
+    this.schemaSettingsManager.add(datePickerComponentFieldSettings);
   }
 }

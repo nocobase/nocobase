@@ -36,6 +36,7 @@ import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsDataScope,
   SchemaSettingsDataTemplates,
+  SchemaSettingsDateFormat,
   SchemaSettingsDefaultValue,
   SchemaSettingsFormItemTemplate,
   SchemaSettingsLinkageRules,
@@ -1077,4 +1078,20 @@ export const subformPopoverComponentFieldSettings = new SchemaSettings({
 export const subtablePopoverComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:SubTable',
   items: [fieldComponent],
+});
+
+export const datePickerComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:DatePicker',
+  items: [
+    {
+      name: 'dateDisplayFormat',
+      Component: SchemaSettingsDateFormat as any,
+      useComponentProps() {
+        const fieldSchema = useFieldSchema();
+        return {
+          fieldSchema,
+        };
+      },
+    },
+  ],
 });
