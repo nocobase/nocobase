@@ -13,6 +13,7 @@ export const BlockInitializer = (props) => {
         const s = merge(schema || {}, item.schema || {});
         item?.schemaInitialize?.(s);
         insert(s);
+        props.onClick?.(s);
       }}
     />
   );

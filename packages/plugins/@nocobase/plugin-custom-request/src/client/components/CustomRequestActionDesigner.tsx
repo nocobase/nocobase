@@ -6,7 +6,6 @@ import {
   SchemaSettingsActionModalItem,
   actionSettingsItems,
   useCollection,
-  useCurrentRoles,
   useRequest,
 } from '@nocobase/client';
 import React from 'react';
@@ -74,14 +73,11 @@ function CustomRequestACL() {
     },
   );
 
-  const currentRoles = useCurrentRoles();
-
   return (
     <>
       <SchemaSettingsActionModalItem
         title={t('Access Control')}
         schema={CustomRequestACLSchema}
-        scope={{ currentRoles }}
         initialValues={{
           roles: data?.data?.roles,
         }}
