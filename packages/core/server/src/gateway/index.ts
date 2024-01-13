@@ -15,7 +15,7 @@ import handler from 'serve-handler';
 import { parse } from 'url';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions } from '../application';
-import { getPackageDirByExposeUrl, getPackageNameByExposeUrl, PLUGIN_STATICS_PATH } from '../plugin-manager';
+import { PLUGIN_STATICS_PATH, getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
@@ -331,7 +331,7 @@ export class Gateway extends EventEmitter {
         from: 'node',
       })
       .then(async () => {
-        if (!await mainApp.isStarted()) {
+        if (!(await mainApp.isStarted())) {
           await mainApp.stop();
         }
       })
@@ -396,7 +396,7 @@ export class Gateway extends EventEmitter {
     this.server.on('upgrade', (request, socket, head) => {
       const { pathname } = parse(request.url);
 
-      if (pathname === '/ws') {
+      if (pathname === process.env.WS_PATH) {
         this.wsServer.wss.handleUpgrade(request, socket, head, (ws) => {
           this.wsServer.wss.emit('connection', ws, request);
         });

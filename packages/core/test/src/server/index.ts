@@ -32,9 +32,9 @@ export const startServerWithRandomPort = async (startServer) => {
 };
 
 export const createWsClient = async ({ serverPort, options = {} }) => {
-  console.log(`connect to ws://localhost:${serverPort}/ws`, options);
+  console.log(`connect to ws://localhost:${serverPort}${process.env.WS_PATH}`, options);
 
-  const wsc = new ws(`ws://localhost:${serverPort}/ws`, options);
+  const wsc = new ws(`ws://localhost:${serverPort}${process.env.WS_PATH}`, options);
   const messages = [];
 
   wsc.on('message', (data) => {
