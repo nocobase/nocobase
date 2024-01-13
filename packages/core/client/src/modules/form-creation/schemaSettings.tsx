@@ -30,7 +30,7 @@ import {
 } from '../../schema-component/antd/action/Action.Designer';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
-import { useIsFileField } from '../../schema-component/antd/form-item/FormItem.Settings';
+import { useIsAssociationField, useIsFileField } from '../../schema-component/antd/form-item/FormItem.Settings';
 import { getTempFieldState } from '../../schema-component/antd/form-v2/utils';
 import { useColorFields } from '../../schema-component/antd/table-v2/Table.Column.Designer';
 import {
@@ -979,7 +979,36 @@ const enableLink = {
 
 export const selectComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Select',
-  items: [fieldComponent, setTheDataScope, setDefaultSortingRules, quickCreate, allowMultiple, titleField, enableLink],
+  items: [
+    {
+      ...fieldComponent,
+      useVisible: useIsAssociationField,
+    },
+    {
+      ...setTheDataScope,
+      useVisible: useIsAssociationField,
+    },
+    {
+      ...setDefaultSortingRules,
+      useVisible: useIsAssociationField,
+    },
+    {
+      ...quickCreate,
+      useVisible: useIsAssociationField,
+    },
+    {
+      ...allowMultiple,
+      useVisible: useIsAssociationField,
+    },
+    {
+      ...titleField,
+      useVisible: useIsAssociationField,
+    },
+    {
+      ...enableLink,
+      useVisible: useIsAssociationField,
+    },
+  ],
 });
 
 export const recordPickerComponentFieldSettings = new SchemaSettings({

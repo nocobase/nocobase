@@ -18,7 +18,7 @@ import {
   subtablePopoverComponentFieldSettings,
   tagComponentFieldSettings,
 } from '../modules/form-creation/schemaSettings';
-import { editFormBlockSettings } from '../modules/form-edit/schemaSettings';
+import { editFormBlockFieldSettings, editFormBlockSettings } from '../modules/form-edit/schemaSettings';
 import { filterFormBlockSettings } from '../modules/form-filter/schemaSettings';
 import { gridCardBlockSettings } from '../modules/grid-card/schemaSettings';
 import { listBlockSettings } from '../modules/list/schemaSettings';
@@ -79,5 +79,6 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(fileManagerComponentFieldSettings);
     this.schemaSettingsManager.add(tagComponentFieldSettings);
     this.schemaSettingsManager.add(cascadeSelectComponentFieldSettings);
+    this.schemaSettingsManager.add(editFormBlockFieldSettings);
   }
 }

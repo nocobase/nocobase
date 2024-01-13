@@ -269,12 +269,18 @@ export const useInheritsTableColumnInitializerFields = () => {
 };
 
 export const useFormItemInitializerFields = (options?: any) => {
+  const { type: formType } = useFormBlockContext();
   const { name, currentFields, template } = useCollection();
   const { getInterface, getCollection } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const { snapshot, fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
+  const formTypeToSettingsName = {
+    update: 'fieldSettings:editFormBlock',
+    create: 'fieldSettings:creationFormBlock',
+  };
+
   return currentFields
     ?.filter((field) => field?.interface && !field?.isForeignKey && !field?.treeChildren)
     ?.map((field) => {
@@ -288,9 +294,8 @@ export const useFormItemInitializerFields = (options?: any) => {
       const schema = {
         type: 'string',
         name: field.name,
-        // 'x-designer': 'FormItem.Designer',
         'x-toolbar': 'FormFieldSchemaToolbar',
-        'x-settings': 'fieldSettings:creationFormBlock',
+        'x-settings': formTypeToSettingsName[formType],
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
