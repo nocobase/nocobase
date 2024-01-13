@@ -12,15 +12,17 @@ export default class AddUserNameMigration extends Migration {
         {
           type: 'string',
           name: 'username',
-          unique: true,
         },
       ],
     });
     const tableNameWithSchema = collection.getTableNameWithSchema();
     const field = collection.getField('username');
-    await this.db.sequelize.getQueryInterface().addColumn(tableNameWithSchema, field.columnName(), {
-      type: DataTypes.STRING,
-    });
+    const exists = await field.existsInDb();
+    if (!exists) {
+      await this.db.sequelize.getQueryInterface().addColumn(tableNameWithSchema, field.columnName(), {
+        type: DataTypes.STRING,
+      });
+    }
     await this.db.sequelize.getQueryInterface().addConstraint(tableNameWithSchema, {
       type: 'unique',
       fields: [field.columnName()],
