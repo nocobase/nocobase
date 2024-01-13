@@ -8,11 +8,11 @@ services:
     networks:
       - nocobase
     depends_on:
-      - mysql
+      - mariadb
     environment:
       - APP_KEY=your-secret-key # Replace it with your own app key
-      - DB_DIALECT=mysql
-      - DB_HOST=mysql
+      - DB_DIALECT=mariadb
+      - DB_HOST=mariadb
       - DB_DATABASE=nocobase
       - DB_USER=nocobase
       - DB_PASSWORD=nocobase
@@ -21,8 +21,8 @@ services:
       - ./storage:/app/nocobase/storage
     ports:
       - "13000:80"
-  mysql:
-    image: mysql:latest
+  mariadb:
+    image: mariadb:latest
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
