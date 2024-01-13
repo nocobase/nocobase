@@ -23,10 +23,14 @@ export default class AddUsersPhoneMigration extends Migration {
         type: DataTypes.STRING,
       });
     }
-    await this.db.sequelize.getQueryInterface().addConstraint(tableNameWithSchema, {
-      type: 'unique',
-      fields: [field.columnName()],
-    });
+    try {
+      await this.db.sequelize.getQueryInterface().addConstraint(tableNameWithSchema, {
+        type: 'unique',
+        fields: [field.columnName()],
+      });
+    } catch (error) {
+      //
+    }
     this.db.removeCollection('users');
   }
 
