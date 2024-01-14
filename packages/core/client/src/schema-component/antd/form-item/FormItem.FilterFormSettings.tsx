@@ -22,6 +22,9 @@ import {
   EditValidationRules,
 } from './SchemaSettingOptions';
 
+/**
+ * @deprecated
+ */
 export const filterFormItemSettings = new SchemaSettings({
   name: 'FilterFormItemSettings',
   items: [

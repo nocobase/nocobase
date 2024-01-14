@@ -352,15 +352,13 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const targetCollection = getCollection(field.target);
-      // const component =
-      //   field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
-      //     ? 'TableField'
-      //     : 'CollectionField';
       let schema = {
         type: 'string',
         name: field.name,
         required: false,
-        'x-designer': 'FormItem.FilterFormDesigner',
+        // 'x-designer': 'FormItem.FilterFormDesigner',
+        'x-toolbar': 'FormFieldSchemaToolbar',
+        'x-settings': 'fieldSettings:filterFormBlock',
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
@@ -371,7 +369,9 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
           type: 'string',
           name: `${field.name}`,
           required: false,
-          'x-designer': 'FormItem.FilterFormDesigner',
+          // 'x-designer': 'FormItem.FilterFormDesigner',
+          'x-toolbar': 'FormFieldSchemaToolbar',
+          'x-settings': 'fieldSettings:filterFormBlock',
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
           'x-collection-field': `${name}.${field.name}`,

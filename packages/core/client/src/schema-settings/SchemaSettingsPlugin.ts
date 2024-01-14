@@ -23,7 +23,7 @@ import {
   tagComponentFieldSettings,
 } from '../modules/form-creation/schemaSettings';
 import { editFormBlockFieldSettings, editFormBlockSettings } from '../modules/form-edit/schemaSettings';
-import { filterFormBlockSettings } from '../modules/form-filter/schemaSettings';
+import { filterFormBlockFieldSettings, filterFormBlockSettings } from '../modules/form-filter/schemaSettings';
 import { gridCardBlockSettings } from '../modules/grid-card/schemaSettings';
 import { listBlockSettings } from '../modules/list/schemaSettings';
 import { markdownBlockSettings } from '../modules/markdown/schemaSettings';
@@ -49,6 +49,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(creationFormBlockSettings);
     this.schemaSettingsManager.add(editFormBlockSettings);
     this.schemaSettingsManager.add(filterFormBlockSettings);
+    this.schemaSettingsManager.add(filterFormBlockFieldSettings);
     this.schemaSettingsManager.add(multiDataDetailsBlockSettings);
     this.schemaSettingsManager.add(singleDataDetailsBlockSettings);
     this.schemaSettingsManager.add(dataSelectorBlockSettings);

@@ -1031,7 +1031,10 @@ export const selectComponentFieldSettings = new SchemaSettings({
     },
     {
       ...enableLink,
-      useVisible: useIsAssociationField,
+      useVisible() {
+        const readPretty = useIsFieldReadPretty();
+        return useIsAssociationField() && readPretty;
+      },
     },
   ],
 });
@@ -1130,12 +1133,7 @@ export const subformComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Nester',
   items: [
     fieldComponent,
-    {
-      ...allowMultiple,
-      useVisible() {
-        return !useIsFormReadPretty();
-      },
-    },
+    allowMultiple,
     {
       name: 'allowDissociate',
       type: 'switch',
