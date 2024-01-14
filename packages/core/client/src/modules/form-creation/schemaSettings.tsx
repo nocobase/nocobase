@@ -30,7 +30,14 @@ import {
 } from '../../schema-component/antd/action/Action.Designer';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
-import { useIsAssociationField, useIsFileField } from '../../schema-component/antd/form-item/FormItem.Settings';
+import {
+  useFieldMode,
+  useIsAssociationField,
+  useIsFieldReadPretty,
+  useIsFileField,
+  useIsFormReadPretty,
+  useIsSelectFieldMode,
+} from '../../schema-component/antd/form-item/FormItem.Settings';
 import { getTempFieldState } from '../../schema-component/antd/form-v2/utils';
 import { useColorFields } from '../../schema-component/antd/table-v2/Table.Column.Designer';
 import {
@@ -46,6 +53,7 @@ import {
   getShouldChange,
 } from '../../schema-settings';
 import { ActionType } from '../../schema-settings/LinkageRules/type';
+import { useIsShowMultipleSwitch } from '../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../variables';
 
 export const creationFormBlockSettings = new SchemaSettings({
@@ -986,19 +994,36 @@ export const selectComponentFieldSettings = new SchemaSettings({
     },
     {
       ...setTheDataScope,
-      useVisible: useIsAssociationField,
+      useVisible() {
+        const isSelectFieldMode = useIsSelectFieldMode();
+        const isFormReadPretty = useIsFormReadPretty();
+        return isSelectFieldMode && !isFormReadPretty;
+      },
     },
     {
       ...setDefaultSortingRules,
-      useVisible: useIsAssociationField,
+      useVisible() {
+        const isSelectFieldMode = useIsSelectFieldMode();
+        const isFormReadPretty = useIsFormReadPretty();
+        return isSelectFieldMode && !isFormReadPretty;
+      },
     },
     {
       ...quickCreate,
-      useVisible: useIsAssociationField,
+      useVisible() {
+        const readPretty = useIsFieldReadPretty();
+        const isAssociationField = useIsAssociationField();
+        const fieldMode = useFieldMode();
+        return !readPretty && isAssociationField && ['Select'].includes(fieldMode);
+      },
     },
     {
       ...allowMultiple,
-      useVisible: useIsAssociationField,
+      useVisible() {
+        const isAssociationField = useIsAssociationField();
+        const IsShowMultipleSwitch = useIsShowMultipleSwitch();
+        return isAssociationField && IsShowMultipleSwitch();
+      },
     },
     {
       ...titleField,
@@ -1105,10 +1130,18 @@ export const subformComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Nester',
   items: [
     fieldComponent,
-    allowMultiple,
+    {
+      ...allowMultiple,
+      useVisible() {
+        return !useIsFormReadPretty();
+      },
+    },
     {
       name: 'allowDissociate',
       type: 'switch',
+      useVisible() {
+        return !useIsFormReadPretty();
+      },
       useComponentProps() {
         const { t } = useTranslation();
         const field = useField<Field>();
@@ -1270,6 +1303,49 @@ export const tagComponentFieldSettings = new SchemaSettings({
 export const cascadeSelectComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:CascadeSelect',
   items: [fieldComponent, titleField],
+});
+
+export const attachmentComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:Upload.Attachment',
+  items: [
+    {
+      name: 'size',
+      type: 'select',
+      useVisible() {
+        const readPretty = useIsFieldReadPretty();
+        return readPretty;
+      },
+      useComponentProps() {
+        const { t } = useTranslation();
+        const field = useField<Field>();
+        const fieldSchema = useFieldSchema();
+        const { dn } = useDesignable();
+        return {
+          title: t('Size'),
+          options: [
+            { label: t('Large'), value: 'large' },
+            { label: t('Default'), value: 'default' },
+            { label: t('Small'), value: 'small' },
+          ],
+          value: field?.componentProps?.size || 'default',
+          onChange(size) {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['size'] = size;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.size = size;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+  ],
 });
 
 export function useFieldComponentName(): string {

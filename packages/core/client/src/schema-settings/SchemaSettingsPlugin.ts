@@ -1,8 +1,12 @@
 import { Plugin } from '../application/Plugin';
 import { filterCollapseBlockSettings } from '../modules/collapse-filter/schemaSettings';
 import { multiDataDetailsBlockSettings } from '../modules/details-multi-data/schemaSettings';
-import { singleDataDetailsBlockSettings } from '../modules/details-single-data/schemaSettings';
 import {
+  detailsBlockFieldSettings,
+  singleDataDetailsBlockSettings,
+} from '../modules/details-single-data/schemaSettings';
+import {
+  attachmentComponentFieldSettings,
   cascadeSelectComponentFieldSettings,
   creationFormBlockFieldSettings,
   creationFormBlockSettings,
@@ -79,6 +83,8 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(fileManagerComponentFieldSettings);
     this.schemaSettingsManager.add(tagComponentFieldSettings);
     this.schemaSettingsManager.add(cascadeSelectComponentFieldSettings);
+    this.schemaSettingsManager.add(attachmentComponentFieldSettings);
     this.schemaSettingsManager.add(editFormBlockFieldSettings);
+    this.schemaSettingsManager.add(detailsBlockFieldSettings);
   }
 }

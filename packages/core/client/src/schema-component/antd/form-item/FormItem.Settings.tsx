@@ -866,7 +866,7 @@ export function useIsFormReadPretty() {
   return !!form?.readPretty;
 }
 
-function useIsFieldReadPretty() {
+export function useIsFieldReadPretty() {
   const field = useField<Field>();
   return field.readPretty;
 }
@@ -886,7 +886,7 @@ export function useCollectionField() {
 export function useIsAssociationField() {
   const collectionField = useCollectionField();
   const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface);
-  return isAssociationField;
+  return isAssociationField || !!collectionField?.target;
 }
 
 export function useIsFileField() {
@@ -897,7 +897,7 @@ export function useIsFileField() {
   return isFileField;
 }
 
-function useFieldMode() {
+export function useFieldMode() {
   const field = useField<Field>();
   const isFileField = useIsFileField();
   const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
