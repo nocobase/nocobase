@@ -24,7 +24,7 @@ export class SAMLAuth extends BaseAuth {
     const name = this.authenticator.get('name');
     const protocol = http ? 'http' : 'https';
     return {
-      callbackUrl: `${protocol}://${ctx.host}/api/saml:redirect?authenticator=${name}&app=${ctx.app.name}`,
+      callbackUrl: `${protocol}://${ctx.host}/api/saml:redirect?authenticator=${name}&__appName=${ctx.app.name}`,
       entryPoint: ssoUrl,
       issuer: name,
       cert: certificate,
