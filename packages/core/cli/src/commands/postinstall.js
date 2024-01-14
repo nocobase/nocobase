@@ -3,7 +3,7 @@ const { run, isDev, isPackageValid, generatePlaywrightPath } = require('../util'
 const { resolve } = require('path');
 const { existsSync } = require('fs');
 const { readFile, writeFile } = require('fs').promises;
-const { createStoragePluginsSymlink } = require('@nocobase/utils/plugin-symlink');
+const { createStoragePluginsSymlink, createDevPluginsSymlink } = require('@nocobase/utils/plugin-symlink');
 
 /**
  * @param {Command} cli
@@ -19,6 +19,7 @@ module.exports = (cli) => {
       if (!isDev()) {
         return;
       }
+      await createDevPluginsSymlink();
       const cwd = process.cwd();
       if (!existsSync(resolve(cwd, '.env')) && existsSync(resolve(cwd, '.env.example'))) {
         const content = await readFile(resolve(cwd, '.env.example'), 'utf-8');

@@ -1,6 +1,7 @@
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
 import { importModule, isURL } from '@nocobase/utils';
 import { fsExists } from '@nocobase/utils/plugin-symlink';
+import axios from 'axios';
 import execa from 'execa';
 import fg from 'fast-glob';
 import fs from 'fs';
@@ -184,12 +185,15 @@ export class PluginManager {
     }
   }
 
-  async create(pluginName: string) {
-    console.log('creating...');
+  async create(pluginName: string, options?: { forceRecreate?: boolean }) {
     const createPlugin = async (name) => {
+      const pluginDir = resolve(process.cwd(), 'packages/plugins', name);
+      if (options?.forceRecreate) {
+        await fs.promises.rm(pluginDir, { recursive: true, force: true });
+      }
       const { PluginGenerator } = require('@nocobase/cli/src/plugin-generator');
       const generator = new PluginGenerator({
-        cwd: resolve(process.cwd(), name),
+        cwd: process.cwd(),
         args: {},
         context: {
           name,
@@ -198,14 +202,50 @@ export class PluginManager {
       await generator.run();
     };
     await createPlugin(pluginName);
-    await this.repository.create({
-      values: {
-        name: pluginName,
-        packageName: pluginName,
-        version: '0.1.0',
+    await tsxRerunning();
+    try {
+      await this.app.db.auth({ retry: 1 });
+    } catch (error) {
+      return;
+    }
+    if (!(await this.app.isInstalled())) {
+      return;
+    }
+    const checkServer = async (port?: number, duration = 1000, max = 60 * 10) => {
+      return new Promise((resolve, reject) => {
+        let count = 0;
+        const { API_BASE_URL, APP_PORT, API_BASE_PATH } = process.env;
+        const baseURL = API_BASE_URL || `http://127.0.0.1:${APP_PORT}${API_BASE_PATH}`;
+        const url = `${baseURL}__health_check`;
+        this.app.log.debug(`health check: ${url}`);
+        const timer = setInterval(async () => {
+          if (count++ > max) {
+            clearInterval(timer);
+            return reject(new Error('Server start timeout.'));
+          }
+
+          axios
+            .get(url)
+            .then((response) => {
+              if (response.status === 200) {
+                clearInterval(timer);
+                resolve(true);
+              }
+            })
+            .catch((error) => {
+              const data = error?.response?.data?.error;
+              this.app.log.debug(data?.message || 'server unavailable', data);
+            });
+        }, duration);
+      });
+    };
+    await checkServer();
+    await execa('yarn', ['nocobase', 'pm', 'add', pluginName], {
+      stdout: 'inherit',
+      env: {
+        ...process.env,
       },
     });
-    await tsxRerunning();
   }
 
   async add(plugin?: any, options: any = {}, insert = false, isUpgrade = false) {
@@ -268,12 +308,7 @@ export class PluginManager {
   }
 
   async loadCommands() {
-    // await this.initPlugins();
-    // for (const [P, plugin] of this.getPlugins()) {
-    //   await plugin.loadCommands();
-    // }
-    // return;
-    this.app.log.info('load commands');
+    this.app.log.debug('load commands');
     const items = await this.repository.find({
       filter: {
         enabled: true,
@@ -524,40 +559,67 @@ export class PluginManager {
     }
   }
 
-  async remove(name: string | string[]) {
+  async remove(name: string | string[], options?: { withDir?: boolean }) {
     const pluginNames = _.castArray(name);
-    for (const pluginName of pluginNames) {
-      const plugin = this.get(pluginName);
-      if (!plugin) {
-        continue;
+    if (await this.app.isStarted()) {
+      for (const pluginName of pluginNames) {
+        const plugin = this.get(pluginName);
+        if (!plugin) {
+          continue;
+        }
+        if (plugin.enabled) {
+          throw new Error(`${pluginName} plugin is enabled`);
+        }
+        await plugin.beforeRemove();
       }
-      if (plugin.enabled) {
-        throw new Error(`${pluginName} plugin is enabled`);
+      await this.repository.destroy({
+        filter: {
+          name: pluginNames,
+        },
+      });
+      const plugins: Plugin[] = [];
+      for (const pluginName of pluginNames) {
+        const plugin = this.get(pluginName);
+        if (!plugin) {
+          continue;
+        }
+        plugins.push(plugin);
+        this.del(pluginName);
+        // if (plugin.options.type && plugin.options.packageName) {
+        //   await removePluginPackage(plugin.options.packageName);
+        // }
       }
-      await plugin.beforeRemove();
-    }
-    await this.repository.destroy({
-      filter: {
-        name: pluginNames,
-      },
-    });
-    const plugins: Plugin[] = [];
-    for (const pluginName of pluginNames) {
-      const plugin = this.get(pluginName);
-      if (!plugin) {
-        continue;
+      await this.app.reload();
+      for (const plugin of plugins) {
+        await plugin.afterRemove();
       }
-      plugins.push(plugin);
-      this.del(pluginName);
-      // if (plugin.options.type && plugin.options.packageName) {
-      //   await removePluginPackage(plugin.options.packageName);
-      // }
+      await this.app.emitStartedEvent();
+    } else {
+      const plugins = await this.repository.find({
+        filter: {
+          name: pluginNames,
+        },
+      });
+      await this.repository.destroy({
+        filter: {
+          name: pluginNames,
+        },
+      });
+      if (options?.withDir) {
+        await Promise.all(
+          plugins.map(async (plugin) => {
+            const dir = resolve(process.env.NODE_MODULES_PATH, plugin.packageName);
+            const realDir = await fs.promises.realpath(dir);
+            this.app.log.debug(`rm -rf ${realDir}`);
+            return fs.promises.rm(realDir, { force: true, recursive: true });
+          }),
+        );
+      }
+      await execa('yarn', ['nocobase', 'restart']);
+      if (options?.withDir) {
+        await execa('yarn', ['postinstall']);
+      }
     }
-    await this.app.reload();
-    for (const plugin of plugins) {
-      await plugin.afterRemove();
-    }
-    await this.app.emitStartedEvent();
   }
 
   async loadOne(plugin: Plugin) {
