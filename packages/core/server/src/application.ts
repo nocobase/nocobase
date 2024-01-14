@@ -47,6 +47,7 @@ import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 
 import packageJson from '../package.json';
+import { MultipleInstanceManager } from './helpers/multiple-instance-manager';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -158,6 +159,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
   private _databases: Map<string, Database> = new Map();
+
+  private _acls: MultipleInstanceManager<ACL>;
+  private _resourcers: MultipleInstanceManager<Resourcer>;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -383,10 +387,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     const oldDb = this.getDb();
+
     this.init();
     if (!oldDb.closed()) {
       await oldDb.close();
     }
+
     this._loaded = false;
   }
 
