@@ -18,7 +18,7 @@ export class SAMLAuth extends BaseAuth {
     });
   }
 
-  getOptions() {
+  getOptions(): SamlConfig {
     const ctx = this.ctx;
     const { ssoUrl, certificate, idpIssuer, http }: SAMLOptions = this.options?.saml || {};
     const name = this.authenticator.get('name');
@@ -30,7 +30,7 @@ export class SAMLAuth extends BaseAuth {
       cert: certificate,
       idpIssuer,
       wantAssertionsSigned: false,
-    } as SamlConfig;
+    };
   }
 
   async validate() {

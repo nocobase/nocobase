@@ -9,7 +9,7 @@ export class SamlPlugin extends Plugin {
     const auth = this.app.pm.get(AuthPlugin);
     auth.registerType(authType, {
       components: {
-        SignInForm: SigninPage,
+        SignInButton: SigninPage,
         AdminSettingsForm: Options,
       },
     });
