@@ -1,6 +1,6 @@
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
-import { omit } from 'lodash';
+import _ from 'lodash';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
@@ -9,6 +9,7 @@ import { RecordProvider, useRecord } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { mergeFilter } from './SharedFilterProvider';
+import { useParsedFilter } from './hooks';
 
 type Params = {
   filter?: any;
@@ -238,6 +239,19 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
     console.error(err);
   }
 
+  const { filter: parsedFilter } = useParsedFilter({
+    filterOption: params?.filter,
+    currentRecord: { __parent: record, __collectionName: props.collection },
+  });
+
+  if (!_.isEmpty(params?.filter) && _.isEmpty(parsedFilter)) {
+    return null;
+  }
+
+  if (params?.filter) {
+    params.filter = parsedFilter;
+  }
+
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
       <BlockProvider name="table-selector" {...props} params={params}>
@@ -261,7 +275,7 @@ export const useTableSelectorProps = () => {
   useEffect(() => {
     if (!ctx?.service?.loading) {
       const data = ctx?.service?.data?.data.map((v) => {
-        return omit(v, collectionField?.foreignKey);
+        return _.omit(v, collectionField?.foreignKey);
       });
       field.value = data;
       field?.setInitialValue?.(data);

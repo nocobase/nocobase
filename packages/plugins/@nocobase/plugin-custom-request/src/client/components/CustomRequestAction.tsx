@@ -1,9 +1,9 @@
 import { Action, useAPIClient, useRequest } from '@nocobase/client';
 import React from 'react';
-import { CustomRequestActionDesigner } from './CustomRequestActionDesigner';
 import { useFieldSchema } from '@formily/react';
 import { listByCurrentRoleUrl } from '../constants';
 import { useCustomizeRequestActionProps } from '../hooks';
+import { CustomRequestActionDesigner } from './CustomRequestActionDesigner';
 
 export const CustomRequestActionACLDecorator = (props) => {
   const apiClient = useAPIClient();

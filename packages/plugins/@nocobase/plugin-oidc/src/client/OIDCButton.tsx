@@ -15,6 +15,8 @@ export const OIDCButton = ({ authenticator }: { authenticator: Authenticator }) 
   const { t } = useOidcTranslation();
   const api = useAPIClient();
   const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const redirect = params.get('redirect');
 
   const login = async () => {
     const response = await api.request({
@@ -23,6 +25,9 @@ export const OIDCButton = ({ authenticator }: { authenticator: Authenticator }) 
       headers: {
         'X-Authenticator': authenticator.name,
       },
+      data: {
+        redirect,
+      },
     });
 
     const authUrl = response?.data?.data;
@@ -30,7 +35,6 @@ export const OIDCButton = ({ authenticator }: { authenticator: Authenticator }) 
   };
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
     const name = params.get('authenticator');
     const error = params.get('error');
     if (name !== authenticator.name) {

@@ -1,5 +1,5 @@
 import Database, { Repository } from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 
 describe('actions', () => {
   let app: MockServer;
@@ -20,14 +20,11 @@ describe('actions', () => {
   const expiresIn = 60 * 60 * 24;
 
   beforeEach(async () => {
-    app = mockServer({
+    app = await createMockServer({
       registerActions: true,
       acl: true,
       plugins: ['users', 'auth', 'api-keys', 'acl'],
     });
-
-    await app.cleanDb();
-    await app.loadAndInstall({ clean: true });
 
     db = app.db;
 

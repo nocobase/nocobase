@@ -2,6 +2,7 @@ import { Migration } from '@nocobase/server';
 import { presetAuthType } from '../../preset';
 
 export default class FixAllowSignUpMigration extends Migration {
+  appVersion = '<0.18.0-alpha.1';
   async up() {
     const repo = this.context.db.getRepository('authenticators');
     const authenticators = await repo.find({

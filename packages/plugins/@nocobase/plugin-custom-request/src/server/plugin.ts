@@ -24,9 +24,7 @@ export class CustomRequestPlugin extends Plugin {
   }
 
   async load() {
-    await this.db.import({
-      directory: resolve(__dirname, './collections'),
-    });
+    await this.importCollections(resolve(__dirname, 'collections'));
 
     this.app.resource({
       name: 'customRequests',
@@ -38,7 +36,7 @@ export class CustomRequestPlugin extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `ui.${this.name}`,
-      actions: ['customRequests:*'],
+      actions: ['customRequests:*', 'roles:list'],
     });
 
     this.app.acl.allow('customRequests', ['send', 'listByCurrentRole'], 'loggedIn');

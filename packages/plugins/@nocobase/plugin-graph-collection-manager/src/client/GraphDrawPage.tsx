@@ -271,7 +271,7 @@ const handelResetLayout = (isTemporaryLayout?) => {
     const positionId = positions.find((v) => v.collectionName === node.id)?.id;
     if (node) {
       const pos = g.node(id);
-      updatePositionData.push({ id: positionId, x: pos.x, y: pos.y });
+      updatePositionData.push({ id: positionId, collectionName: node.id, x: pos.x, y: pos.y });
       node.position(pos?.x, pos?.y);
     }
   });
@@ -315,7 +315,12 @@ const handelResetLayout = (isTemporaryLayout?) => {
           const calculatedPosition = { x: referenceNode.x + 320 * index + 280, y: referenceNode.y };
           node.position(calculatedPosition.x, calculatedPosition.y);
           const positionId = positions.find((v) => v.collectionName === node.id)?.id;
-          updatePositionData.push({ id: positionId, x: calculatedPosition.x, y: calculatedPosition.y });
+          updatePositionData.push({
+            id: positionId,
+            collectionName: node.id,
+            x: calculatedPosition.x,
+            y: calculatedPosition.y,
+          });
         }
       });
     }
@@ -334,7 +339,12 @@ const handelResetLayout = (isTemporaryLayout?) => {
         const calculatedPosition = { x: col * 325 + minX, y: row * 300 + maxY + 300 };
         node.position(calculatedPosition.x, calculatedPosition.y);
         const positionId = positions.find((v) => v.collectionName === node.id)?.id;
-        updatePositionData.push({ id: positionId, x: calculatedPosition.x, y: calculatedPosition.y });
+        updatePositionData.push({
+          id: positionId,
+          collectionName: node.id,
+          x: calculatedPosition.x,
+          y: calculatedPosition.y,
+        });
       }
     });
   });
@@ -343,10 +353,10 @@ const handelResetLayout = (isTemporaryLayout?) => {
   });
   targetGraph.positionCell(nodes[0], 'top-left', { padding: 100 });
   if (!isTemporaryLayout) {
-    targetGraph.updatePositionAction(
-      updatePositionData.filter((v) => v.id),
-      true,
-    );
+    const updateData = updatePositionData.filter((v) => v.id);
+    const createData = updatePositionData.filter((v) => !v.id);
+    updateData.length > 0 && targetGraph.updatePositionAction(updateData, true);
+    createData.length > 0 && targetGraph.saveGraphPositionAction(createData);
   }
 };
 
@@ -407,6 +417,7 @@ export const GraphDrawPage = React.memo(() => {
     const data = collections?.length > 0 ? collections : await refreshCM();
     targetGraph.collections = data;
     targetGraph.updatePositionAction = updatePositionAction;
+    targetGraph.saveGraphPositionAction = saveGraphPositionAction;
     const currentNodes = targetGraph.getNodes();
     setCollectionData(data);
     setCollectionList(data);
@@ -770,11 +781,11 @@ export const GraphDrawPage = React.memo(() => {
       const updateNode = targetGraph.getCellById(node.id);
       switch (status) {
         case 'add':
-          if (referenceNode.x > 4500) {
+          if (referenceNode?.x > 4500) {
             referenceNode = minBy(yNodes, 'x');
             position = { x: minX, y: referenceNode.y + 400 };
           } else {
-            position = { x: referenceNode.x + 350, y: referenceNode.y };
+            position = { x: referenceNode?.x + 350, y: referenceNode?.y };
           }
           targetNode = targetGraph.addNode({
             ...node,

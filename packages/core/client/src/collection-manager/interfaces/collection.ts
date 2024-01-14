@@ -7,7 +7,9 @@ export const collection: IField = {
   type: 'string',
   group: 'advanced',
   order: 5,
-  title: '{{t("Collection")}}',
+  title: '{{t("Collection selector")}}',
+  description:
+    '{{t("Providing certain collections as options for users, typically used in polymorphic or inheritance scenarios")}}',
   sortable: true,
   default: {
     type: 'string',

@@ -245,6 +245,18 @@ function generatePlaywrightPath(clean = false) {
 
 exports.generatePlaywrightPath = generatePlaywrightPath;
 
+function parseEnv(name) {
+  if (name === 'DB_UNDERSCORED') {
+    if (process.env.DB_UNDERSCORED === 'true') {
+      return 'true';
+    }
+    if (process.env.DB_UNDERSCORED) {
+      return 'true';
+    }
+    return 'false';
+  }
+}
+
 exports.initEnv = function initEnv() {
   const env = {
     APP_ENV: 'development',
@@ -254,10 +266,12 @@ exports.initEnv = function initEnv() {
     DB_DIALECT: 'sqlite',
     DB_STORAGE: 'storage/db/nocobase.sqlite',
     DB_TIMEZONE: '+00:00',
+    DB_UNDERSCORED: parseEnv('DB_UNDERSCORED'),
     DEFAULT_STORAGE_TYPE: 'local',
     LOCAL_STORAGE_DEST: 'storage/uploads',
     PLUGIN_STORAGE_PATH: resolve(process.cwd(), 'storage/plugins'),
     MFSU_AD: 'none',
+    WS_PATH: '/ws',
     NODE_MODULES_PATH: resolve(process.cwd(), 'node_modules'),
     PM2_HOME: resolve(process.cwd(), './storage/.pm2'),
     PLUGIN_PACKAGE_PREFIX: '@nocobase/plugin-,@nocobase/plugin-sample-,@nocobase/preset-',

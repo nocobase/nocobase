@@ -2,10 +2,11 @@ import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
 import { importModule, isURL } from '@nocobase/utils';
 import { fsExists } from '@nocobase/utils/plugin-symlink';
 import execa from 'execa';
+import fg from 'fast-glob';
 import fs from 'fs';
 import _ from 'lodash';
 import net from 'net';
-import { resolve, sep } from 'path';
+import { basename, dirname, join, resolve, sep } from 'path';
 import Application from '../application';
 import { createAppProxy, tsxRerunning } from '../helper';
 import { Plugin } from '../plugin';
@@ -31,6 +32,7 @@ export interface PluginManagerOptions {
 export interface InstallOptions {
   cliArgs?: any[];
   clean?: CleanOptions | boolean;
+  force?: boolean;
   sync?: SyncOptions;
 }
 
@@ -230,7 +232,11 @@ export class PluginManager {
       console.error(error);
       // empty
     }
-    this.app.log.debug(`adding plugin...`, { method: 'add', submodule: 'plugin-manager', name: options.name });
+    this.app.log.debug(`add plugin [${options.name}]`, {
+      method: 'add',
+      submodule: 'plugin-manager',
+      name: options.name,
+    });
     let P: any;
     try {
       P = await PluginManager.resolvePlugin(options.packageName || plugin, isUpgrade, !!options.packageName);
@@ -258,7 +264,44 @@ export class PluginManager {
 
   async initPlugins() {
     await this.initPresetPlugins();
-    await this.repository.init();
+    await this.initOtherPlugins();
+  }
+
+  async loadCommands() {
+    // await this.initPlugins();
+    // for (const [P, plugin] of this.getPlugins()) {
+    //   await plugin.loadCommands();
+    // }
+    // return;
+    this.app.log.info('load commands');
+    const items = await this.repository.find({
+      filter: {
+        enabled: true,
+      },
+    });
+    let sourceDir = basename(dirname(__dirname)) === 'src' ? 'src' : 'dist';
+    const packageNames: string[] = items.map((item) => item.packageName);
+    const source = [];
+    for (const packageName of packageNames) {
+      const directory = join(packageName, sourceDir, 'server/commands/*.' + (sourceDir === 'src' ? 'ts' : 'js'));
+      source.push(directory);
+    }
+    sourceDir = basename(dirname(__dirname)) === 'src' ? 'src' : 'lib';
+    for (const plugin of this.options.plugins || []) {
+      if (typeof plugin === 'string') {
+        const packageName = await PluginManager.getPackageName(plugin);
+        const directory = join(packageName, sourceDir, 'server/commands/*.' + (sourceDir === 'src' ? 'ts' : 'js'));
+        source.push(directory);
+      }
+    }
+    const files = await fg(source, {
+      ignore: ['**/*.d.ts'],
+      cwd: process.env.NODE_MODULES_PATH,
+    });
+    for (const file of files) {
+      const callback = await importModule(file);
+      callback(this.app);
+    }
   }
 
   async load(options: any = {}) {
@@ -272,14 +315,14 @@ export class PluginManager {
         continue;
       }
 
-      const name = P.name;
+      const name = plugin.name || P.name;
       current += 1;
 
       this.app.setMaintainingMessage(`before load plugin [${name}], ${current}/${total}`);
       if (!plugin.enabled) {
         continue;
       }
-      this.app.logger.debug(`before load plugin...`, { submodule: 'plugin-manager', method: 'load', name });
+      this.app.logger.debug(`before load plugin [${name}]`, { submodule: 'plugin-manager', method: 'load', name });
       await plugin.beforeLoad();
     }
 
@@ -289,7 +332,7 @@ export class PluginManager {
       if (plugin.state.loaded) {
         continue;
       }
-      const name = P.name;
+      const name = plugin.name || P.name;
       current += 1;
       this.app.setMaintainingMessage(`load plugin [${name}], ${current}/${total}`);
 
@@ -298,11 +341,11 @@ export class PluginManager {
       }
 
       await this.app.emitAsync('beforeLoadPlugin', plugin, options);
-      this.app.logger.debug(`loading plugin...`, { submodule: 'plugin-manager', method: 'load', name });
+      this.app.logger.debug(`load plugin [${name}] `, { submodule: 'plugin-manager', method: 'load', name });
+      await plugin.loadCollections();
       await plugin.load();
       plugin.state.loaded = true;
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
-      this.app.logger.debug(`after load plugin...`, { submodule: 'plugin-manager', method: 'load', name });
     }
 
     this.app.setMaintainingMessage('loaded plugins');
@@ -322,7 +365,7 @@ export class PluginManager {
         continue;
       }
 
-      const name = P.name;
+      const name = plugin.name || P.name;
       current += 1;
 
       if (!plugin.enabled) {
@@ -711,11 +754,140 @@ export class PluginManager {
     return Object.keys(npmInfo.versions);
   }
 
-  protected async initPresetPlugins() {
+  async loadPresetMigrations() {
+    const migrations = {
+      beforeLoad: [],
+      afterSync: [],
+      afterLoad: [],
+    };
+    for (const [P, plugin] of this.getPlugins()) {
+      if (!plugin.isPreset) {
+        continue;
+      }
+      const { beforeLoad, afterSync, afterLoad } = await plugin.loadMigrations();
+      migrations.beforeLoad.push(...beforeLoad);
+      migrations.afterSync.push(...afterSync);
+      migrations.afterLoad.push(...afterLoad);
+    }
+    return {
+      beforeLoad: {
+        up: async () => {
+          this.app.log.debug('run preset migrations(beforeLoad)');
+          const migrator = this.app.db.createMigrator({ migrations: migrations.beforeLoad });
+          await migrator.up();
+        },
+      },
+      afterSync: {
+        up: async () => {
+          this.app.log.debug('run preset migrations(afterSync)');
+          const migrator = this.app.db.createMigrator({ migrations: migrations.afterSync });
+          await migrator.up();
+        },
+      },
+      afterLoad: {
+        up: async () => {
+          this.app.log.debug('run preset migrations(afterLoad)');
+          const migrator = this.app.db.createMigrator({ migrations: migrations.afterLoad });
+          await migrator.up();
+        },
+      },
+    };
+  }
+
+  async loadOtherMigrations() {
+    const migrations = {
+      beforeLoad: [],
+      afterSync: [],
+      afterLoad: [],
+    };
+    for (const [P, plugin] of this.getPlugins()) {
+      if (plugin.isPreset) {
+        continue;
+      }
+      if (!plugin.enabled) {
+        continue;
+      }
+      const { beforeLoad, afterSync, afterLoad } = await plugin.loadMigrations();
+      migrations.beforeLoad.push(...beforeLoad);
+      migrations.afterSync.push(...afterSync);
+      migrations.afterLoad.push(...afterLoad);
+    }
+    return {
+      beforeLoad: {
+        up: async () => {
+          this.app.log.debug('run others migrations(beforeLoad)');
+          const migrator = this.app.db.createMigrator({ migrations: migrations.beforeLoad });
+          await migrator.up();
+        },
+      },
+      afterSync: {
+        up: async () => {
+          this.app.log.debug('run others migrations(afterSync)');
+          const migrator = this.app.db.createMigrator({ migrations: migrations.afterSync });
+          await migrator.up();
+        },
+      },
+      afterLoad: {
+        up: async () => {
+          this.app.log.debug('run others migrations(afterLoad)');
+          const migrator = this.app.db.createMigrator({ migrations: migrations.afterLoad });
+          await migrator.up();
+        },
+      },
+    };
+  }
+
+  async loadPresetPlugins() {
+    await this.initPresetPlugins();
+    await this.load();
+  }
+
+  async upgrade() {
+    this.app.log.info('run upgrade');
+    const toBeUpdated = [];
+    for (const [P, plugin] of this.getPlugins()) {
+      if (plugin.state.upgraded) {
+        continue;
+      }
+      if (!plugin.enabled) {
+        continue;
+      }
+      if (!plugin.isPreset && !plugin.installed) {
+        this.app.log.info(`install built-in plugin [${plugin.name}]`);
+        await plugin.install();
+        toBeUpdated.push(plugin.name);
+      }
+      this.app.log.debug(`upgrade plugin [${plugin.name}]`);
+      await plugin.upgrade();
+      plugin.state.upgraded = true;
+    }
+    await this.repository.update({
+      filter: {
+        name: toBeUpdated,
+      },
+      values: {
+        installed: true,
+      },
+    });
+  }
+
+  async initOtherPlugins() {
+    if (this['_initOtherPlugins']) {
+      return;
+    }
+    await this.repository.init();
+    this['_initOtherPlugins'] = true;
+  }
+
+  async initPresetPlugins() {
+    if (this['_initPresetPlugins']) {
+      return;
+    }
     for (const plugin of this.options.plugins) {
       const [p, opts = {}] = Array.isArray(plugin) ? plugin : [plugin];
       await this.add(p, { enabled: true, isPreset: true, ...opts });
     }
+    this['_initPresetPlugins'] = true;
   }
 }
 

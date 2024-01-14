@@ -87,9 +87,7 @@ export class SnapshotFieldPlugin extends Plugin {
 
   async load() {
     // 导入 collection
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(resolve(__dirname, 'collections'));
 
     this.app.db.registerFieldTypes({
       snapshot: SnapshotField,

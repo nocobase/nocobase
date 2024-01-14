@@ -10,15 +10,18 @@ export const CustomRequestACLSchema = {
       'x-decorator-props': {
         tooltip: generateNTemplate('If not set, all roles can see this action'),
       },
-      'x-component': 'Select',
+      'x-component': 'RemoteSelect',
       'x-component-props': {
         multiple: true,
+        objectValue: true,
+        service: {
+          resource: 'roles',
+        },
+        manual: false,
         fieldNames: {
           label: 'title',
           value: 'name',
         },
-        objectValue: true,
-        options: '{{ currentRoles }}',
       },
     },
   },

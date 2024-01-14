@@ -6,6 +6,7 @@ export { default as supertest } from 'supertest';
 export * from './mockServer';
 
 export const pgOnly: () => any = () => (process.env.DB_DIALECT == 'postgres' ? describe : describe.skip);
+export const isPg = () => process.env.DB_DIALECT == 'postgres';
 
 export function randomStr() {
   // create random string
@@ -31,9 +32,9 @@ export const startServerWithRandomPort = async (startServer) => {
 };
 
 export const createWsClient = async ({ serverPort, options = {} }) => {
-  console.log(`connect to ws://localhost:${serverPort}/ws`, options);
+  console.log(`connect to ws://localhost:${serverPort}${process.env.WS_PATH}`, options);
 
-  const wsc = new ws(`ws://localhost:${serverPort}/ws`, options);
+  const wsc = new ws(`ws://localhost:${serverPort}${process.env.WS_PATH}`, options);
   const messages = [];
 
   wsc.on('message', (data) => {

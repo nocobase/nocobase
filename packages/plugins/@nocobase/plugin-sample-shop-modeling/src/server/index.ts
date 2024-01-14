@@ -16,9 +16,7 @@ export class ShopPlugin extends Plugin {
   }
 
   async load() {
-    await this.db.import({
-      directory: path.resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, 'collections'));
 
     this.app.acl.allow('products', '*');
     this.app.acl.allow('categories', '*');

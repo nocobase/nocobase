@@ -71,6 +71,10 @@ export class BelongsToManyField extends RelationField {
         name: through,
       };
 
+      if (this.collection.options.dumpRules) {
+        throughCollectionOptions['dumpRules'] = this.collection.options.dumpRules;
+      }
+
       // set through collection schema
       if (this.collection.collectionSchema()) {
         throughCollectionOptions['schema'] = this.collection.collectionSchema();

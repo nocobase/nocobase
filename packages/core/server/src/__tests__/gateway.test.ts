@@ -1,10 +1,10 @@
+import { startServerWithRandomPort, supertest, waitSecond } from '@nocobase/test';
 import { vi } from 'vitest';
-import { startServerWithRandomPort, supertest, waitSecond, mockServer } from '@nocobase/test';
-import { Gateway } from '../gateway';
-import Application from '../application';
 import ws from 'ws';
-import { errors } from '../gateway/errors';
 import { AppSupervisor } from '../app-supervisor';
+import Application from '../application';
+import { Gateway } from '../gateway';
+import { errors } from '../gateway/errors';
 describe('gateway', () => {
   let gateway: Gateway;
   beforeEach(() => {
@@ -154,7 +154,7 @@ describe('gateway', () => {
     let port;
     let messages: Array<string>;
     const connectClient = (port) => {
-      wsClient = new ws(`ws://localhost:${port}/ws`);
+      wsClient = new ws(`ws://localhost:${port}${process.env.WS_PATH}`);
       wsClient.on('message', (data) => {
         const message = data.toString();
         messages.push(message);
