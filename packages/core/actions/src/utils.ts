@@ -17,8 +17,8 @@ export function pageArgsToLimitArgs(
 export function getRepositoryFromParams(ctx: Context) {
   const { resourceName, resourceOf } = ctx.action;
 
-  const databaseName = ctx.get('x-database');
-  const database = ctx.app.getDb(databaseName || 'main') as Database;
+  const connectionName = ctx.get('x-connection');
+  const database = ctx.app.getDb(connectionName || 'main') as Database;
 
   if (resourceOf) {
     return database.getRepository<MultipleRelationRepository>(resourceName, resourceOf);
