@@ -265,13 +265,13 @@ export class Resourcer {
   restApiMiddleware({ prefix, accessors }: KoaMiddlewareOptions = {}) {
     return async (ctx: ResourcerContext, next: () => Promise<any>) => {
       ctx.resourcer = this;
-      const databaseName = ctx.get('x-database');
+      const connectionName = ctx.get('x-connection');
 
       let params = parseRequest(
         {
           path: ctx.request.path,
           method: ctx.request.method,
-          namespace: databaseName,
+          namespace: connectionName,
         },
         {
           prefix: this.options.prefix || prefix,
@@ -293,7 +293,7 @@ export class Resourcer {
               path: ctx.request.path,
               method: ctx.request.method,
               type: resource.options.type,
-              namespace: databaseName,
+              namespace: connectionName,
             },
             {
               prefix: this.options.prefix || prefix,
@@ -310,7 +310,7 @@ export class Resourcer {
         ctx.action = this.getAction(getNameByParams(params), params.actionName).clone();
 
         if (params && params.resourceName && params.resourceName.includes('@')) {
-          params.resourceName = params.resourceName.replace(`${databaseName}@`, '');
+          params.resourceName = params.resourceName.replace(`${connectionName}@`, '');
         }
 
         ctx.action.setContext(ctx);

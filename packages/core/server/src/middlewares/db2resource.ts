@@ -3,14 +3,14 @@ import { getNameByParams, parseRequest, ResourcerContext, ResourceType } from '@
 
 export function db2resource(ctx: ResourcerContext & { db: Database }, next: () => Promise<any>) {
   const resourcer = ctx.resourcer;
-  const databaseName = ctx.get('x-database');
-  const database = ctx.app.getDb(databaseName);
+  const connectionName = ctx.get('x-connection');
+  const database = ctx.app.getDb(connectionName);
 
   const params = parseRequest(
     {
       path: ctx.request.path,
       method: ctx.request.method,
-      namespace: databaseName,
+      namespace: connectionName,
     },
     {
       prefix: resourcer.options.prefix,
