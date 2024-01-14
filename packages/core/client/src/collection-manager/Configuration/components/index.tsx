@@ -136,7 +136,6 @@ export const TargetKey = observer(
 
 export const ForeignKey = observer(
   (props) => {
-    console.log(props);
     return (
       <div>
         <Input {...props} />
