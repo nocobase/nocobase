@@ -1,6 +1,6 @@
 import { Field } from '@formily/core';
 import { observer, useField, useForm } from '@formily/react';
-import { Select } from 'antd';
+import { Select, Input } from 'antd';
 import React from 'react';
 import { useRecord } from '../../../record-provider';
 import { useCompile } from '../../../schema-component';
@@ -128,6 +128,18 @@ export const TargetKey = observer(
     return (
       <div>
         <Select disabled value={'id'} options={[{ value: 'id', label: 'ID' }]} />
+      </div>
+    );
+  },
+  { displayName: 'TargetKey' },
+);
+
+export const ForeignKey = observer(
+  (props) => {
+    console.log(props);
+    return (
+      <div>
+        <Input {...props} />
       </div>
     );
   },
