@@ -6,10 +6,12 @@
 
 ```tsx | pure
 interface CollectionManagerOptionsV2 {
-  collections?: Record<string, CollectionV2[] | CollectionOptions[]> | CollectionV2[] | CollectionOptions[];
-  collectionTemplates?: CollectionTemplate[] | CollectionTemplateOptions[];
-  fieldInterfaces?: CollectionFieldInterface[] | CollectionFieldInterfaceOptions[];
+  collections?: CollectionOptionsV2[];
+  collectionTemplates?: (typeof CollectionTemplate)[];
+  fieldInterfaces?: (typeof CollectionFieldInterface)[];
+  fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionNamespaces?: Record<string, string>;
+  collectionMixins?: CollectionMixinConstructor[];
 }
 
 interface GetCollectionOptions {
@@ -24,22 +26,28 @@ class CollectionManagerV2 {
   addCollectionNamespaces(collectionNamespaces: Record<string, string>): void;
   getCollectionNamespaces(): { name: string; title: string }[];
 
-  addCollectionTemplates(templates: CollectionTemplate[] | CollectionTemplateOptions[]): void;
+  addCollectionTemplates(templateClasses: (typeof CollectionTemplate)[]): void;
   getCollectionTemplates(): CollectionTemplate[];
-  getCollectionTemplate(name?: string): CollectionTemplate
+  getCollectionTemplate<T extends CollectionTemplate>(name: string): T
 
-  addCollections(collections: (CollectionOptions | CollectionV2)[], options?: GetCollectionOptions): void
-  setCollections(collections: (CollectionOptions | CollectionV2)[], options?: GetCollectionOptions): void
+  addCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}): void
+  setCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}): void
   getAllCollections(): Record<string, Record<string, CollectionV2>>
-  getCollections(ns?: string, predicate?: (collection: CollectionV2) => boolean): CollectionV2[]
-  getCollection(path: string, options?: GetCollectionOptions): Promise<CollectionV2 | undefined>
+  getCollections(predicate?: (collection: CollectionV2) => boolean, options: GetCollectionOptions = {})
+  getCollection<Mixins = {}>(path: string, options: GetCollectionOptions = {}): (Mixins & CollectionV2) | undefined
   getCollectionName(path: string, options?: GetCollectionOptions): Promise<string | undefined>;
+  getCollectionFields(collectionName: string, options: GetCollectionOptions = {}): CollectionFieldOptionsV2[];
   getCollectionField(path: string, options?: GetCollectionOptions): Promise<CollectionFieldOptions | undefined>;
 
-  addFieldInterfaces(interfaces:CollectionFieldInterface[] | CollectionFieldInterfaceOptions[]): void;
-  getFieldInterfaces(): CollectionFieldInterface[]
-  getCollectionFieldInterfaceGroups(): { name: string; children: CollectionFieldInterface[] }[]
-  getFieldInterface(name: string): CollectionFieldInterface
+  addFieldInterfaces(interfaces: (typeof CollectionFieldInterface)[]): void;
+  getFieldInterfaces(): CollectionFieldInterface[];
+  getFieldInterface<T extends CollectionFieldInterface>(name: string): T;
+
+  addFieldGroups(fieldGroups: Record<string, { label: string; order?: number }>): void;
+  getFieldGroups():  Record<string, { label: string; order?: number }>;
+  getFieldGroup(name: string): { label: string; order?: number };
+
+  addCollectionMixins(mixins: CollectionMixinConstructor[]): void;
 }
 ```
 
@@ -47,12 +55,14 @@ class CollectionManagerV2 {
 
 - Collections：数据表，具体参考：[Collection](/core/collection/collection)
 - CollectionTemplate：数据表模板，具体参考：[CollectionTemplate](/core/collection/collection-template)
-- CollectionFieldInterface：数据表字段模板，具体参考：[CollectionFieldInterface](/core/collection/collection-field-interface)
-- CollectionNamespace：数据表命名空间，具体参考：[CollectionNamespace](/core/collection/collection-manager#collectionnamespace)
+- FieldInterface：数据表字段，具体参考：[CollectionFieldInterface](/core/collection/collection-field-interface)
+- CollectionNamespace：数据表命名空间，具体参考：[CollectionNamespace](/core/collection/collection-manager#collection-namespace)
+- CollectionMixins：数据表类的扩展，具体参考：[Collection Mixins](/core/collection/collection-manager#collection-mixins)
+- FieldGroups：数据字段类，具体参考：[Field Groups](/core/collection/collection-manager#field-groups)
 
-## CollectionNamespace
+## Collection Namespace
 
-NocoBase 支持[多数据源](xxx)，每个数据源在 Collection 中对应一个命名空间。命名空间是一个 Key-Value 对象，Key 为命名空间名称，Value 为标题。例如：
+NocoBase 支持[多数据源](#)，每个数据源在 Collection 中对应一个命名空间。命名空间是一个 Key-Value 对象，Key 为命名空间名称，Value 为标题。例如：
 
 ```tsx | pure
 {
@@ -69,6 +79,88 @@ const collections = collectionManager.getCollections('db2');
 
 如果不传递 `ns` 参数，则返回默认命名空间的数据表。
 
+## Collection Mixins
+
+Collection Mixins 是为扩展 Collection 类提供的一种机制，可以通过 `collectionManager.addCollectionMixins()` 添加 Collection Mixins。
+
+### 定义和注册
+
+```tsx | pure
+import { CollectionV2, Plugin } from '@nocobase/client';
+
+class TestMixin extends CollectionV2 {
+  test() {
+    const { name } = this.options;
+    return 'test '+ name;
+  }
+}
+
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.collectionManager.addCollectionMixins([TestMixin]);
+  }
+}
+```
+
+### 使用
+
+- 使用方式1：在 `CollectionManager` 实例上调用 `getCollection()` 获取指定 `Collection` 实例。
+
+```tsx | pure
+const Demo = () => {
+  const cm = useCollectionManager();
+  const userCollection = cm.getCollection<TestMixin>('users');
+
+  userCollection.test(); // 'test users'
+}
+```
+
+- 使用方式2：调用 `useCollection()` 获取当前上下文的数据表信息。
+
+```tsx | pure
+const Demo = () => {
+  const collection = useCollection<TestMixin>();
+  collection.test(); // 'test users'
+}
+```
+
+### 多个 Mixins 的使用
+
+如果添加了 Mixins，可通过如下方式获得类型提示：
+
+```tsx | pure
+const Demo = () => {
+  const collection = useCollection<TestMixin & Test2Mixin>();
+}
+```
+
+<code src='./demos/collection-manager/mixins.tsx'></code>
+
+## Field Groups
+
+Field Groups 是用来对数据表字段进行分组的。
+
+![Field Groups](./images/field-groups.png)
+
+```tsx | pure
+import { Plugin } from '@nocobase/client';
+
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.collectionManager.addFieldGroups({
+      "basic": {
+        label: "Basic",
+        order: 1
+      },
+      "test": {
+        label: "Test Group",
+        order: 2
+      }
+    });
+  }
+}
+```
+
 ## new CollectionManagerV2(options)
 
 创建一个新的 `CollectionManagerV2` 实例。
@@ -77,18 +169,21 @@ const collections = collectionManager.getCollections('db2');
 
 ```tsx | pure
 interface CollectionManagerOptionsV2 {
-  collections?: Record<string, CollectionV2[] | CollectionOptions[]> | CollectionV2[] | CollectionOptions[];
-  collectionTemplates?: CollectionTemplate[] | CollectionTemplateOptions[];
-  fieldInterfaces?: CollectionFieldInterface[] | CollectionFieldInterfaceOptions[];
+  collections?: CollectionOptionsV2[];
+  collectionTemplates?: (typeof CollectionTemplate)[];
+  fieldInterfaces?: (typeof CollectionFieldInterface)[];
+  fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionNamespaces?: Record<string, string>;
+  collectionMixins?: CollectionMixinConstructor[];
 }
 ```
 
 - 参数说明
 
-1. `collections`、`collectionTemplates`、`fieldInterfaces` 既支持对应的实例，也支持构造函数参数。例如：
+1. 基础使用：
 
 ```tsx | pure
+// users
 const userCollectionOptions = {
   "name": "users",
   "title": "Users",
@@ -97,42 +192,48 @@ const userCollectionOptions = {
   ],
 };
 
-const treeCollectionTemplateOptions = {
-  name: 'tree',
-  title: '{{t("Tree collection")}}',
-  configurableProperties: {
+// collection template
+class TreeCollectionTemplate extends CollectionTemplate {
+  name = 'tree';
+  type = 'object';
+  title = '{{t("Tree collection")}}';
+  configurableProperties = {
     // ...
   }
-};
+}
 
-const checkboxCollectionFieldInterfaceOptions = {
-  name: 'checkbox',
-  type: 'object',
-  title: '{{t("Checkbox")}}',
+
+// field interface
+class CheckboxFieldInterface extends CollectionFieldInterface {
+  name = 'checkbox';
+  type = 'object';
+  group = 'choices';
+  title = '{{t("Checkbox")}}';
   // ...
-};
+}
 
-
-const collectionManager1 = new CollectionManagerV2({
-  collections: [userCollectionOptions],
-  collectionTemplates: [treeCollectionTemplateOptions],
-  fieldInterfaces: [checkboxCollectionFieldInterfaceOptions],
-  collectionNamespaces: {
-    "db2": "DB2"
+// collection mixins
+class TestMixin extends CollectionV2 {
+  test() {
+    return 'test';
   }
-});
+}
 
-
-const userCollection = new Collection(userCollectionOptions);
-const treeCollectionTemplate = new CollectionTemplate(treeCollectionTemplateOptions);
-const checkboxCollectionFieldInterface = new CollectionFieldInterface(checkboxCollectionFieldInterfaceOptions);
-
-const collectionManager2 = new CollectionManagerV2({
-  collections: [userCollection],
-  collectionTemplates: [treeCollectionTemplate],
-  fieldInterfaces: [checkboxCollectionFieldInterface],
-  collectionNamespaces: {
-    "db2": "DB2"
+const app = new Application({
+  collectionManager: {
+    collections: [userCollectionOptions],
+    collectionTemplates: [TreeCollectionTemplate],
+    fieldInterfaces: [CheckboxFieldInterface],
+    collectionNamespaces: {
+      "db2": "DB2"
+    },
+    fieldGroups: {
+      'test': {
+        label: 'Test',
+        order: 1,
+      }
+    },
+    collectionMixins: [TestMixin],
   }
 });
 ```
@@ -177,12 +278,8 @@ class MyPlugin extends Plugin {
       "db2": "DB2"
     });
 
-    this.app.collectionManager.addCollectionTemplates([ treeCollectionTemplate, sqlCollectionTemplate ]);
-    this.app.collectionManager.addFieldInterfaces([checkboxCollectionFieldInterface]);
-
-    const collections = await this.app.apiClient.request({ url: 'collections:list' })
-      .then((res) => res.data.data);
-    this.app.collectionManager.addCollections(collections);
+    this.app.collectionManager.addCollectionTemplates([ TreeCollectionTemplate, SqlCollectionTemplate ]);
+    this.app.collectionManager.addFieldInterfaces([CheckboxFieldInterface]);
   }
 }
 ```
@@ -235,36 +332,38 @@ collectionManager.getCollectionNamespaces(); // [ { name: 'main', title: '主数
 
 ### cm.addCollectionTemplates(templates)
 
-添加数据表模板。
+添加数据表模板的类。
 
 - 类型
 
 ```tsx | pure
-collectionManager.addCollectionTemplates(templates: CollectionTemplate[] | CollectionTemplateOptions[]): void;
+collectionManager.addCollectionTemplates(templateClasses: (typeof CollectionTemplate)[]): void;
 ```
 
 - 示例
 
 ```tsx | pure
-const treeCollectionTemplate = new CollectionTemplate({
-  name: 'tree',
-  title: '{{t("Tree collection")}}',
-  configurableProperties: {
+class SqlCollectionTemplate extends CollectionTemplate {
+  name = 'sql';
+  type = 'object';
+  title = '{{t("SQL collection")}}';
+  configurableProperties = {
     // ...
   }
-});
+}
 
-const sqlCollectionTemplate = new CollectionTemplate({
-  name: 'sql',
-  title: '{{t("SQL collection")}}',
-  configurableProperties: {
+class TreeCollectionTemplate extends CollectionTemplate {
+  name = 'tree';
+  type = 'object';
+  title = '{{t("Tree collection")}}';
+  configurableProperties = {
     // ...
   }
-});
+}
 
 class MyPlugin extends Plugin {
   async load() {
-    this.collectionManager.addCollectionTemplates([ treeCollectionTemplate, sqlCollectionTemplate ]);
+    this.collectionManager.addCollectionTemplates([ SqlCollectionTemplate, TreeCollectionTemplate ]);
   }
 }
 ```
@@ -273,7 +372,7 @@ class MyPlugin extends Plugin {
 
 ### cm.getCollectionTemplates()
 
-获取数据表模板。
+获取数据表模板实例列表。
 
 - 类型
 
@@ -289,15 +388,15 @@ class CollectionManagerV2 {
 collectionManager.getCollectionTemplates(); // [ treeCollectionTemplate, sqlCollectionTemplate ]
 ```
 
-### cm.getCollectionTemplate(name)
+### getCollectionTemplate(name: string)
 
-获取数据表模板。
+获取数据表模板的实例。
 
 - 类型
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollectionTemplate(name: string): CollectionTemplate
+  getCollectionTemplate<T extends CollectionTemplate>(name: string): T
 }
 ```
 
@@ -313,6 +412,36 @@ collectionManager.getCollectionTemplate(); // generalCollectionTemplate
 collectionManager.getCollectionTemplate('tree'); // treeCollectionTemplate
 ```
 
+### cm.addCollectionMixins(mixins)
+
+添加数据表类的扩展。
+
+- 类型
+
+```tsx | pure
+class CollectionManagerV2 {
+  addCollectionMixins(mixins: CollectionMixinConstructor[]): void;
+}
+```
+
+- 示例
+
+```tsx | pure
+
+class TestMixin extends CollectionV2 {
+  test() {
+    return 'test';
+  }
+}
+
+
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.collectionManager.addCollectionMixins([TestMixin]);
+  }
+}
+```
+
 ### cm.addCollections(collections, options?)
 
 添加数据表。
@@ -321,7 +450,7 @@ collectionManager.getCollectionTemplate('tree'); // treeCollectionTemplate
 
 ```tsx | pure
 class CollectionManagerV2 {
-  addCollections(collections: (CollectionOptions | CollectionV2)[], options?: GetCollectionOptions): void
+  addCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}): void
 }
 ```
 
@@ -360,10 +489,10 @@ class CollectionManagerV2 {
 - 示例
 
 ```tsx | pure
-collectionManager.getAllCollections(); // { main: { users: userCollection } }
+collectionManager.getAllCollections(); // { main: { users: userCollection }， db2: {  } }
 ```
 
-### cm.getCollections(ns?, predicate?)
+### cm.getCollections(predicate?, options?)
 
 获取数据表。
 
@@ -371,7 +500,7 @@ collectionManager.getAllCollections(); // { main: { users: userCollection } }
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollections(ns?: string, predicate?: (collection: CollectionV2) => boolean): CollectionV2[]
+  getCollections(predicate?: (collection: CollectionV2) => boolean, options: GetCollectionOptions = {})
 }
 ```
 
@@ -388,7 +517,7 @@ collectionManager.getCollections(); // [ userCollection ]
 
 collectionManager.getCollections('db2'); // [ postCollection ]
 
-collectionManager.getCollections('db2', collection => collection.name === 'posts'); // [ postCollection ]
+collectionManager.getCollections(collection => collection.name === 'posts', { ns: 'db2' }); // [ postCollection ]
 ```
 
 ### cm.setCollections(collections, options?)
@@ -399,7 +528,7 @@ collectionManager.getCollections('db2', collection => collection.name === 'posts
 
 ```tsx | pure
 class CollectionManagerV2 {
-  setCollections(collections: (CollectionOptions | CollectionV2)[], options?: GetCollectionOptions): void
+  setCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}): void
 }
 ```
 
@@ -411,7 +540,7 @@ class CollectionManagerV2 {
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollection(path: string, options?: GetCollectionOptions): CollectionV2 | undefined
+  getCollection<Mixins = {}>(path: string, options: GetCollectionOptions = {}): (Mixins & CollectionV2) | undefined
 }
 ```
 
@@ -430,6 +559,31 @@ collectionManager.getCollection('users.posts'); // postCollection
 collectionManager.getCollection('users.profileId'); // profileCollection
 
 collectionManager.getCollection('users', { ns: 'db2' }); // userCollection
+```
+
+结合 Mixin 使用：
+
+```tsx | pure
+const collection = collectionManager.getCollection<TestMixin>('users');
+const collection = collectionManager.getCollection<TestMixin & TestMixin2>('users');
+```
+
+### cm.getCollectionFields(collectionName, options?)
+
+获取数据表字段列表。
+
+- 类型
+
+```tsx | pure
+class CollectionManagerV2 {
+  getCollectionFields(collectionName: string, options: GetCollectionOptions = {}): CollectionFieldOptionsV2[];
+}
+```
+
+- 示例
+
+```tsx | pure
+collectionManager.getCollectionFields('users'); // [ { name: 'username', type: 'string', title: 'Username', .. }, { name: 'password', type: 'password', title: 'Password', .. } ]
 ```
 
 ### cm.getCollectionName(path, options?)
@@ -481,23 +635,24 @@ collectionManager.getCollectionField('users.roles.name'); // 获取 roles 关联
 
 ```tsx | pure
 class CollectionManagerV2 {
-  addFieldInterfaces(interfaces:CollectionFieldInterface[] | CollectionFieldInterfaceOptions[]): void;
+  addFieldInterfaces(interfaces: (typeof CollectionFieldInterface)[]): void;
 }
 ```
 
 - 示例
 
 ```tsx | pure
-const checkboxCollectionFieldInterface = new CollectionFieldInterface({
-  name: 'checkbox',
-  type: 'object',
-  title: '{{t("Checkbox")}}',
+class CheckboxFieldInterface extends CollectionFieldInterface {
+  name = 'checkbox';
+  type = 'object';
+  group = 'choices';
+  title = '{{t("Checkbox")}}';
   // ...
-});
+}
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.collectionManager.addFieldInterfaces([checkboxCollectionFieldInterface]);
+    this.app.collectionManager.addFieldInterfaces([CheckboxFieldInterface]);
   }
 }
 ```
@@ -510,32 +665,14 @@ class MyPlugin extends Plugin {
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getFieldInterfaces(): CollectionFieldInterface[]
+  getFieldInterfaces(): Record<string, CollectionFieldInterface>
 }
 ```
 
 - 示例
 
 ```tsx | pure
-collectionManager.getFieldInterfaces(); // [ checkboxCollectionFieldInterface ]
-```
-
-### cm.getCollectionFieldInterfaceGroups()
-
-获取数据表字段接口分组。
-
-- 类型
-
-```tsx | pure
-class CollectionManagerV2 {
-  getCollectionFieldInterfaceGroups(): { name: string; children: CollectionFieldInterface[] }[]
-}
-```
-
-- 示例
-
-```tsx | pure
-collectionManager.getCollectionFieldInterfaceGroups(); // [ { name: '基础', children: [ checkboxCollectionFieldInterface ] } ]
+collectionManager.getFieldInterfaces(); // { checkbox: checkboxFieldInterface, url: urlFieldInterface }
 ```
 
 ### cm.getFieldInterface(name)
@@ -546,12 +683,76 @@ collectionManager.getCollectionFieldInterfaceGroups(); // [ { name: '基础', ch
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getFieldInterface(name: string): CollectionFieldInterface
+  getFieldInterface<T extends CollectionFieldInterface>(name: string): T;
 }
 ```
 
 - 示例
 
 ```tsx | pure
-collectionManager.getFieldInterface('checkbox'); // checkboxCollectionFieldInterface
+collectionManager.getFieldInterface('checkbox'); // checkboxFieldInterface
+```
+
+
+### cm.addFieldGroups(fieldGroups)
+
+添加数据表字段分组。
+
+- 类型
+
+```tsx | pure
+class CollectionManagerV2 {
+  addFieldGroups(fieldGroups: Record<string, { label: string; order?: number }>): void;
+}
+```
+
+- 示例
+
+```tsx | pure
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.collectionManager.addFieldGroups({
+      'test': {
+        label: 'Test',
+        order: 1,
+      }
+    });
+  }
+}
+```
+
+### cm.getFieldGroups()
+
+获取数据表字段分组。
+
+- 类型
+
+```tsx | pure
+class CollectionManagerV2 {
+  getFieldGroups():  Record<string, { label: string; order?: number }>;
+}
+```
+
+- 示例
+
+```tsx | pure
+collectionManager.getFieldGroups(); // { test: { label: 'Test', order: 1 } }
+```
+
+### cm.getFieldGroup(name)
+
+获取数据表字段分组。
+
+- 类型
+
+```tsx | pure
+class CollectionManagerV2 {
+  getFieldGroup(name: string): { label: string; order?: number };
+}
+```
+
+- 示例
+
+```tsx | pure
+collectionManager.getFieldGroup('test'); // { label: 'Test', order: 1 }
 ```

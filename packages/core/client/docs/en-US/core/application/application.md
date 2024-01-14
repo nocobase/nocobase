@@ -19,7 +19,7 @@ export interface ApplicationOptions {
   schemaSettings?: SchemaSetting[];
   schemaInitializers?: SchemaInitializer[];
   loadRemotePlugins?: boolean;
-  collectionManager?: CollectionManagerV2 | CollectionManagerOptionsV2;
+  collectionManager?: CollectionManagerOptionsV2;
 }
 ```
 

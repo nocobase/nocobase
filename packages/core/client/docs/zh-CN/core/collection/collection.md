@@ -13,8 +13,11 @@ interface CollectionOptions {
 }
 
 class CollectionV2 {
-  constructor(options: CollectionOptions) {}
+  app: Application;
   collectionManager: CollectionManagerV2;
+
+  constructor(options: CollectionOptions) {}
+
   name: string;
   primaryKey: string;
   titleField: string;
@@ -49,10 +52,11 @@ const usersCollection = new CollectionV2({
 ## CollectionOptions
 
 ```tsx | pure
-interface CollectionOptions {
+export interface CollectionOptionsV2 {
   name: string;
   title?: string;
   namespace?: string;
+  isLocal?: boolean;
   /**
    * Used for @nocobase/plugin-duplicator
    * @see packages/core/database/src/collection-group-manager.tss
@@ -71,11 +75,13 @@ interface CollectionOptions {
 
   tableName?: string;
   inherits?: string[] | string;
+  inherit?: string;
+  key?: string;
   viewName?: string;
   writableView?: boolean;
 
   filterTargetKey?: string;
-  fields?: FieldOptions[];
+  fields?: CollectionFieldOptionsV2[];
   model?: any;
   repository?: any;
   sortable?: CollectionSortable;
@@ -92,6 +98,12 @@ interface CollectionOptions {
 
   template?: string;
 
+  isThrough?: boolean;
+  autoCreate?: boolean;
+  resource?: string;
+  collectionName?: string;
+  sourceKey?: string;
+  uiSchema?: any;
   [key: string]: any;
 }
 ```
@@ -125,21 +137,17 @@ interface CollectionOptions {
 
 ## 实例属性
 
-### collection.name
-
-collection 的标识。
-
 ### collection.collectionManager
 
 [CollectionManager](/core/collection/collection-manager) 的实例。
 
-### collection.primaryKey
-
-主键字段的 name 属性。
-
 ### collection.titleFieldName
 
 标题字段的 name 属性。
+
+### 其他属性
+
+其他属性同 [CollectionOptions](/core/collection/collection#collectionoptions)。
 
 ## 实例方法
 

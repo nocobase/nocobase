@@ -2,7 +2,7 @@ import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react'
 import type { CollectionManagerV2, GetCollectionOptions } from './CollectionManager';
 import type { CollectionV2 } from './Collection';
 
-export const CollectionManagerContextV2 = createContext<CollectionManagerV2<any>>(null);
+export const CollectionManagerContextV2 = createContext<CollectionManagerV2>(null);
 CollectionManagerContextV2.displayName = 'CollectionManagerContextV2';
 
 export interface CollectionManagerProviderProps {
@@ -16,8 +16,8 @@ export const CollectionManagerProviderV2: FC<CollectionManagerProviderProps> = (
   );
 };
 
-export function useCollectionManagerV2<Mixins = {}>() {
-  const context = useContext<CollectionManagerV2<Mixins>>(CollectionManagerContextV2);
+export function useCollectionManagerV2() {
+  const context = useContext<CollectionManagerV2>(CollectionManagerContextV2);
   return context;
 }
 

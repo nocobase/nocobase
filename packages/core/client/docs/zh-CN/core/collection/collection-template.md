@@ -5,15 +5,66 @@
 ![](./images/collection-template.png)
 
 ```ts
-class CollectionTemplate {
-  constructor(options: CollectionTemplateOptions) {}
-  name: string;
-  Collection: typeof CollectionV2;
-  transform(collection: CollectionV2): void
+interface AvailableFieldInterfacesInclude {
+  include?: any[];
+}
 
-  getOptions(): CollectionTemplateOptions
-  setOptions(options: CollectionTemplateOptions): void
-  getOption<K extends keyof CollectionTemplateOptions>(key: K): CollectionTemplateOptions[K]
+interface AvailableFieldInterfacesExclude {
+  exclude?: any[];
+}
+
+interface CollectionTemplateDefaultOptions {
+  /**
+   * 自动生成 id
+   * @default true
+   * */
+  autoGenId?: boolean;
+  /** 创建人 */
+  createdBy?: boolean;
+  /** 最后更新人 */
+  updatedBy?: boolean;
+  /** 创建日期 */
+  createdAt?: boolean;
+  /** 更新日期 */
+  updatedAt?: boolean;
+  /** 可排序 */
+  sortable?: boolean;
+  /* 树结构 */
+  tree?: string;
+  /* 日志 */
+  logging?: boolean;
+  /** 继承 */
+  inherits?: string | string[];
+  /* 字段列表 */
+  fields?: CollectionOptionsV2['fields'];
+}
+
+class CollectionTemplate {
+  app: Application;
+  collectionManager: CollectionManagerV2;
+
+  name: string;
+  Collection?: typeof CollectionV2;
+  transform?: (collection: CollectionOptionsV2, app: Application) => CollectionOptionsV2;
+  title?: string;
+  color?: string;
+  /** 排序 */
+  order?: number;
+  /** 默认配置 */
+  default?: CollectionTemplateDefaultOptions;
+  events?: any;
+  /** UI 可配置的 CollectionOptions 参数（添加或编辑的 Collection 表单的字段） */
+  configurableProperties?: Record<string, ISchema>;
+  /** 当前模板可用的字段类型 */
+  availableFieldInterfaces?: AvailableFieldInterfacesInclude | AvailableFieldInterfacesExclude;
+  /** 是否分割线 */
+  divider?: boolean;
+  /** 模板描述 */
+  description?: string;
+  /**配置字段中的操作按钮 */
+  configureActions?: Record<string, ISchema>;
+  //是否禁止删除字段
+  forbidDeletion?: boolean;
 }
 ```
 
@@ -28,56 +79,37 @@ class SqlCollection extends CollectionV2 {
   }
 }
 
-const sqlCollectionTemplate = new CollectionTemplate({
-  name: 'sql',
-  Collection: SqlCollection,
-  title: '{{t("SQL collection")}}',
-  order: 4,
-  color: 'yellow',
-  default: {
+class SqlCollectionTemplate extends CollectionTemplate {
+  name = 'sql';
+  Collection = SqlCollection; // 自定义的数据表类
+  title = '{{t("SQL collection")}}';
+  order = 4;
+  color = 'yellow';
+  default = {
     fields: [],
-  },
-  configurableProperties: {
-    title: {
-      type: 'string',
-      title: '{{ t("Collection display name") }}',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-    },
+  };
+  configurableProperties = {
     // ...
-  },
-});
+  }
+}
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.collectionManager.addCollectionTemplates([ sqlCollectionTemplate ]);
+    this.app.collectionManager.addCollectionTemplates([ SqlCollectionTemplate ]);
   }
 }
 ```
 
-## CollectionTemplateOptions
+## 实例属性
 
-```ts
- interface CollectionTemplateOptions {
-  name: string;
-  Collection?: typeof CollectionV2;
-  title?: string;
-  color?: string;
-  order?: number;
-  default?: CollectionOptions;
-  events?: any;
-  configurableProperties?: Record<string, ISchema>;
-  availableFieldInterfaces?: AvailableFieldInterfacesInclude | AvailableFieldInterfacesExclude;
-  divider?: boolean;
-  description?: string;
-  configureActions?: Record<string, ISchema>;
-  forbidDeletion?: boolean;
-}
-```
+### name
 
-- `name`：唯一标识符，用于标识模板。
-- `Collection`：模板对应的数据表类。
+模板的唯一标识符。
+
+
+### Collection
+
+模板对应的数据表类。
 
 在创建数据表后，Collection 会有 [template 字段](/core/collection/collection#collectionoptions)，用于标识该数据表是由哪个模板创建的。
 
@@ -94,27 +126,49 @@ class SqlCollection extends CollectionV2 {
   }
 }
 
-const sqlCollectionTemplate = new CollectionTemplate({
-  name: 'sql',
-  Collection: SqlCollection,
+class SqlCollectionTemplate extends CollectionTemplate {
+  name = 'sql';
+  Collection = SqlCollection; // 自定义的数据表类
   // ...
-});
+}
+
+const userCollection = {
+  name: 'users',
+  template: 'sql',
+  // ...
+}
+
+// 内部会调用 new SqlCollection(userCollection)
 ```
 
-- `title`：模板的标题
-- `color`：模板的颜色？
-- `order`：模板的排序
-- `events`：事件
-  - `beforeSubmit`：提交前触发
-- `configurableProperties`：表单配置项
+### title
+
+模板的标题。
+
+### color
+
+模板的颜色。
+
+### order
+
+模板的排序。
+
+### events
+
+- `beforeSubmit`：提交前触发
+
+
+### configurableProperties
+
+表单配置项。
 
 ![](./images//collection-template-form.png)
 
 ```ts
-const sqlCollectionTemplate = new CollectionTemplate({
-  name: 'sql',
+class SqlCollectionTemplate extends CollectionTemplate {
+  name = 'sql',
   // ...
-  configurableProperties: {
+  configurableProperties = {
     title: {
       type: 'string',
       title: '{{ t("Collection display name") }}',
@@ -135,91 +189,20 @@ const sqlCollectionTemplate = new CollectionTemplate({
     },
     // ...
   },
-});
+}
 ```
 
-- `default`：表单默认值
+### default
 
-## 实例属性
+表单默认值。
 
-### collectionTemplate.name
 
-唯一标识符。
-
-### collectionTemplate.Collection
-
-模板对应的数据表类。
 
 ## 实例方法
 
 ### collectionTemplate.transform(collection)
 
 collection 创建后，会调用该方法，用于对 collection 进行转换。
-
-### collectionTemplate.getOptions()
-
-获取所有配置项。
-
-```tsx | pure
-import { useCollectionManagerV2 } from '@nocobase/client';
-
-const Demo = () => {
-  const collectionManager = useCollectionManagerV2();
-  const options = useMemo(() => {
-    const sqlCollectionTemplate = collectionManager.getCollectionTemplate('sql');
-    const options = sqlCollectionTemplate.getOptions();
-  }, [collectionManager]);
-
-  return <pre>{ JSON.stringify(options, null, 2) }</pre>
-}
-```
-
-### collectionTemplate.setOptions(options)
-
-设置配置项，会和原 options 深度合并。
-
-```tsx | pure
-import { Plugin } from '@nocobase/client';
-
-class MyPlugin extends Plugin {
-  load() {
-    const collectionManager = this.app.collectionManager.getCollectionManager();
-    const sqlCollectionTemplate = collectionManager.getCollectionTemplate('sql');
-
-    // deep merge
-    sqlCollectionTemplate.setOptions({
-      configurableProperties: {
-        title: {
-          type: 'string',
-          title: '{{ t("Collection display name") }}',
-          required: true,
-          'x-decorator': 'FormItem',
-          'x-component': 'Input',
-        }
-      },
-    });
-  }
-}
-```
-
-### collectionTemplate.getOption(key)
-
-获取单个配置项。
-
-```tsx | pure
-import { useCollectionManagerV2, useCompile } from '@nocobase/client';
-
-const Demo = () => {
-  const collectionManager = useCollectionManagerV2();
-  const compile = useCompile();
-  const title = useMemo(() => {
-    const sqlCollectionTemplate = collectionManager.getCollectionTemplate('sql');
-    const title = sqlCollectionTemplate.getOption('title');
-  }, [collectionManager]);
-
-  return <pre>{compile(title)}</pre>
-}
-```
 
 ## Utils
 

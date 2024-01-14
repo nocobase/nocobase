@@ -5,7 +5,6 @@ import {
   CollectionManagerOptionsV2,
   CollectionPlugin,
   DataBlockProviderV2,
-  InheritanceCollectionMixin,
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 import { ComponentType } from 'react';

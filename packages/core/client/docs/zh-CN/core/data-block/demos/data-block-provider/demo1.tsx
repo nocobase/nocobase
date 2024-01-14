@@ -15,7 +15,7 @@ import {
   withDynamicSchemaProps,
 } from '@nocobase/client';
 
-import { createApp } from '../createApp';
+import { createApp } from '../../../collection/demos/createApp';
 import { Table, TableProps } from 'antd';
 import { ISchema } from '@formily/json-schema';
 import { observer, useFieldSchema } from '@formily/react';

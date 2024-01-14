@@ -2,6 +2,7 @@ import { SchemaKey } from '@formily/react';
 import { filter } from 'lodash';
 
 import type { CollectionManagerV2 } from './CollectionManager';
+import type { Application } from '../Application';
 
 type dumpable = 'required' | 'optional' | 'skip';
 type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
@@ -80,17 +81,18 @@ export class CollectionV2 {
   protected options: CollectionOptionsV2;
   protected fieldsMap: Record<string, CollectionFieldOptionsV2>;
   protected primaryKey: string;
-  public collectionManager: CollectionManagerV2;
-  public fields: CollectionFieldOptionsV2[];
+  app: Application;
+  collectionManager: CollectionManagerV2;
 
-  constructor(options: CollectionOptionsV2 | CollectionV2, collectionManager: CollectionManagerV2) {
-    this.collectionManager = collectionManager;
-    this.init(options);
+  constructor(options: CollectionOptionsV2, app: Application) {
+    this.app = app;
+    this.collectionManager = app.collectionManager;
+    this.options = options;
   }
-  init(options: CollectionOptionsV2 | CollectionV2) {
-    this.options = options instanceof CollectionV2 ? options.getOptions() : options;
-    this.fields = this.options.fields || [];
+  get fields() {
+    return this.options?.fields || [];
   }
+
   get name() {
     return this.options.name;
   }
@@ -187,9 +189,6 @@ export class CollectionV2 {
   }
   getOption<K extends keyof CollectionOptionsV2>(key: K): CollectionOptionsV2[K] {
     return this.options[key];
-  }
-  setOptions<CollectionOptionsV2>(options: CollectionOptionsV2) {
-    this.init(Object.assign(this.options, options));
   }
   /**
    * Get fields

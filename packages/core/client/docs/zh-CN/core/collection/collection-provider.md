@@ -50,6 +50,13 @@ console.log(collection instanceof CollectionV2) // true
 console.log(collection);
 ```
 
+结合 Mixin 使用：
+
+```tsx | pure
+const collection = useCollectionV2<TestMixin>()
+const collection = useCollectionV2<TestMixin & TestMixin2>()
+```
+
 ## 示例
 
 <code src="./demos/collection/demo1.tsx"></code>

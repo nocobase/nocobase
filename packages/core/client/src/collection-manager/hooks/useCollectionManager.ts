@@ -8,7 +8,7 @@ import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin
 import { uid } from '@formily/shared';
 
 export const useCollectionManager = () => {
-  const cm = useCollectionManagerV2<InheritanceCollectionMixin>();
+  const cm = useCollectionManagerV2();
   const [random, setRandom] = useState(uid());
   const interfaces = useMemo(() => cm?.getFieldInterfaces(), [cm, random]);
   const templates = useMemo(() => cm?.getCollectionTemplates(), [cm, random]);
@@ -34,7 +34,7 @@ export const useCollectionManager = () => {
   const compile = useCompile();
   const getInheritedFields = useCallback(
     (name: string) => {
-      return cm?.getCollection(name)?.getInheritedFields() || [];
+      return cm?.getCollection<InheritanceCollectionMixin>(name)?.getInheritedFields() || [];
     },
     [cm],
   );
@@ -42,7 +42,9 @@ export const useCollectionManager = () => {
   const getCollectionFields = useCallback(
     (name: any): CollectionFieldOptions[] => {
       if (!name) return [];
-      return cm?.getCollection(typeof name === 'object' ? name.name : name)?.getAllFields() || [];
+      return (
+        cm?.getCollection<InheritanceCollectionMixin>(typeof name === 'object' ? name.name : name)?.getAllFields() || []
+      );
     },
     [cm],
   );
@@ -56,7 +58,7 @@ export const useCollectionManager = () => {
   const getInheritCollections = useCallback(
     (name) => {
       if (!name) return [];
-      return cm?.getCollection(name)?.getParentCollectionsName() || [];
+      return cm?.getCollection<InheritanceCollectionMixin>(name)?.getParentCollectionsName() || [];
     },
     [cm],
   );
@@ -64,14 +66,14 @@ export const useCollectionManager = () => {
   const getChildrenCollections = useCallback(
     (name: string, isSupportView = false) => {
       if (!name) return [];
-      return cm?.getCollection(name)?.getChildrenCollections(isSupportView) || [];
+      return cm?.getCollection<InheritanceCollectionMixin>(name)?.getChildrenCollections(isSupportView) || [];
     },
     [cm],
   );
   const getCurrentCollectionFields = useCallback(
     (name: string) => {
       if (!name) return [];
-      return cm?.getCollection(name)?.getCurrentFields() || [];
+      return cm?.getCollection<InheritanceCollectionMixin>(name)?.getCurrentFields() || [];
     },
     [cm],
   );
@@ -188,7 +190,7 @@ export const useCollectionManager = () => {
   // 获取当前 collection 继承链路上的所有 collection
   const getAllCollectionsInheritChain = useCallback(
     (collectionName: string) => {
-      return cm?.getCollection(collectionName)?.getAllCollectionsInheritChain();
+      return cm?.getCollection<InheritanceCollectionMixin>(collectionName)?.getAllCollectionsInheritChain();
     },
     [cm],
   );
@@ -200,7 +202,7 @@ export const useCollectionManager = () => {
    */
   const getInheritCollectionsChain = useCallback(
     (collectionName: string) => () => {
-      return cm?.getCollection(collectionName)?.getInheritCollectionsChain();
+      return cm?.getCollection<InheritanceCollectionMixin>(collectionName)?.getInheritCollectionsChain();
     },
     [cm],
   );
@@ -218,7 +220,9 @@ export const useCollectionManager = () => {
   };
 
   const getParentCollectionFields = (parentCollection, currentCollection) => {
-    return cm?.getCollection(currentCollection)?.getParentCollectionFields(parentCollection);
+    return cm
+      ?.getCollection<InheritanceCollectionMixin>(currentCollection)
+      ?.getParentCollectionFields(parentCollection);
   };
 
   const getTemplate = useCallback(

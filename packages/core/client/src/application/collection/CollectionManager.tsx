@@ -5,13 +5,18 @@ import type { Application } from '../Application';
 import { SchemaKey } from '@formily/react';
 
 export type CollectionMixinConstructor<T = {}> = new (...args: any[]) => T;
-export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
 
-function applyMixins(derivedCtor: CollectionMixinConstructor, baseCtors: CollectionMixinConstructor[]) {
-  baseCtors.forEach((baseCtor) => {
-    Object.getOwnPropertyNames(baseCtor.prototype).forEach((name) => {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      Object.defineProperty(derivedCtor.prototype, name, Object.getOwnPropertyDescriptor(baseCtor.prototype, name)!);
+function applyMixins(instance: any, mixins: any[]) {
+  mixins.forEach((MixinClass) => {
+    const mixin = new MixinClass();
+    Object.getOwnPropertyNames(mixin).forEach((key) => {
+      instance.__proto__[key] = mixin[key];
+    });
+
+    Object.getOwnPropertyNames(mixin.__proto__).forEach((key) => {
+      if (key !== 'constructor') {
+        instance.__proto__[key] = mixin.__proto__[key];
+      }
     });
   });
 }
@@ -49,7 +54,7 @@ export interface GetCollectionOptions {
 }
 
 export interface CollectionManagerOptionsV2 {
-  collections?: Record<string, CollectionOptionsV2[]> | CollectionOptionsV2[];
+  collections?: CollectionOptionsV2[] | Record<string, CollectionOptionsV2[]>;
   collectionTemplates?: (typeof CollectionTemplate)[];
   fieldInterfaces?: (typeof CollectionFieldInterface)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
@@ -57,7 +62,7 @@ export interface CollectionManagerOptionsV2 {
   collectionMixins?: CollectionMixinConstructor[];
 }
 
-export class CollectionManagerV2<Mixins = {}> {
+export class CollectionManagerV2 {
   public app: Application;
   protected collections: Record<string, Record<string, CollectionV2>> = {};
   protected collectionTemplateInstances: Record<string, CollectionTemplate> = {};
@@ -82,7 +87,7 @@ export class CollectionManagerV2<Mixins = {}> {
     this.init(options);
   }
 
-  init(options: CollectionManagerOptionsV2) {
+  private init(options: CollectionManagerOptionsV2) {
     this.collectionMixins.push(...(options.collectionMixins || []));
     this.addCollectionTemplates(options.collectionTemplates || []);
     this.addFieldInterfaces(options.fieldInterfaces || []);
@@ -105,6 +110,7 @@ export class CollectionManagerV2<Mixins = {}> {
     }
   }
 
+  // collection mixins
   addCollectionMixins(mixins: CollectionMixinConstructor[]) {
     if (mixins.length === 0) return;
     const newMixins = mixins.filter((mixin) => !this.collectionMixins.includes(mixin));
@@ -129,10 +135,8 @@ export class CollectionManagerV2<Mixins = {}> {
         const Cls = collectionTemplateInstance?.Collection || CollectionV2;
         const transform = collectionTemplateInstance?.transform || defaultCollectionTransform;
         const transformedCollection = transform(collection, this.app);
-        // eslint-disable-next-line prettier/prettier
-        class CombinedClass extends Cls { }
-        applyMixins(CombinedClass, this.collectionMixins);
-        const instance = new CombinedClass(transformedCollection, this);
+        const instance = new Cls(transformedCollection, this.app);
+        applyMixins(instance, this.collectionMixins);
         return instance;
       })
       .forEach((collectionInstance) => {
@@ -170,7 +174,7 @@ export class CollectionManagerV2<Mixins = {}> {
    * getCollection('users.profile'); // 获取 users 表的 profile 字段的关联表
    * getCollection('a.b.c'); // 获取 a 表的 b 字段的关联表，然后 b.target 表对应的 c 字段的关联表
    */
-  getCollection(path: string, options: GetCollectionOptions = {}): (Mixins & CollectionV2) | undefined {
+  getCollection<Mixins = {}>(path: string, options: GetCollectionOptions = {}): (Mixins & CollectionV2) | undefined {
     const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
     if (!path || typeof path !== 'string') return undefined;
     this.checkNamespace(ns);
@@ -247,7 +251,7 @@ export class CollectionManagerV2<Mixins = {}> {
   getCollectionTemplates() {
     return Object.values(this.collectionTemplateInstances).sort((a, b) => (a.order || 0) - (b.order || 0));
   }
-  getCollectionTemplate<T extends CollectionTemplate>(name: string) {
+  getCollectionTemplate<T extends CollectionTemplate>(name: string): T {
     return this.collectionTemplateInstances[name] as T;
   }
 

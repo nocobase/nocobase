@@ -6,52 +6,13 @@
 
 ```ts
 class CollectionFieldInterface {
-  constructor(options: CollectionFieldInterfaceOptions): {}
-  name: SchemaKey;
-  group: string;
-  title: string;
+  app: Application;
+  collectionManager: CollectionManagerV2;
 
-  getOption<K extends keyof IField>(key: K): CollectionFieldInterfaceOptions[K]
-  getOptions(): CollectionFieldInterfaceOptions;
-  setOptions(options: CollectionFieldInterfaceOptions): void;
-}
-```
-
-其需要结合 [CollectionManager](/core/collection/collection-manager#cmaddcollectionfieldinterfacesinterfaces) 使用。
-
-```ts
-const email = new CollectionFieldInterface({
-  name: 'email',
-  type: 'object',
-  group: 'basic',
-  order: 4,
-  title: '{{t("Email")}}',
-  sortable: true,
-  default: {
-    type: 'string',
-    uiSchema: {
-      type: 'string',
-      'x-component': 'Input',
-      'x-validator': 'email',
-    },
-  },
-});
-
-class MyPlugin extends Plugin {
-  load() {
-    this.app.addFieldInterfaces([ email ]);
-  }
-}
-```
-
-## CollectionFieldInterfaceOptions
-
-```ts
-import { ISchema } from '@formily/react';
-
-interface CollectionFieldInterfaceOptions extends ISchema {
   name: string;
   group: string;
+  title?: string;
+  description?: string;
   order?: number;
   default?: {
     type: string;
@@ -62,36 +23,43 @@ interface CollectionFieldInterfaceOptions extends ISchema {
   availableTypes?: string[];
   hasDefaultValue?: boolean;
   isAssociation?: boolean;
-  schemaInitialize?: (schema: ISchema, data: any) => void;
-  validateSchema?: (fieldSchema: ISchema) => void;
   operators?: any[];
-  /**
-   * - 如果该值为空，则在 Filter 组件中该字段会被过滤掉
-   * - 如果该值为空，则不会在变量列表中看到该字段
-   */
   filterable?: {
-    /**
-     * 字段所支持的操作符，会在 Filter 组件中显示，比如设置 `数据范围` 的时候可以看见
-     */
     operators?: any[];
-    /**
-     * 为当前字段添加子选项，这个子选项会在 Filter 组件中显示，比如设置 `数据范围` 的时候可以看见
-     */
     children?: any[];
     [key: string]: any;
   };
-  // NOTE: set to `true` means field could be used as a title field
   titleUsable?: boolean;
-  [key: string]: any;
+
+  validateSchema(fieldSchema: ISchema): Record<string, ISchema>
+  usePathOptions(field: CollectionFieldOptionsV2): any
+  schemaInitialize(schema: ISchema, data: any): void
+
+  getOption<K extends keyof IField>(key: K): CollectionFieldInterfaceOptions[K]
+  getOptions(): CollectionFieldInterfaceOptions;
+  setOptions(options: CollectionFieldInterfaceOptions): void;
 }
 ```
 
-- `default`：配置表单默认值字段 schema
+其需要结合 [CollectionManager](/core/collection/collection-manager#cmaddcollectionfieldinterfacesinterfaces) 使用。
 
-![](./images/collection-field-interface-form.png)
+```ts
+class EmailFieldInterface extends CollectionFieldInterface {
+  name = 'email';
+  type = 'object';
+  group = 'basic';
+  order = 4;
+  title = '{{t("Email")}}';
+  sortable = true;
+  // ...
+}
 
-
-TODO：类型不完整且含义不清楚，需要补充。
+class MyPlugin extends Plugin {
+  load() {
+    this.app.collectionManager.addFieldInterfaces([ EmailFieldInterface ]);
+  }
+}
+```
 
 ## 实例属性
 
@@ -106,6 +74,13 @@ TODO：类型不完整且含义不清楚，需要补充。
 ### title
 
 标题。
+
+### default
+
+配置表单默认值字段 schema。
+
+![](./images/collection-field-interface-form.png)
+
 
 ## 实例方法
 
@@ -182,3 +157,13 @@ const Demo = () => {
   return <pre>{compile(title)}</pre>
 }
 ```
+
+
+### collectionFieldInterface.validateSchema(fieldSchema)
+
+
+### collectionFieldInterface.usePathOptions(field: CollectionFieldOptionsV2)
+
+
+### collectionFieldInterface.schemaInitialize(schema: ISchema, data: any)
+

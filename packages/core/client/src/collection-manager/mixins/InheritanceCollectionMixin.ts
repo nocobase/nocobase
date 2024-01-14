@@ -1,9 +1,8 @@
-import { CollectionFieldOptionsV2, CollectionManagerV2, GetCollectionFieldPredicate } from '../../application';
+import { CollectionFieldOptionsV2, GetCollectionFieldPredicate } from '../../application';
 import { CollectionV2 } from '../../application/collection/Collection';
 import _, { filter, unionBy, uniq, uniqBy } from 'lodash';
 
 export class InheritanceCollectionMixin extends CollectionV2 {
-  public declare collectionManager: CollectionManagerV2<InheritanceCollectionMixin>;
   protected parentCollections: string[];
   protected childrenCollections: string[];
   protected inheritsFields: CollectionFieldOptionsV2[];
@@ -121,14 +120,14 @@ export class InheritanceCollectionMixin extends CollectionV2 {
 
     const currentFields = this.getCurrentFields();
     const parentCollections = this.getParentCollectionsName();
-    const parentCollection = this.collectionManager.getCollection(parentCollectionName);
+    const parentCollection = this.collectionManager.getCollection<InheritanceCollectionMixin>(parentCollectionName);
     const parentFields = parentCollection.getCurrentFields();
     const index = parentCollections.indexOf(parentCollectionName);
     let filterFields = currentFields;
     if (index > 0) {
       parentCollections.splice(index);
       parentCollections.forEach((collectionName) => {
-        const collection = this.collectionManager.getCollection(collectionName);
+        const collection = this.collectionManager.getCollection<InheritanceCollectionMixin>(collectionName);
         filterFields = filterFields.concat(collection.getCurrentFields());
       });
     }
@@ -148,7 +147,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
 
     const collectionsInheritChain = [this.name];
     const getInheritChain = (name: string) => {
-      const collection = this.collectionManager.getCollection(name);
+      const collection = this.collectionManager.getCollection<InheritanceCollectionMixin>(name);
       if (collection) {
         const { inherits } = collection;
         const children = collection.getChildrenCollectionsName();

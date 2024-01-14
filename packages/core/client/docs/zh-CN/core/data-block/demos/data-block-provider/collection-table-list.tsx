@@ -1,9 +1,9 @@
 import React from 'react';
-import { SchemaComponent, useDataBlockRequestV2, withDynamicSchemaProps } from '@nocobase/client';
-
-import { createApp } from '../createApp';
 import { Table, TableProps } from 'antd';
+import { SchemaComponent, useDataBlockRequestV2, withDynamicSchemaProps } from '@nocobase/client';
 import { ISchema } from '@formily/json-schema';
+
+import { createApp } from '../../../collection/demos/createApp';
 
 const schema: ISchema = {
   type: 'void',
