@@ -52,7 +52,7 @@ export const tableColumnInitializers = new SchemaInitializer({
   insertPosition: 'beforeEnd',
   icon: 'SettingOutlined',
   title: '{{t("Configure columns")}}',
-  wrap: (s) => {
+  wrap: (s, { isInSubTable }) => {
     if (s['x-action-column']) {
       return s;
     }
@@ -61,7 +61,7 @@ export const tableColumnInitializers = new SchemaInitializer({
       'x-decorator': 'TableV2.Column.Decorator',
       // 'x-designer': 'TableV2.Column.Designer',
       'x-toolbar': 'TableFieldSchemaToolbar',
-      'x-settings': 'columnSettings:tableBlock',
+      'x-settings': isInSubTable ? 'columnSettings:subTable' : 'columnSettings:tableBlock',
       'x-component': 'TableV2.Column',
       properties: {
         [s.name]: {

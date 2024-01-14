@@ -45,11 +45,15 @@ import {
   columnInputTextAreaComponentFieldSettings,
   columnInputURLComponentFieldSettings,
   columnMarkdownComponentFieldSettings,
+  columnNesterComponentFieldSettings,
   columnPasswordComponentFieldSettings,
   columnPercentComponentFieldSettings,
+  columnPickerComponentFieldSettings,
+  columnPopoverNesterComponentFieldSettings,
   columnRadioGroupComponentFieldSettings,
   columnRichTextComponentFieldSettings,
   columnSelectComponentFieldSettings,
+  columnSubTableComponentFieldSettings,
   columnTagComponentFieldSettings,
   columnTimePickerComponentFieldSettings,
   columnUploadAttachmentComponentFieldSettings,
@@ -60,6 +64,7 @@ import {
   editActionSettings,
   filterActionSettings,
   refreshActionSettings,
+  subTableColumnSettings,
   tableBlockColumnSettings,
   tableBlockSettings,
   viewActionSettings,
@@ -110,9 +115,10 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(attachmentComponentFieldSettings);
     this.schemaSettingsManager.add(editFormBlockFieldSettings);
     this.schemaSettingsManager.add(detailsBlockFieldSettings);
-    this.schemaSettingsManager.add(tableBlockColumnSettings);
 
     // column settings
+    this.schemaSettingsManager.add(tableBlockColumnSettings);
+    this.schemaSettingsManager.add(subTableColumnSettings);
     this.schemaSettingsManager.add(columnPercentComponentFieldSettings);
     this.schemaSettingsManager.add(columnIconPickerComponentFieldSettings);
     this.schemaSettingsManager.add(columnColorPickerComponentFieldSettings);
@@ -135,5 +141,9 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(columnCheckboxGroupComponentFieldSettings);
     this.schemaSettingsManager.add(columnCheckboxComponentFieldSettings);
     this.schemaSettingsManager.add(columnTagComponentFieldSettings);
+    this.schemaSettingsManager.add(columnPickerComponentFieldSettings);
+    this.schemaSettingsManager.add(columnPopoverNesterComponentFieldSettings);
+    this.schemaSettingsManager.add(columnNesterComponentFieldSettings);
+    this.schemaSettingsManager.add(columnSubTableComponentFieldSettings);
   }
 }

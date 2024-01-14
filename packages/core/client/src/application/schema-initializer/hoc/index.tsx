@@ -3,6 +3,7 @@ import { ConfigProvider, Popover, theme } from 'antd';
 import React, { ComponentType, useCallback, useMemo, useState } from 'react';
 
 import { css } from '@emotion/css';
+import { useFlag } from '../../../flag-provider';
 import { useDesignable } from '../../../schema-component';
 import { useSchemaInitializerStyles } from '../components/style';
 import { SchemaInitializerContext } from '../context';
@@ -13,6 +14,7 @@ const defaultWrap = (s: ISchema) => s;
 export function withInitializer<T>(C: ComponentType<T>) {
   const WithInitializer = observer((props: SchemaInitializerOptions<T>) => {
     const { designable, insertAdjacent } = useDesignable();
+    const { isInSubTable } = useFlag() || {};
     const {
       insert,
       useInsert,
@@ -32,9 +34,9 @@ export function withInitializer<T>(C: ComponentType<T>) {
     const insertSchema = useCallback(
       (schema) => {
         if (insertCallback) {
-          insertCallback(wrap(schema));
+          insertCallback(wrap(schema, { isInSubTable }));
         } else {
-          insertAdjacent(insertPosition, wrap(schema), { onSuccess });
+          insertAdjacent(insertPosition, wrap(schema, { isInSubTable }), { onSuccess });
         }
       },
       [insertCallback, wrap, insertAdjacent, insertPosition, onSuccess],
