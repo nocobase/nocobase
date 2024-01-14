@@ -59,7 +59,9 @@ export const tableColumnInitializers = new SchemaInitializer({
     return {
       type: 'void',
       'x-decorator': 'TableV2.Column.Decorator',
-      'x-designer': 'TableV2.Column.Designer',
+      // 'x-designer': 'TableV2.Column.Designer',
+      'x-toolbar': 'TableFieldSchemaToolbar',
+      'x-settings': 'columnSettings:tableBlock',
       'x-component': 'TableV2.Column',
       properties: {
         [s.name]: {

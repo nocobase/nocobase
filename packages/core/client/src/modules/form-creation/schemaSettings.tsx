@@ -1348,6 +1348,7 @@ export const attachmentComponentFieldSettings = new SchemaSettings({
 
 export function useFieldComponentName(): string {
   const field = useField<Field>();
+  const fieldSchema = useFieldSchema();
   const collectionField = useCollectionField();
   const isFileField = useIsFileField();
   const map = {
@@ -1355,6 +1356,9 @@ export function useFieldComponentName(): string {
     AssociationField: 'Select',
   };
   const fieldComponentName =
-    field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : '') || collectionField?.uiSchema?.['x-component'];
+    field?.componentProps?.['mode'] ||
+    (isFileField ? 'FileManager' : '') ||
+    collectionField?.uiSchema?.['x-component'] ||
+    fieldSchema?.['x-component'];
   return map[fieldComponentName] || fieldComponentName;
 }

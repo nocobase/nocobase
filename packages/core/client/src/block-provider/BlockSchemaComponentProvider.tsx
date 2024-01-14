@@ -3,6 +3,7 @@ import { Plugin } from '../application/Plugin';
 import { FormFieldSchemaToolbar } from '../modules/form-creation/FormFieldSchemaToolbar';
 import { ActionSchemaToolbar } from '../modules/table/ActionSchemaToolbar';
 import { BlockSchemaToolbar } from '../modules/table/BlockSchemaToolbar';
+import { TableFieldSchemaToolbar } from '../modules/table/TableFieldSchemaToolbar';
 import { SchemaComponentOptions } from '../schema-component';
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';
@@ -65,6 +66,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       BlockSchemaToolbar,
       ActionSchemaToolbar,
       FormFieldSchemaToolbar,
+      TableFieldSchemaToolbar,
     });
   }
 

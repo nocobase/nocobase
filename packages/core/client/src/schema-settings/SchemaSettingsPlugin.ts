@@ -31,6 +31,28 @@ import { dataSelectorBlockSettings } from '../modules/table-data-selector/schema
 import {
   addNewActionSettings,
   bulkDeleteActionSettings,
+  columnCascaderComponentFieldSettings,
+  columnCheckboxComponentFieldSettings,
+  columnCheckboxGroupComponentFieldSettings,
+  columnCollectionSelectComponentFieldSettings,
+  columnColorPickerComponentFieldSettings,
+  columnDatePickerComponentFieldSettings,
+  columnFormulaResultComponentFieldSettings,
+  columnIconPickerComponentFieldSettings,
+  columnInputComponentFieldSettings,
+  columnInputJSONComponentFieldSettings,
+  columnInputNumberComponentFieldSettings,
+  columnInputTextAreaComponentFieldSettings,
+  columnInputURLComponentFieldSettings,
+  columnMarkdownComponentFieldSettings,
+  columnPasswordComponentFieldSettings,
+  columnPercentComponentFieldSettings,
+  columnRadioGroupComponentFieldSettings,
+  columnRichTextComponentFieldSettings,
+  columnSelectComponentFieldSettings,
+  columnTagComponentFieldSettings,
+  columnTimePickerComponentFieldSettings,
+  columnUploadAttachmentComponentFieldSettings,
   customizeAddRecordActionSettings,
   customizePopupActionSettings,
   customizeUpdateRecordActionSettings,
@@ -38,6 +60,7 @@ import {
   editActionSettings,
   filterActionSettings,
   refreshActionSettings,
+  tableBlockColumnSettings,
   tableBlockSettings,
   viewActionSettings,
 } from '../modules/table/schemaSettings';
@@ -87,5 +110,30 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(attachmentComponentFieldSettings);
     this.schemaSettingsManager.add(editFormBlockFieldSettings);
     this.schemaSettingsManager.add(detailsBlockFieldSettings);
+    this.schemaSettingsManager.add(tableBlockColumnSettings);
+
+    // column settings
+    this.schemaSettingsManager.add(columnPercentComponentFieldSettings);
+    this.schemaSettingsManager.add(columnIconPickerComponentFieldSettings);
+    this.schemaSettingsManager.add(columnColorPickerComponentFieldSettings);
+    this.schemaSettingsManager.add(columnPasswordComponentFieldSettings);
+    this.schemaSettingsManager.add(columnInputNumberComponentFieldSettings);
+    this.schemaSettingsManager.add(columnInputURLComponentFieldSettings);
+    this.schemaSettingsManager.add(columnInputComponentFieldSettings);
+    this.schemaSettingsManager.add(columnInputTextAreaComponentFieldSettings);
+    this.schemaSettingsManager.add(columnCollectionSelectComponentFieldSettings);
+    this.schemaSettingsManager.add(columnInputJSONComponentFieldSettings);
+    this.schemaSettingsManager.add(columnFormulaResultComponentFieldSettings);
+    this.schemaSettingsManager.add(columnTimePickerComponentFieldSettings);
+    this.schemaSettingsManager.add(columnDatePickerComponentFieldSettings);
+    this.schemaSettingsManager.add(columnUploadAttachmentComponentFieldSettings);
+    this.schemaSettingsManager.add(columnRichTextComponentFieldSettings);
+    this.schemaSettingsManager.add(columnMarkdownComponentFieldSettings);
+    this.schemaSettingsManager.add(columnSelectComponentFieldSettings);
+    this.schemaSettingsManager.add(columnRadioGroupComponentFieldSettings);
+    this.schemaSettingsManager.add(columnCascaderComponentFieldSettings);
+    this.schemaSettingsManager.add(columnCheckboxGroupComponentFieldSettings);
+    this.schemaSettingsManager.add(columnCheckboxComponentFieldSettings);
+    this.schemaSettingsManager.add(columnTagComponentFieldSettings);
   }
 }

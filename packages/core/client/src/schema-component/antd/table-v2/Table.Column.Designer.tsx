@@ -6,8 +6,8 @@ import { useFormBlockContext } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
 import {
   GeneralSchemaDesigner,
-  SchemaSettingsDateFormat,
   SchemaSettingsDataScope,
+  SchemaSettingsDateFormat,
   SchemaSettingsDefaultValue,
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
@@ -22,7 +22,7 @@ import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { removeNullCondition } from '../filter';
 
-const useLabelFields = (collectionName?: any) => {
+export const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用
   const compile = useCompile();
   const { getCollectionFields } = useCollectionManager();
