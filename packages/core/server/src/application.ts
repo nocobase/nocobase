@@ -48,6 +48,7 @@ import { InstallOptions, PluginManager } from './plugin-manager';
 
 import packageJson from '../package.json';
 import { MultipleInstanceManager } from './helpers/multiple-instance-manager';
+import { AclSelectorMiddleware } from './middlewares/acl-selector';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -159,8 +160,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   private _maintainingStatusBeforeCommand: MaintainingCommandStatus | null;
   private _actionCommand: Command;
   private _databases: Map<string, Database> = new Map();
-
-  private _acls: MultipleInstanceManager<ACL>;
   private _resourcers: MultipleInstanceManager<Resourcer>;
 
   constructor(public options: ApplicationOptions) {
@@ -170,6 +169,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.init();
 
     this._appSupervisor.addApp(this);
+  }
+
+  private _acls = new Map<string, ACL>();
+
+  get acls() {
+    return this._acls;
   }
 
   protected _loaded: boolean;
@@ -280,6 +285,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get name() {
     return this.options.name || 'main';
+  }
+
+  createNewACL(name: string) {
+    this._acls.set(name, createACL());
+    return this._acls.get(name);
   }
 
   isMaintaining() {
@@ -895,6 +905,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   getDb(name = 'main') {
+    if (!name) {
+      name = 'main';
+    }
+
     return this._databases.get(name);
   }
 
@@ -969,7 +983,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._resourcer.use(this._authManager.middleware(), { tag: 'auth' });
 
     if (this.options.acl !== false) {
-      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['auth'] });
+      this._resourcer.use(AclSelectorMiddleware(), { tag: 'acl', after: ['auth'] });
     }
 
     this._locales = new Locale(createAppProxy(this));

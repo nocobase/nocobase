@@ -293,6 +293,7 @@ export class Resourcer {
               path: ctx.request.path,
               method: ctx.request.method,
               type: resource.options.type,
+              namespace: databaseName,
             },
             {
               prefix: this.options.prefix || prefix,
@@ -304,8 +305,14 @@ export class Resourcer {
             return next();
           }
         }
+
         // action 需要 clone 之后再赋给 ctx
         ctx.action = this.getAction(getNameByParams(params), params.actionName).clone();
+
+        if (params && params.resourceName && params.resourceName.includes('@')) {
+          params.resourceName = params.resourceName.replace(`${databaseName}@`, '');
+        }
+
         ctx.action.setContext(ctx);
         ctx.action.actionName = params.actionName;
         ctx.action.resourceOf = params.associatedIndex;
@@ -329,6 +336,7 @@ export class Resourcer {
         }
         return compose(ctx.action.getHandlers())(ctx, next);
       } catch (error) {
+        console.log(error);
         return next();
       }
     };
