@@ -75,8 +75,8 @@ export const filterFormBlockSettings = new SchemaSettings({
   ],
 });
 
-export const filterFormBlockFieldSettings = new SchemaSettings({
-  name: 'fieldSettings:filterFormBlock',
+export const filterFormItemFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:FilterFormItem',
   items: [
     {
       name: 'builtInOptions',

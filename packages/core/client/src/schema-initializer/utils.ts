@@ -276,10 +276,6 @@ export const useFormItemInitializerFields = (options?: any) => {
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const { fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
-  const formTypeToSettingsName = {
-    update: 'fieldSettings:editFormBlock',
-    create: 'fieldSettings:creationFormBlock',
-  };
 
   return currentFields
     ?.filter((field) => field?.interface && !field?.isForeignKey && !field?.treeChildren)
@@ -295,7 +291,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         type: 'string',
         name: field.name,
         'x-toolbar': 'FormFieldSchemaToolbar',
-        'x-settings': readPretty ? 'fieldSettings:detailsBlock' : formTypeToSettingsName[formType],
+        'x-settings': 'fieldSettings:FormItem',
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
@@ -358,7 +354,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         required: false,
         // 'x-designer': 'FormItem.FilterFormDesigner',
         'x-toolbar': 'FormFieldSchemaToolbar',
-        'x-settings': 'fieldSettings:filterFormBlock',
+        'x-settings': 'fieldSettings:FilterFormItem',
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
@@ -371,7 +367,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
           required: false,
           // 'x-designer': 'FormItem.FilterFormDesigner',
           'x-toolbar': 'FormFieldSchemaToolbar',
-          'x-settings': 'fieldSettings:filterFormBlock',
+          'x-settings': 'fieldSettings:FilterFormItem',
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
           'x-collection-field': `${name}.${field.name}`,
