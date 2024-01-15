@@ -41,9 +41,9 @@ interface CollectionTemplateDefaultOptions {
 export class CollectionTemplate {
   app: Application;
   collectionManager: CollectionManagerV2;
-  constructor(app: Application) {
+  constructor(app: Application, collectionManager: CollectionManagerV2) {
     this.app = app;
-    this.collectionManager = app.collectionManager;
+    this.collectionManager = collectionManager;
   }
   name: string;
   Collection?: typeof CollectionV2;

@@ -115,10 +115,7 @@ export class Application {
     this.schemaSettingsManager = new SchemaSettingsManager(options.schemaSettings, this);
     this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
-    this.collectionManager =
-      options.collectionManager instanceof CollectionManagerV2
-        ? options.collectionManager
-        : new CollectionManagerV2(options.collectionManager, this);
+    this.collectionManager = new CollectionManagerV2(options.collectionManager, this);
 
     this.addDefaultProviders();
     this.addReactRouterComponents();
@@ -232,12 +229,15 @@ export class Application {
         });
       }
       loadFailed = true;
-      const others = error?.response?.data?.error || error?.response?.data?.errors?.[0] || error;
+      const others = error?.response?.data?.error || error?.response?.data?.errors?.[0] || { message: error?.message };
       this.error = {
         code: 'LOAD_ERROR',
         ...others,
       };
       console.error(this.error);
+      if (error && error instanceof Error) {
+        console.error(error);
+      }
     }
     this.loading = false;
   }

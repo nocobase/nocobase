@@ -7,9 +7,9 @@ import { CollectionManagerV2 } from './CollectionManager';
 export class CollectionFieldInterface implements IField {
   app: Application;
   collectionManager: CollectionManagerV2;
-  constructor(app: Application) {
+  constructor(app: Application, collectionManager: CollectionManagerV2) {
     this.app = app;
-    this.collectionManager = app.collectionManager;
+    this.collectionManager = collectionManager;
   }
   name: string;
   group: string;

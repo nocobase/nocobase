@@ -84,9 +84,9 @@ export class CollectionV2 {
   app: Application;
   collectionManager: CollectionManagerV2;
 
-  constructor(options: CollectionOptionsV2, app: Application) {
+  constructor(options: CollectionOptionsV2, app: Application, collectionManager: CollectionManagerV2) {
     this.app = app;
-    this.collectionManager = app.collectionManager;
+    this.collectionManager = collectionManager;
     this.options = options;
   }
   get fields() {

@@ -135,7 +135,7 @@ export class CollectionManagerV2 {
         const Cls = collectionTemplateInstance?.Collection || CollectionV2;
         const transform = collectionTemplateInstance?.transform || defaultCollectionTransform;
         const transformedCollection = transform(collection, this.app);
-        const instance = new Cls(transformedCollection, this.app);
+        const instance = new Cls(transformedCollection, this.app, this);
         applyMixins(instance, this.collectionMixins);
         return instance;
       })
@@ -227,7 +227,7 @@ export class CollectionManagerV2 {
   // CollectionTemplates
   addCollectionTemplates(templateClasses: (typeof CollectionTemplate)[]) {
     const newCollectionTemplateInstances = templateClasses.reduce((acc, Template) => {
-      const instance = new Template(this.app);
+      const instance = new Template(this.app, this);
       acc[instance.name] = instance;
       return acc;
     }, {});
@@ -258,7 +258,7 @@ export class CollectionManagerV2 {
   // field interface
   addFieldInterfaces(interfaces: (typeof CollectionFieldInterface)[]) {
     const newCollectionFieldInterfaces = interfaces.reduce((acc, Interface) => {
-      const instance = new Interface(this.app);
+      const instance = new Interface(this.app, this);
       acc[instance.name] = instance;
       return acc;
     }, {});
