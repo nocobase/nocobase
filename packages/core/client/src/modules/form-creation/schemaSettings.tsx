@@ -275,12 +275,12 @@ export const formItemFieldSettings = new SchemaSettings({
   name: 'fieldSettings:FormItem',
   items: [
     {
-      name: 'builtInOptions',
+      name: 'decoratorOptions',
       type: 'itemGroup',
       componentProps: {
-        title: 'Built-in options',
+        title: 'Decorator options',
       },
-      useChildren() {
+      useChildren(): any {
         return [
           {
             name: 'editFieldTitle',
@@ -672,16 +672,6 @@ export const formItemFieldSettings = new SchemaSettings({
             },
           },
         ];
-      },
-    },
-    {
-      name: 'decoratorOptions',
-      type: 'itemGroup',
-      componentProps: {
-        title: 'Decorator options',
-      },
-      useChildren() {
-        return [];
       },
     },
     {

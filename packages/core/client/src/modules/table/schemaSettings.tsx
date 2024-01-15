@@ -820,10 +820,10 @@ export const tableColumnSettings = new SchemaSettings({
   name: 'fieldSettings:TableColumn',
   items: [
     {
-      name: 'builtInOptions',
+      name: 'decoratorOptions',
       type: 'itemGroup',
       componentProps: {
-        title: 'Built-in options',
+        title: 'Decorator options',
       },
       useChildren() {
         return [
@@ -872,16 +872,6 @@ export const tableColumnSettings = new SchemaSettings({
             },
           },
         ];
-      },
-    },
-    {
-      name: 'decoratorOptions',
-      type: 'itemGroup',
-      componentProps: {
-        title: 'Decorator options',
-      },
-      useChildren() {
-        return [];
       },
     },
     {

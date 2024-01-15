@@ -79,10 +79,10 @@ export const filterFormItemFieldSettings = new SchemaSettings({
   name: 'fieldSettings:FilterFormItem',
   items: [
     {
-      name: 'builtInOptions',
+      name: 'decoratorOptions',
       type: 'itemGroup',
       componentProps: {
-        title: 'Built-in options',
+        title: 'Decorator options',
       },
       useChildren() {
         return [
@@ -376,16 +376,6 @@ export const filterFormItemFieldSettings = new SchemaSettings({
             Component: EditOperator,
           },
         ];
-      },
-    },
-    {
-      name: 'decoratorOptions',
-      type: 'itemGroup',
-      componentProps: {
-        title: 'Decorator options',
-      },
-      useChildren() {
-        return [];
       },
     },
     {
