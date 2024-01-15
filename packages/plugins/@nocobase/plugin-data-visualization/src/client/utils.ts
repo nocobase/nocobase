@@ -111,7 +111,7 @@ export const removeUnparsableFilter = (filter: any) => {
       const newLogic = {};
       for (const key in filter) {
         const value = removeUnparsableFilter(filter[key]);
-        if (value && !(typeof value === 'object' && Object.keys(value).length === 0)) {
+        if (value !== null && value !== undefined && !(typeof value === 'object' && Object.keys(value).length === 0)) {
           newLogic[key] = value;
         }
       }
