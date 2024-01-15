@@ -266,9 +266,9 @@ test.describe('form item & create form', () => {
     // 选择 Sub-form
     await (async (page: Page, fieldName: string) => {
       await page.getByLabel(`block-item-CollectionField-general-form-general.${fieldName}-${fieldName}`).hover();
-      await page
-        .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
-        .hover();
+      // await page
+      //   .getByLabel(`designer-schema-settings-CollectionField-FormItem.Designer-general-general.${fieldName}`)
+      //   .hover();
     })(page, 'manyToMany');
     await page.getByRole('menuitem', { name: 'Field component' }).click();
     await page.getByRole('option', { name: 'Sub-form', exact: true }).click();
