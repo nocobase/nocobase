@@ -326,6 +326,9 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
         umdNamedDefine: true,
       },
     },
+    resolve: {
+      extensions: ['.js', '.jsx', '.ts', '.tsx', '.json', '.less', '.css'],
+    },
     module: {
       rules: [
         {
@@ -390,20 +393,57 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
           issuer: /\.[jt]sx?$/,
           use: ['@svgr/webpack'],
         },
+        {
+          test: /\.jsx$/,
+          exclude: /[\\/]node_modules[\\/]/,
+          loader: 'builtin:swc-loader',
+          options: {
+            sourceMap: true,
+            jsc: {
+              parser: {
+                syntax: 'ecmascript',
+                jsx: true,
+              },
+              target: "es5"
+            },
+          },
+        },
+        {
+          test: /\.tsx$/,
+          exclude: /[\\/]node_modules[\\/]/,
+          loader: 'builtin:swc-loader',
+          options: {
+            sourceMap: true,
+            jsc: {
+              parser: {
+                syntax: 'typescript',
+                tsx: true,
+              },
+              target: "es5"
+            },
+          },
+        },
+        {
+          test: /\.ts$/,
+          exclude: /[\\/]node_modules[\\/]/,
+          loader: 'builtin:swc-loader',
+          options: {
+            sourceMap: true,
+            jsc: {
+              parser: {
+                syntax: 'typescript',
+              },
+              target: "es5"
+            },
+          },
+        },
       ]
     },
-    builtins: {
-      define: {
+    plugins: [
+      new rspack.DefinePlugin({
         "process.env.NODE_ENV": "'production'",
-      },
-      react: {
-        development: false,
-        refresh: false,
-      },
-      presetEnv: {
-        targets: ['Chrome >= 48'], // 要修改
-      }
-    },
+      })
+    ],
     node: {
       global: true,
     },
