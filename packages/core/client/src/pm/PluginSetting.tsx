@@ -102,7 +102,7 @@ export const AdminSettingsLayout = () => {
     return settings.find((item) => item.name === currentSetting.topLevelName);
   }, [currentSetting, settings]);
   const sidebarMenus = useMemo(() => {
-    return getMenuItems(settings.filter((v) => v.isTop !== false).map((item) => ({ ...item, children: null })));
+    return getMenuItems(settings.filter((v) => v.isTopLevel !== false).map((item) => ({ ...item, children: null })));
   }, [settings]);
   if (!currentSetting || location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
     return <Navigate replace to={getFirstDeepChildPath(settings)} />;
