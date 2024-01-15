@@ -1,5 +1,5 @@
 import { CollectionV2 } from '../../application/collection/Collection';
-import { CollectionTemplate } from '../../application/collection/CollectionTemplate';
+import { CollectionTemplateBase } from '../../application/collection/CollectionTemplate';
 import { getConfigurableProperties } from './properties';
 import { ICollectionTemplate } from './types';
 
@@ -22,7 +22,7 @@ export const general: ICollectionTemplate = {
   ),
 };
 
-export class GeneralCollectionTemplate extends CollectionTemplate {
+export class GeneralCollectionTemplate extends CollectionTemplateBase {
   name = 'general';
   Collection = CollectionV2;
   title = '{{t("General collection")}}';

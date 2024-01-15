@@ -7,7 +7,7 @@
 ```tsx | pure
 interface CollectionManagerOptionsV2 {
   collections?: CollectionOptionsV2[];
-  collectionTemplates?: (typeof CollectionTemplate)[];
+  collectionTemplates?: (typeof CollectionTemplateBase)[];
   fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionNamespaces?: Record<string, string>;
@@ -26,9 +26,9 @@ class CollectionManagerV2 {
   addCollectionNamespaces(collectionNamespaces: Record<string, string>): void;
   getCollectionNamespaces(): { name: string; title: string }[];
 
-  addCollectionTemplates(templateClasses: (typeof CollectionTemplate)[]): void;
-  getCollectionTemplates(): CollectionTemplate[];
-  getCollectionTemplate<T extends CollectionTemplate>(name: string): T
+  addCollectionTemplates(templateClasses: (typeof CollectionTemplateBase)[]): void;
+  getCollectionTemplates(): CollectionTemplateBase[];
+  getCollectionTemplate<T extends CollectionTemplateBase>(name: string): T
 
   addCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}): void
   setCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}): void
@@ -170,7 +170,7 @@ class MyPlugin extends Plugin {
 ```tsx | pure
 interface CollectionManagerOptionsV2 {
   collections?: CollectionOptionsV2[];
-  collectionTemplates?: (typeof CollectionTemplate)[];
+  collectionTemplates?: (typeof CollectionTemplateBase)[];
   fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionNamespaces?: Record<string, string>;
@@ -193,7 +193,7 @@ const userCollectionOptions = {
 };
 
 // collection template
-class TreeCollectionTemplate extends CollectionTemplate {
+class TreeCollectionTemplate extends CollectionTemplateBase {
   name = 'tree';
   type = 'object';
   title = '{{t("Tree collection")}}';
@@ -337,13 +337,13 @@ collectionManager.getCollectionNamespaces(); // [ { name: 'main', title: '主数
 - 类型
 
 ```tsx | pure
-collectionManager.addCollectionTemplates(templateClasses: (typeof CollectionTemplate)[]): void;
+collectionManager.addCollectionTemplates(templateClasses: (typeof CollectionTemplateBase)[]): void;
 ```
 
 - 示例
 
 ```tsx | pure
-class SqlCollectionTemplate extends CollectionTemplate {
+class SqlCollectionTemplate extends CollectionTemplateBase {
   name = 'sql';
   type = 'object';
   title = '{{t("SQL collection")}}';
@@ -352,7 +352,7 @@ class SqlCollectionTemplate extends CollectionTemplate {
   }
 }
 
-class TreeCollectionTemplate extends CollectionTemplate {
+class TreeCollectionTemplate extends CollectionTemplateBase {
   name = 'tree';
   type = 'object';
   title = '{{t("Tree collection")}}';
@@ -378,7 +378,7 @@ class MyPlugin extends Plugin {
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollectionTemplates(): CollectionTemplate[];
+  getCollectionTemplates(): CollectionTemplateBase[];
 }
 ```
 
@@ -396,7 +396,7 @@ collectionManager.getCollectionTemplates(); // [ treeCollectionTemplate, sqlColl
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollectionTemplate<T extends CollectionTemplate>(name: string): T
+  getCollectionTemplate<T extends CollectionTemplateBase>(name: string): T
 }
 ```
 
