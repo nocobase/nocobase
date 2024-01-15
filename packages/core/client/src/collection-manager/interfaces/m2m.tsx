@@ -212,6 +212,7 @@ export const m2m: IField = {
               properties: {
                 targetKey: {
                   type: 'void',
+                  required: true,
                   title: '{{t("Target key")}}',
                   'x-decorator': 'FormItem',
                   'x-component': 'TargetKey',
