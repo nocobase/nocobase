@@ -101,14 +101,6 @@ const workflowFieldset = {
     type: 'object',
     'x-component': 'fieldset',
     properties: {
-      // NOTE: not to expose this option for now, because hard to track errors
-      // useTransaction: {
-      //   type: 'boolean',
-      //   title: `{{ t("Use transaction", { ns: "${NAMESPACE}" }) }}`,
-      //   description: `{{ t("Data operation nodes in workflow will run in a same transaction until any interruption. Any failure will cause data rollback, and will also rollback the history of the execution.", { ns: "${NAMESPACE}" }) }}`,
-      //   'x-decorator': 'FormItem',
-      //   'x-component': 'Checkbox',
-      // },
       deleteExecutionOnStatus: {
         type: 'array',
         title: `{{ t("Auto delete history when execution is on end status", { ns: "${NAMESPACE}" }) }}`,

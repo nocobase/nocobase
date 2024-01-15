@@ -1,11 +1,13 @@
 import { dayjs } from '@nocobase/utils/client';
 import { useMemo } from 'react';
+import { useAPIClient } from '../../api-client';
 import { getDateRanges } from '../../schema-component/antd/date-picker/util';
 import { useCurrentUserContext } from '../../user';
 import { VariableOption } from '../types';
 
 const useBuiltInVariables = () => {
   const data = useCurrentUserContext();
+  const apiClient = useAPIClient();
 
   const currentUser = data?.data?.data;
   const dateVars = getDateRanges();
@@ -15,6 +17,11 @@ const useBuiltInVariables = () => {
         name: '$user',
         ctx: currentUser,
         collectionName: 'users',
+      },
+      {
+        name: '$nRole',
+        ctx: apiClient.auth?.role,
+        collectionName: 'roles',
       },
       /**
        * @deprecated

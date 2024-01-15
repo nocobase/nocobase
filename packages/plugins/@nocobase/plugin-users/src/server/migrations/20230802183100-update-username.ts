@@ -1,11 +1,8 @@
 import { Migration } from '@nocobase/server';
 
 export default class UpdateUserNameMigration extends Migration {
+  appVersion = '<0.13.0-alpha.1';
   async up() {
-    const match = await this.app.version.satisfies('<=0.12.0-alpha.4');
-    if (!match) {
-      return;
-    }
     const repo = this.context.db.getRepository('users');
     const user = await repo.findOne({
       filter: {

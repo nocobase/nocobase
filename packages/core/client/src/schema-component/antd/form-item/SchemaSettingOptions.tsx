@@ -7,11 +7,15 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { SchemaSettings, isPatternDisabled } from '../../../schema-settings';
+import {
+  SchemaSettingsModalItem,
+  SchemaSettingsSelectItem,
+  SchemaSettingsSwitchItem,
+  isPatternDisabled,
+} from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useOperatorList } from '../filter/useOperators';
 import { isFileCollection } from './FormItem';
-
 export const findFilterOperators = (schema: Schema) => {
   while (schema) {
     if (schema['x-filter-operators']) {
@@ -45,7 +49,7 @@ export const EditTitle = () => {
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
 
   return collectionField ? (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       key="edit-field-title"
       title={t('Edit field title')}
       schema={
@@ -88,7 +92,7 @@ export const EditDescription = () => {
   const { dn } = useDesignable();
 
   return !field.readPretty ? (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       key="edit-description"
       title={t('Edit description')}
       schema={
@@ -128,7 +132,7 @@ export const EditTooltip = () => {
   const { dn } = useDesignable();
 
   return field.readPretty ? (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       key="edit-tooltip"
       title={t('Edit tooltip')}
       schema={
@@ -169,7 +173,7 @@ export const EditRequired = () => {
 
   // TODO: FormField 好像被弃用了，应该删除掉
   return !field.readPretty && fieldSchema['x-component'] !== 'FormField' ? (
-    <SchemaSettings.SwitchItem
+    <SchemaSettingsSwitchItem
       key="required"
       title={t('Required')}
       checked={fieldSchema.required as boolean}
@@ -202,7 +206,7 @@ export const EditValidationRules = () => {
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
 
   return form && !form?.readPretty && validateSchema ? (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       title={t('Set validation rules')}
       components={{ ArrayCollapse, FormLayout }}
       schema={
@@ -336,7 +340,7 @@ export const EditDefaultValue = () => {
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
 
   return form && !form?.readPretty && collectionField?.uiSchema?.type ? (
-    <SchemaSettings.ModalItem
+    <SchemaSettingsModalItem
       title={t('Set default value')}
       components={{ ArrayCollapse, FormLayout }}
       schema={
@@ -386,7 +390,7 @@ export const EditComponent = () => {
   const isFileField = isFileCollection(targetCollection as any);
 
   return isAssociationField && fieldModeOptions ? (
-    <SchemaSettings.SelectItem
+    <SchemaSettingsSelectItem
       key="field-mode"
       title={t('Field component')}
       options={fieldModeOptions}
@@ -427,7 +431,7 @@ export const EditPattern = () => {
   }
 
   return form && !form?.readPretty && collectionField?.interface !== 'o2m' && !isPatternDisabled(fieldSchema) ? (
-    <SchemaSettings.SelectItem
+    <SchemaSettingsSelectItem
       key="pattern"
       title={t('Pattern')}
       options={[
@@ -508,7 +512,7 @@ export const EditOperator = () => {
   }
 
   return operatorList.length ? (
-    <SchemaSettings.SelectItem
+    <SchemaSettingsSelectItem
       key="operator"
       title={t('Operator')}
       value={storedOperators[fieldSchema.name]}
@@ -520,34 +524,40 @@ export const EditOperator = () => {
           ['x-uid']: uid,
           ['x-filter-operators']: storedOperators,
         };
+        let componentProps = {};
 
         // 根据操作符的配置，设置组件的属性
         if (operator?.schema?.['x-component']) {
           _.set(fieldSchema, 'x-component-props.component', operator.schema['x-component']);
           _.set(field, 'componentProps.component', operator.schema['x-component']);
           field.reset();
+          componentProps = {
+            component: operator.schema['x-component'],
+            ...operator.schema['x-component-props'],
+          };
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
-              ['x-component-props']: {
-                component: operator.schema['x-component'],
-              },
+              ['x-component-props']: componentProps,
             },
           });
         } else if (fieldSchema['x-component-props']?.component) {
           _.set(fieldSchema, 'x-component-props.component', null);
           _.set(field, 'componentProps.component', null);
           field.reset();
+          componentProps = {
+            component: null,
+            ...operator.schema['x-component-props'],
+          };
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
-              ['x-component-props']: {
-                component: null,
-              },
+              ['x-component-props']: componentProps,
             },
           });
         }
 
+        field.componentProps = componentProps;
         dn.emit('patch', {
           schema,
         });
@@ -577,7 +587,7 @@ export const EditTitleField = () => {
     }));
 
   return options.length > 0 && fieldSchema['x-component'] === 'CollectionField' ? (
-    <SchemaSettings.SelectItem
+    <SchemaSettingsSelectItem
       key="title-field"
       title={t('Title field')}
       options={options}

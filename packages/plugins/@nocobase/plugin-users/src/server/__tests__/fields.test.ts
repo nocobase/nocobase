@@ -1,17 +1,13 @@
 import Database from '@nocobase/database';
-import PluginACL from '@nocobase/plugin-acl';
-import UsersPlugin from '@nocobase/plugin-users';
-import { mockServer, MockServer } from '@nocobase/test';
-import { userPluginConfig } from './utils';
+import { createMockServer, MockServer } from '@nocobase/test';
 describe('createdBy/updatedBy', () => {
   let api: MockServer;
   let db: Database;
 
   beforeEach(async () => {
-    api = mockServer();
-    api.plugin(UsersPlugin, userPluginConfig);
-    api.plugin(PluginACL, { name: 'acl' });
-    await api.loadAndInstall({ clean: true });
+    api = await createMockServer({
+      plugins: ['acl', 'users'],
+    });
     db = api.db;
   });
 
@@ -50,8 +46,8 @@ describe('createdBy/updatedBy', () => {
       });
 
       const data = p2.toJSON();
-      expect(data.createdBy.id).toBe(currentUser.get('id'));
-      expect(data.updatedBy.id).toBe(currentUser.get('id'));
+      expect(data.createdBy.id).toBe(currentUser.id);
+      expect(data.updatedBy.id).toBe(currentUser.id);
     });
 
     it('case 3', async () => {

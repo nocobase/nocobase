@@ -1,5 +1,6 @@
 import { Context } from '@nocobase/actions';
-import { Repository } from '@nocobase/database';
+import { Cache } from '@nocobase/cache';
+import { Model, Repository } from '@nocobase/database';
 
 export async function setCurrentRole(ctx: Context, next) {
   const currentRole = ctx.get('X-Role');
@@ -13,9 +14,21 @@ export async function setCurrentRole(ctx: Context, next) {
     return next();
   }
 
+  const cache = ctx.cache as Cache;
   const repository = ctx.db.getRepository('users.roles', ctx.state.currentUser.id) as unknown as Repository;
-  const roles = await repository.find();
-  ctx.state.currentUser.setDataValue('roles', roles);
+  const roles = (await cache.wrap(`roles:${ctx.state.currentUser.id}`, () =>
+    repository.find({
+      raw: true,
+    }),
+  )) as Model[];
+  if (!roles.length) {
+    ctx.state.currentRole = undefined;
+    return ctx.throw(401, {
+      code: 'USER_HAS_NO_ROLES_ERR',
+      message: ctx.t('The current user has no roles. Please try another account.', { ns: 'acl' }),
+    });
+  }
+  ctx.state.currentUser.roles = roles;
 
   // 1. If the X-Role is set, use the specified role
   if (currentRole) {
@@ -28,7 +41,10 @@ export async function setCurrentRole(ctx: Context, next) {
   }
 
   if (!ctx.state.currentRole) {
-    return ctx.throw(401, { code: 'ROLE_NOT_FOUND_ERR', message: 'The user role does not exist.' });
+    return ctx.throw(401, {
+      code: 'ROLE_NOT_FOUND_ERR',
+      message: ctx.t('The user role does not exist. Please try signing in again', { ns: 'acl' }),
+    });
   }
 
   await next();

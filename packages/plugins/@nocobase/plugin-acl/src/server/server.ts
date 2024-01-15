@@ -1,5 +1,6 @@
 import { NoPermissionError } from '@nocobase/acl';
 import { Context, utils as actionUtils } from '@nocobase/actions';
+import { Cache } from '@nocobase/cache';
 import { Collection, RelationField, snakeCase } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
@@ -347,17 +348,27 @@ export class PluginACL extends Plugin {
       });
     });
 
+    // Delete cache when the roles of a user changed
+    this.app.db.on('rolesUsers.afterSave', async (model) => {
+      const cache = this.app.cache as Cache;
+      await cache.del(`roles:${model.get('userId')}`);
+    });
+    this.app.db.on('rolesUsers.afterDestroy', async (model) => {
+      const cache = this.app.cache as Cache;
+      await cache.del(`roles:${model.get('userId')}`);
+    });
+
     const writeRolesToACL = async (app, options) => {
       const exists = await this.app.db.collectionExistsInDb('roles');
       if (exists) {
-        this.log.info('write roles to ACL');
+        this.log.info('write roles to ACL', { method: 'writeRolesToACL' });
         await this.writeRolesToACL();
       }
     };
 
     // sync database role data to acl
     this.app.on('afterLoad', writeRolesToACL);
-    this.app.on('afterInstall', writeRolesToACL);
+    // this.app.on('afterInstall', writeRolesToACL);
 
     this.app.on('afterInstallPlugin', async (plugin) => {
       if (plugin.getName() !== 'users') {
@@ -433,6 +444,9 @@ export class PluginACL extends Plugin {
       });
     });
 
+    this.app.on('beforeSignOut', ({ userId }) => {
+      this.app.cache.del(`roles:${userId}`);
+    });
     this.app.resourcer.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'auth' });
 
     this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
@@ -877,10 +891,11 @@ export class PluginACL extends Plugin {
 
   async load() {
     await this.importCollections(resolve(__dirname, 'collections'));
+
     this.db.extendCollection({
       name: 'rolesUischemas',
-      namespace: 'acl.acl',
-      duplicator: 'required',
+      dumpRules: 'required',
+      origin: this.options.packageName,
     });
   }
 }

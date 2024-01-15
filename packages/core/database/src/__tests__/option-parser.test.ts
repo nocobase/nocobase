@@ -12,7 +12,7 @@ describe('option parser', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
-
+    await db.clean({ drop: true });
     User = db.collection<{ id: number; name: string }, { name: string }>({
       name: 'users',
       fields: [
@@ -84,7 +84,7 @@ describe('option parser', () => {
   });
 
   test('with sort option', () => {
-    if (db.inDialect('mysql')) {
+    if (db.inDialect('mysql', 'mariadb')) {
       expect(1).toBe(1);
       return;
     }

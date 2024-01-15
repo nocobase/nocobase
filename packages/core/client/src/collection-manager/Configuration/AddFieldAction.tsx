@@ -206,6 +206,9 @@ export const AddFieldAction = (props) => {
             if (v.value === 'id') {
               return typeof record['autoGenId'] === 'boolean' ? record['autoGenId'] : true;
             } else if (v.value === 'tableoid') {
+              if (include?.length) {
+                return include.includes(v.value);
+              }
               return database?.dialect === 'postgres';
             } else {
               return typeof record[v.value] === 'boolean' ? record[v.value] : true;
@@ -216,7 +219,7 @@ export const AddFieldAction = (props) => {
         let children = [];
         if (include?.length) {
           include.forEach((k) => {
-            const field = v.children.find((h) => [k, k.interface].includes(h.value));
+            const field = v?.children?.find((h) => [k, k.interface].includes(h.value));
             field &&
               children.push({
                 ...field,
@@ -224,13 +227,13 @@ export const AddFieldAction = (props) => {
               });
           });
         } else if (exclude?.length) {
-          children = v.children.filter((v) => {
+          children = v?.children?.filter((v) => {
             return !exclude.includes(v.value);
           });
         } else {
-          children = v.children;
+          children = v?.children;
         }
-        children.length &&
+        children?.length &&
           optionArr.push({
             ...v,
             children,
@@ -242,7 +245,7 @@ export const AddFieldAction = (props) => {
   const items = useMemo<MenuProps['items']>(() => {
     return getFieldOptions()
       .map((option) => {
-        if (option.children.length === 0) {
+        if (option?.children?.length === 0) {
           return null;
         }
         if (record.template === 'view') {
@@ -255,8 +258,6 @@ export const AddFieldAction = (props) => {
               .filter((child) => ['m2o'].includes(child.name))
               .map((child) => {
                 return {
-                  role: 'button',
-                  'aria-label': `${compile(option.label)}-${child.name}`,
                   label: compile(child.title),
                   title: compile(child.title),
                   key: child.name,
@@ -270,12 +271,10 @@ export const AddFieldAction = (props) => {
           label: compile(option.label),
           title: compile(option.label),
           key: option.label,
-          children: option.children
+          children: option?.children
             .filter((child) => !['o2o', 'subTable', 'linkTo'].includes(child.name))
             .map((child) => {
               return {
-                role: 'button',
-                'aria-label': `${compile(option.label)}-${child.name}`,
                 label: compile(child.title),
                 title: compile(child.title),
                 key: child.name,
@@ -284,7 +283,7 @@ export const AddFieldAction = (props) => {
             }),
         };
       })
-      .filter((v) => v.children.length);
+      .filter((v) => v?.children?.length);
   }, [getFieldOptions]);
   const menu = useMemo<MenuProps>(() => {
     return {
@@ -311,7 +310,7 @@ export const AddFieldAction = (props) => {
         <ActionContextProvider value={{ visible, setVisible }}>
           <Dropdown getPopupContainer={getContainer} trigger={trigger} align={align} menu={menu}>
             {children || (
-              <Button aria-label="Add field" icon={<PlusOutlined />} type={'primary'}>
+              <Button icon={<PlusOutlined />} type={'primary'}>
                 {t('Add field')}
               </Button>
             )}

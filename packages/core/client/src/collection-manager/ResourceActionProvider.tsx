@@ -78,7 +78,7 @@ const AssociationResourceActionProvider = (props) => {
   );
   const resource = api.resource(request.resource, resourceOf);
   return (
-    <ResourceContext.Provider value={{ type: 'association', resource, association }}>
+    <ResourceContext.Provider value={{ type: 'association', resource, association, collection }}>
       <ResourceActionContext.Provider value={{ ...service, defaultRequest: request, dragSort }}>
         <CollectionProvider collection={collection}>{props.children}</CollectionProvider>
       </ResourceActionContext.Provider>

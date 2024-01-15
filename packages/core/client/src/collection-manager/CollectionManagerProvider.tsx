@@ -32,7 +32,7 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
 };
 
 export const RemoteCollectionManagerProvider = (props: any) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('lm-collections');
   const api = useAPIClient();
   const [contentLoading, setContentLoading] = useState(false);
   const { refreshCH } = useCollectionHistory();

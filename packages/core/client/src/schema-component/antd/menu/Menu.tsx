@@ -15,9 +15,10 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { createDesignable, DndContext, SortableItem, useDesignable, useDesigner } from '../..';
-import { Icon, useAPIClient, useSchemaInitializer } from '../../../';
+import { Icon, useAPIClient, useSchemaInitializerRender } from '../../../';
 import { useCollectMenuItems, useMenuItem } from '../../../hooks/useMenuItem';
 import { useProps } from '../../hooks/useProps';
+import { useMenuTranslation } from './locale';
 import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
 
@@ -201,8 +202,7 @@ const HeaderMenu = ({
       key: 'x-designer-button',
       style: { padding: '0 8px', order: 9999 },
       label: render({
-        'aria-label': 'schema-initializer-Menu-header',
-        'aria-disabled': false,
+        'data-testid': 'schema-initializer-Menu-header',
         style: { background: 'none' },
       }),
       notdelete: true,
@@ -295,8 +295,7 @@ const SideMenu = ({
         key: 'x-designer-button',
         disabled: true,
         label: render({
-          'aria-label': 'schema-initializer-Menu-side',
-          'aria-disabled': false,
+          'data-testid': 'schema-initializer-Menu-side',
           insert: (s) => {
             const dn = createDesignable({
               t,
@@ -314,7 +313,7 @@ const SideMenu = ({
     }
 
     return result;
-  }, [render, sideMenuSchema, designable, loading]);
+  }, [getMenuItems, designable, sideMenuSchema, render, t, api, refresh]);
 
   if (loading) {
     return null;
@@ -378,7 +377,7 @@ export const Menu: ComposedMenu = observer(
     const schema = useFieldSchema();
     const { refresh } = useDesignable();
     const api = useAPIClient();
-    const { render } = useSchemaInitializer(schema['x-initializer']);
+    const { render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
     const sideMenuRef = useSideMenuRef();
     const [selectedKeys, setSelectedKeys] = useState<string[]>();
     const [defaultSelectedKeys, setDefaultSelectedKeys] = useState(() => {
@@ -479,7 +478,7 @@ export const Menu: ComposedMenu = observer(
 
 Menu.Item = observer(
   (props) => {
-    const { t } = useTranslation();
+    const { t } = useMenuTranslation();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;
     const schema = useFieldSchema();
@@ -534,7 +533,7 @@ Menu.Item = observer(
 
 Menu.URL = observer(
   (props) => {
-    const { t } = useTranslation();
+    const { t } = useMenuTranslation();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;
     const schema = useFieldSchema();
@@ -588,7 +587,7 @@ Menu.URL = observer(
 
 Menu.SubMenu = observer(
   (props) => {
-    const { t } = useTranslation();
+    const { t } = useMenuTranslation();
     const { Component, getMenuItems } = useMenuItem();
     const { pushMenuItem } = useCollectMenuItems();
     const { icon, children, ...others } = props;

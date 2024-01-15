@@ -1,10 +1,16 @@
 import { Field } from '@formily/core';
 import { useField, useFieldSchema, useForm } from '@formily/react';
-import { useEffect } from 'react';
+import { nextTick } from '@nocobase/utils/client';
+import _ from 'lodash';
+import { useEffect, useRef } from 'react';
+import { useAssociationNames } from '../../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../../collection-manager';
+import { useFlag } from '../../../../flag-provider';
+import { useRecord } from '../../../../record-provider';
 import { useVariables } from '../../../../variables';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 import { useSubFormValue } from '../../association-field/hooks';
+import { isDisplayField } from '../utils';
 
 /**
  * 用于懒加载 Form 区块中只用于展示的关联字段的值
@@ -16,18 +22,45 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const { name } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
   const form = useForm();
+  const record = useRecord();
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const field = useField<Field>();
   const { formValue: subFormValue } = useSubFormValue();
+  const { isInSubForm, isInSubTable } = useFlag() || {};
+  const { getAssociationAppends } = useAssociationNames();
 
   const schemaName = fieldSchema.name.toString();
-  const formValue = subFormValue || form.values;
+  const formValue = _.cloneDeep(isInSubForm || isInSubTable ? subFormValue : form.values);
+  const collectionFieldRef = useRef(null);
+  const sourceCollectionFieldRef = useRef(null);
+
+  if (collectionFieldRef.current == null && isDisplayField(schemaName)) {
+    collectionFieldRef.current = getCollectionJoinField(`${name}.${schemaName}`);
+  }
+  if (sourceCollectionFieldRef.current == null && isDisplayField(schemaName)) {
+    sourceCollectionFieldRef.current = getCollectionJoinField(`${name}.${schemaName.split('.')[0]}`);
+  }
+
+  const sourceKeyValue =
+    isDisplayField(schemaName) && sourceCollectionFieldRef.current
+      ? _.get(formValue, `${schemaName.split('.')[0]}.${sourceCollectionFieldRef.current?.targetKey || 'id'}`)
+      : undefined;
 
   useEffect(() => {
     // 如果 schemaName 中是以 `.` 分割的，说明是一个关联字段，需要去获取关联字段的值；
     // 在数据表管理页面，也存在 `a.b` 之类的 schema name，其 collectionName 为 fields，所以在这里排除一下 `name === 'fields'` 的情况
-    if (!schemaName.includes('.') || !variables || name === 'fields') {
+    if (
+      !isDisplayField(schemaName) ||
+      !variables ||
+      name === 'fields' ||
+      !collectionFieldRef.current ||
+      hasPreload(record, schemaName)
+    ) {
+      return;
+    }
+
+    if (_.isEmpty(formValue)) {
       return;
     }
 
@@ -37,21 +70,41 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
       collectionName: name,
     };
     const variableString = `{{ $nForm.${schemaName} }}`;
-    const collectionField = getCollectionJoinField(`${name}.${schemaName}`);
 
-    if (!collectionField) {
-      return console.error(new Error(`useLazyLoadAssociationField: ${schemaName} not found in collection ${name}`));
+    // 如果关系字段的 id 为空，则说明请求的数据还没有返回，此时还不能去解析变量
+    if (sourceKeyValue === undefined) {
+      return;
     }
 
+    const { appends } = getAssociationAppends();
+
     variables
-      .parseVariable(variableString, formVariable)
+      .parseVariable(variableString, formVariable, { appends })
       .then((value) => {
-        field.value = transformVariableValue(value, { targetCollectionField: collectionField });
+        nextTick(() => {
+          const result = transformVariableValue(value, { targetCollectionField: collectionFieldRef.current });
+          // fix https://nocobase.height.app/T-2608
+          if (_.isEmpty(result) && !_.isNumber(result)) {
+            field.value = null;
+          } else {
+            field.value = result;
+          }
+        });
       })
       .catch((err) => {
         console.error(err);
       });
-  }, [schemaName.includes('.') ? formValue[schemaName.split('.')[0]] : null]);
+  }, [sourceKeyValue]);
 };
 
 export default useLazyLoadDisplayAssociationFieldsOfForm;
+
+/**
+ * 数据是否已被预加载
+ * @param record
+ * @param path
+ * @returns
+ */
+function hasPreload(record: Record<string, any>, path: string) {
+  return _.get(record, path) != null;
+}

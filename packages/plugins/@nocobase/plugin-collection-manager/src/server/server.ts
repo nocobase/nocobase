@@ -13,12 +13,12 @@ import {
   beforeDestroyForeignKey,
   beforeInitOptions,
 } from './hooks';
+import { beforeCreateForValidateField } from './hooks/beforeCreateForValidateField';
 import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
-import viewResourcer from './resourcers/views';
 import sqlResourcer from './resourcers/sql';
-import { beforeCreateForValidateField } from './hooks/beforeCreateForValidateField';
+import viewResourcer from './resourcers/views';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -34,6 +34,10 @@ export class CollectionManagerPlugin extends Plugin {
       this.schema = process.env.COLLECTION_MANAGER_SCHEMA || this.db.options.schema || 'public';
     }
 
+    this.app.db.registerRepositories({
+      CollectionRepository,
+    });
+
     this.app.db.registerModels({
       CollectionModel,
       FieldModel,
@@ -45,10 +49,6 @@ export class CollectionManagerPlugin extends Plugin {
       context: {
         plugin: this,
       },
-    });
-
-    this.app.db.registerRepositories({
-      CollectionRepository,
     });
 
     this.app.acl.registerSnippet({
@@ -152,6 +152,10 @@ export class CollectionManagerPlugin extends Plugin {
           throw new Error('cant update field without a reverseField key');
         }
       }
+      // todo: 目前只支持一对多
+      if (model.get('sortable') && model.get('type') === 'hasMany') {
+        model.set('sortBy', model.get('foreignKey') + 'Sort');
+      }
     });
 
     this.app.db.on('fields.afterUpdate', async (model: FieldModel, { context, transaction }) => {
@@ -179,6 +183,10 @@ export class CollectionManagerPlugin extends Plugin {
 
       if (prevOnDelete != currentOnDelete) {
         await model.syncReferenceCheckOption({ transaction });
+      }
+
+      if (model.get('type') === 'hasMany' && model.get('sortable') && model.get('sortBy')) {
+        await model.syncSortByField({ transaction });
       }
     });
 
@@ -230,27 +238,27 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     const loadCollections = async () => {
-      this.app.log.debug('loading custom collections');
+      this.log.debug('loading custom collections', { method: 'loadCollections' });
       this.app.setMaintainingMessage('loading custom collections');
       await this.app.db.getRepository<CollectionRepository>('collections').load({
         filter: this.loadFilter,
       });
     };
 
-    this.app.on('loadCollections', loadCollections);
+    // this.app.on('loadCollections', loadCollections);
     this.app.on('beforeStart', loadCollections);
-    this.app.on('beforeUpgrade', async () => {
-      const syncOptions = {
-        alter: {
-          drop: false,
-        },
-        force: false,
-      };
-      await this.db.getCollection('collections').sync(syncOptions);
-      await this.db.getCollection('fields').sync(syncOptions);
-      await this.db.getCollection('collectionCategories').sync(syncOptions);
-      await loadCollections();
-    });
+    // this.app.on('beforeUpgrade', async () => {
+    //   const syncOptions = {
+    //     alter: {
+    //       drop: false,
+    //     },
+    //     force: false,
+    //   };
+    //   await this.db.getCollection('collections').sync(syncOptions);
+    //   await this.db.getCollection('fields').sync(syncOptions);
+    //   await this.db.getCollection('collectionCategories').sync(syncOptions);
+    //   await loadCollections();
+    // });
 
     this.app.resourcer.use(async (ctx, next) => {
       const { resourceName, actionName } = ctx.action;
@@ -353,8 +361,8 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.extendCollection({
       name: 'collectionCategory',
-      namespace: 'collection-manager',
-      duplicator: 'required',
+      dumpRules: 'required',
+      origin: this.options.packageName,
     });
   }
 }

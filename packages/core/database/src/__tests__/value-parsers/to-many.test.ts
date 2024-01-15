@@ -7,6 +7,7 @@ describe('number value parser', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     db.collection({
       name: 'posts',
       fields: [
@@ -87,12 +88,13 @@ describe('number value parser', () => {
   });
 });
 
-describe.only('china region', () => {
+describe('china region', () => {
   let parser: ToManyValueParser;
   let db: Database;
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
     db.collection({
       name: 'users',
       fields: [

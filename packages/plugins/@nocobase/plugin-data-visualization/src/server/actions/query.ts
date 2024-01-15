@@ -1,9 +1,9 @@
 import { Context, Next } from '@nocobase/actions';
 import { Field, FilterParser, snakeCase } from '@nocobase/database';
-import ChartsV2Plugin from '../plugin';
 import { formatter } from './formatter';
 import compose from 'koa-compose';
 import { parseFilter, getDateVars } from '@nocobase/utils';
+import { Cache } from '@nocobase/cache';
 
 type MeasureProps = {
   field: string | string[];
@@ -46,35 +46,26 @@ type QueryParams = Partial<{
 }>;
 
 export const postProcess = async (ctx: Context, next: Next) => {
-  const { sequelize } = ctx.db;
-  const dialect = sequelize.getDialect();
   const { data, fieldMap } = ctx.action.params.values as {
     data: any[];
     fieldMap: { [source: string]: { type?: string } };
   };
-  switch (dialect) {
-    case 'postgres':
-      // https://github.com/sequelize/sequelize/issues/4550
-      ctx.body = data.map((record) => {
-        const result = {};
-        Object.entries(record).forEach(([key, value]) => {
-          const { type } = fieldMap[key] || {};
-          switch (type) {
-            case 'bigInt':
-            case 'integer':
-            case 'float':
-            case 'double':
-              value = Number(value);
-              break;
-          }
-          result[key] = value;
-        });
-        return result;
-      });
-      break;
-    default:
-      ctx.body = data;
-  }
+  ctx.body = data.map((record) => {
+    const result = {};
+    Object.entries(record).forEach(([key, value]) => {
+      const { type } = fieldMap[key] || {};
+      switch (type) {
+        case 'bigInt':
+        case 'integer':
+        case 'float':
+        case 'double':
+          value = Number(value);
+          break;
+      }
+      result[key] = value;
+    });
+    return result;
+  });
   await next();
 };
 
@@ -168,7 +159,6 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
   const { collection: collectionName, measures, dimensions, orders, filter } = ctx.action.params.values as QueryParams;
   const collection = ctx.db.getCollection(collectionName);
   const fields = collection.fields;
-  const underscored = collection.options.underscored;
   const models: {
     [target: string]: {
       type: string;
@@ -184,7 +174,8 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
     } else if (selected.field.length > 1) {
       [target, name] = selected.field;
     }
-    let field = underscored ? snakeCase(name) : name;
+    const rawAttributes = collection.model.getAttributes();
+    let field = rawAttributes[name]?.field || name;
     let fieldType = fields.get(name)?.type;
     if (target) {
       const targetField = fields.get(target) as Field;
@@ -253,7 +244,7 @@ export const parseVariables = async (ctx: Context, next: Next) => {
   const getUser = () => {
     return async ({ fields }) => {
       const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
-      ctx.logger?.info('filter-parse: ', { userFields });
+      ctx.logger?.info('parse filter variables', { userFields, method: 'parseVariables' });
       if (!ctx.state.currentUser) {
         return;
       }
@@ -264,8 +255,9 @@ export const parseVariables = async (ctx: Context, next: Next) => {
         filterByTk: ctx.state.currentUser.id,
         fields: userFields,
       });
-      ctx.logger?.info('filter-parse: ', {
+      ctx.logger?.info('parse filter variables', {
         $user: user?.toJSON(),
+        method: 'parseVariables',
       });
       return user;
     };
@@ -291,8 +283,7 @@ export const parseVariables = async (ctx: Context, next: Next) => {
 
 export const cacheMiddleware = async (ctx: Context, next: Next) => {
   const { uid, cache: cacheConfig, refresh } = ctx.action.params.values as QueryParams;
-  const plugin = ctx.app.getPlugin('data-visualization') as ChartsV2Plugin;
-  const cache = plugin.cache;
+  const cache = ctx.app.cacheManager.getCache('data-visualization') as Cache;
   const useCache = cacheConfig?.enabled && uid;
 
   if (useCache && !refresh) {
@@ -304,7 +295,7 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
   }
   await next();
   if (useCache) {
-    await cache.set(uid, ctx.body, cacheConfig?.ttl || 30);
+    await cache.set(uid, ctx.body, cacheConfig?.ttl * 1000);
   }
 };
 
@@ -330,7 +321,6 @@ export const query = async (ctx: Context, next: Next) => {
       postProcess,
     ])(ctx, next);
   } catch (err) {
-    ctx.app.logger.error('charts query: ', err);
     ctx.throw(500, err);
   }
 };

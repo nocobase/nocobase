@@ -1,5 +1,6 @@
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
+import _ from 'lodash';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
@@ -8,6 +9,7 @@ import { RecordProvider, useRecord } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { mergeFilter } from './SharedFilterProvider';
+import { useParsedFilter } from './hooks';
 
 type Params = {
   filter?: any;
@@ -84,8 +86,8 @@ export const recursiveParent = (schema: Schema, component) => {
   return schema['x-component'] === component
     ? schema
     : schema.parent
-    ? recursiveParent(schema.parent, component)
-    : null;
+      ? recursiveParent(schema.parent, component)
+      : null;
 };
 
 const useAssociationNames = (collection) => {
@@ -237,6 +239,19 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
     console.error(err);
   }
 
+  const { filter: parsedFilter } = useParsedFilter({
+    filterOption: params?.filter,
+    currentRecord: { __parent: record, __collectionName: props.collection },
+  });
+
+  if (!_.isEmpty(params?.filter) && _.isEmpty(parsedFilter)) {
+    return null;
+  }
+
+  if (params?.filter) {
+    params.filter = parsedFilter;
+  }
+
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
       <BlockProvider name="table-selector" {...props} params={params}>
@@ -256,6 +271,7 @@ export const useTableSelectorProps = () => {
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = ctx?.service?.data?.data;
+      field?.setInitialValue?.(ctx?.service?.data?.data);
       field.data = field.data || {};
       field.data.selectedRowKeys = ctx?.field?.data?.selectedRowKeys;
       field.componentProps.pagination = field.componentProps.pagination || {};

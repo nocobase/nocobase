@@ -4,7 +4,7 @@
   "displayName.zh-CN": "权限控制",
   "description": "A simple access control based on roles, resources and actions",
   "description.zh-CN": "基于角色、资源和操作的权限控制。",
-  "version": "0.15.0-alpha.2",
+  "version": "0.19.0-alpha.3",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
@@ -17,6 +17,7 @@
   "peerDependencies": {
     "@nocobase/acl": "0.x",
     "@nocobase/actions": "0.x",
+    "@nocobase/cache": "0.x",
     "@nocobase/client": "0.x",
     "@nocobase/database": "0.x",
     "@nocobase/server": "0.x",
@@ -28,5 +29,5 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugins/acl"
   },
-  "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }

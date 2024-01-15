@@ -37,7 +37,7 @@ describe('collection', () => {
   });
 
   it('should not throw error when create empty collection in sqlite and mysql', async () => {
-    if (!db.inDialect('sqlite', 'mysql')) {
+    if (!db.inDialect('sqlite', 'mysql', 'mariadb')) {
       return;
     }
 
@@ -97,7 +97,7 @@ describe('collection', () => {
     const field = collection.getField('name');
     const r1 = await field.existsInDb();
     expect(r1).toBe(true);
-    await field.removeFromDb();
+    await collection.removeFieldFromDb('name');
     const r2 = await field.existsInDb();
     expect(r2).toBe(false);
 
@@ -257,6 +257,7 @@ describe('collection sync', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
   });
 
   afterEach(async () => {

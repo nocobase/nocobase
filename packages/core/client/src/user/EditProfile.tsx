@@ -126,7 +126,6 @@ export const useEditProfile = () => {
 
   return useMemo<MenuProps['items'][0]>(() => {
     return {
-      role: 'button',
       key: 'profile',
       eventKey: 'EditProfile',
       onClick: () => {
@@ -134,7 +133,7 @@ export const useEditProfile = () => {
         ctx?.setVisible(false);
       },
       label: (
-        <div aria-label="edit-profile">
+        <div>
           {t('Edit profile')}
           <ActionContextProvider value={{ visible, setVisible }}>
             <div onClick={(e) => e.stopPropagation()}>

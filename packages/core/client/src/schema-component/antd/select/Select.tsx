@@ -45,7 +45,7 @@ const ObjectSelect = (props: Props) => {
     <AntdSelect
       // @ts-ignore
       role="button"
-      data-testid={`select-object-${mode}`}
+      data-testid={`select-object-${mode || 'single'}`}
       value={toValue(value)}
       defaultValue={toValue(defaultValue)}
       allowClear={{

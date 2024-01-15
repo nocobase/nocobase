@@ -10,9 +10,9 @@ import { useCompile } from '../../hooks';
 import { ActionContextProvider, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
+import { transformNestedData } from './InternalCascadeSelect';
 import schema from './schema';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
-import { transformNestedData } from './InternalCascadeSelect';
 
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
@@ -24,6 +24,9 @@ const toValue = (value, placeholder) => {
   }
   return value;
 };
+function isObject(value) {
+  return typeof value === 'object' && value !== null;
+}
 export const ReadPrettyInternalViewer: React.FC = observer(
   (props: any) => {
     const fieldSchema = useFieldSchema();
@@ -41,15 +44,18 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const { designable } = useDesignable();
     const { snapshot } = useActionContext();
     const targetCollection = getCollection(collectionField?.target);
-    const isTreeCollection = targetCollection.template === 'tree';
+    const isTreeCollection = targetCollection?.template === 'tree';
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
     const renderRecords = () =>
       toArr(props.value).map((record, index, arr) => {
+        const value = record?.[fieldNames?.label || 'label'];
         const label = isTreeCollection
           ? transformNestedData(record)
               .map((o) => o?.[fieldNames?.label || 'label'])
               .join(' / ')
-          : record?.[fieldNames?.label || 'label'];
+          : isObject(value)
+            ? JSON.stringify(value)
+            : value;
         const val = toValue(compile(label), 'N/A');
         const labelUiSchema = useLabelUiSchema(
           record?.__collection || collectionField?.target,
@@ -61,7 +67,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
             <span>
               {snapshot ? (
                 text
-              ) : enableLink !== false && !props.enableLink ? (
+              ) : enableLink !== false ? (
                 <a
                   onClick={(e) => {
                     e.stopPropagation();
@@ -119,7 +125,13 @@ export const ReadPrettyInternalViewer: React.FC = observer(
               {renderRecords()}
             </EllipsisWithTooltip>
             <ActionContextProvider
-              value={{ visible, setVisible, openMode: 'drawer', snapshot: collectionField?.interface === 'snapshot' }}
+              value={{
+                visible,
+                setVisible,
+                openMode: 'drawer',
+                snapshot: collectionField?.interface === 'snapshot',
+                fieldSchema: fieldSchema,
+              }}
             >
               {renderRecordProvider()}
             </ActionContextProvider>

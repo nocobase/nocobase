@@ -1,0 +1,33 @@
+version: "3"
+networks:
+  nocobase:
+    driver: bridge
+services:
+  app:
+    image: nocobase/nocobase:latest
+    networks:
+      - nocobase
+    depends_on:
+      - mariadb
+    environment:
+      - APP_KEY=your-secret-key # Replace it with your own app key
+      - DB_DIALECT=mariadb
+      - DB_HOST=mariadb
+      - DB_DATABASE=nocobase
+      - DB_USER=nocobase
+      - DB_PASSWORD=nocobase
+      - DB_TIMEZONE=+08:00
+    volumes:
+      - ./storage:/app/nocobase/storage
+    ports:
+      - "13000:80"
+  mariadb:
+    image: mariadb:latest
+    environment:
+      MYSQL_DATABASE: nocobase
+      MYSQL_USER: nocobase
+      MYSQL_PASSWORD: nocobase
+      MYSQL_ROOT_PASSWORD: nocobase
+    restart: always
+    networks:
+      - nocobase

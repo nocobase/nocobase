@@ -1,0 +1,19 @@
+{
+  "HTTP request": "Requisição HTTP",
+  "HTTP method": "Método HTTP",
+  "URL": "URL",
+  "Headers": "Cabeçalhos",
+  "Add request header": "Adicionar cabeçalho de requisição",
+  "Parameters": "Parâmetros",
+  "Add parameter": "Adicionar parâmetro",
+  "Body": "Corpo",
+  "Use variable": "Usar variável",
+  "Format": "Formato",
+  "Insert": "Inserir",
+  "Timeout config": "Configuração de tempo limite",
+  "ms": "ms",
+  "Input request data": "Dados de entrada da requisição",
+  "Only support standard JSON data": "Suporta somente dados JSON padrão",
+  "\"Content-Type\" only support \"application/json\", and no need to specify": "\"Content-Type\" somente suporta \"application/json\" e não precisa ser especificado",
+  "Ignore fail request and continue workflow": "Ignorar falhas na requisição e continuar o fluxo de trabalho"
+}

@@ -10,6 +10,7 @@ import { useFormVariable } from './useFormVariable';
 import { useIterationVariable } from './useIterationVariable';
 import { useParentRecordVariable } from './useParentRecordVariable';
 import { useRecordVariable } from './useRecordVariable';
+import { useRoleVariable } from './useRoleVariable';
 import { useUserVariable } from './useUserVariable';
 
 interface Props {
@@ -58,6 +59,12 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
+  const roleVariable = useRoleVariable({
+    uiSchema: uiSchema,
+    collectionField,
+    noDisabled,
+    targetFieldSchema,
+  });
   const dateVariable = useDateVariable({ operator, schema: uiSchema, noDisabled });
   const formVariable = useFormVariable({
     schema: uiSchema,
@@ -91,6 +98,7 @@ export const useVariableOptions = ({
   return useMemo(() => {
     return [
       userVariable,
+      roleVariable,
       dateVariable,
       form && !form.readPretty && formVariable,
       (isInSubForm || isInSubTable) && iterationVariable,
@@ -101,6 +109,7 @@ export const useVariableOptions = ({
     ].filter(Boolean);
   }, [
     userVariable,
+    roleVariable,
     dateVariable,
     form,
     formVariable,

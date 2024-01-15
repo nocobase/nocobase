@@ -1,7 +1,7 @@
 import { Field } from '@formily/core';
 import { evaluators } from '@nocobase/evaluators/client';
-import { uid } from '@nocobase/utils';
-import _, { last } from 'lodash';
+import { uid } from '@nocobase/utils/client';
+import _ from 'lodash';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { REGEX_OF_VARIABLE } from '../../../variables/utils/isVariable';
@@ -19,7 +19,19 @@ interface Props {
   localVariables: VariableOption[];
 }
 
-export const linkageMergeAction = async ({
+/**
+ * 获取字段临时状态对象
+ */
+export async function getTempFieldState(condition: boolean | Promise<boolean>, value: any) {
+  [condition, value] = await Promise.all([condition, value]);
+
+  return {
+    condition,
+    value,
+  };
+}
+
+export const collectFieldStateOfLinkageRules = ({
   operator,
   value,
   field,
@@ -28,107 +40,87 @@ export const linkageMergeAction = async ({
   variables,
   localVariables,
 }: Props) => {
-  const requiredResult = field?.linkageProperty?.required || [field?.initProperty?.required || false];
-  const displayResult = field?.linkageProperty?.display || [field?.initProperty?.display];
-  const patternResult = field?.linkageProperty?.pattern || [field?.initProperty?.pattern];
-  const valueResult = field?.linkageProperty?.value || [field?.initProperty?.value];
+  const requiredResult = field?.stateOfLinkageRules?.required || [field?.initStateOfLinkageRules?.required];
+  const displayResult = field?.stateOfLinkageRules?.display || [field?.initStateOfLinkageRules?.display];
+  const patternResult = field?.stateOfLinkageRules?.pattern || [field?.initStateOfLinkageRules?.pattern];
+  const valueResult = field?.stateOfLinkageRules?.value || [field?.initStateOfLinkageRules?.value];
   const { evaluate } = evaluators.get('formula.js');
 
   switch (operator) {
     case ActionType.Required:
-      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
-        requiredResult.push(true);
-      }
-      field.linkageProperty = {
-        ...field.linkageProperty,
+      requiredResult.push(getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), true));
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
         required: requiredResult,
       };
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          field.required = last(field.linkageProperty.required);
-        });
-        resolve(void 0);
-      });
+      break;
     case ActionType.InRequired:
-      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
-        requiredResult.push(false);
-      }
-      field.linkageProperty = {
-        ...field.linkageProperty,
+      requiredResult.push(getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), false));
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
         required: requiredResult,
       };
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          field.required = last(field.linkageProperty.required);
-        });
-        resolve(void 0);
-      });
+      break;
     case ActionType.Visible:
     case ActionType.None:
     case ActionType.Hidden:
-      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
-        displayResult.push(operator);
-      }
-      field.linkageProperty = {
-        ...field.linkageProperty,
+      displayResult.push(
+        getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), operator),
+      );
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
         display: displayResult,
       };
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          field.display = last(displayResult);
-        });
-        resolve(void 0);
-      });
+      break;
     case ActionType.Editable:
     case ActionType.ReadOnly:
     case ActionType.ReadPretty:
-      if (await conditionAnalyses({ rules: condition, variables, localVariables })) {
-        patternResult.push(operator);
-      }
-      field.linkageProperty = {
-        ...field.linkageProperty,
+      patternResult.push(
+        getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), operator),
+      );
+      field.stateOfLinkageRules = {
+        ...field.stateOfLinkageRules,
         pattern: patternResult,
       };
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          field.pattern = last(patternResult);
-        });
-        resolve(void 0);
-      });
+      break;
     case ActionType.Value:
-      if (isConditionEmpty(condition) || (await conditionAnalyses({ rules: condition, variables, localVariables }))) {
-        if (value?.mode === 'express') {
-          if ((value.value || value.result) == null) {
-            return;
-          }
+      {
+        const getValue = async () => {
+          if (value?.mode === 'express') {
+            if ((value.value || value.result) == null) {
+              return;
+            }
 
-          // 1. 解析如 `{{$user.name}}` 之类的变量
-          const { exp, scope: expScope } = await replaceVariables(value.value || value.result, {
-            variables,
-            localVariables,
-          });
+            // 1. 解析如 `{{$user.name}}` 之类的变量
+            const { exp, scope: expScope } = await replaceVariables(value.value || value.result, {
+              variables,
+              localVariables,
+            });
 
-          try {
-            // 2. TODO: 需要把里面解析变量的逻辑删除，因为在上一步已经解析过了
-            const result = evaluate(exp, { ...values, now: () => new Date().toString(), ...expScope });
-            valueResult.push(result);
-          } catch (error) {
-            console.error(error);
+            try {
+              // 2. TODO: 需要把里面解析变量的逻辑删除，因为在上一步已经解析过了
+              const result = evaluate(exp, { now: () => new Date().toString(), ...expScope });
+              return result;
+            } catch (error) {
+              console.error(error);
+            }
+          } else if (value?.mode === 'constant') {
+            return value?.value || value;
+          } else {
+            return null;
           }
-        } else if (value?.mode === 'constant') {
-          valueResult.push(value?.value || value);
+        };
+        if (isConditionEmpty(condition)) {
+          valueResult.push(getTempFieldState(true, getValue()));
         } else {
-          valueResult.push(null);
+          valueResult.push(
+            getTempFieldState(conditionAnalyses({ rules: condition, variables, localVariables }), getValue()),
+          );
         }
-
-        field.linkageProperty = {
-          ...field.linkageProperty,
+        field.stateOfLinkageRules = {
+          ...field.stateOfLinkageRules,
           value: valueResult,
         };
-
-        if (last(valueResult) !== undefined) {
-          field.value = last(valueResult);
-        }
       }
       break;
     default:

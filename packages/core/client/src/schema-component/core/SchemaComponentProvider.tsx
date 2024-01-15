@@ -1,7 +1,6 @@
 import { createForm } from '@formily/core';
 import { FormProvider, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useCookieState } from 'ahooks';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponentContext } from '../context';
@@ -44,15 +43,13 @@ const Registry = {
 Schema.registerCompiler(Registry.compile);
 
 export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (props) => {
-  const { designable, components, children } = props;
+  const { designable, onDesignableChange, components, children } = props;
   const [, setUid] = useState(uid());
   const [formId, setFormId] = useState(uid());
   const form = useMemo(() => props.form || createForm(), [formId]);
   const { t } = useTranslation();
   const scope = { ...props.scope, t, randomString };
-  const [active, setActive] = useCookieState('useCookieDesignable', {
-    defaultValue: designable ? 'true' : 'false',
-  });
+  const [active, setActive] = useState(designable);
   return (
     <SchemaComponentContext.Provider
       value={{
@@ -60,9 +57,12 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
         components,
         reset: () => setFormId(uid()),
         refresh: () => setUid(uid()),
-        designable: active === 'true',
-        setDesignable(value) {
-          setActive(value ? 'true' : 'false');
+        designable: typeof designable === 'boolean' ? designable : active,
+        setDesignable: (value) => {
+          if (typeof designable !== 'boolean') {
+            setActive(value);
+          }
+          onDesignableChange?.(value);
         },
       }}
     >

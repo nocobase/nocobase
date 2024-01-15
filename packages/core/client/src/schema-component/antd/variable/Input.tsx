@@ -332,25 +332,24 @@ export function Input(props) {
           )}
         </div>
       )}
-      {options.length > 1 && !disabled ? (
-        <Cascader
-          options={options}
-          value={variable ?? ['', ...(children || !constantOption.children?.length ? [] : [type])]}
-          onChange={onSwitch}
-          loadData={loadData as any}
-          changeOnSelect={changeOnSelect}
-          fieldNames={fieldNames}
-        >
-          {button ?? (
-            <XButton
-              className={css(`
-                margin-left: -1px;
-              `)}
-              type={variable ? 'primary' : 'default'}
-            />
-          )}
-        </Cascader>
-      ) : null}
+      <Cascader
+        options={options}
+        value={variable ?? ['', ...(children || !constantOption.children?.length ? [] : [type])]}
+        onChange={onSwitch}
+        loadData={loadData as any}
+        changeOnSelect={changeOnSelect}
+        fieldNames={fieldNames}
+        disabled={disabled}
+      >
+        {button ?? (
+          <XButton
+            className={css(`
+              margin-left: -1px;
+            `)}
+            type={variable ? 'primary' : 'default'}
+          />
+        )}
+      </Cascader>
     </Space.Compact>,
   );
 }

@@ -1,6 +1,6 @@
 import { SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
+import { act, renderHook, waitFor } from '@nocobase/test/client';
 import React from 'react';
-import { act, renderHook, waitFor } from 'testUtils';
 import { APIClientProvider } from '../../api-client';
 import { mockAPIClient } from '../../testUtils';
 import { CurrentUserProvider } from '../../user';
@@ -56,6 +56,10 @@ vi.mock('../../collection-manager', async () => {
 });
 
 const { apiClient, mockRequest } = mockAPIClient();
+
+// 用于解析 `$nRole` 的值
+apiClient.auth.role = 'root';
+
 mockRequest.onGet('/auth:check').reply(() => {
   return [
     200,
@@ -63,6 +67,16 @@ mockRequest.onGet('/auth:check').reply(() => {
       data: {
         id: 0,
         nickname: 'from request',
+      },
+    },
+  ];
+});
+mockRequest.onGet('/roles:check').reply(() => {
+  return [
+    200,
+    {
+      data: {
+        role: 'root',
       },
     },
   ];
@@ -194,6 +208,7 @@ describe('useVariables', () => {
             "tomorrow": [Function],
             "yesterday": [Function],
           },
+          "$nRole": "root",
           "$system": {
             "now": [Function],
           },
@@ -404,6 +419,7 @@ describe('useVariables', () => {
             "tomorrow": [Function],
             "yesterday": [Function],
           },
+          "$nRole": "root",
           "$system": {
             "now": [Function],
           },
@@ -487,6 +503,7 @@ describe('useVariables', () => {
             "tomorrow": [Function],
             "yesterday": [Function],
           },
+          "$nRole": "root",
           "$new": {
             "name": "new variable",
           },
@@ -583,6 +600,34 @@ describe('useVariables', () => {
     ).toBe('local variable');
 
     // 由于 $local 是一个局部变量，所以不会被缓存到 ctx 中
+    expect(result.current.getVariable('$local')).toBe(null);
+  });
+
+  it('parse multiple variables concurrently using local variables', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    const promises = [];
+
+    await waitFor(() => {
+      for (let i = 0; i < 3; i++) {
+        promises.push(
+          result.current.parseVariable('{{ $user.nickname }}', [
+            {
+              name: `$local`,
+              ctx: {
+                name: `local variable ${i}`,
+              },
+            },
+          ]),
+        );
+      }
+    });
+
+    await Promise.all(promises);
+
+    // 并发多次解析之后，最终的全局变量不应该包含之前注册的局部变量
     expect(result.current.getVariable('$local')).toBe(null);
   });
 

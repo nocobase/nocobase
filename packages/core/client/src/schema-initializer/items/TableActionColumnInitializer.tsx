@@ -1,8 +1,9 @@
 import React from 'react';
 
 import { InitializerWithSwitch } from './InitializerWithSwitch';
+import { useSchemaInitializerItem } from '../../application';
 
-export const TableActionColumnInitializer = (props) => {
+export const TableActionColumnInitializer = () => {
   const schema = {
     type: 'void',
     title: '{{ t("Actions") }}',
@@ -23,5 +24,6 @@ export const TableActionColumnInitializer = (props) => {
       },
     },
   };
-  return <InitializerWithSwitch {...props} schema={schema} type={'x-action-column'} />;
+  const itemConfig = useSchemaInitializerItem();
+  return <InitializerWithSwitch {...itemConfig} schema={schema} item={itemConfig} type={'x-action-column'} />;
 };

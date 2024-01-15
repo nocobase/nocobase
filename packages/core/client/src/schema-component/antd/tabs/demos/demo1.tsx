@@ -2,7 +2,7 @@
  * title: Tabs
  */
 import { ISchema } from '@formily/react';
-import { Action, SchemaComponent, SchemaComponentProvider, Tabs } from '@nocobase/client';
+import { Action, Application, SchemaComponent, SchemaComponentProvider, Tabs } from '@nocobase/client';
 import React from 'react';
 import { AntdSchemaComponentProvider } from '../../AntdSchemaComponentProvider';
 
@@ -45,7 +45,7 @@ const schema: ISchema = {
   },
 };
 
-export default () => {
+const Root = () => {
   return (
     <SchemaComponentProvider designable components={{ Tabs, Action }}>
       <AntdSchemaComponentProvider>
@@ -54,3 +54,13 @@ export default () => {
     </SchemaComponentProvider>
   );
 };
+
+const app = new Application({
+  router: {
+    type: 'memory',
+    initialEntries: ['/'],
+  },
+  providers: [Root],
+});
+
+export default app.getRootComponent();

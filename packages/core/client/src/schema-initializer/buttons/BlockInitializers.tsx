@@ -1,103 +1,72 @@
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 import { gridRowColWrap } from '../utils';
 
-// 页面里添加区块
-export const BlockInitializers = {
+export const blockInitializers = new SchemaInitializer({
+  name: 'BlockInitializers',
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',
   wrap: gridRowColWrap,
   items: [
     {
-      key: 'dataBlocks',
-      type: 'itemGroup',
+      name: 'dataBlocks',
       title: '{{t("Data blocks")}}',
-      children: [
-        {
-          key: 'table',
-          type: 'item',
-          title: '{{t("Table")}}',
-          component: 'TableBlockInitializer',
-        },
-        {
-          key: 'form',
-          type: 'item',
-          title: '{{t("Form")}}',
-          component: 'FormBlockInitializer',
-        },
-        {
-          key: 'details',
-          type: 'item',
-          title: '{{t("Details")}}',
-          component: 'DetailsBlockInitializer',
-        },
-        {
-          key: 'List',
-          type: 'item',
-          title: '{{t("List")}}',
-          component: 'ListBlockInitializer',
-        },
-        {
-          key: 'GridCard',
-          type: 'item',
-          title: '{{t("Grid Card")}}',
-          component: 'GridCardBlockInitializer',
-        },
-        {
-          key: 'calendar',
-          type: 'item',
-          title: '{{t("Calendar")}}',
-          component: 'CalendarBlockInitializer',
-        },
-        {
-          key: 'kanban',
-          type: 'item',
-          title: '{{t("Kanban")}}',
-          component: 'KanbanBlockInitializer',
-        },
-        {
-          key: 'Gantt',
-          type: 'item',
-          title: '{{t("Gantt")}}',
-          component: 'GanttBlockInitializer',
-        },
-      ],
-    },
-    {
-      key: 'filterBlocks',
       type: 'itemGroup',
-      title: '{{t("Filter blocks")}}',
       children: [
         {
-          key: 'filterForm',
-          type: 'item',
-          title: '{{t("Form")}}',
-          component: 'FilterFormBlockInitializer',
+          name: 'table',
+          title: '{{t("Table")}}',
+          Component: 'TableBlockInitializer',
         },
         {
-          key: 'filterCollapse',
-          type: 'item',
-          title: '{{t("Collapse")}}',
-          component: 'FilterCollapseBlockInitializer',
+          name: 'form',
+          title: '{{t("Form")}}',
+          Component: 'FormBlockInitializer',
+        },
+        {
+          name: 'details',
+          title: '{{t("Details")}}',
+          Component: 'DetailsBlockInitializer',
+        },
+        {
+          name: 'list',
+          title: '{{t("List")}}',
+          Component: 'ListBlockInitializer',
+        },
+        {
+          name: 'gridCard',
+          title: '{{t("Grid Card")}}',
+          Component: 'GridCardBlockInitializer',
         },
       ],
     },
     {
-      key: 'media',
+      name: 'filterBlocks',
+      title: '{{t("Filter blocks")}}',
+      type: 'itemGroup',
+      children: [
+        {
+          name: 'filterForm',
+          title: '{{t("Form")}}',
+          Component: 'FilterFormBlockInitializer',
+        },
+        {
+          name: 'filterCollapse',
+          title: '{{t("Collapse")}}',
+          Component: 'FilterCollapseBlockInitializer',
+        },
+      ],
+    },
+    {
+      name: 'otherBlocks',
       type: 'itemGroup',
       title: '{{t("Other blocks")}}',
       children: [
         {
-          key: 'markdown',
-          type: 'item',
+          name: 'markdown',
           title: '{{t("Markdown")}}',
-          component: 'MarkdownBlockInitializer',
-        },
-        {
-          key: 'auditLogs',
-          type: 'item',
-          title: '{{t("Audit logs")}}',
-          component: 'AuditLogsBlockInitializer',
+          Component: 'MarkdownBlockInitializer',
         },
       ],
     },
   ],
-};
+});

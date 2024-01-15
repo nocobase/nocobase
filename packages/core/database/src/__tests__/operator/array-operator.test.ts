@@ -1,5 +1,5 @@
-import { mockDatabase } from '../index';
 import Database from '../../database';
+import { mockDatabase } from '../index';
 
 describe('array field operator', function () {
   let db: Database;
@@ -14,6 +14,8 @@ describe('array field operator', function () {
 
   beforeEach(async () => {
     db = mockDatabase({});
+    await db.clean({ drop: true });
+
     Test = db.collection({
       name: 'test',
       fields: [
@@ -193,6 +195,18 @@ describe('array field operator', function () {
     expect(filter3[0].get('name')).toEqual(t2.get('name'));
   });
 
+  // fix https://nocobase.height.app/T-2803
+  test('$anyOf with string', async () => {
+    const filter3 = await Test.repository.find({
+      filter: {
+        'selected.$anyOf': 'aa',
+      },
+    });
+
+    expect(filter3.length).toEqual(1);
+    expect(filter3[0].get('name')).toEqual(t2.get('name'));
+  });
+
   test('$anyOf with multiple items', async () => {
     const filter3 = await Test.repository.find({
       filter: {
@@ -207,6 +221,18 @@ describe('array field operator', function () {
     const filter = await Test.repository.find({
       filter: {
         'selected.$noneOf': ['aa'],
+      },
+    });
+
+    expect(filter.length).toEqual(1);
+    expect(filter[0].get('name')).toEqual(t1.get('name'));
+  });
+
+  // fix https://nocobase.height.app/T-2803
+  test('$noneOf with string', async () => {
+    const filter = await Test.repository.find({
+      filter: {
+        'selected.$noneOf': 'aa',
       },
     });
 

@@ -1,3 +1,4 @@
+import { untracked } from '@formily/reactive';
 import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
@@ -18,7 +19,7 @@ export const VariablesContext = createContext<VariablesContextType>(null);
 
 const variableToCollectionName = {};
 
-const getFieldPath = (variablePath: string) => {
+const getFieldPath = (variablePath: string, variableToCollectionName: Record<string, any>) => {
   const list = variablePath.split('.');
   const result = list.map((item) => {
     if (variableToCollectionName[item]) {
@@ -50,13 +51,24 @@ const VariablesProvider = ({ children }) => {
    * 3. 如果某个 `key` 不存在，且 `key` 不是一个关联字段，则返回当前值
    */
   const getValue = useCallback(
-    async (variablePath: string) => {
+    async (
+      variablePath: string,
+      localVariables?: VariableOption[],
+      options?: {
+        /** 第一次请求时，需要包含的关系字段 */
+        appends?: string[];
+      },
+    ) => {
       const list = variablePath.split('.');
       const variableName = list[0];
-      let current = ctxRef.current;
-      let collectionName = getFieldPath(variableName);
+      const _variableToCollectionName = mergeVariableToCollectionNameWithLocalVariables(
+        variableToCollectionName,
+        localVariables,
+      );
+      let current = mergeCtxWithLocalVariables(ctxRef.current, localVariables);
+      let collectionName = getFieldPath(variableName, _variableToCollectionName);
 
-      if (process.env.NODE_ENV !== 'production' && !ctxRef.current[variableName]) {
+      if (!current[variableName]) {
         throw new Error(`VariablesProvider: ${variableName} is not found`);
       }
 
@@ -67,7 +79,7 @@ const VariablesProvider = ({ children }) => {
 
         const key = list[index];
         const associationField: CollectionFieldOptions = getCollectionJoinField(
-          getFieldPath(list.slice(0, index + 1).join('.')),
+          getFieldPath(list.slice(0, index + 1).join('.'), _variableToCollectionName),
         );
         if (Array.isArray(current)) {
           const result = current.map((item) => {
@@ -80,6 +92,9 @@ const VariablesProvider = ({ children }) => {
                 const result = api
                   .request({
                     url,
+                    params: {
+                      appends: options?.appends,
+                    },
                   })
                   .then((data) => {
                     clearRequested(url);
@@ -101,6 +116,9 @@ const VariablesProvider = ({ children }) => {
           } else {
             const waitForData = api.request({
               url,
+              params: {
+                appends: options?.appends,
+              },
             });
             stashRequested(url, waitForData);
             data = await waitForData;
@@ -127,7 +145,7 @@ const VariablesProvider = ({ children }) => {
    */
   const registerVariable = useCallback(
     (variableOption: VariableOption) => {
-      if (process.env.NODE_ENV !== 'production' && !isVariable(`{{${variableOption.name}}}`)) {
+      if (!isVariable(`{{${variableOption.name}}}`)) {
         throw new Error(`VariablesProvider: ${variableOption.name} is not a valid name`);
       }
 
@@ -156,50 +174,16 @@ const VariablesProvider = ({ children }) => {
     };
   }, []);
 
-  const removeVariable = useCallback((variableName: string) => {
-    setCtx((prev) => {
-      const next = { ...prev };
-      delete next[variableName];
-      return next;
-    });
-    delete variableToCollectionName[variableName];
-  }, []);
-
-  const onLocalVariablesReady = useCallback(
-    async (localVariables: VariableOption | VariableOption[], handler: () => Promise<void>) => {
-      let old = null;
-      if (localVariables) {
-        if (Array.isArray(localVariables)) {
-          old = localVariables.map((item) => getVariable(item.name));
-          localVariables.forEach((item) => registerVariable(item));
-        } else {
-          // 1. 如果有局部变量，先把全局中同名的变量取出来
-          old = getVariable(localVariables.name);
-          // 2. 把局部变量注册到全局，这样就可以使用了
-          registerVariable(localVariables);
-        }
-      }
-
-      await handler();
-
-      // 3. 局部变量使用完成后，需要在全局中清除
-      if (localVariables) {
-        if (Array.isArray(localVariables)) {
-          localVariables.forEach((item) => removeVariable(item.name));
-        } else {
-          removeVariable(localVariables.name);
-        }
-      }
-      // 4. 如果有同名的全局变量，把它重新注册回去
-      if (old) {
-        if (Array.isArray(old)) {
-          old.filter(Boolean).forEach((item) => registerVariable(item));
-        } else {
-          registerVariable(old);
-        }
-      }
+  const removeVariable = useCallback(
+    (variableName: string) => {
+      setCtx((prev) => {
+        const next = { ...prev };
+        delete next[variableName];
+        return next;
+      });
+      delete variableToCollectionName[variableName];
     },
-    [getVariable, registerVariable, removeVariable],
+    [setCtx],
   );
 
   const parseVariable = useCallback(
@@ -209,45 +193,58 @@ const VariablesProvider = ({ children }) => {
      * @param localVariables 局部变量，解析完成后会被清除
      * @returns
      */
-    async (str: string, localVariables?: VariableOption | VariableOption[]) => {
+    async (
+      str: string,
+      localVariables?: VariableOption | VariableOption[],
+      options?: {
+        /** 第一次请求时，需要包含的关系字段 */
+        appends?: string[];
+      },
+    ) => {
       if (!isVariable(str)) {
         return str;
       }
 
-      let value = null;
-      await onLocalVariablesReady(localVariables, async () => {
-        const path = getPath(str);
-        value = await getValue(path);
-      });
+      if (localVariables) {
+        localVariables = _.isArray(localVariables) ? localVariables : [localVariables];
+      }
+
+      const path = getPath(str);
+      const value = await getValue(path, localVariables as VariableOption[], options);
 
       return uniq(filterEmptyValues(value));
     },
-    [getValue, onLocalVariablesReady],
+    [getValue],
   );
 
   const getCollectionField = useCallback(
     async (variableString: string, localVariables?: VariableOption | VariableOption[]) => {
-      if (process.env.NODE_ENV !== 'production' && !isVariable(variableString)) {
+      if (!isVariable(variableString)) {
         throw new Error(`VariablesProvider: ${variableString} is not a variable string`);
       }
 
-      let result = null;
+      if (localVariables) {
+        localVariables = _.isArray(localVariables) ? localVariables : [localVariables];
+      }
 
-      await onLocalVariablesReady(localVariables, async () => {
-        const path = getPath(variableString);
-        result = getCollectionJoinField(getFieldPath(path));
+      const path = getPath(variableString);
+      let result = getCollectionJoinField(
+        getFieldPath(
+          path,
+          mergeVariableToCollectionNameWithLocalVariables(variableToCollectionName, localVariables as VariableOption[]),
+        ),
+      );
 
-        // 当仅有一个例如 `$user` 这样的字符串时，需要拼一个假的 `collectionField` 返回
-        if (!result && !path.includes('.')) {
-          result = {
-            target: variableToCollectionName[path],
-          };
-        }
-      });
+      // 当仅有一个例如 `$user` 这样的字符串时，需要拼一个假的 `collectionField` 返回
+      if (!result && !path.includes('.')) {
+        result = {
+          target: variableToCollectionName[path],
+        };
+      }
 
       return result;
     },
-    [getCollectionJoinField, onLocalVariablesReady],
+    [getCollectionJoinField],
   );
 
   useEffect(() => {
@@ -277,19 +274,45 @@ VariablesProvider.displayName = 'VariablesProvider';
 
 export default VariablesProvider;
 
-/**
- * 判断是否应该请求关系字段的数据。如果是 null 则可以确定后端的数据为空，此时不需要请求；如果是 undefined 则需要请求。
- *
- * 注意：如果后端接口的这一 “规则” 发生了变更，那么可能会出现问题。
- * @param value
- * @returns
- */
 function shouldToRequest(value) {
-  // fix https://nocobase.height.app/T-2502
-  // 兼容 `对多` 和 `对一` 子表单子表格字段的情况
-  if (JSON.stringify(value) === '[{}]' || JSON.stringify(value) === '{}') {
-    return true;
-  }
+  let result = false;
 
-  return value === undefined;
+  // value 有可能是一个响应式对象，使用 untracked 可以避免意外触发 autorun
+  untracked(() => {
+    // fix https://nocobase.height.app/T-2502
+    // 兼容 `对多` 和 `对一` 子表单子表格字段的情况
+    if (JSON.stringify(value) === '[{}]' || JSON.stringify(value) === '{}') {
+      result = true;
+      return;
+    }
+
+    result = _.isEmpty(value);
+  });
+
+  return result;
+}
+
+function mergeCtxWithLocalVariables(ctx: Record<string, any>, localVariables?: VariableOption[]) {
+  ctx = { ...ctx };
+
+  localVariables?.forEach((item) => {
+    ctx[item.name] = item.ctx;
+  });
+
+  return ctx;
+}
+
+function mergeVariableToCollectionNameWithLocalVariables(
+  variableToCollectionName: Record<string, any>,
+  localVariables?: VariableOption[],
+) {
+  variableToCollectionName = { ...variableToCollectionName };
+
+  localVariables?.forEach((item) => {
+    if (item.collectionName) {
+      variableToCollectionName[item.name] = item.collectionName;
+    }
+  });
+
+  return variableToCollectionName;
 }

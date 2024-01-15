@@ -1,8 +1,6 @@
-import { CollectionOptions } from '@nocobase/client';
+import { defineCollection } from '@nocobase/database';
 
-export default {
-  namespace: 'custom-requests',
-  duplicator: 'optional',
+export default defineCollection({
+  dumpRules: 'required',
   name: 'customRequestsRoles',
-  title: '{{t("Custom request")}}',
-} as CollectionOptions;
+});

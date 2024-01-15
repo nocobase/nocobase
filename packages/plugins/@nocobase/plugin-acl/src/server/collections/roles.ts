@@ -1,11 +1,8 @@
-import { CollectionOptions } from '@nocobase/database';
+import { defineCollection } from '@nocobase/database';
 
-export default {
-  namespace: 'acl.acl',
-  duplicator: {
-    dumpable: 'required',
-    with: 'uiSchemas',
-  },
+export default defineCollection({
+  origin: '@nocobase/plugin-acl',
+  dumpRules: 'required',
   name: 'roles',
   title: '{{t("Roles")}}',
   autoGenId: false,
@@ -98,4 +95,4 @@ export default {
       through: 'rolesUsers',
     },
   ],
-} as CollectionOptions;
+});

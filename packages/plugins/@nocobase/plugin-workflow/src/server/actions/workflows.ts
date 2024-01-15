@@ -7,7 +7,7 @@ export async function update(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context) as Repository;
   const { filterByTk, values } = context.action.params;
   context.action.mergeParams({
-    whitelist: ['title', 'description', 'enabled', 'config', 'options'],
+    whitelist: ['title', 'description', 'enabled', 'triggerTitle', 'config', 'options'],
   });
   // only enable/disable
   if (Object.keys(values).includes('config')) {
@@ -54,12 +54,11 @@ export async function destroy(context: Context, next) {
 }
 
 export async function revision(context: Context, next) {
-  const plugin = context.app.getPlugin('workflow') as Plugin;
-  const { db } = context;
+  const plugin = context.app.getPlugin(Plugin);
   const repository = utils.getRepositoryFromParams(context);
   const { filterByTk, filter = {}, values = {} } = context.action.params;
 
-  context.body = await db.sequelize.transaction(async (transaction) => {
+  context.body = await context.db.sequelize.transaction(async (transaction) => {
     const origin = await repository.findOne({
       filterByTk,
       filter,
@@ -140,7 +139,7 @@ export async function revision(context: Context, next) {
 }
 
 export async function sync(context: Context, next) {
-  const plugin = context.app.getPlugin('workflow');
+  const plugin = context.app.getPlugin(Plugin);
   const repository = utils.getRepositoryFromParams(context);
   const { filterByTk, filter = {} } = context.action.params;
 

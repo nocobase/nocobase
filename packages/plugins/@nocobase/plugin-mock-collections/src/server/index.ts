@@ -188,39 +188,55 @@ export class PluginMockCollectionsServer extends Plugin {
       mock: async (ctx, next) => {
         const { resourceName } = ctx.action;
         const { values, count = 10 } = ctx.action.params;
-        const mockCollectionData = async (collectionName, count = 1, skipAssoc = false) => {
+        const mockCollectionData = async (collectionName, count = 1, depth = 0, maxDepth = 4) => {
           const collection = ctx.db.getCollection(collectionName) as Collection;
           const items = await Promise.all(
             _.range(count).map(async (i) => {
               if (collection.options.template === 'file') {
                 return mockAttachment();
               }
-              const values = {};
+              const v = {};
               if (collection.options.sortable) {
-                values['sort'] = i + 1;
+                v['sort'] = i + 1;
               }
               for (const field of collection.fields.values()) {
                 if (!field.options.interface) {
                   continue;
                 }
-                if (skipAssoc && ['m2o', 'm2m', 'o2m', 'obo', 'oho'].includes(field.options.interface)) {
+                if (depth >= maxDepth && ['m2o', 'm2m', 'o2m', 'obo', 'oho'].includes(field.options.interface)) {
                   continue;
                 }
                 const fn = fieldInterfaces[field.options.interface];
                 if (fn?.mock) {
-                  values[field.name] = await fn.mock(field.options, { mockCollectionData });
+                  v[field.name] = await fn.mock(field.options, { mockCollectionData, maxDepth, depth });
                 }
               }
-              return values;
+              return v;
             }),
           );
           return count == 1 ? items[0] : items;
         };
         const repository = ctx.db.getRepository(resourceName);
-        const data = await mockCollectionData(resourceName, count);
-        // ctx.body = data;
+        let size = count;
+        if (Array.isArray(values)) {
+          size = values.length;
+        }
+        const data = await mockCollectionData(resourceName, size);
+        // ctx.body = {
+        //   values: (Array.isArray(data) ? data : [data]).map((item, index) => {
+        //     if (Array.isArray(values)) {
+        //       return { ...item, ...values[index] };
+        //     }
+        //     return { ...item, ...values };
+        //   }),
+        // };
         ctx.body = await repository.create({
-          values: (Array.isArray(data) ? data : [data]).map((item) => ({ ...item, ...values })),
+          values: (Array.isArray(data) ? data : [data]).map((item, index) => {
+            if (Array.isArray(values)) {
+              return { ...item, ...values[index] };
+            }
+            return { ...item, ...values };
+          }),
         });
         await next();
       },

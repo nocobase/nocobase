@@ -1,0 +1,7 @@
+{
+  "Sign in": "Sign in",
+  "User will be registered automatically if not exists.": "User will be registered automatically if not exists.",
+  "Sign up automatically when the user does not exist": "Sign up automatically when the user does not exist",
+  "Service domain": "Service domain",
+  "The domain is usually the address of your server, in local development, you can use the address of your local machine, such as: http://localhost:13000": "The domain is usually the address of your server, in local development, you can use the address of your local machine, such as: http://localhost:13000"
+}

@@ -82,57 +82,71 @@ export class SortField extends Field {
       const queryInterface = this.collection.db.sequelize.getQueryInterface();
 
       if (scopeKey) {
-        const scopeField = this.collection.getField(scopeKey);
-        if (!scopeField) {
+        const scopeAttribute = this.collection.model.rawAttributes[scopeKey];
+
+        if (!scopeAttribute) {
           throw new Error(`can not find scope field ${scopeKey} for collection ${this.collection.name}`);
         }
 
-        scopeKey = this.collection.model.rawAttributes[scopeKey].field;
+        scopeKey = scopeAttribute.field;
       }
 
       const quotedOrderField = queryInterface.quoteIdentifier(orderField);
 
-      const sortColumnName = this.collection.model.rawAttributes[this.name].field;
+      const sortColumnName = queryInterface.quoteIdentifier(this.collection.model.rawAttributes[this.name].field);
 
-      const sql = `
-        WITH ordered_table AS (
-          SELECT *, ROW_NUMBER() OVER (${
-            scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
-          } ORDER BY ${quotedOrderField}) AS new_sequence_number
-          FROM ${this.collection.quotedTableName()}
-          ${(() => {
-            if (scopeKey && scopeValue) {
-              const hasNull = scopeValue.includes(null);
+      let sql: string;
 
-              return `WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue
-                .filter((v) => v !== null)
-                .map((v) => `'${v}'`)
-                .join(',')}) ${hasNull ? `OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL` : ''} `;
-            }
+      const whereClause =
+        scopeKey && scopeValue
+          ? `
+  WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue
+    .filter((v) => v !== null)
+    .map((v) => `'${v}'`)
+    .join(', ')})${scopeValue.includes(null) ? ` OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL` : ''}`
+          : '';
 
-            return '';
-          })()}
-
-        )
-        ${
-          this.collection.db.inDialect('mysql')
-            ? `
-             UPDATE ${this.collection.quotedTableName()}, ordered_table
-             SET ${this.collection.quotedTableName()}.${sortColumnName} = ordered_table.new_sequence_number
-             WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
-            `
-            : `
-          UPDATE ${this.collection.quotedTableName()}
-        SET ${queryInterface.quoteIdentifier(sortColumnName)} = ordered_table.new_sequence_number
-        FROM ordered_table
-        WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ${queryInterface.quoteIdentifier(
-          'ordered_table',
-        )}.${quotedOrderField};
-        `
-        }
-
-      `;
-
+      if (this.collection.db.inDialect('postgres')) {
+        sql = `
+    UPDATE ${this.collection.quotedTableName()}
+    SET ${sortColumnName} = ordered_table.new_sequence_number
+    FROM (
+      SELECT *, ROW_NUMBER() OVER (${
+        scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
+      } ORDER BY ${quotedOrderField}) AS new_sequence_number
+      FROM ${this.collection.quotedTableName()}
+      ${whereClause}
+    ) AS ordered_table
+    WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField};
+  `;
+      } else if (this.collection.db.inDialect('sqlite')) {
+        sql = `
+    UPDATE ${this.collection.quotedTableName()}
+    SET ${sortColumnName} = (
+      SELECT new_sequence_number
+      FROM (
+        SELECT *, ROW_NUMBER() OVER (${
+          scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
+        } ORDER BY ${quotedOrderField}) AS new_sequence_number
+        FROM ${this.collection.quotedTableName()}
+        ${whereClause}
+      ) AS ordered_table
+      WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
+    );
+  `;
+      } else if (this.collection.db.inDialect('mysql') || this.collection.db.inDialect('mariadb')) {
+        sql = `
+    UPDATE ${this.collection.quotedTableName()}
+    JOIN (
+      SELECT *, ROW_NUMBER() OVER (${
+        scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
+      } ORDER BY ${quotedOrderField}) AS new_sequence_number
+      FROM ${this.collection.quotedTableName()}
+      ${whereClause}
+    ) AS ordered_table ON ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
+    SET ${this.collection.quotedTableName()}.${sortColumnName} = ordered_table.new_sequence_number;
+  `;
+      }
       await this.collection.db.sequelize.query(sql, {
         transaction,
       });

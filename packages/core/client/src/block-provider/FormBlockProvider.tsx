@@ -14,6 +14,7 @@ import { TemplateBlockProvider } from './TemplateBlockProvider';
 export const FormBlockContext = createContext<any>({});
 
 const InternalFormBlockProvider = (props) => {
+  const ctx = useFormBlockContext();
   const { action, readPretty, params, association } = props;
   const field = useField();
   const form = useMemo(
@@ -28,6 +29,7 @@ const InternalFormBlockProvider = (props) => {
   const record = useRecord();
   const formBlockValue = useMemo(() => {
     return {
+      ...ctx,
       params,
       action,
       form,
@@ -82,8 +84,8 @@ export const useFormBlockType = () => {
 };
 
 export const useIsDetailBlock = () => {
-  const ctx = useActionContext();
-  return !(ctx?.fieldSchema?.['x-acl-action'] === 'create' || ctx?.fieldSchema?.['x-action'] === 'create');
+  const ctx = useFormBlockContext();
+  return ctx.type !== 'create';
 };
 
 export const FormBlockProvider = (props) => {

@@ -1,31 +1,52 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
 import { actions as authActions, AuthManager, AuthManagerOptions } from '@nocobase/auth';
-import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
+import { Cache, CacheManager, CacheManagerOptions } from '@nocobase/cache';
 import Database, { CollectionOptions, IDatabaseOptions } from '@nocobase/database';
-import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
+import {
+  createLogger,
+  createSystemLogger,
+  getLoggerFilePath,
+  LoggerOptions,
+  RequestLoggerOptions,
+  SystemLogger,
+  SystemLoggerOptions,
+} from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
-import { applyMixins, AsyncEmitter, measureExecutionTime, Toposort, ToposortOptions } from '@nocobase/utils';
-import chalk from 'chalk';
+import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
+import { applyMixins, AsyncEmitter, importModule, Toposort, ToposortOptions } from '@nocobase/utils';
 import { Command, CommandOptions, ParseOptions } from 'commander';
+import { randomUUID } from 'crypto';
+import glob from 'glob';
 import { IncomingMessage, Server, ServerResponse } from 'http';
 import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
 import lodash from 'lodash';
+import { RecordableHistogram } from 'node:perf_hooks';
+import { basename, resolve } from 'path';
+import semver from 'semver';
 import { createACL } from './acl';
 import { AppCommand } from './app-command';
 import { AppSupervisor } from './app-supervisor';
+import { createCacheManager } from './cache';
 import { registerCli } from './commands';
+import { CronJobManager } from './cron/cron-job-manager';
 import { ApplicationNotInstall } from './errors/application-not-install';
-import { createAppProxy, createI18n, createResourcer, getCommandFullName, registerMiddlewares } from './helper';
+import {
+  createAppProxy,
+  createI18n,
+  createResourcer,
+  enablePerfHooks,
+  getCommandFullName,
+  registerMiddlewares,
+} from './helper';
 import { ApplicationVersion } from './helpers/application-version';
 import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { CronJobManager } from './cron/cron-job-manager';
 
-const packageJson = require('../package.json');
+import packageJson from '../package.json';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -34,9 +55,18 @@ export interface ResourcerOptions {
   prefix?: string;
 }
 
+export interface AppLoggerOptions {
+  request: RequestLoggerOptions;
+  system: SystemLoggerOptions;
+}
+
+export interface AppTelemetryOptions extends TelemetryOptions {
+  enabled?: boolean;
+}
+
 export interface ApplicationOptions {
   database?: IDatabaseOptions | Database;
-  cache?: ICacheConfig | ICacheConfig[];
+  cacheManager?: CacheManagerOptions;
   resourcer?: ResourcerOptions;
   bodyParser?: any;
   cors?: any;
@@ -49,6 +79,8 @@ export interface ApplicationOptions {
   pmSock?: string;
   name?: string;
   authManager?: AuthManagerOptions;
+  perfHooks?: boolean;
+  telemetry?: AppTelemetryOptions;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -90,6 +122,8 @@ interface StartOptions {
   cliArgs?: any[];
   dbSync?: boolean;
   checkInstall?: boolean;
+  quickstart?: boolean;
+  reload?: boolean;
   recover?: boolean;
 }
 
@@ -114,6 +148,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     name: string;
   } = null;
   public running = false;
+  public perfHistograms = new Map<string, RecordableHistogram>();
   protected plugins = new Map<string, Plugin>();
   protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
   protected _started: boolean;
@@ -125,6 +160,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   constructor(public options: ApplicationOptions) {
     super();
+    this.context.reqId = randomUUID();
     this.rawOptions = this.name == 'main' ? lodash.cloneDeep(options) : {};
     this.init();
 
@@ -155,7 +191,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._db;
   }
 
-  protected _logger: Logger;
+  protected _logger: SystemLogger;
 
   get logger() {
     return this._logger;
@@ -167,10 +203,20 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._resourcer;
   }
 
+  protected _cacheManager: CacheManager;
+
+  get cacheManager() {
+    return this._cacheManager;
+  }
+
   protected _cache: Cache;
 
   get cache() {
     return this._cache;
+  }
+
+  set cache(cache: Cache) {
+    this._cache = cache;
   }
 
   protected _cli: AppCommand;
@@ -207,6 +253,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get locales() {
     return this._locales;
+  }
+
+  get localeManager() {
+    return this._locales;
+  }
+
+  protected _telemetry: Telemetry;
+
+  get telemetry() {
+    return this._telemetry;
   }
 
   protected _version: ApplicationVersion;
@@ -257,8 +313,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return packageJson.version;
   }
 
+  /**
+   * @deprecated
+   */
   plugin<O = any>(pluginClass: any, options?: O) {
-    this.log.debug(`add plugin ${pluginClass.name}`);
+    this.log.debug(`add plugin`, { method: 'plugin', name: pluginClass.name });
     this.pm.addPreset(pluginClass, options);
   }
 
@@ -304,6 +363,34 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return (this.cli as any)._findCommand(name);
   }
 
+  async preload() {
+    // load core collections
+    // load plugin commands
+  }
+
+  async reInit() {
+    if (!this._loaded) {
+      return;
+    }
+
+    this.log.info('app reinitializing');
+
+    if (this.cacheManager) {
+      await this.cacheManager.close();
+    }
+
+    if (this.telemetry.started) {
+      await this.telemetry.shutdown();
+    }
+
+    const oldDb = this._db;
+    this.init();
+    if (!oldDb.closed()) {
+      await oldDb.close();
+    }
+    this._loaded = false;
+  }
+
   async load(options?: any) {
     if (this._loaded) {
       return;
@@ -311,7 +398,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (options?.reload) {
       this.setMaintainingMessage('app reload');
-      this.log.info(`app.reload()`);
+      this.log.info(`app.reload()`, { method: 'load' });
+
+      if (this.cacheManager) {
+        await this.cacheManager.close();
+      }
+
+      if (this.telemetry.started) {
+        await this.telemetry.shutdown();
+      }
+
       const oldDb = this._db;
       this.init();
       if (!oldDb.closed()) {
@@ -319,23 +415,37 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       }
     }
 
+    this._cacheManager = await createCacheManager(this, this.options.cacheManager);
+
     this.setMaintainingMessage('init plugins');
     await this.pm.initPlugins();
 
     this.setMaintainingMessage('start load');
-
     this.setMaintainingMessage('emit beforeLoad');
-    await this.emitAsync('beforeLoad', this, options);
+
+    if (options?.hooks !== false) {
+      await this.emitAsync('beforeLoad', this, options);
+    }
+
+    // Telemetry is initialized after beforeLoad hook
+    // since some configuration may be registered in beforeLoad hook
+    this.telemetry.init();
+    if (this.options.telemetry?.enabled) {
+      // Start collecting telemetry data if enabled
+      this.telemetry.start();
+    }
 
     await this.pm.load(options);
 
     this.setMaintainingMessage('emit afterLoad');
-    await this.emitAsync('afterLoad', this, options);
+    if (options?.hooks !== false) {
+      await this.emitAsync('afterLoad', this, options);
+    }
     this._loaded = true;
   }
 
   async reload(options?: any) {
-    this.log.debug(`start reload`);
+    this.log.debug(`start reload`, { method: 'reload' });
 
     this._loaded = false;
 
@@ -346,12 +456,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       reload: true,
     });
 
-    this.log.debug('emit afterReload');
+    this.log.debug('emit afterReload', { method: 'reload' });
     this.setMaintainingMessage('emit afterReload');
     await this.emitAsync('afterReload', this, options);
-    this.log.debug(`finish reload`);
+    this.log.debug(`finish reload`, { method: 'reload' });
   }
 
+  /**
+   * @deprecated
+   */
   getPlugin<P extends Plugin>(name: string | typeof Plugin) {
     return this.pm.get(name) as P;
   }
@@ -366,7 +479,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
     this._authenticated = true;
     await this.db.auth();
-    await this.dbVersionCheck({ exit: true });
+    await this.db.checkVersion();
     await this.db.prepare();
   }
 
@@ -393,8 +506,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           command: this.activatedCommand,
         });
 
-        await this.authenticate();
-        await this.load();
+        if (actionCommand['_authenticate']) {
+          await this.authenticate();
+        }
+
+        if (actionCommand['_preload']) {
+          await this.load();
+        }
       })
       .hook('postAction', async (_, actionCommand) => {
         if (this._maintainingStatusBeforeCommand?.error && this._started) {
@@ -409,14 +527,82 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return command;
   }
 
-  async runAsCLI(argv = process.argv, options?: ParseOptions & { throwError?: boolean }) {
+  async loadMigrations(options) {
+    const { directory, context, namespace } = options;
+    const migrations = {
+      beforeLoad: [],
+      afterSync: [],
+      afterLoad: [],
+    };
+    const extensions = ['js', 'ts'];
+    const patten = `${directory}/*.{${extensions.join(',')}}`;
+    const files = glob.sync(patten, {
+      ignore: ['**/*.d.ts'],
+    });
+    const appVersion = await this.version.get();
+    for (const file of files) {
+      let filename = basename(file);
+      filename = filename.substring(0, filename.lastIndexOf('.')) || filename;
+      const Migration = await importModule(file);
+      const m = new Migration({ app: this, db: this.db, ...context });
+      if (!m.appVersion || semver.satisfies(appVersion, m.appVersion, { includePrerelease: true })) {
+        m.name = `${filename}/${namespace}`;
+        migrations[m.on || 'afterLoad'].push(m);
+      }
+    }
+    return migrations;
+  }
+
+  async loadCoreMigrations() {
+    const migrations = await this.loadMigrations({
+      directory: resolve(__dirname, 'migrations'),
+      namespace: '@nocobase/server',
+    });
+    return {
+      beforeLoad: {
+        up: async () => {
+          this.log.debug('run core migrations(beforeLoad)');
+          const migrator = this.db.createMigrator({ migrations: migrations.beforeLoad });
+          await migrator.up();
+        },
+      },
+      afterSync: {
+        up: async () => {
+          this.log.debug('run core migrations(afterSync)');
+          const migrator = this.db.createMigrator({ migrations: migrations.afterSync });
+          await migrator.up();
+        },
+      },
+      afterLoad: {
+        up: async () => {
+          this.log.debug('run core migrations(afterLoad)');
+          const migrator = this.db.createMigrator({ migrations: migrations.afterLoad });
+          await migrator.up();
+        },
+      },
+    };
+  }
+
+  async loadPluginCommands() {
+    this.log.debug('load plugin commands');
+    await this.pm.loadCommands();
+  }
+
+  async runAsCLI(argv = process.argv, options?: ParseOptions & { throwError?: boolean; reqId?: string }) {
     if (this.activatedCommand) {
       return;
     }
-
+    if (options.reqId) {
+      this.context.reqId = options.reqId;
+      this._logger = this._logger.child({ reqId: this.context.reqId });
+    }
     this._maintainingStatusBeforeCommand = this._maintainingCommandStatus;
 
     try {
+      const commandName = options?.from === 'user' ? argv[0] : argv[2];
+      if (!this.cli.hasCommand(commandName)) {
+        await this.pm.loadCommands();
+      }
       const command = await this.cli.parseAsync(argv, options);
 
       this.setMaintaining({
@@ -426,7 +612,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
       return command;
     } catch (error) {
-      console.log({ error });
       if (!this.activatedCommand) {
         this.activatedCommand = {
           name: 'unknown',
@@ -511,6 +696,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       return;
     }
 
+    this.log.info('restarting...');
+
     this._started = false;
     await this.emitAsync('beforeStop');
     await this.reload(options);
@@ -519,11 +706,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async stop(options: any = {}) {
-    this.log.debug('stop app...');
+    this.log.debug('stop app...', { method: 'stop' });
     this.setMaintainingMessage('stopping app...');
 
     if (this.stopped) {
-      this.log.warn(`Application ${this.name} already stopped`);
+      this.log.warn(`app is stopped`, { method: 'stop' });
       return;
     }
 
@@ -533,61 +720,38 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       // close database connection
       // silent if database already closed
       if (!this.db.closed()) {
-        this.logger.info(`close db`);
+        this.log.info(`close db`, { method: 'stop' });
         await this.db.close();
       }
     } catch (e) {
-      this.log.error(e);
+      this.log.error(e.message, { method: 'stop', err: e.stack });
+    }
+
+    if (this.cacheManager) {
+      await this.cacheManager.close();
+    }
+
+    if (this.telemetry.started) {
+      await this.telemetry.shutdown();
     }
 
     await this.emitAsync('afterStop', this, options);
 
     this.stopped = true;
-    this.log.info(`${this.name} is stopped`);
+    this.log.info(`app has stopped`, { method: 'stop' });
     this._started = false;
   }
 
   async destroy(options: any = {}) {
-    this.logger.debug('start destroy app');
+    this.log.debug('start destroy app', { method: 'destory' });
     this.setMaintainingMessage('destroying app...');
     await this.emitAsync('beforeDestroy', this, options);
     await this.stop(options);
 
-    this.logger.debug('emit afterDestroy');
+    this.log.debug('emit afterDestroy', { method: 'destory' });
     await this.emitAsync('afterDestroy', this, options);
 
-    this.logger.debug('finish destroy app');
-  }
-
-  async dbVersionCheck(options?: { exit?: boolean }) {
-    const r = await this.db.version.satisfies({
-      mysql: '>=8.0.17',
-      sqlite: '3.x',
-      postgres: '>=10',
-    });
-
-    if (!r) {
-      console.log(chalk.red('The database only supports MySQL 8.0.17 and above, SQLite 3.x and PostgreSQL 10+'));
-      if (options?.exit) {
-        process.exit();
-      }
-      return false;
-    }
-
-    if (this.db.inDialect('mysql')) {
-      const result = await this.db.sequelize.query(`SHOW VARIABLES LIKE 'lower_case_table_names'`, { plain: true });
-      if (result?.Value === '1' && !this.db.options.underscored) {
-        console.log(
-          `Your database lower_case_table_names=1, please add ${chalk.yellow('DB_UNDERSCORED=true')} to the .env file`,
-        );
-        if (options?.exit) {
-          process.exit();
-        }
-        return false;
-      }
-    }
-
-    return true;
+    this.log.debug('finish destroy app', { method: 'destory' });
   }
 
   async isInstalled() {
@@ -597,27 +761,41 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async install(options: InstallOptions = {}) {
-    this.setMaintainingMessage('installing app...');
-    this.log.debug('Database dialect: ' + this.db.sequelize.getDialect());
-
-    if (options?.clean || options?.sync?.force) {
-      this.log.debug('truncate database');
+    const reinstall = options.clean || options.force;
+    if (reinstall) {
       await this.db.clean({ drop: true });
-      this.log.debug('app reloading');
-      await this.reload();
-    } else if (await this.isInstalled()) {
+    }
+    if (await this.isInstalled()) {
       this.log.warn('app is installed');
       return;
     }
-
-    this.log.debug('emit beforeInstall');
+    await this.reInit();
+    await this.db.sync();
+    await this.load({ hooks: false });
+    this.log.debug('emit beforeInstall', { method: 'install' });
     this.setMaintainingMessage('call beforeInstall hook...');
     await this.emitAsync('beforeInstall', this, options);
-    this.log.debug('start install plugins');
-    await this.pm.install(options);
-    this.log.debug('update version');
+    // await app.db.sync();
+    await this.pm.install();
     await this.version.update();
-    this.log.debug('emit afterInstall');
+    // this.setMaintainingMessage('installing app...');
+    // this.log.debug('Database dialect: ' + this.db.sequelize.getDialect(), { method: 'install' });
+
+    // if (options?.clean || options?.sync?.force) {
+    //   this.log.debug('truncate database', { method: 'install' });
+    //   await this.db.clean({ drop: true });
+    //   this.log.debug('app reloading', { method: 'install' });
+    //   await this.reload();
+    // } else if (await this.isInstalled()) {
+    //   this.log.warn('app is installed', { method: 'install' });
+    //   return;
+    // }
+
+    // this.log.debug('start install plugins', { method: 'install' });
+    // await this.pm.install(options);
+    // this.log.debug('update version', { method: 'install' });
+    // await this.version.update();
+    this.log.debug('emit afterInstall', { method: 'install' });
     this.setMaintainingMessage('call afterInstall hook...');
     await this.emitAsync('afterInstall', this, options);
 
@@ -631,32 +809,57 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async upgrade(options: any = {}) {
-    await this.emitAsync('beforeUpgrade', this, options);
-    const force = false;
-
-    await measureExecutionTime(async () => {
-      await this.db.migrator.up();
-    }, 'Migrator');
-
-    await measureExecutionTime(async () => {
-      await this.db.sync({
-        force,
-        alter: {
-          drop: force,
-        },
-      });
-    }, 'Sync');
-
+    this.log.info('upgrading...');
+    await this.reInit();
+    const migrator1 = await this.loadCoreMigrations();
+    await migrator1.beforeLoad.up();
+    await this.db.sync();
+    await migrator1.afterSync.up();
+    await this.pm.initPresetPlugins();
+    const migrator2 = await this.pm.loadPresetMigrations();
+    await migrator2.beforeLoad.up();
+    // load preset plugins
+    await this.pm.load();
+    await this.db.sync();
+    await migrator2.afterSync.up();
+    // upgrade preset plugins
+    await this.pm.upgrade();
+    await this.pm.initOtherPlugins();
+    const migrator3 = await this.pm.loadOtherMigrations();
+    await migrator3.beforeLoad.up();
+    // load other plugins
+    // TODO：改成约定式
+    await this.load();
+    await this.db.sync();
+    await migrator3.afterSync.up();
+    // upgrade plugins
+    await this.pm.upgrade();
+    await migrator1.afterLoad.up();
+    await migrator2.afterLoad.up();
+    await migrator3.afterLoad.up();
+    await this.pm.repository.updateVersions();
     await this.version.update();
+    // await this.emitAsync('beforeUpgrade', this, options);
+    // const force = false;
+    // await measureExecutionTime(async () => {
+    //   await this.db.migrator.up();
+    // }, 'Migrator');
+    // await measureExecutionTime(async () => {
+    //   await this.db.sync({
+    //     force,
+    //     alter: {
+    //       drop: force,
+    //     },
+    //   });
+    // }, 'Sync');
     await this.emitAsync('afterUpgrade', this, options);
-
-    this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
-
-    if (this._started) {
-      await measureExecutionTime(async () => {
-        await this.restart();
-      }, 'Restart');
-    }
+    await this.restart();
+    // this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
+    // if (this._started) {
+    //   await measureExecutionTime(async () => {
+    //     await this.restart();
+    //   }, 'Restart');
+    // }
   }
 
   toJSON() {
@@ -676,17 +879,27 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
   }
 
+  createLogger(options: LoggerOptions) {
+    const { dirname } = options;
+    return createLogger({
+      ...options,
+      dirname: getLoggerFilePath(this.name || 'main', dirname || ''),
+    });
+  }
+
   protected init() {
     const options = this.options;
 
-    const logger = createAppLogger({
-      ...options.logger,
-      defaultMeta: {
-        app: this.name,
-      },
+    this._logger = createSystemLogger({
+      dirname: getLoggerFilePath(this.name),
+      filename: 'system',
+      seperateError: true,
+      ...(options.logger?.system || {}),
+    }).child({
+      reqId: this.context.reqId,
+      app: this.name,
+      module: 'application',
     });
-
-    this._logger = logger.instance;
 
     this.reInitEvents();
 
@@ -695,8 +908,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._acl = createACL();
 
     this._cronJobManager = new CronJobManager(this);
-
-    this.use(logger.middleware, { tag: 'logger' });
 
     if (this._db) {
       // MaxListenersExceededWarning
@@ -708,10 +919,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._resourcer = createResourcer(options);
     this._cli = this.createCli();
     this._i18n = createI18n(options);
-    this._cache = createCache(options.cache);
     this.context.db = this._db;
-    this.context.logger = this._logger;
+    // this.context.logger = this._logger;
     this.context.resourcer = this._resourcer;
+    this.context.cacheManager = this._cacheManager;
     this.context.cache = this._cache;
 
     const plugins = this._pm ? this._pm.options.plugins : options.plugins;
@@ -719,6 +930,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._pm = new PluginManager({
       app: this,
       plugins: plugins || [],
+    });
+
+    this._telemetry = new Telemetry({
+      serviceName: `nocobase-${this.name}`,
+      version: this.getVersion(),
+      ...options.telemetry,
     });
 
     this._authManager = new AuthManager({
@@ -740,6 +957,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._locales = new Locale(createAppProxy(this));
 
+    if (options.perfHooks) {
+      enablePerfHooks(this);
+    }
+
     registerMiddlewares(this, options);
 
     if (options.registerActions !== false) {
@@ -752,15 +973,28 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   protected createDatabase(options: ApplicationOptions) {
+    const sqlLogger = this.createLogger({
+      filename: 'sql',
+      level: 'debug',
+    });
+    const logging = (msg: any) => {
+      if (typeof msg === 'string') {
+        msg = msg.replace(/[\r\n]/gm, '').replace(/\s+/g, ' ');
+      }
+      if (msg.includes('INSERT INTO')) {
+        msg = msg.substring(0, 2000) + '...';
+      }
+      sqlLogger.debug({ message: msg, app: this.name, reqId: this.context.reqId });
+    };
+    const dbOptions = options.database instanceof Database ? options.database.options : options.database;
     const db = new Database({
-      ...(options.database instanceof Database ? options.database.options : options.database),
+      ...dbOptions,
+      logging: dbOptions.logging ? logging : false,
       migrator: {
         context: { app: this },
       },
+      logger: this._logger.child({ module: 'database' }),
     });
-
-    db.setLogger(this._logger);
-
     return db;
   }
 }

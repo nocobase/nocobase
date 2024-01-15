@@ -1,4 +1,5 @@
-import { DataTypes, mockDatabase } from '@nocobase/database';
+import { mockDatabase } from '@nocobase/database';
+import { vi } from 'vitest';
 import Application, { ApplicationOptions } from '../application';
 
 const mockServer = (options?: ApplicationOptions) => {
@@ -20,8 +21,7 @@ describe('app command', () => {
 
   beforeEach(async () => {
     app = mockServer();
-    await app.load();
-    await app.install();
+    await app.runCommand('install');
   });
 
   it('should test command should handle by IPC Server or not', () => {
@@ -42,7 +42,7 @@ describe('app command', () => {
   });
 
   it('should correctly parse the command multiple times with varying parameters', async () => {
-    const fn = jest.fn();
+    const fn = vi.fn();
 
     app
       .command('test1')

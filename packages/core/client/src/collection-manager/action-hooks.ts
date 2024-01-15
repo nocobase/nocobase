@@ -579,7 +579,8 @@ export const useFilterActionProps = () => {
   const options = useFilterFieldOptions(collection.fields);
   const service = useResourceActionContext();
   return useFilterFieldProps({
-    options,
+    // 目前仅需要支持筛选 title 和 name，其它字段可能会报错。详见：https://nocobase.height.app/T-2745
+    options: options.filter((option) => ['title', 'name'].includes(option.name)),
     params: service.state?.params?.[0] || service.params,
     service,
   });

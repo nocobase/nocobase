@@ -1,94 +1,62 @@
+import { BaseDumpRules, DumpRules } from './collection';
 import Database from './database';
-import { isString, castArray } from 'lodash';
 
+type RequiredGroup = 'required';
+type SkippedGroup = 'skipped';
+
+export type BuiltInGroup = RequiredGroup | SkippedGroup;
+
+export type DumpRulesGroupType = BuiltInGroup | string;
+
+// Collection Group is a collection of collections, which can be dumped and restored together.
 export interface CollectionGroup {
-  namespace: string;
   collections: string[];
   function: string;
-
-  dumpable: 'required' | 'optional' | 'skip';
+  dataType: DumpRulesGroupType;
   delayRestore?: any;
+}
+
+export interface CollectionGroupWithCollectionTitle extends Omit<CollectionGroup, 'collections'> {
+  collections: Array<{
+    name: string;
+    title: string;
+  }>;
 }
 
 export class CollectionGroupManager {
   constructor(public db: Database) {}
 
-  getGroups() {
-    const collections = [...this.db.collections.values()];
-    const groups = new Map<string, CollectionGroup>();
-
-    const skipped = [];
-
-    for (const collection of collections) {
-      const groupKey = collection.options.namespace;
-
-      if (!groupKey) {
-        continue;
-      }
-
-      const [namespace, groupFunc] = groupKey.split('.');
-
-      if (!groupFunc) {
-        skipped.push({
-          name: collection.name,
-          reason: 'no-group-function',
-        });
-
-        continue;
-      }
-
-      if (!groups.has(groupKey)) {
-        const dumpable = (() => {
-          if (!collection.options.duplicator) {
-            return undefined;
-          }
-
-          if (isString(collection.options.duplicator)) {
-            return {
-              dumpable: collection.options.duplicator,
-            };
-          }
-
-          return collection.options.duplicator;
-        })();
-
-        if (!dumpable) {
-          skipped.push({
-            name: collection.name,
-            reason: 'no-dumpable',
-          });
-          continue;
-        }
-
-        const group: CollectionGroup = {
-          namespace,
-          function: groupFunc,
-          collections: dumpable.with ? castArray(dumpable.with) : [],
-          dumpable: dumpable.dumpable,
-        };
-
-        if (dumpable.delayRestore) {
-          group.delayRestore = dumpable.delayRestore;
-        }
-
-        groups.set(groupKey, group);
-      }
-
-      const group = groups.get(groupKey);
-      group.collections.push(collection.name);
+  static unifyDumpRules(dumpRules: DumpRules):
+    | (BaseDumpRules & {
+        group: DumpRulesGroupType;
+      })
+    | undefined {
+    if (!dumpRules) {
+      return undefined;
     }
 
-    const results = [...groups.values()];
-    const groupCollections = results.map((i) => i.collections).flat();
-
-    for (const skipItem of skipped) {
-      if (groupCollections.includes(skipItem.name)) {
-        continue;
-      }
-
-      this.db.logger.warn(`collection ${skipItem.name} is not in any collection group, reason: ${skipItem.reason}.`);
+    if (typeof dumpRules === 'string') {
+      return {
+        group: dumpRules,
+      };
     }
 
-    return results;
+    if ('required' in dumpRules && (dumpRules as { required: true }).required) {
+      return {
+        ...dumpRules,
+        group: 'required',
+      };
+    }
+
+    if ('skipped' in dumpRules && (dumpRules as { skipped: true }).skipped) {
+      return {
+        ...dumpRules,
+        group: 'skipped',
+      };
+    }
+
+    return dumpRules as BaseDumpRules & {
+      group: DumpRulesGroupType;
+    };
   }
 }

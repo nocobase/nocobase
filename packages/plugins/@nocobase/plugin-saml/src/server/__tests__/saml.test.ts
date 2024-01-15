@@ -1,8 +1,8 @@
 import { Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, createMockServer } from '@nocobase/test';
 import { SAML } from '@node-saml/node-saml';
+import { vi } from 'vitest';
 import { authType } from '../../constants';
-import SAMLPlugin from '../index';
 
 describe('saml', () => {
   let app: MockServer;
@@ -11,11 +11,9 @@ describe('saml', () => {
   let authenticator;
 
   beforeAll(async () => {
-    app = mockServer({
-      plugins: ['users', 'auth'],
+    app = await createMockServer({
+      plugins: ['users', 'auth', 'saml'],
     });
-    app.plugin(SAMLPlugin);
-    await app.loadAndInstall({ clean: true });
     db = app.db;
     agent = app.agent();
 
@@ -41,7 +39,7 @@ describe('saml', () => {
   });
 
   afterEach(async () => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     await db.getRepository('users').destroy({
       truncate: true,
     });
@@ -61,7 +59,7 @@ describe('saml', () => {
         },
       },
     });
-    jest.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
+    vi.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
       profile: {
         nameID: 'test@nocobase.com',
         email: 'test@nocobase.com',
@@ -89,7 +87,7 @@ describe('saml', () => {
         },
       },
     });
-    jest.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
+    vi.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
       profile: {
         nameID: 'test@nocobase.com',
         email: 'test@nocobase.com',
@@ -123,7 +121,7 @@ describe('saml', () => {
       },
     });
 
-    jest.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
+    vi.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
       profile: {
         nameID: 'old@nocobase.com',
         email: 'old@nocobase.com',
@@ -171,7 +169,7 @@ describe('saml', () => {
       },
     });
 
-    jest.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
+    vi.spyOn(SAML.prototype, 'validatePostResponseAsync').mockResolvedValue({
       profile: {
         nameID: 'username',
         email: 'old@nocobase.com',

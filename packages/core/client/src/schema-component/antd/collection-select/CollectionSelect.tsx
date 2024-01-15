@@ -17,7 +17,7 @@ function useOptions({ filter, isTableOid }: CollectionSelectProps) {
   const field: any = useField();
   const ctx: any = useContext(FilterContext);
   const collection = useCollection();
-  const targetCollection = isTableOid && (ctx?.field?.collectionName || collection.name);
+  const targetCollection = isTableOid && (ctx?.field?.collectionName || ctx?.collectionName || collection.name);
   const inheritCollections = useSelfAndChildrenCollections(targetCollection);
   const { collections = [] } = useCollectionManager();
   const currentCollections = field?.dataSource
@@ -52,7 +52,10 @@ export const CollectionSelect = connect(
         popupMatchSelectWidth={false}
         {...others}
         showSearch
-        filterOption={(input, option) => (option?.label ?? '').includes(input)}
+        filterOption={(input, option) =>
+          (option?.label.toLowerCase() ?? '').includes(input.toLocaleLowerCase()) ||
+          (option?.value.toString().toLowerCase() ?? '').includes(input.toLocaleLowerCase())
+        }
         options={options}
       />
     );

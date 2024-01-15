@@ -5,6 +5,9 @@ import Migrator from '../../migrations/20230225111112-drop-ui-schema-relation';
 import { createApp } from '../index';
 
 class AddBelongsToPlugin extends Plugin {
+  get name() {
+    return 'test';
+  }
   beforeLoad() {
     this.app.db.on('beforeDefineCollection', (options) => {
       if (options.name == 'fields') {
@@ -77,9 +80,7 @@ describe.skip('drop ui schema', () => {
 
   beforeEach(async () => {
     app = await createApp({
-      beforePlugin(app) {
-        app.plugin(AddBelongsToPlugin, { name: 'test' });
-      },
+      plugins: [AddBelongsToPlugin],
     });
 
     db = app.db;

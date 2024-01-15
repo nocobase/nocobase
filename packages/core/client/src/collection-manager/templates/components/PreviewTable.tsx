@@ -21,7 +21,7 @@ export const PreviewTable = (props) => {
     if (databaseView) {
       getPreviewData();
     }
-  }, [form.values.fields]);
+  }, [viewName, schema]);
 
   useEffect(() => {
     const pColumns = formatPreviewColumns(fields);
@@ -70,7 +70,7 @@ export const PreviewTable = (props) => {
                   'x-component': schema && fieldSource ? 'CollectionField' : 'Input',
                   'x-read-pretty': true,
                   'x-collection-field': fieldSource?.join('.'),
-                  default: content,
+                  default: item.interface === 'json' ? JSON.stringify(content) : content,
                 },
               },
             };

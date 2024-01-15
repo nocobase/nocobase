@@ -22,9 +22,15 @@ export class CollectionModel extends MagicAttributeModel {
     let collection: Collection;
 
     const collectionOptions = {
+      origin: '@nocobase/plugin-collection-manager',
       ...this.get(),
       fields: [],
     };
+
+    if (!this.db.inDialect('postgres') && collectionOptions.schema) {
+      delete collectionOptions.schema;
+    }
+
     if (this.db.hasCollection(name)) {
       collection = this.db.getCollection(name);
 
@@ -38,6 +44,10 @@ export class CollectionModel extends MagicAttributeModel {
 
       collection.updateOptions(collectionOptions);
     } else {
+      if (!collectionOptions.dumpRules) {
+        lodash.set(collectionOptions, 'dumpRules.group', 'custom');
+      }
+
       collection = this.db.collection(collectionOptions);
     }
 
@@ -75,6 +85,18 @@ export class CollectionModel extends MagicAttributeModel {
 
     if (options.includeFields) {
       fields = fields.filter((field) => options.includeFields.includes(field.name));
+    }
+
+    if (this.options.view && fields.find((f) => f.name == 'id')) {
+      // set id field to primary key, other primary key to false
+      fields = fields.map((field) => {
+        if (field.name == 'id') {
+          field.set('primaryKey', true);
+        } else {
+          field.set('primaryKey', false);
+        }
+        return field;
+      });
     }
 
     // @ts-ignore

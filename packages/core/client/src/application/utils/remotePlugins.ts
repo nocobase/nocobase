@@ -4,8 +4,8 @@ import type { RequireJS } from './requirejs';
 import type { DevDynamicImport } from '../Application';
 
 export function defineDevPlugins(plugins: Record<string, typeof Plugin>) {
-  Object.entries(plugins).forEach(([name, plugin]) => {
-    window.define(name, () => plugin);
+  Object.entries(plugins).forEach(([packageName, plugin]) => {
+    window.define(`${packageName}/client`, () => plugin);
   });
 }
 
@@ -77,36 +77,29 @@ interface GetPluginsOption {
 
 export async function getPlugins(options: GetPluginsOption): Promise<Array<[string, typeof Plugin]>> {
   const { requirejs, pluginData, devDynamicImport } = options;
-
   if (pluginData.length === 0) return [];
 
-  if (process.env.NODE_ENV === 'development' && !process.env.USE_REMOTE_PLUGIN) {
-    const res: Array<[string, typeof Plugin]> = [];
+  const res: Array<[string, typeof Plugin]> = [];
 
-    const resolveDevPlugins: Record<string, typeof Plugin> = {};
-    if (devDynamicImport) {
-      for await (const plugin of pluginData) {
-        const pluginModule = await devDynamicImport(plugin.packageName);
-        if (pluginModule) {
-          res.push([plugin.name, pluginModule.default]);
-          resolveDevPlugins[plugin.name] = pluginModule.default;
-        } else {
-          console.error(`[nocobase]: plugin ${plugin.packageName} load error`);
-        }
+  const resolveDevPlugins: Record<string, typeof Plugin> = {};
+  if (devDynamicImport) {
+    for await (const plugin of pluginData) {
+      const pluginModule = await devDynamicImport(plugin.packageName);
+      if (pluginModule) {
+        res.push([plugin.name, pluginModule.default]);
+        resolveDevPlugins[plugin.packageName] = pluginModule.default;
       }
-      defineDevPlugins(resolveDevPlugins);
     }
+    defineDevPlugins(resolveDevPlugins);
+  }
 
-    const remotePlugins = pluginData.filter((item) => !resolveDevPlugins[item.name]);
+  const remotePlugins = pluginData.filter((item) => !resolveDevPlugins[item.packageName]);
 
-    if (remotePlugins.length === 0) {
-      return res;
-    }
-
-    const remotePluginList = await getRemotePlugins(requirejs, remotePlugins);
-    res.push(...remotePluginList);
+  if (remotePlugins.length === 0) {
     return res;
   }
 
-  return getRemotePlugins(requirejs, pluginData);
+  const remotePluginList = await getRemotePlugins(requirejs, remotePlugins);
+  res.push(...remotePluginList);
+  return res;
 }

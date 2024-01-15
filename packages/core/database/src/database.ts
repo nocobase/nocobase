@@ -1,5 +1,6 @@
-import { Logger } from '@nocobase/logger';
-import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
+import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
+import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import chalk from 'chalk';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import { backOff } from 'exponential-backoff';
@@ -22,6 +23,7 @@ import {
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
+import { CollectionFactory } from './collection-factory';
 import { CollectionGroupManager } from './collection-group-manager';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import DatabaseUtils from './database-utils';
@@ -30,6 +32,7 @@ import { referentialIntegrityCheck } from './features/referential-integrity-chec
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
 import * as FieldTypes from './fields';
 import { Field, FieldContext, RelationField } from './fields';
+import { checkDatabaseVersion } from './helpers';
 import { InheritedCollection } from './inherited-collection';
 import InheritanceMap from './inherited-map';
 import { registerBuiltInListeners } from './listeners';
@@ -89,6 +92,7 @@ export interface IDatabaseOptions extends Options {
   migrator?: any;
   usingBigIntForId?: boolean;
   underscored?: boolean;
+  logger?: LoggerOptions | Logger;
   customHooks?: any;
   instanceId?: string;
 }
@@ -123,9 +127,13 @@ export const DialectVersionAccessors = {
   mysql: {
     sql: 'select version() as version',
     get: (v: string) => {
-      if (v.toLowerCase().includes('mariadb')) {
-        return '';
-      }
+      const m = /([\d+.]+)/.exec(v);
+      return m[0];
+    },
+  },
+  mariadb: {
+    sql: 'select version() as version',
+    get: (v: string) => {
       const m = /([\d+.]+)/.exec(v);
       return m[0];
     },
@@ -154,7 +162,13 @@ class DatabaseVersion {
           return false;
         }
         const [result] = (await this.db.sequelize.query(accessors[dialect].sql)) as any;
-        return semver.satisfies(accessors[dialect].get(result?.[0]?.version), versions[dialect]);
+        const versionResult = accessors[dialect].get(result?.[0]?.version);
+
+        if (lodash.isPlainObject(versionResult) && versionResult.dialect) {
+          return semver.satisfies(versionResult.version, versions[versionResult.dialect]);
+        }
+
+        return semver.satisfies(versionResult, versions[dialect]);
       }
     }
     return false;
@@ -177,23 +191,17 @@ export class Database extends EventEmitter implements AsyncEmitter {
   tableNameCollectionMap = new Map<string, Collection>();
   context: any = {};
   queryInterface: QueryInterface;
-
-  _instanceId: string;
-
   utils = new DatabaseUtils(this);
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
-
-  importedFrom = new Map<string, Array<string>>();
-
+  importedFrom = new Map<string, Set<string>>();
   modelHook: ModelHook;
   version: DatabaseVersion;
-
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
-
   logger: Logger;
-
   collectionGroupManager = new CollectionGroupManager(this);
+
+  collectionFactory: CollectionFactory = new CollectionFactory(this);
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
   constructor(options: DatabaseOptions) {
@@ -210,6 +218,16 @@ export class Database extends EventEmitter implements AsyncEmitter {
       },
       ...lodash.clone(options),
     };
+
+    if (options.logger) {
+      if (typeof options.logger['log'] === 'function') {
+        this.logger = options.logger as Logger;
+      } else {
+        this.logger = createLogger(options.logger);
+      }
+    } else {
+      this.logger = createConsoleLogger();
+    }
 
     if (!options.instanceId) {
       this._instanceId = nanoid();
@@ -233,6 +251,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       // https://github.com/sequelize/sequelize/issues/1774
       require('pg').defaults.parseInt8 = true;
     }
+
     this.options = opts;
 
     const sequelizeOptions = this.sequelizeOptions(this.options);
@@ -288,8 +307,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
       name: 'migrations',
       autoGenId: false,
       timestamps: false,
-      namespace: 'core.migration',
-      duplicator: 'required',
+      dumpRules: 'required',
+      origin: '@nocobase/database',
       fields: [{ type: 'string', name: 'name', primaryKey: true }],
     });
 
@@ -307,18 +326,39 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.initListener();
     patchSequelizeQueryInterface(this);
+
+    this.registerCollectionType();
   }
+
+  _instanceId: string;
 
   get instanceId() {
     return this._instanceId;
   }
 
-  setContext(context: any) {
-    this.context = context;
+  createMigrator({ migrations }) {
+    const migratorOptions: any = this.options.migrator || {};
+    const context = {
+      db: this,
+      sequelize: this.sequelize,
+      queryInterface: this.sequelize.getQueryInterface(),
+      ...migratorOptions.context,
+    };
+    return new Umzug({
+      logger: migratorOptions.logger || console,
+      migrations: Array.isArray(migrations) ? lodash.sortBy(migrations, (m) => m.name) : migrations,
+      context,
+      storage: new SequelizeStorage({
+        tableName: `${this.options.tablePrefix || ''}migrations`,
+        modelName: 'migrations',
+        ...migratorOptions.storage,
+        sequelize: this.sequelize,
+      }),
+    });
   }
 
-  setLogger(logger: Logger) {
-    this.logger = logger;
+  setContext(context: any) {
+    this.context = context;
   }
 
   sequelizeOptions(options) {
@@ -335,6 +375,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         await connection.query('SET search_path TO public;');
       });
     }
+
     return options;
   }
 
@@ -419,6 +460,15 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     });
 
+    this.on('afterDefineCollection', async (collection: Collection) => {
+      const options = collection.options;
+      if (options.origin) {
+        const existsSet = this.importedFrom.get(options.origin) || new Set();
+        existsSet.add(collection.name);
+        this.importedFrom.set(options.origin, existsSet);
+      }
+    });
+
     registerBuiltInListeners(this);
   }
 
@@ -432,12 +482,14 @@ export class Database extends EventEmitter implements AsyncEmitter {
     const files = glob.sync(patten, {
       ignore: ['**/*.d.ts'],
     });
+
     for (const file of files) {
       let filename = basename(file);
       filename = filename.substring(0, filename.lastIndexOf('.')) || filename;
+
       this.migrations.add({
         name: namespace ? `${namespace}/${filename}` : filename,
-        migration: requireModule(file),
+        migration: file,
         context,
       });
     }
@@ -447,8 +499,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return dialect.includes(this.sequelize.getDialect());
   }
 
-  escapeId(identifier: string) {
-    return this.inDialect('mysql') ? `\`${identifier}\`` : `"${identifier}"`;
+  isMySQLCompatibleDialect() {
+    return this.inDialect('mysql', 'mariadb');
   }
 
   /**
@@ -466,29 +518,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.emit('beforeDefineCollection', options);
 
-    const hasValidInheritsOptions = (() => {
-      return options.inherits && lodash.castArray(options.inherits).length > 0;
-    })();
-
-    const hasViewOptions = options.viewName || options.view;
-
-    const collectionKlass = (() => {
-      if (hasValidInheritsOptions) {
-        return InheritedCollection;
-      }
-
-      if (hasViewOptions) {
-        return ViewCollection;
-      }
-
-      if (options.sql) {
-        return SqlCollection;
-      }
-
-      return Collection;
-    })();
-
-    const collection = new collectionKlass(options, { database: this });
+    const collection = this.collectionFactory.createCollection(options);
 
     this.collections.set(collection.name, collection);
 
@@ -677,7 +707,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   async sync(options?: SyncOptions) {
-    const isMySQL = this.sequelize.getDialect() === 'mysql';
+    const isMySQL = this.isMySQLCompatibleDialect();
     if (isMySQL) {
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 0', null);
     }
@@ -745,11 +775,13 @@ export class Database extends EventEmitter implements AsyncEmitter {
     const authenticate = async () => {
       try {
         await this.sequelize.authenticate(others);
-        console.log('Connection has been established successfully.');
+        this.logger.info('Connection has been established successfully.', { method: 'auth' });
       } catch (error) {
-        console.log(`Attempt ${attemptNumber}/${retry}: Unable to connect to the database: ${error.message}`);
+        this.logger.warn(`Attempt ${attemptNumber}/${retry}: Unable to connect to the database: ${error.message}`, {
+          method: 'auth',
+        });
         const nextDelay = startingDelay * Math.pow(timeMultiple, attemptNumber - 1);
-        console.log(`Will retry in ${nextDelay}ms...`);
+        this.logger.warn(`Will retry in ${nextDelay}ms...`, { method: 'auth' });
         attemptNumber++;
         throw error; // Re-throw the error so that backoff can catch and handle it
       }
@@ -766,7 +798,23 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  async checkVersion() {
+    return await checkDatabaseVersion(this);
+  }
+
   async prepare() {
+    if (this.isMySQLCompatibleDialect()) {
+      const result = await this.sequelize.query(`SHOW VARIABLES LIKE 'lower_case_table_names'`, { plain: true });
+
+      if (result?.Value === '1' && !this.options.underscored) {
+        console.log(
+          `Your database lower_case_table_names=1, please add ${chalk.yellow('DB_UNDERSCORED=true')} to the .env file`,
+        );
+
+        process.exit();
+      }
+    }
+
     if (this.inDialect('postgres') && this.options.schema && this.options.schema != 'public') {
       await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${this.options.schema}"`, null);
     }
@@ -874,17 +922,65 @@ export class Database extends EventEmitter implements AsyncEmitter {
       if (module.extend) {
         this.extendCollection(module.collectionOptions, module.mergeOptions);
       } else {
-        const collection = this.collection(module);
-
-        if (options.from) {
-          this.importedFrom.set(options.from, [...(this.importedFrom.get(options.from) || []), collection.name]);
-        }
+        const collection = this.collection({
+          ...module,
+          origin: options.from,
+        });
 
         result.set(collection.name, collection);
       }
     }
 
     return result;
+  }
+
+  private registerCollectionType() {
+    this.collectionFactory.registerCollectionType(InheritedCollection, {
+      condition: (options) => {
+        return options.inherits && lodash.castArray(options.inherits).length > 0;
+      },
+    });
+
+    this.collectionFactory.registerCollectionType(ViewCollection, {
+      condition: (options) => {
+        return options.viewName || options.view;
+      },
+
+      async onSync() {
+        return;
+      },
+
+      async onDump(dumper, collection: Collection) {
+        try {
+          const viewDef = await collection.db.queryInterface.viewDef(collection.getTableNameWithSchemaAsString());
+
+          dumper.writeSQLContent(`view-${collection.name}`, {
+            sql: [
+              `DROP VIEW IF EXISTS ${collection.getTableNameWithSchemaAsString()}`,
+              `CREATE VIEW ${collection.getTableNameWithSchemaAsString()} AS ${viewDef}`,
+            ],
+            group: 'required',
+          });
+        } catch (e) {
+          return;
+        }
+        return;
+      },
+    });
+
+    this.collectionFactory.registerCollectionType(SqlCollection, {
+      condition: (options) => {
+        return options.sql;
+      },
+
+      async onSync() {
+        return;
+      },
+
+      async onDump(dumper, collection: Collection) {
+        return;
+      },
+    });
   }
 }
 

@@ -1,8 +1,10 @@
 import { useFieldSchema } from '@formily/react';
 import { useCollection } from '../../';
+import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 
 // 表格操作配置
-export const TableActionInitializers = {
+export const tableActionInitializers = new SchemaInitializer({
+  name: 'TableActionInitializers',
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -11,12 +13,14 @@ export const TableActionInitializers = {
   items: [
     {
       type: 'itemGroup',
+      name: 'enableActions',
       title: "{{t('Enable actions')}}",
       children: [
         {
           type: 'item',
+          name: 'filter',
           title: "{{t('Filter')}}",
-          component: 'FilterActionInitializer',
+          Component: 'FilterActionInitializer',
           schema: {
             'x-align': 'left',
           },
@@ -24,7 +28,8 @@ export const TableActionInitializers = {
         {
           type: 'item',
           title: "{{t('Add new')}}",
-          component: 'CreateActionInitializer',
+          name: 'addNew',
+          Component: 'CreateActionInitializer',
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
@@ -32,7 +37,7 @@ export const TableActionInitializers = {
               skipScopeCheck: true,
             },
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return !['view', 'file', 'sql'].includes(collection.template) || collection?.writableView;
           },
@@ -40,12 +45,13 @@ export const TableActionInitializers = {
         {
           type: 'item',
           title: "{{t('Delete')}}",
-          component: 'BulkDestroyActionInitializer',
+          name: 'delete',
+          Component: 'BulkDestroyActionInitializer',
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
           },
-          visible: function useVisible() {
+          useVisible() {
             const collection = useCollection();
             return !['view', 'sql'].includes(collection.template) || collection?.writableView;
           },
@@ -53,19 +59,20 @@ export const TableActionInitializers = {
         {
           type: 'item',
           title: "{{t('Refresh')}}",
-          component: 'RefreshActionInitializer',
+          name: 'refresh',
+          Component: 'RefreshActionInitializer',
           schema: {
             'x-align': 'right',
           },
         },
         {
-          type: 'item',
+          name: 'toggle',
           title: "{{t('Expand/Collapse')}}",
-          component: 'ExpandActionInitializer',
+          Component: 'ExpandActionInitializer',
           schema: {
             'x-align': 'right',
           },
-          visible: function useVisible() {
+          useVisible() {
             const schema = useFieldSchema();
             const collection = useCollection();
             const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
@@ -75,91 +82,23 @@ export const TableActionInitializers = {
       ],
     },
     {
+      name: 'divider',
       type: 'divider',
-      visible: function useVisible() {
+      useVisible() {
         const collection = useCollection();
         return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
     },
-    // {
-    //   type: 'item',
-    //   title: "{{t('Association fields filter')}}",
-    //   component: 'ActionBarAssociationFilterAction',
-    //   schema: {
-    //     'x-align': 'left',
-    //   },
-    //   find: (schema: Schema) => {
-    //     const resultSchema = Object.entries(schema.parent.properties).find(
-    //       ([, value]) => value['x-component'] === 'AssociationFilter',
-    //     )?.[1];
-    //     return resultSchema;
-    //   },
-    //   visible: () => {
-    //     const collection = useCollection();
-    //     const schema = useFieldSchema();
-    //     return (collection as any).template !== 'view' && schema['x-initializer'] !== 'GanttActionInitializers';
-    //   },
-    // },
-    // {
-    //   type: 'divider',
-    //   visible: () => {
-    //     const collection = useCollection();
-    //     const schema = useFieldSchema();
-    //     return (collection as any).template !== 'view' && schema['x-initializer'] !== 'GanttActionInitializers';
-    //   },
-    // },
     {
       type: 'subMenu',
+      name: 'customize',
       title: '{{t("Customize")}}',
       children: [
         {
           type: 'item',
-          title: '{{t("Bulk update")}}',
-          component: 'CustomizeActionInitializer',
-          schema: {
-            type: 'void',
-            title: '{{ t("Bulk update") }}',
-            'x-component': 'Action',
-            'x-align': 'right',
-            'x-acl-action': 'update',
-            'x-decorator': 'ACLActionProvider',
-            'x-acl-action-props': {
-              skipScopeCheck: true,
-            },
-            'x-action': 'customize:bulkUpdate',
-            'x-designer': 'Action.Designer',
-            'x-action-settings': {
-              assignedValues: {},
-              updateMode: 'selected',
-              onSuccess: {
-                manualClose: true,
-                redirecting: false,
-                successMessage: '{{t("Updated successfully")}}',
-              },
-            },
-            'x-component-props': {
-              icon: 'EditOutlined',
-              useProps: '{{ useCustomizeBulkUpdateActionProps }}',
-            },
-          },
-        },
-        {
-          type: 'item',
-          title: '{{t("Bulk edit")}}',
-          component: 'CustomizeBulkEditActionInitializer',
-          schema: {
-            'x-align': 'right',
-            'x-decorator': 'ACLActionProvider',
-            'x-acl-action': 'update',
-            'x-acl-action-props': {
-              skipScopeCheck: true,
-            },
-          },
-        },
-        {
-          type: 'item',
           title: '{{t("Add record")}}',
-          component: 'CustomizeAddRecordActionInitializer',
+          name: 'addRecord',
+          Component: 'CustomizeAddRecordActionInitializer',
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
@@ -170,10 +109,10 @@ export const TableActionInitializers = {
           },
         },
       ],
-      visible: function useVisible() {
+      useVisible() {
         const collection = useCollection();
         return !['view', 'sql'].includes(collection.template) || collection?.writableView;
       },
     },
   ],
-};
+});

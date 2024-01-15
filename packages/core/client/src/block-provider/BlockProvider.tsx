@@ -97,6 +97,9 @@ const useResource = (props: UseResourceProps) => {
   if (record?.__parent?.[association?.sourceKey || 'id']) {
     return api.resource(resource, record.__parent[association?.sourceKey || 'id']);
   }
+  if (record?.[association?.sourceKey || 'id']) {
+    return api.resource(resource, record[association?.sourceKey || 'id']);
+  }
   return api.resource(collection);
 };
 
@@ -302,12 +305,10 @@ export const BlockProvider = (props: {
 }) => {
   const { collection, association, name } = props;
   const resource = useResource(props);
-  const { appends, updateAssociationValues } = useAssociationNames();
+  const { getAssociationAppends } = useAssociationNames();
+  const { appends, updateAssociationValues } = getAssociationAppends();
   const params = useMemo(() => {
-    if (!props.params) {
-      return props.params;
-    }
-    if (!props.params['appends']) {
+    if (!props.params?.['appends']) {
       return { ...props.params, appends };
     }
     return { ...props.params };

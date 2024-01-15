@@ -178,6 +178,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       throw new Error(`app ${app.name} already exists`);
     }
 
+    app.logger.info(`add app ${app.name} into supervisor`, { submodule: 'supervisor', method: 'addApp' });
+
     this.bindAppEvents(app);
 
     this.apps[app.name] = app;
@@ -262,7 +264,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
       if (
         maintainingStatus &&
-        ['install', 'upgrade', 'pm.add', 'pm.update', 'pm.enable', 'pm.disable', 'pm.remove'].includes(
+        ['install', 'upgrade', 'pm.add', 'pm.update', 'pm.enable', 'pm.disable', 'pm.remove', 'restore'].includes(
           maintainingStatus.command.name,
         ) &&
         !startOptions.recover

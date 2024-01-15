@@ -1,5 +1,5 @@
 import { uid } from '@formily/shared';
-import { BlockInitializer } from '@nocobase/client';
+import { BlockInitializer, useSchemaInitializerItem } from '@nocobase/client';
 import React from 'react';
 import { useCustomRequestsResource } from '../hooks/useCustomRequestsResource';
 
@@ -22,17 +22,18 @@ export const CustomRequestInitializer: React.FC<any> = (props) => {
     },
   };
 
+  const itemConfig = useSchemaInitializerItem();
   return (
     <BlockInitializer
-      {...props}
-      insert={async (s) => {
-        await customRequestsResource.updateOrCreate({
+      {...itemConfig}
+      item={itemConfig}
+      onClick={async (s) => {
+        // create a custom request
+        await customRequestsResource.create({
           values: {
             key: s['x-uid'],
           },
-          filterKeys: ['key'],
         });
-        await props?.insert(s);
       }}
       schema={schema}
     />

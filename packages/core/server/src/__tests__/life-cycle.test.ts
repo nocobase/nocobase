@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import Application from '../application';
 import { Plugin } from '../plugin';
 
@@ -18,8 +19,8 @@ describe('application life cycle', () => {
   });
 
   it('should start application', async () => {
-    const loadFn = jest.fn();
-    const installFn = jest.fn();
+    const loadFn = vi.fn();
+    const installFn = vi.fn();
 
     // register plugin
     class TestPlugin extends Plugin {

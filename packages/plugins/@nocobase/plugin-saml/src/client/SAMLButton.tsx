@@ -1,14 +1,17 @@
 import { LoginOutlined } from '@ant-design/icons';
-import { Authenticator, css, useAPIClient } from '@nocobase/client';
+import { css, useAPIClient } from '@nocobase/client';
 import { Button, Space, message } from 'antd';
 import React, { useEffect } from 'react';
 import { useSamlTranslation } from './locale';
 import { useLocation } from 'react-router-dom';
+import { Authenticator } from '@nocobase/plugin-auth/client';
 
 export const SAMLButton = ({ authenticator }: { authenticator: Authenticator }) => {
   const { t } = useSamlTranslation();
   const api = useAPIClient();
   const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const redirect = params.get('redirect');
 
   const login = async () => {
     const response = await api.request({
@@ -17,6 +20,9 @@ export const SAMLButton = ({ authenticator }: { authenticator: Authenticator }) 
       headers: {
         'X-Authenticator': authenticator.name,
       },
+      data: {
+        redirect,
+      },
     });
 
     const authUrl = response?.data?.data;
@@ -24,7 +30,6 @@ export const SAMLButton = ({ authenticator }: { authenticator: Authenticator }) 
   };
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
     const name = params.get('authenticator');
     const error = params.get('error');
     if (name !== authenticator.name) {

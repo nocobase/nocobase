@@ -166,6 +166,7 @@ function migrateUsedConfig(config, manualForms) {
 }
 
 export default class extends Migration {
+  appVersion = '<0.9.1-alpha.3';
   async up() {
     const match = await this.app.version.satisfies('<0.9.1-alpha.3');
     if (!match) {

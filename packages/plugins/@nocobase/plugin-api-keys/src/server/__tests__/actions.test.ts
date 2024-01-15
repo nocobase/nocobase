@@ -1,5 +1,5 @@
 import Database, { Repository } from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
+import { createMockServer, MockServer } from '@nocobase/test';
 
 describe('actions', () => {
   let app: MockServer;
@@ -8,24 +8,7 @@ describe('actions', () => {
   let agent;
   let resource;
 
-  beforeEach(async () => {
-    app = mockServer({
-      registerActions: true,
-      acl: true,
-      plugins: ['users', 'auth', 'api-keys', 'acl'],
-    });
-
-    await app.loadAndInstall({ clean: true });
-    db = app.db;
-    repo = db.getRepository('apiKeys');
-    agent = app.agent();
-    resource = agent.set('X-Role', 'admin').resource('apiKeys');
-  });
-
   afterEach(async () => {
-    await repo.destroy({
-      truncate: true,
-    });
     await app.destroy();
   });
 
@@ -37,24 +20,37 @@ describe('actions', () => {
   const expiresIn = 60 * 60 * 24;
 
   beforeEach(async () => {
-    const userRepo = await db.getRepository('users');
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: ['users', 'auth', 'api-keys', 'acl'],
+    });
+
+    db = app.db;
+
+    repo = db.getRepository('apiKeys');
+    agent = app.agent();
+    resource = agent.set('X-Role', 'admin').resource('apiKeys');
+    const userRepo = app.db.getRepository('users');
+
     user = await userRepo.findOne({
       appends: ['roles'],
     });
+
     testUser = await userRepo.create({
       values: {
         nickname: 'test',
         roles: user.roles,
       },
     });
-    const roleRepo = await db.getRepository('roles');
+    const roleRepo = await app.db.getRepository('roles');
     testRole = await roleRepo.create({
       values: {
         name: 'TEST_ROLE',
       },
     });
 
-    role = await (db.getRepository('users.roles', user.id) as unknown as Repository).findOne({
+    role = await (app.db.getRepository('users.roles', user.id) as unknown as Repository).findOne({
       where: {
         default: true,
       },

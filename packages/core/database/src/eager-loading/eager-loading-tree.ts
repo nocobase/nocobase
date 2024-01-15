@@ -174,13 +174,26 @@ export class EagerLoadingTree {
           );
         });
 
-        const belongsToAssociationsOnly = includeForFilter.every((include) => {
-          const association = node.model.associations[include.association];
-          if (!association) {
-            return false;
+        const isBelongsToAssociationOnly = (includes, model) => {
+          for (const include of includes) {
+            const association = model.associations[include.association];
+            if (!association) {
+              return false;
+            }
+
+            if (association.associationType != 'BelongsTo') {
+              return false;
+            }
+
+            if (!isBelongsToAssociationOnly(include.include || [], association.target)) {
+              return false;
+            }
           }
-          return association.associationType == 'BelongsTo';
-        });
+
+          return true;
+        };
+
+        const belongsToAssociationsOnly = isBelongsToAssociationOnly(includeForFilter, node.model);
 
         if (belongsToAssociationsOnly) {
           instances = await node.model.findAll({
@@ -208,7 +221,7 @@ export class EagerLoadingTree {
               include: includeForFilter,
             } as any)
           ).map((row) => {
-            return { row, pk: row.get(primaryKeyField) };
+            return { row, pk: row[primaryKeyField] };
           });
 
           const findOptions = {

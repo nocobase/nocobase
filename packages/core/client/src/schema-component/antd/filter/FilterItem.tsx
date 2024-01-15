@@ -57,7 +57,7 @@ export const FilterItem = observer(
           <Cascader
             // @ts-ignore
             role="button"
-            data-testid="filter-select-field"
+            data-testid="select-filter-field"
             className={css`
               width: 160px;
             `}
@@ -71,7 +71,7 @@ export const FilterItem = observer(
           <Select
             // @ts-ignore
             role="button"
-            data-testid="filter-select-operator"
+            data-testid="select-filter-operator"
             className={css`
               min-width: 110px;
             `}

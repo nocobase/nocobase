@@ -1,0 +1,12 @@
+{
+  "Aggregate": "Aggregate",
+  "Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.":
+    "Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.",
+  "Aggregator function": "Aggregator function",
+  "Target type": "Target type",
+  "Data of collection": "Data of collection",
+  "Data of associated collection": "Data of associated collection",
+  "Field to aggregate": "Field to aggregate",
+  "Distinct": "Distinct",
+  "Query result": "Query result"
+}

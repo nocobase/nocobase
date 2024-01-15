@@ -17,7 +17,7 @@ import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
   RecordProvider,
-  useSchemaInitializer,
+  useSchemaInitializerRender,
   useTableBlockContext,
   useTableSelectorContext,
 } from '../../../';
@@ -37,7 +37,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
   const schema = useFieldSchema();
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
-  const { exists, render } = useSchemaInitializer(schema['x-initializer']);
+  const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
   const columns = schema
     .reduceProperties((buf, s) => {
       if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
@@ -538,6 +538,7 @@ export const Table: any = observer(
             ref={tableSizeRefCallback}
             rowKey={rowKey ?? defaultRowKey}
             dataSource={dataSource}
+            tableLayout="auto"
             {...others}
             {...restProps}
             pagination={paginationProps}
@@ -547,7 +548,6 @@ export const Table: any = observer(
             }}
             onRow={onRow}
             rowClassName={(record) => (selectedRow.includes(record[rowKey]) ? highlightRow : '')}
-            tableLayout={'auto'}
             scroll={scroll}
             columns={columns}
             expandable={{

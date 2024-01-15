@@ -1,9 +1,17 @@
+import { TFuncKey, TOptions } from 'i18next';
 import type { Application } from './Application';
 
 export class Plugin<T = any> {
-  constructor(protected options: T, protected app: Application) {
+  constructor(
+    protected options: T,
+    protected app: Application,
+  ) {
     this.options = options;
     this.app = app;
+  }
+
+  get pluginManager() {
+    return this.app.pluginManager;
   }
 
   get pm() {
@@ -14,9 +22,25 @@ export class Plugin<T = any> {
     return this.app.router;
   }
 
+  get pluginSettingsManager() {
+    return this.app.pluginSettingsManager;
+  }
+
+  get schemaInitializerManager() {
+    return this.app.schemaInitializerManager;
+  }
+
+  get schemaSettingsManager() {
+    return this.app.schemaSettingsManager;
+  }
+
   async afterAdd() {}
 
   async beforeLoad() {}
 
   async load() {}
+
+  t(text: TFuncKey | TFuncKey[], options: TOptions = {}) {
+    return this.app.i18n.t(text, { ns: this.options?.['packageName'], ...(options as any) });
+  }
 }

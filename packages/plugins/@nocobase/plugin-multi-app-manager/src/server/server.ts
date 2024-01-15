@@ -2,7 +2,7 @@ import { Database, IDatabaseOptions, Transactionable } from '@nocobase/database'
 import Application, { AppSupervisor, Gateway, Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
 import lodash from 'lodash';
-import path, { resolve } from 'path';
+import path from 'path';
 import { ApplicationModel } from '../server';
 
 export type AppDbCreator = (app: Application, options?: Transactionable & { context?: any }) => Promise<void>;
@@ -63,6 +63,13 @@ const defaultDbCreator = async (app: Application) => {
     const connection = await mysql.createConnection({ host, port, user: username, password });
     await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
     await connection.close();
+  }
+
+  if (dialect === 'mariadb') {
+    const mariadb = require('mariadb');
+    const connection = await mariadb.createConnection({ host, port, user: username, password });
+    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
+    await connection.end();
   }
 
   if (dialect === 'postgres') {
@@ -151,9 +158,7 @@ export class PluginMultiAppManager extends Plugin {
   }
 
   async load() {
-    await this.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+    await this.importCollections(path.resolve(__dirname, 'collections'));
 
     // after application created
     this.db.on(
