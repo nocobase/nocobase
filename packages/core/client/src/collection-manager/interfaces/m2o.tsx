@@ -105,7 +105,6 @@ export const m2o: IField = {
                 target: {
                   type: 'string',
                   title: '{{t("Target collection")}}',
-                  required: true,
                   'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
@@ -142,7 +141,7 @@ export const m2o: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 targetKey: {
-                  type: 'void',
+                  type: 'string',
                   required: true,
                   title: '{{t("Target key")}}',
                   'x-decorator': 'FormItem',

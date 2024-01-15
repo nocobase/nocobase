@@ -166,8 +166,7 @@ export const o2m: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 targetKey: {
-                  type: 'void',
-                  required: true,
+                  type: 'string',
                   title: '{{t("Target key")}}',
                   'x-decorator': 'FormItem',
                   'x-component': 'TargetKey',
