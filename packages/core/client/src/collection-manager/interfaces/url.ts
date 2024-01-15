@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { defaultProps, operators } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 
 export const url: IField = {
   name: 'url',
@@ -27,7 +27,7 @@ export const url: IField = {
   },
 };
 
-export class UrlFieldInterface extends CollectionFieldInterface {
+export class UrlFieldInterface extends CollectionFieldInterfaceBase {
   name = 'url';
   type = 'string';
   group = 'basic';

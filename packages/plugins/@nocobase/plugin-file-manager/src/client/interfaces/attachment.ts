@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { CollectionFieldInterface, IField, interfacesProperties } from '@nocobase/client';
+import { CollectionFieldInterfaceBase, IField, interfacesProperties } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 
 export const attachment: IField = {
@@ -118,7 +118,7 @@ export const attachment: IField = {
   },
 };
 
-export class AttachmentFieldInterface extends CollectionFieldInterface {
+export class AttachmentFieldInterface extends CollectionFieldInterfaceBase {
   name = 'attachment';
   type = 'object';
   group = 'media';

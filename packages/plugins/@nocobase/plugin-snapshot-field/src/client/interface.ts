@@ -1,7 +1,7 @@
 import type { Field } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
 import {
-  CollectionFieldInterface,
+  CollectionFieldInterfaceBase,
   IField,
   interfacesProperties,
   useCollectionManager,
@@ -192,7 +192,7 @@ export const snapshot: IField = {
   },
 };
 
-export class SnapshotFieldInterface extends CollectionFieldInterface {
+export class SnapshotFieldInterface extends CollectionFieldInterfaceBase {
   name = 'snapshot';
   type = 'object';
   group = 'advanced';

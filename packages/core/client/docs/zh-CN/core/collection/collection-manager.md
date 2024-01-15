@@ -8,7 +8,7 @@
 interface CollectionManagerOptionsV2 {
   collections?: CollectionOptionsV2[];
   collectionTemplates?: (typeof CollectionTemplate)[];
-  fieldInterfaces?: (typeof CollectionFieldInterface)[];
+  fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionNamespaces?: Record<string, string>;
   collectionMixins?: CollectionMixinConstructor[];
@@ -39,9 +39,9 @@ class CollectionManagerV2 {
   getCollectionFields(collectionName: string, options: GetCollectionOptions = {}): CollectionFieldOptionsV2[];
   getCollectionField(path: string, options?: GetCollectionOptions): Promise<CollectionFieldOptions | undefined>;
 
-  addFieldInterfaces(interfaces: (typeof CollectionFieldInterface)[]): void;
-  getFieldInterfaces(): CollectionFieldInterface[];
-  getFieldInterface<T extends CollectionFieldInterface>(name: string): T;
+  addFieldInterfaces(interfaces: (typeof CollectionFieldInterfaceBase)[]): void;
+  getFieldInterfaces(): CollectionFieldInterfaceBase[];
+  getFieldInterface<T extends CollectionFieldInterfaceBase>(name: string): T;
 
   addFieldGroups(fieldGroups: Record<string, { label: string; order?: number }>): void;
   getFieldGroups():  Record<string, { label: string; order?: number }>;
@@ -171,7 +171,7 @@ class MyPlugin extends Plugin {
 interface CollectionManagerOptionsV2 {
   collections?: CollectionOptionsV2[];
   collectionTemplates?: (typeof CollectionTemplate)[];
-  fieldInterfaces?: (typeof CollectionFieldInterface)[];
+  fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionNamespaces?: Record<string, string>;
   collectionMixins?: CollectionMixinConstructor[];
@@ -204,7 +204,7 @@ class TreeCollectionTemplate extends CollectionTemplate {
 
 
 // field interface
-class CheckboxFieldInterface extends CollectionFieldInterface {
+class CheckboxFieldInterface extends CollectionFieldInterfaceBase {
   name = 'checkbox';
   type = 'object';
   group = 'choices';
@@ -635,14 +635,14 @@ collectionManager.getCollectionField('users.roles.name'); // 获取 roles 关联
 
 ```tsx | pure
 class CollectionManagerV2 {
-  addFieldInterfaces(interfaces: (typeof CollectionFieldInterface)[]): void;
+  addFieldInterfaces(interfaces: (typeof CollectionFieldInterfaceBase)[]): void;
 }
 ```
 
 - 示例
 
 ```tsx | pure
-class CheckboxFieldInterface extends CollectionFieldInterface {
+class CheckboxFieldInterface extends CollectionFieldInterfaceBase {
   name = 'checkbox';
   type = 'object';
   group = 'choices';
@@ -665,7 +665,7 @@ class MyPlugin extends Plugin {
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getFieldInterfaces(): Record<string, CollectionFieldInterface>
+  getFieldInterfaces(): Record<string, CollectionFieldInterfaceBase>
 }
 ```
 
@@ -683,7 +683,7 @@ collectionManager.getFieldInterfaces(); // { checkbox: checkboxFieldInterface, u
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getFieldInterface<T extends CollectionFieldInterface>(name: string): T;
+  getFieldInterface<T extends CollectionFieldInterfaceBase>(name: string): T;
 }
 ```
 

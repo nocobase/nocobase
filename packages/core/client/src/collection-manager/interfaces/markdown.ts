@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
 import { defaultProps, operators } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 
 export const markdown: IField = {
   name: 'markdown',
@@ -75,7 +75,7 @@ export const markdown: IField = {
   },
 };
 
-export class MarkdownFieldInterface extends CollectionFieldInterface {
+export class MarkdownFieldInterface extends CollectionFieldInterfaceBase {
   name = 'markdown';
   type = 'object';
   title = '{{t("Markdown")}}';

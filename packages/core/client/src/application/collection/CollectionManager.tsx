@@ -1,4 +1,4 @@
-import { CollectionFieldInterface } from './CollectionFieldInterface';
+import { CollectionFieldInterfaceBase } from './CollectionFieldInterface';
 import { CollectionTemplate } from './CollectionTemplate';
 import { CollectionFieldOptionsV2, CollectionOptionsV2, CollectionV2 } from './Collection';
 import type { Application } from '../Application';
@@ -56,7 +56,7 @@ export interface GetCollectionOptions {
 export interface CollectionManagerOptionsV2 {
   collections?: CollectionOptionsV2[] | Record<string, CollectionOptionsV2[]>;
   collectionTemplates?: (typeof CollectionTemplate)[];
-  fieldInterfaces?: (typeof CollectionFieldInterface)[];
+  fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionNamespaces?: Record<string, string>;
   collectionMixins?: CollectionMixinConstructor[];
@@ -66,7 +66,7 @@ export class CollectionManagerV2 {
   public app: Application;
   protected collections: Record<string, Record<string, CollectionV2>> = {};
   protected collectionTemplateInstances: Record<string, CollectionTemplate> = {};
-  protected fieldInterfaceInstances: Record<string, CollectionFieldInterface> = {};
+  protected fieldInterfaceInstances: Record<string, CollectionFieldInterfaceBase> = {};
   protected collectionMixins: CollectionMixinConstructor[] = [];
   protected collectionNamespaces: Record<string, string> = {
     [DEFAULT_COLLECTION_NAMESPACE_NAME]: DEFAULT_COLLECTION_NAMESPACE_TITLE,
@@ -256,7 +256,7 @@ export class CollectionManagerV2 {
   }
 
   // field interface
-  addFieldInterfaces(interfaces: (typeof CollectionFieldInterface)[]) {
+  addFieldInterfaces(interfaces: (typeof CollectionFieldInterfaceBase)[]) {
     const newCollectionFieldInterfaces = interfaces.reduce((acc, Interface) => {
       const instance = new Interface(this.app, this);
       acc[instance.name] = instance;
@@ -268,7 +268,7 @@ export class CollectionManagerV2 {
   getFieldInterfaces() {
     return this.fieldInterfaceInstances;
   }
-  getFieldInterface<T extends CollectionFieldInterface>(name: string) {
+  getFieldInterface<T extends CollectionFieldInterfaceBase>(name: string) {
     return this.fieldInterfaceInstances[name] as T;
   }
 

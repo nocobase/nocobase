@@ -3,7 +3,7 @@ import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
 import { i18n } from '../../i18n';
 import { registerValidateRules } from '@formily/validator';
-import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 
 registerValidateRules({
   username(value) {
@@ -168,7 +168,7 @@ export const input: IField = {
   },
 };
 
-export class InputFieldInterface extends CollectionFieldInterface {
+export class InputFieldInterface extends CollectionFieldInterfaceBase {
   name = 'input';
   type = 'object';
   group = 'basic';

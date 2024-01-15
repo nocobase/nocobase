@@ -1,6 +1,6 @@
 import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 
 export const phone: IField = {
   name: 'phone',
@@ -34,7 +34,7 @@ export const phone: IField = {
   titleUsable: true,
 };
 
-export class PhoneFieldInterface extends CollectionFieldInterface {
+export class PhoneFieldInterface extends CollectionFieldInterfaceBase {
   name = 'phone';
   type = 'object';
   group = 'basic';

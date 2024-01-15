@@ -4,7 +4,7 @@ import { IField } from '../../collection-manager';
 import { Application } from '../Application';
 import { CollectionManagerV2 } from './CollectionManager';
 
-export class CollectionFieldInterface implements IField {
+export class CollectionFieldInterfaceBase implements IField {
   app: Application;
   collectionManager: CollectionManagerV2;
   constructor(app: Application, collectionManager: CollectionManagerV2) {
