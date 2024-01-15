@@ -11,7 +11,7 @@ import {
 import { CustomRequestACL, CustomRequestSettingsItem } from './components/CustomRequestActionDesigner';
 
 export const customizeCustomRequestActionSettings = new SchemaSettings({
-  name: 'actionSettings:customize:customRequest',
+  name: 'actionSettings:customRequest',
   items: [
     {
       name: 'title',

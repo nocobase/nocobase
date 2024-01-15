@@ -62,7 +62,7 @@ export const readPrettyFormActionInitializers = new SchemaInitializer({
             title: '{{ t("Popup") }}',
             'x-action': 'customize:popup',
             'x-toolbar': 'ActionSchemaToolbar',
-            'x-settings': 'actionSettings:customize:popup',
+            'x-settings': 'actionSettings:popup',
             'x-component': 'Action',
             'x-component-props': {
               openMode: 'drawer',
@@ -112,7 +112,7 @@ export const readPrettyFormActionInitializers = new SchemaInitializer({
             title: '{{ t("Update record") }}',
             'x-component': 'Action',
             'x-toolbar': 'ActionSchemaToolbar',
-            'x-settings': 'actionSettings:customize:updateRecord',
+            'x-settings': 'actionSettings:updateRecord',
             'x-action': 'customize:update',
             'x-decorator': 'ACLActionProvider',
             'x-acl-action': 'update',

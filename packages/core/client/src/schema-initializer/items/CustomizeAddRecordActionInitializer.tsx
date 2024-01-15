@@ -7,7 +7,7 @@ export const CustomizeAddRecordActionInitializer = () => {
     type: 'void',
     title: '{{t("Add record")}}',
     'x-toolbar': 'ActionSchemaToolbar',
-    'x-settings': 'actionSettings:customize:addRecord',
+    'x-settings': 'actionSettings:addRecord',
     'x-component': 'Action',
     'x-action': 'customize:create',
     'x-component-props': {

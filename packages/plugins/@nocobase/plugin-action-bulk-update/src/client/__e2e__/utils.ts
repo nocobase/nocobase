@@ -423,7 +423,7 @@ export const oneEmptyTableBlockWithCustomizeUpdate: PageConfig = {
                             'x-align': 'right',
                             'x-action': 'customize:bulkUpdate',
                             'x-toolbar': 'ActionSchemaToolbar',
-                            'x-settings': 'ActionSettings:customize:bulkUpdate',
+                            'x-settings': 'ActionSettings:bulkUpdate',
                             'x-component': 'Action',
                             'x-decorator': 'ACLActionProvider',
                             'x-acl-action': 'update',

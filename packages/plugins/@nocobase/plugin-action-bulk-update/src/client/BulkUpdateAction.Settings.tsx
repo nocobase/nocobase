@@ -1,20 +1,20 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { isValid, uid } from '@formily/shared';
 import {
-  SchemaSettings,
   ActionDesigner,
-  useSchemaToolbar,
-  useDesignable,
-  useCompile,
   DefaultValueProvider,
+  FlagProvider,
+  SchemaSettings,
+  SchemaSettingsActionModalItem,
   SchemaSettingsItemGroup,
   SchemaSettingsModalItem,
-  SchemaSettingsActionModalItem,
   SchemaSettingsSelectItem,
-  FlagProvider,
+  useCompile,
+  useDesignable,
+  useSchemaToolbar,
 } from '@nocobase/client';
-import { isValid, uid } from '@formily/shared';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useField, useFieldSchema, ISchema } from '@formily/react';
 
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
@@ -179,7 +179,7 @@ function AssignedFieldValues() {
 }
 
 const bulkUpdateActionSettings = new SchemaSettings({
-  name: 'ActionSettings:customize:bulkUpdate',
+  name: 'ActionSettings:bulkUpdate',
   items: [
     {
       name: 'Customize',

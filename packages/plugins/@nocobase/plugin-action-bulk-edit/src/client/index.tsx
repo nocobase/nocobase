@@ -20,7 +20,7 @@ export class BulkEditPlugin extends Plugin {
         'x-decorator': 'ACLActionProvider',
         'x-action': 'customize:bulkEdit',
         'x-toolbar': 'ActionSchemaToolbar',
-        'x-settings': 'ActionSettings:customize:bulkEdit',
+        'x-settings': 'ActionSettings:bulkEdit',
         'x-acl-action': 'update',
         'x-acl-action-props': {
           skipScopeCheck: true,

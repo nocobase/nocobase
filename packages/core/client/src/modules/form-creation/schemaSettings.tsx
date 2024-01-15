@@ -158,7 +158,7 @@ export const submitActionSettings = new SchemaSettings({
 });
 
 export const customizeSaveRecordActionSettings = new SchemaSettings({
-  name: 'actionSettings:customize:saveRecord',
+  name: 'actionSettings:saveRecord',
   items: [
     {
       name: 'title',
@@ -214,7 +214,7 @@ export const customizeSaveRecordActionSettings = new SchemaSettings({
 });
 
 export const customizeSubmitToWorkflowActionSettings = new SchemaSettings({
-  name: 'actionSettings:customize:submitToWorkflow',
+  name: 'actionSettings:submitToWorkflow',
   items: [
     {
       name: 'title',

@@ -13,7 +13,7 @@ const formTriggerWorkflowActionInitializerV2: SchemaInitializerItemType = {
       useProps: '{{ useTriggerWorkflowsActionProps }}',
     },
     'x-toolbar': 'ActionSchemaToolbar',
-    'x-settings': 'actionSettings:customize:submitToWorkflow',
+    'x-settings': 'actionSettings:submitToWorkflow',
     'x-action-settings': {
       assignedValues: {},
       skipValidator: false,
@@ -67,7 +67,7 @@ export const formActionInitializers = new SchemaInitializer({
             'x-action': 'customize:save',
             'x-component': 'Action',
             'x-toolbar': 'ActionSchemaToolbar',
-            'x-settings': 'actionSettings:customize:saveRecord',
+            'x-settings': 'actionSettings:saveRecord',
             'x-designer-props': {
               modalTip:
                 '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',

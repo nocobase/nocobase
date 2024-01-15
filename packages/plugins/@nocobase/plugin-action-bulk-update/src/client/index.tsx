@@ -22,7 +22,7 @@ export class BulkUpdatePlugin extends Plugin {
         },
         'x-action': 'customize:bulkUpdate',
         'x-toolbar': 'ActionSchemaToolbar',
-        'x-settings': 'ActionSettings:customize:bulkUpdate',
+        'x-settings': 'ActionSettings:bulkUpdate',
         'x-action-settings': {
           assignedValues: {},
           updateMode: 'selected',

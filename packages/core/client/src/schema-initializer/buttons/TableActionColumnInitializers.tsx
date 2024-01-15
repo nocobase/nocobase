@@ -189,7 +189,7 @@ export const tableActionColumnInitializers = new SchemaInitializer({
             title: '{{ t("Popup") }}',
             'x-action': 'customize:popup',
             'x-toolbar': 'ActionSchemaToolbar',
-            'x-settings': 'actionSettings:customize:popup',
+            'x-settings': 'actionSettings:popup',
             'x-component': 'Action.Link',
             'x-component-props': {
               openMode: 'drawer',
@@ -243,7 +243,7 @@ export const tableActionColumnInitializers = new SchemaInitializer({
             'x-decorator': 'ACLActionProvider',
             'x-acl-action': 'update',
             'x-toolbar': 'ActionSchemaToolbar',
-            'x-settings': 'actionSettings:customize:updateRecord',
+            'x-settings': 'actionSettings:updateRecord',
             'x-action-settings': {
               assignedValues: {},
               onSuccess: {

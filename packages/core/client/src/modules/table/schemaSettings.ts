@@ -561,7 +561,7 @@ export const filterActionSettings = new SchemaSettings({
 });
 
 export const customizeAddRecordActionSettings = new SchemaSettings({
-  name: 'actionSettings:customize:addRecord',
+  name: 'actionSettings:addRecord',
   items: [
     {
       name: 'title',
@@ -716,7 +716,7 @@ export const deleteActionSettings = new SchemaSettings({
 });
 
 export const customizePopupActionSettings = new SchemaSettings({
-  name: 'actionSettings:customize:popup',
+  name: 'actionSettings:popup',
   items: [
     {
       name: 'title',
@@ -768,7 +768,7 @@ export const customizePopupActionSettings = new SchemaSettings({
 });
 
 export const customizeUpdateRecordActionSettings = new SchemaSettings({
-  name: 'actionSettings:customize:updateRecord',
+  name: 'actionSettings:updateRecord',
   items: [
     {
       name: 'title',

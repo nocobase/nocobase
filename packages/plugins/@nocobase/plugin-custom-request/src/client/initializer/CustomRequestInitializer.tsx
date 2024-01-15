@@ -11,7 +11,7 @@ export const CustomRequestInitializer: React.FC<any> = (props) => {
     'x-component': 'CustomRequestAction',
     'x-action': 'customize:form:request',
     'x-toolbar': 'ActionSchemaToolbar',
-    'x-settings': 'actionSettings:customize:customRequest',
+    'x-settings': 'actionSettings:customRequest',
     'x-decorator': 'CustomRequestAction.Decorator',
     'x-uid': uid(),
     'x-action-settings': {

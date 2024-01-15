@@ -1,19 +1,19 @@
-import React from 'react';
+import { useFieldSchema } from '@formily/react';
 import {
-  SchemaSettings,
-  useCompile,
   ActionDesigner,
-  useSchemaToolbar,
-  useDesignable,
   SchemaInitializerOpenModeSchemaItems,
-  SchemaSettingsSelectItem,
+  SchemaSettings,
   SchemaSettingsDivider,
-  SchemaSettingsRemove,
   SchemaSettingsItemGroup,
+  SchemaSettingsRemove,
+  SchemaSettingsSelectItem,
+  useCompile,
+  useDesignable,
+  useSchemaToolbar,
 } from '@nocobase/client';
 import { ModalProps } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFieldSchema } from '@formily/react';
 
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
@@ -78,8 +78,8 @@ function RemoveButton(
     )
   );
 }
-const bulkEditactionSettings = new SchemaSettings({
-  name: 'ActionSettings:customize:bulkEdit',
+const bulkEditActionSettings = new SchemaSettings({
+  name: 'ActionSettings:bulkEdit',
   items: [
     {
       name: 'Customize',
@@ -131,4 +131,4 @@ const bulkEditactionSettings = new SchemaSettings({
   ],
 });
 
-export { bulkEditactionSettings };
+export { bulkEditActionSettings as bulkEditactionSettings };
