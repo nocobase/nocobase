@@ -1,6 +1,6 @@
 import { useCollection, useCollectionFilterOptions, useCompile } from '@nocobase/client';
-import { useTranslation } from '../locale';
 import { useMemo } from 'react';
+import { useTranslation } from '../locale';
 
 export const useCustomRequestVariableOptions = () => {
   const collection = useCollection();
@@ -16,17 +16,17 @@ export const useCustomRequestVariableOptions = () => {
     return [
       {
         name: 'currentRecord',
-        title: t('Current record'),
+        title: t('Current record', { ns: 'client' }),
         children: [...fields],
       },
       {
         name: 'currentUser',
-        title: t('Current user'),
+        title: t('Current user', { ns: 'client' }),
         children: userFields,
       },
       {
         name: 'currentTime',
-        title: t('Current time'),
+        title: t('Current time', { ns: 'client' }),
         children: null,
       },
     ];

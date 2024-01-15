@@ -33,6 +33,72 @@ export const formItemSettings = new SchemaSettings({
   items: [
     ...(generalSettingsItems as any),
     {
+      name: 'allowAddNewData',
+      type: 'switch',
+      useVisible() {
+        const readPretty = useIsFieldReadPretty();
+        const isAssociationField = useIsAssociationField();
+        const fieldMode = useFieldMode();
+        return !readPretty && isAssociationField && ['SubTable'].includes(fieldMode);
+      },
+      useComponentProps() {
+        const { t } = useTranslation();
+        const field = useField<Field>();
+        const fieldSchema = useFieldSchema();
+        const { dn, refresh } = useDesignable();
+        return {
+          title: t('Allow add new'),
+          checked: fieldSchema['x-component-props']?.allowAddnew !== (false as boolean),
+          onChange(value) {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            field.componentProps.allowAddnew = value;
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props'].allowAddnew = value;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'allowSelectExistingRecord',
+      type: 'switch',
+      useVisible() {
+        const readPretty = useIsFieldReadPretty();
+        const isAssociationField = useIsAssociationField();
+        const fieldMode = useFieldMode();
+        return !readPretty && isAssociationField && ['SubTable'].includes(fieldMode);
+      },
+      useComponentProps() {
+        const { t } = useTranslation();
+        const field = useField<Field>();
+        const fieldSchema = useFieldSchema();
+        const { dn, refresh } = useDesignable();
+        return {
+          title: t('Allow selection of existing records'),
+          checked: fieldSchema['x-component-props']?.allowSelectExistingRecord,
+          onChange(value) {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            field.componentProps.allowSelectExistingRecord = value;
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props'].allowSelectExistingRecord = value;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          },
+        };
+      },
+    },
+    {
       name: 'quickUpload',
       type: 'switch',
       useVisible() {
