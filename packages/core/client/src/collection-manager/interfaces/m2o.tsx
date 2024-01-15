@@ -104,6 +104,7 @@ export const m2o: IField = {
               properties: {
                 target: {
                   type: 'string',
+                  required: true,
                   title: '{{t("Target collection")}}',
                   'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
                   'x-decorator': 'FormItem',
@@ -142,7 +143,6 @@ export const m2o: IField = {
               properties: {
                 targetKey: {
                   type: 'string',
-                  required: true,
                   title: '{{t("Target key")}}',
                   'x-decorator': 'FormItem',
                   'x-component': 'TargetKey',
