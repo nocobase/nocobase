@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import { defaultProps, operators, recordPickerViewer } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 
 export const createdBy: IField = {
   name: 'createdBy',
@@ -68,7 +68,7 @@ export const createdBy: IField = {
   },
 };
 
-export class CreatedByFieldInterface extends CollectionFieldInterface {
+export class CreatedByFieldInterface extends CollectionFieldInterfaceBase {
   name = 'createdBy';
   type = 'object';
   group = 'systemInfo';

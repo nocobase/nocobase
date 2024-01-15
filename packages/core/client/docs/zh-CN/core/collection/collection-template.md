@@ -39,7 +39,7 @@ interface CollectionTemplateDefaultOptions {
   fields?: CollectionOptionsV2['fields'];
 }
 
-class CollectionTemplate {
+class CollectionTemplateBase {
   app: Application;
   collectionManager: CollectionManagerV2;
 
@@ -71,7 +71,7 @@ class CollectionTemplate {
 其需要结合 [CollectionManager](/core/collection/collection-manager#cmaddcollectiontemplatestemplates) 使用。
 
 ```ts
-import { Plugin, CollectionV2, CollectionTemplate } from '@nocobase/client';
+import { Plugin, CollectionV2, CollectionTemplateBase } from '@nocobase/client';
 
 class SqlCollection extends CollectionV2 {
   otherMethods() {
@@ -79,7 +79,7 @@ class SqlCollection extends CollectionV2 {
   }
 }
 
-class SqlCollectionTemplate extends CollectionTemplate {
+class SqlCollectionTemplate extends CollectionTemplateBase {
   name = 'sql';
   Collection = SqlCollection; // 自定义的数据表类
   title = '{{t("SQL collection")}}';
@@ -126,7 +126,7 @@ class SqlCollection extends CollectionV2 {
   }
 }
 
-class SqlCollectionTemplate extends CollectionTemplate {
+class SqlCollectionTemplate extends CollectionTemplateBase {
   name = 'sql';
   Collection = SqlCollection; // 自定义的数据表类
   // ...
@@ -165,7 +165,7 @@ const userCollection = {
 ![](./images//collection-template-form.png)
 
 ```ts
-class SqlCollectionTemplate extends CollectionTemplate {
+class SqlCollectionTemplate extends CollectionTemplateBase {
   name = 'sql',
   // ...
   configurableProperties = {
@@ -235,7 +235,7 @@ const getConfigurableProperties: (...keys: DefaultConfigurableKeys[]) => Record<
 ```tsx | pure
 import { getConfigurableProperties } from '@nocobase/client';
 
-const sqlCollectionTemplate = new CollectionTemplate({
+const sqlCollectionTemplate = new CollectionTemplateBase({
   name: 'sql',
   // ...
   configurableProperties: {

@@ -1,4 +1,4 @@
-import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 import { operators } from './properties';
 import { IField } from './types';
 
@@ -45,7 +45,7 @@ export const tableoid: IField = {
   },
 };
 
-export class TableoidFieldInterface extends CollectionFieldInterface {
+export class TableoidFieldInterface extends CollectionFieldInterfaceBase {
   name = 'tableoid';
   type = 'object';
   group = 'systemInfo';

@@ -1,4 +1,4 @@
-import { CollectionFieldInterface, IField, interfacesProperties } from '@nocobase/client';
+import { CollectionFieldInterfaceBase, IField, interfacesProperties } from '@nocobase/client';
 const { defaultProps, operators } = interfacesProperties;
 
 export const mathFormula: IField = {
@@ -81,7 +81,7 @@ export const mathFormula: IField = {
   },
 };
 
-export class MathFormulaFieldInterface extends CollectionFieldInterface {
+export class MathFormulaFieldInterface extends CollectionFieldInterfaceBase {
   name = 'mathFormula';
   type = 'object';
   group = 'advanced';

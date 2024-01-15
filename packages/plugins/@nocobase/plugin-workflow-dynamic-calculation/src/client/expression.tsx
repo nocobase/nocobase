@@ -1,4 +1,4 @@
-import { CollectionFieldInterface, IField, interfacesProperties } from '@nocobase/client';
+import { CollectionFieldInterfaceBase, IField, interfacesProperties } from '@nocobase/client';
 
 import { NAMESPACE } from '../locale';
 
@@ -23,7 +23,7 @@ export const expression = {
   },
 } as IField;
 
-export class ExpressionFieldInterface extends CollectionFieldInterface {
+export class ExpressionFieldInterface extends CollectionFieldInterfaceBase {
   name = 'expression';
   type = 'string';
   group = 'advanced';

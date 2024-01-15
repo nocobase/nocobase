@@ -2,7 +2,7 @@ import type { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
 import { defaultProps, operators } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 
 export const richText: IField = {
   name: 'richText',
@@ -76,7 +76,7 @@ export const richText: IField = {
   },
 };
 
-export class RichTextFieldInterface extends CollectionFieldInterface {
+export class RichTextFieldInterface extends CollectionFieldInterfaceBase {
   name = 'richText';
   type = 'object';
   group = 'media';

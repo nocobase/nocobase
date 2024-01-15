@@ -1,5 +1,5 @@
-import { CollectionFieldInterface } from './CollectionFieldInterface';
-import { CollectionTemplate } from './CollectionTemplate';
+import { CollectionFieldInterfaceBase } from './CollectionFieldInterface';
+import { CollectionTemplateBase } from './CollectionTemplate';
 import { CollectionFieldOptionsV2, CollectionOptionsV2, CollectionV2 } from './Collection';
 import type { Application } from '../Application';
 import { SchemaKey } from '@formily/react';
@@ -55,8 +55,8 @@ export interface GetCollectionOptions {
 
 export interface CollectionManagerOptionsV2 {
   collections?: CollectionOptionsV2[] | Record<string, CollectionOptionsV2[]>;
-  collectionTemplates?: (typeof CollectionTemplate)[];
-  fieldInterfaces?: (typeof CollectionFieldInterface)[];
+  collectionTemplates?: (typeof CollectionTemplateBase)[];
+  fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionNamespaces?: Record<string, string>;
   collectionMixins?: CollectionMixinConstructor[];
@@ -65,8 +65,8 @@ export interface CollectionManagerOptionsV2 {
 export class CollectionManagerV2 {
   public app: Application;
   protected collections: Record<string, Record<string, CollectionV2>> = {};
-  protected collectionTemplateInstances: Record<string, CollectionTemplate> = {};
-  protected fieldInterfaceInstances: Record<string, CollectionFieldInterface> = {};
+  protected collectionTemplateInstances: Record<string, CollectionTemplateBase> = {};
+  protected fieldInterfaceInstances: Record<string, CollectionFieldInterfaceBase> = {};
   protected collectionMixins: CollectionMixinConstructor[] = [];
   protected collectionNamespaces: Record<string, string> = {
     [DEFAULT_COLLECTION_NAMESPACE_NAME]: DEFAULT_COLLECTION_NAMESPACE_TITLE,
@@ -225,7 +225,7 @@ export class CollectionManagerV2 {
   }
 
   // CollectionTemplates
-  addCollectionTemplates(templateClasses: (typeof CollectionTemplate)[]) {
+  addCollectionTemplates(templateClasses: (typeof CollectionTemplateBase)[]) {
     const newCollectionTemplateInstances = templateClasses.reduce((acc, Template) => {
       const instance = new Template(this.app, this);
       acc[instance.name] = instance;
@@ -251,12 +251,12 @@ export class CollectionManagerV2 {
   getCollectionTemplates() {
     return Object.values(this.collectionTemplateInstances).sort((a, b) => (a.order || 0) - (b.order || 0));
   }
-  getCollectionTemplate<T extends CollectionTemplate>(name: string): T {
+  getCollectionTemplate<T extends CollectionTemplateBase>(name: string): T {
     return this.collectionTemplateInstances[name] as T;
   }
 
   // field interface
-  addFieldInterfaces(interfaces: (typeof CollectionFieldInterface)[]) {
+  addFieldInterfaces(interfaces: (typeof CollectionFieldInterfaceBase)[]) {
     const newCollectionFieldInterfaces = interfaces.reduce((acc, Interface) => {
       const instance = new Interface(this.app, this);
       acc[instance.name] = instance;
@@ -268,7 +268,7 @@ export class CollectionManagerV2 {
   getFieldInterfaces() {
     return this.fieldInterfaceInstances;
   }
-  getFieldInterface<T extends CollectionFieldInterface>(name: string) {
+  getFieldInterface<T extends CollectionFieldInterfaceBase>(name: string) {
     return this.fieldInterfaceInstances[name] as T;
   }
 

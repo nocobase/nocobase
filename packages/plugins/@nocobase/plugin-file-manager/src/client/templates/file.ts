@@ -1,4 +1,4 @@
-import { CollectionTemplate, getConfigurableProperties } from '@nocobase/client';
+import { CollectionTemplateBase, getConfigurableProperties } from '@nocobase/client';
 // import { CollectionOptions } from '@nocobase/database';
 import { NAMESPACE } from '../locale';
 
@@ -153,7 +153,7 @@ import { NAMESPACE } from '../locale';
 //   },
 // } as CollectionOptions;
 
-export class FileCollectionTemplate extends CollectionTemplate {
+export class FileCollectionTemplate extends CollectionTemplateBase {
   name = 'file';
   title = `{{t("File collection", { ns: "${NAMESPACE}" })}}`;
   order = 3;

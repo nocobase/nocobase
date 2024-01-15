@@ -1,4 +1,4 @@
-import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 import { dateTimeProps, defaultProps, operators } from './properties';
 import { IField } from './types';
 
@@ -32,7 +32,7 @@ export const createdAt: IField = {
   titleUsable: true,
 };
 
-export class CreatedAtFieldInterface extends CollectionFieldInterface {
+export class CreatedAtFieldInterface extends CollectionFieldInterfaceBase {
   name = 'createdAt';
   type = 'object';
   group = 'systemInfo';

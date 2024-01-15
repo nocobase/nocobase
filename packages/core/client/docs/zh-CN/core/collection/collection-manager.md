@@ -7,8 +7,8 @@
 ```tsx | pure
 interface CollectionManagerOptionsV2 {
   collections?: CollectionOptionsV2[];
-  collectionTemplates?: (typeof CollectionTemplate)[];
-  fieldInterfaces?: (typeof CollectionFieldInterface)[];
+  collectionTemplates?: (typeof CollectionTemplateBase)[];
+  fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionNamespaces?: Record<string, string>;
   collectionMixins?: CollectionMixinConstructor[];
@@ -26,9 +26,9 @@ class CollectionManagerV2 {
   addCollectionNamespaces(collectionNamespaces: Record<string, string>): void;
   getCollectionNamespaces(): { name: string; title: string }[];
 
-  addCollectionTemplates(templateClasses: (typeof CollectionTemplate)[]): void;
-  getCollectionTemplates(): CollectionTemplate[];
-  getCollectionTemplate<T extends CollectionTemplate>(name: string): T
+  addCollectionTemplates(templateClasses: (typeof CollectionTemplateBase)[]): void;
+  getCollectionTemplates(): CollectionTemplateBase[];
+  getCollectionTemplate<T extends CollectionTemplateBase>(name: string): T
 
   addCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}): void
   setCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}): void
@@ -39,9 +39,9 @@ class CollectionManagerV2 {
   getCollectionFields(collectionName: string, options: GetCollectionOptions = {}): CollectionFieldOptionsV2[];
   getCollectionField(path: string, options?: GetCollectionOptions): Promise<CollectionFieldOptions | undefined>;
 
-  addFieldInterfaces(interfaces: (typeof CollectionFieldInterface)[]): void;
-  getFieldInterfaces(): CollectionFieldInterface[];
-  getFieldInterface<T extends CollectionFieldInterface>(name: string): T;
+  addFieldInterfaces(interfaces: (typeof CollectionFieldInterfaceBase)[]): void;
+  getFieldInterfaces(): CollectionFieldInterfaceBase[];
+  getFieldInterface<T extends CollectionFieldInterfaceBase>(name: string): T;
 
   addFieldGroups(fieldGroups: Record<string, { label: string; order?: number }>): void;
   getFieldGroups():  Record<string, { label: string; order?: number }>;
@@ -170,8 +170,8 @@ class MyPlugin extends Plugin {
 ```tsx | pure
 interface CollectionManagerOptionsV2 {
   collections?: CollectionOptionsV2[];
-  collectionTemplates?: (typeof CollectionTemplate)[];
-  fieldInterfaces?: (typeof CollectionFieldInterface)[];
+  collectionTemplates?: (typeof CollectionTemplateBase)[];
+  fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionNamespaces?: Record<string, string>;
   collectionMixins?: CollectionMixinConstructor[];
@@ -193,7 +193,7 @@ const userCollectionOptions = {
 };
 
 // collection template
-class TreeCollectionTemplate extends CollectionTemplate {
+class TreeCollectionTemplate extends CollectionTemplateBase {
   name = 'tree';
   type = 'object';
   title = '{{t("Tree collection")}}';
@@ -204,7 +204,7 @@ class TreeCollectionTemplate extends CollectionTemplate {
 
 
 // field interface
-class CheckboxFieldInterface extends CollectionFieldInterface {
+class CheckboxFieldInterface extends CollectionFieldInterfaceBase {
   name = 'checkbox';
   type = 'object';
   group = 'choices';
@@ -337,13 +337,13 @@ collectionManager.getCollectionNamespaces(); // [ { name: 'main', title: '主数
 - 类型
 
 ```tsx | pure
-collectionManager.addCollectionTemplates(templateClasses: (typeof CollectionTemplate)[]): void;
+collectionManager.addCollectionTemplates(templateClasses: (typeof CollectionTemplateBase)[]): void;
 ```
 
 - 示例
 
 ```tsx | pure
-class SqlCollectionTemplate extends CollectionTemplate {
+class SqlCollectionTemplate extends CollectionTemplateBase {
   name = 'sql';
   type = 'object';
   title = '{{t("SQL collection")}}';
@@ -352,7 +352,7 @@ class SqlCollectionTemplate extends CollectionTemplate {
   }
 }
 
-class TreeCollectionTemplate extends CollectionTemplate {
+class TreeCollectionTemplate extends CollectionTemplateBase {
   name = 'tree';
   type = 'object';
   title = '{{t("Tree collection")}}';
@@ -378,7 +378,7 @@ class MyPlugin extends Plugin {
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollectionTemplates(): CollectionTemplate[];
+  getCollectionTemplates(): CollectionTemplateBase[];
 }
 ```
 
@@ -396,7 +396,7 @@ collectionManager.getCollectionTemplates(); // [ treeCollectionTemplate, sqlColl
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollectionTemplate<T extends CollectionTemplate>(name: string): T
+  getCollectionTemplate<T extends CollectionTemplateBase>(name: string): T
 }
 ```
 
@@ -635,14 +635,14 @@ collectionManager.getCollectionField('users.roles.name'); // 获取 roles 关联
 
 ```tsx | pure
 class CollectionManagerV2 {
-  addFieldInterfaces(interfaces: (typeof CollectionFieldInterface)[]): void;
+  addFieldInterfaces(interfaces: (typeof CollectionFieldInterfaceBase)[]): void;
 }
 ```
 
 - 示例
 
 ```tsx | pure
-class CheckboxFieldInterface extends CollectionFieldInterface {
+class CheckboxFieldInterface extends CollectionFieldInterfaceBase {
   name = 'checkbox';
   type = 'object';
   group = 'choices';
@@ -665,7 +665,7 @@ class MyPlugin extends Plugin {
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getFieldInterfaces(): Record<string, CollectionFieldInterface>
+  getFieldInterfaces(): Record<string, CollectionFieldInterfaceBase>
 }
 ```
 
@@ -683,7 +683,7 @@ collectionManager.getFieldInterfaces(); // { checkbox: checkboxFieldInterface, u
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getFieldInterface<T extends CollectionFieldInterface>(name: string): T;
+  getFieldInterface<T extends CollectionFieldInterfaceBase>(name: string): T;
 }
 ```
 
