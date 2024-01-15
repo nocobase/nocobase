@@ -21,7 +21,7 @@ import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './ho
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
 
-const useTableSelectorProps = () => {
+export const useTableSelectorProps = () => {
   const field: any = useField();
   const {
     multiple,
