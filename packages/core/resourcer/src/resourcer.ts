@@ -265,10 +265,13 @@ export class Resourcer {
   restApiMiddleware({ prefix, accessors }: KoaMiddlewareOptions = {}) {
     return async (ctx: ResourcerContext, next: () => Promise<any>) => {
       ctx.resourcer = this;
+      const connectionName = ctx.get('x-connection');
+
       let params = parseRequest(
         {
           path: ctx.request.path,
           method: ctx.request.method,
+          namespace: connectionName,
         },
         {
           prefix: this.options.prefix || prefix,
@@ -279,6 +282,7 @@ export class Resourcer {
       if (!params) {
         return next();
       }
+
       try {
         const resource = this.getResource(getNameByParams(params));
 
@@ -289,6 +293,7 @@ export class Resourcer {
               path: ctx.request.path,
               method: ctx.request.method,
               type: resource.options.type,
+              namespace: connectionName,
             },
             {
               prefix: this.options.prefix || prefix,
@@ -300,8 +305,14 @@ export class Resourcer {
             return next();
           }
         }
+
         // action 需要 clone 之后再赋给 ctx
         ctx.action = this.getAction(getNameByParams(params), params.actionName).clone();
+
+        if (params && params.resourceName && params.resourceName.includes('@')) {
+          params.resourceName = params.resourceName.replace(`${connectionName}@`, '');
+        }
+
         ctx.action.setContext(ctx);
         ctx.action.actionName = params.actionName;
         ctx.action.resourceOf = params.associatedIndex;
@@ -325,6 +336,7 @@ export class Resourcer {
         }
         return compose(ctx.action.getHandlers())(ctx, next);
       } catch (error) {
+        console.log(error);
         return next();
       }
     };

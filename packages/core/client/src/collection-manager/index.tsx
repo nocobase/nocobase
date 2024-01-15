@@ -1,8 +1,10 @@
 export {
+  useCancelAction,
   useCollectionFilterOptions,
   useSortFields,
   useLinkageCollectionFilterOptions,
   useCollectionFieldsOptions,
+  isDeleteButtonDisabled,
 } from './action-hooks';
 export * from './CollectionField';
 export * from './CollectionFieldProvider';
@@ -24,3 +26,4 @@ export * from './CollectionHistoryProvider';
 export * from './interfaces/properties';
 export * from './collectionPlugin';
 export * from './mixins/InheritanceCollectionMixin';
+export * from './sub-table';

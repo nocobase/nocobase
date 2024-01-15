@@ -16,6 +16,13 @@ export * from './EditCategoryAction';
 export * from './SyncFieldsAction';
 export * from './SyncSQLFieldsAction';
 export * from './DeleteCollectionAction';
+export * from './AddSubFieldAction';
+export * from './EditSubFieldAction';
+export * from './components/FieldSummary';
+export * from './components/TemplateSummary';
+export * from './components/CollectionFieldInterface';
+export * from './components/CollectionCategory';
+export * from './components/CollectionTemplate';
 
 registerValidateFormats({
   uid: /^[a-zA-Z][a-zA-Z0-9_-]*$/,

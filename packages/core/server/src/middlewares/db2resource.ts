@@ -3,41 +3,58 @@ import { getNameByParams, parseRequest, ResourcerContext, ResourceType } from '@
 
 export function db2resource(ctx: ResourcerContext & { db: Database }, next: () => Promise<any>) {
   const resourcer = ctx.resourcer;
-  const database = ctx.db;
+  const connectionName = ctx.get('x-connection');
+  const database = ctx.app.getDb(connectionName);
+
   const params = parseRequest(
     {
       path: ctx.request.path,
       method: ctx.request.method,
+      namespace: connectionName,
     },
     {
       prefix: resourcer.options.prefix,
       accessors: resourcer.options.accessors,
     },
   );
+
   if (!params) {
     return next();
   }
 
   const resourceName = getNameByParams(params);
+
   // 如果资源名称未被定义
   if (resourcer.isDefined(resourceName)) {
     return next();
   }
-  const [collectionName, fieldName] = resourceName.split('.');
+
+  const splitResult = resourceName.split('.');
+
+  let collectionName = splitResult[0];
+  const fieldName = splitResult[1];
+
+  if (collectionName.includes('@')) {
+    collectionName = collectionName.split('@')[1];
+  }
+
   // 如果经过加载后是已经定义的表
   if (!database.hasCollection(collectionName)) {
     return next();
   }
+
   const collection = database.getCollection(collectionName);
   let resourceType: ResourceType = 'single';
   if (fieldName && collection.hasField(fieldName)) {
     const field = collection.getField(fieldName);
     resourceType = field.type;
   }
+
   resourcer.define({
     type: resourceType,
     name: resourceName,
   });
+
   return next();
 }
 

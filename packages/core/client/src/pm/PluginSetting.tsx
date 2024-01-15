@@ -3,7 +3,7 @@ import { css } from '@emotion/css';
 import { Layout, Menu, Result } from 'antd';
 import _, { get } from 'lodash';
 import React, { createContext, useCallback, useMemo } from 'react';
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useStyles } from './style';
 import { ADMIN_SETTINGS_PATH, PluginSettingsPageType, useApp } from '../application';
 import { useCompile } from '../schema-component';
@@ -22,11 +22,34 @@ function getMenuItems(list: PluginSettingsPageType[]) {
   });
 }
 
+function matchRoute(data, url) {
+  const keys = Object.keys(data);
+
+  for (const pattern of keys) {
+    const regexPattern = pattern.replace(/:[^/]+/g, '([^/]+)');
+    const match = url.match(new RegExp(`^${regexPattern}$`));
+
+    if (match) {
+      return data[pattern];
+    }
+  }
+
+  return null;
+}
+function replaceRouteParams(urlTemplate, params) {
+  // 使用正则表达式替换占位符
+  return urlTemplate.replace(/:\w+/g, (match) => {
+    const paramName = match.substring(1);
+    return params?.[paramName] || match;
+  });
+}
+
 export const AdminSettingsLayout = () => {
   const { styles, theme } = useStyles();
   const app = useApp();
   const navigate = useNavigate();
   const location = useLocation();
+  const params = useParams();
   const compile = useCompile();
   const settings = useMemo(() => {
     const list = app.pluginSettingsManager.getList();
@@ -68,7 +91,10 @@ export const AdminSettingsLayout = () => {
     return map;
   }, [settings]);
 
-  const currentSetting = useMemo(() => settingsMapByPath[location.pathname], [location.pathname, settingsMapByPath]);
+  const currentSetting = useMemo(
+    () => matchRoute(settingsMapByPath, location.pathname),
+    [location.pathname, settingsMapByPath],
+  );
   const currentTopLevelSetting = useMemo(() => {
     if (!currentSetting) {
       return null;
@@ -76,7 +102,7 @@ export const AdminSettingsLayout = () => {
     return settings.find((item) => item.name === currentSetting.topLevelName);
   }, [currentSetting, settings]);
   const sidebarMenus = useMemo(() => {
-    return getMenuItems(settings.map((item) => ({ ...item, children: null })));
+    return getMenuItems(settings.filter((v) => v.isTop !== false).map((item) => ({ ...item, children: null })));
   }, [settings]);
   if (!currentSetting || location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
     return <Navigate replace to={getFirstDeepChildPath(settings)} />;
@@ -104,7 +130,7 @@ export const AdminSettingsLayout = () => {
           theme={'light'}
         >
           <Menu
-            selectedKeys={[currentSetting?.topLevelName]}
+            selectedKeys={[currentSetting?.pluginKey || currentSetting.topLevelName]}
             style={{ height: 'calc(100vh - 46px)', overflowY: 'auto', overflowX: 'hidden' }}
             onClick={({ key }) => {
               const plugin = settings.find((item) => item.name === key);
@@ -127,11 +153,12 @@ export const AdminSettingsLayout = () => {
               ghost={false}
               title={currentTopLevelSetting.title}
               footer={
-                currentTopLevelSetting.children?.length > 0 && (
+                currentTopLevelSetting.children?.length > 0 &&
+                currentTopLevelSetting.showTabs !== false && (
                   <Menu
                     style={{ marginLeft: -theme.margin }}
                     onClick={({ key }) => {
-                      navigate(app.pluginSettingsManager.getRoutePath(key));
+                      navigate(replaceRouteParams(app.pluginSettingsManager.getRoutePath(key), params));
                     }}
                     selectedKeys={[currentSetting?.name]}
                     mode="horizontal"

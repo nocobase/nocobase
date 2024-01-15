@@ -1,5 +1,5 @@
 import { set } from 'lodash';
-import { createElement } from 'react';
+import React, { createElement } from 'react';
 import { Outlet } from 'react-router-dom';
 
 import { Icon } from '../icon';
@@ -11,7 +11,7 @@ export const ADMIN_SETTINGS_PATH = '/admin/settings/';
 export const SNIPPET_PREFIX = 'pm.';
 
 export interface PluginSettingOptions {
-  title: string;
+  title: string | React.ReactElement;
   /**
    * @default Outlet
    */
@@ -27,8 +27,8 @@ export interface PluginSettingOptions {
 }
 
 export interface PluginSettingsPageType {
-  label?: string;
-  title: string;
+  label?: string | React.ReactElement;
+  title: string | React.ReactElement;
   key: string;
   icon: any;
   path: string;
@@ -75,7 +75,7 @@ export class PluginSettingsManager {
   add(name: string, options: PluginSettingOptions) {
     const nameArr = name.split('.');
     const topLevelName = nameArr[0];
-    this.settings[name] = { Component: Outlet, ...options, name, topLevelName };
+    this.settings[name] = { Component: Outlet, ...options, name, topLevelName: options.topLevelName || topLevelName };
 
     // add children
     if (nameArr.length > 1) {

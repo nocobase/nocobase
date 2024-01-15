@@ -126,11 +126,12 @@ const MenuEditor = (props) => {
 
   useEffect(() => {
     const properties = Object.values(current?.root?.properties || {}).shift()?.['properties'] || data?.data?.properties;
-    if (properties && sideMenuRef.current) {
-      const pageType = Object.values(properties).find(
-        (item) => item['x-uid'] === params.name && item['x-component'] === 'Menu.Item',
-      );
-      if (pageType) {
+    if (sideMenuRef.current) {
+      const pageType =
+        properties &&
+        Object.values(properties).find((item) => item['x-uid'] === params.name && item['x-component'] === 'Menu.Item');
+      const isUIPage = properties && Object.values(properties).some((v) => v['x-uid'] === params.name);
+      if (pageType || !isUIPage) {
         sideMenuRef.current.style.display = 'none';
       } else {
         sideMenuRef.current.style.display = 'block';
@@ -267,7 +268,6 @@ export const InternalAdminLayout = (props: any) => {
   const params = useParams<any>();
   const { token } = useToken();
   const { render } = useAppSpin();
-
   return (
     <Layout>
       <GlobalStyleForAdminLayout />
