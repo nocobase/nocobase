@@ -13,7 +13,8 @@ module.exports = (cli) => {
   cli
     .command('postinstall')
     .allowUnknownOption()
-    .action(async () => {
+    .option('--skip-umi')
+    .action(async (options) => {
       generatePlaywrightPath(true);
       await createStoragePluginsSymlink();
       if (!isDev()) {
@@ -32,11 +33,13 @@ module.exports = (cli) => {
       if (!isPackageValid('umi')) {
         return;
       }
-      run('umi', ['generate', 'tmp'], {
-        stdio: 'pipe',
-        env: {
-          APP_ROOT: `${APP_PACKAGE_ROOT}/client`,
-        },
-      });
+      if (options.skipUmi) {
+        run('umi', ['generate', 'tmp'], {
+          stdio: 'pipe',
+          env: {
+            APP_ROOT: `${APP_PACKAGE_ROOT}/client`,
+          },
+        });
+      }
     });
 };

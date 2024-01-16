@@ -238,6 +238,7 @@ export class PluginManager {
       },
       filterKeys: ['name'],
     });
+    await sleep(1000);
     await tsxRerunning();
   }
 
@@ -608,8 +609,8 @@ export class PluginManager {
           }),
         );
       }
-      await execa('yarn', ['nocobase', 'restart']);
       await execa('yarn', ['postinstall']);
+      await execa('yarn', ['nocobase', 'refresh']);
     }
   }
 
