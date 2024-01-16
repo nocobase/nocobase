@@ -74,7 +74,7 @@ export default (app: Application) => {
     // .ipc()
     // .preload()
     .arguments('<plugins...>')
-    .option('--with-dir')
+    .option('--remove-dir')
     .action(async (plugins, options) => {
       await app.pm.remove(plugins, options);
     });

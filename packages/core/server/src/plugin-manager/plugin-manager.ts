@@ -553,7 +553,7 @@ export class PluginManager {
     }
   }
 
-  async remove(name: string | string[], options?: { withDir?: boolean }) {
+  async remove(name: string | string[], options?: { removeDir?: boolean }) {
     const pluginNames = _.castArray(name);
     if (await this.app.isStarted()) {
       for (const pluginName of pluginNames) {
@@ -599,7 +599,7 @@ export class PluginManager {
           name: pluginNames,
         },
       });
-      if (options?.withDir) {
+      if (options?.removeDir) {
         await Promise.all(
           plugins.map(async (plugin) => {
             const dir = resolve(process.env.NODE_MODULES_PATH, plugin.packageName);
