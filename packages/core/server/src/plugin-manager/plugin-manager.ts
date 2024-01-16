@@ -8,8 +8,6 @@ import _ from 'lodash';
 import net from 'net';
 import { basename, dirname, join, resolve, sep } from 'path';
 import Application from '../application';
-import { Gateway } from '../gateway';
-import { IPCSocketClient } from '../gateway/ipc-socket-client';
 import { createAppProxy, tsxRerunning } from '../helper';
 import { Plugin } from '../plugin';
 import { uploadMiddleware } from './middleware';
@@ -209,8 +207,6 @@ export class PluginManager {
       await generator.run();
     };
     await createPlugin(pluginName);
-    await tsxRerunning();
-    await sleep(500);
     try {
       await this.app.db.auth({ retry: 1 });
       const installed = await this.app.isInstalled();
@@ -222,53 +218,27 @@ export class PluginManager {
       return;
     }
     this.app.log.info('attempt to add the plugin to the app');
-    const ipcClient = await new Promise<IPCSocketClient | false>((resolve, reject) => {
-      let ipcClient;
-      const max = 3;
-      let count = 0;
-      const timer = setInterval(async () => {
-        ipcClient = await Gateway.getIPCSocketClient();
-        if (ipcClient) {
-          clearInterval(timer);
-          resolve(ipcClient);
-        }
-        if (count++ > max) {
-          clearInterval(timer);
-          resolve(false);
-        }
-      }, 500);
+    let packageName: string;
+    try {
+      packageName = await PluginManager.getPackageName(pluginName);
+    } catch (error) {
+      packageName = pluginName;
+    }
+    const json = await PluginManager.getPackageJson(packageName);
+    this.app.log.info(`add plugin [${packageName}]`, {
+      name: pluginName,
+      packageName: packageName,
+      version: json.version,
     });
-    if (ipcClient) {
-      await ipcClient.write({ type: 'appReady' });
-      ipcClient.close();
-      await execa('yarn', ['nocobase', 'pm', 'add', pluginName], {
-        stdout: 'inherit',
-        env: {
-          ...process.env,
-        },
-      });
-    } else {
-      let packageName: string;
-      try {
-        packageName = await PluginManager.getPackageName(pluginName);
-      } catch (error) {
-        packageName = pluginName;
-      }
-      const json = await PluginManager.getPackageJson(packageName);
-      this.app.log.info(`add plugin [${packageName}]`, {
+    await this.repository.updateOrCreate({
+      values: {
         name: pluginName,
         packageName: packageName,
         version: json.version,
-      });
-      await this.repository.updateOrCreate({
-        values: {
-          name: pluginName,
-          packageName: packageName,
-          version: json.version,
-        },
-        filterKeys: ['name'],
-      });
-    }
+      },
+      filterKeys: ['name'],
+    });
+    await tsxRerunning();
   }
 
   async add(plugin?: any, options: any = {}, insert = false, isUpgrade = false) {
@@ -639,9 +609,7 @@ export class PluginManager {
         );
       }
       await execa('yarn', ['nocobase', 'restart']);
-      if (options?.withDir) {
-        await execa('yarn', ['postinstall']);
-      }
+      await execa('yarn', ['postinstall']);
     }
   }
 
