@@ -481,7 +481,9 @@ export const formItemSettings = new SchemaSettings({
                 'x-action': 'create',
                 'x-acl-action': 'create',
                 title: "{{t('Add new')}}",
-                'x-designer': 'Action.Designer',
+                // 'x-designer': 'Action.Designer',
+                'x-toolbar': 'ActionSchemaToolbar',
+                'x-settings': 'actonSettings:addNew',
                 'x-component': 'Action',
                 'x-decorator': 'ACLActionProvider',
                 'x-component-props': {
@@ -542,7 +544,9 @@ export const formItemSettings = new SchemaSettings({
                   'x-action': 'create',
                   'x-acl-action': 'create',
                   title: "{{t('Add new')}}",
-                  'x-designer': 'Action.Designer',
+                  // 'x-designer': 'Action.Designer',
+                  'x-toolbar': 'ActionSchemaToolbar',
+                  'x-settings': 'actonSettings:addNew',
                   'x-component': 'Action',
                   'x-decorator': 'ACLActionProvider',
                   'x-component-props': {

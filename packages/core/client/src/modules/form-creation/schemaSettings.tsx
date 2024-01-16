@@ -855,7 +855,9 @@ const quickCreate: any = {
               'x-action': 'create',
               'x-acl-action': 'create',
               title: "{{t('Add new')}}",
-              'x-designer': 'Action.Designer',
+              // 'x-designer': 'Action.Designer',
+              'x-toolbar': 'ActionSchemaToolbar',
+              'x-settings': 'actionSettings:addNew',
               'x-component': 'Action',
               'x-decorator': 'ACLActionProvider',
               'x-component-props': {

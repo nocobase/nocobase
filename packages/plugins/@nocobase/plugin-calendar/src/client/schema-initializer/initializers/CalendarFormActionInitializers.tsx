@@ -76,7 +76,9 @@ export const CalendarFormActionInitializers: SchemaInitializer = new SchemaIniti
             type: 'void',
             title: generateNTemplate('Popup'),
             'x-action': 'customize:popup',
-            'x-designer': 'Action.Designer',
+            // 'x-designer': 'Action.Designer',
+            'x-toolbar': 'ActionSchemaToolbar',
+            'x-settings': 'actionSettings:popup',
             'x-component': 'Action',
             'x-component-props': {
               openMode: 'drawer',
@@ -125,7 +127,9 @@ export const CalendarFormActionInitializers: SchemaInitializer = new SchemaIniti
           schema: {
             title: generateNTemplate('Update record'),
             'x-component': 'Action',
-            'x-designer': 'Action.Designer',
+            // 'x-designer': 'Action.Designer',
+            'x-toolbar': 'ActionSchemaToolbar',
+            'x-settings': 'actionSettings:updateRecord',
             'x-acl-action': 'update',
             'x-action': 'customize:update',
             'x-action-settings': {

@@ -56,7 +56,9 @@ export const associationFilterFilterBlockInitializer = new SchemaInitializer({
             title: field.uiSchema.title,
             interface: field.interface,
             type: 'void',
-            'x-designer': 'AssociationFilter.Item.Designer',
+            // 'x-designer': 'AssociationFilter.Item.Designer',
+            'x-toolbar': 'CollapseItemSchemaToolbar',
+            'x-settings': 'fieldSettings:FilterCollapseItem',
             'x-component': 'AssociationFilter.Item',
             'x-component-props': {
               fieldNames: {

@@ -419,9 +419,10 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
           const schema = {
             type: 'string',
             name: `${field.name}.${subField.name}`,
-            'x-designer': 'FormItem.Designer',
+            // 'x-designer': 'FormItem.Designer',
+            'x-toolbar': 'FormItemSchemaToolbar',
+            'x-settings': 'fieldSettings:FormItem',
             'x-component': 'CollectionField',
-
             'x-read-pretty': readPretty,
             'x-component-props': {
               'pattern-disable': block === 'Form' && readPretty,
@@ -495,7 +496,9 @@ const getItem = (
   const schema = {
     type: 'string',
     name: schemaName,
-    'x-designer': 'FormItem.FilterFormDesigner',
+    // 'x-designer': 'FormItem.FilterFormDesigner',
+    'x-toolbar': 'FormItemSchemaToolbar',
+    'x-settings': 'fieldSettings:FilterFormItem',
     'x-designer-props': {
       // 在 useOperatorList 中使用，用于获取对应的操作符列表
       interface: field.interface,
@@ -611,7 +614,9 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
             name: field.name,
             title: field?.uiSchema?.title || field.name,
             required: false,
-            'x-designer': 'FormItem.FilterFormDesigner',
+            // 'x-designer': 'FormItem.FilterFormDesigner',
+            'x-toolbar': 'FormItemSchemaToolbar',
+            'x-settings': 'fieldSettings:FilterFormItem',
             'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
@@ -708,7 +713,9 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
             type: 'string',
             name: field.name,
             title: field?.uiSchema?.title || field.name,
-            'x-designer': 'FormItem.Designer',
+            // 'x-designer': 'FormItem.Designer',
+            'x-toolbar': 'FormItemSchemaToolbar',
+            'x-settings': 'fieldSettings:FormItem',
             'x-component': 'BulkEditField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,

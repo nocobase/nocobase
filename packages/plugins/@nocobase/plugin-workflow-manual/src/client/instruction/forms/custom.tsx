@@ -297,7 +297,9 @@ const CustomItemsComponent = (props) => {
                                   field: newField,
                                 },
                                 'x-collection-field': `${collection.name}.${options.name}`,
-                                'x-designer': 'FormItem.Designer',
+                                // 'x-designer': 'FormItem.Designer',
+                                'x-toolbar': 'FormItemSchemaToolbar',
+                                'x-settings': 'fieldSettings:FormItem',
                               });
                               setCallback(null);
                               setInterface(null);
