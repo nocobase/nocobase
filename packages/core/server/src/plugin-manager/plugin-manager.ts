@@ -1,7 +1,6 @@
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
 import { importModule, isURL } from '@nocobase/utils';
 import { fsExists } from '@nocobase/utils/plugin-symlink';
-import axios from 'axios';
 import execa from 'execa';
 import fg from 'fast-glob';
 import fs from 'fs';
@@ -9,6 +8,8 @@ import _ from 'lodash';
 import net from 'net';
 import { basename, dirname, join, resolve, sep } from 'path';
 import Application from '../application';
+import { Gateway } from '../gateway';
+import { IPCSocketClient } from '../gateway/ipc-socket-client';
 import { createAppProxy, tsxRerunning } from '../helper';
 import { Plugin } from '../plugin';
 import { uploadMiddleware } from './middleware';
@@ -24,6 +25,12 @@ import {
   removeTmpDir,
   updatePluginByCompressedFileUrl,
 } from './utils';
+
+export const sleep = async (timeout = 0) => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, timeout);
+  });
+};
 
 export interface PluginManagerOptions {
   app: Application;
@@ -203,49 +210,65 @@ export class PluginManager {
     };
     await createPlugin(pluginName);
     await tsxRerunning();
+    await sleep(500);
     try {
       await this.app.db.auth({ retry: 1 });
+      const installed = await this.app.isInstalled();
+      if (!installed) {
+        console.log(`yarn pm add ${pluginName}`);
+        return;
+      }
     } catch (error) {
       return;
     }
-    if (!(await this.app.isInstalled())) {
-      return;
-    }
-    const checkServer = async (port?: number, duration = 1000, max = 60 * 10) => {
-      return new Promise((resolve, reject) => {
-        let count = 0;
-        const { API_BASE_URL, APP_PORT, API_BASE_PATH } = process.env;
-        const baseURL = API_BASE_URL || `http://127.0.0.1:${APP_PORT}${API_BASE_PATH}`;
-        const url = `${baseURL}__health_check`;
-        this.app.log.debug(`health check: ${url}`);
-        const timer = setInterval(async () => {
-          if (count++ > max) {
-            clearInterval(timer);
-            return reject(new Error('Server start timeout.'));
-          }
-
-          axios
-            .get(url)
-            .then((response) => {
-              if (response.status === 200) {
-                clearInterval(timer);
-                resolve(true);
-              }
-            })
-            .catch((error) => {
-              const data = error?.response?.data?.error;
-              this.app.log.debug(data?.message || 'server unavailable', data);
-            });
-        }, duration);
-      });
-    };
-    await checkServer();
-    await execa('yarn', ['nocobase', 'pm', 'add', pluginName], {
-      stdout: 'inherit',
-      env: {
-        ...process.env,
-      },
+    this.app.log.info('attempt to add the plugin to the app');
+    const ipcClient = await new Promise<IPCSocketClient | false>((resolve, reject) => {
+      let ipcClient;
+      const max = 3;
+      let count = 0;
+      const timer = setInterval(async () => {
+        ipcClient = await Gateway.getIPCSocketClient();
+        if (ipcClient) {
+          clearInterval(timer);
+          resolve(ipcClient);
+        }
+        if (count++ > max) {
+          clearInterval(timer);
+          resolve(false);
+        }
+      }, 500);
     });
+    if (ipcClient) {
+      await ipcClient.write({ type: 'appReady' });
+      ipcClient.close();
+      await execa('yarn', ['nocobase', 'pm', 'add', pluginName], {
+        stdout: 'inherit',
+        env: {
+          ...process.env,
+        },
+      });
+    } else {
+      let packageName: string;
+      try {
+        packageName = await PluginManager.getPackageName(pluginName);
+      } catch (error) {
+        packageName = pluginName;
+      }
+      const json = await PluginManager.getPackageJson(packageName);
+      this.app.log.info(`add plugin [${packageName}]`, {
+        name: pluginName,
+        packageName: packageName,
+        version: json.version,
+      });
+      await this.repository.updateOrCreate({
+        values: {
+          name: pluginName,
+          packageName: packageName,
+          version: json.version,
+        },
+        filterKeys: ['name'],
+      });
+    }
   }
 
   async add(plugin?: any, options: any = {}, insert = false, isUpgrade = false) {

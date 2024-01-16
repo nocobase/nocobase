@@ -436,4 +436,13 @@ export class Gateway extends EventEmitter {
     this.server?.close();
     this.wsServer?.close();
   }
+
+  static async getIPCSocketClient() {
+    const socketPath = resolve(process.cwd(), process.env.SOCKET_PATH || 'storage/gateway.sock');
+    try {
+      return await IPCSocketClient.getConnection(socketPath);
+    } catch (error) {
+      return false;
+    }
+  }
 }

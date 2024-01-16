@@ -73,6 +73,25 @@ export class IPCSocketServer {
   }
 
   static async handleClientMessage({ reqId, type, payload }) {
+    if (type === 'appReady') {
+      const status = await new Promise<string>((resolve, reject) => {
+        let status: string;
+        const max = 300;
+        let count = 0;
+        const timer = setInterval(async () => {
+          status = AppSupervisor.getInstance().getAppStatus('main');
+          if (status === 'running') {
+            clearInterval(timer);
+            resolve(status);
+          }
+          if (count++ > max) {
+            reject('error');
+          }
+        }, 500);
+      });
+      console.log('status', status);
+      return status;
+    }
     // console.log(`cli received message ${type}`);
 
     if (type === 'passCliArgv') {
