@@ -123,7 +123,7 @@ export const o2m: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 sourceKey: {
-                  type: 'void',
+                  type: 'string',
                   title: '{{t("Source key")}}',
                   default: 'id',
                   enum: [{ label: 'ID', value: 'id' }],
