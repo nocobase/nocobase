@@ -1,6 +1,6 @@
 import React from 'react';
 import { SchemaToolbar } from '../../schema-settings';
 
-export const FormFieldSchemaToolbar = (props) => {
+export const FormItemSchemaToolbar = (props) => {
   return <SchemaToolbar {...props} />;
 };

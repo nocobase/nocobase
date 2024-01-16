@@ -1,6 +1,6 @@
+import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
 import { useOptionalFieldList } from '../../../block-provider/hooks';
 import { useAssociatedFields } from '../../../filter-provider/utils';
-import { SchemaInitializer } from '../../../application/schema-initializer/SchemaInitializer';
 
 export const associationFilterFilterBlockInitializer = new SchemaInitializer({
   name: 'AssociationFilter.FilterBlockInitializer',
@@ -23,7 +23,9 @@ export const associationFilterFilterBlockInitializer = new SchemaInitializer({
             name: field.name,
             title: field.uiSchema?.title,
             type: 'void',
-            'x-designer': 'AssociationFilter.Item.Designer',
+            // 'x-designer': 'AssociationFilter.Item.Designer',
+            'x-toolbar': 'CollapseItemSchemaToolbar',
+            'x-settings': 'fieldSettings:FilterCollapseItem',
             'x-component': 'AssociationFilter.Item',
             'x-component-props': {
               fieldNames: {

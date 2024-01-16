@@ -1,5 +1,8 @@
 import { Plugin } from '../application/Plugin';
-import { filterCollapseBlockSettings } from '../modules/collapse-filter/schemaSettings';
+import {
+  filterCollapseBlockSettings,
+  filterCollapseItemFieldSettings,
+} from '../modules/collapse-filter/schemaSettings';
 import { multiDataDetailsBlockSettings } from '../modules/details-multi-data/schemaSettings';
 import { singleDataDetailsBlockSettings } from '../modules/details-single-data/schemaSettings';
 import {
@@ -99,6 +102,7 @@ export class SchemaSettingsPlugin extends Plugin {
     // field settings
     this.schemaSettingsManager.add(formItemFieldSettings);
     this.schemaSettingsManager.add(tableColumnSettings);
+    this.schemaSettingsManager.add(filterCollapseItemFieldSettings);
 
     // field component settings
     this.schemaSettingsManager.add(selectComponentFieldSettings);

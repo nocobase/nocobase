@@ -1,6 +1,7 @@
 import React from 'react';
 import { Plugin } from '../application/Plugin';
-import { FormFieldSchemaToolbar } from '../modules/form-creation/FormFieldSchemaToolbar';
+import { CollapseItemSchemaToolbar } from '../modules/collapse-filter/CollapseItemSchemaToolbar';
+import { FormItemSchemaToolbar } from '../modules/form-creation/FormItemSchemaToolbar';
 import { ActionSchemaToolbar } from '../modules/table/ActionSchemaToolbar';
 import { BlockSchemaToolbar } from '../modules/table/BlockSchemaToolbar';
 import { TableFieldSchemaToolbar } from '../modules/table/TableFieldSchemaToolbar';
@@ -65,7 +66,8 @@ export class BlockSchemaComponentPlugin extends Plugin {
       RecordLink,
       BlockSchemaToolbar,
       ActionSchemaToolbar,
-      FormFieldSchemaToolbar,
+      FormItemSchemaToolbar,
+      CollapseItemSchemaToolbar,
       TableFieldSchemaToolbar,
     });
   }
