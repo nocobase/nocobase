@@ -47,7 +47,7 @@ import {
   timePickerComponentFieldSettings,
   uploadAttachmentComponentFieldSettings,
 } from '../modules/form-creation/schemaSettings';
-import { editFormBlockSettings } from '../modules/form-edit/schemaSettings';
+import { bulkEditFieldSettings, editFormBlockSettings } from '../modules/form-edit/schemaSettings';
 import { filterFormBlockSettings, filterFormItemFieldSettings } from '../modules/form-filter/schemaSettings';
 import { gridCardBlockSettings } from '../modules/grid-card/schemaSettings';
 import { listBlockSettings } from '../modules/list/schemaSettings';
@@ -103,6 +103,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(formItemFieldSettings);
     this.schemaSettingsManager.add(tableColumnSettings);
     this.schemaSettingsManager.add(filterCollapseItemFieldSettings);
+    this.schemaSettingsManager.add(bulkEditFieldSettings);
 
     // field component settings
     this.schemaSettingsManager.add(selectComponentFieldSettings);

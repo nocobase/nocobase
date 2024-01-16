@@ -1,10 +1,10 @@
+import { useForm } from '@formily/react';
 import {
+  SchemaInitializerItemType,
   useCollection,
   useCollectionManager,
   useRemoveGridFormItem,
-  SchemaInitializerItemType,
 } from '@nocobase/client';
-import { useForm } from '@formily/react';
 import { useMemo } from 'react';
 
 export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
@@ -30,7 +30,9 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
             type: 'string',
             name: field.name,
             title: field?.uiSchema?.title || field.name,
-            'x-designer': 'FormItem.Designer',
+            // 'x-designer': 'FormItem.Designer',
+            'x-toolbar': 'FormItemSchemaToolbar',
+            'x-settings': 'fieldSettings:BulkEditFormItem',
             'x-component': 'BulkEditField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
