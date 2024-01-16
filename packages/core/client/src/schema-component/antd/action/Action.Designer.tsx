@@ -504,7 +504,7 @@ function WorkflowConfig() {
   const workflowTypes = workflowPlugin.getTriggersOptions().filter((item) => {
     return typeof item.options.useActionTriggerable === 'function'
       ? item.options.useActionTriggerable()
-      : item.options.useActionTriggerable;
+      : Boolean(item.options.useActionTriggerable);
   });
   const description = {
     submit: t('Workflow will be triggered after submitting succeeded.', { ns: 'workflow' }),

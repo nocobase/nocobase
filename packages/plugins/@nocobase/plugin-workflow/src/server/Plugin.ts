@@ -63,6 +63,14 @@ export default class PluginWorkflowServer extends Plugin {
     return logger;
   }
 
+  isWorkflowSync(workflow: WorkflowModel) {
+    const trigger = this.triggers.get(workflow.type);
+    if (!trigger) {
+      throw new Error(`invalid trigger type ${workflow.type} of workflow ${workflow.id}`);
+    }
+    return trigger.sync ?? workflow.options.sync;
+  }
+
   onBeforeSave = async (instance: WorkflowModel, options) => {
     const Model = <typeof WorkflowModel>instance.constructor;
 
@@ -284,7 +292,7 @@ export default class PluginWorkflowServer extends Plugin {
       return;
     }
 
-    if (this.triggers.get(workflow.type).sync ?? workflow.options.sync) {
+    if (this.isWorkflowSync(workflow)) {
       return this.triggerSync(workflow, context, options);
     }
 
