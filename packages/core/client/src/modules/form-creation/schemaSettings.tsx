@@ -1193,7 +1193,7 @@ export const subformPopoverComponentFieldSettings = new SchemaSettings({
   items: [fieldComponent, allowMultiple],
 });
 
-export const subtablePopoverComponentFieldSettings = new SchemaSettings({
+export const subTablePopoverComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:SubTable',
   items: [fieldComponent],
 });

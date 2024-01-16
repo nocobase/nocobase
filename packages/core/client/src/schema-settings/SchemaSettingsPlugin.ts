@@ -39,10 +39,10 @@ import {
   recordPickerComponentFieldSettings,
   richTextComponentFieldSettings,
   selectComponentFieldSettings,
+  subTablePopoverComponentFieldSettings,
   subformComponentFieldSettings,
   subformPopoverComponentFieldSettings,
   submitActionSettings,
-  subtablePopoverComponentFieldSettings,
   tagComponentFieldSettings,
   timePickerComponentFieldSettings,
   uploadAttachmentComponentFieldSettings,
@@ -110,7 +110,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(recordPickerComponentFieldSettings);
     this.schemaSettingsManager.add(subformComponentFieldSettings);
     this.schemaSettingsManager.add(subformPopoverComponentFieldSettings);
-    this.schemaSettingsManager.add(subtablePopoverComponentFieldSettings);
+    this.schemaSettingsManager.add(subTablePopoverComponentFieldSettings);
     this.schemaSettingsManager.add(datePickerComponentFieldSettings);
     this.schemaSettingsManager.add(fileManagerComponentFieldSettings);
     this.schemaSettingsManager.add(tagComponentFieldSettings);
