@@ -322,7 +322,9 @@ export const bulkEditFormActionInitializers = new SchemaInitializer({
             type: 'void',
             title: '{{ t("Popup") }}',
             'x-action': 'customize:popup',
-            'x-designer': 'Action.Designer',
+            // 'x-designer': 'Action.Designer',
+            'x-toolbar': 'ActionSchemaToolbar',
+            'x-settings': 'actionSettings:popup',
             'x-component': 'Action',
             'x-component-props': {
               openMode: 'drawer',
@@ -372,7 +374,9 @@ export const bulkEditFormActionInitializers = new SchemaInitializer({
             title: '{{ t("Save") }}',
             'x-component': 'Action',
             'x-action': 'customize:save',
-            'x-designer': 'Action.Designer',
+            // 'x-designer': 'Action.Designer',
+            'x-toolbar': 'ActionSchemaToolbar',
+            'x-settings': 'actionSettings:saveRecord',
             'x-designer-props': {
               modalTip:
                 '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
