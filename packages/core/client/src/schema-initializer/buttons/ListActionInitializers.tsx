@@ -155,7 +155,9 @@ export const listItemActionInitializers = new SchemaInitializer({
             type: 'void',
             title: '{{ t("Popup") }}',
             'x-action': 'customize:popup',
-            'x-designer': 'Action.Designer',
+            // 'x-designer': 'Action.Designer',
+            'x-toolbar': 'ActionSchemaToolbar',
+            'x-settings': 'actionSettings:popup',
             'x-component': 'Action.Link',
             'x-component-props': {
               openMode: 'drawer',
@@ -207,7 +209,9 @@ export const listItemActionInitializers = new SchemaInitializer({
             'x-action': 'customize:update',
             'x-decorator': 'ACLActionProvider',
             'x-acl-action': 'update',
-            'x-designer': 'Action.Designer',
+            // 'x-designer': 'Action.Designer',
+            'x-toolbar': 'ActionSchemaToolbar',
+            'x-settings': 'actionSettings:updateRecord',
             'x-action-settings': {
               assignedValues: {},
               onSuccess: {
