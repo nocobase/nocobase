@@ -46,11 +46,9 @@ export default class extends Instruction {
     const { workflow } = processor.execution;
     const sync = this.workflow.isWorkflowSync(workflow);
 
-    const promise = request(config);
-
     if (sync) {
       try {
-        const response = await promise;
+        const response = await request(config);
         return {
           status: JOB_STATUS.RESOLVED,
           result: response.data,
@@ -70,7 +68,7 @@ export default class extends Instruction {
     });
 
     // eslint-disable-next-line promise/catch-or-return
-    promise
+    request(config)
       .then((response) => {
         job.set({
           status: JOB_STATUS.RESOLVED,
