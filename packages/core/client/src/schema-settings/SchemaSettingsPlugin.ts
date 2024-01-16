@@ -9,6 +9,13 @@ import {
   checkboxGroupComponentFieldSettings,
   collectionSelectComponentFieldSettings,
   colorPickerComponentFieldSettings,
+  columnDatePickerComponentFieldSettings,
+  columnNesterComponentFieldSettings,
+  columnPickerComponentFieldSettings,
+  columnPopoverNesterComponentFieldSettings,
+  columnSelectComponentFieldSettings,
+  columnSubTableComponentFieldSettings,
+  columnTagComponentFieldSettings,
   creationFormBlockSettings,
   customizeSaveRecordActionSettings,
   customizeSubmitToWorkflowActionSettings,
@@ -122,5 +129,12 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(cascaderComponentFieldSettings);
     this.schemaSettingsManager.add(checkboxGroupComponentFieldSettings);
     this.schemaSettingsManager.add(checkboxComponentFieldSettings);
+    this.schemaSettingsManager.add(columnDatePickerComponentFieldSettings);
+    this.schemaSettingsManager.add(columnSelectComponentFieldSettings);
+    this.schemaSettingsManager.add(columnNesterComponentFieldSettings);
+    this.schemaSettingsManager.add(columnSubTableComponentFieldSettings);
+    this.schemaSettingsManager.add(columnPickerComponentFieldSettings);
+    this.schemaSettingsManager.add(columnPopoverNesterComponentFieldSettings);
+    this.schemaSettingsManager.add(columnTagComponentFieldSettings);
   }
 }

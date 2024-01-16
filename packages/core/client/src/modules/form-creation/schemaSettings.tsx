@@ -12,6 +12,7 @@ import { useCollection, useCollectionManager } from '../../collection-manager';
 import { useOptions } from '../../collection-manager/hooks/useOptions';
 import { useRecord } from '../../record-provider';
 import {
+  isFileCollection,
   removeNullCondition,
   useCollectionField,
   useDesignable,
@@ -28,7 +29,6 @@ import {
   SkipValidation,
   WorkflowConfig,
 } from '../../schema-component/antd/action/Action.Designer';
-import { useAssociationFieldContext } from '../../schema-component/antd/association-field/hooks';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
 import { DynamicComponentProps } from '../../schema-component/antd/filter/DynamicComponent';
 import {
@@ -41,7 +41,7 @@ import {
 } from '../../schema-component/antd/form-item/FormItem.Settings';
 import { getTempFieldState } from '../../schema-component/antd/form-v2/utils';
 import { useColumnSchema } from '../../schema-component/antd/table-v2/Table.Column.Decorator';
-import { useColorFields } from '../../schema-component/antd/table-v2/Table.Column.Designer';
+import { useColorFields, useLabelFields } from '../../schema-component/antd/table-v2/Table.Column.Designer';
 import {
   SchemaSettingsBlockTitleItem,
   SchemaSettingsDataScope,
@@ -53,8 +53,10 @@ import {
   SchemaSettingsSortingRule,
   VariableInput,
   getShouldChange,
+  isPatternDisabled,
 } from '../../schema-settings';
 import { ActionType } from '../../schema-settings/LinkageRules/type';
+import useIsAllowToSetDefaultValue from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useIsShowMultipleSwitch } from '../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useLocalVariables, useVariables } from '../../variables';
 
@@ -436,6 +438,12 @@ export const formItemFieldSettings = new SchemaSettings({
           {
             name: 'required',
             type: 'switch',
+            useVisible() {
+              const field = useField<Field>();
+              const fieldSchema = useFieldSchema();
+              const { required = true } = useSchemaToolbar();
+              return !field.readPretty && fieldSchema['x-component'] !== 'FormField' && required;
+            },
             useComponentProps() {
               const { t } = useTranslation();
               const field = useField<Field>();
@@ -463,14 +471,19 @@ export const formItemFieldSettings = new SchemaSettings({
           {
             name: 'setDefaultValue',
             useVisible() {
-              const collectionField = useCollectionField();
-              return !['o2m', 'obo', 'oho', 'o2o'].includes(collectionField?.interface);
+              const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
+              return isAllowToSetDefaultValue();
             },
             Component: SchemaSettingsDefaultValue,
           },
           {
             name: 'pattern',
             type: 'select',
+            useVisible() {
+              const { form } = useFormBlockContext();
+              const fieldSchema = useFieldSchema();
+              return form && !form?.readPretty && !isPatternDisabled(fieldSchema);
+            },
             useComponentProps() {
               const { t } = useTranslation();
               const field = useField<Field>();
@@ -667,8 +680,10 @@ export const formItemFieldSettings = new SchemaSettings({
               };
             },
             useVisible() {
+              const { form } = useFormBlockContext();
+              const isFormReadPretty = useIsFormReadPretty();
               const validateSchema = useValidateSchema();
-              return !!validateSchema;
+              return form && !isFormReadPretty && validateSchema;
             },
           },
         ];
@@ -873,8 +888,9 @@ const allowMultiple: any = {
   name: 'allowMultiple',
   type: 'switch',
   useVisible() {
+    const isFieldReadPretty = useIsFieldReadPretty();
     const collectionField = useCollectionField();
-    return ['hasMany', 'belongsToMany'].includes(collectionField?.type);
+    return !isFieldReadPretty && ['hasMany', 'belongsToMany'].includes(collectionField?.type);
   },
   useComponentProps() {
     const { t } = useTranslation();
@@ -988,16 +1004,16 @@ export const selectComponentFieldSettings = new SchemaSettings({
       ...setTheDataScope,
       useVisible() {
         const isSelectFieldMode = useIsSelectFieldMode();
-        const isFormReadPretty = useIsFormReadPretty();
-        return isSelectFieldMode && !isFormReadPretty;
+        const isFieldReadPretty = useIsFieldReadPretty();
+        return isSelectFieldMode && !isFieldReadPretty;
       },
     },
     {
       ...setDefaultSortingRules,
       useVisible() {
         const isSelectFieldMode = useIsSelectFieldMode();
-        const isFormReadPretty = useIsFormReadPretty();
-        return isSelectFieldMode && !isFormReadPretty;
+        const isFieldReadPretty = useIsFieldReadPretty();
+        return isSelectFieldMode && !isFieldReadPretty;
       },
     },
     {
@@ -1038,6 +1054,10 @@ export const recordPickerComponentFieldSettings = new SchemaSettings({
     {
       name: 'popupSize',
       type: 'select',
+      useVisible() {
+        const isFieldReadPretty = useIsFieldReadPretty();
+        return !isFieldReadPretty;
+      },
       useComponentProps() {
         const { t } = useTranslation();
         const field = useField<Field>();
@@ -1070,6 +1090,10 @@ export const recordPickerComponentFieldSettings = new SchemaSettings({
     {
       name: 'allowAddNewData',
       type: 'switch',
+      useVisible() {
+        const isFieldReadPretty = useIsFieldReadPretty();
+        return !isFieldReadPretty;
+      },
       useComponentProps() {
         const { t } = useTranslation();
         const field = useField<Field>();
@@ -1182,6 +1206,1012 @@ export const datePickerComponentFieldSettings = new SchemaSettings({
         const fieldSchema = useFieldSchema();
         return {
           fieldSchema,
+        };
+      },
+    },
+  ],
+});
+
+export const columnDatePickerComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:ColumnDatePicker',
+  items: [
+    {
+      name: 'dateDisplayFormat',
+      Component: SchemaSettingsDateFormat as any,
+      useComponentProps() {
+        const { fieldSchema } = useColumnSchema();
+        return {
+          fieldSchema,
+        };
+      },
+    },
+  ],
+});
+
+export const columnSelectComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:ColumnSelect',
+  items: [
+    {
+      name: 'fieldComponent',
+      type: 'select',
+      useVisible() {
+        const { collectionField } = useColumnSchema();
+        return !!collectionField?.target;
+      },
+      useComponentProps() {
+        const { fieldSchema, collectionField } = useColumnSchema();
+        const { getCollection } = useCollectionManager();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+        const targetCollection = getCollection(collectionField?.target);
+        const isFileField = isFileCollection(targetCollection as any);
+        const fieldModeOptions = useFieldModeOptions({ fieldSchema });
+        const fieldMode = fieldSchema?.['x-component-props']?.['mode'] || 'Select';
+
+        return {
+          key: 'field-mode',
+          title: t('Field component'),
+          options: fieldSchema['x-read-pretty']
+            ? [
+                { label: t('Title'), value: 'Select' },
+                isFileField && { label: t('File manager'), value: 'FileManager' },
+                { label: t('Tag'), value: 'Tag' },
+              ].filter(Boolean)
+            : fieldModeOptions,
+          value: fieldMode,
+          onChange: (mode) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['mode'] = mode;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.mode = mode;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'enableLink',
+      type: 'switch',
+      useVisible() {
+        const { collectionField, fieldSchema } = useColumnSchema();
+        return collectionField?.target && fieldSchema['x-read-pretty'];
+      },
+      useComponentProps() {
+        const { fieldSchema } = useColumnSchema();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+
+        return {
+          title: t('Enable link'),
+          checked: fieldSchema['x-component-props']?.enableLink !== false,
+          onChange: (flag) => {
+            fieldSchema['x-component-props'] = {
+              ...fieldSchema?.['x-component-props'],
+              enableLink: flag,
+            };
+            field.componentProps = {
+              ...fieldSchema?.['x-component-props'],
+              enableLink: flag,
+            };
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema?.['x-component-props'],
+                },
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'titleField',
+      type: 'select',
+      useVisible() {
+        const { collectionField } = useColumnSchema();
+        return !!collectionField?.target;
+      },
+      useComponentProps() {
+        const { uiSchema, fieldSchema, collectionField } = useColumnSchema();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+        const fieldNames =
+          fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
+        const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
+
+        return {
+          title: t('Title field'),
+          options: options,
+          value: fieldNames?.['label'],
+          onChange: (label) => {
+            const fieldNames = {
+              ...collectionField?.uiSchema?.['x-component-props']['fieldNames'],
+              ...fieldSchema?.['x-component-props']?.['fieldNames'],
+              label,
+            };
+            fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+              f.componentProps.fieldNames = fieldNames;
+            });
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema['x-component-props'],
+                },
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'setDefaultSortingRules',
+      Component: SchemaSettingsSortingRule,
+      useVisible() {
+        const { fieldSchema, collectionField } = useColumnSchema();
+        const field: any = useField();
+        const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
+
+        return (
+          isSubTableColumn &&
+          !field?.readPretty &&
+          ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface)
+        );
+      },
+      useComponentProps() {
+        const { fieldSchema } = useColumnSchema();
+        const field: any = useField();
+
+        return {
+          fieldSchema,
+          onSubmitCallBack: (sortArr) => {
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+              f.componentProps.service = f.componentProps.service || { params: {} };
+              f.componentProps.service.params.sort = sortArr;
+            });
+          },
+        };
+      },
+    },
+  ],
+});
+
+export const columnNesterComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:ColumnNester',
+  items: [
+    {
+      name: 'fieldComponent',
+      type: 'select',
+      useVisible() {
+        const { collectionField } = useColumnSchema();
+        return !!collectionField?.target;
+      },
+      useComponentProps() {
+        const { fieldSchema, collectionField } = useColumnSchema();
+        const { getCollection } = useCollectionManager();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+        const targetCollection = getCollection(collectionField?.target);
+        const isFileField = isFileCollection(targetCollection as any);
+        const fieldModeOptions = useFieldModeOptions({ fieldSchema });
+        const fieldMode = fieldSchema?.['x-component-props']?.['mode'] || 'Select';
+
+        return {
+          key: 'field-mode',
+          title: t('Field component'),
+          options: fieldSchema['x-read-pretty']
+            ? [
+                { label: t('Title'), value: 'Select' },
+                isFileField && { label: t('File manager'), value: 'FileManager' },
+                { label: t('Tag'), value: 'Tag' },
+              ].filter(Boolean)
+            : fieldModeOptions,
+          value: fieldMode,
+          onChange: (mode) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['mode'] = mode;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.mode = mode;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'enableLink',
+      type: 'switch',
+      useVisible() {
+        const { collectionField, fieldSchema } = useColumnSchema();
+        return collectionField?.target && fieldSchema['x-read-pretty'];
+      },
+      useComponentProps() {
+        const { fieldSchema } = useColumnSchema();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+
+        return {
+          title: t('Enable link'),
+          checked: fieldSchema['x-component-props']?.enableLink !== false,
+          onChange: (flag) => {
+            fieldSchema['x-component-props'] = {
+              ...fieldSchema?.['x-component-props'],
+              enableLink: flag,
+            };
+            field.componentProps = {
+              ...fieldSchema?.['x-component-props'],
+              enableLink: flag,
+            };
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema?.['x-component-props'],
+                },
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'titleField',
+      type: 'select',
+      useVisible() {
+        const { collectionField } = useColumnSchema();
+        return !!collectionField?.target;
+      },
+      useComponentProps() {
+        const { uiSchema, fieldSchema, collectionField } = useColumnSchema();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+        const fieldNames =
+          fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
+        const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
+
+        return {
+          title: t('Title field'),
+          options: options,
+          value: fieldNames?.['label'],
+          onChange: (label) => {
+            const fieldNames = {
+              ...collectionField?.uiSchema?.['x-component-props']['fieldNames'],
+              ...fieldSchema?.['x-component-props']?.['fieldNames'],
+              label,
+            };
+            fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+              f.componentProps.fieldNames = fieldNames;
+            });
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema['x-component-props'],
+                },
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'setDefaultSortingRules',
+      Component: SchemaSettingsSortingRule,
+      useVisible() {
+        const { fieldSchema, collectionField } = useColumnSchema();
+        const field: any = useField();
+        const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
+
+        return (
+          isSubTableColumn &&
+          !field?.readPretty &&
+          ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface)
+        );
+      },
+      useComponentProps() {
+        const { fieldSchema } = useColumnSchema();
+        const field: any = useField();
+
+        return {
+          fieldSchema,
+          onSubmitCallBack: (sortArr) => {
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+              f.componentProps.service = f.componentProps.service || { params: {} };
+              f.componentProps.service.params.sort = sortArr;
+            });
+          },
+        };
+      },
+    },
+  ],
+});
+
+export const columnSubTableComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:ColumnSubTable',
+  items: [
+    {
+      name: 'fieldComponent',
+      type: 'select',
+      useVisible() {
+        const { collectionField } = useColumnSchema();
+        return !!collectionField?.target;
+      },
+      useComponentProps() {
+        const { fieldSchema, collectionField } = useColumnSchema();
+        const { getCollection } = useCollectionManager();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+        const targetCollection = getCollection(collectionField?.target);
+        const isFileField = isFileCollection(targetCollection as any);
+        const fieldModeOptions = useFieldModeOptions({ fieldSchema });
+        const fieldMode = fieldSchema?.['x-component-props']?.['mode'] || 'Select';
+
+        return {
+          key: 'field-mode',
+          title: t('Field component'),
+          options: fieldSchema['x-read-pretty']
+            ? [
+                { label: t('Title'), value: 'Select' },
+                isFileField && { label: t('File manager'), value: 'FileManager' },
+                { label: t('Tag'), value: 'Tag' },
+              ].filter(Boolean)
+            : fieldModeOptions,
+          value: fieldMode,
+          onChange: (mode) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['mode'] = mode;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.mode = mode;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'enableLink',
+      type: 'switch',
+      useVisible() {
+        const { collectionField, fieldSchema } = useColumnSchema();
+        return collectionField?.target && fieldSchema['x-read-pretty'];
+      },
+      useComponentProps() {
+        const { fieldSchema } = useColumnSchema();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+
+        return {
+          title: t('Enable link'),
+          checked: fieldSchema['x-component-props']?.enableLink !== false,
+          onChange: (flag) => {
+            fieldSchema['x-component-props'] = {
+              ...fieldSchema?.['x-component-props'],
+              enableLink: flag,
+            };
+            field.componentProps = {
+              ...fieldSchema?.['x-component-props'],
+              enableLink: flag,
+            };
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema?.['x-component-props'],
+                },
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'titleField',
+      type: 'select',
+      useVisible() {
+        const { collectionField } = useColumnSchema();
+        return !!collectionField?.target;
+      },
+      useComponentProps() {
+        const { uiSchema, fieldSchema, collectionField } = useColumnSchema();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+        const fieldNames =
+          fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
+        const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
+
+        return {
+          title: t('Title field'),
+          options: options,
+          value: fieldNames?.['label'],
+          onChange: (label) => {
+            const fieldNames = {
+              ...collectionField?.uiSchema?.['x-component-props']['fieldNames'],
+              ...fieldSchema?.['x-component-props']?.['fieldNames'],
+              label,
+            };
+            fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+              f.componentProps.fieldNames = fieldNames;
+            });
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema['x-component-props'],
+                },
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'setDefaultSortingRules',
+      Component: SchemaSettingsSortingRule,
+      useVisible() {
+        const { fieldSchema, collectionField } = useColumnSchema();
+        const field: any = useField();
+        const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
+
+        return (
+          isSubTableColumn &&
+          !field?.readPretty &&
+          ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface)
+        );
+      },
+      useComponentProps() {
+        const { fieldSchema } = useColumnSchema();
+        const field: any = useField();
+
+        return {
+          fieldSchema,
+          onSubmitCallBack: (sortArr) => {
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+              f.componentProps.service = f.componentProps.service || { params: {} };
+              f.componentProps.service.params.sort = sortArr;
+            });
+          },
+        };
+      },
+    },
+  ],
+});
+
+export const columnPickerComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:ColumnPicker',
+  items: [
+    {
+      name: 'fieldComponent',
+      type: 'select',
+      useVisible() {
+        const { collectionField } = useColumnSchema();
+        return !!collectionField?.target;
+      },
+      useComponentProps() {
+        const { fieldSchema, collectionField } = useColumnSchema();
+        const { getCollection } = useCollectionManager();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+        const targetCollection = getCollection(collectionField?.target);
+        const isFileField = isFileCollection(targetCollection as any);
+        const fieldModeOptions = useFieldModeOptions({ fieldSchema });
+        const fieldMode = fieldSchema?.['x-component-props']?.['mode'] || 'Select';
+
+        return {
+          key: 'field-mode',
+          title: t('Field component'),
+          options: fieldSchema['x-read-pretty']
+            ? [
+                { label: t('Title'), value: 'Select' },
+                isFileField && { label: t('File manager'), value: 'FileManager' },
+                { label: t('Tag'), value: 'Tag' },
+              ].filter(Boolean)
+            : fieldModeOptions,
+          value: fieldMode,
+          onChange: (mode) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['mode'] = mode;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.mode = mode;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'enableLink',
+      type: 'switch',
+      useVisible() {
+        const { collectionField, fieldSchema } = useColumnSchema();
+        return collectionField?.target && fieldSchema['x-read-pretty'];
+      },
+      useComponentProps() {
+        const { fieldSchema } = useColumnSchema();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+
+        return {
+          title: t('Enable link'),
+          checked: fieldSchema['x-component-props']?.enableLink !== false,
+          onChange: (flag) => {
+            fieldSchema['x-component-props'] = {
+              ...fieldSchema?.['x-component-props'],
+              enableLink: flag,
+            };
+            field.componentProps = {
+              ...fieldSchema?.['x-component-props'],
+              enableLink: flag,
+            };
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema?.['x-component-props'],
+                },
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'titleField',
+      type: 'select',
+      useVisible() {
+        const { collectionField } = useColumnSchema();
+        return !!collectionField?.target;
+      },
+      useComponentProps() {
+        const { uiSchema, fieldSchema, collectionField } = useColumnSchema();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+        const fieldNames =
+          fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
+        const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
+
+        return {
+          title: t('Title field'),
+          options: options,
+          value: fieldNames?.['label'],
+          onChange: (label) => {
+            const fieldNames = {
+              ...collectionField?.uiSchema?.['x-component-props']['fieldNames'],
+              ...fieldSchema?.['x-component-props']?.['fieldNames'],
+              label,
+            };
+            fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+              f.componentProps.fieldNames = fieldNames;
+            });
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema['x-component-props'],
+                },
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'setDefaultSortingRules',
+      Component: SchemaSettingsSortingRule,
+      useVisible() {
+        const { fieldSchema, collectionField } = useColumnSchema();
+        const field: any = useField();
+        const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
+
+        return (
+          isSubTableColumn &&
+          !field?.readPretty &&
+          ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface)
+        );
+      },
+      useComponentProps() {
+        const { fieldSchema } = useColumnSchema();
+        const field: any = useField();
+
+        return {
+          fieldSchema,
+          onSubmitCallBack: (sortArr) => {
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+              f.componentProps.service = f.componentProps.service || { params: {} };
+              f.componentProps.service.params.sort = sortArr;
+            });
+          },
+        };
+      },
+    },
+  ],
+});
+
+export const columnPopoverNesterComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:ColumnPopoverNester',
+  items: [
+    {
+      name: 'fieldComponent',
+      type: 'select',
+      useVisible() {
+        const { collectionField } = useColumnSchema();
+        return !!collectionField?.target;
+      },
+      useComponentProps() {
+        const { fieldSchema, collectionField } = useColumnSchema();
+        const { getCollection } = useCollectionManager();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+        const targetCollection = getCollection(collectionField?.target);
+        const isFileField = isFileCollection(targetCollection as any);
+        const fieldModeOptions = useFieldModeOptions({ fieldSchema });
+        const fieldMode = fieldSchema?.['x-component-props']?.['mode'] || 'Select';
+
+        return {
+          key: 'field-mode',
+          title: t('Field component'),
+          options: fieldSchema['x-read-pretty']
+            ? [
+                { label: t('Title'), value: 'Select' },
+                isFileField && { label: t('File manager'), value: 'FileManager' },
+                { label: t('Tag'), value: 'Tag' },
+              ].filter(Boolean)
+            : fieldModeOptions,
+          value: fieldMode,
+          onChange: (mode) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['mode'] = mode;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.mode = mode;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'enableLink',
+      type: 'switch',
+      useVisible() {
+        const { collectionField, fieldSchema } = useColumnSchema();
+        return collectionField?.target && fieldSchema['x-read-pretty'];
+      },
+      useComponentProps() {
+        const { fieldSchema } = useColumnSchema();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+
+        return {
+          title: t('Enable link'),
+          checked: fieldSchema['x-component-props']?.enableLink !== false,
+          onChange: (flag) => {
+            fieldSchema['x-component-props'] = {
+              ...fieldSchema?.['x-component-props'],
+              enableLink: flag,
+            };
+            field.componentProps = {
+              ...fieldSchema?.['x-component-props'],
+              enableLink: flag,
+            };
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema?.['x-component-props'],
+                },
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'titleField',
+      type: 'select',
+      useVisible() {
+        const { collectionField } = useColumnSchema();
+        return !!collectionField?.target;
+      },
+      useComponentProps() {
+        const { uiSchema, fieldSchema, collectionField } = useColumnSchema();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+        const fieldNames =
+          fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
+        const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
+
+        return {
+          title: t('Title field'),
+          options: options,
+          value: fieldNames?.['label'],
+          onChange: (label) => {
+            const fieldNames = {
+              ...collectionField?.uiSchema?.['x-component-props']['fieldNames'],
+              ...fieldSchema?.['x-component-props']?.['fieldNames'],
+              label,
+            };
+            fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+              f.componentProps.fieldNames = fieldNames;
+            });
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema['x-component-props'],
+                },
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'setDefaultSortingRules',
+      Component: SchemaSettingsSortingRule,
+      useVisible() {
+        const { fieldSchema, collectionField } = useColumnSchema();
+        const field: any = useField();
+        const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
+
+        return (
+          isSubTableColumn &&
+          !field?.readPretty &&
+          ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface)
+        );
+      },
+      useComponentProps() {
+        const { fieldSchema } = useColumnSchema();
+        const field: any = useField();
+
+        return {
+          fieldSchema,
+          onSubmitCallBack: (sortArr) => {
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+              f.componentProps.service = f.componentProps.service || { params: {} };
+              f.componentProps.service.params.sort = sortArr;
+            });
+          },
+        };
+      },
+    },
+  ],
+});
+
+export const columnTagComponentFieldSettings = new SchemaSettings({
+  name: 'fieldSettings:component:ColumnTag',
+  items: [
+    {
+      name: 'fieldComponent',
+      type: 'select',
+      useVisible() {
+        const { collectionField } = useColumnSchema();
+        return !!collectionField?.target;
+      },
+      useComponentProps() {
+        const { fieldSchema, collectionField } = useColumnSchema();
+        const { getCollection } = useCollectionManager();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+        const targetCollection = getCollection(collectionField?.target);
+        const isFileField = isFileCollection(targetCollection as any);
+        const fieldModeOptions = useFieldModeOptions({ fieldSchema });
+        const fieldMode = fieldSchema?.['x-component-props']?.['mode'] || 'Select';
+
+        return {
+          key: 'field-mode',
+          title: t('Field component'),
+          options: fieldSchema['x-read-pretty']
+            ? [
+                { label: t('Title'), value: 'Select' },
+                isFileField && { label: t('File manager'), value: 'FileManager' },
+                { label: t('Tag'), value: 'Tag' },
+              ].filter(Boolean)
+            : fieldModeOptions,
+          value: fieldMode,
+          onChange: (mode) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['mode'] = mode;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.mode = mode;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'enableLink',
+      type: 'switch',
+      useVisible() {
+        const { collectionField, fieldSchema } = useColumnSchema();
+        return collectionField?.target && fieldSchema['x-read-pretty'];
+      },
+      useComponentProps() {
+        const { fieldSchema } = useColumnSchema();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+
+        return {
+          title: t('Enable link'),
+          checked: fieldSchema['x-component-props']?.enableLink !== false,
+          onChange: (flag) => {
+            fieldSchema['x-component-props'] = {
+              ...fieldSchema?.['x-component-props'],
+              enableLink: flag,
+            };
+            field.componentProps = {
+              ...fieldSchema?.['x-component-props'],
+              enableLink: flag,
+            };
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema?.['x-component-props'],
+                },
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'titleField',
+      type: 'select',
+      useVisible() {
+        const { collectionField } = useColumnSchema();
+        return !!collectionField?.target;
+      },
+      useComponentProps() {
+        const { uiSchema, fieldSchema, collectionField } = useColumnSchema();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+        const fieldNames =
+          fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
+        const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
+
+        return {
+          title: t('Title field'),
+          options: options,
+          value: fieldNames?.['label'],
+          onChange: (label) => {
+            const fieldNames = {
+              ...collectionField?.uiSchema?.['x-component-props']['fieldNames'],
+              ...fieldSchema?.['x-component-props']?.['fieldNames'],
+              label,
+            };
+            fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            field.form.query(`${path.concat(`*.` + fieldSchema.name)}`).forEach((f) => {
+              f.componentProps.fieldNames = fieldNames;
+            });
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema['x-component-props'],
+                },
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'tagColorField',
+      type: 'select',
+      useVisible() {
+        const { collectionField } = useColumnSchema();
+        return !!collectionField?.target;
+      },
+      useComponentProps() {
+        const { fieldSchema, collectionField } = useColumnSchema();
+        const field: any = useField();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+        const colorFieldOptions = useColorFields(collectionField?.target ?? collectionField?.targetCollection);
+
+        return {
+          key: 'title-field',
+          title: t('Tag color field'),
+          options: colorFieldOptions,
+          value: fieldSchema?.['x-component-props']?.tagColorField,
+          onChange: (tagColorField) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['tagColorField'] = tagColorField;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps.tagColorField = tagColorField;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          },
         };
       },
     },
@@ -1356,1495 +2386,90 @@ export function useFieldComponentName(): string {
 }
 export const percentComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Percent',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const iconPickerComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:IconPicker',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const colorPickerComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:ColorPicker',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const passwordComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Password',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const inputNumberComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:InputNumber',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const inputURLComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Input.URL',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const inputComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Input',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const collectionSelectComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:CollectionSelect',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const inputJSONComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Input.JSON',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const formulaResultComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Formula.Result',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const inputTextAreaComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Input.TextArea',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const timePickerComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:TimePicker',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const richTextComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:RichText',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const markdownComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Markdown',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const radioGroupComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Radio.Group',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const cascaderComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Cascader',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const checkboxGroupComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Checkbox.Group',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
+
 export const checkboxComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Checkbox',
-  items: [
-    {
-      name: 'columnWidth',
-      type: 'modal',
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Column width'),
-          schema: {
-            type: 'object',
-            title: t('Column width'),
-            properties: {
-              width: {
-                default: columnSchema?.['x-component-props']?.['width'] || 200,
-                'x-decorator': 'FormItem',
-                'x-component': 'InputNumber',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema,
-          onSubmit: ({ width }) => {
-            const props = columnSchema['x-component-props'] || {};
-            props['width'] = width;
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            schema['x-component-props'] = props;
-            columnSchema['x-component-props'] = props;
-            field.componentProps.width = width;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'sortable',
-      type: 'switch',
-      useVisible() {
-        const { collectionField } = useColumnSchema();
-        const { getInterface } = useCollectionManager();
-        const interfaceCfg = getInterface(collectionField?.interface);
-        const { currentMode } = useAssociationFieldContext();
-
-        return interfaceCfg?.sortable === true && !currentMode;
-      },
-      useComponentProps() {
-        const field: any = useField();
-        const { t } = useTranslation();
-        const columnSchema = useFieldSchema();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Sortable'),
-          checked: field.componentProps.sorter,
-          onChange: (v) => {
-            const schema: ISchema = {
-              ['x-uid']: columnSchema['x-uid'],
-            };
-            columnSchema['x-component-props'] = {
-              ...columnSchema['x-component-props'],
-              sorter: v,
-            };
-            schema['x-component-props'] = columnSchema['x-component-props'];
-            field.componentProps.sorter = v;
-            dn.emit('patch', {
-              schema,
-            });
-            dn.refresh();
-          },
-        };
-      },
-    },
-  ],
+  items: [],
 });
