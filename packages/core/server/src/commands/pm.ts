@@ -71,9 +71,11 @@ export default (app: Application) => {
     });
 
   pm.command('remove')
+    .auth()
     // .ipc()
     // .preload()
     .arguments('<plugins...>')
+    .option('--force')
     .option('--remove-dir')
     .action(async (plugins, options) => {
       await app.pm.remove(plugins, options);

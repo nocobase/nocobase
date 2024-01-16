@@ -553,16 +553,39 @@ export class PluginManager {
     }
   }
 
-  async remove(name: string | string[], options?: { removeDir?: boolean }) {
+  async remove(name: string | string[], options?: { removeDir?: boolean; force?: boolean }) {
     const pluginNames = _.castArray(name);
-    if (await this.app.isStarted()) {
+    const records = await this.repository.find({
+      filter: {
+        name: pluginNames,
+      },
+    });
+    async function removeDir() {
+      await Promise.all(
+        records.map(async (plugin) => {
+          const dir = resolve(process.env.NODE_MODULES_PATH, plugin.packageName);
+          const realDir = await fs.promises.realpath(dir);
+          this.app.log.debug(`rm -rf ${realDir}`);
+          return fs.promises.rm(realDir, { force: true, recursive: true });
+        }),
+      );
+      await execa('yarn', ['postinstall']);
+    }
+    if (options?.force) {
+      await this.repository.destroy({
+        filter: {
+          name: pluginNames,
+        },
+      });
+    } else {
+      await this.app.load();
       for (const pluginName of pluginNames) {
         const plugin = this.get(pluginName);
         if (!plugin) {
           continue;
         }
         if (plugin.enabled) {
-          throw new Error(`${pluginName} plugin is enabled`);
+          throw new Error(`plugin is enabled [${pluginName}]`);
         }
         await plugin.beforeRemove();
       }
@@ -579,39 +602,13 @@ export class PluginManager {
         }
         plugins.push(plugin);
         this.del(pluginName);
-        // if (plugin.options.type && plugin.options.packageName) {
-        //   await removePluginPackage(plugin.options.packageName);
-        // }
-      }
-      await this.app.reload();
-      for (const plugin of plugins) {
         await plugin.afterRemove();
       }
-      await this.app.emitStartedEvent();
-    } else {
-      const plugins = await this.repository.find({
-        filter: {
-          name: pluginNames,
-        },
-      });
-      await this.repository.destroy({
-        filter: {
-          name: pluginNames,
-        },
-      });
-      if (options?.removeDir) {
-        await Promise.all(
-          plugins.map(async (plugin) => {
-            const dir = resolve(process.env.NODE_MODULES_PATH, plugin.packageName);
-            const realDir = await fs.promises.realpath(dir);
-            this.app.log.debug(`rm -rf ${realDir}`);
-            return fs.promises.rm(realDir, { force: true, recursive: true });
-          }),
-        );
-      }
-      await execa('yarn', ['postinstall']);
-      await execa('yarn', ['nocobase', 'refresh']);
     }
+    if (options?.removeDir) {
+      await removeDir();
+    }
+    await execa('yarn', ['nocobase', 'refresh']);
   }
 
   async loadOne(plugin: Plugin) {
