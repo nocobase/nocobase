@@ -22,7 +22,7 @@ export const number: IField = {
       },
     },
   },
-  availableTypes: ['double', 'float'],
+  availableTypes: ['double', 'float', 'decimal'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

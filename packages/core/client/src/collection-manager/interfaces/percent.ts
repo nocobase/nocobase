@@ -75,7 +75,7 @@ export const percent: IField = {
       width: '100%',
     };
   },
-  availableTypes: ['float'],
+  availableTypes: ['float', 'double', 'decimal'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

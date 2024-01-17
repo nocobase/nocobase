@@ -18,7 +18,7 @@ export const richText: IField = {
       'x-component': 'RichText',
     },
   },
-  availableTypes: ['text'],
+  availableTypes: ['text', 'json'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

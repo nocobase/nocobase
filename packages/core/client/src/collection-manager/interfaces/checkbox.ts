@@ -16,7 +16,7 @@ export const checkbox: IField = {
       'x-component': 'Checkbox',
     },
   },
-  availableTypes: ['boolean'],
+  availableTypes: ['boolean', 'integer', 'bigInt'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
