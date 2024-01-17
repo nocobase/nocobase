@@ -87,7 +87,7 @@ export const useFormBlockType = () => {
 export const useIsDetailBlock = () => {
   const ctx = useFormBlockContext();
   const { fieldSchema } = useActionContext();
-  return ctx.type !== 'create' && fieldSchema['x-acl-action'] !== 'create';
+  return ctx.type !== 'create' && fieldSchema?.['x-acl-action'] !== 'create';
 };
 
 export const FormBlockProvider = (props) => {
