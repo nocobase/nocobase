@@ -20,7 +20,7 @@ export default class extends Migration {
             }
             return job.update(
               {
-                nodeKey: job.node.key,
+                nodeKey: job.node?.key,
               },
               {
                 silent: true,
