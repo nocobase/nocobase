@@ -188,6 +188,7 @@ export const oho: IField = {
   title: '{{t("One to one (has one)")}}',
   description: '{{t("One to one description")}}',
   isAssociation: true,
+  availableTypes: ['hasOne'],
   default: {
     type: 'hasOne',
     // name,
@@ -391,6 +392,7 @@ export const obo: IField = {
       },
     },
   },
+  availableTypes: ['belongsTo'],
   schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
     // schema['type'] = 'object';
     if (['Table', 'Kanban'].includes(block)) {
