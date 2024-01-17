@@ -1,10 +1,12 @@
 import { CollectionFieldOptionsV2, GetCollectionFieldPredicate } from '../../application';
 import { CollectionV2 } from '../../application/collection/Collection';
-import _, { filter, unionBy, uniq, uniqBy } from 'lodash';
+import _, { filter, unionBy, uniq } from 'lodash';
 
 export class InheritanceCollectionMixin extends CollectionV2 {
-  protected parentCollections: string[];
-  protected childrenCollections: string[];
+  protected parentCollectionsName: string[];
+  protected parentCollections: CollectionV2[];
+  protected childrenCollections: { supportView?: CollectionV2[]; notSupportView?: CollectionV2[] } = {};
+  protected childrenCollectionsName: { supportView?: string[]; notSupportView?: string[] } = {};
   protected inheritsFields: CollectionFieldOptionsV2[];
   protected currentFields: CollectionFieldOptionsV2[];
   protected allFields: CollectionFieldOptionsV2[];
@@ -14,9 +16,10 @@ export class InheritanceCollectionMixin extends CollectionV2 {
   protected foreignKeyFields: CollectionFieldOptionsV2[];
 
   getParentCollectionsName() {
-    if (this.parentCollections?.length) {
-      return this.parentCollections;
+    if (this.parentCollectionsName?.length) {
+      return this.parentCollectionsName;
     }
+
     const parents: string[] = [];
     const getParentCollectionsInner = (collectionName: string) => {
       const collection = this.collectionManager.getCollection(collectionName);
@@ -33,19 +36,24 @@ export class InheritanceCollectionMixin extends CollectionV2 {
       return uniq(parents);
     };
 
-    this.parentCollections = getParentCollectionsInner(this.name);
-    return this.parentCollections;
+    this.parentCollectionsName = getParentCollectionsInner(this.name);
+    return this.parentCollectionsName;
   }
 
   getParentCollections() {
-    return this.getParentCollectionsName().map((collectionName) => {
+    if (this.parentCollections?.length) {
+      return this.parentCollections;
+    }
+    this.parentCollections = this.getParentCollectionsName().map((collectionName) => {
       return this.collectionManager.getCollection(collectionName);
     });
+    return this.parentCollections;
   }
 
   getChildrenCollectionsName(isSupportView = false) {
-    if (this.childrenCollections?.length) {
-      return this.childrenCollections;
+    const cacheKey = isSupportView ? 'supportView' : 'notSupportView';
+    if (this.childrenCollectionsName[cacheKey]?.length) {
+      return this.childrenCollectionsName[cacheKey];
     }
 
     const children: string[] = [];
@@ -56,12 +64,12 @@ export class InheritanceCollectionMixin extends CollectionV2 {
       });
       inheritCollections.forEach((v) => {
         const collectionKey = v.name;
-        children.push(v.name);
+        children.push(collectionKey);
         return getChildrenCollectionsInner(collectionKey);
       });
       if (isSupportView) {
         const sourceCollections = collections.filter((v) => {
-          return v.sources?.length === 1 && v?.sources[0] === name;
+          return v.sources?.length === 1 && v?.sources[0] === collectionName;
         });
         sourceCollections.forEach((v) => {
           const collectionKey = v.name;
@@ -69,17 +77,22 @@ export class InheritanceCollectionMixin extends CollectionV2 {
           return getChildrenCollectionsInner(collectionKey);
         });
       }
-      return uniqBy(children, 'key');
+      return uniq(children);
     };
 
-    this.childrenCollections = getChildrenCollectionsInner(this.name);
-    return this.childrenCollections;
+    this.childrenCollectionsName[cacheKey] = getChildrenCollectionsInner(this.name);
+    return this.childrenCollectionsName[cacheKey];
   }
 
   getChildrenCollections(isSupportView = false) {
-    return this.getChildrenCollectionsName(isSupportView).map((collectionName) => {
+    const cacheKey = isSupportView ? 'supportView' : 'notSupportView';
+    if (this.childrenCollections[cacheKey]?.length) {
+      return this.childrenCollections[cacheKey];
+    }
+    this.childrenCollections[cacheKey] = this.getChildrenCollectionsName(isSupportView).map((collectionName) => {
       return this.collectionManager.getCollection(collectionName);
     });
+    return this.childrenCollections[cacheKey];
   }
 
   getInheritedFields() {
@@ -98,12 +111,13 @@ export class InheritanceCollectionMixin extends CollectionV2 {
 
   // override CollectionV2
   getFieldsMap() {
-    if (!this.fieldsMap) {
-      this.fieldsMap = this.getAllFields().reduce((memo, field) => {
-        memo[field.name] = field;
-        return memo;
-      }, {});
+    if (this.fieldsMap) {
+      return this.fieldsMap;
     }
+    this.fieldsMap = this.getAllFields().reduce((memo, field) => {
+      memo[field.name] = field;
+      return memo;
+    }, {});
     return this.fieldsMap;
   }
   getCurrentFields(predicate?: GetCollectionFieldPredicate) {
