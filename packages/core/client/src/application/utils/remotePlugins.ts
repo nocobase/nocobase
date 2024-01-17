@@ -48,7 +48,7 @@ export function getRemotePlugins(
       packageNames,
       (...pluginModules: (typeof Plugin & { default?: typeof Plugin })[]) => {
         const res = pluginModules
-          .map<[string, typeof Plugin]>((item, index) => [pluginData[index].name, item.default || item])
+          .map<[string, typeof Plugin]>((item, index) => [pluginData[index].name, item?.default || item])
           .filter((item) => item[1]);
         resolve(res);
 
