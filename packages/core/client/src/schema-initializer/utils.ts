@@ -1659,7 +1659,7 @@ const getChildrenV3 = ({
       if (item.inherit) {
         return false;
       }
-      const fields = collectionManager.getCollectionFields(item.name, { ns: namespace });
+      const fields = collectionManager.getCollectionFields(item.name, { namespace });
       if (item.autoGenId === false && !fields.find((v) => v.primaryKey)) {
         return false;
       } else if (

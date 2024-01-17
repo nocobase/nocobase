@@ -73,12 +73,9 @@ export class CollectionManagerV2 {
   };
   protected collectionFieldGroups: Record<string, { label: string; order?: number }> = {};
   protected mainResource: (...args: any[]) => Promise<CollectionOptionsV2[]>;
-  protected thirdResource: (
+  protected thirdResources: ((
     ...args: any[]
-  ) => Promise<{ name: string; description: string; collections: CollectionOptionsV2[] }[]>;
-  protected reloadFns?: {
-    [key: string]: (...args: any[]) => Promise<any>;
-  } = {};
+  ) => Promise<{ name: string; description: string; collections: CollectionOptionsV2[] }[]>)[] = [];
   protected reloadCallbacks: {
     [key: string]: ((collections: CollectionOptionsV2[]) => void)[];
   } = {};
@@ -302,10 +299,12 @@ export class CollectionManagerV2 {
     this.mainResource = fn;
   }
 
-  setThirdResource(
+  addThirdResource(
     fn: (...args: any[]) => Promise<{ name: string; description: string; collections: CollectionOptionsV2[] }[]>,
   ) {
-    this.thirdResource = fn;
+    if (!this.thirdResources.includes(fn)) {
+      this.thirdResources.push(fn);
+    }
   }
 
   async reloadMain(callback?: (collections?: CollectionOptionsV2[]) => void) {
@@ -315,11 +314,12 @@ export class CollectionManagerV2 {
     this.reloadCallbacks[DEFAULT_COLLECTION_NAMESPACE_NAME]?.forEach((cb) => cb(collections));
   }
 
-  async reloadThird() {
-    if (!this.thirdResource) {
-      return;
-    }
-    const data = await this.thirdResource();
+  private async reloadThird(
+    thirdResource: (
+      ...args: any[]
+    ) => Promise<{ name: string; description: string; collections: CollectionOptionsV2[] }[]>,
+  ) {
+    const data = await thirdResource();
     data.forEach(({ name, description, collections }) => {
       this.addCollectionNamespaces({ [name]: description });
       this.setCollections(collections, { namespace: name });
@@ -327,9 +327,14 @@ export class CollectionManagerV2 {
     });
   }
 
+  private async reloadThirds(callback?: () => void) {
+    await Promise.all(this.thirdResources.map((thirdResource) => this.reloadThird(thirdResource)));
+    callback && callback();
+  }
+
   async reloadAll(callback?: () => void) {
     await this.reloadMain();
-    await this.reloadThird();
+    await this.reloadThirds();
     callback && callback();
   }
 
@@ -347,13 +352,14 @@ export class CollectionManagerV2 {
   private getInheritData() {
     return {
       collections: this.collections,
-      collectionFieldGroups: this.collectionFieldGroups,
-      reloadCallbacks: this.reloadCallbacks,
       collectionTemplateInstances: this.collectionTemplateInstances,
       fieldInterfaceInstances: this.fieldInterfaceInstances,
       collectionMixins: this.collectionMixins,
       collectionNamespaces: this.collectionNamespaces,
-      reloadFns: this.reloadFns,
+      collectionFieldGroups: this.collectionFieldGroups,
+      mainResource: this.mainResource,
+      thirdResources: this.thirdResources,
+      reloadCallbacks: this.reloadCallbacks,
       collectionArr: this.collectionArr,
       options: this.options,
     };
