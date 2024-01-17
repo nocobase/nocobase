@@ -9,7 +9,6 @@ import { useApp, useSchemaToolbar } from '../../application';
 import { SchemaSettings } from '../../application/schema-settings/SchemaSettings';
 import { useFormBlockContext } from '../../block-provider';
 import { useCollection, useCollectionManager } from '../../collection-manager';
-import { useOptions } from '../../collection-manager/hooks/useOptions';
 import { useRecord } from '../../record-provider';
 import {
   isFileCollection,
@@ -37,6 +36,7 @@ import {
   useIsFileField,
   useIsFormReadPretty,
   useIsSelectFieldMode,
+  useTitleFieldOptions,
 } from '../../schema-component/antd/form-item/FormItem.Settings';
 import { getTempFieldState } from '../../schema-component/antd/form-v2/utils';
 import { useColumnSchema } from '../../schema-component/antd/table-v2/Table.Column.Decorator';
@@ -930,7 +930,7 @@ const titleField: any = {
     const field = useField<Field>();
     const fieldSchema = useFieldSchema();
     const { dn } = useDesignable();
-    const options = useOptions();
+    const options = useTitleFieldOptions();
     const collectionField = useCollectionField();
 
     return {

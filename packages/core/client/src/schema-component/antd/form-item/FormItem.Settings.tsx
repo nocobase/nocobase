@@ -650,7 +650,7 @@ export const formItemSettings = new SchemaSettings({
       name: 'enableLink',
       type: 'switch',
       useVisible() {
-        const options = useOptions();
+        const options = useTitleFieldOptions();
         const readPretty = useIsFieldReadPretty();
         const isFileField = useIsFileField();
 
@@ -762,7 +762,7 @@ export const formItemSettings = new SchemaSettings({
       name: 'titleField',
       type: 'select',
       useVisible() {
-        const options = useOptions();
+        const options = useTitleFieldOptions();
         const isAssociationField = useIsAssociationField();
         const fieldMode = useFieldMode();
         return options.length > 0 && isAssociationField && fieldMode !== 'SubTable';
@@ -772,7 +772,7 @@ export const formItemSettings = new SchemaSettings({
         const field = useField<Field>();
         const fieldSchema = useFieldSchema();
         const { dn } = useDesignable();
-        const options = useOptions();
+        const options = useTitleFieldOptions();
         const collectionField = useCollectionField();
         return {
           title: t('Title field'),
@@ -999,7 +999,7 @@ function useShowFieldMode() {
   return showFieldMode;
 }
 
-function useOptions() {
+export function useTitleFieldOptions() {
   const { getCollectionFields, isTitleField } = useCollectionManager();
   const compile = useCompile();
   const collectionField = useCollectionField();
