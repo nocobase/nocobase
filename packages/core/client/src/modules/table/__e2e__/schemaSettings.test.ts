@@ -582,7 +582,9 @@ test.describe('actions schema settings', () => {
 
     const showMenu = async (page: Page) => {
       await page.getByLabel('action-Action.Link-Popup-customize:popup-general-table-0').hover();
-      await page.getByRole('button', { name: 'designer-schema-settings-Action.Link-Action.Designer-general' }).hover();
+      await page
+        .getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:popup-general' })
+        .hover();
     };
 
     test('supported options', async ({ page, mockPage, mockRecord }) => {
@@ -637,7 +639,9 @@ test.describe('actions schema settings', () => {
 
     const showMenu = async (page: Page) => {
       await page.getByLabel('action-Action.Link-Update record-customize:update-general-table-0').hover();
-      await page.getByRole('button', { name: 'designer-schema-settings-Action.Link-Action.Designer-general' }).hover();
+      await page
+        .getByRole('button', { name: 'designer-schema-settings-Action.Link-actionSettings:updateRecord-general' })
+        .hover();
     };
 
     test('supported options', async ({ page, mockPage, mockRecord }) => {
@@ -685,7 +689,7 @@ test.describe('actions schema settings', () => {
       await page.getByRole('button', { name: 'Submit' }).click();
 
       // 添加 add child 按钮
-      await page.getByRole('button', { name: 'Actions' }).hover();
+      await page.getByRole('button', { name: 'Actions', exact: true }).hover();
       await page.getByLabel('designer-schema-settings-TableV2.Column-TableV2.ActionColumnDesigner-tree').hover();
       await page.getByRole('menuitem', { name: 'Add child' }).click();
 

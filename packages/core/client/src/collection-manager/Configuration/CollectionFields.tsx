@@ -6,7 +6,7 @@ import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCurrentAppInfo } from '../../appInfo';
 import { RecordProvider, useRecord } from '../../record-provider';
-import { Action, useAttach, useCompile, SchemaComponent } from '../../schema-component';
+import { Action, SchemaComponent, useAttach, useCompile } from '../../schema-component';
 import { Input } from '../../schema-component/antd/input';
 import {
   isDeleteButtonDisabled,

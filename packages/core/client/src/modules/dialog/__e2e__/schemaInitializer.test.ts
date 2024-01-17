@@ -94,7 +94,9 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     // delete markdown block
     await page.getByLabel('block-item-Markdown.Void-general-markdown').hover();
-    await page.getByLabel('designer-schema-settings-Markdown.Void-Markdown.Void.Designer-general').hover();
+    await page
+      .getByRole('button', { name: 'designer-schema-settings-Markdown.Void-markdownBlockSettings-general' })
+      .hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 
@@ -183,7 +185,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await page.getByRole('button', { name: 'OK', exact: true }).click();
     // delete markdown block
     await page.getByLabel('block-item-Markdown.Void-general-markdown').hover();
-    await page.getByLabel('designer-schema-settings-Markdown.Void-Markdown.Void.Designer-general').hover();
+    await page.getByLabel('designer-schema-settings-Markdown.Void-markdownBlockSettings-general').hover();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
 

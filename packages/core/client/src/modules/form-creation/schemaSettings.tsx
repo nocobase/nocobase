@@ -14,7 +14,6 @@ import { useRecord } from '../../record-provider';
 import {
   isFileCollection,
   removeNullCondition,
-  useCollectionField,
   useDesignable,
   useFieldModeOptions,
   useIsAddNewForm,
@@ -2475,3 +2474,15 @@ export const checkboxComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:Checkbox',
   items: [],
 });
+
+/**
+ * 获取字段相关的配置信息
+ * @returns
+ */
+function useCollectionField() {
+  const { getCollectionJoinField } = useCollectionManager();
+  const { getField } = useCollection();
+  const fieldSchema = useFieldSchema();
+  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  return collectionField;
+}

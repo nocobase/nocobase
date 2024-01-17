@@ -4,7 +4,7 @@ import { CollapseItemSchemaToolbar } from '../modules/collapse-filter/CollapseIt
 import { FormItemSchemaToolbar } from '../modules/form-creation/FormItemSchemaToolbar';
 import { ActionSchemaToolbar } from '../modules/table/ActionSchemaToolbar';
 import { BlockSchemaToolbar } from '../modules/table/BlockSchemaToolbar';
-import { TableFieldSchemaToolbar } from '../modules/table/TableFieldSchemaToolbar';
+import { TableColumnSchemaToolbar } from '../modules/table/TableColumnSchemaToolbar';
 import { SchemaComponentOptions } from '../schema-component';
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';
@@ -68,7 +68,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       ActionSchemaToolbar,
       FormItemSchemaToolbar,
       CollapseItemSchemaToolbar,
-      TableFieldSchemaToolbar,
+      TableColumnSchemaToolbar,
     });
   }
 
