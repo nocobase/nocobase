@@ -78,8 +78,13 @@ function RemoveButton(
     )
   );
 }
-const bulkEditActionSettings = new SchemaSettings({
-  name: 'ActionSettings:bulkEdit',
+
+/**
+ * @deprecated
+ * 之所以还保留，仅是为了兼容旧版 schema
+ */
+export const deprecatedBulkEditActionSettings = new SchemaSettings({
+  name: 'ActionSettings:customize:bulkEdit',
   items: [
     {
       name: 'Customize',
@@ -131,4 +136,55 @@ const bulkEditActionSettings = new SchemaSettings({
   ],
 });
 
-export { bulkEditActionSettings as bulkEditactionSettings };
+export const bulkEditActionSettings = new SchemaSettings({
+  name: 'ActionSettings:bulkEdit',
+  items: [
+    {
+      name: 'Customize',
+      Component: MenuGroup,
+      children: [
+        {
+          name: 'editButton',
+          Component: ActionDesigner.ButtonEditor,
+          useComponentProps() {
+            const { buttonEditorProps } = useSchemaToolbar();
+            return buttonEditorProps;
+          },
+        },
+        {
+          name: 'openMode',
+          Component: SchemaInitializerOpenModeSchemaItems,
+          useComponentProps() {
+            const fieldSchema = useFieldSchema();
+            const isPopupAction = [
+              'create',
+              'update',
+              'view',
+              'customize:popup',
+              'duplicate',
+              'customize:create',
+            ].includes(fieldSchema['x-action'] || '');
+
+            return {
+              openMode: isPopupAction,
+              openSize: isPopupAction,
+            };
+          },
+        },
+        {
+          name: 'updateMode',
+          Component: UpdateMode,
+        },
+        {
+          name: 'remove',
+          sort: 100,
+          Component: RemoveButton as any,
+          useComponentProps() {
+            const { removeButtonProps } = useSchemaToolbar();
+            return removeButtonProps;
+          },
+        },
+      ],
+    },
+  ],
+});
