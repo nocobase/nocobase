@@ -30,7 +30,7 @@ export const GanttBlockInitializer = () => {
       componentType={'Gantt'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
-        const collectionFields = getCollectionFields(item.name);
+        const collectionFields = getCollectionFields(item.name, item.namespace);
         const stringFields = collectionFields
           ?.filter((field) => field.type === 'string')
           ?.map((field) => {
@@ -122,6 +122,7 @@ export const GanttBlockInitializer = () => {
         insert(
           createGanttBlockSchema({
             collection: item.name,
+            namespace: item.namespace,
             fieldNames: {
               ...values,
             },

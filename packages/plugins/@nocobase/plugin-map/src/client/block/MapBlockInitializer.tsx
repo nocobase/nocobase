@@ -29,8 +29,11 @@ export const MapBlockInitializer = () => {
       onCreateBlockSchema={async ({ item }) => {
         const mapFieldOptions = getCollectionFieldsOptions(item.name, ['point', 'lineString', 'polygon'], {
           association: ['o2o', 'obo', 'oho', 'o2m', 'm2o', 'm2m'],
+          namespace: item.namespace,
         });
-        const markerFieldOptions = getCollectionFieldsOptions(item.name, 'string');
+        const markerFieldOptions = getCollectionFieldsOptions(item.name, 'string', {
+          namespace: item.namespace,
+        });
         const values = await FormDialog(
           t('Create map block'),
           () => {
@@ -83,6 +86,7 @@ export const MapBlockInitializer = () => {
         insert(
           createMapBlockSchema({
             collection: item.name,
+            namespace: item.namespace,
             fieldNames: {
               ...values,
             },

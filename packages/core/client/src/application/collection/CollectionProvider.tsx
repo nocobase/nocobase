@@ -9,15 +9,18 @@ CollectionContextV2.displayName = 'CollectionContextV2';
 
 export interface CollectionProviderProps {
   name: string;
-  ns?: string;
   children?: ReactNode;
   allowNull?: boolean;
+  namespace?: string;
 }
 
 export const CollectionProviderV2: FC<CollectionProviderProps> = (props) => {
-  const { name, ns, children, allowNull } = props;
+  const { name, children, allowNull, namespace } = props;
   const collectionManager = useCollectionManagerV2();
-  const collection = useMemo(() => collectionManager.getCollection(name, { ns }), [collectionManager, name, ns]);
+  const collection = useMemo(
+    () => collectionManager.getCollection(name, { namespace }),
+    [collectionManager, name, namespace],
+  );
   if (!collection && allowNull) return <>{props.children}</>;
   if (!collection && !allowNull) return <DeletedPlaceholder type="Collection" name={name} />;
   return <CollectionContextV2.Provider value={collection}>{children}</CollectionContextV2.Provider>;

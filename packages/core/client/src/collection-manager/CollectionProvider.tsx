@@ -4,6 +4,7 @@ import { CollectionOptions } from './types';
 import React from 'react';
 import { DeletedPlaceholder } from '../application/collection/DeletedPlaceholder';
 import { CollectionExtendsProvider } from './CollectionManagerProvider';
+import { useBlockNamespace } from '../block-provider';
 
 function getCollectionName(name?: string | CollectionOptions): string {
   if (!name) return undefined;
@@ -18,11 +19,12 @@ export const CollectionProvider: FC<{
   children?: ReactNode;
 }> = ({ children, allowNull, name, collection }) => {
   const collectionName = getCollectionName(name || collection);
+  const namespace = useBlockNamespace();
   const cm = useCollectionManagerV2();
-  const hasCollection = cm.getCollection(collectionName);
+  const hasCollection = cm.getCollection(collectionName, { namespace });
   if (hasCollection || (allowNull && !collection))
     return (
-      <CollectionProviderV2 allowNull={allowNull} name={collectionName}>
+      <CollectionProviderV2 allowNull={allowNull} name={collectionName} namespace={namespace}>
         {children}
       </CollectionProviderV2>
     );

@@ -1294,10 +1294,10 @@ export function getAssociationPath(str) {
   return str;
 }
 
-export const useAssociationNames = () => {
+export const useAssociationNames = (namespace?: string) => {
   let updateAssociationValues = new Set([]);
   let appends = new Set([]);
-  const { getCollectionJoinField, getCollection } = useCollectionManager();
+  const { getCollectionJoinField, getCollection } = useCollectionManager(namespace);
   const fieldSchema = useFieldSchema();
   const _getAssociationAppends = (schema, str) => {
     schema.reduceProperties((pre, s) => {

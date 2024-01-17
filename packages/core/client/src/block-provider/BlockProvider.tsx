@@ -8,6 +8,7 @@ import template from 'lodash/template';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  DEFAULT_COLLECTION_NAMESPACE_NAME,
   TableFieldResource,
   WithoutTableFieldResource,
   useAPIClient,
@@ -45,6 +46,7 @@ interface UseResourceProps {
   association?: any;
   useSourceId?: any;
   collection?: any;
+  namespace?: any;
   block?: any;
 }
 
@@ -59,7 +61,7 @@ export const useAssociation = (props) => {
 };
 
 const useResource = (props: UseResourceProps) => {
-  const { block, collection, resource, useSourceId } = props;
+  const { block, collection, namespace, resource, useSourceId } = props;
   const record = useRecord();
   const api = useAPIClient();
   const { fieldSchema } = useActionContext();
@@ -69,6 +71,12 @@ const useResource = (props: UseResourceProps) => {
   const field = useField();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   const __parent = useContext(BlockRequestContext);
+  const headers = useMemo(() => {
+    if (namespace !== DEFAULT_COLLECTION_NAMESPACE_NAME) {
+      return { 'x-connection': namespace };
+    }
+  }, [namespace]);
+
   if (block === 'TableField') {
     const options = {
       field,
@@ -89,18 +97,18 @@ const useResource = (props: UseResourceProps) => {
     return __parent.resource;
   }
   if (!association) {
-    return api.resource(resource);
+    return api.resource(resource, undefined, headers);
   }
   if (sourceId) {
-    return api.resource(resource, sourceId);
+    return api.resource(resource, sourceId, headers);
   }
   if (record?.__parent?.[association?.sourceKey || 'id']) {
-    return api.resource(resource, record.__parent[association?.sourceKey || 'id']);
+    return api.resource(resource, record.__parent[association?.sourceKey || 'id'], headers);
   }
   if (record?.[association?.sourceKey || 'id']) {
-    return api.resource(resource, record[association?.sourceKey || 'id']);
+    return api.resource(resource, record[association?.sourceKey || 'id'], headers);
   }
-  return api.resource(collection);
+  return api.resource(collection, undefined, headers);
 };
 
 const useActionParams = (props) => {
@@ -295,17 +303,23 @@ export const useBlockContext = () => {
   return useContext(BlockContext);
 };
 
+export const BlockNamespaceContext = createContext<string>(undefined);
+export const useBlockNamespace = () => {
+  return useContext(BlockNamespaceContext);
+};
+
 export const BlockProvider = (props: {
   name: string;
   resource: any;
   collection?: any;
   association?: any;
+  namespace?: string;
   params?: any;
   children?: any;
 }) => {
-  const { collection, association, name } = props;
+  const { collection, association, name, namespace } = props;
   const resource = useResource(props);
-  const { getAssociationAppends } = useAssociationNames();
+  const { getAssociationAppends } = useAssociationNames(namespace);
   const { appends, updateAssociationValues } = getAssociationAppends();
   const params = useMemo(() => {
     if (!props.params?.['appends']) {
@@ -317,19 +331,21 @@ export const BlockProvider = (props: {
 
   return (
     <BlockContext.Provider value={blockValue}>
-      <MaybeCollectionProvider collection={collection}>
-        <BlockAssociationContext.Provider value={association}>
-          <BlockResourceContext.Provider value={resource}>
-            <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
-              <SharedFilterProvider {...props} params={params}>
-                <FilterBlockRecord {...props} params={params}>
-                  {props.children}
-                </FilterBlockRecord>
-              </SharedFilterProvider>
-            </BlockRequestProvider>
-          </BlockResourceContext.Provider>
-        </BlockAssociationContext.Provider>
-      </MaybeCollectionProvider>
+      <BlockNamespaceContext.Provider value={namespace}>
+        <MaybeCollectionProvider collection={collection}>
+          <BlockAssociationContext.Provider value={association}>
+            <BlockResourceContext.Provider value={resource}>
+              <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
+                <SharedFilterProvider {...props} params={params}>
+                  <FilterBlockRecord {...props} params={params}>
+                    {props.children}
+                  </FilterBlockRecord>
+                </SharedFilterProvider>
+              </BlockRequestProvider>
+            </BlockResourceContext.Provider>
+          </BlockAssociationContext.Provider>
+        </MaybeCollectionProvider>
+      </BlockNamespaceContext.Provider>
     </BlockContext.Provider>
   );
 };

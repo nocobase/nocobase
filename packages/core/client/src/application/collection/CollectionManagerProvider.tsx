@@ -21,11 +21,11 @@ export function useCollectionManagerV2() {
   return context;
 }
 
-export const useCollectionsV2 = (predicate?: (collection: CollectionV2) => boolean, options?: GetCollectionOptions) => {
+export const useCollectionsV2 = (options?: {
+  predicate?: (collection: CollectionV2) => boolean;
+  namespace?: string;
+}) => {
   const collectionManager = useCollectionManagerV2();
-  const collections = useMemo(
-    () => collectionManager.getCollections(predicate, options),
-    [collectionManager, options, predicate],
-  );
+  const collections = useMemo(() => collectionManager.getCollections(options), [collectionManager, options]);
   return collections;
 };

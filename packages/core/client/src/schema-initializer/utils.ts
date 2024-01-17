@@ -3,7 +3,13 @@ import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerItemType, useFormActiveFields, useFormBlockContext } from '../';
+import {
+  CollectionManagerV2,
+  SchemaInitializerItemType,
+  useCollectionManagerV2,
+  useFormActiveFields,
+  useFormBlockContext,
+} from '../';
 import { CollectionFieldOptions, FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
@@ -900,6 +906,31 @@ export const useCollectionDataSourceItemsV2 = (componentName) => {
   return res;
 };
 
+export const useCollectionDataSourceItemsV3 = (componentName) => {
+  const { t } = useTranslation();
+  const cm = useCollectionManagerV2();
+  const allCollections = cm.getAllCollections((collection) => !collection.isLocal);
+  const { getTemplatesByCollection } = useSchemaTemplateManager();
+  const res = useMemo(() => {
+    return allCollections.map(({ nsName, nsTitle, collections }) => ({
+      name: nsName,
+      label: nsTitle,
+      type: 'subMenu',
+      children: getChildrenV3({
+        collections,
+        collectionManager: cm,
+        componentName,
+        searchValue: '',
+        namespace: nsName,
+        getTemplatesByCollection,
+        t,
+      }),
+    }));
+  }, [allCollections, componentName, cm, getTemplatesByCollection, t]);
+
+  return res;
+};
+
 export const createDetailsBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
@@ -1344,6 +1375,7 @@ export const createTableBlockSchema = (options) => {
     tableBlockProvider,
     disableTemplate,
     TableBlockDesigner,
+    namespace,
     blockType,
     pageSize = 20,
     ...others
@@ -1354,6 +1386,7 @@ export const createTableBlockSchema = (options) => {
     'x-acl-action': `${resource || collection}:list`,
     'x-decorator-props': {
       collection,
+      namespace,
       resource: resource || collection,
       action: 'list',
       params: {
@@ -1595,6 +1628,122 @@ const getChildren = ({
                 mode: 'reference',
                 name: item.name,
                 template,
+                title: templateName || t('Untitled'),
+              };
+            }),
+          },
+        ],
+      };
+    });
+};
+
+const getChildrenV3 = ({
+  collections,
+  collectionManager,
+  namespace,
+  componentName,
+  searchValue,
+  getTemplatesByCollection,
+  t,
+}: {
+  collections: any[];
+  collectionManager: CollectionManagerV2;
+  componentName: string;
+  searchValue: string;
+  namespace: string;
+  getTemplatesByCollection: (collectionName: string, resourceName?: string) => any;
+  t;
+}) => {
+  return collections
+    ?.filter((item) => {
+      if (item.inherit) {
+        return false;
+      }
+      const fields = collectionManager.getCollectionFields(item.name, { ns: namespace });
+      if (item.autoGenId === false && !fields.find((v) => v.primaryKey)) {
+        return false;
+      } else if (
+        ['Kanban', 'FormItem'].includes(componentName) &&
+        ((item.template === 'view' && !item.writableView) || item.template === 'sql')
+      ) {
+        return false;
+      } else if (item.template === 'file' && ['Kanban', 'FormItem', 'Calendar'].includes(componentName)) {
+        return false;
+      } else {
+        const title = item.title || item.tableName;
+        if (!title) {
+          return false;
+        }
+        return title.toUpperCase().includes(searchValue.toUpperCase()) && !(item?.isThrough && item?.autoCreate);
+      }
+    })
+    ?.map((item, index) => {
+      const title = item.title || item.tableName;
+      const templates = getTemplatesByCollection(item.name).filter((template) => {
+        return (
+          componentName &&
+          template.componentName === componentName &&
+          (!template.resourceName || template.resourceName === item.name)
+        );
+      });
+      if (!templates.length) {
+        return {
+          type: 'item',
+          name: item.name,
+          title,
+          namespace,
+        };
+      }
+      return {
+        key: `${componentName}_table_subMenu_${index}`,
+        type: 'subMenu',
+        name: `${item.name}_${index}`,
+        title,
+        namespace,
+        children: [
+          {
+            type: 'item',
+            name: item.name,
+            namespace,
+            title: t('Blank block'),
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: `${componentName}_table_subMenu_${index}_copy`,
+            type: 'subMenu',
+            name: 'copy',
+            namespace,
+            title: t('Duplicate template'),
+            children: templates.map((template) => {
+              const templateName =
+                template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
+              return {
+                type: 'item',
+                mode: 'copy',
+                name: item.name,
+                template,
+                namespace,
+                title: templateName || t('Untitled'),
+              };
+            }),
+          },
+          {
+            key: `${componentName}_table_subMenu_${index}_ref`,
+            type: 'subMenu',
+            name: 'ref',
+            namespace,
+            title: t('Reference template'),
+            children: templates.map((template) => {
+              const templateName =
+                template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
+              return {
+                type: 'item',
+                mode: 'reference',
+                name: item.name,
+                template,
+                namespace,
                 title: templateName || t('Untitled'),
               };
             }),

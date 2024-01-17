@@ -46,7 +46,7 @@ export const RemoteCollectionManagerProvider = (props: any) => {
   };
   const service = useRequest<{
     data: any;
-  }>(() => cm.reload(refreshCH));
+  }>(() => cm.reloadAll(refreshCH));
   const result = useRequest<{
     data: any;
   }>(coptions);

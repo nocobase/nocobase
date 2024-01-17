@@ -17,6 +17,7 @@ export const FilterCollapseBlockInitializer = () => {
       componentType={'FilterCollapse'}
       onCreateBlockSchema={async ({ item }) => {
         const schema = createCollapseBlockSchema({
+          namespace: item.namespace,
           collection: item.collectionName || item.name,
           // 与数据区块做区分
           blockType: 'filter',

@@ -39,7 +39,14 @@ const ChartInitializer = () => {
       icon={<BarChartOutlined />}
       componentType={'Chart'}
       onCreateBlockSchema={async ({ item }) => {
-        setCurrent({ schema: {}, field: null, collection: item.name, service: null, data: undefined });
+        setCurrent({
+          schema: {},
+          field: null,
+          collection: item.name,
+          namespace: item.namespace,
+          service: null,
+          data: undefined,
+        });
         setVisible(true);
       }}
     />

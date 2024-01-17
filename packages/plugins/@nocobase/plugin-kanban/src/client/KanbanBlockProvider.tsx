@@ -75,7 +75,7 @@ const recursiveProperties = (schema: Schema, component = 'CollectionField', asso
 };
 
 const useAssociationNames = (collection) => {
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager(collection.namespace);
   const collectionFields = getCollectionFields(collection);
   const associationFields = new Set();
   for (const collectionField of collectionFields) {

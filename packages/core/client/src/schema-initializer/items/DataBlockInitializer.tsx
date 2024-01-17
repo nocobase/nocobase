@@ -7,10 +7,11 @@ import {
   SchemaInitializerMenu,
   useSchemaInitializer,
   useSchemaInitializerMenuItems,
+  useSchemaInitializerMenuItemsV2,
 } from '../../application';
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { useCollectionDataSourceItemsV2 } from '../utils';
+import { useCollectionDataSourceItemsV2, useCollectionDataSourceItemsV3 } from '../utils';
 
 const MENU_ITEM_HEIGHT = 40;
 const STEP = 15;
@@ -210,6 +211,129 @@ export function useMenuSearch(items: any[], isOpenSubMenu: boolean, showType?: b
   return resultItems;
 }
 
+export function useMenuSearchV2(data: any, openKey: string, showType?: boolean) {
+  const [searchValue, setSearchValue] = useState('');
+  const [count, setCount] = useState(STEP);
+
+  useEffect(() => {
+    if (openKey) {
+      setSearchValue('');
+    }
+  }, [openKey]);
+
+  const currentItems = useMemo(() => {
+    if (!openKey) return [];
+    return data.find((item) => item.key === openKey)?.children || [];
+  }, [data, openKey]);
+
+  // 根据搜索的值进行处理
+  const searchedItems = useMemo(() => {
+    if (!searchValue) return currentItems;
+    const lowerSearchValue = searchValue.toLocaleLowerCase();
+    return currentItems.filter(
+      (item) =>
+        (item.label || item.title) &&
+        String(item.label || item.title)
+          .toLocaleLowerCase()
+          .includes(lowerSearchValue),
+    );
+  }, [searchValue, currentItems]);
+
+  const shouldLoadMore = useMemo(() => searchedItems.length > count, [count, searchedItems]);
+
+  // 根据 count 进行懒加载处理
+  const limitedSearchedItems = useMemo(() => {
+    return searchedItems.slice(0, count);
+  }, [searchedItems, count]);
+
+  // 最终的返回结果
+  const resultItems = useMemo<MenuProps['items']>(() => {
+    // isMenuType 为了 `useSchemaInitializerMenuItems()` 里面处理判断标识的
+    const res: any[] = [
+      // 开头：搜索框
+      Object.assign(
+        {
+          key: 'search',
+          label: (
+            <SearchCollections
+              value={searchValue}
+              onChange={(val: string) => {
+                setCount(STEP);
+                setSearchValue(val);
+              }}
+            />
+          ),
+          onClick({ domEvent }) {
+            domEvent.stopPropagation();
+          },
+        },
+        showType ? { isMenuType: true } : {},
+      ),
+    ];
+
+    // 中间：搜索的数据
+    if (limitedSearchedItems.length > 0) {
+      // 有搜索结果
+      res.push(...limitedSearchedItems);
+      if (shouldLoadMore) {
+        res.push(
+          Object.assign(
+            {
+              key: 'load-more',
+              label: (
+                <LoadingItem
+                  maxHeight={STEP * MENU_ITEM_HEIGHT}
+                  loadMore={() => {
+                    setCount((count) => count + STEP);
+                  }}
+                />
+              ),
+            },
+            showType ? { isMenuType: true } : {},
+          ),
+        );
+      }
+    } else {
+      // 搜索结果为空
+      res.push(
+        Object.assign(
+          {
+            key: 'empty',
+            style: {
+              height: 150,
+            },
+            label: (
+              <div onClick={(e) => e.stopPropagation()}>
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              </div>
+            ),
+          },
+          showType ? { isMenuType: true } : {},
+        ),
+      );
+    }
+
+    return res;
+  }, [limitedSearchedItems, searchValue, shouldLoadMore, showType]);
+
+  const res = useMemo(() => {
+    return data.map((item) => {
+      if (openKey && item.key === openKey) {
+        return {
+          ...item,
+          children: resultItems,
+        };
+      } else {
+        return {
+          ...item,
+          children: [],
+        };
+      }
+    });
+  }, [data, openKey, resultItems]);
+  return res;
+}
+
 export interface DataBlockInitializerProps {
   templateWrap?: (
     templateSchema: any,
@@ -259,11 +383,17 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     },
     [createBlockSchema, getTemplateSchemaByMode, insert, isCusomeizeCreate, onCreateBlockSchema, templateWrap],
   );
-  const defaultItems = useCollectionDataSourceItemsV2(componentType);
-  const menuChildren = useMemo(() => items || defaultItems, [items, defaultItems]);
-  const childItems = useSchemaInitializerMenuItems(menuChildren, name, onClick);
-  const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
-  const searchedChildren = useMenuSearch(childItems, isOpenSubMenu);
+  // const defaultItems = useCollectionDataSourceItemsV2(componentType);
+  const defaultItemsV2 = useCollectionDataSourceItemsV3(componentType);
+  // const menuChildren = useMemo(() => items || defaultItems, [items, defaultItems]);
+  // const childItems = useSchemaInitializerMenuItems(menuChildren, name, onClick);
+  const getMenuItems = useSchemaInitializerMenuItemsV2(onClick);
+  const childItemsV2 = useMemo(() => getMenuItems(defaultItemsV2, name), [defaultItemsV2]);
+  // const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
+  const [openMenuKey, setOpenMenuKey] = useState('');
+  // const searchedChildren = useMenuSearch(childItems, isOpenSubMenu);
+  const searchedChildrenV2 = useMenuSearchV2(childItemsV2, openMenuKey);
+
   const compiledMenuItems = useMemo(
     () => [
       {
@@ -274,17 +404,21 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
           if (info.key !== name) return;
           onClick({ ...info, item: props });
         },
-        children: searchedChildren,
+        children: searchedChildrenV2,
+        // children: searchedChildren,
       },
     ],
-    [name, compile, title, icon, searchedChildren, onClick, props],
+    [name, compile, title, icon, childItemsV2, onClick, props],
   );
-
-  if (menuChildren.length > 0) {
+  if (childItemsV2.length > 0) {
     return (
       <SchemaInitializerMenu
         onOpenChange={(keys) => {
-          setIsOpenSubMenu(keys.length > 0);
+          if (keys.length === 2) {
+            setOpenMenuKey(keys[1]);
+          } else if (keys.length === 0) {
+            setOpenMenuKey('');
+          }
         }}
         items={compiledMenuItems}
       />

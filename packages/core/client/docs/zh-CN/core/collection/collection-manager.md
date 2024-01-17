@@ -15,7 +15,7 @@ interface CollectionManagerOptionsV2 {
 }
 
 interface GetCollectionOptions {
-  ns?: string;
+  namespace?: string;
 }
 
 class CollectionManagerV2 {
@@ -71,13 +71,13 @@ NocoBase 支持[多数据源](#)，每个数据源在 Collection 中对应一个
 }
 ```
 
-在调用 `collectionManager.getCollections()` 等方法时，可以通过 `ns` 参数指定命名空间，例如：
+在调用 `collectionManager.getCollections()` 等方法时，可以通过 `namespace` 参数指定命名空间，例如：
 
 ```tsx | pure
 const collections = collectionManager.getCollections('db2');
 ```
 
-如果不传递 `ns` 参数，则返回默认命名空间的数据表。
+如果不传递 `namespace` 参数，则返回默认命名空间的数据表。
 
 ## Collection Mixins
 
@@ -506,8 +506,8 @@ class CollectionManagerV2 {
 
 - 详解
 
-1. 如果不传递 `ns` 参数，则返回默认命名空间的数据表。
-2. 如果传递 `ns` 参数，则返回指定命名空间的数据表。
+1. 如果不传递 `namespace` 参数，则返回默认命名空间的数据表。
+2. 如果传递 `namespace` 参数，则返回指定命名空间的数据表。
 3. 如果传递 `predicate` 参数，则返回符合条件的数据表。
 
 - 示例
@@ -517,7 +517,7 @@ collectionManager.getCollections(); // [ userCollection ]
 
 collectionManager.getCollections('db2'); // [ postCollection ]
 
-collectionManager.getCollections(collection => collection.name === 'posts', { ns: 'db2' }); // [ postCollection ]
+collectionManager.getCollections(collection => collection.name === 'posts', { namespace: 'db2' }); // [ postCollection ]
 ```
 
 ### cm.setCollections(collections, options?)
@@ -558,7 +558,7 @@ collectionManager.getCollection('users'); // userCollection
 collectionManager.getCollection('users.posts'); // postCollection
 collectionManager.getCollection('users.profileId'); // profileCollection
 
-collectionManager.getCollection('users', { ns: 'db2' }); // userCollection
+collectionManager.getCollection('users', { namespace: 'db2' }); // userCollection
 ```
 
 结合 Mixin 使用：

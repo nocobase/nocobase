@@ -50,7 +50,7 @@ export const DEFAULT_COLLECTION_NAMESPACE_TITLE = '{{t("main")}}';
 export const DEFAULT_COLLECTION_NAMESPACE_NAME = 'main';
 
 export interface GetCollectionOptions {
-  ns?: string;
+  namespace?: string;
 }
 
 export interface CollectionManagerOptionsV2 {
@@ -72,11 +72,15 @@ export class CollectionManagerV2 {
     [DEFAULT_COLLECTION_NAMESPACE_NAME]: DEFAULT_COLLECTION_NAMESPACE_TITLE,
   };
   protected collectionFieldGroups: Record<string, { label: string; order?: number }> = {};
+  protected mainResource: (...args: any[]) => Promise<CollectionOptionsV2[]>;
+  protected thirdResource: (
+    ...args: any[]
+  ) => Promise<{ name: string; description: string; collections: CollectionOptionsV2[] }[]>;
   protected reloadFns?: {
     [key: string]: (...args: any[]) => Promise<any>;
   } = {};
   protected reloadCallbacks: {
-    [key: string]: ((collections: CollectionV2[]) => void)[];
+    [key: string]: ((collections: CollectionOptionsV2[]) => void)[];
   } = {};
   protected collectionArr: Record<string, CollectionV2[]> = {};
   protected options: CollectionManagerOptionsV2 = {};
@@ -96,16 +100,16 @@ export class CollectionManagerV2 {
     if (Array.isArray(options.collections)) {
       this.addCollections(options.collections);
     } else {
-      Object.keys(options.collections || {}).forEach((ns) => {
-        this.addCollections(options.collections[ns], { ns });
+      Object.keys(options.collections || {}).forEach((namespace) => {
+        this.addCollections(options.collections[namespace], { namespace });
       });
     }
   }
 
-  private checkNamespace(ns: string) {
-    if (!this.collectionNamespaces[ns]) {
+  private checkNamespace(namespace: string) {
+    if (!this.collectionNamespaces[namespace]) {
       throw new Error(
-        `[@nocobase/client]: CollectionManager "${ns}" does not exist in namespace, you should call collectionManager.addNamespaces() to add it`,
+        `[@nocobase/client]: CollectionManager "${namespace}" does not exist in namespace, you should call collectionManager.addNamespaces() to add it`,
       );
     }
   }
@@ -117,17 +121,17 @@ export class CollectionManagerV2 {
     this.collectionMixins.push(...newMixins);
 
     // 重新添加数据表
-    Object.keys(this.collections).forEach((ns) => {
-      const collections = this.getCollections(undefined, { ns });
-      this.addCollections(collections, { ns });
+    Object.keys(this.collections).forEach((namespace) => {
+      const collections = this.getCollections({ namespace });
+      this.addCollections(collections, { namespace });
     });
   }
 
   // collections
   addCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}) {
-    const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
-    this.checkNamespace(ns);
-    this.collectionArr[ns] = undefined;
+    const { namespace = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
+    this.checkNamespace(namespace);
+    this.collectionArr[namespace] = undefined;
 
     collections
       .map((collection) => {
@@ -135,37 +139,46 @@ export class CollectionManagerV2 {
         const Cls = collectionTemplateInstance?.Collection || CollectionV2;
         const transform = collectionTemplateInstance?.transform || defaultCollectionTransform;
         const transformedCollection = transform(collection, this.app);
-        const instance = new Cls(transformedCollection, this.app, this);
+        const instance = new Cls({ ...transformedCollection, namespace: namespace }, this.app, this);
         applyMixins(instance, this.collectionMixins);
         return instance;
       })
       .forEach((collectionInstance) => {
-        if (!this.collections[ns]) {
-          this.collections[ns] = {};
+        if (!this.collections[namespace]) {
+          this.collections[namespace] = {};
         }
-        this.collections[ns][collectionInstance.name] = collectionInstance;
+        this.collections[namespace][collectionInstance.name] = collectionInstance;
       });
   }
   setCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}) {
-    const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
-    this.checkNamespace(ns);
-    this.collections[ns] = {};
+    const { namespace = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
+    this.checkNamespace(namespace);
+    this.collections[namespace] = {};
     this.addCollections(collections, options);
   }
-  getAllCollections() {
-    return this.collections;
+  getAllCollections(
+    predicate?: (collection: CollectionV2) => boolean,
+  ): { nsName: string; nsTitle: string; collections: CollectionV2[] }[] {
+    return Object.keys(this.collectionNamespaces).reduce<
+      { nsName: string; nsTitle: string; collections: CollectionV2[] }[]
+    >((acc, namespace) => {
+      acc.push({
+        nsName: namespace,
+        nsTitle: this.collectionNamespaces[namespace],
+        collections: this.getCollections({ predicate, namespace }),
+      });
+      return acc;
+    }, []);
   }
-  getCollections(predicate?: (collection: CollectionV2) => boolean, options: GetCollectionOptions = {}) {
-    const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
-    if (!predicate && this.collectionArr[ns]?.length) {
-      return this.collectionArr[ns];
+  getCollections(options: { predicate?: (collection: CollectionV2) => boolean; namespace?: string } = {}) {
+    const { namespace = DEFAULT_COLLECTION_NAMESPACE_NAME, predicate } = options;
+    if (!this.collectionArr[namespace]?.length) {
+      this.collectionArr[namespace] = Object.values(this.collections[namespace] || {});
     }
-
-    this.collectionArr[ns] = Object.values(this.collections[ns] || {});
     if (predicate) {
-      return this.collectionArr[ns].filter(predicate);
+      return this.collectionArr[namespace].filter(predicate);
     }
-    return this.collectionArr[ns];
+    return this.collectionArr[namespace];
   }
   /**
    * 获取数据表
@@ -175,16 +188,16 @@ export class CollectionManagerV2 {
    * getCollection('a.b.c'); // 获取 a 表的 b 字段的关联表，然后 b.target 表对应的 c 字段的关联表
    */
   getCollection<Mixins = {}>(path: string, options: GetCollectionOptions = {}): (Mixins & CollectionV2) | undefined {
-    const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
+    const { namespace = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
     if (!path || typeof path !== 'string') return undefined;
-    this.checkNamespace(ns);
+    this.checkNamespace(namespace);
     if (path.split('.').length > 1) {
       // 获取到关联字段
       const associationField = this.getCollectionField(path);
 
-      return this.getCollection(associationField.target, { ns });
+      return this.getCollection(associationField.target, { namespace });
     }
-    return this.collections[ns]?.[path] as Mixins & CollectionV2;
+    return this.collections[namespace]?.[path] as Mixins & CollectionV2;
   }
   getCollectionName(path: string, options: GetCollectionOptions = {}): string | undefined {
     const res = this.getCollection(path, options);
@@ -207,9 +220,9 @@ export class CollectionManagerV2 {
       return;
     }
     const [collectionName, ...fieldNames] = String(path).split('.');
-    const { ns = DEFAULT_COLLECTION_NAMESPACE_NAME } = options || {};
-    this.checkNamespace(ns);
-    const collection = this.getCollection(collectionName, { ns });
+    const { namespace = DEFAULT_COLLECTION_NAMESPACE_NAME } = options || {};
+    this.checkNamespace(namespace);
+    const collection = this.getCollection(collectionName, { namespace });
     if (!collection) {
       return;
     }
@@ -234,18 +247,21 @@ export class CollectionManagerV2 {
     Object.assign(this.collectionTemplateInstances, newCollectionTemplateInstances);
 
     // 重新添加数据表
-    const reAddCollections = Object.keys(this.collections).reduce<Record<string, CollectionOptionsV2[]>>((acc, ns) => {
-      acc[ns] = this.getCollections(
-        (collection) => {
-          return newCollectionTemplateInstances[collection.template];
-        },
-        { ns },
-      ).map((collection) => collection.getOptions());
-      return acc;
-    }, {});
+    const reAddCollections = Object.keys(this.collections).reduce<Record<string, CollectionOptionsV2[]>>(
+      (acc, namespace) => {
+        acc[namespace] = this.getCollections({
+          predicate: (collection) => {
+            return newCollectionTemplateInstances[collection.template];
+          },
+          namespace,
+        }).map((collection) => collection.getOptions());
+        return acc;
+      },
+      {},
+    );
 
-    Object.keys(reAddCollections).forEach((ns) => {
-      this.addCollections(reAddCollections[ns], { ns });
+    Object.keys(reAddCollections).forEach((namespace) => {
+      this.addCollections(reAddCollections[namespace], { namespace });
     });
   }
   getCollectionTemplates() {
@@ -282,23 +298,45 @@ export class CollectionManagerV2 {
     return this.collectionFieldGroups[name];
   }
 
-  setReloadFn(fn: (...args: any[]) => Promise<any>, namespace: string = DEFAULT_COLLECTION_NAMESPACE_NAME) {
-    this.reloadFns[namespace] = fn;
+  setMainResource(fn: (...args: any[]) => Promise<CollectionOptionsV2[]>) {
+    this.mainResource = fn;
   }
 
-  async reload(
-    callback?: (collections: CollectionV2[]) => void,
-    namespace = DEFAULT_COLLECTION_NAMESPACE_NAME,
-  ): Promise<void> {
-    if (this.reloadFns[namespace]) {
-      const collections = await this.reloadFns[namespace]();
-      this.setCollections(collections);
-      callback && callback(collections);
-      this.reloadCallbacks[namespace]?.forEach((cb) => cb(collections));
+  setThirdResource(
+    fn: (...args: any[]) => Promise<{ name: string; description: string; collections: CollectionOptionsV2[] }[]>,
+  ) {
+    this.thirdResource = fn;
+  }
+
+  async reloadMain(callback?: (collections?: CollectionOptionsV2[]) => void) {
+    const collections = await this.mainResource();
+    this.setCollections(collections);
+    callback && callback(collections);
+    this.reloadCallbacks[DEFAULT_COLLECTION_NAMESPACE_NAME]?.forEach((cb) => cb(collections));
+  }
+
+  async reloadThird() {
+    if (!this.thirdResource) {
+      return;
     }
+    const data = await this.thirdResource();
+    data.forEach(({ name, description, collections }) => {
+      this.addCollectionNamespaces({ [name]: description });
+      this.setCollections(collections, { namespace: name });
+      this.reloadCallbacks[name]?.forEach((cb) => cb(collections));
+    });
   }
 
-  addReloadCallback(callback: (collections: CollectionV2[]) => void, namespace = DEFAULT_COLLECTION_NAMESPACE_NAME) {
+  async reloadAll(callback?: () => void) {
+    await this.reloadMain();
+    await this.reloadThird();
+    callback && callback();
+  }
+
+  addReloadCallback(
+    callback: (collections: CollectionOptionsV2[]) => void,
+    namespace = DEFAULT_COLLECTION_NAMESPACE_NAME,
+  ) {
     if (!this.reloadCallbacks[namespace]) {
       this.reloadCallbacks[namespace] = [];
     }

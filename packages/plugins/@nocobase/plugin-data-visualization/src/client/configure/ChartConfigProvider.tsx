@@ -10,6 +10,7 @@ export type ChartConfigCurrent = {
   schema: ISchema;
   field: any;
   collection: string;
+  namespace: string;
   service: any;
   initialValues?: any;
   data: any[];
