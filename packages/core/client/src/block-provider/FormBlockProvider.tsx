@@ -85,7 +85,7 @@ export const useFormBlockType = () => {
 
 export const useIsDetailBlock = () => {
   const ctx = useFormBlockContext();
-  return ctx.type !== 'create';
+  return ctx.type && ctx.type !== 'create';
 };
 
 export const FormBlockProvider = (props) => {
@@ -97,7 +97,6 @@ export const FormBlockProvider = (props) => {
   const isDetailBlock = useIsDetailBlock();
   let detailFlag = false;
   if (isDetailBlock) {
-    detailFlag = true;
     if (!designable && __collection) {
       detailFlag = __collection === collection;
     }
