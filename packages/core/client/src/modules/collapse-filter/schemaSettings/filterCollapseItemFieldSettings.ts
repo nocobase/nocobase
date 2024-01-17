@@ -1,71 +1,11 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { SchemaSettings } from '../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext } from '../../block-provider';
-import { useCollection, useCollectionManager } from '../../collection-manager';
-import { FilterBlockType } from '../../filter-provider';
-import { useCompile, useDesignable } from '../../schema-component';
-import {
-  SchemaSettingsBlockTitleItem,
-  SchemaSettingsConnectDataBlocks,
-  SchemaSettingsDataScope,
-  SchemaSettingsDefaultSortingRules,
-  SchemaSettingsTemplate,
-} from '../../schema-settings';
-
-export const filterCollapseBlockSettings = new SchemaSettings({
-  name: 'filterCollapseBlockSettings',
-  items: [
-    {
-      name: 'EditBlockTitle',
-      Component: SchemaSettingsBlockTitleItem,
-    },
-    {
-      name: 'ConvertReferenceToDuplicate',
-      Component: SchemaSettingsTemplate,
-      useComponentProps() {
-        const { name } = useCollection();
-        const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
-
-        return {
-          componentName: 'FilterCollapse',
-          collectionName: name,
-          resourceName: defaultResource,
-        };
-      },
-    },
-    {
-      name: 'ConnectDataBlocks',
-      Component: SchemaSettingsConnectDataBlocks,
-      useComponentProps() {
-        const { t } = useTranslation();
-
-        return {
-          type: FilterBlockType.COLLAPSE,
-          emptyDescription: t('No blocks to connect'),
-        };
-      },
-    },
-    {
-      name: 'divider',
-      type: 'divider',
-    },
-    {
-      name: 'delete',
-      type: 'remove',
-      useComponentProps() {
-        return {
-          removeParentsIfNoChildren: true,
-          breakRemoveOn: {
-            'x-component': 'Grid',
-          },
-        };
-      },
-    },
-  ],
-});
+import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
+import { useFormBlockContext } from '../../../block-provider';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCompile, useDesignable } from '../../../schema-component';
+import { SchemaSettingsDataScope, SchemaSettingsDefaultSortingRules } from '../../../schema-settings';
 
 export const filterCollapseItemFieldSettings = new SchemaSettings({
   name: 'fieldSettings:FilterCollapseItem',

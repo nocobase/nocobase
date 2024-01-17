@@ -137,7 +137,7 @@ export const deprecatedBulkEditActionSettings = new SchemaSettings({
 });
 
 export const bulkEditActionSettings = new SchemaSettings({
-  name: 'ActionSettings:bulkEdit',
+  name: 'actionSettings:bulkEdit',
   items: [
     {
       name: 'Customize',

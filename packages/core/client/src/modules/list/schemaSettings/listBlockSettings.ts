@@ -1,41 +1,42 @@
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
+import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { SchemaSettings } from '../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext } from '../../block-provider';
-import { useDetailsBlockContext } from '../../block-provider/DetailsBlockProvider';
-import { useCollection, useSortFields } from '../../collection-manager';
-import { removeNullCondition, useDesignable } from '../../schema-component';
-import { SchemaSettingsBlockTitleItem, SchemaSettingsDataScope, SchemaSettingsTemplate } from '../../schema-settings';
+import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
+import { useFormBlockContext } from '../../../block-provider';
+import { useCollection, useSortFields } from '../../../collection-manager';
+import { removeNullCondition, useDesignable } from '../../../schema-component';
+import {
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsDataScope,
+  SchemaSettingsTemplate,
+} from '../../../schema-settings';
 
-export const multiDataDetailsBlockSettings = new SchemaSettings({
-  name: 'multiDataDetailsBlockSettings',
+export const listBlockSettings = new SchemaSettings({
+  name: 'listBlockSettings',
   items: [
     {
-      name: 'title',
+      name: 'EditBlockTitle',
       Component: SchemaSettingsBlockTitleItem,
     },
     {
-      name: 'dataScope',
+      name: 'SetTheDataScope',
       Component: SchemaSettingsDataScope,
       useComponentProps() {
         const { name } = useCollection();
         const fieldSchema = useFieldSchema();
         const { form } = useFormBlockContext();
         const field = useField();
-        const { service } = useDetailsBlockContext();
         const { dn } = useDesignable();
+
         return {
           collectionName: name,
           defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
-          form,
+          form: form,
           onSubmit: ({ filter }) => {
             filter = removeNullCondition(filter);
-            const params = field.decoratorProps.params || {};
-            params.filter = filter;
-            field.decoratorProps.params = params;
-            fieldSchema['x-decorator-props']['params'] = params;
-            service.run({ ...service.params?.[0], filter });
+            _.set(fieldSchema, 'x-decorator-props.params.filter', filter);
+            field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params, page: 1 };
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
@@ -47,14 +48,13 @@ export const multiDataDetailsBlockSettings = new SchemaSettings({
       },
     },
     {
-      name: 'sortingRules',
+      name: 'SetDefaultSortingRules',
       type: 'modal',
       useComponentProps() {
         const { name } = useCollection();
         const { t } = useTranslation();
         const fieldSchema = useFieldSchema();
         const field = useField();
-        const { service } = useDetailsBlockContext();
         const { dn } = useDesignable();
         const sortFields = useSortFields(name);
         const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
@@ -69,11 +69,10 @@ export const multiDataDetailsBlockSettings = new SchemaSettings({
                 direction: 'asc',
               };
         });
+
         return {
           title: t('Set default sorting rules'),
-          components: {
-            ArrayItems,
-          },
+          components: { ArrayItems },
           schema: {
             type: 'object',
             title: t('Set default sorting rules'),
@@ -98,7 +97,6 @@ export const multiDataDetailsBlockSettings = new SchemaSettings({
                         field: {
                           type: 'string',
                           enum: sortFields,
-                          required: true,
                           'x-decorator': 'FormItem',
                           'x-component': 'Select',
                           'x-component-props': {
@@ -144,34 +142,65 @@ export const multiDataDetailsBlockSettings = new SchemaSettings({
               },
             },
           } as ISchema,
-          onSubmit({ sort }) {
+          onSubmit: ({ sort }) => {
             const sortArr = sort.map((item) => {
               return item.direction === 'desc' ? `-${item.field}` : item.field;
             });
-            const params = field.decoratorProps.params || {};
-            params.sort = sortArr;
-            field.decoratorProps.params = params;
-            fieldSchema['x-decorator-props']['params'] = params;
+
+            _.set(fieldSchema, 'x-decorator-props.params.sort', sortArr);
+            field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params, page: 1 };
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
                 'x-decorator-props': fieldSchema['x-decorator-props'],
               },
             });
-            service.run({ ...service.params?.[0], sort: sortArr });
           },
         };
       },
     },
     {
-      name: 'template',
+      name: 'RecordsPerPage',
+      type: 'select',
+      useComponentProps() {
+        const { t } = useTranslation();
+        const fieldSchema = useFieldSchema();
+        const field = useField();
+        const { dn } = useDesignable();
+
+        return {
+          title: t('Records per page'),
+          value: field.decoratorProps?.params?.pageSize || 20,
+          options: [
+            { label: '10', value: 10 },
+            { label: '20', value: 20 },
+            { label: '50', value: 50 },
+            { label: '80', value: 80 },
+            { label: '100', value: 100 },
+          ],
+          onChange: (pageSize) => {
+            _.set(fieldSchema, 'x-decorator-props.params.pageSize', pageSize);
+            field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params, page: 1 };
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': fieldSchema['x-decorator-props'],
+              },
+            });
+          },
+        };
+      },
+    },
+    {
+      name: 'ConvertReferenceToDuplicate',
       Component: SchemaSettingsTemplate,
       useComponentProps() {
         const { name } = useCollection();
         const fieldSchema = useFieldSchema();
         const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+
         return {
-          componentName: 'Details',
+          componentName: 'List',
           collectionName: name,
           resourceName: defaultResource,
         };
@@ -182,13 +211,15 @@ export const multiDataDetailsBlockSettings = new SchemaSettings({
       type: 'divider',
     },
     {
-      name: 'remove',
+      name: 'delete',
       type: 'remove',
-      componentProps: {
-        removeParentsIfNoChildren: true,
-        breakRemoveOn: {
-          'x-component': 'Grid',
-        },
+      useComponentProps() {
+        return {
+          removeParentsIfNoChildren: true,
+          breakRemoveOn: {
+            'x-component': 'Grid',
+          },
+        };
       },
     },
   ],

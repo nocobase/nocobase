@@ -1,10 +1,10 @@
 import React from 'react';
 import { Plugin } from '../application/Plugin';
-import { CollapseItemSchemaToolbar } from '../modules/collapse-filter/CollapseItemSchemaToolbar';
-import { FormItemSchemaToolbar } from '../modules/form-creation/FormItemSchemaToolbar';
-import { ActionSchemaToolbar } from '../modules/table/ActionSchemaToolbar';
-import { BlockSchemaToolbar } from '../modules/table/BlockSchemaToolbar';
-import { TableColumnSchemaToolbar } from '../modules/table/TableColumnSchemaToolbar';
+import { ActionSchemaToolbar } from '../modules/schema-toolbar/ActionSchemaToolbar';
+import { BlockSchemaToolbar } from '../modules/schema-toolbar/BlockSchemaToolbar';
+import { CollapseItemSchemaToolbar } from '../modules/schema-toolbar/CollapseItemSchemaToolbar';
+import { FormItemSchemaToolbar } from '../modules/schema-toolbar/FormItemSchemaToolbar';
+import { TableColumnSchemaToolbar } from '../modules/schema-toolbar/TableColumnSchemaToolbar';
 import { SchemaComponentOptions } from '../schema-component';
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';

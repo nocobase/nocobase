@@ -1,72 +1,67 @@
 import { Plugin } from '../application/Plugin';
-import {
-  filterCollapseBlockSettings,
-  filterCollapseItemFieldSettings,
-} from '../modules/collapse-filter/schemaSettings';
-import { multiDataDetailsBlockSettings } from '../modules/details-multi-data/schemaSettings';
-import { singleDataDetailsBlockSettings } from '../modules/details-single-data/schemaSettings';
-import {
-  cascadeSelectComponentFieldSettings,
-  cascaderComponentFieldSettings,
-  checkboxComponentFieldSettings,
-  checkboxGroupComponentFieldSettings,
-  collectionSelectComponentFieldSettings,
-  colorPickerComponentFieldSettings,
-  columnDatePickerComponentFieldSettings,
-  columnNesterComponentFieldSettings,
-  columnPickerComponentFieldSettings,
-  columnPopoverNesterComponentFieldSettings,
-  columnSelectComponentFieldSettings,
-  columnSubTableComponentFieldSettings,
-  columnTagComponentFieldSettings,
-  creationFormBlockSettings,
-  customizeSaveRecordActionSettings,
-  customizeSubmitToWorkflowActionSettings,
-  datePickerComponentFieldSettings,
-  fileManagerComponentFieldSettings,
-  formItemFieldSettings,
-  formulaResultComponentFieldSettings,
-  iconPickerComponentFieldSettings,
-  inputComponentFieldSettings,
-  inputJSONComponentFieldSettings,
-  inputNumberComponentFieldSettings,
-  inputTextAreaComponentFieldSettings,
-  inputURLComponentFieldSettings,
-  markdownComponentFieldSettings,
-  passwordComponentFieldSettings,
-  percentComponentFieldSettings,
-  radioGroupComponentFieldSettings,
-  recordPickerComponentFieldSettings,
-  richTextComponentFieldSettings,
-  selectComponentFieldSettings,
-  subTablePopoverComponentFieldSettings,
-  subformComponentFieldSettings,
-  subformPopoverComponentFieldSettings,
-  submitActionSettings,
-  tagComponentFieldSettings,
-  timePickerComponentFieldSettings,
-  uploadAttachmentComponentFieldSettings,
-} from '../modules/form-creation/schemaSettings';
-import { bulkEditFieldSettings, editFormBlockSettings } from '../modules/form-edit/schemaSettings';
-import { filterFormBlockSettings, filterFormItemFieldSettings } from '../modules/form-filter/schemaSettings';
-import { gridCardBlockSettings } from '../modules/grid-card/schemaSettings';
-import { listBlockSettings } from '../modules/list/schemaSettings';
-import { markdownBlockSettings } from '../modules/markdown/schemaSettings';
-import { dataSelectorBlockSettings } from '../modules/table-data-selector/schemaSettings';
-import {
-  addNewActionSettings,
-  bulkDeleteActionSettings,
-  customizeAddRecordActionSettings,
-  customizePopupActionSettings,
-  customizeUpdateRecordActionSettings,
-  deleteActionSettings,
-  editActionSettings,
-  filterActionSettings,
-  refreshActionSettings,
-  tableBlockSettings,
-  tableColumnSettings,
-  viewActionSettings,
-} from '../modules/table/schemaSettings';
+import { filterCollapseBlockSettings } from '../modules/collapse-filter/schemaSettings/filterCollapseBlockSettings';
+import { filterCollapseItemFieldSettings } from '../modules/collapse-filter/schemaSettings/filterCollapseItemFieldSettings';
+import { multiDataDetailsBlockSettings } from '../modules/details-multi-data/schemaSettings/multiDataDetailsBlockSettings';
+import { singleDataDetailsBlockSettings } from '../modules/details-single-data/schemaSettings/singleDataDetailsBlockSettings';
+import { creationFormBlockSettings } from '../modules/form-creation/schema-settings/creationFormBlockSettings';
+import { customizeSaveRecordActionSettings } from '../modules/form-creation/schema-settings/customizeSaveRecordActionSettings';
+import { customizeSubmitToWorkflowActionSettings } from '../modules/form-creation/schema-settings/customizeSubmitToWorkflowActionSettings';
+import { cascadeSelectComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/cascadeSelectComponentFieldSettings';
+import { cascaderComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/cascaderComponentFieldSettings';
+import { checkboxComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/checkboxComponentFieldSettings';
+import { checkboxGroupComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/checkboxGroupComponentFieldSettings';
+import { collectionSelectComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/collectionSelectComponentFieldSettings';
+import { colorPickerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/colorPickerComponentFieldSettings';
+import { columnDatePickerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/columnDatePickerComponentFieldSettings';
+import { columnNesterComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/columnNesterComponentFieldSettings';
+import { columnPickerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/columnPickerComponentFieldSettings';
+import { columnPopoverNesterComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/columnPopoverNesterComponentFieldSettings';
+import { columnSelectComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/columnSelectComponentFieldSettings';
+import { columnSubTableComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/columnSubTableComponentFieldSettings';
+import { columnTagComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/columnTagComponentFieldSettings';
+import { datePickerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/datePickerComponentFieldSettings';
+import { fileManagerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/fileManagerComponentFieldSettings';
+import { formulaResultComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/formulaResultComponentFieldSettings';
+import { iconPickerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/iconPickerComponentFieldSettings';
+import { inputComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/inputComponentFieldSettings';
+import { inputJSONComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/inputJSONComponentFieldSettings';
+import { inputNumberComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/inputNumberComponentFieldSettings';
+import { inputTextAreaComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/inputTextAreaComponentFieldSettings';
+import { inputURLComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/inputURLComponentFieldSettings';
+import { markdownComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/markdownComponentFieldSettings';
+import { passwordComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/passwordComponentFieldSettings';
+import { percentComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/percentComponentFieldSettings';
+import { radioGroupComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/radioGroupComponentFieldSettings';
+import { recordPickerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/recordPickerComponentFieldSettings';
+import { richTextComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/richTextComponentFieldSettings';
+import { selectComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/selectComponentFieldSettings';
+import { subTablePopoverComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/subTablePopoverComponentFieldSettings';
+import { subformComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/subformComponentFieldSettings';
+import { subformPopoverComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/subformPopoverComponentFieldSettings';
+import { tagComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/tagComponentFieldSettings';
+import { timePickerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/timePickerComponentFieldSettings';
+import { uploadAttachmentComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/uploadAttachmentComponentFieldSettings';
+import { formItemSettings } from '../modules/form-creation/schema-settings/formItemSettings';
+import { submitActionSettings } from '../modules/form-creation/schema-settings/submitActionSettings';
+import { editFormBlockSettings } from '../modules/form-edit/schemaSettings/editFormBlockSettings';
+import { filterFormBlockSettings } from '../modules/form-filter/schemaSettings/filterFormBlockSettings';
+import { filterFormItemFieldSettings } from '../modules/form-filter/schemaSettings/filterFormItemFieldSettings';
+import { gridCardBlockSettings } from '../modules/grid-card/schemaSettings/gridCardBlockSettings';
+import { listBlockSettings } from '../modules/list/schemaSettings/listBlockSettings';
+import { markdownBlockSettings } from '../modules/markdown/schemaSettings/markdownBlockSettings';
+import { dataSelectorBlockSettings } from '../modules/table-data-selector/schemaSettings/dataSelectorBlockSettings';
+import { addNewActionSettings } from '../modules/table/schemaSettings/addNewActionSettings';
+import { bulkDeleteActionSettings } from '../modules/table/schemaSettings/bulkDeleteActionSettings';
+import { customizeAddRecordActionSettings } from '../modules/table/schemaSettings/customizeAddRecordActionSettings';
+import { customizePopupActionSettings } from '../modules/table/schemaSettings/customizePopupActionSettings';
+import { customizeUpdateRecordActionSettings } from '../modules/table/schemaSettings/customizeUpdateRecordActionSettings';
+import { deleteActionSettings } from '../modules/table/schemaSettings/deleteActionSettings';
+import { editActionSettings } from '../modules/table/schemaSettings/editActionSettings';
+import { filterActionSettings } from '../modules/table/schemaSettings/filterActionSettings';
+import { refreshActionSettings } from '../modules/table/schemaSettings/refreshActionSettings';
+import { tableBlockSettings } from '../modules/table/schemaSettings/tableBlockSettings';
+import { tableColumnSettings } from '../modules/table/schemaSettings/tableColumnSettings';
+import { viewActionSettings } from '../modules/table/schemaSettings/viewActionSettings';
 
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
@@ -100,10 +95,9 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);
 
     // field settings
-    this.schemaSettingsManager.add(formItemFieldSettings);
+    this.schemaSettingsManager.add(formItemSettings);
     this.schemaSettingsManager.add(tableColumnSettings);
     this.schemaSettingsManager.add(filterCollapseItemFieldSettings);
-    this.schemaSettingsManager.add(bulkEditFieldSettings);
 
     // field component settings
     this.schemaSettingsManager.add(selectComponentFieldSettings);

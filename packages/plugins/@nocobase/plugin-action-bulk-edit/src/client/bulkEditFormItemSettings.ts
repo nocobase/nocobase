@@ -1,82 +1,22 @@
 import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
+import {
+  SchemaSettings,
+  useApp,
+  useCollection,
+  useCollectionManager,
+  useDesignable,
+  useFieldComponentName,
+  useFormBlockContext,
+  useIsFormReadPretty,
+  useValidateSchema,
+} from '@nocobase/client';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { useApp } from '../../application';
-import { SchemaSettings } from '../../application/schema-settings/SchemaSettings';
-import { useCollection, useCollectionManager } from '../../collection-manager';
-import { FilterBlockType } from '../../filter-provider';
-import { EditOperator, useDesignable, useValidateSchema } from '../../schema-component';
-import {
-  SchemaSettingsBlockTitleItem,
-  SchemaSettingsConnectDataBlocks,
-  SchemaSettingsFormItemTemplate,
-  SchemaSettingsLinkageRules,
-} from '../../schema-settings';
-import { useFieldComponentName } from '../form-creation/schemaSettings';
 
-export const filterFormBlockSettings = new SchemaSettings({
-  name: 'filterFormBlockSettings',
-  items: [
-    {
-      name: 'title',
-      Component: SchemaSettingsBlockTitleItem,
-    },
-    {
-      name: 'formItemTemplate',
-      Component: SchemaSettingsFormItemTemplate,
-      useComponentProps() {
-        const { name } = useCollection();
-        const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
-        return {
-          componentName: 'FilterFormItem',
-          collectionName: name,
-          resourceName: defaultResource,
-        };
-      },
-    },
-    {
-      name: 'linkageRules',
-      Component: SchemaSettingsLinkageRules,
-      useComponentProps() {
-        const { name } = useCollection();
-        return {
-          collectionName: name,
-        };
-      },
-    },
-    {
-      name: 'connectDataBlocks',
-      Component: SchemaSettingsConnectDataBlocks,
-      useComponentProps() {
-        const { t } = useTranslation();
-        return {
-          type: FilterBlockType.FORM,
-          emptyDescription: t('No blocks to connect'),
-        };
-      },
-    },
-    {
-      name: 'divider',
-      type: 'divider',
-    },
-    {
-      name: 'remove',
-      type: 'remove',
-      componentProps: {
-        removeParentsIfNoChildren: true,
-        breakRemoveOn: {
-          'x-component': 'Grid',
-        },
-      },
-    },
-  ],
-});
-
-export const filterFormItemFieldSettings = new SchemaSettings({
-  name: 'fieldSettings:FilterFormItem',
+export const bulkEditFormItemSettings = new SchemaSettings({
+  name: 'fieldSettings:BulkEditFormItem',
   items: [
     {
       name: 'decoratorOptions',
@@ -114,7 +54,7 @@ export const filterFormItemFieldSettings = new SchemaSettings({
                       'x-component-props': {},
                     },
                   },
-                } as ISchema,
+                },
                 onSubmit({ title }) {
                   if (title) {
                     field.title = title;
@@ -184,7 +124,7 @@ export const filterFormItemFieldSettings = new SchemaSettings({
                       'x-component-props': {},
                     },
                   },
-                } as ISchema,
+                },
                 onSubmit({ description }) {
                   field.description = description;
                   fieldSchema.description = description;
@@ -221,7 +161,7 @@ export const filterFormItemFieldSettings = new SchemaSettings({
                       'x-component-props': {},
                     },
                   },
-                } as ISchema,
+                },
                 onSubmit({ tooltip }) {
                   field.decoratorProps.tooltip = tooltip;
                   fieldSchema['x-decorator-props'] = fieldSchema['x-decorator-props'] || {};
@@ -335,7 +275,7 @@ export const filterFormItemFieldSettings = new SchemaSettings({
                       },
                     },
                   },
-                } as ISchema,
+                },
                 onSubmit(v) {
                   const rules = [];
                   for (const rule of v.rules) {
@@ -367,13 +307,11 @@ export const filterFormItemFieldSettings = new SchemaSettings({
               };
             },
             useVisible() {
+              const { form } = useFormBlockContext();
+              const isFormReadPretty = useIsFormReadPretty();
               const validateSchema = useValidateSchema();
-              return !!validateSchema;
+              return form && !isFormReadPretty && validateSchema;
             },
-          },
-          {
-            name: 'operator',
-            Component: EditOperator,
           },
         ];
       },

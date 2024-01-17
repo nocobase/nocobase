@@ -3,87 +3,20 @@ import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { useApp } from '../../application';
-import { SchemaSettings } from '../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext } from '../../block-provider';
-import { useCollection, useCollectionManager } from '../../collection-manager';
-import { useDesignable, useIsFormReadPretty, useValidateSchema } from '../../schema-component';
-import {
-  SchemaSettingsBlockTitleItem,
-  SchemaSettingsDataTemplates,
-  SchemaSettingsFormItemTemplate,
-  SchemaSettingsLinkageRules,
-} from '../../schema-settings';
-import { useFieldComponentName } from '../form-creation/schemaSettings';
+import { useApp, useSchemaToolbar } from '../../../application';
+import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
+import { useFormBlockContext } from '../../../block-provider';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useFieldComponentName } from '../../../common/useFieldComponentName';
+import { useDesignable, useValidateSchema } from '../../../schema-component';
+import { useIsFormReadPretty } from '../../../schema-component/antd/form-item/FormItem.Settings';
+import { getTempFieldState } from '../../../schema-component/antd/form-v2/utils';
+import { SchemaSettingsDefaultValue, isPatternDisabled } from '../../../schema-settings';
+import { ActionType } from '../../../schema-settings/LinkageRules/type';
+import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 
-export const editFormBlockSettings = new SchemaSettings({
-  name: 'editFormBlockSettings',
-  items: [
-    {
-      name: 'title',
-      Component: SchemaSettingsBlockTitleItem,
-    },
-    {
-      name: 'linkageRules',
-      Component: SchemaSettingsLinkageRules,
-      useComponentProps() {
-        const { name } = useCollection();
-        return {
-          collectionName: name,
-        };
-      },
-    },
-    {
-      name: 'dataTemplates',
-      Component: SchemaSettingsDataTemplates,
-      useVisible() {
-        const { action } = useFormBlockContext();
-        return !action;
-      },
-      useComponentProps() {
-        const { name } = useCollection();
-        return {
-          collectionName: name,
-        };
-      },
-    },
-    {
-      name: 'divider',
-      type: 'divider',
-    },
-    {
-      name: 'formItemTemplate',
-      Component: SchemaSettingsFormItemTemplate,
-      useComponentProps() {
-        const { name } = useCollection();
-        const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
-        return {
-          componentName: 'FormItem',
-          collectionName: name,
-          resourceName: defaultResource,
-        };
-      },
-    },
-    {
-      name: 'divider2',
-      type: 'divider',
-    },
-    {
-      name: 'remove',
-      type: 'remove',
-      componentProps: {
-        removeParentsIfNoChildren: true,
-        breakRemoveOn: {
-          'x-component': 'Grid',
-        },
-      },
-    },
-  ],
-});
-
-export const bulkEditFieldSettings = new SchemaSettings({
-  name: 'fieldSettings:BulkEditFormItem',
+export const formItemSettings = new SchemaSettings({
+  name: 'fieldSettings:FormItem',
   items: [
     {
       name: 'decoratorOptions',
@@ -91,7 +24,7 @@ export const bulkEditFieldSettings = new SchemaSettings({
       componentProps: {
         title: 'Decorator options',
       },
-      useChildren() {
+      useChildren(): any {
         return [
           {
             name: 'editFieldTitle',
@@ -239,6 +172,121 @@ export const bulkEditFieldSettings = new SchemaSettings({
                       'x-decorator-props': fieldSchema['x-decorator-props'],
                     },
                   });
+                  dn.refresh();
+                },
+              };
+            },
+          },
+          {
+            name: 'required',
+            type: 'switch',
+            useVisible() {
+              const field = useField<Field>();
+              const fieldSchema = useFieldSchema();
+              const { required = true } = useSchemaToolbar();
+              return !field.readPretty && fieldSchema['x-component'] !== 'FormField' && required;
+            },
+            useComponentProps() {
+              const { t } = useTranslation();
+              const field = useField<Field>();
+              const fieldSchema = useFieldSchema();
+              const { dn, refresh } = useDesignable();
+
+              return {
+                title: t('Required'),
+                checked: fieldSchema.required as boolean,
+                onChange(required) {
+                  const schema = {
+                    ['x-uid']: fieldSchema['x-uid'],
+                  };
+                  field.required = required;
+                  fieldSchema['required'] = required;
+                  schema['required'] = required;
+                  dn.emit('patch', {
+                    schema,
+                  });
+                  refresh();
+                },
+              };
+            },
+          },
+          {
+            name: 'setDefaultValue',
+            useVisible() {
+              const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
+              return isAllowToSetDefaultValue();
+            },
+            Component: SchemaSettingsDefaultValue,
+          },
+          {
+            name: 'pattern',
+            type: 'select',
+            useVisible() {
+              const { form } = useFormBlockContext();
+              const fieldSchema = useFieldSchema();
+              return form && !form?.readPretty && !isPatternDisabled(fieldSchema);
+            },
+            useComponentProps() {
+              const { t } = useTranslation();
+              const field = useField<Field>();
+              const fieldSchema = useFieldSchema();
+              const { dn } = useDesignable();
+              let readOnlyMode = 'editable';
+              if (fieldSchema['x-disabled'] === true) {
+                readOnlyMode = 'readonly';
+              }
+              if (fieldSchema['x-read-pretty'] === true) {
+                readOnlyMode = 'read-pretty';
+              }
+              return {
+                title: t('Pattern'),
+                options: [
+                  { label: t('Editable'), value: 'editable' },
+                  { label: t('Readonly'), value: 'readonly' },
+                  { label: t('Easy-reading'), value: 'read-pretty' },
+                ],
+                value: readOnlyMode,
+                onChange(v) {
+                  const schema: ISchema = {
+                    ['x-uid']: fieldSchema['x-uid'],
+                  };
+
+                  switch (v) {
+                    case 'readonly': {
+                      fieldSchema['x-read-pretty'] = false;
+                      fieldSchema['x-disabled'] = true;
+                      schema['x-read-pretty'] = false;
+                      schema['x-disabled'] = true;
+                      field.readPretty = false;
+                      field.disabled = true;
+                      _.set(field, 'initStateOfLinkageRules.pattern', getTempFieldState(true, ActionType.ReadOnly));
+                      break;
+                    }
+                    case 'read-pretty': {
+                      fieldSchema['x-read-pretty'] = true;
+                      fieldSchema['x-disabled'] = false;
+                      schema['x-read-pretty'] = true;
+                      schema['x-disabled'] = false;
+                      field.readPretty = true;
+                      _.set(field, 'initStateOfLinkageRules.pattern', getTempFieldState(true, ActionType.ReadPretty));
+                      break;
+                    }
+                    default: {
+                      fieldSchema['x-read-pretty'] = false;
+                      fieldSchema['x-disabled'] = false;
+                      schema['x-read-pretty'] = false;
+                      schema['x-disabled'] = false;
+                      field.readPretty = false;
+                      field.disabled = false;
+                      _.set(field, 'initStateOfLinkageRules.pattern', getTempFieldState(true, ActionType.Editable));
+                      break;
+                    }
+                  }
+
+                  dn.emit('patch', {
+                    schema,
+                  });
+
                   dn.refresh();
                 },
               };

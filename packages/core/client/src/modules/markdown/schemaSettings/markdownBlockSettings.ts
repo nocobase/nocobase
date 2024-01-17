@@ -1,6 +1,6 @@
 import { useField } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { SchemaSettings } from '../../application/schema-settings/SchemaSettings';
+import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 
 export const markdownBlockSettings = new SchemaSettings({
   name: 'markdownBlockSettings',

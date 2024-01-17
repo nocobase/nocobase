@@ -1,45 +1,45 @@
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { cloneDeep } from 'lodash';
-import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaSettings } from '../../application/schema-settings/SchemaSettings';
-import { recursiveParent, useFormBlockContext, useTableSelectorContext } from '../../block-provider';
-import { useCollection, useCollectionManager, useSortFields } from '../../collection-manager';
-import { removeNullCondition, useDesignable } from '../../schema-component';
-import { SchemaSettingsDataScope } from '../../schema-settings';
+import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
+import { useFormBlockContext } from '../../../block-provider';
+import { useDetailsBlockContext } from '../../../block-provider/DetailsBlockProvider';
+import { useCollection, useSortFields } from '../../../collection-manager';
+import { removeNullCondition, useDesignable } from '../../../schema-component';
+import {
+  SchemaSettingsBlockTitleItem,
+  SchemaSettingsDataScope,
+  SchemaSettingsTemplate,
+} from '../../../schema-settings';
 
-export const dataSelectorBlockSettings = new SchemaSettings({
-  name: 'dataSelectorBlockSettings',
+export const multiDataDetailsBlockSettings = new SchemaSettings({
+  name: 'multiDataDetailsBlockSettings',
   items: [
     {
-      name: 'SetTheDataScope',
+      name: 'title',
+      Component: SchemaSettingsBlockTitleItem,
+    },
+    {
+      name: 'dataScope',
       Component: SchemaSettingsDataScope,
-      useComponentProps: () => {
+      useComponentProps() {
         const { name } = useCollection();
-        const field = useField();
         const fieldSchema = useFieldSchema();
         const { form } = useFormBlockContext();
-        const { service, extraFilter } = useTableSelectorContext();
+        const field = useField();
+        const { service } = useDetailsBlockContext();
         const { dn } = useDesignable();
-        const onDataScopeSubmit = useCallback(
-          ({ filter }) => {
+        return {
+          collectionName: name,
+          defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
+          form,
+          onSubmit: ({ filter }) => {
             filter = removeNullCondition(filter);
             const params = field.decoratorProps.params || {};
             params.filter = filter;
             field.decoratorProps.params = params;
             fieldSchema['x-decorator-props']['params'] = params;
-            let serviceFilter = cloneDeep(filter);
-            if (extraFilter) {
-              if (serviceFilter) {
-                serviceFilter = {
-                  $and: [extraFilter, serviceFilter],
-                };
-              } else {
-                serviceFilter = extraFilter;
-              }
-            }
-            service.run({ ...service.params?.[0], filter: serviceFilter, page: 1 });
+            service.run({ ...service.params?.[0], filter });
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
@@ -47,68 +47,20 @@ export const dataSelectorBlockSettings = new SchemaSettings({
               },
             });
           },
-          [dn, field.decoratorProps, fieldSchema, service, extraFilter],
-        );
-
-        return {
-          collectionName: name,
-          defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
-          form: form,
-          onSubmit: onDataScopeSubmit,
         };
       },
     },
     {
-      name: 'treeTable',
-      type: 'switch',
-      useComponentProps: () => {
-        const field = useField();
-        const fieldSchema = useFieldSchema();
-        const { service } = useTableSelectorContext();
-        const { t } = useTranslation();
-        const { dn } = useDesignable();
-
-        return {
-          title: t('Tree table'),
-          defaultChecked: true,
-          checked: field.decoratorProps.treeTable !== false,
-          onChange: (flag) => {
-            field.form.clearFormGraph(`${field.address}.*`);
-            field.decoratorProps.treeTable = flag;
-            fieldSchema['x-decorator-props'].treeTable = flag;
-            const params = {
-              ...service.params?.[0],
-              tree: flag ? true : null,
-            };
-            dn.emit('patch', {
-              schema: fieldSchema,
-            });
-            dn.refresh();
-            service.run(params);
-          },
-        };
-      },
-      useVisible: () => {
-        const { getCollectionJoinField } = useCollectionManager();
-        const fieldSchema = useFieldSchema();
-        const collection = useCollection();
-        const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
-        const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
-
-        return collection?.tree && collectionField?.target === collectionField?.collectionName;
-      },
-    },
-    {
-      name: 'SetDefaultSortingRules',
+      name: 'sortingRules',
       type: 'modal',
       useComponentProps() {
         const { name } = useCollection();
-        const field = useField();
-        const fieldSchema = useFieldSchema();
-        const sortFields = useSortFields(name);
-        const { service } = useTableSelectorContext();
         const { t } = useTranslation();
+        const fieldSchema = useFieldSchema();
+        const field = useField();
+        const { service } = useDetailsBlockContext();
         const { dn } = useDesignable();
+        const sortFields = useSortFields(name);
         const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
         const sort = defaultSort?.map((item: string) => {
           return item.startsWith('-')
@@ -121,10 +73,11 @@ export const dataSelectorBlockSettings = new SchemaSettings({
                 direction: 'asc',
               };
         });
-
         return {
           title: t('Set default sorting rules'),
-          components: { ArrayItems },
+          components: {
+            ArrayItems,
+          },
           schema: {
             type: 'object',
             title: t('Set default sorting rules'),
@@ -195,7 +148,7 @@ export const dataSelectorBlockSettings = new SchemaSettings({
               },
             },
           } as ISchema,
-          onSubmit: ({ sort }) => {
+          onSubmit({ sort }) {
             const sortArr = sort.map((item) => {
               return item.direction === 'desc' ? `-${item.field}` : item.field;
             });
@@ -213,45 +166,18 @@ export const dataSelectorBlockSettings = new SchemaSettings({
           },
         };
       },
-      useVisible() {
-        const field = useField();
-        const { dragSort } = field.decoratorProps;
-        return !dragSort;
-      },
     },
     {
-      name: 'RecordsPerPage',
-      type: 'select',
+      name: 'template',
+      Component: SchemaSettingsTemplate,
       useComponentProps() {
-        const field = useField();
+        const { name } = useCollection();
         const fieldSchema = useFieldSchema();
-        const { service } = useTableSelectorContext();
-        const { t } = useTranslation();
-        const { dn } = useDesignable();
-
+        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
         return {
-          title: t('Records per page'),
-          value: field.decoratorProps?.params?.pageSize || 20,
-          options: [
-            { label: '10', value: 10 },
-            { label: '20', value: 20 },
-            { label: '50', value: 50 },
-            { label: '100', value: 100 },
-            { label: '200', value: 200 },
-          ],
-          onChange: (pageSize) => {
-            const params = field.decoratorProps.params || {};
-            params.pageSize = pageSize;
-            field.decoratorProps.params = params;
-            fieldSchema['x-decorator-props']['params'] = params;
-            service.run({ ...service.params?.[0], pageSize, page: 1 });
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
-              },
-            });
-          },
+          componentName: 'Details',
+          collectionName: name,
+          resourceName: defaultResource,
         };
       },
     },
@@ -260,21 +186,14 @@ export const dataSelectorBlockSettings = new SchemaSettings({
       type: 'divider',
     },
     {
-      name: 'delete',
+      name: 'remove',
       type: 'remove',
-      useComponentProps() {
-        return {
-          removeParentsIfNoChildren: true,
-          breakRemoveOn: {
-            'x-component': 'Grid',
-          },
-        };
+      componentProps: {
+        removeParentsIfNoChildren: true,
+        breakRemoveOn: {
+          'x-component': 'Grid',
+        },
       },
     },
   ],
-});
-
-export const dataSelectorBlockFieldSettings = new SchemaSettings({
-  name: 'fieldSettings:dataSelectorBlock',
-  items: [],
 });

@@ -3,11 +3,13 @@ import { bulkEditActionSettings, deprecatedBulkEditActionSettings } from './Bulk
 import { BulkEditFormItemInitializers } from './BulkEditFormItemInitializers';
 import { BulkEditPluginProvider } from './BulkEditPluginProvider';
 import { CreateFormBulkEditBlockInitializers } from './CreateFormBulkEditBlockInitializers';
+import { bulkEditFormItemSettings } from './bulkEditFormItemSettings';
 export class BulkEditPlugin extends Plugin {
   async load() {
     this.app.use(BulkEditPluginProvider);
     this.app.schemaSettingsManager.add(deprecatedBulkEditActionSettings);
     this.app.schemaSettingsManager.add(bulkEditActionSettings);
+    this.app.schemaSettingsManager.add(bulkEditFormItemSettings);
     this.app.schemaInitializerManager.add(BulkEditFormItemInitializers);
     this.app.schemaInitializerManager.add(CreateFormBulkEditBlockInitializers);
 
@@ -21,7 +23,7 @@ export class BulkEditPlugin extends Plugin {
         'x-decorator': 'ACLActionProvider',
         'x-action': 'customize:bulkEdit',
         'x-toolbar': 'ActionSchemaToolbar',
-        'x-settings': 'ActionSettings:bulkEdit',
+        'x-settings': 'actionSettings:bulkEdit',
         'x-acl-action': 'update',
         'x-acl-action-props': {
           skipScopeCheck: true,

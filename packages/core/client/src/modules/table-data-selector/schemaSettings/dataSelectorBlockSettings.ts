@@ -1,79 +1,45 @@
 import { ArrayItems } from '@formily/antd-v5';
-import { ISchema } from '@formily/json-schema';
-import { useField, useFieldSchema } from '@formily/react';
-import _ from 'lodash';
-import { useMemo } from 'react';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { cloneDeep } from 'lodash';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaSettings } from '../../application/schema-settings/SchemaSettings';
-import { useFormBlockContext } from '../../block-provider';
-import { useCollection, useSortFields } from '../../collection-manager';
-import { removeNullCondition, useDesignable } from '../../schema-component';
-import {
-  defaultColumnCount,
-  gridSizes,
-  pageSizeOptions,
-  screenSizeMaps,
-  screenSizeTitleMaps,
-} from '../../schema-component/antd/grid-card/options';
-import { SchemaSettingsDataScope, SchemaSettingsTemplate } from '../../schema-settings';
+import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
+import { recursiveParent, useFormBlockContext, useTableSelectorContext } from '../../../block-provider';
+import { useCollection, useCollectionManager, useSortFields } from '../../../collection-manager';
+import { removeNullCondition, useDesignable } from '../../../schema-component';
+import { SchemaSettingsDataScope } from '../../../schema-settings';
 
-const columnCountMarks = [1, 2, 3, 4, 6, 8, 12, 24].reduce((obj, cur) => {
-  obj[cur] = cur;
-  return obj;
-}, {});
-
-export const gridCardBlockSettings = new SchemaSettings({
-  name: 'gridCardBlockSettings',
+export const dataSelectorBlockSettings = new SchemaSettings({
+  name: 'dataSelectorBlockSettings',
   items: [
     {
-      name: 'SetTheCountOfColumnsDisplayedInARow',
-      type: 'modal',
-      useComponentProps() {
-        const { t } = useTranslation();
-        const fieldSchema = useFieldSchema();
+      name: 'SetTheDataScope',
+      Component: SchemaSettingsDataScope,
+      useComponentProps: () => {
+        const { name } = useCollection();
         const field = useField();
+        const fieldSchema = useFieldSchema();
+        const { form } = useFormBlockContext();
+        const { service, extraFilter } = useTableSelectorContext();
         const { dn } = useDesignable();
-        const columnCount = field.decoratorProps.columnCount || defaultColumnCount;
-
-        const columnCountSchema = useMemo(() => {
-          return {
-            'x-component': 'Slider',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              min: 1,
-              max: 24,
-              marks: columnCountMarks,
-              tooltip: {
-                formatter: (value) => `${value}${t('Column')}`,
-              },
-              step: null,
-            },
-          };
-        }, [t]);
-
-        const columnCountProperties = useMemo(() => {
-          return gridSizes.reduce((o, k) => {
-            o[k] = {
-              ...columnCountSchema,
-              title: t(screenSizeTitleMaps[k]),
-              description: `${t('Screen size')} ${screenSizeMaps[k]} ${t('pixels')}`,
-            };
-            return o;
-          }, {});
-        }, [columnCountSchema, t]);
-
-        return {
-          title: t('Set the count of columns displayed in a row'),
-          initialValues: columnCount,
-          schema: {
-            type: 'object',
-            title: t('Set the count of columns displayed in a row'),
-            properties: columnCountProperties,
-          } as ISchema,
-
-          onSubmit: (columnCount) => {
-            _.set(fieldSchema, 'x-decorator-props.columnCount', columnCount);
-            field.decoratorProps.columnCount = columnCount;
+        const onDataScopeSubmit = useCallback(
+          ({ filter }) => {
+            filter = removeNullCondition(filter);
+            const params = field.decoratorProps.params || {};
+            params.filter = filter;
+            field.decoratorProps.params = params;
+            fieldSchema['x-decorator-props']['params'] = params;
+            let serviceFilter = cloneDeep(filter);
+            if (extraFilter) {
+              if (serviceFilter) {
+                serviceFilter = {
+                  $and: [extraFilter, serviceFilter],
+                };
+              } else {
+                serviceFilter = extraFilter;
+              }
+            }
+            service.run({ ...service.params?.[0], filter: serviceFilter, page: 1 });
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
@@ -81,36 +47,55 @@ export const gridCardBlockSettings = new SchemaSettings({
               },
             });
           },
-        };
-      },
-    },
-    {
-      name: 'SetTheDataScope',
-      Component: SchemaSettingsDataScope,
-      useComponentProps() {
-        const { name } = useCollection();
-        const fieldSchema = useFieldSchema();
-        const { form } = useFormBlockContext();
-        const field = useField();
-        const { dn } = useDesignable();
-        const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
+          [dn, field.decoratorProps, fieldSchema, service, extraFilter],
+        );
 
         return {
           collectionName: name,
           defaultFilter: fieldSchema?.['x-decorator-props']?.params?.filter || {},
           form: form,
-          onSubmit: ({ filter }) => {
-            filter = removeNullCondition(filter);
-            _.set(fieldSchema, 'x-decorator-props.params.filter', filter);
-            field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params };
+          onSubmit: onDataScopeSubmit,
+        };
+      },
+    },
+    {
+      name: 'treeTable',
+      type: 'switch',
+      useComponentProps: () => {
+        const field = useField();
+        const fieldSchema = useFieldSchema();
+        const { service } = useTableSelectorContext();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
+
+        return {
+          title: t('Tree table'),
+          defaultChecked: true,
+          checked: field.decoratorProps.treeTable !== false,
+          onChange: (flag) => {
+            field.form.clearFormGraph(`${field.address}.*`);
+            field.decoratorProps.treeTable = flag;
+            fieldSchema['x-decorator-props'].treeTable = flag;
+            const params = {
+              ...service.params?.[0],
+              tree: flag ? true : null,
+            };
             dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
-              },
+              schema: fieldSchema,
             });
+            dn.refresh();
+            service.run(params);
           },
         };
+      },
+      useVisible: () => {
+        const { getCollectionJoinField } = useCollectionManager();
+        const fieldSchema = useFieldSchema();
+        const collection = useCollection();
+        const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
+        const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
+
+        return collection?.tree && collectionField?.target === collectionField?.collectionName;
       },
     },
     {
@@ -118,13 +103,13 @@ export const gridCardBlockSettings = new SchemaSettings({
       type: 'modal',
       useComponentProps() {
         const { name } = useCollection();
-        const { t } = useTranslation();
-        const fieldSchema = useFieldSchema();
         const field = useField();
-        const { dn } = useDesignable();
+        const fieldSchema = useFieldSchema();
         const sortFields = useSortFields(name);
+        const { service } = useTableSelectorContext();
+        const { t } = useTranslation();
+        const { dn } = useDesignable();
         const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
-
         const sort = defaultSort?.map((item: string) => {
           return item.startsWith('-')
             ? {
@@ -214,35 +199,52 @@ export const gridCardBlockSettings = new SchemaSettings({
             const sortArr = sort.map((item) => {
               return item.direction === 'desc' ? `-${item.field}` : item.field;
             });
-
-            _.set(fieldSchema, 'x-decorator-props.params.sort', sortArr);
-            field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params };
+            const params = field.decoratorProps.params || {};
+            params.sort = sortArr;
+            field.decoratorProps.params = params;
+            fieldSchema['x-decorator-props']['params'] = params;
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
                 'x-decorator-props': fieldSchema['x-decorator-props'],
               },
             });
+            service.run({ ...service.params?.[0], sort: sortArr });
           },
         };
+      },
+      useVisible() {
+        const field = useField();
+        const { dragSort } = field.decoratorProps;
+        return !dragSort;
       },
     },
     {
       name: 'RecordsPerPage',
       type: 'select',
       useComponentProps() {
-        const { t } = useTranslation();
-        const fieldSchema = useFieldSchema();
         const field = useField();
+        const fieldSchema = useFieldSchema();
+        const { service } = useTableSelectorContext();
+        const { t } = useTranslation();
         const { dn } = useDesignable();
 
         return {
           title: t('Records per page'),
           value: field.decoratorProps?.params?.pageSize || 20,
-          options: pageSizeOptions.map((v) => ({ value: v })),
+          options: [
+            { label: '10', value: 10 },
+            { label: '20', value: 20 },
+            { label: '50', value: 50 },
+            { label: '100', value: 100 },
+            { label: '200', value: 200 },
+          ],
           onChange: (pageSize) => {
-            _.set(fieldSchema, 'x-decorator-props.params.pageSize', pageSize);
-            field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params, page: 1 };
+            const params = field.decoratorProps.params || {};
+            params.pageSize = pageSize;
+            field.decoratorProps.params = params;
+            fieldSchema['x-decorator-props']['params'] = params;
+            service.run({ ...service.params?.[0], pageSize, page: 1 });
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
@@ -250,21 +252,6 @@ export const gridCardBlockSettings = new SchemaSettings({
               },
             });
           },
-        };
-      },
-    },
-    {
-      name: 'ConvertReferenceToDuplicate',
-      Component: SchemaSettingsTemplate,
-      useComponentProps() {
-        const { name } = useCollection();
-        const fieldSchema = useFieldSchema();
-        const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
-
-        return {
-          componentName: 'GridCard',
-          collectionName: name,
-          resourceName: defaultResource,
         };
       },
     },
@@ -285,9 +272,4 @@ export const gridCardBlockSettings = new SchemaSettings({
       },
     },
   ],
-});
-
-export const gridCardBlockFieldSettings = new SchemaSettings({
-  name: 'fieldSettings:gridCardBlock',
-  items: [],
 });
