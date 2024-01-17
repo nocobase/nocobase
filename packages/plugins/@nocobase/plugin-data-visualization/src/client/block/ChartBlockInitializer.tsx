@@ -5,37 +5,30 @@ import {
   SchemaInitializer,
   SchemaInitializerItem,
   useACLRoleContext,
-  useCollectionDataSourceItemsV2,
   useSchemaInitializer,
   useSchemaInitializerItem,
 } from '@nocobase/client';
-import React, { useContext } from 'react';
+import React, { useCallback, useContext } from 'react';
 import { ChartConfigContext } from '../configure';
 import { FilterBlockInitializer } from '../filter';
 import { lang } from '../locale';
 
 const ChartInitializer = () => {
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
-  const collections = useCollectionDataSourceItemsV2('Chart');
   const { allowAll, parseAction } = useACLRoleContext();
   const itemConfig = useSchemaInitializerItem();
-
-  const items = collections
-    .filter((item) => {
-      if (allowAll) {
-        return true;
-      }
+  const filter = useCallback(
+    (item) => {
       const params = parseAction(`${item.name}:list`);
       return params;
-    })
-    .map((item) => ({
-      ...item,
-    }));
+    },
+    [allowAll, parseAction],
+  );
 
   return (
     <DataBlockInitializer
       {...itemConfig}
-      items={items}
+      filter={filter}
       icon={<BarChartOutlined />}
       componentType={'Chart'}
       onCreateBlockSchema={async ({ item }) => {

@@ -13,6 +13,7 @@ export const FormBlockInitializer = () => {
       icon={<FormOutlined />}
       componentType={'FormItem'}
       templateWrap={(templateSchema, { item }) => {
+        console.log('item', item);
         const s = createFormBlockSchema({
           isCusomeizeCreate,
           namespace: item.namespace,

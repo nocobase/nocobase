@@ -3,6 +3,7 @@ import { Divider, Empty, Input, MenuProps, Spin } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  CollectionV2,
   SchemaInitializerItem,
   SchemaInitializerMenu,
   useSchemaInitializer,
@@ -349,7 +350,7 @@ export interface DataBlockInitializerProps {
   icon?: string | React.ReactNode;
   name: string;
   title: string;
-  items?: any[];
+  filter?: (collection: CollectionV2) => boolean;
   componentType: string;
 }
 
@@ -363,7 +364,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     icon = TableOutlined,
     name,
     title,
-    items,
+    filter,
   } = props;
   const { insert } = useSchemaInitializer();
   const compile = useCompile();
@@ -377,14 +378,20 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
         if (onCreateBlockSchema) {
           onCreateBlockSchema({ item });
         } else if (createBlockSchema) {
-          insert(createBlockSchema({ collection: item.collectionName || item.name, isCusomeizeCreate }));
+          insert(
+            createBlockSchema({
+              collection: item.collectionName || item.name,
+              namespace: item.namespace,
+              isCusomeizeCreate,
+            }),
+          );
         }
       }
     },
     [createBlockSchema, getTemplateSchemaByMode, insert, isCusomeizeCreate, onCreateBlockSchema, templateWrap],
   );
   // const defaultItems = useCollectionDataSourceItemsV2(componentType);
-  const defaultItemsV2 = useCollectionDataSourceItemsV3(componentType);
+  const defaultItemsV2 = useCollectionDataSourceItemsV3(componentType, filter);
   // const menuChildren = useMemo(() => items || defaultItems, [items, defaultItems]);
   // const childItems = useSchemaInitializerMenuItems(menuChildren, name, onClick);
   const getMenuItems = useSchemaInitializerMenuItemsV2(onClick);

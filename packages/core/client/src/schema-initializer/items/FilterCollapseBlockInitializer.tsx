@@ -1,5 +1,5 @@
 import { TableOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useCallback } from 'react';
 
 import { useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { createCollapseBlockSchema } from '../utils';
@@ -8,7 +8,9 @@ import { DataBlockInitializer } from './DataBlockInitializer';
 export const FilterCollapseBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
-  const items = itemConfig?.name === 'filterCollapseBlockInTableSelector' ? [] : undefined;
+  const filter = useCallback(() => {
+    return itemConfig?.name !== 'filterCollapseBlockInTableSelector';
+  }, [itemConfig?.name]);
 
   return (
     <DataBlockInitializer
@@ -24,7 +26,7 @@ export const FilterCollapseBlockInitializer = () => {
         });
         insert(schema);
       }}
-      items={items}
+      filter={filter}
     />
   );
 };

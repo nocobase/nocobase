@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   CollectionManagerV2,
+  CollectionV2,
   SchemaInitializerItemType,
   useCollectionManagerV2,
   useFormActiveFields,
@@ -906,10 +907,14 @@ export const useCollectionDataSourceItemsV2 = (componentName) => {
   return res;
 };
 
-export const useCollectionDataSourceItemsV3 = (componentName) => {
+export const useCollectionDataSourceItemsV3 = (
+  componentName,
+  filter: (collection: CollectionV2) => boolean = () => true,
+) => {
   const { t } = useTranslation();
   const cm = useCollectionManagerV2();
-  const allCollections = cm.getAllCollections((collection) => !collection.isLocal);
+  const notLocal = (collection) => !collection.isLocal;
+  const allCollections = cm.getAllCollections((collection) => notLocal(collection) && filter(collection));
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const res = useMemo(() => {
     return allCollections.map(({ nsName, nsTitle, collections }) => ({
@@ -936,6 +941,7 @@ export const createDetailsBlockSchema = (options) => {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
     actionInitializers = 'DetailsActionInitializers',
     collection,
+    namespace,
     association,
     resource,
     template,
@@ -948,6 +954,7 @@ export const createDetailsBlockSchema = (options) => {
     'x-decorator': 'DetailsBlockProvider',
     'x-decorator-props': {
       resource: resourceName,
+      namespace,
       collection,
       association,
       readPretty: true,
@@ -1006,6 +1013,7 @@ export const createListBlockSchema = (options) => {
     actionInitializers = 'ListActionInitializers',
     itemActionInitializers = 'ListItemActionInitializers',
     collection,
+    namespace,
     association,
     resource,
     template,
@@ -1019,6 +1027,7 @@ export const createListBlockSchema = (options) => {
     'x-decorator-props': {
       resource: resourceName,
       collection,
+      namespace,
       association,
       readPretty: true,
       action: 'list',
@@ -1095,6 +1104,7 @@ export const createGridCardBlockSchema = (options) => {
     association,
     resource,
     template,
+    namespace,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -1106,6 +1116,7 @@ export const createGridCardBlockSchema = (options) => {
       resource: resourceName,
       collection,
       association,
+      namespace,
       readPretty: true,
       action: 'list',
       params: {
@@ -1180,6 +1191,7 @@ export const createFormBlockSchema = (options) => {
     actionInitializers = 'FormActionInitializers',
     collection,
     resource,
+    namespace,
     association,
     action,
     actions = {},
@@ -1199,6 +1211,7 @@ export const createFormBlockSchema = (options) => {
     'x-decorator-props': {
       ...others,
       action,
+      namespace,
       resource: resourceName,
       collection,
       association,
@@ -1250,6 +1263,7 @@ export const createFilterFormBlockSchema = (options) => {
     collection,
     resource,
     association,
+    namespace,
     action,
     template,
     ...others
@@ -1262,6 +1276,7 @@ export const createFilterFormBlockSchema = (options) => {
       ...others,
       action,
       resource: resourceName,
+      namespace,
       collection,
       association,
     },
@@ -1310,6 +1325,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
     actionInitializers = 'ReadPrettyFormActionInitializers',
     collection,
     association,
+    namespace,
     resource,
     template,
     ...others
@@ -1323,6 +1339,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
       resource: resourceName,
       collection,
       association,
+      namespace,
       readPretty: true,
       action: 'get',
       useParams: '{{ useParamsFromRecord }}',
@@ -1455,12 +1472,13 @@ export const createTableBlockSchema = (options) => {
 };
 
 export const createCollapseBlockSchema = (options) => {
-  const { collection, blockType } = options;
+  const { collection, namespace, blockType } = options;
   const schema: ISchema = {
     type: 'void',
     'x-decorator': 'AssociationFilter.Provider',
     'x-decorator-props': {
       collection,
+      namespace,
       blockType,
       associationFilterStyle: {
         width: '100%',
@@ -1485,7 +1503,7 @@ export const createCollapseBlockSchema = (options) => {
 };
 
 export const createTableSelectorSchema = (options) => {
-  const { collection, resource, rowKey, ...others } = options;
+  const { collection, namespace, resource, rowKey, ...others } = options;
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resource || collection}:list`,
@@ -1493,6 +1511,7 @@ export const createTableSelectorSchema = (options) => {
     'x-decorator-props': {
       collection,
       resource: resource || collection,
+      namespace,
       action: 'list',
       params: {
         pageSize: 20,
