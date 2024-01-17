@@ -121,7 +121,7 @@ export const o2o: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 sourceKey: {
-                  type: 'void',
+                  type: 'string',
                   title: '{{t("Source key")}}',
                   'x-decorator': 'FormItem',
                   'x-component': 'SourceKey',
@@ -299,7 +299,7 @@ export const oho: IField = {
               'x-component': 'Grid.Col',
               properties: {
                 sourceKey: {
-                  type: 'void',
+                  type: 'string',
                   title: '{{t("Source key")}}',
                   'x-decorator': 'FormItem',
                   'x-component': 'SourceKey',
