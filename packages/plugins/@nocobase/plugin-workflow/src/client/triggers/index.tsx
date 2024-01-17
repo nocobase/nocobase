@@ -54,6 +54,8 @@ function useUpdateConfigAction() {
 }
 
 export abstract class Trigger {
+  constructor(public workflow: WorkflowPlugin) {}
+  sync: boolean;
   title: string;
   description?: string;
   // group: string;

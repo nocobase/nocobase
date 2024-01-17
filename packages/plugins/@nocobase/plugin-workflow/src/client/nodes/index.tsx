@@ -39,6 +39,7 @@ export type NodeAvailableContext = {
 };
 
 export abstract class Instruction {
+  constructor(public workflow: WorkflowPlugin) {}
   title: string;
   type: string;
   group: string;

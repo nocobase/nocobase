@@ -45,9 +45,13 @@ export default class PluginWorkflowClient extends Plugin {
     }));
   };
 
-  registerTrigger(type: string, trigger: Trigger | { new (): Trigger }) {
+  isWorkflowSync(workflow) {
+    return this.triggers.get(workflow.type).sync ?? workflow.options.sync;
+  }
+
+  registerTrigger(type: string, trigger: Trigger | { new (workflow: PluginWorkflowClient): Trigger }) {
     if (typeof trigger === 'function') {
-      this.triggers.register(type, new trigger());
+      this.triggers.register(type, new trigger(this));
     } else if (trigger) {
       this.triggers.register(type, trigger);
     } else {
@@ -55,9 +59,9 @@ export default class PluginWorkflowClient extends Plugin {
     }
   }
 
-  registerInstruction(type: string, instruction: Instruction | { new (): Instruction }) {
+  registerInstruction(type: string, instruction: Instruction | { new (workflow: PluginWorkflowClient): Instruction }) {
     if (typeof instruction === 'function') {
-      this.instructions.register(type, new instruction());
+      this.instructions.register(type, new instruction(this));
     } else if (instruction instanceof Instruction) {
       this.instructions.register(type, instruction);
     } else {

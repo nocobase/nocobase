@@ -154,4 +154,7 @@ export default class extends Instruction {
         }
       : null;
   }
+  isAvailable({ workflow, upstream, branchIndex }) {
+    return !this.workflow.isWorkflowSync(workflow);
+  }
 }

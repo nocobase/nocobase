@@ -84,4 +84,7 @@ export default class extends Instruction {
   components = {
     Duration,
   };
+  isAvailable({ workflow, upstream, branchIndex }) {
+    return !this.workflow.isWorkflowSync(workflow);
+  }
 }
