@@ -87,7 +87,7 @@ export const useFormBlockType = () => {
 export const useIsDetailBlock = () => {
   const ctx = useFormBlockContext();
   const { fieldSchema } = useActionContext();
-  return ctx.type !== 'create' && fieldSchema?.['x-acl-action'] !== 'create';
+  return ctx.type !== 'create' && fieldSchema?.['x-acl-action'] !== 'create' && fieldSchema?.['x-action'] !== 'create';
 };
 
 export const FormBlockProvider = (props) => {
@@ -99,6 +99,7 @@ export const FormBlockProvider = (props) => {
   const isDetailBlock = useIsDetailBlock();
   let detailFlag = false;
   if (isDetailBlock) {
+    detailFlag = true;
     if (!designable && __collection) {
       detailFlag = __collection === collection;
     }
