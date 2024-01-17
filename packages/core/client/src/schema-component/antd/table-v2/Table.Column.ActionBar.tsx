@@ -4,7 +4,9 @@ import React from 'react';
 import { SortableItem, useDesigner } from '../..';
 
 export const designerCss = css`
-  position: relative;
+  margin: -18px -16px;
+  padding: 18px 16px;
+
   &:hover {
     > .general-schema-designer {
       display: block;
@@ -20,10 +22,6 @@ export const designerCss = css`
     display: none;
     background: var(--colorBgSettingsHover) !important;
     border: 0 !important;
-    top: -16px !important;
-    bottom: -16px !important;
-    left: -16px !important;
-    right: -16px !important;
     pointer-events: none;
     > .general-schema-designer-icons {
       position: absolute;

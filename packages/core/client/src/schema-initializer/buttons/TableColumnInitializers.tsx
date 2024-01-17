@@ -60,7 +60,7 @@ export const tableColumnInitializers = new SchemaInitializer({
       type: 'void',
       'x-decorator': 'TableV2.Column.Decorator',
       // 'x-designer': 'TableV2.Column.Designer',
-      'x-toolbar': 'TableFieldSchemaToolbar',
+      'x-toolbar': 'TableColumnSchemaToolbar',
       'x-settings': 'fieldSettings:TableColumn',
       'x-component': 'TableV2.Column',
       properties: {

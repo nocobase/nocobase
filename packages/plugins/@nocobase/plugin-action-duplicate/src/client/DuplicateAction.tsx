@@ -1,23 +1,23 @@
 import { css, cx } from '@emotion/css';
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
-import { App, Button } from 'antd';
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   ActionContextProvider,
   CollectionProvider,
+  FormBlockContext,
   RecordProvider,
+  fetchTemplateData,
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
   useCollection,
   useCollectionManager,
   useDesignable,
-  useRecord,
-  fetchTemplateData,
-  FormBlockContext,
   useFormBlockContext,
+  useRecord,
 } from '@nocobase/client';
+import { App, Button } from 'antd';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -152,6 +152,7 @@ export const DuplicateAction = observer(
           <div>
             {isLinkBtn ? (
               <a
+                className="nb-action-link"
                 role={props.role}
                 aria-label={props['aria-label']}
                 //@ts-ignore
@@ -159,6 +160,7 @@ export const DuplicateAction = observer(
                 style={{
                   opacity: designable && field?.data?.hidden && 0.1,
                   cursor: loading ? 'not-allowed' : 'pointer',
+                  position: 'relative',
                 }}
                 onClick={handelDuplicate}
               >

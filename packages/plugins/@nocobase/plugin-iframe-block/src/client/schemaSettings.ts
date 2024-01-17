@@ -1,4 +1,5 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { uid } from '@formily/shared';
 import { SchemaSettings, useAPIClient, useDesignable } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
