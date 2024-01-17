@@ -7,12 +7,11 @@ import {
   SchemaInitializerItem,
   SchemaInitializerMenu,
   useSchemaInitializer,
-  useSchemaInitializerMenuItems,
-  useSchemaInitializerMenuItemsV2,
+  useGetSchemaInitializerMenuItems,
 } from '../../application';
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
-import { useCollectionDataSourceItemsV2, useCollectionDataSourceItemsV3 } from '../utils';
+import { useCollectionDataSourceItems } from '../utils';
 
 const MENU_ITEM_HEIGHT = 40;
 const STEP = 15;
@@ -110,109 +109,7 @@ const LoadingItem = ({ loadMore, maxHeight }) => {
   );
 };
 
-export function useMenuSearch(items: any[], isOpenSubMenu: boolean, showType?: boolean) {
-  const [searchValue, setSearchValue] = useState('');
-  const [count, setCount] = useState(STEP);
-  useEffect(() => {
-    if (isOpenSubMenu) {
-      setSearchValue('');
-    }
-  }, [isOpenSubMenu]);
-
-  // 根据搜索的值进行处理
-  const searchedItems = useMemo(() => {
-    if (!searchValue) return items;
-    const lowerSearchValue = searchValue.toLocaleLowerCase();
-    return items.filter(
-      (item) =>
-        (item.label || item.title) &&
-        String(item.label || item.title)
-          .toLocaleLowerCase()
-          .includes(lowerSearchValue),
-    );
-  }, [searchValue, items]);
-
-  const shouldLoadMore = useMemo(() => searchedItems.length > count, [count, searchedItems]);
-
-  // 根据 count 进行懒加载处理
-  const limitedSearchedItems = useMemo(() => {
-    return searchedItems.slice(0, count);
-  }, [searchedItems, count]);
-
-  // 最终的返回结果
-  const resultItems = useMemo<MenuProps['items']>(() => {
-    // isMenuType 为了 `useSchemaInitializerMenuItems()` 里面处理判断标识的
-    const res: any[] = [
-      // 开头：搜索框
-      Object.assign(
-        {
-          key: 'search',
-          label: (
-            <SearchCollections
-              value={searchValue}
-              onChange={(val: string) => {
-                setCount(STEP);
-                setSearchValue(val);
-              }}
-            />
-          ),
-          onClick({ domEvent }) {
-            domEvent.stopPropagation();
-          },
-        },
-        showType ? { isMenuType: true } : {},
-      ),
-    ];
-
-    // 中间：搜索的数据
-    if (limitedSearchedItems.length > 0) {
-      // 有搜索结果
-      res.push(...limitedSearchedItems);
-      if (shouldLoadMore) {
-        res.push(
-          Object.assign(
-            {
-              key: 'load-more',
-              label: (
-                <LoadingItem
-                  maxHeight={STEP * MENU_ITEM_HEIGHT}
-                  loadMore={() => {
-                    setCount((count) => count + STEP);
-                  }}
-                />
-              ),
-            },
-            showType ? { isMenuType: true } : {},
-          ),
-        );
-      }
-    } else {
-      // 搜索结果为空
-      res.push(
-        Object.assign(
-          {
-            key: 'empty',
-            style: {
-              height: 150,
-            },
-            label: (
-              <div onClick={(e) => e.stopPropagation()}>
-                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
-              </div>
-            ),
-          },
-          showType ? { isMenuType: true } : {},
-        ),
-      );
-    }
-
-    return res;
-  }, [limitedSearchedItems, searchValue, shouldLoadMore, showType]);
-
-  return resultItems;
-}
-
-export function useMenuSearchV2(data: any, openKey: string, showType?: boolean) {
+export function useMenuSearch(data: any, openKey: string, showType?: boolean) {
   const [searchValue, setSearchValue] = useState('');
   const [count, setCount] = useState(STEP);
 
@@ -390,17 +287,12 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     },
     [createBlockSchema, getTemplateSchemaByMode, insert, isCusomeizeCreate, onCreateBlockSchema, templateWrap],
   );
-  // const defaultItems = useCollectionDataSourceItemsV2(componentType);
-  const defaultItemsV2 = useCollectionDataSourceItemsV3(componentType, filter);
-  // const menuChildren = useMemo(() => items || defaultItems, [items, defaultItems]);
-  // const childItems = useSchemaInitializerMenuItems(menuChildren, name, onClick);
-  const getMenuItems = useSchemaInitializerMenuItemsV2(onClick);
-  const childItemsV2 = useMemo(() => getMenuItems(defaultItemsV2, name), [defaultItemsV2]);
-  // const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
+  const items = useCollectionDataSourceItems(componentType, filter);
+  console.log('items', items);
+  const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
+  const childItems = useMemo(() => getMenuItems(items, name), [items]);
   const [openMenuKey, setOpenMenuKey] = useState('');
-  // const searchedChildren = useMenuSearch(childItems, isOpenSubMenu);
-  const searchedChildrenV2 = useMenuSearchV2(childItemsV2, openMenuKey);
-
+  const searchedChildren = useMenuSearch(childItems, openMenuKey);
   const compiledMenuItems = useMemo(
     () => [
       {
@@ -411,13 +303,12 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
           if (info.key !== name) return;
           onClick({ ...info, item: props });
         },
-        children: searchedChildrenV2,
-        // children: searchedChildren,
+        children: searchedChildren,
       },
     ],
-    [name, compile, title, icon, childItemsV2, onClick, props],
+    [name, compile, title, icon, childItems, onClick, props],
   );
-  if (childItemsV2.length > 0) {
+  if (childItems.length > 0) {
     return (
       <SchemaInitializerMenu
         onOpenChange={(keys) => {

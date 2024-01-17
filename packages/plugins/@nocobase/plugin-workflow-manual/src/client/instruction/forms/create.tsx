@@ -8,6 +8,7 @@ import {
   SchemaSettingsLinkageRules,
   SchemaSettingsRemove,
   useCollection,
+  useGetSchemaInitializerMenuItems,
   useMenuSearch,
 } from '@nocobase/client';
 
@@ -39,26 +40,34 @@ function CreateFormDesigner() {
 export default {
   title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
   config: {
-    useInitializer({ collections }) {
-      const childItems = useMemo(
+    useInitializer({ allCollections }) {
+      const items = useMemo(
         () =>
-          collections.map((item) => ({
-            name: _.camelCase(`createRecordForm-child-${item.name}`),
-            type: 'item',
-            title: item.title,
-            label: item.label,
-            schema: {
-              collection: item.name,
-              title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
-              formType: 'create',
-              'x-designer': 'CreateFormDesigner',
-            },
-            Component: FormBlockInitializer,
+          allCollections.map(({ nsName, nsTitle, collections }) => ({
+            name: nsName,
+            label: nsTitle,
+            type: 'subMenu',
+            children: collections.map((item) => ({
+              name: _.camelCase(`createRecordForm-child-${item.name}`),
+              type: 'item',
+              title: item.title || item.tableName,
+              schema: {
+                collection: item.name,
+                namespace: nsName,
+                title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
+                formType: 'create',
+                'x-designer': 'CreateFormDesigner',
+              },
+              Component: FormBlockInitializer,
+            })),
           })),
-        [collections],
+        [allCollections],
       );
-      const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
-      const searchedChildren = useMenuSearch(childItems, isOpenSubMenu, true);
+      const getMenuItems = useGetSchemaInitializerMenuItems();
+      const childItems = useMemo(() => getMenuItems(items, 'createRecordForm'), [items]);
+      const [openMenuKey, setOpenMenuKey] = useState('');
+      const searchedChildren = useMenuSearch(childItems, openMenuKey);
+
       return {
         name: 'createRecordForm',
         key: 'createRecordForm',
@@ -66,7 +75,11 @@ export default {
         title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
         componentProps: {
           onOpenChange(keys) {
-            setIsOpenSubMenu(keys.length > 0);
+            if (keys.length === 2) {
+              setOpenMenuKey(keys[1]);
+            } else if (keys.length === 0) {
+              setOpenMenuKey('');
+            }
           },
         },
         children: searchedChildren,

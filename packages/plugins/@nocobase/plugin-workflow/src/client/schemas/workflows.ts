@@ -8,7 +8,7 @@ import React from 'react';
 import { executionSchema } from './executions';
 
 const collection = {
-  name: 'workflows',
+  name: 'workflows-1',
   fields: [
     {
       type: 'string',

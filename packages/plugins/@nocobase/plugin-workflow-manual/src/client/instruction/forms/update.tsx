@@ -12,6 +12,7 @@ import {
   SchemaSettingsRemove,
   useCollection,
   useCollectionFilterOptions,
+  useCollectionManagerV2,
   useDesignable,
   useMenuSearch,
 } from '@nocobase/client';
@@ -76,26 +77,31 @@ function UpdateFormDesigner() {
 export default {
   title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
   config: {
-    useInitializer({ collections }) {
+    useInitializer({ allCollections }) {
       const childItems = useMemo(
         () =>
-          collections.map((item) => ({
-            name: _.camelCase(`updateRecordForm-child-${item.name}`),
-            type: 'item',
-            title: item.title,
-            label: item.label,
-            schema: {
-              collection: item.name,
-              title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
-              formType: 'update',
-              'x-designer': 'UpdateFormDesigner',
-            },
-            Component: FormBlockInitializer,
+          allCollections.map(({ nsName, nsTitle, collections }) => ({
+            name: nsName,
+            label: nsTitle,
+            type: 'subMenu',
+            children: collections.map((item) => ({
+              name: _.camelCase(`updateRecordForm-child-${item.name}`),
+              type: 'item',
+              title: item.title || item.tableName,
+              schema: {
+                collection: item.name,
+                namespace: nsName,
+                title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
+                formType: 'update',
+                'x-designer': 'UpdateFormDesigner',
+              },
+              Component: FormBlockInitializer,
+            })),
           })),
-        [collections],
+        [allCollections],
       );
-      const [isOpenSubMenu, setIsOpenSubMenu] = useState(false);
-      const searchedChildren = useMenuSearch(childItems, isOpenSubMenu, true);
+      const [openMenuKey, setOpenMenuKey] = useState('');
+      const searchedChildren = useMenuSearch(childItems, openMenuKey);
       return {
         name: 'updateRecordForm',
         key: 'updateRecordForm',
@@ -103,7 +109,11 @@ export default {
         title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
         componentProps: {
           onOpenChange(keys) {
-            setIsOpenSubMenu(keys.length > 0);
+            if (keys.length === 2) {
+              setOpenMenuKey(keys[1]);
+            } else if (keys.length === 0) {
+              setOpenMenuKey('');
+            }
           },
         },
         children: searchedChildren,

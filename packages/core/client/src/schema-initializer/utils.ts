@@ -864,50 +864,7 @@ export const useRecordCollectionDataSourceItems = (
   ];
 };
 
-export const useCollectionDataSourceItems = (componentName) => {
-  const { t } = useTranslation();
-  const { collections, getCollectionFields } = useCollectionManager();
-  const { getTemplatesByCollection } = useSchemaTemplateManager();
-
-  return [
-    {
-      type: 'itemGroup',
-      title: null,
-      children: [],
-      loadChildren: ({ searchValue } = { searchValue: '' }) => {
-        return getChildren({
-          collections,
-          getCollectionFields,
-          componentName,
-          searchValue,
-          getTemplatesByCollection,
-          t,
-        });
-      },
-    },
-  ];
-};
-
-export const useCollectionDataSourceItemsV2 = (componentName) => {
-  const { t } = useTranslation();
-  const { collections, getCollectionFields } = useCollectionManager();
-  const { getTemplatesByCollection } = useSchemaTemplateManager();
-
-  const res = useMemo(() => {
-    return getChildren({
-      collections,
-      getCollectionFields,
-      componentName,
-      searchValue: '',
-      getTemplatesByCollection,
-      t,
-    });
-  }, [collections, componentName, getCollectionFields, getTemplatesByCollection, t]);
-
-  return res;
-};
-
-export const useCollectionDataSourceItemsV3 = (
+export const useCollectionDataSourceItems = (
   componentName,
   filter: (collection: CollectionV2) => boolean = () => true,
 ) => {
@@ -1697,7 +1654,7 @@ const getChildrenV3 = ({
       }
     })
     ?.map((item, index) => {
-      const title = item.title || item.tableName;
+      const title = item.title || item.tableName || item.label;
       const templates = getTemplatesByCollection(item.name).filter((template) => {
         return (
           componentName &&
