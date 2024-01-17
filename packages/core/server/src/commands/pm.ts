@@ -6,10 +6,10 @@ export default (app: Application) => {
   const pm = app.command('pm');
 
   pm.command('create')
-    .ipc()
     .arguments('plugin')
-    .action(async (plugin) => {
-      await app.pm.create(plugin);
+    .option('--force-recreate')
+    .action(async (plugin, options) => {
+      await app.pm.create(plugin, options);
     });
 
   pm.command('add')
@@ -71,10 +71,13 @@ export default (app: Application) => {
     });
 
   pm.command('remove')
-    .ipc()
-    .preload()
+    .auth()
+    // .ipc()
+    // .preload()
     .arguments('<plugins...>')
-    .action(async (plugins) => {
-      await app.pm.remove(plugins);
+    .option('--force')
+    .option('--remove-dir')
+    .action(async (plugins, options) => {
+      await app.pm.remove(plugins, options);
     });
 };
