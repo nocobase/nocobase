@@ -99,6 +99,7 @@ export default class extends Instruction {
       status: JOB_STATUS.PENDING,
       result: mode ? [] : null,
       nodeId: node.id,
+      nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
 
