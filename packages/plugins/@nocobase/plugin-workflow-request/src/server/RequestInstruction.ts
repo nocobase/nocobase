@@ -44,6 +44,7 @@ export default class extends Instruction {
     const job = await processor.saveJob({
       status: JOB_STATUS.PENDING,
       nodeId: node.id,
+      nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
 
