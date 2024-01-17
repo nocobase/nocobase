@@ -89,7 +89,6 @@ export const TableColumnDesigner = (props) => {
     readOnlyMode = 'read-pretty';
   }
   const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
-
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettingsModalItem
@@ -203,7 +202,7 @@ export const TableColumnDesigner = (props) => {
         collectionField?.interface,
       ) &&
         !isFileField &&
-        readOnlyMode === 'read-pretty' && (
+        (readOnlyMode === 'read-pretty' || field.readPretty || field.readOnly) && (
           <SchemaSettingsSwitchItem
             title={t('Enable link')}
             checked={fieldSchema['x-component-props']?.enableLink !== false}

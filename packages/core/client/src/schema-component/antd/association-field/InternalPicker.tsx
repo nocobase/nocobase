@@ -14,12 +14,13 @@ import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { CollectionProvider } from '../../../collection-manager';
+import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionContextProvider } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 
 export const useTableSelectorProps = () => {
   const field: any = useField();
@@ -69,6 +70,7 @@ export const InternalPicker = observer(
     const fieldSchema = useFieldSchema();
     const insertSelector = useInsertSchema('Selector');
     const { options: collectionField } = useAssociationFieldContext();
+    const { collectionName } = useFormBlockContext();
     const compile = useCompile();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const isAllowAddNew = fieldSchema['x-add-new'];
@@ -99,6 +101,7 @@ export const InternalPicker = observer(
       selectedRows,
       setSelectedRows,
       collectionField,
+      currentFormCollection: collectionName,
     };
 
     const getValue = () => {

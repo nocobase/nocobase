@@ -41,6 +41,10 @@ type Props = {
   style?: React.CSSProperties;
   collectionField: CollectionFieldOptions;
   contextCollectionName?: string;
+  /**指定当前表单数据表 */
+  currentFormCollectionName?: string;
+  /**指定当前对象数据表 */
+  currentIterationCollectionName?: string;
   /**
    * 根据 `onChange` 的第一个参数，判断是否需要触发 `onChange`
    * @param value `onChange` 的第一个参数
@@ -82,12 +86,23 @@ export const VariableInput = (props: Props) => {
     record,
     returnScope = _.identity,
     targetFieldSchema,
+    currentFormCollectionName,
+    currentIterationCollectionName,
   } = props;
   const { name: blockCollectionName } = useBlockCollection();
   const scope = useVariableScope();
   const { operator, schema: uiSchema = collectionField?.uiSchema } = useValues();
 
-  const variableOptions = useVariableOptions({ collectionField, form, record, operator, uiSchema, targetFieldSchema });
+  const variableOptions = useVariableOptions({
+    collectionField,
+    form,
+    record,
+    operator,
+    uiSchema,
+    targetFieldSchema,
+    currentFormCollectionName,
+    currentIterationCollectionName,
+  });
   const contextVariable = useContextAssociationFields({ schema, maxDepth: 2, contextCollectionName, collectionField });
   const { compatOldVariables } = useCompatOldVariables({
     collectionField,
@@ -115,7 +130,6 @@ export const VariableInput = (props: Props) => {
     },
     [onChange, shouldChange],
   );
-
   return (
     <Variable.Input
       className={className}
