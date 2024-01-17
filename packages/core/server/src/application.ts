@@ -706,11 +706,20 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async stop(options: any = {}) {
-    this.log.debug('stop app...', { method: 'stop' });
+    const log =
+      options.logging === false
+        ? {
+            debug() {},
+            warn() {},
+            info() {},
+            error() {},
+          }
+        : this.log;
+    log.debug('stop app...', { method: 'stop' });
     this.setMaintainingMessage('stopping app...');
 
     if (this.stopped) {
-      this.log.warn(`app is stopped`, { method: 'stop' });
+      log.warn(`app is stopped`, { method: 'stop' });
       return;
     }
 
@@ -720,11 +729,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       // close database connection
       // silent if database already closed
       if (!this.db.closed()) {
-        this.log.info(`close db`, { method: 'stop' });
+        log.info(`close db`, { method: 'stop' });
         await this.db.close();
       }
     } catch (e) {
-      this.log.error(e.message, { method: 'stop', err: e.stack });
+      log.error(e.message, { method: 'stop', err: e.stack });
     }
 
     if (this.cacheManager) {
@@ -738,7 +747,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterStop', this, options);
 
     this.stopped = true;
-    this.log.info(`app has stopped`, { method: 'stop' });
+    log.info(`app has stopped`, { method: 'stop' });
     this._started = false;
   }
 

@@ -7,6 +7,7 @@ export default (app: Application) => {
     .auth()
     .option('-f, --force')
     .option('-c, --clean')
+    .option('--lang <lang>')
     .action(async (options) => {
       await app.install(options);
       const reinstall = options.clean || options.force;

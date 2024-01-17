@@ -85,3 +85,14 @@ async function createDevPluginSymLink(pluginName) {
 }
 
 exports.createDevPluginSymLink = createDevPluginSymLink;
+
+async function createDevPluginsSymlink() {
+  const storagePluginsPath = resolve(process.cwd(), 'packages/plugins');
+  if (!(await fsExists(storagePluginsPath))) {
+    return;
+  }
+  const pluginNames = await getStoragePluginNames(storagePluginsPath);
+  await Promise.all(pluginNames.map((pluginName) => createDevPluginSymLink(pluginName)));
+}
+
+exports.createDevPluginsSymlink = createDevPluginsSymlink;
