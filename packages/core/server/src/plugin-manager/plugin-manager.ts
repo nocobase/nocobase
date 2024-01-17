@@ -555,22 +555,27 @@ export class PluginManager {
 
   async remove(name: string | string[], options?: { removeDir?: boolean; force?: boolean }) {
     const pluginNames = _.castArray(name);
-    const records = await this.repository.find({
-      filter: {
-        name: pluginNames,
-      },
+    const records = pluginNames.map((name) => {
+      return {
+        name: name,
+        packageName: name,
+      };
     });
-    async function removeDir() {
+    const removeDir = async () => {
       await Promise.all(
         records.map(async (plugin) => {
           const dir = resolve(process.env.NODE_MODULES_PATH, plugin.packageName);
-          const realDir = await fs.promises.realpath(dir);
-          this.app.log.debug(`rm -rf ${realDir}`);
-          return fs.promises.rm(realDir, { force: true, recursive: true });
+          try {
+            const realDir = await fs.promises.realpath(dir);
+            this.app.log.debug(`rm -rf ${realDir}`);
+            return fs.promises.rm(realDir, { force: true, recursive: true });
+          } catch (error) {
+            return false;
+          }
         }),
       );
-      await execa('yarn', ['postinstall']);
-    }
+      await execa('yarn', ['nocobase', 'postinstall']);
+    };
     if (options?.force) {
       await this.repository.destroy({
         filter: {
@@ -603,6 +608,9 @@ export class PluginManager {
         plugins.push(plugin);
         this.del(pluginName);
         await plugin.afterRemove();
+      }
+      if (await this.app.isStarted()) {
+        await this.app.tryReloadOrRestart();
       }
     }
     if (options?.removeDir) {

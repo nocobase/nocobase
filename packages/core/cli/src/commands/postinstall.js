@@ -33,7 +33,7 @@ module.exports = (cli) => {
       if (!isPackageValid('umi')) {
         return;
       }
-      if (options.skipUmi) {
+      if (!options.skipUmi) {
         run('umi', ['generate', 'tmp'], {
           stdio: 'pipe',
           env: {
