@@ -676,6 +676,7 @@ export class PluginManager {
       await this.add(opts['name'] || urlOrName, opts, true);
     }
     await this.app.emitStartedEvent();
+    await execa('yarn', ['nocobase', 'postinstall']);
   }
 
   async addByNpm(options: { packageName: string; name?: string; registry: string; authToken?: string }) {
