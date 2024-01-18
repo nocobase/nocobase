@@ -15,13 +15,16 @@ export class PluginErrorHandler extends Plugin {
   }
 
   registerSequelizeValidationErrorHandler() {
-    const findFieldTitle = (instance, path, tFunc) => {
+    const findFieldTitle = (instance, path, tFunc, ctx) => {
       if (!instance) {
         return path;
       }
 
       const model = instance.constructor;
-      const collection = this.db.modelCollection.get(model);
+      const connectionName = ctx.get('x-connection') || 'main';
+      const database = this.app.getDb(connectionName);
+
+      const collection = database.modelCollection.get(model);
       const field = collection.getField(path);
       const fieldOptions = Schema.compile(field?.options, { t: tFunc });
       const title = lodash.get(fieldOptions, 'uiSchema.title', path);
@@ -36,7 +39,7 @@ export class PluginErrorHandler extends Plugin {
             return {
               message: ctx.i18n.t(err.type, {
                 ns: this.i18nNs,
-                field: findFieldTitle(err.instance, err.path, ctx.i18n.t),
+                field: findFieldTitle(err.instance, err.path, ctx.i18n.t, ctx),
               }),
             };
           }),
