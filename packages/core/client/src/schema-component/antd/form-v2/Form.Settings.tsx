@@ -13,7 +13,7 @@ import {
   SchemaSettingsFormItemTemplate,
   SchemaSettingsLinkageRules,
   SchemaSettingsTemplate,
-} from '../../../schema-settings';
+} from '../../../schema-settings/SchemaSettings';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 
