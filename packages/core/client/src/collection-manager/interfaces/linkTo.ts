@@ -45,7 +45,7 @@ export const linkTo: IField = {
       },
     },
   },
-  availableTypes: ['belongsToMany'],
+  // availableTypes: ['belongsToMany'],
   schemaInitialize(schema: ISchema, { readPretty, block, targetCollection }) {
     if (targetCollection?.titleField && schema['x-component-props']) {
       schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
