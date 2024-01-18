@@ -2,6 +2,7 @@ import { Field } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
+import { omit } from 'lodash';
 import { useAPIClient, useRequest } from '../api-client';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
@@ -10,6 +11,7 @@ import { useResourceActionContext } from '../collection-manager/ResourceActionPr
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
 import { useApp } from '../application';
+import { useCollectionNamespace } from '../block-provider';
 
 export const ACLContext = createContext<any>({});
 
@@ -91,7 +93,9 @@ export const ACLActionParamsContext = createContext<any>({});
 
 export const useACLRolesCheck = () => {
   const ctx = useContext(ACLContext);
-  const data = ctx?.data?.data;
+  const ns = useCollectionNamespace();
+  const { dataSources: dataSourcesAcl } = ctx.data.meta;
+  const data = { ...ctx?.data?.data, ...omit(dataSourcesAcl?.[ns], 'snippets') };
   const getActionAlias = (actionPath: string) => {
     const actionName = actionPath.split(':').pop();
     return data?.actionAlias?.[actionName] || actionName;
