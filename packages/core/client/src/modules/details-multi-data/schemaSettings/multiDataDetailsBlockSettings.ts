@@ -13,7 +13,7 @@ import {
 } from '../../../schema-settings';
 
 export const multiDataDetailsBlockSettings = new SchemaSettings({
-  name: 'multiDataDetailsBlockSettings',
+  name: 'blockSettings:multiDataDetails',
   items: [
     {
       name: 'title',

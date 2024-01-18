@@ -57,7 +57,7 @@ export const tableSelectorInitializers = new SchemaInitializer({
             'x-decorator': 'BlockItem',
             // 'x-designer': 'Markdown.Void.Designer',
             'x-toolbar': 'BlockSchemaToolbar',
-            'x-settings': 'markdownBlockSettings',
+            'x-settings': 'blockSettings:markdown',
             'x-component': 'Markdown.Void',
             'x-component-props': {
               content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',

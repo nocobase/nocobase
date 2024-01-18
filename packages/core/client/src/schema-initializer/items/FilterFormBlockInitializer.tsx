@@ -17,7 +17,7 @@ export const FilterFormBlockInitializer = (props) => {
         const s = createFilterFormBlockSchema({
           template: templateSchema,
           collection: item.collectionName,
-          settings: 'filterFormBlockSettings',
+          settings: 'blockSettings:filterForm',
         });
         if (item.template && item.mode === 'reference') {
           s['x-template-key'] = item.template.key;
@@ -25,7 +25,7 @@ export const FilterFormBlockInitializer = (props) => {
         return s;
       }}
       createBlockSchema={(options) => {
-        options = { ...options, settings: 'filterFormBlockSettings' };
+        options = { ...options, settings: 'blockSettings:filterForm' };
         return createFilterFormBlockSchema(options);
       }}
       items={items}

@@ -11,7 +11,7 @@ import {
 } from '../../../schema-settings';
 
 export const filterFormBlockSettings = new SchemaSettings({
-  name: 'filterFormBlockSettings',
+  name: 'blockSettings:filterForm',
   items: [
     {
       name: 'title',

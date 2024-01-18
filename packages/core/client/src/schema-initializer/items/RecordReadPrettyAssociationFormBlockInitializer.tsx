@@ -35,7 +35,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
               template: s,
-              settings: 'singleDataDetailsBlockSettings',
+              settings: 'blockSettings:singleDataDetails',
             });
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
@@ -54,7 +54,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
               action: 'get',
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
-              settings: 'singleDataDetailsBlockSettings',
+              settings: 'blockSettings:singleDataDetails',
             }),
           );
         }

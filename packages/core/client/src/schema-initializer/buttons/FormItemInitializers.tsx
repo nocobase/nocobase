@@ -83,7 +83,7 @@ export const formItemInitializers = new SchemaInitializer({
         'x-decorator': 'FormItem',
         // 'x-designer': 'Markdown.Void.Designer',
         'x-toolbar': 'BlockSchemaToolbar',
-        'x-settings': 'markdownBlockSettings',
+        'x-settings': 'blockSettings:markdown',
         'x-component': 'Markdown.Void',
         'x-component-props': {
           content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',
@@ -160,7 +160,7 @@ export const filterFormItemInitializers = new SchemaInitializer({
         'x-decorator': 'FormItem',
         // 'x-designer': 'Markdown.Void.Designer',
         'x-toolbar': 'BlockSchemaToolbar',
-        'x-settings': 'markdownBlockSettings',
+        'x-settings': 'blockSettings:markdown',
         'x-component': 'Markdown.Void',
         'x-component-props': {
           content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',

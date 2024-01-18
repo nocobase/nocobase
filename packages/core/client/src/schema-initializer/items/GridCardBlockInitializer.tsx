@@ -19,7 +19,7 @@ export const GridCardBlockInitializer = () => {
         const schema = createGridCardBlockSchema({
           collection: item.name,
           rowKey: collection.filterTargetKey || 'id',
-          settings: 'gridCardBlockSettings',
+          settings: 'blockSettings:gridCard',
         });
         insert(schema);
       }}

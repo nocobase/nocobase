@@ -31,7 +31,7 @@ export const RecordAssociationListBlockInitializer = () => {
               collection: field.target,
               resource,
               association: resource,
-              settings: 'listBlockSettings',
+              settings: 'blockSettings:list',
             }),
           );
         }

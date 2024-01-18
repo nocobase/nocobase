@@ -35,7 +35,7 @@ export const RecordAssociationFormBlockInitializer = () => {
               useParams: '{{ useParamsFromRecord }}',
               actionInitializers,
               template: s,
-              settings: 'creationFormBlockSettings',
+              settings: 'blockSettings:creationForm',
             });
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
@@ -54,7 +54,7 @@ export const RecordAssociationFormBlockInitializer = () => {
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
               actionInitializers,
-              settings: 'creationFormBlockSettings',
+              settings: 'blockSettings:creationForm',
             }),
           );
         }

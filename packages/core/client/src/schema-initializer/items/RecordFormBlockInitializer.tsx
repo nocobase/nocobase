@@ -30,7 +30,7 @@ export const RecordFormBlockInitializer = () => {
               useParams: '{{ useParamsFromRecord }}',
               actionInitializers: 'UpdateFormActionInitializers',
               template: s,
-              settings: 'editFormBlockSettings',
+              settings: 'blockSettings:editForm',
             });
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
@@ -48,7 +48,7 @@ export const RecordFormBlockInitializer = () => {
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
               actionInitializers: 'UpdateFormActionInitializers',
-              settings: 'editFormBlockSettings',
+              settings: 'blockSettings:editForm',
             }),
           );
         }

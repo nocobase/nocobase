@@ -13,7 +13,7 @@ export const FilterDesigner = () => {
 
   return (
     <GeneralSchemaDesigner
-      schemaSettings="filterFormBlockSettings"
+      schemaSettings="blockSettings:filterForm"
       template={template}
       title={title || name}
     ></GeneralSchemaDesigner>

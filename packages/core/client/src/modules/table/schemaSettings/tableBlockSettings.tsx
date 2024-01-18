@@ -18,7 +18,7 @@ import {
 } from '../../../schema-settings';
 
 export const tableBlockSettings = new SchemaSettings({
-  name: 'tableBlockSettings',
+  name: 'blockSettings:table',
   items: [
     {
       name: 'editBlockTitle',

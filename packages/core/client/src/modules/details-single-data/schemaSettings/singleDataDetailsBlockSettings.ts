@@ -4,7 +4,7 @@ import { useCollection } from '../../../collection-manager';
 import { SchemaSettingsBlockTitleItem, SchemaSettingsFormItemTemplate } from '../../../schema-settings';
 
 export const singleDataDetailsBlockSettings = new SchemaSettings({
-  name: 'singleDataDetailsBlockSettings',
+  name: 'blockSettings:singleDataDetails',
   items: [
     {
       name: 'title',

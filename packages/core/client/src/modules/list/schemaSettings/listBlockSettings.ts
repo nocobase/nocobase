@@ -13,7 +13,7 @@ import {
 } from '../../../schema-settings';
 
 export const listBlockSettings = new SchemaSettings({
-  name: 'listBlockSettings',
+  name: 'blockSettings:list',
   items: [
     {
       name: 'EditBlockTitle',

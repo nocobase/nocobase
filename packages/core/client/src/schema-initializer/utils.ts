@@ -1392,7 +1392,7 @@ export const createTableBlockSchema = (options) => {
       ...others,
     },
     'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': 'tableBlockSettings',
+    'x-settings': 'blockSettings:table',
     'x-component': 'CardItem',
     'x-filter-targets': [],
     properties: {
@@ -1464,7 +1464,7 @@ export const createCollapseBlockSchema = (options) => {
       name: 'filter-collapse',
     },
     'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': 'filterCollapseBlockSettings',
+    'x-settings': 'blockSettings:filterCollapse',
     'x-component': 'CardItem',
     'x-filter-targets': [],
     properties: {
@@ -1498,7 +1498,7 @@ export const createTableSelectorSchema = (options) => {
       ...others,
     },
     'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': 'dataSelectorBlockSettings',
+    'x-settings': 'blockSettings:dataSelector',
     'x-component': 'CardItem',
     properties: {
       actions: {

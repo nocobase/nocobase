@@ -17,7 +17,7 @@ export const FormBlockInitializer = () => {
           isCusomeizeCreate,
           template: templateSchema,
           collection: item.name,
-          settings: 'creationFormBlockSettings',
+          settings: 'blockSettings:creationForm',
         });
         if (item.template && item.mode === 'reference') {
           s['x-template-key'] = item.template.key;

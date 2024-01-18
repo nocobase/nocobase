@@ -31,7 +31,7 @@ export const RecordAssociationGridCardBlockInitializer = () => {
               collection: field.target,
               resource,
               association: resource,
-              settings: 'gridCardBlockSettings',
+              settings: 'blockSettings:gridCard',
             }),
           );
         }

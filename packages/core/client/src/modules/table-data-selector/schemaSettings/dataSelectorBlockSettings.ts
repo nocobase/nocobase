@@ -10,7 +10,7 @@ import { removeNullCondition, useDesignable } from '../../../schema-component';
 import { SchemaSettingsDataScope } from '../../../schema-settings';
 
 export const dataSelectorBlockSettings = new SchemaSettings({
-  name: 'dataSelectorBlockSettings',
+  name: 'blockSettings:dataSelector',
   items: [
     {
       name: 'SetTheDataScope',

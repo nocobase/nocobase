@@ -16,7 +16,7 @@ export const MarkdownBlockInitializer = () => {
       onClick={() => {
         insert({
           type: 'void',
-          'x-settings': 'markdownBlockSettings',
+          'x-settings': 'blockSettings:markdown',
           'x-decorator': 'CardItem',
           'x-decorator-props': {
             name: 'markdown',

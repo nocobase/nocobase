@@ -19,7 +19,7 @@ export const ListBlockInitializer = () => {
         const schema = createListBlockSchema({
           collection: item.name,
           rowKey: collection.filterTargetKey || 'id',
-          settings: 'listBlockSettings',
+          settings: 'blockSettings:list',
         });
         insert(schema);
       }}

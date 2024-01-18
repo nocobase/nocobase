@@ -10,7 +10,7 @@ import {
 } from '../../../schema-settings';
 
 export const filterCollapseBlockSettings = new SchemaSettings({
-  name: 'filterCollapseBlockSettings',
+  name: 'blockSettings:filterCollapse',
   items: [
     {
       name: 'EditBlockTitle',

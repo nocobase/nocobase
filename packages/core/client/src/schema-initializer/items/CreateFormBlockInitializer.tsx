@@ -28,7 +28,7 @@ export const CreateFormBlockInitializer = () => {
               association,
               collection: collection.name,
               template: s,
-              settings: 'creationFormBlockSettings',
+              settings: 'blockSettings:creationForm',
             });
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
@@ -43,7 +43,7 @@ export const CreateFormBlockInitializer = () => {
               actionInitializers: 'CreateFormActionInitializers',
               association,
               collection: collection.name,
-              settings: 'creationFormBlockSettings',
+              settings: 'blockSettings:creationForm',
             }),
           );
         }

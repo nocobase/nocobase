@@ -30,7 +30,7 @@ export const RecordAssociationDetailsBlockInitializer = () => {
               resource,
               association: resource,
               rowKey: collection.filterTargetKey || 'id',
-              settings: 'multiDataDetailsBlockSettings',
+              settings: 'blockSettings:multiDataDetails',
             }),
           );
         }

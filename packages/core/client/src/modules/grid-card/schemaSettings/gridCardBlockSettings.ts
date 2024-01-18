@@ -19,7 +19,7 @@ import { SchemaSettingsDataScope, SchemaSettingsTemplate } from '../../../schema
 import { columnCountMarks } from './utils';
 
 export const gridCardBlockSettings = new SchemaSettings({
-  name: 'gridCardBlockSettings',
+  name: 'blockSettings:gridCard',
   items: [
     {
       name: 'SetTheCountOfColumnsDisplayedInARow',

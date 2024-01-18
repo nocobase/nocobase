@@ -10,7 +10,7 @@ import {
 } from '../../../schema-settings';
 
 export const editFormBlockSettings = new SchemaSettings({
-  name: 'editFormBlockSettings',
+  name: 'blockSettings:editForm',
   items: [
     {
       name: 'title',
