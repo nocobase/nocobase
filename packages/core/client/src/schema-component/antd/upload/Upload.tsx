@@ -167,6 +167,7 @@ Upload.Attachment = connect((props: UploadProps) => {
                     if (info.file.status === 'done') {
                       onChange?.(toValue(list));
                     }
+                    onChange?.(toValue(list));
                     setFileList(list.map(toItem));
                     setSync(true);
                   } else {
