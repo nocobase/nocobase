@@ -11,7 +11,7 @@ import { useResourceActionContext } from '../collection-manager/ResourceActionPr
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
 import { useApp } from '../application';
-import { useCollectionNamespace } from '../block-provider';
+import { useCollectionNamespace } from '../block-provider/BlockProvider';
 
 export const ACLContext = createContext<any>({});
 
