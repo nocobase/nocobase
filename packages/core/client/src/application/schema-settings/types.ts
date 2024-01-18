@@ -27,7 +27,7 @@ interface SchemaSettingsItemCommon<T = {}> {
   /**
    * @default true
    */
-  checkChildrenLength?: boolean;
+  hideIfNoChildren?: boolean;
   componentProps?: Omit<T, 'children'>;
   useComponentProps?: () => Omit<T, 'children'>;
 }

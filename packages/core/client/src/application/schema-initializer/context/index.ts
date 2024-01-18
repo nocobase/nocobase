@@ -16,14 +16,7 @@ export const useSchemaInitializer = () => {
 export const SchemaInitializerItemContext = createContext<
   Omit<
     SchemaInitializerItemType,
-    | 'type'
-    | 'Component'
-    | 'component'
-    | 'useVisible'
-    | 'useChildren'
-    | 'checkChildrenLength'
-    | 'sort'
-    | 'componentProps'
+    'type' | 'Component' | 'component' | 'useVisible' | 'useChildren' | 'hideIfNoChildren' | 'sort' | 'componentProps'
   >
 >({} as any);
 SchemaInitializerItemContext.displayName = 'SchemaInitializerItemContext';

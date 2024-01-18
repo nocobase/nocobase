@@ -43,7 +43,7 @@ export const associationFilterFilterBlockInitializer = new SchemaInitializer({
       name: 'choicesFields',
       type: 'itemGroup',
       title: '{{t("Choices fields")}}',
-      checkChildrenLength: true,
+      hideIfNoChildren: true,
       useChildren() {
         const optionalList = useOptionalFieldList();
         const useProps = '{{useAssociationFilterBlockProps}}';

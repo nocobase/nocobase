@@ -70,7 +70,7 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = (props) => {
     type,
     Component,
     children,
-    checkChildrenLength = true,
+    hideIfNoChildren = true,
     componentProps,
   } = props as any;
   const useChildrenRes = useChildren();
@@ -89,7 +89,7 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = (props) => {
   if (!C) {
     return null;
   }
-  if (checkChildrenLength && Array.isArray(componentChildren) && componentChildren.length === 0) {
+  if (hideIfNoChildren && Array.isArray(componentChildren) && componentChildren.length === 0) {
     return null;
   }
 

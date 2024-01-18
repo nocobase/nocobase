@@ -131,7 +131,7 @@ export const addBlockButton: SchemaInitializer = new SchemaInitializer({
       type: 'itemGroup',
       name: 'dataBlocks',
       title: '{{t("Data blocks")}}',
-      checkChildrenLength: true,
+      hideIfNoChildren: true,
       useChildren() {
         const workflowPlugin = usePlugin(WorkflowPlugin);
         const current = useNodeContext();
