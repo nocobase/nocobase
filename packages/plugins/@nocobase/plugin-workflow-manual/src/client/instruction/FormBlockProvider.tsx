@@ -2,7 +2,9 @@ import { createForm } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import {
   BlockRequestContext,
+  CollectionNamespace,
   CollectionProvider,
+  DEFAULT_COLLECTION_NAMESPACE_NAME,
   FormActiveFieldsProvider,
   FormBlockContext,
   FormV2,
@@ -19,7 +21,9 @@ export function FormBlockProvider(props) {
   const fieldSchema = useFieldSchema();
   const field = useField();
   const formBlockRef = useRef(null);
-  const { getAssociationAppends } = useAssociationNames();
+  const namespace = props.namespace || DEFAULT_COLLECTION_NAMESPACE_NAME;
+
+  const { getAssociationAppends } = useAssociationNames(namespace);
   const { appends, updateAssociationValues } = getAssociationAppends();
   const [formKey] = Object.keys(fieldSchema.toJSON().properties ?? {});
   const values = userJob?.result?.[formKey];
@@ -50,7 +54,13 @@ export function FormBlockProvider(props) {
     };
   }, [values]);
   const api = useAPIClient();
-  const resource = api.resource(props.collection);
+  const headers = useMemo(() => {
+    if (namespace !== DEFAULT_COLLECTION_NAMESPACE_NAME) {
+      return { 'x-connection': namespace };
+    }
+  }, [namespace]);
+
+  const resource = api.resource(props.collection, undefined, headers);
   const __parent = useContext(BlockRequestContext);
 
   const formBlockValue = useMemo(() => {
@@ -65,21 +75,23 @@ export function FormBlockProvider(props) {
   }, [field, form, params, service, updateAssociationValues]);
 
   return !userJob.status || values ? (
-    <CollectionProvider collection={props.collection}>
-      <RecordProvider record={values} parent={false}>
-        <FormActiveFieldsProvider name="form">
-          <BlockRequestContext.Provider value={{ block: 'form', props, field, service, resource, __parent }}>
-            <FormBlockContext.Provider value={formBlockValue}>
-              <Component {...field.componentProps}>
-                <FormV2.Templates style={{ marginBottom: 18 }} form={form} />
-                <div ref={formBlockRef}>
-                  <RecursionField schema={fieldSchema} onlyRenderProperties />
-                </div>
-              </Component>
-            </FormBlockContext.Provider>
-          </BlockRequestContext.Provider>
-        </FormActiveFieldsProvider>
-      </RecordProvider>
-    </CollectionProvider>
+    <CollectionNamespace.Provider value={namespace}>
+      <CollectionProvider collection={props.collection}>
+        <RecordProvider record={values} parent={false}>
+          <FormActiveFieldsProvider name="form">
+            <BlockRequestContext.Provider value={{ block: 'form', props, field, service, resource, __parent }}>
+              <FormBlockContext.Provider value={formBlockValue}>
+                <Component {...field.componentProps}>
+                  <FormV2.Templates style={{ marginBottom: 18 }} form={form} />
+                  <div ref={formBlockRef}>
+                    <RecursionField schema={fieldSchema} onlyRenderProperties />
+                  </div>
+                </Component>
+              </FormBlockContext.Provider>
+            </BlockRequestContext.Provider>
+          </FormActiveFieldsProvider>
+        </RecordProvider>
+      </CollectionProvider>
+    </CollectionNamespace.Provider>
   ) : null;
 }

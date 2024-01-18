@@ -65,7 +65,7 @@ function InternalFormBlockInitializer({ schema, ...others }) {
 export function FormBlockInitializer() {
   const itemConfig = useSchemaInitializerItem();
   return (
-    <CollectionProvider collection={itemConfig.schema?.collection}>
+    <CollectionProvider namespace={itemConfig.schema?.namespace} collection={itemConfig.schema?.collection}>
       <InternalFormBlockInitializer {...itemConfig} />
     </CollectionProvider>
   );

@@ -41,9 +41,10 @@ export default {
   title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
   config: {
     useInitializer({ allCollections }) {
-      const items = useMemo(
+      const childItems = useMemo(
         () =>
           allCollections.map(({ nsName, nsTitle, collections }) => ({
+            key: nsName,
             name: nsName,
             label: nsTitle,
             type: 'subMenu',
@@ -63,8 +64,6 @@ export default {
           })),
         [allCollections],
       );
-      const getMenuItems = useGetSchemaInitializerMenuItems();
-      const childItems = useMemo(() => getMenuItems(items, 'createRecordForm'), [items]);
       const [openMenuKey, setOpenMenuKey] = useState('');
       const searchedChildren = useMenuSearch(childItems, openMenuKey);
 
