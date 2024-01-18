@@ -3,7 +3,7 @@ import { useSessionStorageState } from 'ahooks';
 import { App, ConfigProvider, Layout } from 'antd';
 import { createGlobalStyle } from 'antd-style';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Outlet, useMatch, useNavigate, useParams } from 'react-router-dom';
+import { Link, Outlet, useMatch, useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -68,6 +68,7 @@ const MenuEditor = (props) => {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
   const params = useParams<any>();
+  const location = useLocation();
   const isMatchAdmin = useMatch('/admin');
   const isMatchAdminName = useMatch('/admin/:name');
   const defaultSelectedUid = params.name;
@@ -130,8 +131,8 @@ const MenuEditor = (props) => {
       const pageType =
         properties &&
         Object.values(properties).find((item) => item['x-uid'] === params.name && item['x-component'] === 'Menu.Item');
-      const isUIPage = properties && Object.values(properties).some((v) => v['x-uid'] === params.name);
-      if (pageType || !isUIPage) {
+      const isSettingPage = location?.pathname.includes('/settings');
+      if (pageType || isSettingPage) {
         sideMenuRef.current.style.display = 'none';
       } else {
         sideMenuRef.current.style.display = 'block';
