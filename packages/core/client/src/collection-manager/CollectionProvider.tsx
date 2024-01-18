@@ -4,7 +4,7 @@ import { CollectionOptions } from './types';
 import React from 'react';
 import { DeletedPlaceholder } from '../application/collection/DeletedPlaceholder';
 import { CollectionExtendsProvider } from './CollectionManagerProvider';
-import { useCollectionNamespace } from '../block-provider';
+import { useCollectionNamespace } from '../block-provider/BlockProvider';
 
 function getCollectionName(name?: string | CollectionOptions): string {
   if (!name) return undefined;
