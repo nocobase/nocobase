@@ -419,7 +419,7 @@ test.describe('table column & sub-table in edit form', () => {
       ],
       variableValue: ['Current user', 'Nickname'],
       expectVariableValue: async () => {
-        await page.getByRole('button', { name: 'plus' }).click();
+        await page.getByRole('button', { name: 'Add new' }).click();
         await expect(
           page
             .getByLabel('block-item-CollectionField-general-form-general.singleLineText-singleLineText')

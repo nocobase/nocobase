@@ -115,7 +115,7 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
       }),
     {
       defaultParams: [collection, query],
-      // Wait until CharrFilterProvider is rendered and check the status of the filter form
+      // Wait until ChartFilterProvider is rendered and check the status of the filter form
       // since the filter parameters should be applied if the filter block is enabled
       ready: ready && (!enabled || !!form),
     },

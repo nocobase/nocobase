@@ -146,6 +146,7 @@ export default class Processor {
     if (!(job instanceof Model)) {
       job.upstreamId = prevJob instanceof Model ? prevJob.get('id') : null;
       job.nodeId = node.id;
+      job.nodeKey = node.key;
     }
     const savedJob = await this.saveJob(job);
 
@@ -229,9 +230,8 @@ export default class Processor {
     }
     this.jobsMap.set(job.id, job);
 
-    const node = this.nodesMap.get(job.nodeId);
-    this.jobsMapByNodeKey[node.key] = job.result;
     this.lastSavedJob = job;
+    this.jobsMapByNodeKey[job.nodeKey] = job.result;
 
     return job;
   }

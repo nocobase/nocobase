@@ -1,21 +1,44 @@
-import { PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { exchangeArrayState } from '@formily/core/esm/shared/internals';
-import { observer } from '@formily/react';
+import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { isArr } from '@formily/shared';
 import { Button } from 'antd';
-import React from 'react';
+import { omit, unionBy, uniqBy } from 'lodash';
+import React, { useState, useMemo, useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FormActiveFieldsProvider } from '../../../block-provider';
 import { FlagProvider } from '../../../flag-provider';
 import { Table } from '../table-v2/Table';
-import { useAssociationFieldContext } from './hooks';
+import { useAssociationFieldContext, useFieldNames } from './hooks';
+import { ActionContextProvider } from '../action';
+import {
+  FormProvider,
+  RecordPickerProvider,
+  SchemaComponentOptions,
+  useActionContext,
+  RecordPickerContext,
+} from '../..';
+import { getLabelFormatValue, useLabelUiSchema } from './util';
+import { CollectionProvider } from '../../../collection-manager';
+import { TableSelectorParamsProvider } from '../../../block-provider/TableSelectorProvider';
+import { useCompile } from '../../hooks';
+import { useTableSelectorProps } from './InternalPicker';
+import { useCreateActionProps } from '../../../block-provider/hooks';
 
 export const SubTable: any = observer(
   (props: any) => {
-    const { field } = useAssociationFieldContext<ArrayField>();
-    // useSubTableSpecialCase({ field });
+    const { openSize } = props;
+    const { field, options: collectionField } = useAssociationFieldContext<ArrayField>();
+    const { t } = useTranslation();
+    const [visibleSelector, setVisibleSelector] = useState(false);
+    const [selectedRows, setSelectedRows] = useState([]);
+    const fieldNames = useFieldNames(props);
+    const fieldSchema = useFieldSchema();
+    const compile = useCompile();
+    const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
+
     const move = (fromIndex: number, toIndex: number) => {
       if (toIndex === undefined) return;
       if (!isArr(field.value)) return;
@@ -32,6 +55,55 @@ export const SubTable: any = observer(
       });
     };
     field.move = move;
+
+    const options = useMemo(() => {
+      if (field.value && Object.keys(field.value).length > 0) {
+        const opts = (Array.isArray(field.value) ? field.value : field.value ? [field.value] : [])
+          .filter(Boolean)
+          .map((option) => {
+            const label = option?.[fieldNames.label];
+            return {
+              ...option,
+              [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
+            };
+          });
+        return opts;
+      }
+      return [];
+    }, [field.value, fieldNames?.label]);
+
+    const pickerProps = {
+      size: 'small',
+      fieldNames: field.componentProps.fieldNames,
+      multiple: true,
+      association: {
+        target: collectionField?.target,
+      },
+      options,
+      onChange: props?.onChange,
+      selectedRows,
+      setSelectedRows,
+      collectionField,
+    };
+    const usePickActionProps = () => {
+      const { setVisible } = useActionContext();
+      const { selectedRows, options, collectionField } = useContext(RecordPickerContext);
+      return {
+        onClick() {
+          const selectData = unionBy(selectedRows, options, collectionField?.targetKey || 'id');
+          const data = field.value || [];
+          field.value = uniqBy(data.concat(selectData), collectionField?.targetKey || 'id');
+          field.onInput(field.value);
+          setVisible(false);
+        },
+      };
+    };
+    const getFilter = () => {
+      const targetKey = collectionField?.targetKey || 'id';
+      const list = options.map((option) => option[targetKey]).filter(Boolean);
+      const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
+      return filter;
+    };
     return (
       <div
         className={css`
@@ -72,6 +144,9 @@ export const SubTable: any = observer(
                 .ant-formily-editable {
                   vertical-align: sub;
                 }
+                .ant-table-footer {
+                  display: flex;
+                }
               `}
               bordered
               size={'small'}
@@ -83,27 +158,80 @@ export const SubTable: any = observer(
               rowSelection={{ type: 'none', hideSelectAll: true }}
               footer={() =>
                 field.editable && (
-                  <Button
-                    type={'text'}
-                    block
-                    className={css`
-                      display: block;
-                    `}
-                    onClick={() => {
-                      field.value = field.value || [];
-                      field.value.push({});
-                      field.onInput(field.value);
-                    }}
-                    icon={<PlusOutlined />}
-                  >
-                    {/* {t('Add new')} */}
-                  </Button>
+                  <>
+                    {field.componentProps?.allowAddnew !== false && (
+                      <Button
+                        type={'text'}
+                        block
+                        className={css`
+                          display: block;
+                          border-radius: 0px;
+                          border-right: 1px solid rgba(0, 0, 0, 0.06);
+                        `}
+                        onClick={() => {
+                          field.value = field.value || [];
+                          field.value.push({});
+                          field.onInput(field.value);
+                        }}
+                      >
+                        {t('Add new')}
+                      </Button>
+                    )}
+                    {field.componentProps?.allowSelectExistingRecord && (
+                      <Button
+                        type={'text'}
+                        block
+                        className={css`
+                          display: block;
+                          border-radius: 0px;
+                        `}
+                        onClick={() => {
+                          setVisibleSelector(true);
+                        }}
+                      >
+                        {t('Select')}
+                      </Button>
+                    )}
+                  </>
                 )
               }
               isSubTable={true}
             />
           </FormActiveFieldsProvider>
         </FlagProvider>
+        <ActionContextProvider
+          value={{
+            openSize,
+            openMode: 'drawer',
+            visible: visibleSelector,
+            setVisible: setVisibleSelector,
+          }}
+        >
+          <RecordPickerProvider {...pickerProps}>
+            <CollectionProvider name={collectionField?.target}>
+              <FormProvider>
+                <TableSelectorParamsProvider params={{ filter: getFilter() }}>
+                  <SchemaComponentOptions
+                    scope={{
+                      usePickActionProps,
+                      useTableSelectorProps,
+                      useCreateActionProps,
+                    }}
+                  >
+                    <RecursionField
+                      onlyRenderProperties
+                      basePath={field.address}
+                      schema={fieldSchema.parent}
+                      filterProperties={(s) => {
+                        return s['x-component'] === 'AssociationField.Selector';
+                      }}
+                    />
+                  </SchemaComponentOptions>
+                </TableSelectorParamsProvider>
+              </FormProvider>
+            </CollectionProvider>
+          </RecordPickerProvider>
+        </ActionContextProvider>
       </div>
     );
   },

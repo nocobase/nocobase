@@ -6,17 +6,17 @@ import { getSubAppName } from '@nocobase/sdk';
 import { Authenticator } from '@nocobase/plugin-auth/client';
 
 export const SigninPage = (props: { authenticator: Authenticator }) => {
-  const location = useLocation();
-
   const authenticator = props.authenticator;
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const redirect = params.get('redirect');
 
   const app = getSubAppName() || 'main';
   const login = async () => {
-    window.location.replace(`/api/cas:login?authenticator=${authenticator.name}&__appName=${app}`);
+    window.location.replace(`/api/cas:login?authenticator=${authenticator.name}&__appName=${app}&redirect=${redirect}`);
   };
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
     const name = params.get('authenticator');
     const error = params.get('error');
     if (name !== authenticator.name) {

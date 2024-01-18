@@ -36,7 +36,7 @@ export class CustomRequestPlugin extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `ui.${this.name}`,
-      actions: ['customRequests:*'],
+      actions: ['customRequests:*', 'roles:list'],
     });
 
     this.app.acl.allow('customRequests', ['send', 'listByCurrentRole'], 'loggedIn');

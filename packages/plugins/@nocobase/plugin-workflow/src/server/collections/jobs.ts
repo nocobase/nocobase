@@ -17,6 +17,10 @@ export default {
       target: 'flow_nodes',
     },
     {
+      type: 'string',
+      name: 'nodeKey',
+    },
+    {
       type: 'belongsTo',
       name: 'upstream',
       target: 'jobs',
