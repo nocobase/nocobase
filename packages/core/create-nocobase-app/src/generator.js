@@ -134,7 +134,7 @@ class AppGenerator extends Generator {
         APP_ENV: 'development',
         DB_DIALECT: dbDialect,
         APP_KEY: crypto.randomBytes(256).toString('base64'),
-        PLUGIN_PACKAGE_PREFIX: `@nocobase/plugin-,@nocobase/preset-,@${this.context.name}/plugin-`,
+        // PLUGIN_PACKAGE_PREFIX: `@nocobase/plugin-,@nocobase/preset-,@${this.context.name}/plugin-`,
         ...env,
       },
     };

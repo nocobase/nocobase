@@ -65,7 +65,7 @@ export const pageTabSettings = new SchemaSettings({
         const { t } = useTranslation();
         const { schema } = useSchemaToolbar();
         return {
-          title: 'Delete',
+          title: t('Delete'),
           eventKey: 'remove',
           onClick() {
             modal.confirm({

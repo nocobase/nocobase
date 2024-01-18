@@ -191,6 +191,7 @@
   "Insert if not exists, or update": "Insert if not exists, or update",
   "Determine whether a record exists by the following fields": "Determine whether a record exists by the following fields",
   "Update": "Update",
+  "Update record": "Update record",
   "View": "View",
   "View record": "View record",
   "Refresh": "Refresh",

@@ -271,6 +271,7 @@ exports.initEnv = function initEnv() {
     LOCAL_STORAGE_DEST: 'storage/uploads',
     PLUGIN_STORAGE_PATH: resolve(process.cwd(), 'storage/plugins'),
     MFSU_AD: 'none',
+    WS_PATH: '/ws',
     NODE_MODULES_PATH: resolve(process.cwd(), 'node_modules'),
     PM2_HOME: resolve(process.cwd(), './storage/.pm2'),
     PLUGIN_PACKAGE_PREFIX: '@nocobase/plugin-,@nocobase/plugin-sample-,@nocobase/preset-',

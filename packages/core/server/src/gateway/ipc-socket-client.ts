@@ -1,7 +1,7 @@
-import net from 'net';
-import * as events from 'events';
-import xpipe from 'xpipe';
 import { Logger, createConsoleLogger } from '@nocobase/logger';
+import * as events from 'events';
+import net from 'net';
+import xpipe from 'xpipe';
 
 export const writeJSON = (socket: net.Socket, data: object) => {
   socket.write(JSON.stringify(data) + '\n', 'utf8');
@@ -47,6 +47,8 @@ export class IPCSocketClient extends events.EventEmitter {
 
   async handleServerMessage({ reqId, type, payload }) {
     switch (type) {
+      case 'not_found':
+        break;
       case 'error':
         this.logger.error({ reqId, message: `${payload.message}|${payload.stack}` });
         break;

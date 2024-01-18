@@ -154,7 +154,7 @@ describe('gateway', () => {
     let port;
     let messages: Array<string>;
     const connectClient = (port) => {
-      wsClient = new ws(`ws://localhost:${port}/ws`);
+      wsClient = new ws(`ws://localhost:${port}${process.env.WS_PATH}`);
       wsClient.on('message', (data) => {
         const message = data.toString();
         messages.push(message);

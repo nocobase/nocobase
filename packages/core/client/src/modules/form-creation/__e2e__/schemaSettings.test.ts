@@ -597,7 +597,10 @@ test.describe('creation form block schema settings', () => {
       await page.mouse.move(300, 0);
 
       // 当新增一行时，应该显示默认值
-      await page.getByRole('button', { name: 'plus' }).click();
+      await page
+        .getByTestId('drawer-Action.Container-general-Add record')
+        .getByRole('button', { name: 'Add new' })
+        .click();
       await expect(
         page
           .getByRole('cell', { name: 'block-item-CollectionField-users-form-users.nickname-Nickname' })

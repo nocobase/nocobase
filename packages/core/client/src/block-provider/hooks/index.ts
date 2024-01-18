@@ -184,6 +184,7 @@ export const useCreateActionProps = () => {
   const compile = useCompile();
   const { modal } = App.useApp();
   const { t } = useTranslation();
+  const { updateAssociationValues } = useFormBlockContext();
   const collectValues = useCollectValuesToSubmit();
   const action = actionField.componentProps.saveMode || 'create';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
@@ -205,6 +206,7 @@ export const useCreateActionProps = () => {
           triggerWorkflows: triggerWorkflows?.length
             ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
             : undefined,
+          updateAssociationValues,
         });
         setVisible?.(false);
         actionField.data.loading = false;

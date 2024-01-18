@@ -51,20 +51,21 @@ export const postProcess = async (ctx: Context, next: Next) => {
     fieldMap: { [source: string]: { type?: string } };
   };
   ctx.body = data.map((record) => {
-    const result = {};
     Object.entries(record).forEach(([key, value]) => {
+      if (!value) {
+        return;
+      }
       const { type } = fieldMap[key] || {};
       switch (type) {
         case 'bigInt':
         case 'integer':
         case 'float':
         case 'double':
-          value = Number(value);
+          record[key] = Number(value);
           break;
       }
-      result[key] = value;
     });
-    return result;
+    return record;
   });
   await next();
 };
