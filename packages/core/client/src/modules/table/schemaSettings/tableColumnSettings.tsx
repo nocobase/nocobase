@@ -145,8 +145,8 @@ export const tableColumnSettings = new SchemaSettings({
           {
             name: 'setDefaultValue',
             useVisible() {
-              const field = useField();
-              return field.editable;
+              const { fieldSchema } = useColumnSchema();
+              return !fieldSchema['x-read-pretty'];
             },
             Component: SchemaSettingsDefaultValue,
             useComponentProps() {
