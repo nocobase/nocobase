@@ -17,6 +17,7 @@
     "build": "nocobase build",
     "test": "nocobase test",
     "e2e": "nocobase e2e",
+    "tar": "nocobase tar",
     "postinstall": "nocobase postinstall",
     "lint": "eslint ."
   },

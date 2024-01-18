@@ -47,7 +47,6 @@ export class PresetNocoBase extends Plugin {
   localPlugins = [
     'multi-app-manager>=0.7.0-alpha.1',
     'audit-logs>=0.7.1-alpha.4',
-    'sample-hello>=0.8.0-alpha.4',
     'map>=0.8.1-alpha.3',
     'saml>=0.8.1-alpha.3',
     'snapshot-field>=0.8.1-alpha.3',

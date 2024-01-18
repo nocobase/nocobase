@@ -91,6 +91,7 @@ export default class extends Instruction {
       status: JOB_STATUS.PENDING,
       result: null,
       nodeId: node.id,
+      nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
     job.node = node;

@@ -6,6 +6,7 @@ import dbSync from './db-sync';
 import destroy from './destroy';
 import install from './install';
 import pm from './pm';
+import refresh from './refresh';
 import restart from './restart';
 import start from './start';
 import stop from './stop';
@@ -25,6 +26,7 @@ export function registerCli(app: Application) {
   stop(app);
   destroy(app);
   start(app);
+  refresh(app);
 
   // development only with @nocobase/cli
   app.command('build').argument('[packages...]');

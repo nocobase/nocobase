@@ -3,7 +3,7 @@ const { run, isDev, isPackageValid, generatePlaywrightPath } = require('../util'
 const { resolve } = require('path');
 const { existsSync } = require('fs');
 const { readFile, writeFile } = require('fs').promises;
-const { createStoragePluginsSymlink } = require('@nocobase/utils/plugin-symlink');
+const { createStoragePluginsSymlink, createDevPluginsSymlink } = require('@nocobase/utils/plugin-symlink');
 
 /**
  * @param {Command} cli
@@ -13,12 +13,14 @@ module.exports = (cli) => {
   cli
     .command('postinstall')
     .allowUnknownOption()
-    .action(async () => {
+    .option('--skip-umi')
+    .action(async (options) => {
       generatePlaywrightPath(true);
       await createStoragePluginsSymlink();
       if (!isDev()) {
         return;
       }
+      await createDevPluginsSymlink();
       const cwd = process.cwd();
       if (!existsSync(resolve(cwd, '.env')) && existsSync(resolve(cwd, '.env.example'))) {
         const content = await readFile(resolve(cwd, '.env.example'), 'utf-8');
@@ -31,11 +33,13 @@ module.exports = (cli) => {
       if (!isPackageValid('umi')) {
         return;
       }
-      run('umi', ['generate', 'tmp'], {
-        stdio: 'pipe',
-        env: {
-          APP_ROOT: `${APP_PACKAGE_ROOT}/client`,
-        },
-      });
+      if (!options.skipUmi) {
+        run('umi', ['generate', 'tmp'], {
+          stdio: 'pipe',
+          env: {
+            APP_ROOT: `${APP_PACKAGE_ROOT}/client`,
+          },
+        });
+      }
     });
 };

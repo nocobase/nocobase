@@ -1,10 +1,10 @@
-import net from 'net';
+import { randomUUID } from 'crypto';
 import fs from 'fs';
+import net from 'net';
 import path from 'path';
 import xpipe from 'xpipe';
 import { AppSupervisor } from '../app-supervisor';
 import { writeJSON } from './ipc-socket-client';
-import { randomUUID } from 'crypto';
 
 export class IPCSocketServer {
   socketServer: net.Server;
@@ -45,10 +45,10 @@ export class IPCSocketServer {
           const dataObj = JSON.parse(message);
 
           IPCSocketServer.handleClientMessage({ reqId, ...dataObj })
-            .then(() => {
+            .then((result) => {
               writeJSON(c, {
                 reqId,
-                type: 'success',
+                type: result === false ? 'not_found' : 'success',
               });
             })
             .catch((err) => {
@@ -73,14 +73,33 @@ export class IPCSocketServer {
   }
 
   static async handleClientMessage({ reqId, type, payload }) {
-    console.log(`cli received message ${type}`);
+    if (type === 'appReady') {
+      const status = await new Promise<string>((resolve, reject) => {
+        let status: string;
+        const max = 300;
+        let count = 0;
+        const timer = setInterval(async () => {
+          status = AppSupervisor.getInstance().getAppStatus('main');
+          if (status === 'running') {
+            clearInterval(timer);
+            resolve(status);
+          }
+          if (count++ > max) {
+            reject('error');
+          }
+        }, 500);
+      });
+      console.log('status', status);
+      return status;
+    }
+    // console.log(`cli received message ${type}`);
 
     if (type === 'passCliArgv') {
       const argv = payload.argv;
 
       const mainApp = await AppSupervisor.getInstance().getApp('main');
       if (!mainApp.cli.hasCommand(argv[2])) {
-        console.log('passCliArgv', argv[2]);
+        // console.log('passCliArgv', argv[2]);
         await mainApp.pm.loadCommands();
       }
       const cli = mainApp.cli;
@@ -89,7 +108,8 @@ export class IPCSocketServer {
           from: 'node',
         })
       ) {
-        throw new Error('Not handle by ipc server');
+        mainApp.log.debug('Not handle by ipc server');
+        return false;
       }
 
       return mainApp.runAsCLI(argv, {

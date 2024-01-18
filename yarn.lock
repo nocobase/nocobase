@@ -8242,11 +8242,6 @@ async-mutex@^0.3.2:
   dependencies:
     tslib "^2.3.1"
 
-async-ratelimiter@^1.3.0:
-  version "1.3.13"
-  resolved "https://registry.npmmirror.com/async-ratelimiter/-/async-ratelimiter-1.3.13.tgz#51c0056752751b7664ea5d9b3cfe20b8d081538f"
-  integrity sha512-eZDuN5XrlFwJdK0xxVS03Xj+LW9DkBi34RTVUhnbHoO+jFyI8I026y6x0KeRqTKay90wzl7eUC/HuKPm0U2ZFA==
-
 async-settle@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmmirror.com/async-settle/-/async-settle-1.0.0.tgz#1d0a914bb02575bec8a8f3a74e5080f72b2c0c6b"
@@ -11853,22 +11848,6 @@ ecdsa-sig-formatter@1.0.11:
   integrity sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ==
   dependencies:
     safe-buffer "^5.0.1"
-
-echarts-for-react@^3.0.2:
-  version "3.0.2"
-  resolved "https://registry.npmmirror.com/echarts-for-react/-/echarts-for-react-3.0.2.tgz#ac5859157048a1066d4553e34b328abb24f2b7c1"
-  integrity sha512-DRwIiTzx8JfwPOVgGttDytBqdp5VzCSyMRIxubgU/g2n9y3VLUmF2FK7Icmg/sNVkv4+rktmrLN9w22U2yy3fA==
-  dependencies:
-    fast-deep-equal "^3.1.3"
-    size-sensor "^1.0.1"
-
-echarts@^5.4.3:
-  version "5.4.3"
-  resolved "https://registry.npmmirror.com/echarts/-/echarts-5.4.3.tgz#f5522ef24419164903eedcfd2b506c6fc91fb20c"
-  integrity sha512-mYKxLxhzy6zyTi/FaEbJMOZU1ULGEQHaeIeuMR5L+JnJTpz+YR03mnnpBhbR4+UYJAgiXgpyTVLffPAjOTLkZA==
-  dependencies:
-    tslib "2.3.0"
-    zrender "5.4.4"
 
 editions@^2.2.0:
   version "2.3.1"
@@ -16302,15 +16281,6 @@ koa-convert@^2.0.0:
     co "^4.6.0"
     koa-compose "^4.1.0"
 
-koa-ratelimit@^5.0.1:
-  version "5.1.0"
-  resolved "https://registry.npmmirror.com/koa-ratelimit/-/koa-ratelimit-5.1.0.tgz#4686e10a4ffd3c0b3b9b9416d4634b706a1d4c52"
-  integrity sha512-bXz1UkF9l0PTaYfj5bDCX85NFWA1W3/miBMpZjS+BEKajNPHQaqgaMDwZMM2RdbLGTYRi+mHIOjNTUjTdWjhKA==
-  dependencies:
-    async-ratelimiter "^1.3.0"
-    debug "^4.1.1"
-    ms "^2.1.2"
-
 koa-send@^5.0.0, koa-send@^5.0.1:
   version "5.0.1"
   resolved "https://registry.npmmirror.com/koa-send/-/koa-send-5.0.1.tgz#39dceebfafb395d0d60beaffba3a70b4f543fe79"
@@ -18237,7 +18207,7 @@ ms@2.1.2:
   resolved "https://registry.npmmirror.com/ms/-/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
   integrity sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==
 
-ms@^2.0.0, ms@^2.1.1, ms@^2.1.2:
+ms@^2.0.0, ms@^2.1.1:
   version "2.1.3"
   resolved "https://registry.npmmirror.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
@@ -18599,11 +18569,6 @@ node-xlsx@^0.16.1:
     "@babel/runtime" "^7.14.6"
     buffer-from "^1.1.1"
     xlsx "^0.17.0"
-
-nodejs-snowflake@2.0.1:
-  version "2.0.1"
-  resolved "https://registry.npmmirror.com/nodejs-snowflake/-/nodejs-snowflake-2.0.1.tgz#d82fb1c7398404c5ac984d6f1cdfb1b5aef7bd80"
-  integrity sha512-zMfDorNNsJm1OWWx/OUUGVT0bQ3TwC2ti4URD8UjnpffVLtLpy3eBDIaV5TnLs91YrRhwBD6L0StqU6YtnZt9A==
 
 nodemailer-mock@^1.5.11:
   version "1.5.12"
@@ -24590,11 +24555,6 @@ tslib@1.9.3:
   resolved "https://registry.npmmirror.com/tslib/-/tslib-1.9.3.tgz#d7e4dd79245d85428c4d7e4822a79917954ca286"
   integrity sha512-4krF8scpejhaOgqzBEcGM7yDIEfi0/8+8zDRZhNZZ2kjmHJ4hv3zCbQWxoJGz1iw5U0Jl0nma13xzHXcncMavQ==
 
-tslib@2.3.0:
-  version "2.3.0"
-  resolved "https://registry.npmmirror.com/tslib/-/tslib-2.3.0.tgz#803b8cdab3e12ba581a4ca41c8839bbb0dacb09e"
-  integrity sha512-N82ooyxVNm6h1riLCoyS9e3fuJ3AMG2zIZs2Gd1ATcSFjSA23Q0fzjjZeh0jbJvWVDZ0cJT8yaNNaaXHzueNjg==
-
 tslib@^1.10.0, tslib@^1.11.1, tslib@^1.8.1, tslib@^1.9.0:
   version "1.14.1"
   resolved "https://registry.npmmirror.com/tslib/-/tslib-1.14.1.tgz#cf2d38bdc34a134bcaf1091c41f6619e2f672d00"
@@ -26385,13 +26345,6 @@ zip-stream@^4.1.0:
     archiver-utils "^3.0.4"
     compress-commons "^4.1.2"
     readable-stream "^3.6.0"
-
-zrender@5.4.4:
-  version "5.4.4"
-  resolved "https://registry.npmmirror.com/zrender/-/zrender-5.4.4.tgz#8854f1d95ecc82cf8912f5a11f86657cb8c9e261"
-  integrity sha512-0VxCNJ7AGOMCWeHVyTrGzUgrK4asT4ml9PEkeGirAkKNYXYzoPJCLvmyfdoOXcjTHPs10OZVMfD1Rwg16AZyYw==
-  dependencies:
-    tslib "2.3.0"
 
 zustand@^4.4.1:
   version "4.4.7"

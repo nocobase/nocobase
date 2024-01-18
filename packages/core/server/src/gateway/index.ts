@@ -313,7 +313,7 @@ export class Gateway extends EventEmitter {
         const response: any = await ipcClient.write({ type: 'passCliArgv', payload: { argv: process.argv } });
         ipcClient.close();
 
-        if (response.type !== 'error' || response.payload.message !== 'Not handle by ipc server') {
+        if (!['error', 'not_found'].includes(response.type)) {
           return;
         }
       }
@@ -332,11 +332,16 @@ export class Gateway extends EventEmitter {
       })
       .then(async () => {
         if (!(await mainApp.isStarted())) {
-          await mainApp.stop();
+          await mainApp.stop({ logging: false });
         }
       })
-      .catch((e) => {
-        console.error(e);
+      .catch(async (e) => {
+        if (e.code !== 'commander.helpDisplayed') {
+          mainApp.log.error(e);
+        }
+        if (!(await mainApp.isStarted())) {
+          await mainApp.stop({ logging: false });
+        }
       });
   }
 
@@ -430,5 +435,14 @@ export class Gateway extends EventEmitter {
   close() {
     this.server?.close();
     this.wsServer?.close();
+  }
+
+  static async getIPCSocketClient() {
+    const socketPath = resolve(process.cwd(), process.env.SOCKET_PATH || 'storage/gateway.sock');
+    try {
+      return await IPCSocketClient.getConnection(socketPath);
+    } catch (error) {
+      return false;
+    }
   }
 }
