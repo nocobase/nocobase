@@ -101,8 +101,8 @@ export default {
           })),
         [allCollections],
       );
-      const [openMenuKey, setOpenMenuKey] = useState('');
-      const searchedChildren = useMenuSearch(childItems, openMenuKey);
+      const [openMenuKeys, setOpenMenuKeys] = useState([]);
+      const searchedChildren = useMenuSearch(childItems, openMenuKeys);
       return {
         name: 'updateRecordForm',
         key: 'updateRecordForm',
@@ -110,11 +110,7 @@ export default {
         title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
         componentProps: {
           onOpenChange(keys) {
-            if (keys.length === 2) {
-              setOpenMenuKey(keys[1]);
-            } else if (keys.length === 0) {
-              setOpenMenuKey('');
-            }
+            setOpenMenuKeys(keys);
           },
         },
         children: searchedChildren,

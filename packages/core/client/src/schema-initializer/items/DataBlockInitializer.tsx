@@ -109,19 +109,27 @@ const LoadingItem = ({ loadMore, maxHeight }) => {
   );
 };
 
-export function useMenuSearch(data: any, openKey: string, showType?: boolean) {
+export function useMenuSearch(data: any[], openKeys: string[], showType?: boolean) {
   const [searchValue, setSearchValue] = useState('');
   const [count, setCount] = useState(STEP);
 
+  const isMuliSource = useMemo(() => data.length > 1, [data]);
+  const openKey = useMemo(() => {
+    return isMuliSource ? openKeys?.[1] : openKeys?.length > 0;
+  }, [openKeys]);
+
   useEffect(() => {
-    if (openKey) {
+    if (!openKey) {
       setSearchValue('');
     }
   }, [openKey]);
 
   const currentItems = useMemo(() => {
-    if (!openKey) return [];
-    return data.find((item) => (item.key || item.name) === openKey)?.children || [];
+    if (isMuliSource) {
+      if (!openKey) return [];
+      return data.find((item) => (item.key || item.name) === openKey)?.children || [];
+    }
+    return data[0].children || [];
   }, [data, openKey]);
 
   // 根据搜索的值进行处理
@@ -215,6 +223,7 @@ export function useMenuSearch(data: any, openKey: string, showType?: boolean) {
   }, [limitedSearchedItems, searchValue, shouldLoadMore, showType]);
 
   const res = useMemo(() => {
+    if (!isMuliSource) return resultItems;
     return data.map((item) => {
       if (openKey && item.key === openKey) {
         return {
@@ -288,11 +297,10 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     [createBlockSchema, getTemplateSchemaByMode, insert, isCusomeizeCreate, onCreateBlockSchema, templateWrap],
   );
   const items = useCollectionDataSourceItems(componentType, filter);
-  console.log('items', items);
   const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
   const childItems = useMemo(() => getMenuItems(items, name), [items]);
-  const [openMenuKey, setOpenMenuKey] = useState('');
-  const searchedChildren = useMenuSearch(childItems, openMenuKey);
+  const [openMenuKeys, setOpenMenuKeys] = useState([]);
+  const searchedChildren = useMenuSearch(childItems, openMenuKeys);
   const compiledMenuItems = useMemo(
     () => [
       {
@@ -312,11 +320,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     return (
       <SchemaInitializerMenu
         onOpenChange={(keys) => {
-          if (keys.length === 2) {
-            setOpenMenuKey(keys[1]);
-          } else if (keys.length === 0) {
-            setOpenMenuKey('');
-          }
+          setOpenMenuKeys(keys);
         }}
         items={compiledMenuItems}
       />
