@@ -95,7 +95,7 @@ export const useACLRolesCheck = () => {
   const ctx = useContext(ACLContext);
   const ns = useCollectionNamespace();
   const { dataSources: dataSourcesAcl } = ctx.data.meta;
-  const data = { ...ctx?.data?.data, ...omit(dataSourcesAcl[ns], 'snippets') };
+  const data = { ...ctx?.data?.data, ...omit(dataSourcesAcl?.[ns], 'snippets') };
   const getActionAlias = (actionPath: string) => {
     const actionName = actionPath.split(':').pop();
     return data?.actionAlias?.[actionName] || actionName;
