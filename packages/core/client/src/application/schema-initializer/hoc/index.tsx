@@ -3,6 +3,7 @@ import { ConfigProvider, Popover, theme } from 'antd';
 import React, { ComponentType, useCallback, useMemo, useState } from 'react';
 
 import { css } from '@emotion/css';
+import { useNiceDropdownMaxHeight } from '../../../common/useNiceDropdownHeight';
 import { useFlag } from '../../../flag-provider';
 import { useDesignable } from '../../../schema-component';
 import { useSchemaInitializerStyles } from '../components/style';
@@ -45,6 +46,7 @@ export function withInitializer<T>(C: ComponentType<T>) {
     const { wrapSSR, hashId, componentCls } = useSchemaInitializerStyles();
     const [visible, setVisible] = useState(false);
     const { token } = theme.useToken();
+    const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
 
     const cProps = useMemo(
       () => ({
@@ -90,9 +92,8 @@ export function withInitializer<T>(C: ComponentType<T>) {
               <div
                 className={`${componentCls} ${hashId}`}
                 style={{
-                  maxHeight: 'calc(50vh - 50px)',
+                  maxHeight: dropdownMaxHeight,
                   overflowY: 'auto',
-                  overflowX: 'hidden',
                 }}
               >
                 <ConfigProvider
