@@ -15,7 +15,7 @@ export const FormBlockContext = createContext<any>({});
 
 const InternalFormBlockProvider = (props) => {
   const ctx = useFormBlockContext();
-  const { action, readPretty, params, association } = props;
+  const { action, readPretty, params, association, collection } = props;
   const field = useField();
   const form = useMemo(
     () =>
@@ -40,6 +40,7 @@ const InternalFormBlockProvider = (props) => {
       resource,
       updateAssociationValues,
       formBlockRef,
+      collectionName: collection,
     };
   }, [action, field, form, params, resource, service, updateAssociationValues]);
 
@@ -85,7 +86,8 @@ export const useFormBlockType = () => {
 
 export const useIsDetailBlock = () => {
   const ctx = useFormBlockContext();
-  return ctx.type !== 'create';
+  const { fieldSchema } = useActionContext();
+  return ctx.type !== 'create' && fieldSchema?.['x-acl-action'] !== 'create' && fieldSchema?.['x-action'] !== 'create';
 };
 
 export const FormBlockProvider = (props) => {

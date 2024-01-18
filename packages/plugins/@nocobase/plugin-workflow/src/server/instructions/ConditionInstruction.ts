@@ -152,6 +152,7 @@ export class ConditionInstruction extends Instruction {
       result,
       // TODO(optimize): try unify the building of job
       nodeId: node.id,
+      nodeKey: node.key,
       upstreamId: (prevJob && prevJob.id) || null,
     };
 

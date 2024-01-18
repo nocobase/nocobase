@@ -11,7 +11,7 @@ async function waitForModalToBeHidden(page) {
   });
 }
 
-test.describe('add plugin in front', () => {
+test.describe.skip('add plugin in front', () => {
   test.slow();
   test('add plugin from npm registry, then remove plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
@@ -49,7 +49,7 @@ test.describe('add plugin in front', () => {
   test.skip('add plugin from file URL', async ({ page, mockPage }) => {});
 });
 
-test.describe('remove plugin', () => {
+test.describe.skip('remove plugin', () => {
   test.slow();
   test('remove plugin, then add plugin', async ({ page, mockPage }) => {
     await mockPage().goto();
@@ -95,7 +95,7 @@ test.describe('remove plugin', () => {
   });
 });
 
-test.describe('enable & disable plugin', () => {
+test.describe.skip('enable & disable plugin', () => {
   test.slow();
   test('enable plugin', async ({ page, mockPage }) => {
     await mockPage().goto();

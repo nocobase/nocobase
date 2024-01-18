@@ -27,14 +27,13 @@ export const CustomRequestInitializer: React.FC<any> = (props) => {
     <BlockInitializer
       {...itemConfig}
       item={itemConfig}
-      insert={async (s) => {
-        await customRequestsResource.updateOrCreate({
+      onClick={async (s) => {
+        // create a custom request
+        await customRequestsResource.create({
           values: {
             key: s['x-uid'],
           },
-          filterKeys: ['key'],
         });
-        await props?.insert(s);
       }}
       schema={schema}
     />

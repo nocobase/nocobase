@@ -9,6 +9,7 @@ export const redirect = async (ctx: Context, next: Next) => {
   const search = new URLSearchParams(decodeURIComponent(state));
   const authenticator = search.get('name');
   const appName = search.get('app');
+  const redirect = search.get('redirect') || '/admin';
   let prefix = '';
   if (appName && appName !== 'main') {
     const appSupervisor = AppSupervisor.getInstance();
@@ -19,10 +20,10 @@ export const redirect = async (ctx: Context, next: Next) => {
   const auth = (await ctx.app.authManager.get(authenticator, ctx)) as OIDCAuth;
   try {
     const { token } = await auth.signIn();
-    ctx.redirect(`${prefix}/admin?authenticator=${authenticator}&token=${token}`);
+    ctx.redirect(`${prefix}${redirect}?authenticator=${authenticator}&token=${token}`);
   } catch (error) {
     ctx.logger.error('OIDC auth error', { error });
-    ctx.redirect(`${prefix}/signin?authenticator=${authenticator}&error=${error.message}`);
+    ctx.redirect(`${prefix}/signin?redirect=${redirect}&authenticator=${authenticator}&error=${error.message}`);
   }
   await next();
 };

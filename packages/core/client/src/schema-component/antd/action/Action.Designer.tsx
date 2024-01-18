@@ -23,6 +23,7 @@ import {
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   SchemaSettingsSwitchItem,
+  SchemaSettingsEnableChildCollections,
 } from '../../../schema-settings/SchemaSettings';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
@@ -754,7 +755,7 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
       },
       {
         name: 'enableChildCollections',
-        Component: SchemaSettingsLinkageRules,
+        Component: SchemaSettingsEnableChildCollections,
         useVisible() {
           const fieldSchema = useFieldSchema();
           const { name } = useCollection();

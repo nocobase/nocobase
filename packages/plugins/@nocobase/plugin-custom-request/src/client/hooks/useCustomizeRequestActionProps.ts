@@ -24,12 +24,10 @@ export const useCustomizeRequestActionProps = () => {
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
-  const { fields, getField, getPrimaryKey } = useCollection();
-  const { field, resource, __parent, service } = useBlockRequestContext();
-  const { getActiveFieldsName } = useFormActiveFields() || {};
+  const { getPrimaryKey } = useCollection();
+  const { resource, __parent, service } = useBlockRequestContext();
   const record = useRecord();
   const fieldSchema = useFieldSchema();
-  const { data, runAsync } = useGetCustomRequest();
   const actionField = useField();
   const { setVisible } = useActionContext();
   const { modal, message } = App.useApp();
@@ -38,29 +36,14 @@ export const useCustomizeRequestActionProps = () => {
   return {
     async onClick() {
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
-      const options = data ? data?.data?.options : (await runAsync())?.data?.options;
-      if (!options?.['url']) {
-        return message.error(t('Please configure the request settings first'));
-      }
       const xAction = actionSchema?.['x-action'];
       if (skipValidator !== true && xAction === 'customize:form:request') {
         await form.submit();
       }
 
       let formValues = {};
-      const methods = ['POST', 'PUT', 'PATCH'];
-      if (xAction === 'customize:form:request' && methods.includes(options['method'])) {
-        const fieldNames = fields.map((field) => field.name);
-        const values = getFormValues({
-          filterByTk,
-          field,
-          form,
-          fieldNames,
-          getField,
-          resource,
-          actionFields: getActiveFieldsName?.('form') || [],
-        });
-        formValues = values;
+      if (xAction === 'customize:form:request') {
+        formValues = form.values;
       }
 
       actionField.data ??= {};

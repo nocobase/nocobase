@@ -15,7 +15,7 @@ import handler from 'serve-handler';
 import { parse } from 'url';
 import { AppSupervisor } from '../app-supervisor';
 import { ApplicationOptions } from '../application';
-import { getPackageDirByExposeUrl, getPackageNameByExposeUrl, PLUGIN_STATICS_PATH } from '../plugin-manager';
+import { PLUGIN_STATICS_PATH, getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
@@ -313,7 +313,7 @@ export class Gateway extends EventEmitter {
         const response: any = await ipcClient.write({ type: 'passCliArgv', payload: { argv: process.argv } });
         ipcClient.close();
 
-        if (response.type !== 'error' || response.payload.message !== 'Not handle by ipc server') {
+        if (!['error', 'not_found'].includes(response.type)) {
           return;
         }
       }
@@ -331,12 +331,17 @@ export class Gateway extends EventEmitter {
         from: 'node',
       })
       .then(async () => {
-        if (!await mainApp.isStarted()) {
-          await mainApp.stop();
+        if (!(await mainApp.isStarted())) {
+          await mainApp.stop({ logging: false });
         }
       })
-      .catch((e) => {
-        console.error(e);
+      .catch(async (e) => {
+        if (e.code !== 'commander.helpDisplayed') {
+          mainApp.log.error(e);
+        }
+        if (!(await mainApp.isStarted())) {
+          await mainApp.stop({ logging: false });
+        }
       });
   }
 
@@ -396,7 +401,7 @@ export class Gateway extends EventEmitter {
     this.server.on('upgrade', (request, socket, head) => {
       const { pathname } = parse(request.url);
 
-      if (pathname === '/ws') {
+      if (pathname === process.env.WS_PATH) {
         this.wsServer.wss.handleUpgrade(request, socket, head, (ws) => {
           this.wsServer.wss.emit('connection', ws, request);
         });
@@ -430,5 +435,14 @@ export class Gateway extends EventEmitter {
   close() {
     this.server?.close();
     this.wsServer?.close();
+  }
+
+  static async getIPCSocketClient() {
+    const socketPath = resolve(process.cwd(), process.env.SOCKET_PATH || 'storage/gateway.sock');
+    try {
+      return await IPCSocketClient.getConnection(socketPath);
+    } catch (error) {
+      return false;
+    }
   }
 }

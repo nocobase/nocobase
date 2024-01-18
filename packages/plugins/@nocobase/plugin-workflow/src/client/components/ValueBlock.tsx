@@ -53,7 +53,7 @@ function Result({ dataSource }) {
   }
   const result = parse(dataSource)({
     $jobsMapByNodeKey: (execution.jobs ?? []).reduce(
-      (map, job) => Object.assign(map, { [job.nodeId]: job.result }),
+      (map, job) => Object.assign(map, { [job.nodeKey]: job.result }),
       {},
     ),
   });
