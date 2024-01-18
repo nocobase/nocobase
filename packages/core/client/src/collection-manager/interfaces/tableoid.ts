@@ -21,7 +21,6 @@ export const tableoid: IField = {
       'x-read-pretty': true,
     },
   },
-  availableTypes: ['string'],
   properties: {
     'uiSchema.title': {
       type: 'string',
