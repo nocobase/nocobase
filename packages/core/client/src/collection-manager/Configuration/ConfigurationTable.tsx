@@ -27,12 +27,14 @@ import { collectionSchema } from './schemas/collections';
 const useAsyncDataSource = (service: any, exclude?: string[]) => {
   return (field: any, options?: any) => {
     field.loading = true;
-    service(field, options, exclude).then(
-      action.bound((data: any) => {
-        field.dataSource = data;
-        field.loading = false;
-      }),
-    );
+    service(field, options, exclude)
+      .then(
+        action.bound((data: any) => {
+          field.dataSource = data;
+          field.loading = false;
+        }),
+      )
+      .catch(console.error);
   };
 };
 
@@ -66,13 +68,15 @@ const useBulkDestroySubField = () => {
 // 获取当前字段列表
 const useCurrentFields = () => {
   const record = useRecord();
+  const { getCollectionFields } = useCollectionManager();
+
   // 仅当当前字段为子表单时，从DataSourceContext中获取已配置的字段列表
   if (record.__parent && record.__parent.interface === 'subTable') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const ctx = useContext(DataSourceContext);
     return ctx.dataSource;
   }
 
-  const { getCollectionFields } = useCollectionManager();
   const fields = getCollectionFields(record.collectionName || record.name) as any[];
   return fields;
 };
@@ -83,7 +87,7 @@ const useNewId = (prefix) => {
 
 export const ConfigurationTable = () => {
   const { t } = useTranslation();
-  const { collections = [], interfaces } = useCollectionManager();
+  const { interfaces, getCollections } = useCollectionManager();
   const {
     data: { database },
   } = useCurrentAppInfo();
@@ -91,8 +95,6 @@ export const ConfigurationTable = () => {
   const data = useContext(CollectionCategroriesContext);
   const api = useAPIClient();
   const resource = api.resource('dbViews');
-  const collectonsRef: any = useRef();
-  collectonsRef.current = collections;
   const compile = useCompile();
 
   /**
@@ -105,7 +107,7 @@ export const ConfigurationTable = () => {
   const loadCollections = async (field, options, exclude?: string[]) => {
     const { targetScope } = options;
     const isFieldInherits = field.props?.name === 'inherits';
-    const filteredItems = collectonsRef.current.filter((item) => {
+    const filteredItems = getCollections().filter((item) => {
       if (exclude?.includes(item.template)) {
         return false;
       }
