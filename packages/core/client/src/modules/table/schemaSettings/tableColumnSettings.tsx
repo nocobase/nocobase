@@ -302,7 +302,6 @@ export const tableColumnSettings = new SchemaSettings({
         const componentSettings = app.schemaSettingsManager.get(
           `fieldSettings:component:${map[fieldComponentName] || fieldComponentName}`,
         );
-        console.log('fieldComponentName', fieldComponentName);
         return componentSettings?.items || [];
       },
     },

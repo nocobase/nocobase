@@ -1,7 +1,6 @@
-import React, { FC, useMemo, useRef, useEffect } from 'react';
+import React, { FC, useEffect, useMemo, useRef } from 'react';
 
 import { useFindComponent } from '../../../schema-component';
-import { SchemaSettingsItemType } from '../types';
 import {
   SchemaSettingsActionModalItem,
   SchemaSettingsCascaderItem,
@@ -17,6 +16,7 @@ import {
   useSchemaSettings,
 } from '../../../schema-settings/SchemaSettings';
 import { SchemaSettingItemContext } from '../context';
+import { SchemaSettingsItemType } from '../types';
 
 export interface SchemaSettingsChildrenProps {
   children: SchemaSettingsItemType[];
@@ -70,7 +70,7 @@ export const SchemaSettingsChild: FC<SchemaSettingsItemType> = (props) => {
     type,
     Component,
     children,
-    checkChildrenLength,
+    checkChildrenLength = true,
     componentProps,
   } = props as any;
   const useChildrenRes = useChildren();
