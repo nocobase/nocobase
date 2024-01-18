@@ -32,12 +32,11 @@ export function AddButton(props: AddButtonProps) {
       { key: 'manual', label: `{{t("Manual", { ns: "${NAMESPACE}" })}}` },
       { key: 'extended', label: `{{t("Extended types", { ns: "${NAMESPACE}" })}}` },
     ]
-      .filter((group) => instructionList.filter((item) => item.group === group.key).length)
       .map((group) => {
         const groupInstructions = instructionList.filter(
           (item) =>
             item.group === group.key &&
-            (item.isAvailable ? item.isAvailable({ workflow, upstream, branchIndex }) : true),
+            (item.useAvailable ? item.useAvailable({ workflow, upstream, branchIndex }) : true),
         );
 
         return {
@@ -59,7 +58,8 @@ export function AddButton(props: AddButtonProps) {
               : null,
           })),
         };
-      });
+      })
+      .filter((group) => group.children.length);
   }, [branchIndex, instructionList, upstream, workflow]);
   const resource = useMemo(() => {
     if (!workflow) {

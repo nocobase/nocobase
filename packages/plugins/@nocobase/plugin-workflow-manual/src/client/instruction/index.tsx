@@ -1,6 +1,6 @@
-import { SchemaInitializerItemType, useCollectionManager, useCompile } from '@nocobase/client';
+import { SchemaInitializerItemType, useCollectionManager, useCompile, usePlugin } from '@nocobase/client';
 
-import {
+import WorkflowPlugin, {
   defaultFieldNames,
   getCollectionFieldOptions,
   CollectionBlockInitializer,
@@ -154,7 +154,9 @@ export default class extends Instruction {
         }
       : null;
   }
-  isAvailable({ workflow, upstream, branchIndex }) {
-    return !this.workflow.isWorkflowSync(workflow);
+  useAvailable({ workflow, upstream, branchIndex }) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const workflowPlugin = usePlugin(WorkflowPlugin);
+    return !workflowPlugin.isWorkflowSync(workflow);
   }
 }

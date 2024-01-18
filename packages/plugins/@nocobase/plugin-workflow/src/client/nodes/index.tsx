@@ -39,7 +39,6 @@ export type NodeAvailableContext = {
 };
 
 export abstract class Instruction {
-  constructor(public workflow: WorkflowPlugin) {}
   title: string;
   type: string;
   group: string;
@@ -53,7 +52,7 @@ export abstract class Instruction {
   useVariables?(node, options?: UseVariableOptions): VariableOption;
   useScopeVariables?(node, options?): VariableOption[];
   useInitializers?(node): SchemaInitializerItemType | null;
-  isAvailable?(ctx: NodeAvailableContext): boolean;
+  useAvailable?(ctx: NodeAvailableContext): boolean;
   end?: boolean;
 }
 

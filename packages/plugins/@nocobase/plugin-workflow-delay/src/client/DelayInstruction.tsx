@@ -1,7 +1,7 @@
 import React from 'react';
 import { InputNumber, Select } from 'antd';
-import { css, useCompile } from '@nocobase/client';
-import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow/client';
+import { css, useCompile, usePlugin } from '@nocobase/client';
+import WorkflowPlugin, { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../locale';
 
@@ -84,7 +84,9 @@ export default class extends Instruction {
   components = {
     Duration,
   };
-  isAvailable({ workflow, upstream, branchIndex }) {
-    return !this.workflow.isWorkflowSync(workflow);
+  useAvailable({ workflow, upstream, branchIndex }) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const workflowPlugin = usePlugin(WorkflowPlugin);
+    return !workflowPlugin.isWorkflowSync(workflow);
   }
 }
