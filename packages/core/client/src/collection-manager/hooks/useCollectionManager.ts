@@ -6,7 +6,7 @@ import { CollectionFieldOptions, CollectionOptions } from '../types';
 import { useCollectionManagerV2 } from '../../application';
 import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
 import { uid } from '@formily/shared';
-import { useCollectionNamespace } from '../../block-provider';
+import { useCollectionNamespace } from '../../block-provider/BlockProvider';
 
 export const useCollectionManager = (namespace?: string) => {
   const cm = useCollectionManagerV2();
