@@ -28,6 +28,7 @@ export const RecordAssociationBlockInitializer = () => {
             createTableBlockSchema({
               rowKey: collection.filterTargetKey,
               collection: field.target,
+              namespace: collection.namespace,
               resource,
               association: resource,
             }),

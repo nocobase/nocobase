@@ -19,6 +19,7 @@ export const TableSelectorInitializer = () => {
           createTableSelectorSchema({
             rowKey: collection.filterTargetKey,
             collection: collection.name,
+            namespace: collection.namespace,
             resource: collection.name,
           }),
         );

@@ -26,6 +26,7 @@ export const CreateFormBlockInitializer = () => {
             const blockSchema = createFormBlockSchema({
               actionInitializers: 'CreateFormActionInitializers',
               association,
+              namespace: collection.namespace,
               collection: collection.name,
               template: s,
             });
@@ -41,6 +42,7 @@ export const CreateFormBlockInitializer = () => {
             createFormBlockSchema({
               actionInitializers: 'CreateFormActionInitializers',
               association,
+              namespace: collection.namespace,
               collection: collection.name,
             }),
           );

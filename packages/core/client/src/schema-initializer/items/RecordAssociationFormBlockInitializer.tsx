@@ -1,17 +1,20 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FormOutlined } from '@ant-design/icons';
 
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
 import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
+import { useCollectionManager } from '../../collection-manager';
 
 export const RecordAssociationFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { onCreateBlockSchema, componentType, createBlockSchema, ...others } = itemConfig;
   const { insert } = useSchemaInitializer();
+  const { getCollection } = useCollectionManager();
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const field = itemConfig.field;
-  const collection = field.target;
+  const collectionName = field.target;
+  const collection = useMemo(() => getCollection(collectionName), [collectionName]);
   const resource = `${field.collectionName}.${field.name}`;
   return (
     <SchemaInitializerItem
@@ -27,7 +30,8 @@ export const RecordAssociationFormBlockInitializer = () => {
           const s = await getTemplateSchemaByMode(item);
           if (item.template.componentName === 'FormItem') {
             const blockSchema = createFormBlockSchema({
-              collection,
+              collection: collectionName,
+              namespace: collection.namespace,
               resource,
               association: resource,
               action,
@@ -46,8 +50,9 @@ export const RecordAssociationFormBlockInitializer = () => {
         } else {
           insert(
             createFormBlockSchema({
-              collection,
+              collection: collectionName,
               resource,
+              namespace: collection.namespace,
               association: resource,
               action,
               useSourceId: '{{ useSourceIdFromParentRecord }}',
