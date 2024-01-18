@@ -72,7 +72,7 @@ const useResource = (props: UseResourceProps) => {
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   const __parent = useContext(BlockRequestContext);
   const headers = useMemo(() => {
-    if (namespace !== DEFAULT_COLLECTION_NAMESPACE_NAME) {
+    if (namespace && namespace !== DEFAULT_COLLECTION_NAMESPACE_NAME) {
       return { 'x-connection': namespace };
     }
   }, [namespace]);
