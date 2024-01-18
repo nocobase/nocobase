@@ -303,9 +303,9 @@ export const useBlockContext = () => {
   return useContext(BlockContext);
 };
 
-export const BlockNamespaceContext = createContext<string>(undefined);
-export const useBlockNamespace = () => {
-  return useContext(BlockNamespaceContext);
+export const CollectionNamespace = createContext<string>(undefined);
+export const useCollectionNamespace = () => {
+  return useContext(CollectionNamespace);
 };
 
 export const BlockProvider = (props: {
@@ -331,7 +331,7 @@ export const BlockProvider = (props: {
 
   return (
     <BlockContext.Provider value={blockValue}>
-      <BlockNamespaceContext.Provider value={namespace}>
+      <CollectionNamespace.Provider value={namespace}>
         <MaybeCollectionProvider collection={collection}>
           <BlockAssociationContext.Provider value={association}>
             <BlockResourceContext.Provider value={resource}>
@@ -345,7 +345,7 @@ export const BlockProvider = (props: {
             </BlockResourceContext.Provider>
           </BlockAssociationContext.Provider>
         </MaybeCollectionProvider>
-      </BlockNamespaceContext.Provider>
+      </CollectionNamespace.Provider>
     </BlockContext.Provider>
   );
 };

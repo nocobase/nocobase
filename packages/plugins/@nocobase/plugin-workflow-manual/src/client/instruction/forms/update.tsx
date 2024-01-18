@@ -81,6 +81,7 @@ export default {
       const childItems = useMemo(
         () =>
           allCollections.map(({ nsName, nsTitle, collections }) => ({
+            key: nsName,
             name: nsName,
             label: nsTitle,
             type: 'subMenu',

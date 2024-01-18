@@ -121,7 +121,7 @@ export function useMenuSearch(data: any, openKey: string, showType?: boolean) {
 
   const currentItems = useMemo(() => {
     if (!openKey) return [];
-    return data.find((item) => item.key === openKey)?.children || [];
+    return data.find((item) => (item.key || item.name) === openKey)?.children || [];
   }, [data, openKey]);
 
   // 根据搜索的值进行处理

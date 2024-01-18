@@ -6,11 +6,11 @@ import { CollectionFieldOptions, CollectionOptions } from '../types';
 import { useCollectionManagerV2 } from '../../application';
 import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
 import { uid } from '@formily/shared';
-import { useBlockNamespace } from '../../block-provider';
+import { useCollectionNamespace } from '../../block-provider';
 
 export const useCollectionManager = (namespace?: string) => {
   const cm = useCollectionManagerV2();
-  const blockNamespaceValue = useBlockNamespace();
+  const blockNamespaceValue = useCollectionNamespace();
   const namespaceValue = namespace || blockNamespaceValue || undefined;
   const [random, setRandom] = useState(uid());
   const interfaces = useMemo(() => cm?.getFieldInterfaces(), [cm, random]);
