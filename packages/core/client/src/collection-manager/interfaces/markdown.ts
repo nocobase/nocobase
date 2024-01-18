@@ -18,7 +18,7 @@ export const markdown: IField = {
       'x-component': 'Markdown',
     },
   },
-  availableTypes: ['text'],
+  availableTypes: ['text', 'json'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

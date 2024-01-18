@@ -20,7 +20,7 @@ export const select: IField = {
       enum: [],
     },
   },
-  availableTypes: ['string'],
+  availableTypes: ['string', 'bigInt', 'boolean'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

@@ -19,7 +19,7 @@ export const textarea: IField = {
       'x-component': 'Input.TextArea',
     },
   },
-  availableTypes: ['text'],
+  availableTypes: ['text', 'json'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

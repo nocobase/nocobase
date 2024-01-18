@@ -21,7 +21,7 @@ export const datetime: IField = {
       },
     },
   },
-  availableTypes: ['date'],
+  availableTypes: ['date', 'dateOnly'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
