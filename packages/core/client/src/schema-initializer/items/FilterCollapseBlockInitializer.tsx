@@ -8,15 +8,13 @@ import { DataBlockInitializer } from './DataBlockInitializer';
 export const FilterCollapseBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
-  const filter = useCallback(() => {
-    return itemConfig?.name !== 'filterCollapseBlockInTableSelector';
-  }, [itemConfig?.name]);
 
   return (
     <DataBlockInitializer
       {...itemConfig}
       icon={<TableOutlined />}
       componentType={'FilterCollapse'}
+      isItem={itemConfig?.name === 'filterCollapseBlockInTableSelector'}
       onCreateBlockSchema={async ({ item }) => {
         const schema = createCollapseBlockSchema({
           namespace: item.namespace,
@@ -26,7 +24,6 @@ export const FilterCollapseBlockInitializer = () => {
         });
         insert(schema);
       }}
-      filter={filter}
     />
   );
 };

@@ -258,6 +258,7 @@ export interface DataBlockInitializerProps {
   title: string;
   filter?: (collection: CollectionV2) => boolean;
   componentType: string;
+  isItem?: boolean;
 }
 
 export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
@@ -271,6 +272,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     name,
     title,
     filter,
+    isItem,
   } = props;
   const { insert } = useSchemaInitializer();
   const compile = useCompile();
@@ -316,7 +318,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     ],
     [name, compile, title, icon, childItems, onClick, props],
   );
-  if (childItems.length > 0) {
+  if (!isItem && childItems.length > 0) {
     return (
       <SchemaInitializerMenu
         onOpenChange={(keys) => {
