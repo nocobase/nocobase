@@ -34,6 +34,8 @@ const postgres = {
 
 const mysql = {
   smallint: ['integer', 'boolean'],
+  tinyint: ['integer', 'boolean'],
+  mediumint: ['integer', 'boolean'],
   char: 'string',
   date: 'date',
   time: 'time',
@@ -47,7 +49,6 @@ const mysql = {
   double: 'float',
   boolean: 'boolean',
 
-  tinyint: 'integer',
   datetime: 'date',
   timestamp: 'date',
   json: ['json', 'array'],
