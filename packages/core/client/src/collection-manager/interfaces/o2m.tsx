@@ -344,7 +344,7 @@ export class O2MFieldInterface extends CollectionFieldInterfaceBase {
                   description:
                     "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
                   'x-decorator': 'FormItem',
-                  'x-component': 'Input',
+                  'x-component': 'ForeignKey',
                   'x-validator': 'uid',
                   'x-disabled': '{{ !createOnly }}',
                 },
