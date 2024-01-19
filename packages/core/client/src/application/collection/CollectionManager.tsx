@@ -322,12 +322,10 @@ export class CollectionManagerV2 {
   async reloadThirdResource(sourceName: string) {
     const thirdResource = this.thirdResources[sourceName];
     const oldNamespaces = this.sourceNamespaceMap[sourceName] || [];
+    const data = await thirdResource();
     oldNamespaces.forEach((namespace) => {
       delete this.collectionNamespaces[namespace];
     });
-
-    const data = await thirdResource();
-
     this.sourceNamespaceMap[sourceName] = data.map(({ name }) => name);
     data.forEach(({ name, description, collections }) => {
       this.addCollectionNamespaces({ [name]: description });
