@@ -842,5 +842,10 @@
   "Return to the main application": "返回主应用",
   "Permission denied": "没有权限",
   "Allow add new":"允许新增",
-  "Allow selection of existing records":"允许选择已有数据"
+  "Allow selection of existing records":"允许选择已有数据",
+  "Table field name": "字段标识",
+  "Table select option": "选项值",
+  "Table name": "数据表标识",
+  "auto generate uid": "自动生成uid",
+  "auto generate uid switch": "uid的自动生成逻辑开关控制"
 }

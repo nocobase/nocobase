@@ -2,6 +2,7 @@ import { Field } from '@formily/core';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 export * as operators from './operators';
+import { ERandomUidType, getRandomUidName } from '../../CollectionManageSettingProvider';
 
 export const type: ISchema = {
   type: 'string',
@@ -248,7 +249,9 @@ export const dataSource: ISchema = {
             'x-component': 'Input',
             'x-reactions': (field: Field) => {
               if (!field.initialValue) {
-                field.initialValue = uid();
+                const randomUidBlacklist = localStorage.getItem('RANDOM_UID_BLACKLIST');
+                const data = getRandomUidName(randomUidBlacklist, ERandomUidType.SELECT_OPTION, uid());
+                field.initialValue = data;
               }
             },
           },

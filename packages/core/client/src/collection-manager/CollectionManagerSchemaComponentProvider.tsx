@@ -6,6 +6,7 @@ import {
   CollectionProvider,
   ResourceActionProvider,
   useDataSourceFromRAC,
+  CollectionManageSettingProvider,
 } from './';
 import * as hooks from './action-hooks';
 import { DataSourceProvider, ds, SubFieldDataSourceProvider } from './sub-table';
@@ -21,6 +22,7 @@ export const CollectionManagerSchemaComponentProvider: React.FC = (props) => {
         CollectionFieldProvider,
         CollectionProvider,
         ResourceActionProvider,
+        CollectionManageSettingProvider,
       }}
     >
       {props.children}

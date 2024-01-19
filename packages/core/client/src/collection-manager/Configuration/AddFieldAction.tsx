@@ -16,8 +16,9 @@ import useDialect from '../hooks/useDialect';
 import { IField } from '../interfaces/types';
 import * as components from './components';
 import { getOptions } from './interfaces';
+import { ERandomUidType, getRandomUidName, useRandomUidBlacklist } from '../CollectionManageSettingProvider';
 
-const getSchema = (schema: IField, record: any, compile) => {
+const getSchema = (schema: IField, record: any, compile, data) => {
   if (!schema) {
     return;
   }
@@ -48,13 +49,15 @@ const getSchema = (schema: IField, record: any, compile) => {
       },
     };
   }
+  const name = getRandomUidName(data, ERandomUidType.TABLE_NAME, `f_${uid()}`);
   const initialValue: any = {
-    name: `f_${uid()}`,
+    name,
     ...cloneDeep(schema.default),
     interface: schema.name,
   };
   if (initialValue.reverseField) {
-    initialValue.reverseField.name = `f_${uid()}`;
+    const name = getRandomUidName(data, ERandomUidType.TABLE_FIELD, `f_${uid()}`);
+    initialValue.reverseField.name = name;
   }
   // initialValue.uiSchema.title = schema.title;
   return {
@@ -285,6 +288,7 @@ export const AddFieldAction = (props) => {
       })
       .filter((v) => v?.children?.length);
   }, [getFieldOptions]);
+  const randomUidBlacklist = useRandomUidBlacklist();
   const menu = useMemo<MenuProps>(() => {
     return {
       style: {
@@ -295,7 +299,7 @@ export const AddFieldAction = (props) => {
         //@ts-ignore
         const targetScope = e.item.props['data-targetScope'];
         targetScope && setTargetScope(targetScope);
-        const schema = getSchema(getInterface(e.key), record, compile);
+        const schema = getSchema(getInterface(e.key), record, compile, randomUidBlacklist);
         if (schema) {
           setSchema(schema);
           setVisible(true);

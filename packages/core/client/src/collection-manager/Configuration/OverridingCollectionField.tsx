@@ -13,6 +13,7 @@ import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
+import { ERandomUidType, getRandomUidName, useRandomUidBlacklist } from '../CollectionManageSettingProvider';
 
 const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
   if (!schema) {
@@ -160,6 +161,7 @@ export const OverridingFieldAction = (props) => {
       };
     });
   }, []);
+  const randomUidBlacklist = useRandomUidBlacklist();
   return (
     <RecordProvider record={{ ...record, collectionName: record.__parent.name }}>
       <ActionContextProvider value={{ visible, setVisible }}>
@@ -178,7 +180,8 @@ export const OverridingFieldAction = (props) => {
               if (!defaultValues?.reverseField) {
                 defaultValues.autoCreateReverseField = false;
                 defaultValues.reverseField = interfaceConf.default?.reverseField;
-                set(defaultValues.reverseField, 'name', `f_${uid()}`);
+                const data = getRandomUidName(randomUidBlacklist, ERandomUidType.TABLE_FIELD, `f_${uid()}`);
+                set(defaultValues.reverseField, 'name', data);
                 set(defaultValues.reverseField, 'uiSchema.title', record.__parent.title);
               }
               const schema = getSchema(

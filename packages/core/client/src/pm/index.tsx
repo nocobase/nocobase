@@ -4,7 +4,7 @@ import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';
 import { AdminSettingsLayout } from './PluginSetting';
 import { PluginManager } from './PluginManager';
 import { ACLPane } from '../acl/ACLShortcut';
-import { CollectionManagerPane } from '../collection-manager';
+import { CollectionManagerPane, CollectionManageSetting } from '../collection-manager';
 import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
 import { ADMIN_SETTINGS_PATH } from '../application';
@@ -49,6 +49,11 @@ export class PMPlugin extends Plugin {
     this.app.pluginSettingsManager.add('collection-manager.collections', {
       title: '{{t("Collections & Fields")}}',
       Component: CollectionManagerPane,
+    });
+
+    this.app.pluginSettingsManager.add('collection-manager.settings', {
+      title: '{{t("Setting")}}',
+      Component: CollectionManageSetting,
     });
   }
 

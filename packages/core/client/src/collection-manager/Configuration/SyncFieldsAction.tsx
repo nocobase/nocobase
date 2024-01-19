@@ -16,8 +16,9 @@ import { IField } from '../interfaces/types';
 import { PreviewFields } from '../templates/components/PreviewFields';
 import { PreviewTable } from '../templates/components/PreviewTable';
 import * as components from './components';
+import { ERandomUidType, getRandomUidName, useRandomUidBlacklist } from '../CollectionManageSettingProvider';
 
-const getSchema = (schema: IField, record: any, compile) => {
+const getSchema = (schema: IField, record: any, compile, data) => {
   if (!schema) {
     return;
   }
@@ -29,13 +30,15 @@ const getSchema = (schema: IField, record: any, compile) => {
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
+  const name = getRandomUidName(data, ERandomUidType.TABLE_NAME, `f_${uid()}`);
   const initialValue: any = {
-    name: `f_${uid()}`,
+    name,
     ...cloneDeep(schema.default),
     interface: schema.name,
   };
   if (initialValue.reverseField) {
-    initialValue.reverseField.name = `f_${uid()}`;
+    const name = getRandomUidName(data, ERandomUidType.TABLE_FIELD, `f_${uid()}`);
+    initialValue.reverseField.name = name;
   }
   // initialValue.uiSchema.title = schema.title;
   return {
@@ -163,6 +166,7 @@ export const SyncFieldsActionCom = (props) => {
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
+  const randomUidBlacklist = useRandomUidBlacklist();
   return (
     record.template === 'view' && (
       <RecordProvider record={record}>
@@ -171,7 +175,7 @@ export const SyncFieldsActionCom = (props) => {
             <Button
               icon={<PlusOutlined />}
               onClick={(e) => {
-                const schema = getSchema({}, record, compile);
+                const schema = getSchema({}, record, compile, randomUidBlacklist);
                 if (schema) {
                   setSchema(schema);
                   setVisible(true);
