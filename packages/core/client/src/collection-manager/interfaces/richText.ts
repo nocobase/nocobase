@@ -90,7 +90,7 @@ export class RichTextFieldInterface extends CollectionFieldInterfaceBase {
       'x-component': 'RichText',
     },
   };
-  availableTypes = ['text'];
+  availableTypes = ['text', 'json'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

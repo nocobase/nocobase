@@ -59,7 +59,7 @@ export class DatetimeFieldInterface extends CollectionFieldInterfaceBase {
       },
     },
   };
-  availableTypes = ['date'];
+  availableTypes = ['date', 'dateOnly'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

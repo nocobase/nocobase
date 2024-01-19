@@ -58,7 +58,7 @@ export class SelectFieldInterface extends CollectionFieldInterfaceBase {
       enum: [],
     },
   };
-  availableTypes = ['string'];
+  availableTypes = ['string', 'bigInt', 'boolean'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

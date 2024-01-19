@@ -89,7 +89,7 @@ export class MarkdownFieldInterface extends CollectionFieldInterfaceBase {
       'x-component': 'Markdown',
     },
   };
-  availableTypes = ['text'];
+  availableTypes = ['text', 'json'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

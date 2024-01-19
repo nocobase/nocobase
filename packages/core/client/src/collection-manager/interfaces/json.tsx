@@ -88,7 +88,7 @@ export class JsonFieldInterface extends CollectionFieldInterfaceBase {
       default: null,
     },
   };
-  availableTypes = ['json', 'array', 'jsonb'];
+  availableTypes = ['json', 'array', 'jsonb', 'text', 'circle', 'lineString', 'point', 'polygon'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

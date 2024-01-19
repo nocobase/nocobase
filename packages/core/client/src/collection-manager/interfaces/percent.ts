@@ -195,7 +195,7 @@ export class PercentFieldInterface extends CollectionFieldInterfaceBase {
       width: '100%',
     };
   }
-  availableTypes = ['float'];
+  availableTypes = ['float', 'double', 'decimal'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

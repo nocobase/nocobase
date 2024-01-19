@@ -142,5 +142,5 @@ export const ForeignKey = observer(
       </div>
     );
   },
-  { displayName: 'TargetKey' },
+  { displayName: 'ForeignKey' },
 );

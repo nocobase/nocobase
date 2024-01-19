@@ -134,7 +134,7 @@ export class NumberFieldInterface extends CollectionFieldInterfaceBase {
       },
     },
   };
-  availableTypes = ['double', 'float'];
+  availableTypes = ['double', 'float', 'decimal'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

@@ -183,7 +183,7 @@ export class InputFieldInterface extends CollectionFieldInterfaceBase {
       'x-component': 'Input',
     },
   };
-  availableTypes = ['string'];
+  availableTypes = ['string', 'uid'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

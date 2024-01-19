@@ -44,7 +44,7 @@ export class RadioGroupFieldInterface extends CollectionFieldInterfaceBase {
       'x-component': 'Radio.Group',
     },
   };
-  availableTypes = ['string'];
+  availableTypes = ['string', 'integer', 'boolean', 'integer'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

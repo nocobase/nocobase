@@ -90,7 +90,7 @@ export class TextareaFieldInterface extends CollectionFieldInterfaceBase {
       'x-component': 'Input.TextArea',
     },
   };
-  availableTypes = ['text'];
+  availableTypes = ['text', 'json'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,
