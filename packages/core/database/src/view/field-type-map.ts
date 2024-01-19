@@ -36,6 +36,11 @@ const mysql = {
   smallint: ['integer', 'boolean'],
   tinyint: ['integer', 'boolean'],
   mediumint: ['integer', 'boolean'],
+
+  'smallint unsigned': ['integer', 'boolean'],
+  'tinyint unsigned': ['integer', 'boolean'],
+  'mediumint unsigned': ['integer', 'boolean'],
+
   char: 'string',
   date: 'date',
   time: 'time',
@@ -43,8 +48,10 @@ const mysql = {
   text: 'text',
   longtext: 'text',
   int: 'integer',
+  'int unsigned': 'integer',
   integer: 'integer',
   bigint: 'bigInt',
+  'bigint unsigned': 'bigInt',
   float: 'float',
   double: 'float',
   boolean: 'boolean',
