@@ -1,0 +1,86 @@
+name: Build Pro Image
+
+on:
+  pull_request:
+    branches:
+      - '**'
+jobs:
+  build-and-push:
+    if: github.event.pull_request.head.repo.fork != true
+    runs-on: ubuntu-latest
+    services:
+      verdaccio:
+        image: verdaccio/verdaccio:latest
+        ports:
+          - 4873:4873
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+          submodules: true
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v3
+        with:
+          repository: nocobase/pro-plugins
+          ref: T-2327-and-2771
+          path: packages/pro-plugins
+          ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
+      - name: rm .git
+        run: rm -rf packages/pro-plugins/.git &&  git config --global user.email "you@example.com"  &&  git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            nocobase/nocobase
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Login to Aliyun Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.ALI_DOCKER_REGISTRY }}
+          username: ${{ secrets.ALI_DOCKER_USERNAME }}
+          password: ${{ secrets.ALI_DOCKER_PASSWORD }}
+
+      - name: Set tags
+        id: set-tags
+        run: |
+          echo "::set-output name=tags::${{ secrets.ALI_DOCKER_REGISTRY }}/${{ steps.meta.outputs.tags }}-pro"
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile
+          build-args: |
+            VERDACCIO_URL=http://localhost:4873/
+            COMMIT_HASH=${GITHUB_SHA}
+            PLUGINS_DIRS=pro-plugins
+            APPEND_PRESET_LOCAL_PLUGINS=notifications>=0.5.0-alpha.16,demo-platform>=0.14.0-alpha.7,disable-pm-add,workflow-json-query,collection-fdw,workflow-variable,telemetry-prometheus,workflow-approval,database-connections
+            BEFORE_PACK_NOCOBASE=yarn add @nocobase/plugin-demo-platform @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add @nocobase/plugin-workflow-json-query @nocobase/plugin-collection-fdw @nocobase/plugin-workflow-variable @nocobase/plugin-telemetry-prometheus @nocobase/plugin-workflow-approval @nocobase/plugin-database-connections -W
+          push: true
+          tags: ${{ steps.set-tags.outputs.tags }}
+
+      - name: Deploy NocoBase
+        env:
+          IMAGE_TAG: ${{ steps.meta.outputs.tags }}
+        run: |
+          echo $IMAGE_TAG
+          export APP_NAME=$(echo $IMAGE_TAG | cut -d ":" -f 2)-pro
+          echo $APP_NAME
+          curl --retry 2 --location --request POST "${{secrets.NOCOBASE_DEPLOY_HOST}}$APP_NAME" \
+            --header 'Content-Type: application/json' \
+            -d "{
+                \"tag\": \"$APP_NAME\",
+                \"dialect\": \"postgres\"
+            }"
