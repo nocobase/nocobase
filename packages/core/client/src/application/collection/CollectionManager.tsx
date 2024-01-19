@@ -370,6 +370,7 @@ export class CollectionManagerV2 {
       collectionFieldGroups: this.collectionFieldGroups,
       mainResource: this.mainResource,
       thirdResources: this.thirdResources,
+      sourceNamespaceMap: this.sourceNamespaceMap,
       reloadCallbacks: this.reloadCallbacks,
       collectionArr: this.collectionArr,
       options: this.options,
