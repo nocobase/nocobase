@@ -33,6 +33,10 @@ const postgres = {
 };
 
 const mysql = {
+  smallint: ['integer', 'boolean'],
+  char: 'string',
+  date: 'date',
+  time: 'time',
   varchar: 'string',
   text: 'text',
   longtext: 'text',
