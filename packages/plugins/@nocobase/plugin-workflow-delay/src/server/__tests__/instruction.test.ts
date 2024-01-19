@@ -97,7 +97,7 @@ describe('workflow > instructions > delay', () => {
       const n2 = await workflow.createNode({
         type: 'create',
         config: {
-          collection: 'comment',
+          collection: 'comments',
           params: {
             values: {
               status: 'should be number but use string to raise an error',
