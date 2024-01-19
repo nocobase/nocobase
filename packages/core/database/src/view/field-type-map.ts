@@ -1,6 +1,7 @@
 const postgres = {
   'character varying': 'string',
   varchar: 'string',
+  character: 'string',
   text: 'text',
   char: 'string',
   oid: 'string',
@@ -11,20 +12,23 @@ const postgres = {
   bigint: 'bigInt',
   decimal: 'float',
   numeric: 'float',
+  real: 'float',
   'double precision': 'float',
 
   'timestamp without time zone': 'date',
   'timestamp with time zone': 'date',
+  'time without time zone': 'time',
+
   date: 'date',
   boolean: 'boolean',
 
   json: ['json', 'array'],
   jsonb: ['json', 'array', 'jsonb'],
 
-  point: 'point',
-  path: 'lineString',
-  polygon: 'polygon',
-  circle: 'circle',
+  point: 'json',
+  path: 'json',
+  polygon: 'json',
+  circle: 'json',
   uuid: 'string',
 };
 
