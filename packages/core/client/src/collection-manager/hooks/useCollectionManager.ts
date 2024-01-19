@@ -1,7 +1,7 @@
 import { CascaderProps } from 'antd';
 import _ from 'lodash';
 import { useCallback, useMemo, useState } from 'react';
-import { useCompile } from '../../schema-component';
+import { useCompile, useSchemaComponentContext } from '../../schema-component';
 import { CollectionFieldOptions, CollectionOptions } from '../types';
 import { useCollectionManagerV2 } from '../../application';
 import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
@@ -13,6 +13,7 @@ export const useCollectionManager = (namespace?: string) => {
   const blockNamespaceValue = useCollectionNamespace();
   const namespaceValue = namespace || blockNamespaceValue || undefined;
   const [random, setRandom] = useState(uid());
+  const { refresh } = useSchemaComponentContext();
   const interfaces = useMemo(() => cm?.getFieldInterfaces(), [cm, random]);
   const templates = useMemo(() => cm?.getCollectionTemplates(), [cm, random]);
   const getCollections = useCallback(() => {
@@ -22,9 +23,23 @@ export const useCollectionManager = (namespace?: string) => {
       .map((item) => item.getOptions());
   }, [cm]);
   const collections = useMemo(() => getCollections(), [cm, random]);
-  const service = useCallback(() => cm?.reloadMain(() => setRandom(uid())), [cm]);
+  const service = useCallback(
+    () =>
+      cm?.reloadMain(() => {
+        refresh();
+        setRandom(uid());
+      }),
+    [cm],
+  );
   const updateCollection = cm?.setCollections.bind(cm);
-  const refreshCM = useCallback(() => cm?.reloadMain(() => setRandom(uid())), [cm]);
+  const refreshCM = useCallback(
+    () =>
+      cm?.reloadMain(() => {
+        refresh();
+        setRandom(uid());
+      }),
+    [cm],
+  );
 
   const compile = useCompile();
   const getInheritedFields = useCallback(
