@@ -18,11 +18,11 @@ interface AddButtonProps {
 
 export function AddButton(props: AddButtonProps) {
   const { upstream, branchIndex = null } = props;
-  const { instructions } = usePlugin(WorkflowPlugin);
+  const engine = usePlugin(WorkflowPlugin);
   const compile = useCompile();
   const api = useAPIClient();
   const { workflow, refresh } = useFlowContext() ?? {};
-  const instructionList = Array.from(instructions.getValues()) as Instruction[];
+  const instructionList = Array.from(engine.instructions.getValues()) as Instruction[];
   const { styles } = useStyles();
 
   const groups = useMemo(() => {
@@ -36,7 +36,7 @@ export function AddButton(props: AddButtonProps) {
         const groupInstructions = instructionList.filter(
           (item) =>
             item.group === group.key &&
-            (item.useAvailable ? item.useAvailable({ workflow, upstream, branchIndex }) : true),
+            (item.isAvailable ? item.isAvailable({ engine, workflow, upstream, branchIndex }) : true),
         );
 
         return {
@@ -60,26 +60,21 @@ export function AddButton(props: AddButtonProps) {
         };
       })
       .filter((group) => group.children.length);
-  }, [branchIndex, instructionList, upstream, workflow]);
-  const resource = useMemo(() => {
-    if (!workflow) {
-      return null;
-    }
-    return api.resource('workflows.nodes', workflow.id);
-  }, [workflow?.id]);
+  }, [branchIndex, engine, instructionList, upstream, workflow]);
+
   const onCreate = useCallback(
     async ({ keyPath }) => {
       const type = keyPath.pop();
       const config = {};
       const [optionKey] = keyPath;
-      const instruction = instructions.get(type);
+      const instruction = engine.instructions.get(type);
       if (optionKey) {
         const { value } = instruction.options?.find((item) => item.key === optionKey) ?? {};
         Object.assign(config, typeof value === 'function' ? value() : value);
       }
 
-      if (resource) {
-        await resource.create({
+      if (workflow) {
+        await api.resource('workflows.nodes', workflow.id).create({
           values: {
             type,
             upstreamId: upstream?.id ?? null,
@@ -91,7 +86,7 @@ export function AddButton(props: AddButtonProps) {
         refresh();
       }
     },
-    [branchIndex, resource?.create, upstream?.id],
+    [api, branchIndex, engine.instructions, refresh, upstream?.id, workflow],
   );
 
   const menu = useMemo<MenuProps>(() => {

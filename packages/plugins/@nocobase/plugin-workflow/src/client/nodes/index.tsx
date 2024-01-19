@@ -33,6 +33,7 @@ import useStyles from '../style';
 import { UseVariableOptions, VariableOption } from '../variable';
 
 export type NodeAvailableContext = {
+  engine: WorkflowPlugin;
   workflow: object;
   upstream: object;
   branchIndex: number;
@@ -52,7 +53,7 @@ export abstract class Instruction {
   useVariables?(node, options?: UseVariableOptions): VariableOption;
   useScopeVariables?(node, options?): VariableOption[];
   useInitializers?(node): SchemaInitializerItemType | null;
-  useAvailable?(ctx: NodeAvailableContext): boolean;
+  isAvailable?(ctx: NodeAvailableContext): boolean;
   end?: boolean;
 }
 

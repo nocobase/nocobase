@@ -84,9 +84,7 @@ export default class extends Instruction {
   components = {
     Duration,
   };
-  useAvailable({ workflow, upstream, branchIndex }) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const workflowPlugin = usePlugin(WorkflowPlugin);
-    return !workflowPlugin.isWorkflowSync(workflow);
+  isAvailable({ engine, workflow, upstream, branchIndex }) {
+    return !engine.isWorkflowSync(workflow);
   }
 }
