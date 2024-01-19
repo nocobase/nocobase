@@ -193,7 +193,6 @@ export class CollectionManagerV2 {
   getCollection<Mixins = {}>(path: string, options: GetCollectionOptions = {}): (Mixins & CollectionV2) | undefined {
     const { namespace = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
     if (!path || typeof path !== 'string') return undefined;
-    this.checkNamespace(namespace);
     if (path.split('.').length > 1) {
       // 获取到关联字段
       const associationField = this.getCollectionField(path);
@@ -224,7 +223,6 @@ export class CollectionManagerV2 {
     }
     const [collectionName, ...fieldNames] = String(path).split('.');
     const { namespace = DEFAULT_COLLECTION_NAMESPACE_NAME } = options || {};
-    this.checkNamespace(namespace);
     const collection = this.getCollection(collectionName, { namespace });
     if (!collection) {
       return;
