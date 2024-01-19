@@ -676,6 +676,14 @@ export class PluginACL extends Plugin {
       for (const action of inspectActions) {
         const actionCtx: any = {
           db: ctx.db,
+          get: () => {
+            return undefined;
+          },
+          app: {
+            getDb() {
+              return ctx.db;
+            },
+          },
           action: {
             actionName: action,
             name: action,

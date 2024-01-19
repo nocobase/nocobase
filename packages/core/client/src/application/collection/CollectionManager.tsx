@@ -3,6 +3,7 @@ import { CollectionTemplateBase } from './CollectionTemplate';
 import { CollectionFieldOptionsV2, CollectionOptionsV2, CollectionV2 } from './Collection';
 import type { Application } from '../Application';
 import { SchemaKey } from '@formily/react';
+import { merge } from 'lodash';
 
 export type CollectionMixinConstructor<T = {}> = new (...args: any[]) => T;
 
@@ -53,6 +54,8 @@ export interface GetCollectionOptions {
   namespace?: string;
 }
 
+type NamespacesType = Record<string, string>;
+
 export interface CollectionManagerOptionsV2 {
   collections?: CollectionOptionsV2[] | Record<string, CollectionOptionsV2[]>;
   collectionTemplates?: (typeof CollectionTemplateBase)[];
@@ -62,24 +65,27 @@ export interface CollectionManagerOptionsV2 {
   collectionMixins?: CollectionMixinConstructor[];
 }
 
+type ThirdResource = (
+  ...args: any[]
+) => Promise<{ name: string; description: string; collections: CollectionOptionsV2[] }[]>;
+
 export class CollectionManagerV2 {
   public app: Application;
   protected collections: Record<string, Record<string, CollectionV2>> = {};
   protected collectionTemplateInstances: Record<string, CollectionTemplateBase> = {};
   protected fieldInterfaceInstances: Record<string, CollectionFieldInterfaceBase> = {};
   protected collectionMixins: CollectionMixinConstructor[] = [];
-  protected collectionNamespaces: Record<string, string> = {
-    [DEFAULT_COLLECTION_NAMESPACE_NAME]: DEFAULT_COLLECTION_NAMESPACE_TITLE,
+  protected collectionNamespaces: NamespacesType = {
+    [DEFAULT_COLLECTION_NAMESPACE_NAME]: DEFAULT_COLLECTION_NAMESPACE_NAME,
   };
   protected collectionFieldGroups: Record<string, { label: string; order?: number }> = {};
   protected mainResource: (...args: any[]) => Promise<CollectionOptionsV2[]>;
-  protected thirdResources: ((
-    ...args: any[]
-  ) => Promise<{ name: string; description: string; collections: CollectionOptionsV2[] }[]>)[] = [];
+  protected thirdResources: Record<string, ThirdResource> = {};
   protected reloadCallbacks: {
     [key: string]: ((collections: CollectionOptionsV2[]) => void)[];
   } = {};
   protected collectionArr: Record<string, CollectionV2[]> = {};
+  protected sourceNamespaceMap: Record<string, string[]> = {};
   protected options: CollectionManagerOptionsV2 = {};
 
   constructor(options: CollectionManagerOptionsV2 = {}, app: Application) {
@@ -155,9 +161,9 @@ export class CollectionManagerV2 {
   }
   getAllCollections(
     predicate?: (collection: CollectionV2) => boolean,
-  ): { nsName: string; nsTitle: string; collections: CollectionV2[] }[] {
+  ): { nsName: string; nsTitle: string; source?: string; collections: CollectionV2[] }[] {
     return Object.keys(this.collectionNamespaces).reduce<
-      { nsName: string; nsTitle: string; collections: CollectionV2[] }[]
+      { nsName: string; nsTitle: string; source?: string; collections: CollectionV2[] }[]
     >((acc, namespace) => {
       acc.push({
         nsName: namespace,
@@ -227,11 +233,14 @@ export class CollectionManagerV2 {
   }
 
   // collectionNamespaces
-  addCollectionNamespaces(collectionNamespaces: Record<string, string>) {
+  addCollectionNamespaces(collectionNamespaces: NamespacesType) {
+    this.collectionNamespaces = merge(this.collectionNamespaces, collectionNamespaces);
+  }
+  setCollectionNamespaces(collectionNamespaces: NamespacesType) {
     Object.assign(this.collectionNamespaces, collectionNamespaces);
   }
   getCollectionNamespaces() {
-    return Object.entries(this.collectionNamespaces).map(([name, title]) => ({ name, title }));
+    return this.collectionNamespaces;
   }
 
   // CollectionTemplates
@@ -299,12 +308,8 @@ export class CollectionManagerV2 {
     this.mainResource = fn;
   }
 
-  addThirdResource(
-    fn: (...args: any[]) => Promise<{ name: string; description: string; collections: CollectionOptionsV2[] }[]>,
-  ) {
-    if (!this.thirdResources.includes(fn)) {
-      this.thirdResources.push(fn);
-    }
+  addThirdResource(name: string, fn: ThirdResource) {
+    this.thirdResources[name] = fn;
   }
 
   async reloadMain(callback?: (collections?: CollectionOptionsV2[]) => void) {
@@ -314,12 +319,16 @@ export class CollectionManagerV2 {
     this.reloadCallbacks[DEFAULT_COLLECTION_NAMESPACE_NAME]?.forEach((cb) => cb(collections));
   }
 
-  private async reloadThird(
-    thirdResource: (
-      ...args: any[]
-    ) => Promise<{ name: string; description: string; collections: CollectionOptionsV2[] }[]>,
-  ) {
+  async reloadThirdResource(sourceName: string) {
+    const thirdResource = this.thirdResources[sourceName];
+    const oldNamespaces = this.sourceNamespaceMap[sourceName] || [];
+    oldNamespaces.forEach((namespace) => {
+      delete this.collectionNamespaces[namespace];
+    });
+
     const data = await thirdResource();
+
+    this.sourceNamespaceMap[sourceName] = data.map(({ name }) => name);
     data.forEach(({ name, description, collections }) => {
       this.addCollectionNamespaces({ [name]: description });
       this.setCollections(collections, { namespace: name });
@@ -327,14 +336,16 @@ export class CollectionManagerV2 {
     });
   }
 
-  private async reloadThirds(callback?: () => void) {
-    await Promise.all(this.thirdResources.map((thirdResource) => this.reloadThird(thirdResource)));
+  async reloadThirdResources(callback?: () => void) {
+    await Promise.all(
+      Object.keys(this.thirdResources).map((thirdResourceName) => this.reloadThirdResource(thirdResourceName)),
+    );
     callback && callback();
   }
 
   async reloadAll(callback?: () => void) {
     await this.reloadMain();
-    await this.reloadThirds();
+    await this.reloadThirdResources();
     callback && callback();
   }
 
@@ -359,6 +370,7 @@ export class CollectionManagerV2 {
       collectionFieldGroups: this.collectionFieldGroups,
       mainResource: this.mainResource,
       thirdResources: this.thirdResources,
+      sourceNamespaceMap: this.sourceNamespaceMap,
       reloadCallbacks: this.reloadCallbacks,
       collectionArr: this.collectionArr,
       options: this.options,

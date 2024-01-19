@@ -55,7 +55,7 @@ export function FormBlockProvider(props) {
   }, [values]);
   const api = useAPIClient();
   const headers = useMemo(() => {
-    if (namespace !== DEFAULT_COLLECTION_NAMESPACE_NAME) {
+    if (namespace && namespace !== DEFAULT_COLLECTION_NAMESPACE_NAME) {
       return { 'x-connection': namespace };
     }
   }, [namespace]);
