@@ -46,7 +46,7 @@ export default class PluginWorkflowClient extends Plugin {
   };
 
   isWorkflowSync(workflow) {
-    return this.triggers.get(workflow.type).sync ?? workflow.options.sync;
+    return this.triggers.get(workflow.type).sync ?? workflow.sync;
   }
 
   registerTrigger(type: string, trigger: Trigger | { new (): Trigger }) {

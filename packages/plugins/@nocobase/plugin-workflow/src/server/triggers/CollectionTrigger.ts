@@ -93,7 +93,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     },
   );
 
-  if (workflow.options.sync) {
+  if (workflow.sync) {
     await promise;
   }
 }

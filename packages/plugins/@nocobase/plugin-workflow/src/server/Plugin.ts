@@ -68,7 +68,7 @@ export default class PluginWorkflowServer extends Plugin {
     if (!trigger) {
       throw new Error(`invalid trigger type ${workflow.type} of workflow ${workflow.id}`);
     }
-    return trigger.sync ?? workflow.options.sync;
+    return trigger.sync ?? workflow.sync;
   }
 
   onBeforeSave = async (instance: WorkflowModel, options) => {
