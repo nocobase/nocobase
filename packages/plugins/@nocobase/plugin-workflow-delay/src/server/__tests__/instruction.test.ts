@@ -97,11 +97,9 @@ describe('workflow > instructions > delay', () => {
       const n2 = await workflow.createNode({
         type: 'create',
         config: {
-          collection: 'comments',
+          collection: 'notExistsTable',
           params: {
-            values: {
-              status: 'should be number but use string to raise an error',
-            },
+            values: {},
           },
         },
         upstreamId: n1.id,
@@ -122,8 +120,8 @@ describe('workflow > instructions > delay', () => {
       const [e2] = await workflow.getExecutions();
       expect(e2.status).toEqual(EXECUTION_STATUS.ERROR);
       const [j2, j3] = await e2.getJobs({ order: [['id', 'ASC']] });
-      expect(j2.status).toBe(JOB_STATUS.ERROR);
-      expect(j3.status).toBe(JOB_STATUS.RESOLVED);
+      expect(j2.status).toBe(JOB_STATUS.RESOLVED);
+      expect(j3.status).toBe(JOB_STATUS.ERROR);
     });
   });
 
