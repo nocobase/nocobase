@@ -86,7 +86,7 @@ describe('workflow > instructions > delay', () => {
       expect(j2.status).toBe(JOB_STATUS.FAILED);
     });
 
-    it('delay to resolve and rollback in downstream node', async () => {
+    it('delay to resolve and downstream node error', async () => {
       const n1 = await workflow.createNode({
         type: 'delay',
         config: {
@@ -122,8 +122,8 @@ describe('workflow > instructions > delay', () => {
       const [e2] = await workflow.getExecutions();
       expect(e2.status).toEqual(EXECUTION_STATUS.ERROR);
       const [j2, j3] = await e2.getJobs({ order: [['id', 'ASC']] });
-      expect(j2.status).toBe(JOB_STATUS.RESOLVED);
-      expect(j3.status).toBe(JOB_STATUS.ERROR);
+      expect(j2.status).toBe(JOB_STATUS.ERROR);
+      expect(j3.status).toBe(JOB_STATUS.RESOLVED);
     });
   });
 
