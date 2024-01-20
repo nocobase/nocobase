@@ -5,11 +5,11 @@ import { Space } from 'antd';
 import classNames from 'classnames';
 import React, { FC, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SchemaToolbarProvider, useSchemaInitializerRender, useSchemaSettingsRender } from '../application';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettingsDropdown } from './SchemaSettings';
 import { useGetAriaLabelOfDesigner } from './hooks/useGetAriaLabelOfDesigner';
-import { SchemaToolbarProvider, useSchemaInitializerRender, useSchemaSettingsRender } from '../application';
 import { useStyles } from './styles';
 
 const titleCss = css`
@@ -160,7 +160,7 @@ export interface SchemaToolbarProps {
   showBackground?: boolean;
 }
 
-export const SchemaToolbar: FC<SchemaToolbarProps> = (props) => {
+const InternalSchemaToolbar: FC<SchemaToolbarProps> = (props) => {
   const { title, initializer, settings, showBackground, showBorder = true, draggable = true } = props;
   const { designable } = useDesignable();
   const fieldSchema = useFieldSchema();
@@ -242,13 +242,13 @@ export const SchemaToolbar: FC<SchemaToolbarProps> = (props) => {
       }
     }
 
-    if (toolbarElement) {
+    if (toolbarElement?.parentElement) {
       toolbarElement.parentElement.addEventListener('mouseenter', show);
       toolbarElement.parentElement.addEventListener('mouseleave', hide);
     }
 
     return () => {
-      if (toolbarElement) {
+      if (toolbarElement?.parentElement) {
         toolbarElement.parentElement.removeEventListener('mouseenter', show);
         toolbarElement.parentElement.removeEventListener('mouseleave', hide);
       }
@@ -285,4 +285,14 @@ export const SchemaToolbar: FC<SchemaToolbarProps> = (props) => {
       </div>
     </div>
   );
+};
+
+export const SchemaToolbar: FC<SchemaToolbarProps> = (props) => {
+  const { designable } = useDesignable();
+
+  if (!designable) {
+    return null;
+  }
+
+  return <InternalSchemaToolbar {...props} />;
 };
