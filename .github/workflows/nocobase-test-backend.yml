@@ -136,7 +136,7 @@ jobs:
     container: node:${{ matrix.node_version }}
     services:
       mysql:
-        image: mysql:8
+        image: mysql:8.2 # >= 8.3 will meet unsolved error: https://github.com/nocobase/nocobase/actions/runs/7581141593/job/20653828990?pr=3383
         env:
           MYSQL_ROOT_PASSWORD: password
           MYSQL_DATABASE: nocobase
