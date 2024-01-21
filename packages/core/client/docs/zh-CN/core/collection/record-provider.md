@@ -11,6 +11,10 @@ interface RecordProviderProps<DataType = {}, ParentDataType = {}> {
   isNew?: boolean;
   record?: RecordV2<DataType, ParentDataType> | DataType;
   parentRecord?: RecordV2<ParentDataType> | DataType;
+  /**
+   * 当前记录所属的 collection name
+   */
+  collectionName?: string;
 }
 ```
 
