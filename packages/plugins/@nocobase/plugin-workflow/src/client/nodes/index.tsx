@@ -54,7 +54,7 @@ export abstract class Instruction {
   useScopeVariables?(node, options?): VariableOption[];
   useInitializers?(node): SchemaInitializerItemType | null;
   isAvailable?(ctx: NodeAvailableContext): boolean;
-  end?: boolean;
+  end?: boolean | ((node) => boolean);
 }
 
 function useUpdateAction() {
@@ -124,17 +124,16 @@ export function Node({ data }) {
   const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
   const workflowPlugin = usePlugin(WorkflowPlugin);
   const { Component = NodeDefaultView, end } = workflowPlugin.instructions.get(data.type);
-
   return (
     <NodeContext.Provider value={data}>
       <div className={cx(styles.nodeBlockClass)}>
         <Component data={data} />
-        {end ? (
+        {!end || (typeof end === 'function' && !end(data)) ? (
+          <AddButton aria-label={getAriaLabel()} upstream={data} />
+        ) : (
           <div className="end-sign">
             <CloseOutlined />
           </div>
-        ) : (
-          <AddButton aria-label={getAriaLabel()} upstream={data} />
         )}
       </div>
     </NodeContext.Provider>
