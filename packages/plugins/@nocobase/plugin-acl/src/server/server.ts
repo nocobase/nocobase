@@ -13,7 +13,7 @@ import { setCurrentRole } from './middlewares/setCurrentRole';
 import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
-import createWithACLMetaMiddleware from './middlewares/with-acl-meta';
+import { createWithACLMetaMiddleware } from './middlewares/with-acl-meta';
 
 export interface AssociationFieldAction {
   associationActions: string[];
@@ -639,7 +639,7 @@ export class PluginACL extends Plugin {
       },
     );
 
-    const withACLMeta = createWithACLMetaMiddleware(this.app.db, this.app.acl);
+    const withACLMeta = createWithACLMetaMiddleware();
 
     // append allowedActions to list & get response
     this.app.use(

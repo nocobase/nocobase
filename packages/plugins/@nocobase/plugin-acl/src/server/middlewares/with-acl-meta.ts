@@ -1,10 +1,14 @@
 import lodash from 'lodash';
-import { ACL, NoPermissionError } from '@nocobase/acl';
-import { Database, snakeCase } from '@nocobase/database';
+import { NoPermissionError } from '@nocobase/acl';
+import { snakeCase } from '@nocobase/database';
 
-function createWithACLMetaMiddleware(db: Database, acl: ACL) {
+function createWithACLMetaMiddleware() {
   return async (ctx: any, next) => {
     await next();
+
+    const connection = ctx.get('x-connection') || 'main';
+    const db = ctx.app.getDb(connection);
+    const acl = connection === 'main' ? ctx.app.acl : ctx.app.acls.get(connection);
 
     if (!ctx.action || !ctx.get('X-With-ACL-Meta') || ctx.status !== 200) {
       return;
@@ -243,4 +247,4 @@ function createWithACLMetaMiddleware(db: Database, acl: ACL) {
   };
 }
 
-export default createWithACLMetaMiddleware;
+export { createWithACLMetaMiddleware };
