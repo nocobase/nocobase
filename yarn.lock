@@ -4860,10 +4860,10 @@
   resolved "https://registry.npmmirror.com/@remix-run/router/-/router-1.14.0.tgz#9bc39a5a3a71b81bdb310eba6def5bc3966695b7"
   integrity sha512-WOHih+ClN7N8oHk9N4JUiMxQJmRVaOxcg8w7F/oHUXzJt920ekASLI/7cYX8XkntDWRhLZtsk6LbGrkgOAvi5A==
 
-"@remix-run/router@1.14.1":
-  version "1.14.1"
-  resolved "https://registry.npmjs.org/@remix-run/router/-/router-1.14.1.tgz#6d2dd03d52e604279c38911afc1079d58c50a755"
-  integrity sha512-Qg4DMQsfPNAs88rb2xkdk03N3bjK4jgX5fR24eHCTR9q6PrhZQZ4UJBPzCHJkIpTRN1UKxx2DzjZmnC+7Lj0Ow==
+"@remix-run/router@1.14.2":
+  version "1.14.2"
+  resolved "https://registry.yarnpkg.com/@remix-run/router/-/router-1.14.2.tgz#4d58f59908d9197ba3179310077f25c88e49ed17"
+  integrity sha512-ACXpdMM9hmKZww21yEqWwiLws/UPLhNKvimN8RrYSqPSvB3ov7sLvAcfvaxePeLvccTQKGdkDIhLYApZVDFuKg==
 
 "@restart/hooks@^0.4.7":
   version "0.4.15"
@@ -6371,9 +6371,9 @@
   integrity sha512-6UAa+t9eR3AZzRanZWGNUV8MoXwVpXQHMqCMdK8PNPwTy+G3kYHP+2KkTI+39vXETNb6krRijL+zWzmFrlfLjw==
 
 "@types/node@*", "@types/node@>=12", "@types/node@^20":
-  version "20.10.4"
-  resolved "https://registry.npmmirror.com/@types/node/-/node-20.10.4.tgz#b246fd84d55d5b1b71bf51f964bd514409347198"
-  integrity sha512-D08YG6rr8X90YB56tSIuBaddy/UXAA9RKJoFvrsnogAum/0pmjkgi4+2nx96A330FmioegBWmEYQ+syqCFaveg==
+  version "20.11.5"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.11.5.tgz#be10c622ca7fcaa3cf226cf80166abc31389d86e"
+  integrity sha512-g557vgQjUUfN76MZAN/dt1z3dzcUsimuysco0KeluHgrPdJXkP/XdAURgyO2W9fZWHRtRBiVKzKn8vyOAwlG+w==
   dependencies:
     undici-types "~5.26.4"
 
@@ -7751,7 +7751,7 @@ antd-token-previewer@^2.0.0-alpha.6:
 
 antd@5.12.8, antd@5.x, antd@^5.12.8, antd@^5.5.1:
   version "5.12.8"
-  resolved "https://registry.npmmirror.com/antd/-/antd-5.12.8.tgz#94fea825e9bae535af7adf70417fa1f0dadc4c98"
+  resolved "https://registry.yarnpkg.com/antd/-/antd-5.12.8.tgz#94fea825e9bae535af7adf70417fa1f0dadc4c98"
   integrity sha512-R2CRcB+aaVZurb3J0IKpBRWq5kW4CLcSqDF58/QBsqYdzK7XjSvM8+eF3rWVRUDbSJfGmyW7I80ywNRYpW1+vA==
   dependencies:
     "@ant-design/colors" "^7.0.2"
@@ -18848,7 +18848,7 @@ number-is-nan@^1.0.0:
 
 nwsapi@2.2.7, nwsapi@^2.2.0:
   version "2.2.7"
-  resolved "https://registry.npmjs.org/nwsapi/-/nwsapi-2.2.7.tgz#738e0707d3128cb750dddcfe90e4610482df0f30"
+  resolved "https://registry.yarnpkg.com/nwsapi/-/nwsapi-2.2.7.tgz#738e0707d3128cb750dddcfe90e4610482df0f30"
   integrity sha512-ub5E4+FBPKwAZx0UwIQOjYWGHTEq5sPqHQNRN8Z9e4A7u3Tj1weLJsL59yH9vmvqEtBHaOmT6cYQKIZOxp35FQ==
 
 oauth-sign@~0.9.0:
@@ -21605,11 +21605,11 @@ react-router-dom@6.3.0, react-router-dom@6.x, react-router-dom@^6.11.2:
     react-router "6.21.0"
 
 react-router@6.21.0, react-router@6.3.0, react-router@^6.11.2:
-  version "6.21.1"
-  resolved "https://registry.npmjs.org/react-router/-/react-router-6.21.1.tgz#8db7ee8d7cfc36513c9a66b44e0897208c33be34"
-  integrity sha512-W0l13YlMTm1YrpVIOpjCADJqEUpz1vm+CMo47RuFX4Ftegwm6KOYsL5G3eiE52jnJpKvzm6uB/vTKTPKM8dmkA==
+  version "6.21.3"
+  resolved "https://registry.yarnpkg.com/react-router/-/react-router-6.21.3.tgz#8086cea922c2bfebbb49c6594967418f1f167d70"
+  integrity sha512-a0H638ZXULv1OdkmiK6s6itNhoy33ywxmUFT/xtSoVyf9VnC7n7+VT4LjVzdIHSaF5TIh9ylUgxMXksHTgGrKg==
   dependencies:
-    "@remix-run/router" "1.14.1"
+    "@remix-run/router" "1.14.2"
 
 react-side-effect@^2.1.0:
   version "2.1.2"
