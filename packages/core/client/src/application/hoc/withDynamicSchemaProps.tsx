@@ -11,14 +11,20 @@ interface WithSchemaHookOptions {
 export function withDynamicSchemaProps<T = any>(Component: ComponentType<T>, options: WithSchemaHookOptions = {}) {
   const displayName = options.displayName || Component.displayName || Component.name;
   const ComponentWithProps: ComponentType<T> = (props) => {
-    const { dn } = useDesignable();
+    const { dn, findComponent } = useDesignable();
     const { scope } = useSchemaComponentContext();
     const useComponentPropsStr = useMemo(() => {
-      if (dn.getSchemaAttribute('x-component')) {
-        return dn.getSchemaAttribute('x-use-component-props');
+      const xComponent = dn.getSchemaAttribute('x-component');
+      const xDecorator = dn.getSchemaAttribute('x-decorator');
+      const xUseComponentProps = dn.getSchemaAttribute('x-use-component-props');
+      const xUseDecoratorProps = dn.getSchemaAttribute('x-use-decorator-props');
+
+      if (xComponent && xUseComponentProps && findComponent(xComponent) === ComponentWithProps) {
+        return xUseComponentProps;
       }
-      if (dn.getSchemaAttribute('x-decorator')) {
-        return dn.getSchemaAttribute('x-use-decorator-props');
+
+      if (xDecorator && xUseDecoratorProps && findComponent(xDecorator) === ComponentWithProps) {
+        return xUseDecoratorProps;
       }
     }, [dn]);
     const useSchemaProps = useMemo(() => {
