@@ -17,10 +17,11 @@ export const CreateDatabaseConnectAction = () => {
   const { t } = useTranslation();
   const [dialect, setDialect] = useState(null);
   const useDialectDataSource = (field) => {
-    const options = [...plugin.databaseTypes.values()].map((storageType) => {
+    const options = [...plugin.databaseTypes.keys()].map((key) => {
+      const databaseType = plugin.databaseTypes.get(key);
       return {
-        value: storageType.name,
-        label: compile(storageType.title),
+        value: databaseType.name,
+        label: compile(databaseType.label),
       };
     });
     field.dataSource = options;
@@ -43,12 +44,15 @@ export const CreateDatabaseConnectAction = () => {
                     'x-decorator': 'Form',
                     'x-decorator-props': {
                       initialValue: {
-                        dialect: databaseType.name,
+                        dialect: info.key,
                       },
                     },
-                    title: compile("{{t('Add new')}}") + ' - ' + compile(databaseType.title),
+                    title: compile("{{t('Add new')}}") + ' - ' + compile(databaseType.label),
                     properties: {
-                      ..._.cloneDeep(databaseType.properties),
+                      body: {
+                        type: 'void',
+                        'x-component': databaseType.DataSourceSettingsForm,
+                      },
                       footer: {
                         type: 'void',
                         'x-component': 'Action.Drawer.Footer',
@@ -82,10 +86,11 @@ export const CreateDatabaseConnectAction = () => {
                 },
               });
             },
-            items: [...plugin.databaseTypes.values()].map((storageType) => {
+            items: [...plugin.databaseTypes.keys()].map((key) => {
+              const databaseType = plugin.databaseTypes.get(key);
               return {
-                key: storageType.name,
-                label: compile(storageType.title),
+                key: key,
+                label: compile(databaseType?.label),
               };
             }),
           }}
