@@ -1,12 +1,12 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
-import { BlockRequestProviderV2 } from './DataBlockRequestProvider';
-import { Designable, useDesignable } from '../../schema-component';
-import { withDynamicSchemaProps } from '../hoc';
-import { DataBlockResourceProviderV2 } from './DataBlockResourceProvider';
-import { AssociationProviderV2, CollectionProviderV2, RecordV2 } from '../collection';
 import { UseRequestOptions, UseRequestService } from '../../api-client';
+import { Designable, useDesignable } from '../../schema-component';
+import { AssociationProviderV2, CollectionProviderV2, RecordV2 } from '../collection';
+import { withDynamicSchemaProps } from '../hoc';
 import { CollectionDataSourceProvider } from './CollectionDataSourceProvider';
+import { BlockRequestProviderV2 } from './DataBlockRequestProvider';
+import { DataBlockResourceProviderV2 } from './DataBlockResourceProvider';
 
 export interface AllDataBlockProps {
   collection: string;
