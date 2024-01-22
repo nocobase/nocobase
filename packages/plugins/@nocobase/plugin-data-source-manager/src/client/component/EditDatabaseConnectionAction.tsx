@@ -16,7 +16,6 @@ import { useForm, useField } from '@formily/react';
 import PluginDatabaseConnectionsClient from '../';
 import { NAMESPACE } from '../locale';
 
-
 export const EditDatabaseConnectionAction = () => {
   const record = useRecord();
   const [schema, setSchema] = useState({});
@@ -56,7 +55,7 @@ export const EditDatabaseConnectionAction = () => {
         <a
           onClick={() => {
             setVisible(true);
-            const databaseType = plugin.databaseTypes.get(record.type || 'mysql');
+            const databaseType = plugin.databaseTypes.get(record.dialect);
             setSchema({
               type: 'object',
               properties: {
@@ -71,7 +70,10 @@ export const EditDatabaseConnectionAction = () => {
                   },
                   title: compile("{{t('Edit')}}") + ' - ' + compile(record.name),
                   properties: {
-                    ..._.cloneDeep(databaseType?.properties),
+                    body: {
+                      type: 'void',
+                      'x-component': databaseType.DataSourceSettingsForm,
+                    },
                     footer: {
                       type: 'void',
                       'x-component': 'Action.Drawer.Footer',
