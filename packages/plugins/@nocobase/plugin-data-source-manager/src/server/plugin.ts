@@ -15,7 +15,7 @@ import { ConnectionsRolesResourcesModel } from './models/connections-roles-resou
 import { ConnectionsRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { Middleware } from '@nocobase/resourcer';
 
-export class PluginDatabaseConnectionsServer extends Plugin {
+export class PluginDataSourceManagerServer extends Plugin {
   async beforeLoad() {
     this.app.db.registerModels({
       DatabaseConnectionModel,
@@ -249,4 +249,4 @@ export class PluginDatabaseConnectionsServer extends Plugin {
   }
 }
 
-export default PluginDatabaseConnectionsServer;
+export default PluginDataSourceManagerServer;

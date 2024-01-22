@@ -41,12 +41,7 @@ export class PluginDataSourceManagerClient extends Plugin {
       topLevelName: `${NAMESPACE}/:name`,
       pluginKey: NAMESPACE,
     });
-
-    Object.values(databaseTypes).forEach((type) => {
-      this.registerDatabaseType(type.name, type);
-    });
-
-    this.collectionManager.addThirdResource(NAMESPACE, this.getThirdResource.bind(this))
+    this.collectionManager.addThirdResource(NAMESPACE, this.getThirdResource.bind(this));
   }
 
   async getThirdResource() {
