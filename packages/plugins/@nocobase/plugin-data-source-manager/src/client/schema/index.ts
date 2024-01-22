@@ -32,7 +32,7 @@ const collection = {
       name: 'dialect',
       interface: 'select',
       uiSchema: {
-        title: `{{t("Database dialaect", { ns: "${NAMESPACE}" })}}`,
+        title: `{{t("type", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Select',
       } as ISchema,
