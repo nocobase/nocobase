@@ -10,7 +10,7 @@ const collection = {
       name: 'name',
       interface: 'input',
       uiSchema: {
-        title: `{{t("DataSource",{ ns: "${NAMESPACE}" })}}`,
+        title: `{{t("Data source name",{ ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Input',
         required: true,
