@@ -11,7 +11,7 @@ export const BreadcumbTitle = () => {
     <Breadcrumb
       separator=">"
       items={[
-        { title: <Link to={app.pluginSettingsManager.getRoutePath(NAMESPACE)}>{lang('Data soure manager')}</Link> },
+        { title: <Link to={app.pluginSettingsManager.getRoutePath(NAMESPACE)}>{lang('Data source manager')}</Link> },
 
         {
           title: name,
