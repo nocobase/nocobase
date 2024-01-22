@@ -1,0 +1,23 @@
+{
+  "Database server": "数据库服务",
+  "Server name": "服务名称",
+  "Host": "服务器地址",
+  "Port": "端口",
+  "Database": "数据库",
+  "Database connections": "连接第三方数据库",
+  "Test Connection": "测试连接",
+  "Connection successful'": "连接成功",
+  "Display name": "名称",
+  "Username": "用户名",
+  "Password": "密码",
+  "Database dialaect": "数据库",
+  "Connection name": "名称",
+  "Description": "描述",
+  "Storage": "文件地址",
+  "Collections": "数据表",
+  "Permissions": "权限",
+  "Allow adding and modifying collection":"允许添加和修改数据表结构",
+  "Unknown field type":"未知字段类型",
+  "The following field types are not compatible and do not support output and display":"以下字段类型未适配，不支持输出和显示",
+  "Field database type":"字段数据库类型"
+}
