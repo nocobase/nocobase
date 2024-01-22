@@ -80,10 +80,10 @@ export default {
     useInitializer({ allCollections }) {
       const childItems = useMemo(
         () =>
-          allCollections.map(({ nsName, nsTitle, collections }) => ({
-            key: nsName,
-            name: nsName,
-            label: nsTitle,
+          allCollections.map(({ dataSourceName, dataSourceDescription, collections }) => ({
+            key: dataSourceName,
+            name: dataSourceName,
+            label: dataSourceDescription,
             type: 'subMenu',
             children: collections.map((item) => ({
               name: _.camelCase(`updateRecordForm-child-${item.name}`),
@@ -91,7 +91,7 @@ export default {
               title: item.title || item.tableName,
               schema: {
                 collection: item.name,
-                namespace: nsName,
+                dataSource: dataSourceName,
                 title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
                 formType: 'update',
                 'x-designer': 'UpdateFormDesigner',

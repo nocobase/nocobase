@@ -57,7 +57,7 @@ export class CollectionPlugin extends Plugin {
     this.addFieldInterfaces();
     this.addFieldGroups();
 
-    this.collectionManager.setMainResource(this.reloadCollections.bind(this));
+    this.collectionManager.setMainDataSource(this.reloadCollections.bind(this));
   }
 
   addFieldGroups() {

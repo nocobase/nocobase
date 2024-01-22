@@ -4,7 +4,7 @@ import { CollectionOptions } from './types';
 import React from 'react';
 import { DeletedPlaceholder } from '../application/collection/DeletedPlaceholder';
 import { CollectionExtendsProvider } from './CollectionManagerProvider';
-import { useCollectionNamespace } from '../block-provider/BlockProvider';
+import { useDataSourceName } from '../block-provider/BlockProvider';
 
 function getCollectionName(name?: string | CollectionOptions): string {
   if (!name) return undefined;
@@ -17,16 +17,16 @@ export const CollectionProvider: FC<{
   collection?: CollectionOptions | string;
   allowNull?: boolean;
   children?: ReactNode;
-  namespace?: string;
-}> = ({ children, allowNull, name, namespace, collection }) => {
+  dataSource?: string;
+}> = ({ children, allowNull, name, dataSource, collection }) => {
   const collectionName = getCollectionName(name || collection);
-  const collectionNamespace = useCollectionNamespace();
-  const namespaceValue = namespace || collectionNamespace || undefined;
+  const dataSourceName = useDataSourceName();
+  const dataSourceValue = dataSource || dataSourceName || undefined;
   const cm = useCollectionManagerV2();
-  const hasCollection = cm.getCollection(collectionName, { namespace: namespaceValue });
+  const hasCollection = cm.getCollection(collectionName, { dataSource: dataSourceValue });
   if (hasCollection || (allowNull && !collection))
     return (
-      <CollectionProviderV2 allowNull={allowNull} name={collectionName} namespace={namespaceValue}>
+      <CollectionProviderV2 allowNull={allowNull} name={collectionName} dataSource={dataSourceValue}>
         {children}
       </CollectionProviderV2>
     );

@@ -29,10 +29,10 @@ export const CalendarBlockInitializer = () => {
       componentType={'Calendar'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
-        const stringFieldsOptions = getCollectionFieldsOptions(item.name, 'string', { namespace: item.namespace });
+        const stringFieldsOptions = getCollectionFieldsOptions(item.name, 'string', { dataSource: item.dataSource });
         const dateFieldsOptions = getCollectionFieldsOptions(item.name, 'date', {
           association: ['o2o', 'obo', 'oho', 'm2o'],
-          namespace: item.namespace,
+          dataSource: item.dataSource,
         });
 
         const values = await FormDialog(
@@ -79,7 +79,7 @@ export const CalendarBlockInitializer = () => {
         insert(
           createCalendarBlockSchema({
             collection: item.name,
-            namespace: item.namespace,
+            dataSource: item.dataSource,
             fieldNames: {
               ...values,
             },

@@ -31,7 +31,7 @@ export const RecordAssociationFormBlockInitializer = () => {
           if (item.template.componentName === 'FormItem') {
             const blockSchema = createFormBlockSchema({
               collection: collectionName,
-              namespace: collection.namespace,
+              dataSource: collection.dataSource,
               resource,
               association: resource,
               action,
@@ -52,7 +52,7 @@ export const RecordAssociationFormBlockInitializer = () => {
             createFormBlockSchema({
               collection: collectionName,
               resource,
-              namespace: collection.namespace,
+              dataSource: collection.dataSource,
               association: resource,
               action,
               useSourceId: '{{ useSourceIdFromParentRecord }}',

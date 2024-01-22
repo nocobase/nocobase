@@ -1296,10 +1296,10 @@ export function getAssociationPath(str) {
   return str;
 }
 
-export const useAssociationNames = (namespace?: string) => {
+export const useAssociationNames = (dataSource?: string) => {
   let updateAssociationValues = new Set([]);
   let appends = new Set([]);
-  const { getCollectionJoinField, getCollection } = useCollectionManager(namespace);
+  const { getCollectionJoinField, getCollection } = useCollectionManager(dataSource);
   const fieldSchema = useFieldSchema();
   const _getAssociationAppends = (schema, str) => {
     schema.reduceProperties((pre, s) => {

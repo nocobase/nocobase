@@ -10,12 +10,11 @@ interface CollectionManagerOptionsV2 {
   collectionTemplates?: (typeof CollectionTemplateBase)[];
   fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
-  collectionNamespaces?: Record<string, string>;
   collectionMixins?: CollectionMixinConstructor[];
 }
 
 interface GetCollectionOptions {
-  namespace?: string;
+  dataSource?: string;
 }
 
 class CollectionManagerV2 {
@@ -23,8 +22,8 @@ class CollectionManagerV2 {
 
   constructor(options: CollectionManagerOptionsV2 = {}, app: Application);
 
-  addCollectionNamespaces(collectionNamespaces: Record<string, string>): void;
-  getCollectionNamespaces(): { name: string; title: string }[];
+  addDataSources(dataSources: Record<string, string>): void;
+  getDataSources(): { name: string; title: string }[];
 
   addCollectionTemplates(templateClasses: (typeof CollectionTemplateBase)[]): void;
   getCollectionTemplates(): CollectionTemplateBase[];
@@ -56,28 +55,40 @@ class CollectionManagerV2 {
 - Collections：数据表，具体参考：[Collection](/core/collection/collection)
 - CollectionTemplate：数据表模板，具体参考：[CollectionTemplate](/core/collection/collection-template)
 - FieldInterface：数据表字段，具体参考：[CollectionFieldInterface](/core/collection/collection-field-interface)
-- CollectionNamespace：数据表命名空间，具体参考：[CollectionNamespace](/core/collection/collection-manager#collection-namespace)
+- DataSource：数据表的数据源，具体参考：[CollectionNamespace](/core/collection/collection-manager#datasource)
 - CollectionMixins：数据表类的扩展，具体参考：[Collection Mixins](/core/collection/collection-manager#collection-mixins)
 - FieldGroups：数据字段类，具体参考：[Field Groups](/core/collection/collection-manager#field-groups)
 
-## Collection Namespace
+## DataSource
 
 NocoBase 支持[多数据源](#)，每个数据源在 Collection 中对应一个命名空间。命名空间是一个 Key-Value 对象，Key 为命名空间名称，Value 为标题。例如：
 
 ```tsx | pure
-{
-  "main": "主数据源",
-  "db2": "DB2"
-}
+[
+  {
+    name: 'main',
+    description: '主数据源',
+    collections: [
+      // ...
+    ]
+  },
+  {
+    name: 'db2',
+    description: 'DB2',
+    collections: [
+      // ...
+    ]
+  },
+]
 ```
 
-在调用 `collectionManager.getCollections()` 等方法时，可以通过 `namespace` 参数指定命名空间，例如：
+在调用 `collectionManager.getCollections()` 等方法时，可以通过 `dataSource` 参数指定数据表来源，例如：
 
 ```tsx | pure
 const collections = collectionManager.getCollections('db2');
 ```
 
-如果不传递 `namespace` 参数，则返回默认命名空间的数据表。
+如果不传递 `dataSource` 参数，则返回默认数据源的数据表。
 
 ## Collection Mixins
 
@@ -173,7 +184,7 @@ interface CollectionManagerOptionsV2 {
   collectionTemplates?: (typeof CollectionTemplateBase)[];
   fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
-  collectionNamespaces?: Record<string, string>;
+  dataSources?: Record<string, string>;
   collectionMixins?: CollectionMixinConstructor[];
 }
 ```
@@ -224,7 +235,7 @@ const app = new Application({
     collections: [userCollectionOptions],
     collectionTemplates: [TreeCollectionTemplate],
     fieldInterfaces: [CheckboxFieldInterface],
-    collectionNamespaces: {
+    dataSources: {
       "db2": "DB2"
     },
     fieldGroups: {
@@ -241,11 +252,11 @@ const app = new Application({
 2. `collections` 如果是一个对象，则 Key 为命名空间名称，Value 为数据表数组；如果是数组，则会添加到默认命名空间。例如：
 
 ```tsx | pure
-import { DEFAULT_COLLECTION_NAMESPACE_NAME } from '@nocobase/client';
+import { DEFAULT_DATA_SOURCE_NAME } from '@nocobase/client';
 
 const collectionManager = new CollectionManager({
   collections: {
-    [DEFAULT_COLLECTION_NAMESPACE_NAME]: [postCollection],
+    [DEFAULT_DATA_SOURCE_NAME]: [postCollection],
     "db2": [userCollection],
   }
 })
@@ -253,7 +264,7 @@ const collectionManager = new CollectionManager({
 
 
 ```tsx | pure
-import { DEFAULT_COLLECTION_NAMESPACE_NAME } from '@nocobase/client';
+import { DEFAULT_DATA_SOURCE_NAME } from '@nocobase/client';
 
 const collectionManager = new CollectionManager({
   collections: [userCollection]
@@ -262,7 +273,7 @@ const collectionManager = new CollectionManager({
 // 等同于
 const collectionManager = new CollectionManager({
   collections: {
-    [DEFAULT_COLLECTION_NAMESPACE_NAME]: [userCollection]
+    [DEFAULT_DATA_SOURCE_NAME]: [userCollection]
   }
 })
 ```
@@ -274,7 +285,7 @@ import { Plugin } from '@nocobase/client';
 
 class MyPlugin extends Plugin {
   async load()  {
-    this.app.collectionManager.addCollectionNamespaces({
+    this.app.collectionManager.addDataSources({
       "db2": "DB2"
     });
 
@@ -286,7 +297,7 @@ class MyPlugin extends Plugin {
 
 ## 实例方法
 
-### cm.addCollectionNamespaces(collectionNamespaces)
+### cm.addDataSources(dataSources)
 
 添加数据表命名空间。
 
@@ -294,7 +305,7 @@ class MyPlugin extends Plugin {
 
 ```tsx | pure
 class CollectionManagerV2 {
-  addCollectionNamespaces(collectionNamespaces: Record<string, string>): void;
+  addDataSources(dataSources: Record<string, string>): void;
 }
 ```
 
@@ -305,14 +316,14 @@ import { Plugin } from '@nocobase/client';
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.collectionManager.addCollectionNamespaces({
+    this.app.collectionManager.addDataSources({
       "db2": "DB2"
     });
   }
 }
 ```
 
-### cm.getCollectionNamespaces()
+### cm.getDataSources()
 
 获取数据表命名空间。
 
@@ -320,14 +331,14 @@ class MyPlugin extends Plugin {
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollectionNamespaces(): { name: string; title: string }[];
+  getDataSources(): { name: string; title: string }[];
 }
 ```
 
 - 示例
 
 ```tsx | pure
-collectionManager.getCollectionNamespaces(); // [ { name: 'main', title: '主数据源' }, { name: 'db2', title: 'DB2' }]
+collectionManager.getDataSources(); // [ { name: 'main', title: '主数据源' }, { name: 'db2', title: 'DB2' }]
 ```
 
 ### cm.addCollectionTemplates(templates)
@@ -506,8 +517,8 @@ class CollectionManagerV2 {
 
 - 详解
 
-1. 如果不传递 `namespace` 参数，则返回默认命名空间的数据表。
-2. 如果传递 `namespace` 参数，则返回指定命名空间的数据表。
+1. 如果不传递 `dataSource` 参数，则返回默认命名空间的数据表。
+2. 如果传递 `dataSource` 参数，则返回指定命名空间的数据表。
 3. 如果传递 `predicate` 参数，则返回符合条件的数据表。
 
 - 示例
@@ -517,7 +528,7 @@ collectionManager.getCollections(); // [ userCollection ]
 
 collectionManager.getCollections('db2'); // [ postCollection ]
 
-collectionManager.getCollections(collection => collection.name === 'posts', { namespace: 'db2' }); // [ postCollection ]
+collectionManager.getCollections(collection => collection.name === 'posts', { dataSource: 'db2' }); // [ postCollection ]
 ```
 
 ### cm.setCollections(collections, options?)
@@ -558,7 +569,7 @@ collectionManager.getCollection('users'); // userCollection
 collectionManager.getCollection('users.posts'); // postCollection
 collectionManager.getCollection('users.profileId'); // profileCollection
 
-collectionManager.getCollection('users', { namespace: 'db2' }); // userCollection
+collectionManager.getCollection('users', { dataSource: 'db2' }); // userCollection
 ```
 
 结合 Mixin 使用：

@@ -15,10 +15,10 @@ export const GridCardBlockInitializer = () => {
       icon={<OrderedListOutlined />}
       componentType={'GridCard'}
       onCreateBlockSchema={async ({ item }) => {
-        const collection = getCollection(item.name, item.namespace);
+        const collection = getCollection(item.name, item.dataSource);
         const schema = createGridCardBlockSchema({
           collection: item.name,
-          namespace: item.namespace,
+          dataSource: item.dataSource,
           rowKey: collection.filterTargetKey || 'id',
         });
         insert(schema);

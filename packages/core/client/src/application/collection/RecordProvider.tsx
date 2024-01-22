@@ -9,16 +9,26 @@ export interface RecordProviderProps<DataType = {}, ParentDataType = {}> {
   isNew?: boolean;
   record?: RecordV2<DataType, ParentDataType> | DataType;
   parentRecord?: RecordV2<ParentDataType> | DataType;
+  /**
+   * 当前记录所属的 collection name
+   */
+  collectionName?: string;
 }
 
-export const RecordProviderV2: FC<RecordProviderProps> = ({ isNew, record, parentRecord, children }) => {
+export const RecordProviderV2: FC<RecordProviderProps> = ({
+  isNew,
+  record,
+  parentRecord,
+  children,
+  collectionName,
+}) => {
   const parentRecordValue = useMemo(() => {
     if (parentRecord) {
       if (parentRecord instanceof RecordV2) return parentRecord;
-      return new RecordV2({ data: parentRecord });
+      return new RecordV2({ data: parentRecord, collectionName });
     }
     if (record instanceof RecordV2) return record.parentRecord;
-  }, [parentRecord, record]);
+  }, [collectionName, parentRecord, record]);
 
   const currentRecordValue = useMemo(() => {
     let res: RecordV2;
@@ -27,14 +37,14 @@ export const RecordProviderV2: FC<RecordProviderProps> = ({ isNew, record, paren
         res = record;
         res.isNew = record.isNew || isNew;
       } else {
-        res = new RecordV2({ data: record, isNew });
+        res = new RecordV2({ data: record, isNew, collectionName });
       }
     } else {
-      res = new RecordV2({ isNew });
+      res = new RecordV2({ isNew, collectionName });
     }
     res.setParentRecord(parentRecordValue);
     return res;
-  }, [parentRecordValue, record, isNew]);
+  }, [record, parentRecordValue, isNew, collectionName]);
 
   return <RecordContextV2.Provider value={currentRecordValue}>{children}</RecordContextV2.Provider>;
 };

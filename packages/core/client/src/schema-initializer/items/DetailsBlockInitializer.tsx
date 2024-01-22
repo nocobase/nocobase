@@ -15,10 +15,10 @@ export const DetailsBlockInitializer = () => {
       icon={<TableOutlined />}
       componentType={'Details'}
       onCreateBlockSchema={async ({ item }) => {
-        const collection = getCollection(item.name, item.namespace);
+        const collection = getCollection(item.name, item.dataSource);
         const schema = createDetailsBlockSchema({
           collection: item.name,
-          namespace: item.namespace,
+          dataSource: item.dataSource,
           rowKey: collection.filterTargetKey || 'id',
           actionInitializers:
             (collection.template !== 'view' || collection?.writableView) &&

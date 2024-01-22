@@ -8,7 +8,7 @@ import template from 'lodash/template';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  DEFAULT_COLLECTION_NAMESPACE_NAME,
+  DEFAULT_DATA_SOURCE_NAME,
   TableFieldResource,
   WithoutTableFieldResource,
   useAPIClient,
@@ -46,7 +46,7 @@ interface UseResourceProps {
   association?: any;
   useSourceId?: any;
   collection?: any;
-  namespace?: any;
+  dataSource?: any;
   block?: any;
 }
 
@@ -61,7 +61,7 @@ export const useAssociation = (props) => {
 };
 
 const useResource = (props: UseResourceProps) => {
-  const { block, collection, namespace, resource, useSourceId } = props;
+  const { block, collection, dataSource, resource, useSourceId } = props;
   const record = useRecord();
   const api = useAPIClient();
   const { fieldSchema } = useActionContext();
@@ -72,10 +72,10 @@ const useResource = (props: UseResourceProps) => {
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   const __parent = useContext(BlockRequestContext);
   const headers = useMemo(() => {
-    if (namespace && namespace !== DEFAULT_COLLECTION_NAMESPACE_NAME) {
-      return { 'x-connection': namespace };
+    if (dataSource && dataSource !== DEFAULT_DATA_SOURCE_NAME) {
+      return { 'x-connection': dataSource };
     }
-  }, [namespace]);
+  }, [dataSource]);
 
   if (block === 'TableField') {
     const options = {
@@ -303,9 +303,9 @@ export const useBlockContext = () => {
   return useContext(BlockContext);
 };
 
-export const CollectionNamespace = createContext<string>(undefined);
-export const useCollectionNamespace = () => {
-  return useContext(CollectionNamespace);
+export const DataSourceName = createContext<string>(undefined);
+export const useDataSourceName = () => {
+  return useContext(DataSourceName);
 };
 
 export const BlockProvider = (props: {
@@ -313,13 +313,13 @@ export const BlockProvider = (props: {
   resource: any;
   collection?: any;
   association?: any;
-  namespace?: string;
+  dataSource?: string;
   params?: any;
   children?: any;
 }) => {
-  const { collection, association, name, namespace } = props;
+  const { collection, association, name, dataSource } = props;
   const resource = useResource(props);
-  const { getAssociationAppends } = useAssociationNames(namespace);
+  const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
   const params = useMemo(() => {
     if (!props.params?.['appends']) {
@@ -331,7 +331,7 @@ export const BlockProvider = (props: {
 
   return (
     <BlockContext.Provider value={blockValue}>
-      <CollectionNamespace.Provider value={namespace}>
+      <DataSourceName.Provider value={dataSource}>
         <MaybeCollectionProvider collection={collection}>
           <BlockAssociationContext.Provider value={association}>
             <BlockResourceContext.Provider value={resource}>
@@ -345,7 +345,7 @@ export const BlockProvider = (props: {
             </BlockResourceContext.Provider>
           </BlockAssociationContext.Provider>
         </MaybeCollectionProvider>
-      </CollectionNamespace.Provider>
+      </DataSourceName.Provider>
     </BlockContext.Provider>
   );
 };
@@ -360,7 +360,7 @@ export const useFilterByTk = () => {
   const record = useRecord();
   const collection = useCollection();
   const { getCollectionField } = useCollectionManager();
-  const assoc = useContext(BlockAssociationContext);
+  const assoc = useBlockAssociationContext();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   if (!withoutTableFieldResource) {
     if (resource instanceof TableFieldResource || __parent?.block === 'TableField') {
@@ -378,7 +378,7 @@ export const useFilterByTk = () => {
 export const useSourceIdFromRecord = () => {
   const record = useRecord();
   const { getCollectionField } = useCollectionManager();
-  const assoc = useContext(BlockAssociationContext);
+  const assoc = useBlockAssociationContext();
   if (assoc) {
     const association = getCollectionField(assoc);
     return record?.[association.sourceKey || 'id'];
@@ -388,7 +388,7 @@ export const useSourceIdFromRecord = () => {
 export const useSourceIdFromParentRecord = () => {
   const record = useRecord();
   const { getCollectionField } = useCollectionManager();
-  const assoc = useContext(BlockAssociationContext);
+  const assoc = useBlockAssociationContext();
   if (assoc) {
     const association = getCollectionField(assoc);
     return record?.__parent?.[association.sourceKey || 'id'];

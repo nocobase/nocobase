@@ -15,10 +15,10 @@ export const TableBlockInitializer = () => {
       icon={<TableOutlined />}
       componentType={'Table'}
       onCreateBlockSchema={async ({ item }) => {
-        const collection = getCollection(item.name, item.namespace);
+        const collection = getCollection(item.name, item.dataSource);
         const schema = createTableBlockSchema({
           collection: item.name,
-          namespace: item.namespace,
+          dataSource: item.dataSource,
           rowKey: collection.filterTargetKey || 'id',
         });
         insert(schema);

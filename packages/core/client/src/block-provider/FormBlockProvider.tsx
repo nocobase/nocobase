@@ -8,8 +8,8 @@ import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { FormActiveFieldsProvider } from './hooks';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
+import { FormActiveFieldsProvider } from './hooks';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -106,16 +106,19 @@ export const FormBlockProvider = (props) => {
   }
   const createFlag =
     (currentCollection.name === (collection?.name || collection) && !isDetailBlock) || !currentCollection.name;
+
+  if (!detailFlag && !createFlag && !isCusomeizeCreate) {
+    return null;
+  }
+
   return (
-    (detailFlag || createFlag || isCusomeizeCreate) && (
-      <TemplateBlockProvider>
-        <BlockProvider name={props.name || 'form'} {...props} block={'form'}>
-          <FormActiveFieldsProvider name="form">
-            <InternalFormBlockProvider {...props} />
-          </FormActiveFieldsProvider>
-        </BlockProvider>
-      </TemplateBlockProvider>
-    )
+    <TemplateBlockProvider>
+      <BlockProvider name={props.name || 'form'} {...props} block={'form'}>
+        <FormActiveFieldsProvider name="form">
+          <InternalFormBlockProvider {...props} />
+        </FormActiveFieldsProvider>
+      </BlockProvider>
+    </TemplateBlockProvider>
   );
 };
 

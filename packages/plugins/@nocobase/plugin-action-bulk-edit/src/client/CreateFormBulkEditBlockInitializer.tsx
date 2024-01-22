@@ -30,7 +30,7 @@ export const CreateFormBulkEditBlockInitializer = () => {
               actionInitializers: 'CreateFormActionInitializers',
               association,
               collection: collection.name,
-              namespace: collection.namespace,
+              dataSource: collection.dataSource,
               template: s,
             });
             if (item.mode === 'reference') {
@@ -47,7 +47,7 @@ export const CreateFormBulkEditBlockInitializer = () => {
               actionInitializers: 'BulkEditFormActionInitializers',
               association,
               collection: collection.name,
-              namespace: collection.namespace,
+              dataSource: collection.dataSource,
             }),
           );
         }

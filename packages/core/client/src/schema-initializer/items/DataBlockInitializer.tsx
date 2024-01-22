@@ -289,7 +289,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
           insert(
             createBlockSchema({
               collection: item.collectionName || item.name,
-              namespace: item.namespace,
+              dataSource: item.dataSource,
               isCusomeizeCreate,
             }),
           );

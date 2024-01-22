@@ -90,7 +90,7 @@ const BlockProvider = (props) => {
 export const SnapshotBlockProvider = (props) => {
   const record = useRecord();
   const { __tableName } = record;
-  const { getInheritCollections } = useCollectionManager(props.namespace);
+  const { getInheritCollections } = useCollectionManager(props.dataSource);
   const inheritCollections = getInheritCollections(__tableName);
   const { designable } = useDesignable();
   const flag =

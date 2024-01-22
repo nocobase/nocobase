@@ -15,10 +15,10 @@ export const ListBlockInitializer = () => {
       icon={<OrderedListOutlined />}
       componentType={'List'}
       onCreateBlockSchema={async ({ item }) => {
-        const collection = getCollection(item.name, item.namespace);
+        const collection = getCollection(item.name, item.dataSource);
         const schema = createListBlockSchema({
           collection: item.name,
-          namespace: item.namespace,
+          dataSource: item.dataSource,
           rowKey: collection.filterTargetKey || 'id',
         });
         insert(schema);

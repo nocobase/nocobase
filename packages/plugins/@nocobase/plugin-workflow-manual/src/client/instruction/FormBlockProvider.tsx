@@ -2,9 +2,9 @@ import { createForm } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import {
   BlockRequestContext,
-  CollectionNamespace,
   CollectionProvider,
-  DEFAULT_COLLECTION_NAMESPACE_NAME,
+  DEFAULT_DATA_SOURCE_NAME,
+  DataSourceName,
   FormActiveFieldsProvider,
   FormBlockContext,
   FormV2,
@@ -21,9 +21,9 @@ export function FormBlockProvider(props) {
   const fieldSchema = useFieldSchema();
   const field = useField();
   const formBlockRef = useRef(null);
-  const namespace = props.namespace || DEFAULT_COLLECTION_NAMESPACE_NAME;
+  const dataSource = props.dataSource || DEFAULT_DATA_SOURCE_NAME;
 
-  const { getAssociationAppends } = useAssociationNames(namespace);
+  const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
   const [formKey] = Object.keys(fieldSchema.toJSON().properties ?? {});
   const values = userJob?.result?.[formKey];
@@ -55,10 +55,10 @@ export function FormBlockProvider(props) {
   }, [values]);
   const api = useAPIClient();
   const headers = useMemo(() => {
-    if (namespace && namespace !== DEFAULT_COLLECTION_NAMESPACE_NAME) {
-      return { 'x-connection': namespace };
+    if (dataSource && dataSource !== DEFAULT_DATA_SOURCE_NAME) {
+      return { 'x-connection': dataSource };
     }
-  }, [namespace]);
+  }, [dataSource]);
 
   const resource = api.resource(props.collection, undefined, headers);
   const __parent = useContext(BlockRequestContext);
@@ -75,7 +75,7 @@ export function FormBlockProvider(props) {
   }, [field, form, params, service, updateAssociationValues]);
 
   return !userJob.status || values ? (
-    <CollectionNamespace.Provider value={namespace}>
+    <DataSourceName.Provider value={dataSource}>
       <CollectionProvider collection={props.collection}>
         <RecordProvider record={values} parent={false}>
           <FormActiveFieldsProvider name="form">
@@ -92,6 +92,6 @@ export function FormBlockProvider(props) {
           </FormActiveFieldsProvider>
         </RecordProvider>
       </CollectionProvider>
-    </CollectionNamespace.Provider>
+    </DataSourceName.Provider>
   ) : null;
 }

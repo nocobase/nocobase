@@ -11,7 +11,7 @@
 ```tsx | pure
 interface CollectionProviderProps {
   name: string;
-  namespace?: string;
+  dataSource?: string;
   children?: ReactNode;
 }
 ```
@@ -20,7 +20,7 @@ interface CollectionProviderProps {
 
 组件会根据 `name` 去 [CollectionManager](/core/collection/collection-manager) 中查询数据表信息，如果查询不到，则会不进行渲染。
 
-`namespace` 用于指定数据表所在的[命名空间](/core/collection/collection-manager#collectionnamespace)，如果不指定，则默认命名空间。
+`dataSource` 用于指定数据表所在的[命名空间](/core/collection/collection-manager#datasource)，如果不指定，则默认命名空间。
 
 - 示例
 

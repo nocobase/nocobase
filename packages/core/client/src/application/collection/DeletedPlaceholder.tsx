@@ -7,7 +7,7 @@ export const DeletedPlaceholder: FC<{ type: string; name?: string | number }> = 
   const { designable } = useDesignable();
   const { t } = useTranslation();
   if (!name) {
-    console.warn('DeletedPlaceholder: name is required');
+    console.error(`DeletedPlaceholder: ${type} name is required`);
     return null;
   }
   if (!designable && process.env.NODE_ENV !== 'development') return null;

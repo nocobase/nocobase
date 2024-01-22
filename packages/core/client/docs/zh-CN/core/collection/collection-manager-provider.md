@@ -37,12 +37,10 @@ const Demo = () => {
 ```tsx | pure
 const Demo = () => {
   const collectionManager = useCollectionManagerV2();
-  const collectionNamespaces = useMemo(() => collectionManager.getCollectionNames(), [collectionManager]);
+  const allCollections = useMemo(() => collectionManager.getAllCollections(), [collectionManager]);
 
   return <div>
-    {collectionNamespaces.map((namespace) => {
-      return <div key={namespace.name}>{namespace.name}: {namespace.title}</div>;
-    })}
+    <pre>{JSON.stringify(allCollections, null, 2)}</pre>
   </div>;
 };
 ```
@@ -54,21 +52,17 @@ import { Application, useCollectionManagerV2, useCompile } from '@nocobase/clien
 const Demo = () => {
   const compile = useCompile();
   const collectionManager = useCollectionManagerV2();
-  const collectionNamespaces = useMemo(() => collectionManager.getCollectionNamespaces(), [collectionManager]);
+  const dataSources = useMemo(() => collectionManager.getDataSources(), [collectionManager]);
 
   return <div>
-    {collectionNamespaces.map((namespace) => {
-      return <div key={namespace.name}>{namespace.name}: { compile(namespace.title)}</div>;
-    })}
+    <pre>{JSON.stringify(allCollections, null, 2)}</pre>
   </div>;
 };
 
 const app = new Application({
   providers: [Demo],
   collectionManager: {
-    collectionNamespaces: {
-      'db2': "DB 2",
-    }
+    // ...
   }
 });
 

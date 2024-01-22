@@ -36,7 +36,7 @@ const ChartInitializer = () => {
           schema: {},
           field: null,
           collection: item.name,
-          namespace: item.namespace,
+          dataSource: item.dataSource,
           service: null,
           data: undefined,
         });
