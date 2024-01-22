@@ -41,10 +41,11 @@ export class PluginDataSourceManagerClient extends Plugin {
       topLevelName: `${NAMESPACE}/:name`,
       pluginKey: NAMESPACE,
     });
-    this.collectionManager.addThirdResource(NAMESPACE, this.getThirdResource.bind(this));
+
+    this.collectionManager.setThirdDataSource(this.getThirdDataSource.bind(this));
   }
 
-  async getThirdResource() {
+  async getThirdDataSource() {
     const service = await this.app.apiClient.request<{
       data: any;
     }>({

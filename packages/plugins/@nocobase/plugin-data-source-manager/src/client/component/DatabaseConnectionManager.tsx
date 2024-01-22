@@ -16,7 +16,6 @@ import { databaseConnectionSchema } from '../schema';
 import { CreateDatabaseConnectAction } from './CreateDatabaseConnectAction';
 import { EditDatabaseConnectionAction } from './EditDatabaseConnectionAction';
 import { ViewDatabaseConnectionAction } from './ViewDatabaseConnectionAction';
-import { NAMESPACE } from '../locale';
 
 export const DatabaseConnectionManagerPane = () => {
   const compile = useCompile();
@@ -31,9 +30,9 @@ export const DatabaseConnectionManagerPane = () => {
 
   useEffect(() => {
     return () => {
-      cm.reloadThirdResource(NAMESPACE)
-    }
-  }, [])
+      cm.reloadThirdDataSource();
+    };
+  }, []);
 
   const useRefreshActionProps = () => {
     const service = useResourceActionContext();
