@@ -1,4 +1,5 @@
-export const getConnectionPath = (name: string | number) => `/admin/settings/database-connections/${name}`;
-export const getConnectionCollectionPath = (name: string | number) => `/admin/settings/database-connections/${name}/collections`;
-export const getConnectionPermissionPath = (name: string | number) => `/admin/settings/database-connections/${name}/permissions`;
-
+export const getConnectionPath = (name: string | number) => `/admin/settings/data-source-manager/${name}`;
+export const getConnectionCollectionPath = (name: string | number) =>
+  `/admin/settings/data-source-manager/${name}/collections`;
+export const getConnectionPermissionPath = (name: string | number) =>
+  `/admin/settings/data-source-manager/${name}/permissions`;
