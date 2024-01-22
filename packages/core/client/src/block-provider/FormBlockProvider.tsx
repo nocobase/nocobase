@@ -15,7 +15,7 @@ import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
-import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { BlockProvider, DataSourceName, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider, useAssociationNames } from './hooks';
 
@@ -176,7 +176,7 @@ export const FormBlockProvider = (props) => {
 };
 
 export const FormBlockProviderV2 = withDynamicSchemaProps((props) => {
-  const { association } = props;
+  const { association, dataSource } = props;
   let record = useRecordV2(false);
   let parentRecord = null;
 
@@ -186,13 +186,15 @@ export const FormBlockProviderV2 = withDynamicSchemaProps((props) => {
   }
 
   return (
-    <DataBlockProviderV2 parentRecord={parentRecord} record={record} {...props}>
-      <TemplateBlockProvider>
-        <FormActiveFieldsProvider name="form">
-          <InternalFormBlockProviderV2 {...props} />
-        </FormActiveFieldsProvider>
-      </TemplateBlockProvider>
-    </DataBlockProviderV2>
+    <DataSourceName.Provider value={dataSource}>
+      <DataBlockProviderV2 parentRecord={parentRecord} record={record} {...props}>
+        <TemplateBlockProvider>
+          <FormActiveFieldsProvider name="form">
+            <InternalFormBlockProviderV2 {...props} />
+          </FormActiveFieldsProvider>
+        </TemplateBlockProvider>
+      </DataBlockProviderV2>
+    </DataSourceName.Provider>
   );
 });
 
