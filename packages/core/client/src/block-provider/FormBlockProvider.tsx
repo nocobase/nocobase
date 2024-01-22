@@ -225,7 +225,7 @@ export const useFormBlockProps = () => {
 };
 
 export const useFormDataBlockProps = (props: any = {}) => {
-  const { getAssociationAppends } = useAssociationNames(props?.namespace);
+  const { getAssociationAppends } = useAssociationNames(props?.dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
   const params = useMemo(() => {
     if (!props?.params?.['appends']) {
