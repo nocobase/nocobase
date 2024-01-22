@@ -1,7 +1,12 @@
 import Database from '@nocobase/database';
 import { getNameByParams, parseRequest, ResourcerContext, ResourceType } from '@nocobase/resourcer';
 
-export function db2resource(ctx: ResourcerContext & { db: Database }, next: () => Promise<any>) {
+export async function db2resource(ctx: ResourcerContext & { db: Database }, next: () => Promise<any>) {
+  const dataSource = ctx.get('x-data-source');
+  if (dataSource) {
+    await next();
+    return;
+  }
   const resourcer = ctx.resourcer;
   const database = ctx.db;
   const params = parseRequest(
