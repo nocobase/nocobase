@@ -4,7 +4,7 @@
   "Host": "服务器地址",
   "Port": "端口",
   "Database": "数据库",
-  "Database connections": "连接第三方数据库",
+  "Data soure manager": "数据源管理",
   "Test Connection": "测试连接",
   "Connection successful'": "连接成功",
   "Display name": "名称",

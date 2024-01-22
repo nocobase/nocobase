@@ -12,13 +12,13 @@ export class PluginDataSourceManagerClient extends Plugin {
   async load() {
     this.app.use(DatabaseConnectionProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {
-      title: `{{t("Database connections", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Data soure manager", { ns: "${NAMESPACE}" })}}`,
       icon: 'ClusterOutlined',
       showTabs: false,
       aclSnippet: 'pm.database-connections.manager',
     });
     this.app.pluginSettingsManager.add(`${NAMESPACE}.list`, {
-      title: `{{t("Database connections", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Data soure manager", { ns: "${NAMESPACE}" })}}`,
       Component: DatabaseConnectionManagerPane,
       sort: 1,
     });
