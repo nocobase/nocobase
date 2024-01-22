@@ -11,7 +11,7 @@
   "Username": "用户名",
   "Password": "密码",
   "Database dialaect": "数据库",
-  "Connection name": "名称",
+  "DataSource": "数据源",
   "Description": "描述",
   "Storage": "文件地址",
   "Collections": "数据表",
