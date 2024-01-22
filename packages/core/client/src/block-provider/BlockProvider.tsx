@@ -13,6 +13,7 @@ import {
   WithoutTableFieldResource,
   useAPIClient,
   useActionContext,
+  useDataBlockPropsV2,
   useDesignable,
   useRecord,
 } from '../';
@@ -346,17 +347,13 @@ export const BlockProvider = (props: {
   );
 };
 
-export const useBlockAssociationContext = () => {
-  return useContext(BlockAssociationContext);
-};
-
 export const useFilterByTk = () => {
   const { resource, __parent } = useContext(BlockRequestContext);
   const recordIndex = useRecordIndex();
   const record = useRecord();
   const collection = useCollection();
   const { getCollectionField } = useCollectionManager();
-  const assoc = useBlockAssociationContext();
+  const { association: assoc } = useDataBlockPropsV2();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   if (!withoutTableFieldResource) {
     if (resource instanceof TableFieldResource || __parent?.block === 'TableField') {
@@ -374,7 +371,7 @@ export const useFilterByTk = () => {
 export const useSourceIdFromRecord = () => {
   const record = useRecord();
   const { getCollectionField } = useCollectionManager();
-  const assoc = useBlockAssociationContext();
+  const { association: assoc } = useDataBlockPropsV2();
   if (assoc) {
     const association = getCollectionField(assoc);
     return record?.[association.sourceKey || 'id'];
@@ -384,7 +381,7 @@ export const useSourceIdFromRecord = () => {
 export const useSourceIdFromParentRecord = () => {
   const record = useRecord();
   const { getCollectionField } = useCollectionManager();
-  const assoc = useBlockAssociationContext();
+  const { association: assoc } = useDataBlockPropsV2();
   if (assoc) {
     const association = getCollectionField(assoc);
     return record?.__parent?.[association.sourceKey || 'id'];

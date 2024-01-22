@@ -1,10 +1,15 @@
-import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
-import { useBlockAssociationContext, useBlockRequestContext } from '../../block-provider';
+import React from 'react';
+import {
+  SchemaInitializerItem,
+  useDataBlockPropsV2,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+} from '../../application';
+import { useBlockRequestContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 export const RecordReadPrettyFormBlockInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -20,7 +25,7 @@ export const RecordReadPrettyFormBlockInitializer = () => {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const currentCollection = useCollection();
   const collection = targetCollection || currentCollection;
-  const association = useBlockAssociationContext();
+  const { association } = useDataBlockPropsV2();
   const { block } = useBlockRequestContext();
   const actionInitializers =
     block !== 'TableField' ? itemConfig.actionInitializers || 'ReadPrettyFormActionInitializers' : null;

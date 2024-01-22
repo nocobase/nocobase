@@ -1,17 +1,17 @@
-import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
-import {
-  useBlockAssociationContext,
-  useCollection,
-  useSchemaTemplateManager,
-  useRecordCollectionDataSourceItems,
-  useBlockRequestContext,
-  useSchemaInitializer,
-  SchemaInitializerItem,
-  useSchemaInitializerItem,
-} from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import {
+  SchemaInitializerItem,
+  useBlockRequestContext,
+  useCollection,
+  useDataBlockPropsV2,
+  useRecordCollectionDataSourceItems,
+  useSchemaInitializer,
+  useSchemaInitializerItem,
+  useSchemaTemplateManager,
+} from '@nocobase/client';
+import React from 'react';
 
 export const createSnapshotBlockSchema = (options) => {
   const {
@@ -75,7 +75,7 @@ export const SnapshotBlockInitializersDetailItem = () => {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const collection = targetCollection || useCollection();
-  const association = useBlockAssociationContext();
+  const { association } = useDataBlockPropsV2();
   const { block } = useBlockRequestContext();
   const actionInitializers =
     block !== 'TableField' ? itemConfig.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
