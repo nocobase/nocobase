@@ -10,7 +10,6 @@ interface CollectionManagerOptionsV2 {
   collectionTemplates?: (typeof CollectionTemplateBase)[];
   fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
-  dataSources?: Record<string, string>;
   collectionMixins?: CollectionMixinConstructor[];
 }
 
@@ -56,28 +55,40 @@ class CollectionManagerV2 {
 - Collections：数据表，具体参考：[Collection](/core/collection/collection)
 - CollectionTemplate：数据表模板，具体参考：[CollectionTemplate](/core/collection/collection-template)
 - FieldInterface：数据表字段，具体参考：[CollectionFieldInterface](/core/collection/collection-field-interface)
-- CollectionNamespace：数据表命名空间，具体参考：[CollectionNamespace](/core/collection/collection-manager#collection-namespace)
+- DataSource：数据表的数据源，具体参考：[CollectionNamespace](/core/collection/collection-manager#datasource)
 - CollectionMixins：数据表类的扩展，具体参考：[Collection Mixins](/core/collection/collection-manager#collection-mixins)
 - FieldGroups：数据字段类，具体参考：[Field Groups](/core/collection/collection-manager#field-groups)
 
-## Collection Namespace
+## DataSource
 
 NocoBase 支持[多数据源](#)，每个数据源在 Collection 中对应一个命名空间。命名空间是一个 Key-Value 对象，Key 为命名空间名称，Value 为标题。例如：
 
 ```tsx | pure
-{
-  "main": "主数据源",
-  "db2": "DB2"
-}
+[
+  {
+    name: 'main',
+    description: '主数据源',
+    collections: [
+      // ...
+    ]
+  },
+  {
+    name: 'db2',
+    description: 'DB2',
+    collections: [
+      // ...
+    ]
+  },
+]
 ```
 
-在调用 `collectionManager.getCollections()` 等方法时，可以通过 `namespace` 参数指定命名空间，例如：
+在调用 `collectionManager.getCollections()` 等方法时，可以通过 `dataSource` 参数指定数据表来源，例如：
 
 ```tsx | pure
 const collections = collectionManager.getCollections('db2');
 ```
 
-如果不传递 `namespace` 参数，则返回默认命名空间的数据表。
+如果不传递 `dataSource` 参数，则返回默认数据源的数据表。
 
 ## Collection Mixins
 
@@ -506,8 +517,8 @@ class CollectionManagerV2 {
 
 - 详解
 
-1. 如果不传递 `namespace` 参数，则返回默认命名空间的数据表。
-2. 如果传递 `namespace` 参数，则返回指定命名空间的数据表。
+1. 如果不传递 `dataSource` 参数，则返回默认命名空间的数据表。
+2. 如果传递 `dataSource` 参数，则返回指定命名空间的数据表。
 3. 如果传递 `predicate` 参数，则返回符合条件的数据表。
 
 - 示例
@@ -517,7 +528,7 @@ collectionManager.getCollections(); // [ userCollection ]
 
 collectionManager.getCollections('db2'); // [ postCollection ]
 
-collectionManager.getCollections(collection => collection.name === 'posts', { namespace: 'db2' }); // [ postCollection ]
+collectionManager.getCollections(collection => collection.name === 'posts', { dataSource: 'db2' }); // [ postCollection ]
 ```
 
 ### cm.setCollections(collections, options?)
@@ -558,7 +569,7 @@ collectionManager.getCollection('users'); // userCollection
 collectionManager.getCollection('users.posts'); // postCollection
 collectionManager.getCollection('users.profileId'); // profileCollection
 
-collectionManager.getCollection('users', { namespace: 'db2' }); // userCollection
+collectionManager.getCollection('users', { dataSource: 'db2' }); // userCollection
 ```
 
 结合 Mixin 使用：

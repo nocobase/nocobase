@@ -116,7 +116,7 @@ export interface CollectionOptionsV2 {
 
 - template: 模板标识，用于标识该 Collection 是由哪个模板创建的，详细说明请查看 [CollectionTemplate](/core/collection/collection-template)
 
-- namespace
+- dataSource: 数据源标识，用于标识该 Collection 是由哪个数据源创建的，详细说明请查看 [CollectionDataSource](/core/collection/collection-manager#datasource)
 
 - duplicator
 

@@ -37,12 +37,10 @@ const Demo = () => {
 ```tsx | pure
 const Demo = () => {
   const collectionManager = useCollectionManagerV2();
-  const dataSources = useMemo(() => collectionManager.getCollectionNames(), [collectionManager]);
+  const allCollections = useMemo(() => collectionManager.getAllCollections(), [collectionManager]);
 
   return <div>
-    {dataSources.map((namespace) => {
-      return <div key={namespace.name}>{namespace.name}: {namespace.title}</div>;
-    })}
+    <pre>{JSON.stringify(allCollections, null, 2)}</pre>
   </div>;
 };
 ```
@@ -57,18 +55,14 @@ const Demo = () => {
   const dataSources = useMemo(() => collectionManager.getDataSources(), [collectionManager]);
 
   return <div>
-    {dataSources.map((namespace) => {
-      return <div key={namespace.name}>{namespace.name}: { compile(namespace.title)}</div>;
-    })}
+    <pre>{JSON.stringify(allCollections, null, 2)}</pre>
   </div>;
 };
 
 const app = new Application({
   providers: [Demo],
   collectionManager: {
-    dataSources: {
-      'db2': "DB 2",
-    }
+    // ...
   }
 });
 
