@@ -1172,9 +1172,8 @@ export const createFormBlockSchema = (options) => {
       resource: resourceName,
       collection,
       association,
-      // action: 'get',
-      // useParams: '{{ useParamsFromRecord }}',
     },
+    'x-use-decorator-props': 'useFormDataBlockProps',
     'x-designer': designer,
     'x-component': 'CardItem',
     'x-component-props': {

@@ -3,13 +3,21 @@ import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react
 import { Spin } from 'antd';
 import _, { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
+import {
+  DataBlockProviderV2,
+  useDataBlockPropsV2,
+  useDataBlockRequestV2,
+  useDataBlockResourceV2,
+  useRecordV2,
+  withDynamicSchemaProps,
+} from '../application';
 import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
-import { FormActiveFieldsProvider } from './hooks';
+import { FormActiveFieldsProvider, useAssociationNames } from './hooks';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -75,6 +83,51 @@ const InternalFormBlockProvider = (props) => {
   return <FormBlockContext.Provider value={formBlockValue}>{content}</FormBlockContext.Provider>;
 };
 
+const InternalFormBlockProviderV2 = (props) => {
+  const { action, readPretty, params, collection } = props;
+  const ctx = useFormBlockContext();
+  const field = useField();
+  const form = useMemo(
+    () =>
+      createForm({
+        readPretty,
+      }),
+    [readPretty],
+  );
+  const service = useDataBlockRequestV2();
+  const resource = useDataBlockResourceV2();
+  const { updateAssociationValues } = useDataBlockPropsV2();
+  const formBlockRef = useRef();
+  const formBlockValue = useMemo(() => {
+    return {
+      ...ctx,
+      params,
+      action,
+      form,
+      // update 表示是表单编辑区块，create 表示是表单新增区块
+      type: action === 'get' ? 'update' : 'create',
+      field,
+      service,
+      resource,
+      updateAssociationValues,
+      formBlockRef,
+      collectionName: collection,
+    };
+  }, [action, collection, ctx, field, form, params, resource, service, updateAssociationValues]);
+
+  if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
+    return <Spin />;
+  }
+
+  return (
+    <FormBlockContext.Provider value={formBlockValue}>
+      <div ref={formBlockRef}>
+        <RenderChildrenWithDataTemplates form={form} />
+      </div>
+    </FormBlockContext.Provider>
+  );
+};
+
 /**
  * 获取表单区块的类型：update 表示是表单编辑区块，create 表示是表单新增区块
  * @returns
@@ -122,6 +175,27 @@ export const FormBlockProvider = (props) => {
   );
 };
 
+export const FormBlockProviderV2 = withDynamicSchemaProps((props) => {
+  const { association } = props;
+  let record = useRecordV2(false);
+  let parentRecord = null;
+
+  if (association) {
+    parentRecord = record;
+    record = null;
+  }
+
+  return (
+    <DataBlockProviderV2 parentRecord={parentRecord} record={record} {...props}>
+      <TemplateBlockProvider>
+        <FormActiveFieldsProvider name="form">
+          <InternalFormBlockProviderV2 {...props} />
+        </FormActiveFieldsProvider>
+      </TemplateBlockProvider>
+    </DataBlockProviderV2>
+  );
+});
+
 export const useFormBlockContext = () => {
   return useContext(FormBlockContext);
 };
@@ -147,6 +221,23 @@ export const useFormBlockProps = () => {
   }, [ctx?.service?.loading]);
   return {
     form: ctx.form,
+  };
+};
+
+export const useFormDataBlockProps = (props: any = {}) => {
+  const { getAssociationAppends } = useAssociationNames(props?.namespace);
+  const { appends, updateAssociationValues } = getAssociationAppends();
+  const params = useMemo(() => {
+    if (!props?.params?.['appends']) {
+      return { ...props?.params, appends };
+    }
+    return { ...props?.params };
+  }, [appends, props?.params]);
+
+  return {
+    ...props,
+    params,
+    updateAssociationValues,
   };
 };
 

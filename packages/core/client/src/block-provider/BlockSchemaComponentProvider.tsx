@@ -4,7 +4,7 @@ import { SchemaComponentOptions } from '../schema-component';
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';
 import { FilterFormBlockProvider } from './FilterFormBlockProvider';
-import { FormBlockProvider, useFormBlockProps } from './FormBlockProvider';
+import { FormBlockProviderV2, useFormBlockProps, useFormDataBlockProps } from './FormBlockProvider';
 import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
 import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
@@ -19,7 +19,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         TableFieldProvider,
         TableBlockProvider,
         TableSelectorProvider,
-        FormBlockProvider,
+        FormBlockProvider: FormBlockProviderV2,
         FilterFormBlockProvider,
         FormFieldProvider,
         DetailsBlockProvider,
@@ -54,7 +54,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       TableFieldProvider,
       TableBlockProvider,
       TableSelectorProvider,
-      FormBlockProvider,
+      FormBlockProvider: FormBlockProviderV2,
       FilterFormBlockProvider,
       FormFieldProvider,
       DetailsBlockProvider,
@@ -74,6 +74,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useTableFieldProps,
       useTableBlockProps,
       useTableSelectorProps,
+      useFormDataBlockProps,
     });
   }
 }
