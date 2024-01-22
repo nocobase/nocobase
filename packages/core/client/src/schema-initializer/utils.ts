@@ -874,16 +874,16 @@ export const useCollectionDataSourceItems = (
   const allCollections = cm.getAllCollections((collection) => notLocal(collection) && filter(collection));
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const res = useMemo(() => {
-    return allCollections.map(({ nsName, nsTitle, collections }) => ({
-      name: nsName,
-      label: nsTitle,
+    return allCollections.map(({ name, description, collections }) => ({
+      name: name,
+      label: description,
       type: 'subMenu',
-      children: getChildrenV3({
+      children: getChildren({
         collections,
         collectionManager: cm,
         componentName,
         searchValue: '',
-        namespace: nsName,
+        dataSource: name,
         getTemplatesByCollection,
         t,
       }),
@@ -898,7 +898,7 @@ export const createDetailsBlockSchema = (options) => {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
     actionInitializers = 'DetailsActionInitializers',
     collection,
-    namespace,
+    dataSource,
     association,
     resource,
     template,
@@ -911,7 +911,7 @@ export const createDetailsBlockSchema = (options) => {
     'x-decorator': 'DetailsBlockProvider',
     'x-decorator-props': {
       resource: resourceName,
-      namespace,
+      dataSource,
       collection,
       association,
       readPretty: true,
@@ -970,7 +970,7 @@ export const createListBlockSchema = (options) => {
     actionInitializers = 'ListActionInitializers',
     itemActionInitializers = 'ListItemActionInitializers',
     collection,
-    namespace,
+    dataSource,
     association,
     resource,
     template,
@@ -984,7 +984,7 @@ export const createListBlockSchema = (options) => {
     'x-decorator-props': {
       resource: resourceName,
       collection,
-      namespace,
+      dataSource,
       association,
       readPretty: true,
       action: 'list',
@@ -1061,7 +1061,7 @@ export const createGridCardBlockSchema = (options) => {
     association,
     resource,
     template,
-    namespace,
+    dataSource,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -1073,7 +1073,7 @@ export const createGridCardBlockSchema = (options) => {
       resource: resourceName,
       collection,
       association,
-      namespace,
+      dataSource,
       readPretty: true,
       action: 'list',
       params: {
@@ -1148,7 +1148,7 @@ export const createFormBlockSchema = (options) => {
     actionInitializers = 'FormActionInitializers',
     collection,
     resource,
-    namespace,
+    dataSource,
     association,
     action,
     actions = {},
@@ -1168,7 +1168,7 @@ export const createFormBlockSchema = (options) => {
     'x-decorator-props': {
       ...others,
       action,
-      namespace,
+      dataSource,
       resource: resourceName,
       collection,
       association,
@@ -1220,7 +1220,7 @@ export const createFilterFormBlockSchema = (options) => {
     collection,
     resource,
     association,
-    namespace,
+    dataSource,
     action,
     template,
     ...others
@@ -1233,7 +1233,7 @@ export const createFilterFormBlockSchema = (options) => {
       ...others,
       action,
       resource: resourceName,
-      namespace,
+      dataSource,
       collection,
       association,
     },
@@ -1282,7 +1282,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
     actionInitializers = 'ReadPrettyFormActionInitializers',
     collection,
     association,
-    namespace,
+    dataSource,
     resource,
     template,
     ...others
@@ -1296,7 +1296,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
       resource: resourceName,
       collection,
       association,
-      namespace,
+      dataSource,
       readPretty: true,
       action: 'get',
       useParams: '{{ useParamsFromRecord }}',
@@ -1349,7 +1349,7 @@ export const createTableBlockSchema = (options) => {
     tableBlockProvider,
     disableTemplate,
     TableBlockDesigner,
-    namespace,
+    dataSource,
     blockType,
     pageSize = 20,
     ...others
@@ -1360,7 +1360,7 @@ export const createTableBlockSchema = (options) => {
     'x-acl-action': `${resource || collection}:list`,
     'x-decorator-props': {
       collection,
-      namespace,
+      dataSource,
       resource: resource || collection,
       action: 'list',
       params: {
@@ -1429,13 +1429,13 @@ export const createTableBlockSchema = (options) => {
 };
 
 export const createCollapseBlockSchema = (options) => {
-  const { collection, namespace, blockType } = options;
+  const { collection, dataSource, blockType } = options;
   const schema: ISchema = {
     type: 'void',
     'x-decorator': 'AssociationFilter.Provider',
     'x-decorator-props': {
       collection,
-      namespace,
+      dataSource,
       blockType,
       associationFilterStyle: {
         width: '100%',
@@ -1460,7 +1460,7 @@ export const createCollapseBlockSchema = (options) => {
 };
 
 export const createTableSelectorSchema = (options) => {
-  const { collection, namespace, resource, rowKey, ...others } = options;
+  const { collection, dataSource, resource, rowKey, ...others } = options;
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resource || collection}:list`,
@@ -1468,7 +1468,7 @@ export const createTableSelectorSchema = (options) => {
     'x-decorator-props': {
       collection,
       resource: resource || collection,
-      namespace,
+      dataSource,
       action: 'list',
       params: {
         pageSize: 20,
@@ -1510,113 +1510,8 @@ export const createTableSelectorSchema = (options) => {
 
 const getChildren = ({
   collections,
-  getCollectionFields,
-  componentName,
-  searchValue,
-  getTemplatesByCollection,
-  t,
-}: {
-  collections: any[];
-  getCollectionFields: (name: any) => CollectionFieldOptions[];
-  componentName: string;
-  searchValue: string;
-  getTemplatesByCollection: (collectionName: string, resourceName?: string) => any;
-  t;
-}) => {
-  return collections
-    ?.filter((item) => {
-      if (item.inherit) {
-        return false;
-      }
-      const fields = getCollectionFields(item.name);
-      if (item.autoGenId === false && !fields.find((v) => v.primaryKey)) {
-        return false;
-      } else if (
-        ['Kanban', 'FormItem'].includes(componentName) &&
-        ((item.template === 'view' && !item.writableView) || item.template === 'sql')
-      ) {
-        return false;
-      } else if (item.template === 'file' && ['Kanban', 'FormItem', 'Calendar'].includes(componentName)) {
-        return false;
-      } else {
-        if (!item.title) {
-          return false;
-        }
-        return item.title.toUpperCase().includes(searchValue.toUpperCase()) && !(item?.isThrough && item?.autoCreate);
-      }
-    })
-    ?.map((item, index) => {
-      const templates = getTemplatesByCollection(item.name).filter((template) => {
-        return (
-          componentName &&
-          template.componentName === componentName &&
-          (!template.resourceName || template.resourceName === item.name)
-        );
-      });
-      if (!templates.length) {
-        return {
-          type: 'item',
-          name: item.name,
-          title: item.title,
-        };
-      }
-      return {
-        key: `${componentName}_table_subMenu_${index}`,
-        type: 'subMenu',
-        name: `${item.name}_${index}`,
-        title: item.title,
-        children: [
-          {
-            type: 'item',
-            name: item.name,
-            title: t('Blank block'),
-          },
-          {
-            type: 'divider',
-          },
-          {
-            key: `${componentName}_table_subMenu_${index}_copy`,
-            type: 'subMenu',
-            name: 'copy',
-            title: t('Duplicate template'),
-            children: templates.map((template) => {
-              const templateName =
-                template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
-              return {
-                type: 'item',
-                mode: 'copy',
-                name: item.name,
-                template,
-                title: templateName || t('Untitled'),
-              };
-            }),
-          },
-          {
-            key: `${componentName}_table_subMenu_${index}_ref`,
-            type: 'subMenu',
-            name: 'ref',
-            title: t('Reference template'),
-            children: templates.map((template) => {
-              const templateName =
-                template?.componentName === 'FormItem' ? `${template?.name} ${t('(Fields only)')}` : template?.name;
-              return {
-                type: 'item',
-                mode: 'reference',
-                name: item.name,
-                template,
-                title: templateName || t('Untitled'),
-              };
-            }),
-          },
-        ],
-      };
-    });
-};
-
-const getChildrenV3 = ({
-  collections,
   collectionManager,
-  namespace,
+  dataSource,
   componentName,
   searchValue,
   getTemplatesByCollection,
@@ -1626,7 +1521,7 @@ const getChildrenV3 = ({
   collectionManager: CollectionManagerV2;
   componentName: string;
   searchValue: string;
-  namespace: string;
+  dataSource: string;
   getTemplatesByCollection: (collectionName: string, resourceName?: string) => any;
   t;
 }) => {
@@ -1635,7 +1530,7 @@ const getChildrenV3 = ({
       if (item.inherit) {
         return false;
       }
-      const fields = collectionManager.getCollectionFields(item.name, { namespace });
+      const fields = collectionManager.getCollectionFields(item.name, { dataSource });
       if (item.autoGenId === false && !fields.find((v) => v.primaryKey)) {
         return false;
       } else if (
@@ -1667,7 +1562,7 @@ const getChildrenV3 = ({
           type: 'item',
           name: item.name,
           title,
-          namespace,
+          dataSource,
         };
       }
       return {
@@ -1675,12 +1570,12 @@ const getChildrenV3 = ({
         type: 'subMenu',
         name: `${item.name}_${index}`,
         title,
-        namespace,
+        dataSource,
         children: [
           {
             type: 'item',
             name: item.name,
-            namespace,
+            dataSource,
             title: t('Blank block'),
           },
           {
@@ -1690,7 +1585,7 @@ const getChildrenV3 = ({
             key: `${componentName}_table_subMenu_${index}_copy`,
             type: 'subMenu',
             name: 'copy',
-            namespace,
+            dataSource,
             title: t('Duplicate template'),
             children: templates.map((template) => {
               const templateName =
@@ -1700,7 +1595,7 @@ const getChildrenV3 = ({
                 mode: 'copy',
                 name: item.name,
                 template,
-                namespace,
+                dataSource,
                 title: templateName || t('Untitled'),
               };
             }),
@@ -1709,7 +1604,7 @@ const getChildrenV3 = ({
             key: `${componentName}_table_subMenu_${index}_ref`,
             type: 'subMenu',
             name: 'ref',
-            namespace,
+            dataSource,
             title: t('Reference template'),
             children: templates.map((template) => {
               const templateName =
@@ -1719,7 +1614,7 @@ const getChildrenV3 = ({
                 mode: 'reference',
                 name: item.name,
                 template,
-                namespace,
+                dataSource,
                 title: templateName || t('Untitled'),
               };
             }),

@@ -11,7 +11,7 @@ import { useResourceActionContext } from '../collection-manager/ResourceActionPr
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
 import { useApp } from '../application';
-import { useCollectionNamespace } from '../block-provider/BlockProvider';
+import { useDataSourceName } from '../block-provider/BlockProvider';
 
 export const ACLContext = createContext<any>({});
 
@@ -93,9 +93,9 @@ export const ACLActionParamsContext = createContext<any>({});
 
 export const useACLRolesCheck = () => {
   const ctx = useContext(ACLContext);
-  const ns = useCollectionNamespace();
+  const dataSourceName = useDataSourceName();
   const { dataSources: dataSourcesAcl } = ctx?.data?.meta || {};
-  const data = { ...ctx?.data?.data, ...omit(dataSourcesAcl?.[ns], 'snippets') };
+  const data = { ...ctx?.data?.data, ...omit(dataSourcesAcl?.[dataSourceName], 'snippets') };
   const getActionAlias = (actionPath: string) => {
     const actionName = actionPath.split(':').pop();
     return data?.actionAlias?.[actionName] || actionName;

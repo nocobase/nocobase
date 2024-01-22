@@ -55,7 +55,7 @@ const usersCollection = new CollectionV2({
 export interface CollectionOptionsV2 {
   name: string;
   title?: string;
-  namespace?: string;
+  dataSource?: string;
   isLocal?: boolean;
   /**
    * Used for @nocobase/plugin-duplicator

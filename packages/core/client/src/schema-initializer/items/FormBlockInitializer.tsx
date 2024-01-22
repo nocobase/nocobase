@@ -15,7 +15,7 @@ export const FormBlockInitializer = () => {
       templateWrap={(templateSchema, { item }) => {
         const s = createFormBlockSchema({
           isCusomeizeCreate,
-          namespace: item.namespace,
+          dataSource: item.dataSource,
           template: templateSchema,
           collection: item.name,
         });

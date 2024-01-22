@@ -3,7 +3,6 @@ import { CollectionTemplateBase } from './CollectionTemplate';
 import { CollectionFieldOptionsV2, CollectionOptionsV2, CollectionV2 } from './Collection';
 import type { Application } from '../Application';
 import { SchemaKey } from '@formily/react';
-import { merge } from 'lodash';
 
 export type CollectionMixinConstructor<T = {}> = new (...args: any[]) => T;
 
@@ -47,45 +46,46 @@ const defaultCollectionTransform = (collection: CollectionOptionsV2, app: Applic
   };
 };
 
-export const DEFAULT_COLLECTION_NAMESPACE_TITLE = '{{t("main")}}';
-export const DEFAULT_COLLECTION_NAMESPACE_NAME = 'main';
+export const DEFAULT_DATA_SOURCE_TITLE = '{{t("main")}}';
+export const DEFAULT_DATA_SOURCE_NAME = 'main';
 
 export interface GetCollectionOptions {
-  namespace?: string;
+  dataSource?: string;
 }
 
-type NamespacesType = Record<string, string>;
+interface DataSource {
+  name: string;
+  description: string;
+  collections?: CollectionOptionsV2[];
+  [key: string]: any;
+}
+
+type DataSourceName = string;
 
 export interface CollectionManagerOptionsV2 {
-  collections?: CollectionOptionsV2[] | Record<string, CollectionOptionsV2[]>;
+  collections?: CollectionOptionsV2[];
   collectionTemplates?: (typeof CollectionTemplateBase)[];
   fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
-  collectionNamespaces?: Record<string, string>;
   collectionMixins?: CollectionMixinConstructor[];
 }
 
-type ThirdResource = (
-  ...args: any[]
-) => Promise<{ name: string; description: string; collections: CollectionOptionsV2[] }[]>;
+type ThirdDataResourceFn = () => Promise<DataSource[]>;
+type MainDataSOurceFn = () => Promise<CollectionOptionsV2[]>;
+type ReloadCallback = (collections: CollectionOptionsV2[]) => void;
 
 export class CollectionManagerV2 {
   public app: Application;
-  protected collections: Record<string, Record<string, CollectionV2>> = {};
+  protected collections: Record<string, Record<DataSourceName, CollectionV2>> = {};
   protected collectionTemplateInstances: Record<string, CollectionTemplateBase> = {};
   protected fieldInterfaceInstances: Record<string, CollectionFieldInterfaceBase> = {};
   protected collectionMixins: CollectionMixinConstructor[] = [];
-  protected collectionNamespaces: NamespacesType = {
-    [DEFAULT_COLLECTION_NAMESPACE_NAME]: DEFAULT_COLLECTION_NAMESPACE_NAME,
-  };
+  protected dataSourceMap: Record<DataSourceName, Omit<DataSource, 'collections'>> = {};
   protected collectionFieldGroups: Record<string, { label: string; order?: number }> = {};
-  protected mainResource: (...args: any[]) => Promise<CollectionOptionsV2[]>;
-  protected thirdResources: Record<string, ThirdResource> = {};
-  protected reloadCallbacks: {
-    [key: string]: ((collections: CollectionOptionsV2[]) => void)[];
-  } = {};
+  protected mainDataSourceFn: MainDataSOurceFn;
+  protected thirdDataSourceFn: ThirdDataResourceFn;
+  protected reloadCallbacks: Record<string, ReloadCallback[]> = {};
   protected collectionArr: Record<string, CollectionV2[]> = {};
-  protected sourceNamespaceMap: Record<string, string[]> = {};
   protected options: CollectionManagerOptionsV2 = {};
 
   constructor(options: CollectionManagerOptionsV2 = {}, app: Application) {
@@ -95,26 +95,21 @@ export class CollectionManagerV2 {
   }
 
   private init(options: CollectionManagerOptionsV2) {
+    this.initDataSourceMap();
     this.collectionMixins.push(...(options.collectionMixins || []));
     this.addCollectionTemplates(options.collectionTemplates || []);
     this.addFieldInterfaces(options.fieldInterfaces || []);
     this.addFieldGroups(options.fieldGroups || {});
-    this.addCollectionNamespaces(options.collectionNamespaces || {});
-    if (Array.isArray(options.collections)) {
-      this.addCollections(options.collections);
-    } else {
-      Object.keys(options.collections || {}).forEach((namespace) => {
-        this.addCollections(options.collections[namespace], { namespace });
-      });
-    }
+    this.addCollections(options.collections || []);
   }
 
-  private checkNamespace(namespace: string) {
-    if (!this.collectionNamespaces[namespace]) {
-      throw new Error(
-        `[@nocobase/client]: CollectionManager "${namespace}" does not exist in namespace, you should call collectionManager.addNamespaces() to add it`,
-      );
-    }
+  private initDataSourceMap() {
+    this.dataSourceMap = {
+      [DEFAULT_DATA_SOURCE_NAME]: {
+        name: DEFAULT_DATA_SOURCE_NAME,
+        description: DEFAULT_DATA_SOURCE_TITLE,
+      },
+    };
   }
 
   // collection mixins
@@ -124,17 +119,16 @@ export class CollectionManagerV2 {
     this.collectionMixins.push(...newMixins);
 
     // 重新添加数据表
-    Object.keys(this.collections).forEach((namespace) => {
-      const collections = this.getCollections({ namespace });
-      this.addCollections(collections, { namespace });
+    Object.keys(this.collections).forEach((dataSource) => {
+      const collections = this.getCollections({ dataSource }).map((item) => item.getOptions());
+      this.addCollections(collections, { dataSource });
     });
   }
 
   // collections
   addCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}) {
-    const { namespace = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
-    this.checkNamespace(namespace);
-    this.collectionArr[namespace] = undefined;
+    const { dataSource = DEFAULT_DATA_SOURCE_NAME } = options;
+    this.collectionArr[dataSource] = undefined;
 
     collections
       .map((collection) => {
@@ -142,46 +136,46 @@ export class CollectionManagerV2 {
         const Cls = collectionTemplateInstance?.Collection || CollectionV2;
         const transform = collectionTemplateInstance?.transform || defaultCollectionTransform;
         const transformedCollection = transform(collection, this.app);
-        const instance = new Cls({ ...transformedCollection, namespace: namespace }, this.app, this);
+        const instance = new Cls({ ...transformedCollection, dataSource }, this.app, this);
         applyMixins(instance, this.collectionMixins);
         return instance;
       })
       .forEach((collectionInstance) => {
-        if (!this.collections[namespace]) {
-          this.collections[namespace] = {};
+        if (!this.collections[dataSource]) {
+          this.collections[dataSource] = {};
         }
-        this.collections[namespace][collectionInstance.name] = collectionInstance;
+        this.collections[dataSource][collectionInstance.name] = collectionInstance;
       });
   }
   setCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}) {
-    const { namespace = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
-    this.checkNamespace(namespace);
-    this.collections[namespace] = {};
+    const { dataSource = DEFAULT_DATA_SOURCE_NAME } = options;
+    this.collections[dataSource] = {};
     this.addCollections(collections, options);
   }
   getAllCollections(
     predicate?: (collection: CollectionV2) => boolean,
-  ): { nsName: string; nsTitle: string; source?: string; collections: CollectionV2[] }[] {
-    return Object.keys(this.collectionNamespaces).reduce<
-      { nsName: string; nsTitle: string; source?: string; collections: CollectionV2[] }[]
-    >((acc, namespace) => {
-      acc.push({
-        nsName: namespace,
-        nsTitle: this.collectionNamespaces[namespace],
-        collections: this.getCollections({ predicate, namespace }),
-      });
-      return acc;
-    }, []);
+  ): (Omit<DataSource, 'collections'> & { collections: CollectionV2[] })[] {
+    return Object.keys(this.dataSourceMap).reduce<Omit<DataSource, 'collections'> & { collections: CollectionV2[] }[]>(
+      (acc, dataSourceName) => {
+        const dataSource = this.dataSourceMap[dataSourceName];
+        acc.push({
+          ...dataSource,
+          collections: this.getCollections({ predicate, dataSource: dataSourceName }),
+        });
+        return acc;
+      },
+      [],
+    );
   }
-  getCollections(options: { predicate?: (collection: CollectionV2) => boolean; namespace?: string } = {}) {
-    const { namespace = DEFAULT_COLLECTION_NAMESPACE_NAME, predicate } = options;
-    if (!this.collectionArr[namespace]?.length) {
-      this.collectionArr[namespace] = Object.values(this.collections[namespace] || {});
+  getCollections(options: { predicate?: (collection: CollectionV2) => boolean; dataSource?: string } = {}) {
+    const { dataSource = DEFAULT_DATA_SOURCE_NAME, predicate } = options;
+    if (!this.collectionArr[dataSource]?.length) {
+      this.collectionArr[dataSource] = Object.values(this.collections[dataSource] || {});
     }
     if (predicate) {
-      return this.collectionArr[namespace].filter(predicate);
+      return this.collectionArr[dataSource].filter(predicate);
     }
-    return this.collectionArr[namespace];
+    return this.collectionArr[dataSource];
   }
   /**
    * 获取数据表
@@ -191,15 +185,15 @@ export class CollectionManagerV2 {
    * getCollection('a.b.c'); // 获取 a 表的 b 字段的关联表，然后 b.target 表对应的 c 字段的关联表
    */
   getCollection<Mixins = {}>(path: string, options: GetCollectionOptions = {}): (Mixins & CollectionV2) | undefined {
-    const { namespace = DEFAULT_COLLECTION_NAMESPACE_NAME } = options;
+    const { dataSource = DEFAULT_DATA_SOURCE_NAME } = options;
     if (!path || typeof path !== 'string') return undefined;
     if (path.split('.').length > 1) {
       // 获取到关联字段
       const associationField = this.getCollectionField(path);
 
-      return this.getCollection(associationField.target, { namespace });
+      return this.getCollection(associationField.target, { dataSource });
     }
-    return this.collections[namespace]?.[path] as Mixins & CollectionV2;
+    return this.collections[dataSource]?.[path] as Mixins & CollectionV2;
   }
   getCollectionName(path: string, options: GetCollectionOptions = {}): string | undefined {
     const res = this.getCollection(path, options);
@@ -222,23 +216,20 @@ export class CollectionManagerV2 {
       return;
     }
     const [collectionName, ...fieldNames] = String(path).split('.');
-    const { namespace = DEFAULT_COLLECTION_NAMESPACE_NAME } = options || {};
-    const collection = this.getCollection(collectionName, { namespace });
+    const { dataSource = DEFAULT_DATA_SOURCE_NAME } = options || {};
+    const collection = this.getCollection(collectionName, { dataSource });
     if (!collection) {
       return;
     }
     return collection.getField(fieldNames.join('.'));
   }
 
-  // collectionNamespaces
-  addCollectionNamespaces(collectionNamespaces: NamespacesType) {
-    this.collectionNamespaces = merge(this.collectionNamespaces, collectionNamespaces);
+  // dataSources
+  getDataSources() {
+    return Object.values(this.dataSourceMap);
   }
-  setCollectionNamespaces(collectionNamespaces: NamespacesType) {
-    Object.assign(this.collectionNamespaces, collectionNamespaces);
-  }
-  getCollectionNamespaces() {
-    return this.collectionNamespaces;
+  getDataSource(name: string) {
+    return this.dataSourceMap[name];
   }
 
   // CollectionTemplates
@@ -252,20 +243,20 @@ export class CollectionManagerV2 {
 
     // 重新添加数据表
     const reAddCollections = Object.keys(this.collections).reduce<Record<string, CollectionOptionsV2[]>>(
-      (acc, namespace) => {
-        acc[namespace] = this.getCollections({
+      (acc, dataSource) => {
+        acc[dataSource] = this.getCollections({
           predicate: (collection) => {
             return newCollectionTemplateInstances[collection.template];
           },
-          namespace,
+          dataSource,
         }).map((collection) => collection.getOptions());
         return acc;
       },
       {},
     );
 
-    Object.keys(reAddCollections).forEach((namespace) => {
-      this.addCollections(reAddCollections[namespace], { namespace });
+    Object.keys(reAddCollections).forEach((dataSource) => {
+      this.addCollections(reAddCollections[dataSource], { dataSource });
     });
   }
   getCollectionTemplates() {
@@ -302,58 +293,50 @@ export class CollectionManagerV2 {
     return this.collectionFieldGroups[name];
   }
 
-  setMainResource(fn: (...args: any[]) => Promise<CollectionOptionsV2[]>) {
-    this.mainResource = fn;
+  setMainDataSource(fn: MainDataSOurceFn) {
+    this.mainDataSourceFn = fn;
   }
 
-  addThirdResource(name: string, fn: ThirdResource) {
-    this.thirdResources[name] = fn;
+  setThirdDataSource(fn: ThirdDataResourceFn) {
+    this.thirdDataSourceFn = fn;
   }
 
-  async reloadMain(callback?: (collections?: CollectionOptionsV2[]) => void) {
-    const collections = await this.mainResource();
+  async reloadMain(callback?: ReloadCallback) {
+    const collections = await this.mainDataSourceFn();
     this.setCollections(collections);
     callback && callback(collections);
-    this.reloadCallbacks[DEFAULT_COLLECTION_NAMESPACE_NAME]?.forEach((cb) => cb(collections));
+    this.reloadCallbacks[DEFAULT_DATA_SOURCE_NAME]?.forEach((cb) => cb(collections));
   }
 
-  async reloadThirdResource(sourceName: string) {
-    const thirdResource = this.thirdResources[sourceName];
-    const oldNamespaces = this.sourceNamespaceMap[sourceName] || [];
-    const data = await thirdResource();
-    oldNamespaces.forEach((namespace) => {
-      delete this.collectionNamespaces[namespace];
+  async reloadThirdDataSource(callback?: () => void) {
+    if (!this.thirdDataSourceFn) return;
+    const data = await this.thirdDataSourceFn();
+    this.initDataSourceMap();
+    data.forEach((dataSource) => {
+      const { collections: _unUse, ...rest } = dataSource;
+      this.dataSourceMap[dataSource.name] = rest;
     });
-    this.sourceNamespaceMap[sourceName] = data.map(({ name }) => name);
-    data.forEach(({ name, description, collections }) => {
-      this.addCollectionNamespaces({ [name]: description });
-      this.setCollections(collections, { namespace: name });
+
+    data.forEach(({ name, collections, ...others }) => {
+      this.dataSourceMap[name] = { ...others, name };
+      this.setCollections(collections, { dataSource: name });
       this.reloadCallbacks[name]?.forEach((cb) => cb(collections));
     });
-  }
-
-  async reloadThirdResources(callback?: () => void) {
-    await Promise.all(
-      Object.keys(this.thirdResources).map((thirdResourceName) => this.reloadThirdResource(thirdResourceName)),
-    );
     callback && callback();
   }
 
   async reloadAll(callback?: () => void) {
     await this.reloadMain();
-    await this.reloadThirdResources();
+    await this.reloadThirdDataSource();
     callback && callback();
   }
 
-  addReloadCallback(
-    callback: (collections: CollectionOptionsV2[]) => void,
-    namespace = DEFAULT_COLLECTION_NAMESPACE_NAME,
-  ) {
-    if (!this.reloadCallbacks[namespace]) {
-      this.reloadCallbacks[namespace] = [];
+  addReloadCallback(callback: ReloadCallback, dataSource = DEFAULT_DATA_SOURCE_NAME) {
+    if (!this.reloadCallbacks[dataSource]) {
+      this.reloadCallbacks[dataSource] = [];
     }
 
-    this.reloadCallbacks[namespace].push(callback);
+    this.reloadCallbacks[dataSource].push(callback);
   }
 
   private getInheritData() {
@@ -362,11 +345,10 @@ export class CollectionManagerV2 {
       collectionTemplateInstances: this.collectionTemplateInstances,
       fieldInterfaceInstances: this.fieldInterfaceInstances,
       collectionMixins: this.collectionMixins,
-      collectionNamespaces: this.collectionNamespaces,
+      dataSourceMap: this.dataSourceMap,
       collectionFieldGroups: this.collectionFieldGroups,
-      mainResource: this.mainResource,
-      thirdResources: this.thirdResources,
-      sourceNamespaceMap: this.sourceNamespaceMap,
+      mainDataSourceFn: this.mainDataSourceFn,
+      thirdDataSourceFn: this.thirdDataSourceFn,
       reloadCallbacks: this.reloadCallbacks,
       collectionArr: this.collectionArr,
       options: this.options,

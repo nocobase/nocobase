@@ -6,12 +6,12 @@ import { CollectionFieldOptions, CollectionOptions } from '../types';
 import { useCollectionManagerV2 } from '../../application';
 import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
 import { uid } from '@formily/shared';
-import { useCollectionNamespace } from '../../block-provider/BlockProvider';
+import { useDataSourceName } from '../../block-provider/BlockProvider';
 
-export const useCollectionManager = (namespace?: string) => {
+export const useCollectionManager = (dataSourceName?: string) => {
   const cm = useCollectionManagerV2();
-  const blockNamespaceValue = useCollectionNamespace();
-  const namespaceValue = namespace || blockNamespaceValue || undefined;
+  const blockDataSourceName = useDataSourceName();
+  const dataSourceNameValue = dataSourceName || blockDataSourceName || undefined;
   const [random, setRandom] = useState(uid());
   const { refresh } = useSchemaComponentContext();
   const interfaces = useMemo(() => cm?.getFieldInterfaces(), [cm, random]);
@@ -46,7 +46,7 @@ export const useCollectionManager = (namespace?: string) => {
     (name: string, customNamespace?: string) => {
       return (
         cm
-          ?.getCollection<InheritanceCollectionMixin>(name, { namespace: customNamespace || namespaceValue })
+          ?.getCollection<InheritanceCollectionMixin>(name, { dataSource: customNamespace || dataSourceNameValue })
           ?.getInheritedFields() || []
       );
     },
@@ -59,7 +59,7 @@ export const useCollectionManager = (namespace?: string) => {
       return (
         cm
           ?.getCollection<InheritanceCollectionMixin>(typeof name === 'object' ? name.name : name, {
-            namespace: customNamespace || namespaceValue,
+            dataSource: customNamespace || dataSourceNameValue,
           })
           ?.getAllFields() || []
       );
@@ -69,7 +69,7 @@ export const useCollectionManager = (namespace?: string) => {
   const getCollectionField = useCallback(
     (name: string, customNamespace?: string) => {
       if (!name || name.split('.').length < 2) return;
-      return cm?.getCollectionField(name, { namespace: customNamespace || namespaceValue });
+      return cm?.getCollectionField(name, { dataSource: customNamespace || dataSourceNameValue });
     },
     [cm],
   );
@@ -78,7 +78,7 @@ export const useCollectionManager = (namespace?: string) => {
       if (!name) return [];
       return (
         cm
-          ?.getCollection<InheritanceCollectionMixin>(name, { namespace: customNamespace || namespaceValue })
+          ?.getCollection<InheritanceCollectionMixin>(name, { dataSource: customNamespace || dataSourceNameValue })
           ?.getParentCollectionsName() || []
       );
     },
@@ -90,7 +90,7 @@ export const useCollectionManager = (namespace?: string) => {
       if (!name) return [];
       return (
         cm
-          ?.getCollection<InheritanceCollectionMixin>(name, { namespace: customNamespace || namespaceValue })
+          ?.getCollection<InheritanceCollectionMixin>(name, { dataSource: customNamespace || dataSourceNameValue })
           ?.getChildrenCollections(isSupportView) || []
       );
     },
@@ -101,7 +101,7 @@ export const useCollectionManager = (namespace?: string) => {
       if (!name) return [];
       return (
         cm
-          ?.getCollection<InheritanceCollectionMixin>(name, { namespace: customNamespace || namespaceValue })
+          ?.getCollection<InheritanceCollectionMixin>(name, { dataSource: customNamespace || dataSourceNameValue })
           ?.getCurrentFields() || []
       );
     },
@@ -114,7 +114,7 @@ export const useCollectionManager = (namespace?: string) => {
       collectionName: string,
       type: string | string[] = 'string',
       opts?: {
-        namespace?: string;
+        dataSource?: string;
         cached?: Record<string, any>;
         collectionNames?: string[];
         /**
@@ -150,7 +150,7 @@ export const useCollectionManager = (namespace?: string) => {
         exceptInterfaces = [],
         prefixFieldValue = '',
         usePrefix = false,
-        namespace: customNamespace,
+        dataSource: customDataSourceNameValue,
       } = opts || {};
 
       if (collectionNames.length - 1 > maxDepth) {
@@ -165,7 +165,7 @@ export const useCollectionManager = (namespace?: string) => {
       if (typeof type === 'string') {
         type = [type];
       }
-      const fields = getCollectionFields(collectionName, customNamespace);
+      const fields = getCollectionFields(collectionName, customDataSourceNameValue);
       const options = fields
         ?.filter(
           (field) =>
@@ -189,7 +189,7 @@ export const useCollectionManager = (namespace?: string) => {
               : getCollectionFieldsOptions(field.target, type, {
                   ...opts,
                   cached,
-                  namespace: customNamespace,
+                  dataSource: customDataSourceNameValue,
                   collectionNames: [...collectionNames, field.target],
                   prefixFieldValue: usePrefix
                     ? prefixFieldValue
@@ -215,7 +215,7 @@ export const useCollectionManager = (namespace?: string) => {
 
   const getCollection = useCallback(
     (name: any, customNamespace?: string): CollectionOptions => {
-      return cm?.getCollection(name, { namespace: customNamespace || namespaceValue });
+      return cm?.getCollection(name, { dataSource: customNamespace || dataSourceNameValue });
     },
     [cm],
   );
@@ -224,7 +224,9 @@ export const useCollectionManager = (namespace?: string) => {
   const getAllCollectionsInheritChain = useCallback(
     (collectionName: string, customNamespace?: string) => {
       return cm
-        ?.getCollection<InheritanceCollectionMixin>(collectionName, { namespace: customNamespace || namespaceValue })
+        ?.getCollection<InheritanceCollectionMixin>(collectionName, {
+          dataSource: customNamespace || dataSourceNameValue,
+        })
         ?.getAllCollectionsInheritChain();
     },
     [cm],
@@ -238,7 +240,9 @@ export const useCollectionManager = (namespace?: string) => {
   const getInheritCollectionsChain = useCallback(
     (collectionName: string, customNamespace?: string) => () => {
       return cm
-        ?.getCollection<InheritanceCollectionMixin>(collectionName, { namespace: customNamespace || namespaceValue })
+        ?.getCollection<InheritanceCollectionMixin>(collectionName, {
+          dataSource: customNamespace || dataSourceNameValue,
+        })
         ?.getInheritCollectionsChain();
     },
     [cm],
@@ -258,7 +262,9 @@ export const useCollectionManager = (namespace?: string) => {
 
   const getParentCollectionFields = (parentCollection, currentCollection, customNamespace?: string) => {
     return cm
-      ?.getCollection<InheritanceCollectionMixin>(currentCollection, { namespace: customNamespace || namespaceValue })
+      ?.getCollection<InheritanceCollectionMixin>(currentCollection, {
+        dataSource: customNamespace || dataSourceNameValue,
+      })
       ?.getParentCollectionFields(parentCollection);
   };
 

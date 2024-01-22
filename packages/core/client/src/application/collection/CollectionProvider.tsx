@@ -11,15 +11,15 @@ export interface CollectionProviderProps {
   name: string;
   children?: ReactNode;
   allowNull?: boolean;
-  namespace?: string;
+  dataSource?: string;
 }
 
 export const CollectionProviderV2: FC<CollectionProviderProps> = (props) => {
-  const { name, children, allowNull, namespace } = props;
+  const { name, children, allowNull, dataSource } = props;
   const collectionManager = useCollectionManagerV2();
   const collection = useMemo(
-    () => collectionManager.getCollection(name, { namespace }),
-    [collectionManager, name, namespace],
+    () => collectionManager.getCollection(name, { dataSource }),
+    [collectionManager, name, dataSource],
   );
   if (!collection && allowNull) return <>{props.children}</>;
   if (!collection && !allowNull) return <DeletedPlaceholder type="Collection" name={name} />;

@@ -28,7 +28,7 @@ export const RecordAssociationDetailsBlockInitializer = () => {
             createDetailsBlockSchema({
               collection: field.target,
               resource,
-              namespace: collection.namespace,
+              dataSource: collection.dataSource,
               association: resource,
               rowKey: collection.filterTargetKey || 'id',
             }),

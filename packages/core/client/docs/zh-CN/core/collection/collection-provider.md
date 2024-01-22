@@ -11,7 +11,7 @@
 ```tsx | pure
 interface CollectionProviderProps {
   name: string;
-  namespace?: string;
+  dataSource?: string;
   children?: ReactNode;
 }
 ```

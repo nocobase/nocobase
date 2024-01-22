@@ -33,7 +33,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
             const blockSchema = createReadPrettyFormBlockSchema({
               actionInitializers,
               collection: collectionName,
-              namespace: collection.namespace,
+              dataSource: collection.dataSource,
               resource,
               association: resource,
               action: 'get',
@@ -55,7 +55,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = () => {
               collection: collectionName,
               resource,
               association: resource,
-              namespace: collection.namespace,
+              dataSource: collection.dataSource,
               action: 'get',
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',

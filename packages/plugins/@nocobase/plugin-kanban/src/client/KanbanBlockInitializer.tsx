@@ -32,7 +32,7 @@ export const KanbanBlockInitializer = () => {
       componentType={'Kanban'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item }) => {
-        const collectionFields = getCollectionFields(item.name, item.namespace);
+        const collectionFields = getCollectionFields(item.name, item.dataSource);
         const fields = collectionFields
           ?.filter((field) => ['select', 'radioGroup'].includes(field.interface))
           ?.map((field) => {
@@ -93,7 +93,7 @@ export const KanbanBlockInitializer = () => {
           createKanbanBlockSchema({
             groupField: values.groupField.value,
             collection: item.name,
-            namespace: item.namespace,
+            dataSource: item.dataSource,
             params: {
               sort: [sortName],
               paginate: false,

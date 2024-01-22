@@ -17,7 +17,7 @@ export const FilterCollapseBlockInitializer = () => {
       isItem={itemConfig?.name === 'filterCollapseBlockInTableSelector'}
       onCreateBlockSchema={async ({ item }) => {
         const schema = createCollapseBlockSchema({
-          namespace: item.namespace,
+          dataSource: item.dataSource,
           collection: item.collectionName || item.name,
           // 与数据区块做区分
           blockType: 'filter',

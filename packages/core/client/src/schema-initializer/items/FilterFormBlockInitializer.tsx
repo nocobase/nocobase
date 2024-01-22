@@ -16,7 +16,7 @@ export const FilterFormBlockInitializer = () => {
       templateWrap={(templateSchema, { item }) => {
         const s = createFilterFormBlockSchema({
           template: templateSchema,
-          namespace: item.namespace,
+          dataSource: item.dataSource,
           collection: item.collectionName,
         });
         if (item.template && item.mode === 'reference') {

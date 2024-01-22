@@ -30,7 +30,7 @@ export const RecordAssociationGridCardBlockInitializer = () => {
               rowKey: collection.filterTargetKey,
               collection: field.target,
               resource,
-              namespace: collection.namespace,
+              dataSource: collection.dataSource,
               association: resource,
             }),
           );

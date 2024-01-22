@@ -10,12 +10,12 @@ interface CollectionManagerOptionsV2 {
   collectionTemplates?: (typeof CollectionTemplateBase)[];
   fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
-  collectionNamespaces?: Record<string, string>;
+  dataSources?: Record<string, string>;
   collectionMixins?: CollectionMixinConstructor[];
 }
 
 interface GetCollectionOptions {
-  namespace?: string;
+  dataSource?: string;
 }
 
 class CollectionManagerV2 {
@@ -23,8 +23,8 @@ class CollectionManagerV2 {
 
   constructor(options: CollectionManagerOptionsV2 = {}, app: Application);
 
-  addCollectionNamespaces(collectionNamespaces: Record<string, string>): void;
-  getCollectionNamespaces(): { name: string; title: string }[];
+  addDataSources(dataSources: Record<string, string>): void;
+  getDataSources(): { name: string; title: string }[];
 
   addCollectionTemplates(templateClasses: (typeof CollectionTemplateBase)[]): void;
   getCollectionTemplates(): CollectionTemplateBase[];
@@ -173,7 +173,7 @@ interface CollectionManagerOptionsV2 {
   collectionTemplates?: (typeof CollectionTemplateBase)[];
   fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
-  collectionNamespaces?: Record<string, string>;
+  dataSources?: Record<string, string>;
   collectionMixins?: CollectionMixinConstructor[];
 }
 ```
@@ -224,7 +224,7 @@ const app = new Application({
     collections: [userCollectionOptions],
     collectionTemplates: [TreeCollectionTemplate],
     fieldInterfaces: [CheckboxFieldInterface],
-    collectionNamespaces: {
+    dataSources: {
       "db2": "DB2"
     },
     fieldGroups: {
@@ -241,11 +241,11 @@ const app = new Application({
 2. `collections` 如果是一个对象，则 Key 为命名空间名称，Value 为数据表数组；如果是数组，则会添加到默认命名空间。例如：
 
 ```tsx | pure
-import { DEFAULT_COLLECTION_NAMESPACE_NAME } from '@nocobase/client';
+import { DEFAULT_DATA_SOURCE_NAME } from '@nocobase/client';
 
 const collectionManager = new CollectionManager({
   collections: {
-    [DEFAULT_COLLECTION_NAMESPACE_NAME]: [postCollection],
+    [DEFAULT_DATA_SOURCE_NAME]: [postCollection],
     "db2": [userCollection],
   }
 })
@@ -253,7 +253,7 @@ const collectionManager = new CollectionManager({
 
 
 ```tsx | pure
-import { DEFAULT_COLLECTION_NAMESPACE_NAME } from '@nocobase/client';
+import { DEFAULT_DATA_SOURCE_NAME } from '@nocobase/client';
 
 const collectionManager = new CollectionManager({
   collections: [userCollection]
@@ -262,7 +262,7 @@ const collectionManager = new CollectionManager({
 // 等同于
 const collectionManager = new CollectionManager({
   collections: {
-    [DEFAULT_COLLECTION_NAMESPACE_NAME]: [userCollection]
+    [DEFAULT_DATA_SOURCE_NAME]: [userCollection]
   }
 })
 ```
@@ -274,7 +274,7 @@ import { Plugin } from '@nocobase/client';
 
 class MyPlugin extends Plugin {
   async load()  {
-    this.app.collectionManager.addCollectionNamespaces({
+    this.app.collectionManager.addDataSources({
       "db2": "DB2"
     });
 
@@ -286,7 +286,7 @@ class MyPlugin extends Plugin {
 
 ## 实例方法
 
-### cm.addCollectionNamespaces(collectionNamespaces)
+### cm.addDataSources(dataSources)
 
 添加数据表命名空间。
 
@@ -294,7 +294,7 @@ class MyPlugin extends Plugin {
 
 ```tsx | pure
 class CollectionManagerV2 {
-  addCollectionNamespaces(collectionNamespaces: Record<string, string>): void;
+  addDataSources(dataSources: Record<string, string>): void;
 }
 ```
 
@@ -305,14 +305,14 @@ import { Plugin } from '@nocobase/client';
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.collectionManager.addCollectionNamespaces({
+    this.app.collectionManager.addDataSources({
       "db2": "DB2"
     });
   }
 }
 ```
 
-### cm.getCollectionNamespaces()
+### cm.getDataSources()
 
 获取数据表命名空间。
 
@@ -320,14 +320,14 @@ class MyPlugin extends Plugin {
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getCollectionNamespaces(): { name: string; title: string }[];
+  getDataSources(): { name: string; title: string }[];
 }
 ```
 
 - 示例
 
 ```tsx | pure
-collectionManager.getCollectionNamespaces(); // [ { name: 'main', title: '主数据源' }, { name: 'db2', title: 'DB2' }]
+collectionManager.getDataSources(); // [ { name: 'main', title: '主数据源' }, { name: 'db2', title: 'DB2' }]
 ```
 
 ### cm.addCollectionTemplates(templates)

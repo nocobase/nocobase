@@ -25,7 +25,7 @@ export const RecordFormBlockInitializer = () => {
             const blockSchema = createFormBlockSchema({
               association,
               collection: collection.name,
-              namespace: collection.namespace,
+              dataSource: collection.dataSource,
               action: 'get',
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
@@ -44,7 +44,7 @@ export const RecordFormBlockInitializer = () => {
             createFormBlockSchema({
               association,
               collection: collection.name,
-              namespace: collection.namespace,
+              dataSource: collection.dataSource,
               action: 'get',
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
