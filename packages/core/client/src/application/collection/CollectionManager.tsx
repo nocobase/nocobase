@@ -125,6 +125,16 @@ export class CollectionManagerV2 {
     });
   }
 
+  protected getCollectionInstance(collection: CollectionOptionsV2, dataSource?: string) {
+    const collectionTemplateInstance = this.getCollectionTemplate(collection.template);
+    const Cls = collectionTemplateInstance?.Collection || CollectionV2;
+    const transform = collectionTemplateInstance?.transform || defaultCollectionTransform;
+    const transformedCollection = transform(collection, this.app);
+    const instance = new Cls({ ...transformedCollection, dataSource }, this.app, this);
+    applyMixins(instance, this.collectionMixins);
+    return instance;
+  }
+
   // collections
   addCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}) {
     const { dataSource = DEFAULT_DATA_SOURCE_NAME } = options;
@@ -132,13 +142,7 @@ export class CollectionManagerV2 {
 
     collections
       .map((collection) => {
-        const collectionTemplateInstance = this.getCollectionTemplate(collection.template);
-        const Cls = collectionTemplateInstance?.Collection || CollectionV2;
-        const transform = collectionTemplateInstance?.transform || defaultCollectionTransform;
-        const transformedCollection = transform(collection, this.app);
-        const instance = new Cls({ ...transformedCollection, dataSource }, this.app, this);
-        applyMixins(instance, this.collectionMixins);
-        return instance;
+        return this.getCollectionInstance(collection, dataSource);
       })
       .forEach((collectionInstance) => {
         if (!this.collections[dataSource]) {
@@ -184,7 +188,14 @@ export class CollectionManagerV2 {
    * getCollection('users.profile'); // 获取 users 表的 profile 字段的关联表
    * getCollection('a.b.c'); // 获取 a 表的 b 字段的关联表，然后 b.target 表对应的 c 字段的关联表
    */
-  getCollection<Mixins = {}>(path: string, options: GetCollectionOptions = {}): (Mixins & CollectionV2) | undefined {
+  getCollection<Mixins = {}>(
+    path: string | CollectionOptionsV2,
+    options: GetCollectionOptions = {},
+  ): (Mixins & CollectionV2) | undefined {
+    if (typeof path === 'object') {
+      return this.getCollectionInstance(path) as Mixins & CollectionV2;
+    }
+
     const { dataSource = DEFAULT_DATA_SOURCE_NAME } = options;
     if (!path || typeof path !== 'string') return undefined;
     if (path.split('.').length > 1) {

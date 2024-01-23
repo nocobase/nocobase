@@ -58,7 +58,7 @@ export const useCollectionManager = (dataSourceName?: string) => {
       if (!name) return [];
       return (
         cm
-          ?.getCollection<InheritanceCollectionMixin>(typeof name === 'object' ? name.name : name, {
+          ?.getCollection<InheritanceCollectionMixin>(name, {
             dataSource: customNamespace || dataSourceNameValue,
           })
           ?.getAllFields() || []

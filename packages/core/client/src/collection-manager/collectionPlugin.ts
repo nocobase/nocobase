@@ -157,6 +157,6 @@ export class CollectionPlugin extends Plugin {
       },
     });
 
-    return [...(service?.data?.data || []), collectionData];
+    return service?.data?.data || [];
   }
 }
