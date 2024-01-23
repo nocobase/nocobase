@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useCollectionManager } from '../../../';
-import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
+import { mergeFilter } from '../../../filter-provider/utils';
 import { SchemaComponent, useCompile } from '../../../schema-component';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
 

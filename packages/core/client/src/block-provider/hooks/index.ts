@@ -12,7 +12,7 @@ import { AssociationFilter, useFormActiveFields, useFormBlockContext, useTableBl
 import { useAPIClient, useRequest } from '../../api-client';
 import { useCollection, useCollectionManager } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
-import { transformToFilter } from '../../filter-provider/utils';
+import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { BulkEditFormItemValueType } from '../../schema-initializer/components';
@@ -22,7 +22,6 @@ import { isVariable } from '../../variables/utils/isVariable';
 import { transformVariableValue } from '../../variables/utils/transformVariableValue';
 import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
-import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
 export * from './useFormActiveFields';
