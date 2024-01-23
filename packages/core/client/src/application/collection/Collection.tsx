@@ -93,6 +93,10 @@ export class CollectionV2 {
     return this.options?.fields || [];
   }
 
+  get sourceKey() {
+    return this.options.sourceKey;
+  }
+
   get name() {
     return this.options.name;
   }
