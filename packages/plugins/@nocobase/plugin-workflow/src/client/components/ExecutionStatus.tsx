@@ -1,8 +1,12 @@
-import { Select, Tag } from 'antd';
 import React, { useCallback } from 'react';
+import { Button, Modal, Select, Tag, Tooltip, message } from 'antd';
+import { ExclamationCircleFilled, StopOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
-import { useCompile } from '@nocobase/client';
+import { Action, css, useCompile, useRecord, useResourceActionContext, useResourceContext } from '@nocobase/client';
+
 import { EXECUTION_STATUS, ExecutionStatusOptions, ExecutionStatusOptionsMap } from '../constants';
+import { lang } from '../locale';
 
 function LabelTag(props) {
   const compile = useCompile();
@@ -50,5 +54,46 @@ export function ExecutionStatusSelect({ ...props }) {
         ),
       )}
     </Select>
+  );
+}
+
+export function ExecutionStatusColumn(props) {
+  const { t } = useTranslation();
+  const { refresh } = useResourceActionContext();
+  const { resource } = useResourceContext();
+  const record = useRecord();
+  const onClick = useCallback(() => {
+    Modal.confirm({
+      title: lang('Cancel the execution'),
+      icon: <ExclamationCircleFilled />,
+      content: lang('Are you sure you want to cancel the execution?'),
+      onOk: () => {
+        resource
+          .cancel({
+            filterByTk: record.id,
+          })
+          .then(() => {
+            message.success(t('Operation succeeded'));
+            refresh();
+          })
+          .catch((response) => {
+            console.error(response.data.error);
+          });
+      },
+    });
+  }, [record]);
+  return (
+    <div
+      className={css`
+        display: flex;
+      `}
+    >
+      {props.children}
+      {record.status ? null : (
+        <Tooltip title={lang('Cancel the execution')}>
+          <Button type="link" danger onClick={onClick} shape="circle" size="small" icon={<StopOutlined />} />
+        </Tooltip>
+      )}
+    </div>
   );
 }
