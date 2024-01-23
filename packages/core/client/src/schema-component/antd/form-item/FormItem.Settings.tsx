@@ -379,7 +379,6 @@ export const formItemSettings = new SchemaSettings({
         const fieldModeOptions = useFieldModeOptions();
         const isAddNewForm = useIsAddNewForm();
         const fieldMode = useFieldMode();
-
         return {
           title: t('Field component'),
           options: fieldModeOptions,
@@ -929,7 +928,8 @@ function isFileCollection(collection: Collection) {
 
 export function useIsFormReadPretty() {
   const { form } = useFormBlockContext();
-  return !!form?.readPretty;
+  const field = useField();
+  return !!form?.readPretty || !!field.readPretty;
 }
 
 function useIsFieldReadPretty() {
