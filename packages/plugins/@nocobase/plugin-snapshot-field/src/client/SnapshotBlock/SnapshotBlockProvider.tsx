@@ -5,6 +5,7 @@ import {
   BlockAssociationContext,
   BlockRequestContext,
   BlockResourceContext,
+  CollectionDataSourceProvider,
   FormBlockContext,
   MaybeCollectionProvider,
   RecordProvider,
@@ -73,17 +74,19 @@ const BlockRequestProvider = (props) => {
 };
 
 const BlockProvider = (props) => {
-  const { collection, association } = props;
+  const { collection, association, dataSource } = props;
   const resource = useResource(props);
 
   return (
-    <MaybeCollectionProvider collection={collection}>
-      <BlockAssociationContext.Provider value={association}>
-        <BlockResourceContext.Provider value={resource}>
-          <BlockRequestProvider {...props}>{props.children}</BlockRequestProvider>
-        </BlockResourceContext.Provider>
-      </BlockAssociationContext.Provider>
-    </MaybeCollectionProvider>
+    <CollectionDataSourceProvider dataSource={dataSource}>
+      <MaybeCollectionProvider collection={collection}>
+        <BlockAssociationContext.Provider value={association}>
+          <BlockResourceContext.Provider value={resource}>
+            <BlockRequestProvider {...props}>{props.children}</BlockRequestProvider>
+          </BlockResourceContext.Provider>
+        </BlockAssociationContext.Provider>
+      </MaybeCollectionProvider>
+    </CollectionDataSourceProvider>
   );
 };
 

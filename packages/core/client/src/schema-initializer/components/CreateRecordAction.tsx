@@ -99,6 +99,7 @@ export const CreateRecordAction = observer(
     const fieldSchema = useFieldSchema();
     const field: any = useField();
     const [currentCollection, setCurrentCollection] = useState(collection.name);
+    const [currentCollectionDataSource, setCurrentCollectionDataSource] = useState(collection.dataSource);
     const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
     const values = useRecord();
     const ctx = useActionContext();
@@ -125,12 +126,13 @@ export const CreateRecordAction = observer(
         <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
           <CreateAction
             {...props}
-            onClick={(name) => {
+            onClick={(collectionData) => {
               setVisible(true);
-              setCurrentCollection(name);
+              setCurrentCollection(collectionData.name);
+              setCurrentCollectionDataSource(collectionData.dataSource);
             }}
           />
-          <CollectionProvider name={currentCollection}>
+          <CollectionProvider name={currentCollection} dataSource={currentCollectionDataSource}>
             <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
           </CollectionProvider>
         </ActionContextProvider>
@@ -181,7 +183,7 @@ export const CreateAction = observer(
             return;
           }
           return {
-            ...childCollection,
+            ...childCollection.getOptions(),
             title: k.title || childCollection.title,
           };
         })
@@ -199,7 +201,7 @@ export const CreateAction = observer(
       return inheritsCollections.map((option) => ({
         key: option.name,
         label: compile(option.title),
-        onClick: () => onClick?.(option.name),
+        onClick: () => onClick?.(option),
       }));
     }, [inheritsCollections, onClick]);
 
@@ -276,6 +278,7 @@ function FinallyButton({
   form;
   designable: boolean;
 }) {
+  const { getCollection } = useCollectionManager();
   if (inheritsCollections?.length > 0) {
     if (!linkageFromForm) {
       return allowAddToCurrent === undefined || allowAddToCurrent ? (
@@ -290,7 +293,7 @@ function FinallyButton({
           ]}
           menu={menu}
           onClick={(info) => {
-            onClick?.(collection.name);
+            onClick?.(collection);
           }}
         >
           {icon}
@@ -315,9 +318,10 @@ function FinallyButton({
         icon={icon}
         onClick={(info) => {
           const collectionName = getLinkageCollection(linkageFromForm, form, field);
-          const targetCollection = inheritsCollections.find((v) => v.name === collectionName)
+          const targetCollectionName = inheritsCollections.find((v) => v.name === collectionName)
             ? collectionName
             : collection.name;
+          const targetCollection = getCollection(targetCollectionName);
           onClick?.(targetCollection);
         }}
         style={{
@@ -338,7 +342,7 @@ function FinallyButton({
       danger={props.danger}
       icon={icon}
       onClick={(info) => {
-        onClick?.(collection.name);
+        onClick?.(collection);
       }}
       style={{
         display: !designable && field?.data?.hidden && 'none',
