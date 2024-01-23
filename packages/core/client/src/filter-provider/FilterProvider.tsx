@@ -1,6 +1,7 @@
 import { useField, useFieldSchema } from '@formily/react';
 import { uniqBy } from 'lodash';
 import React, { createContext, useEffect, useRef } from 'react';
+import { useDataBlockPropsV2 } from '../application';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { SharedFilter, mergeFilter } from '../block-provider/SharedFilterProvider';
 import { CollectionFieldOptions, useCollection } from '../collection-manager';
@@ -68,11 +69,12 @@ export const FilterBlockProvider: React.FC = ({ children }) => {
  */
 export const DataBlockCollector = ({
   children,
-  params,
+  params: _params,
 }: {
   children: React.ReactNode;
   params?: { filter: SharedFilter };
 }) => {
+  const { params = _params } = useDataBlockPropsV2() || {};
   const collection = useCollection();
   const { recordDataBlocks, removeDataBlock } = useFilterBlock();
   const { service } = useBlockRequestContext();

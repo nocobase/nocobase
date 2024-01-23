@@ -10,9 +10,10 @@ import {
   useDataBlockRequestV2,
   useDataBlockResourceV2,
   useRecordV2,
-  withDynamicSchemaProps,
 } from '../application';
+import { withDynamicSchemaProps } from '../application/hoc';
 import { useCollection } from '../collection-manager';
+import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
@@ -190,11 +191,13 @@ export const FormBlockProviderV2 = withDynamicSchemaProps((props) => {
     <DataBlockProviderV2 parentRecord={parentRecord} record={record} {...props}>
       {/* from BlockProvider */}
       <ACLCollectionProvider>
-        <TemplateBlockProvider>
-          <FormActiveFieldsProvider name="form">
-            <InternalFormBlockProviderV2 {...props} />
-          </FormActiveFieldsProvider>
-        </TemplateBlockProvider>
+        <DataBlockCollector>
+          <TemplateBlockProvider>
+            <FormActiveFieldsProvider name="form">
+              <InternalFormBlockProviderV2 {...props} />
+            </FormActiveFieldsProvider>
+          </TemplateBlockProvider>
+        </DataBlockCollector>
       </ACLCollectionProvider>
     </DataBlockProviderV2>
   );
