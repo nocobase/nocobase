@@ -1,20 +1,19 @@
+import { SchemaExpressionScopeContext, useField, useFieldSchema } from '@formily/react';
 import {
-  useBlockRequestContext,
-  useTableBlockContext,
-  useCompile,
-  useRecord,
-  useVariables,
-  useCollection,
-  useLocalVariables,
   isVariable,
   transformVariableValue,
-  TableFieldResource,
+  useBlockRequestContext,
+  useCollection,
+  useCompile,
+  useLocalVariables,
+  useRecord,
+  useTableBlockContext,
+  useVariables,
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
-import { SchemaExpressionScopeContext, useFieldSchema, useField } from '@formily/react';
-import { useNavigate } from 'react-router-dom';
 import { App, message } from 'antd';
 import { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useBulkUpdateTranslation } from './locale';
 
 export const useCustomizeBulkUpdateActionProps = () => {
@@ -99,9 +98,9 @@ export const useCustomizeBulkUpdateActionProps = () => {
             actionField.data.loading = false;
           }
           service?.refresh?.();
-          if (!(resource instanceof TableFieldResource)) {
-            __parent?.service?.refresh?.();
-          }
+          // if (!(resource instanceof TableFieldResource)) {
+          //   __parent?.service?.refresh?.();
+          // }
           if (!onSuccess?.successMessage) {
             return;
           }

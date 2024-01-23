@@ -1,20 +1,16 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import {
-  TableFieldResource,
-  getFormValues,
   useAPIClient,
   useActionContext,
   useBlockRequestContext,
   useCollection,
   useCompile,
   useFilterByTk,
-  useFormActiveFields,
   useRecord,
 } from '@nocobase/client';
-import { App } from 'antd';
 import { isURL } from '@nocobase/utils/client';
+import { App } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { useGetCustomRequest } from './useGetCustomRequest';
 import { useTranslation } from '../locale';
 
 export const useCustomizeRequestActionProps = () => {
@@ -61,9 +57,9 @@ export const useCustomizeRequestActionProps = () => {
           },
         });
         actionField.data.loading = false;
-        if (!(resource instanceof TableFieldResource)) {
-          __parent?.service?.refresh?.();
-        }
+        // if (!(resource instanceof TableFieldResource)) {
+        //   __parent?.service?.refresh?.();
+        // }
         service?.refresh?.();
         if (xAction === 'customize:form:request') {
           setVisible?.(false);

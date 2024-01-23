@@ -9,7 +9,6 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { Link } from 'react-router-dom';
 import {
   DEFAULT_DATA_SOURCE_NAME,
-  TableFieldResource,
   WithoutTableFieldResource,
   useAPIClient,
   useActionContext,
@@ -65,38 +64,38 @@ const useResource = (props: UseResourceProps) => {
   const { block, collection, dataSource, resource, useSourceId } = props;
   const record = useRecord();
   const api = useAPIClient();
-  const { fieldSchema } = useActionContext();
-  const isCreateAction = fieldSchema?.['x-action'] === 'create';
+  // const { fieldSchema } = useActionContext();
+  // const isCreateAction = fieldSchema?.['x-action'] === 'create';
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
-  const field = useField();
-  const withoutTableFieldResource = useContext(WithoutTableFieldResource);
-  const __parent = useBlockRequestContext();
+  // const field = useField();
+  // const withoutTableFieldResource = useContext(WithoutTableFieldResource);
+  // const __parent = useBlockRequestContext();
   const headers = useMemo(() => {
     if (dataSource && dataSource !== DEFAULT_DATA_SOURCE_NAME) {
       return { 'x-connection': dataSource };
     }
   }, [dataSource]);
 
-  if (block === 'TableField') {
-    const options = {
-      field,
-      api,
-      resource,
-      sourceId: !isCreateAction
-        ? sourceId || record[association?.sourceKey || 'id'] || record?.__parent?.[association?.sourceKey || 'id']
-        : undefined,
-    };
-    return new TableFieldResource(options);
-  }
+  // if (block === 'TableField') {
+  //   const options = {
+  //     field,
+  //     api,
+  //     resource,
+  //     sourceId: !isCreateAction
+  //       ? sourceId || record[association?.sourceKey || 'id'] || record?.__parent?.[association?.sourceKey || 'id']
+  //       : undefined,
+  //   };
+  //   return new TableFieldResource(options);
+  // }
 
-  if (
-    !withoutTableFieldResource &&
-    __parent?.block === 'TableField' &&
-    __parent?.resource instanceof TableFieldResource
-  ) {
-    return __parent.resource;
-  }
+  // if (
+  //   !withoutTableFieldResource &&
+  //   __parent?.block === 'TableField' &&
+  //   __parent?.resource instanceof TableFieldResource
+  // ) {
+  //   return __parent.resource;
+  // }
   if (!association) {
     return api.resource(resource, undefined, headers);
   }
@@ -353,7 +352,7 @@ export const useFilterByTk = () => {
   const { association: assoc } = useDataBlockPropsV2();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   if (!withoutTableFieldResource) {
-    if (resource instanceof TableFieldResource || __parent?.block === 'TableField') {
+    if (__parent?.block === 'TableField') {
       return recordIndex;
     }
   }

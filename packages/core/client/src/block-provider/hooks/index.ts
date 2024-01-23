@@ -22,7 +22,6 @@ import { isVariable } from '../../variables/utils/isVariable';
 import { transformVariableValue } from '../../variables/utils/transformVariableValue';
 import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
-import { TableFieldResource } from '../TableFieldProvider';
 
 export * from './useFormActiveFields';
 export * from './useParsedFilter';
@@ -529,9 +528,9 @@ export const useCustomizeUpdateActionProps = () => {
         values: { ...assignedValues },
       });
       service?.refresh?.();
-      if (!(resource instanceof TableFieldResource)) {
-        __parent?.service?.refresh?.();
-      }
+      // if (!(resource instanceof TableFieldResource)) {
+      //   __parent?.service?.refresh?.();
+      // }
       if (!onSuccess?.successMessage) {
         return;
       }
@@ -641,9 +640,9 @@ export const useCustomizeBulkUpdateActionProps = () => {
             actionField.data.loading = false;
           }
           service?.refresh?.();
-          if (!(resource instanceof TableFieldResource)) {
-            __parent?.service?.refresh?.();
-          }
+          // if (!(resource instanceof TableFieldResource)) {
+          //   __parent?.service?.refresh?.();
+          // }
           if (!onSuccess?.successMessage) {
             return;
           }
@@ -735,9 +734,9 @@ export const useCustomizeBulkEditActionProps = () => {
         }
         await resource.update(updateData);
         actionField.data.loading = false;
-        if (!(resource instanceof TableFieldResource)) {
-          __parent?.__parent?.service?.refresh?.();
-        }
+        // if (!(resource instanceof TableFieldResource)) {
+        //   __parent?.__parent?.service?.refresh?.();
+        // }
         __parent?.service?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
@@ -826,9 +825,9 @@ export const useCustomizeRequestActionProps = () => {
           ...requestBody,
         });
         actionField.data.loading = false;
-        if (!(resource instanceof TableFieldResource)) {
-          __parent?.service?.refresh?.();
-        }
+        // if (!(resource instanceof TableFieldResource)) {
+        //   __parent?.service?.refresh?.();
+        // }
         service?.refresh?.();
         if (xAction === 'customize:form:request') {
           setVisible?.(false);
