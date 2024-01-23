@@ -2,19 +2,20 @@ import { createForm } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import {
   BlockRequestContext,
+  CollectionDataSourceProvider,
   CollectionProvider,
   DEFAULT_DATA_SOURCE_NAME,
-  CollectionDataSourceProvider,
   FormActiveFieldsProvider,
   FormBlockContext,
   FormV2,
   RecordProvider,
   useAPIClient,
   useAssociationNames,
+  useBlockRequestContext,
   useDesignable,
   useRecord,
 } from '@nocobase/client';
-import React, { useContext, useMemo, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 
 export function FormBlockProvider(props) {
   const userJob = useRecord();
@@ -61,7 +62,7 @@ export function FormBlockProvider(props) {
   }, [dataSource]);
 
   const resource = api.resource(props.collection, undefined, headers);
-  const __parent = useContext(BlockRequestContext);
+  const __parent = useBlockRequestContext();
 
   const formBlockValue = useMemo(() => {
     return {

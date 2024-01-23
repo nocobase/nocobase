@@ -7,10 +7,11 @@ import {
   RecordProvider,
   useAPIClient,
   useAssociationNames,
+  useBlockRequestContext,
 } from '@nocobase/client';
 import { useFlowContext } from '@nocobase/plugin-workflow/client';
 import { parse } from '@nocobase/utils/client';
-import React, { useContext, useMemo, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 
 function useFlowContextData(dataSource) {
   const { execution, nodes } = useFlowContext();
@@ -61,7 +62,7 @@ export function DetailsBlockProvider(props) {
   };
   const api = useAPIClient();
   const resource = api.resource(props.collection);
-  const __parent = useContext(BlockRequestContext);
+  const __parent = useBlockRequestContext();
 
   return (
     <CollectionProvider collection={props.collection}>
