@@ -4,8 +4,7 @@ import { getNameByParams, parseRequest, ResourcerContext, ResourceType } from '@
 export async function db2resource(ctx: ResourcerContext & { db: Database }, next: () => Promise<any>) {
   const dataSource = ctx.get('x-data-source');
   if (dataSource) {
-    await next();
-    return;
+    return next();
   }
   const resourcer = ctx.resourcer;
   const database = ctx.db;

@@ -21,10 +21,14 @@ export class DataSourceManager {
   middleware() {
     return async (ctx, next) => {
       const name = ctx.get('x-data-source');
-      if (this.dataSources.has(name)) {
-        const ds = this.dataSources.get(name);
-        ctx.dataSource = ds;
-        return ds.middleware(this.middlewares)(ctx, next);
+      if (name) {
+        if (this.dataSources.has(name)) {
+          const ds = this.dataSources.get(name);
+          ctx.dataSource = ds;
+          return ds.middleware(this.middlewares)(ctx, next);
+        } else {
+          ctx.throw(`data source ${name} does not exist`);
+        }
       }
       await next();
       console.log('next....');
