@@ -66,8 +66,8 @@ jobs:
             VERDACCIO_URL=http://localhost:4873/
             COMMIT_HASH=${GITHUB_SHA}
             PLUGINS_DIRS=pro-plugins
-            APPEND_PRESET_LOCAL_PLUGINS=notifications>=0.5.0-alpha.16,demo-platform>=0.14.0-alpha.7,disable-pm-add,workflow-json-query,collection-fdw,workflow-variable,telemetry-prometheus,workflow-approval,database-connections
-            BEFORE_PACK_NOCOBASE=yarn add @nocobase/plugin-demo-platform @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add @nocobase/plugin-workflow-json-query @nocobase/plugin-collection-fdw @nocobase/plugin-workflow-variable @nocobase/plugin-telemetry-prometheus @nocobase/plugin-workflow-approval @nocobase/plugin-database-connections -W
+            APPEND_PRESET_LOCAL_PLUGINS=notifications>=0.5.0-alpha.16,demo-platform>=0.14.0-alpha.7,disable-pm-add,workflow-json-query,collection-fdw,workflow-variable,telemetry-prometheus,workflow-approval,source-postgres,source-mysql
+            BEFORE_PACK_NOCOBASE=yarn add @nocobase/plugin-demo-platform @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add @nocobase/plugin-workflow-json-query @nocobase/plugin-collection-fdw @nocobase/plugin-workflow-variable @nocobase/plugin-telemetry-prometheus @nocobase/plugin-workflow-approval @nocobase/plugin-data-source-postgres @nocobase/plugin-data-source-mysql -W
           push: true
           tags: ${{ steps.set-tags.outputs.tags }}
 
