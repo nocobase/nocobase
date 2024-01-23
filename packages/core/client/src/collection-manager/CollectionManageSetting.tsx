@@ -4,14 +4,19 @@ import { Card, message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollectionManageSetting, CollectionManageSettingProvider } from './CollectionManageSettingProvider';
+import {
+  useCollectionManageSetting,
+  CollectionManageSettingProvider,
+  ERandomUidType,
+  CONSTANT,
+} from './CollectionManageSettingProvider';
 import { useAPIClient, useRequest } from '..';
 import { SchemaComponent, useActionContext } from '../schema-component';
 
-const useSystemSettingsValues = (options) => {
+const useSettingsValues = (options) => {
   const { visible } = useActionContext();
   const result = useCollectionManageSetting();
-  return useRequest(() => Promise.resolve(result.data), {
+  return useRequest(() => Promise.resolve(result?.data), {
     ...options,
     refreshDeps: [visible],
   });
@@ -25,7 +30,11 @@ const useSaveSystemSettingsValues = () => {
     async run() {
       await form.submit();
       const values = cloneDeep(form.values);
-      localStorage.setItem('RANDOM_UID_BLACKLIST', values?.options?.randomUidBlacklist);
+      localStorage.setItem(CONSTANT.RANDOM_UID_OPTIONS, values?.options?.randomUidBlacklist);
+      values.options = {
+        ...values.options,
+        type: values?.options?.randomUidBlacklist?.length === 0 ? CONSTANT.ALL_SELECTED_EMPTY : '',
+      };
       await api.request({
         url: 'applicationPlugins:update',
         method: 'post',
@@ -45,7 +54,7 @@ const schema: ISchema = {
     [uid()]: {
       'x-decorator': 'Form',
       'x-decorator-props': {
-        useValues: '{{ useSystemSettingsValues }}',
+        useValues: '{{ useSettingsValues }}',
       },
       'x-component': 'div',
       type: 'void',
@@ -57,10 +66,10 @@ const schema: ISchema = {
           'x-component': 'Checkbox.Group',
           'x-component-props': {
             options: [
-              { label: '{{t("Table name")}}', value: 'TABLE_NAME' },
-              { label: '{{t("Table field name")}}', value: 'TABLE_FIELD' },
-              { label: '{{t("Foreign key")}}', value: 'FOREIGN_KEY' },
-              { label: '{{t("Table select option")}}', value: 'SELECT_OPTION' },
+              { label: '{{t("Table name")}}', value: ERandomUidType.TABLE_NAME },
+              { label: '{{t("Table field name")}}', value: ERandomUidType.TABLE_FIELD },
+              { label: '{{t("Foreign key")}}', value: ERandomUidType.FOREIGN_KEY },
+              { label: '{{t("Table select option")}}', value: ERandomUidType.SELECT_OPTION },
             ],
           },
           'x-decorator': 'FormItem',
@@ -95,7 +104,7 @@ export const CollectionManageSetting = () => {
   return (
     <Card bordered={false}>
       <CollectionManageSettingProvider>
-        <SchemaComponent scope={{ useSaveSystemSettingsValues, useSystemSettingsValues }} schema={schema} />
+        <SchemaComponent scope={{ useSaveSystemSettingsValues, useSettingsValues }} schema={schema} />
       </CollectionManageSettingProvider>
     </Card>
   );
