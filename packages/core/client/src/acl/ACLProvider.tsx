@@ -1,16 +1,16 @@
 import { Field } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
+import { omit } from 'lodash';
 import React, { createContext, useContext, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { omit } from 'lodash';
 import { useAPIClient, useRequest } from '../api-client';
+import { useApp, useCollectionDataSourceName } from '../application';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { useCollection, useCollectionManager } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
-import { useApp, useCollectionDataSourceName } from '../application';
 
 export const ACLContext = createContext<any>({});
 
@@ -249,7 +249,7 @@ export const ACLActionProvider = (props) => {
 };
 
 export const useACLFieldWhitelist = () => {
-  const params = useContext(ACLActionParamsContext);
+  const params = useACLActionParamsContext();
   const whitelist = []
     .concat(params?.whitelist || [])
     .concat(params?.fields || [])

@@ -3,6 +3,7 @@ import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react
 import { Spin } from 'antd';
 import _, { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
+import { ACLCollectionProvider } from '../acl';
 import {
   DataBlockProviderV2,
   useDataBlockPropsV2,
@@ -176,7 +177,7 @@ export const FormBlockProvider = (props) => {
 };
 
 export const FormBlockProviderV2 = withDynamicSchemaProps((props) => {
-  const { association, dataSource } = props;
+  const { association } = props;
   let record = useRecordV2(false);
   let parentRecord = null;
 
@@ -187,11 +188,14 @@ export const FormBlockProviderV2 = withDynamicSchemaProps((props) => {
 
   return (
     <DataBlockProviderV2 parentRecord={parentRecord} record={record} {...props}>
-      <TemplateBlockProvider>
-        <FormActiveFieldsProvider name="form">
-          <InternalFormBlockProviderV2 {...props} />
-        </FormActiveFieldsProvider>
-      </TemplateBlockProvider>
+      {/* from BlockProvider */}
+      <ACLCollectionProvider>
+        <TemplateBlockProvider>
+          <FormActiveFieldsProvider name="form">
+            <InternalFormBlockProviderV2 {...props} />
+          </FormActiveFieldsProvider>
+        </TemplateBlockProvider>
+      </ACLCollectionProvider>
     </DataBlockProviderV2>
   );
 });
