@@ -353,7 +353,7 @@ describe('workflow > instructions > request', () => {
   describe('sync request', () => {
     it('sync trigger', async () => {
       const syncFlow = await WorkflowModel.create({
-        type: 'sync',
+        type: 'syncTrigger',
         enabled: true,
       });
       await syncFlow.createNode({
