@@ -4,11 +4,9 @@ import { omit } from 'lodash';
 import React, { createContext, useContext, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
-import { useApp, useCollectionDataSourceName } from '../application';
+import { useApp, useCollectionDataSourceName, useDataBlockPropsV2, useDataBlockRequestV2 } from '../application';
 import { useAppSpin } from '../application/hooks/useAppSpin';
-import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { useCollection, useCollectionManager } from '../collection-manager';
-import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
 
@@ -140,15 +138,13 @@ const getIgnoreScope = (options: any = {}) => {
 };
 
 const useAllowedActions = () => {
-  const service = useResourceActionContext();
-  const result = useBlockRequestContext() || { service };
-  return result?.allowedActions ?? result?.service?.data?.meta?.allowedActions;
+  const request = useDataBlockRequestV2();
+  return (request?.data as any)?.meta?.allowedActions;
 };
 
 const useResourceName = () => {
-  const service = useResourceActionContext();
-  const result = useBlockRequestContext() || { service };
-  return result?.props?.resource || result?.service?.defaultRequest?.resource;
+  const { resource: resourceName } = useDataBlockPropsV2();
+  return resourceName;
 };
 
 export function useACLRoleContext() {
@@ -220,16 +216,16 @@ export const useRecordPkValue = () => {
 export const ACLActionProvider = (props) => {
   const { template, writableView } = useCollection();
   const recordPkValue = useRecordPkValue();
-  const resource = useResourceName();
+  const resourceName = useResourceName();
   const { parseAction } = useACLRoleContext();
   const schema = useFieldSchema();
   let actionPath = schema['x-acl-action'];
   const editablePath = ['create', 'update', 'destroy', 'importXlsx'];
-  if (!actionPath && resource && schema['x-action']) {
-    actionPath = `${resource}:${schema['x-action']}`;
+  if (!actionPath && resourceName && schema['x-action']) {
+    actionPath = `${resourceName}:${schema['x-action']}`;
   }
   if (!actionPath?.includes(':')) {
-    actionPath = `${resource}:${actionPath}`;
+    actionPath = `${resourceName}:${actionPath}`;
   }
   if (!actionPath) {
     return <>{props.children}</>;

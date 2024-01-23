@@ -1,9 +1,9 @@
-import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 import { IResource } from '@nocobase/sdk';
+import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
 import { useAPIClient } from '../../api-client';
-import { useDataBlockPropsV2 } from './DataBlockProvider';
 import { DEFAULT_DATA_SOURCE_NAME, useCollectionManagerV2 } from '../collection';
+import { useDataBlockPropsV2 } from './DataBlockProvider';
 
 export const DataBlockResourceContextV2 = createContext<IResource>(null);
 DataBlockResourceContextV2.displayName = 'DataBlockResourceContextV2';

@@ -2,9 +2,9 @@ import { useDeepCompareEffect } from 'ahooks';
 import React, { FC, createContext, useContext } from 'react';
 
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
-import { useDataBlockResourceV2 } from './DataBlockResourceProvider';
 import { RecordProviderV2 } from '../collection';
 import { AllDataBlockProps, useDataBlockPropsV2 } from './DataBlockProvider';
+import { useDataBlockResourceV2 } from './DataBlockResourceProvider';
 
 export const BlockRequestContextV2 = createContext<UseRequestResult<any>>(null);
 BlockRequestContextV2.displayName = 'BlockRequestContextV2';
