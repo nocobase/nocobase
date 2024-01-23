@@ -20,7 +20,7 @@ import {
 import { ACLCollectionProvider } from '../acl/ACLProvider';
 import { CollectionDataSourceProvider } from '../application/data-block';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
-import { FilterBlockRecord } from '../filter-provider/FilterProvider';
+import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
 import { useTemplateBlockContext } from './TemplateBlockProvider';
@@ -335,9 +335,9 @@ export const BlockProvider = (props: {
               <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
                 {/* 可以删除 */}
                 <SharedFilterProvider {...props} params={params}>
-                  <FilterBlockRecord {...props} params={params}>
+                  <DataBlockCollector {...props} params={params}>
                     {props.children}
-                  </FilterBlockRecord>
+                  </DataBlockCollector>
                 </SharedFilterProvider>
               </BlockRequestProvider>
             </BlockResourceContext.Provider>
