@@ -60,7 +60,7 @@ interface DataSource {
   [key: string]: any;
 }
 
-type DataSourceName = string;
+type DataSourceNameType = string;
 
 export interface CollectionManagerOptionsV2 {
   collections?: CollectionOptionsV2[];
@@ -76,11 +76,11 @@ type ReloadCallback = (collections: CollectionOptionsV2[]) => void;
 
 export class CollectionManagerV2 {
   public app: Application;
-  protected collections: Record<string, Record<DataSourceName, CollectionV2>> = {};
+  protected collections: Record<string, Record<DataSourceNameType, CollectionV2>> = {};
   protected collectionTemplateInstances: Record<string, CollectionTemplateBase> = {};
   protected fieldInterfaceInstances: Record<string, CollectionFieldInterfaceBase> = {};
   protected collectionMixins: CollectionMixinConstructor[] = [];
-  protected dataSourceMap: Record<DataSourceName, Omit<DataSource, 'collections'>> = {};
+  protected dataSourceMap: Record<DataSourceNameType, Omit<DataSource, 'collections'>> = {};
   protected collectionFieldGroups: Record<string, { label: string; order?: number }> = {};
   protected mainDataSourceFn: MainDataSOurceFn;
   protected thirdDataSourceFn: ThirdDataResourceFn;

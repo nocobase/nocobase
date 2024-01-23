@@ -10,8 +10,7 @@ import { useCollection, useCollectionManager } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
-import { useApp } from '../application';
-import { useDataSourceName } from '../block-provider/BlockProvider';
+import { useApp, useCollectionDataSourceName } from '../application';
 
 export const ACLContext = createContext<any>({});
 
@@ -93,7 +92,7 @@ export const ACLActionParamsContext = createContext<any>({});
 
 export const useACLRolesCheck = () => {
   const ctx = useContext(ACLContext);
-  const dataSourceName = useDataSourceName();
+  const dataSourceName = useCollectionDataSourceName();
   const { dataSources: dataSourcesAcl } = ctx?.data?.meta || {};
   const data = { ...ctx?.data?.data, ...omit(dataSourcesAcl?.[dataSourceName], 'snippets') };
   const getActionAlias = (actionPath: string) => {

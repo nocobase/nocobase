@@ -6,11 +6,11 @@ import { CollectionFieldOptions, CollectionOptions } from '../types';
 import { useCollectionManagerV2 } from '../../application';
 import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
 import { uid } from '@formily/shared';
-import { useDataSourceName } from '../../block-provider/BlockProvider';
+import { useCollectionDataSourceName } from '../../application/data-block';
 
 export const useCollectionManager = (dataSourceName?: string) => {
   const cm = useCollectionManagerV2();
-  const blockDataSourceName = useDataSourceName();
+  const blockDataSourceName = useCollectionDataSourceName();
   const dataSourceNameValue = dataSourceName || blockDataSourceName || undefined;
   const [random, setRandom] = useState(uid());
   const { refresh } = useSchemaComponentContext();

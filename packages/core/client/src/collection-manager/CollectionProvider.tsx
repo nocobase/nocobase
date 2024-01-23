@@ -4,7 +4,7 @@ import { CollectionOptions } from './types';
 import React from 'react';
 import { DeletedPlaceholder } from '../application/collection/DeletedPlaceholder';
 import { CollectionExtendsProvider } from './CollectionManagerProvider';
-import { useDataSourceName } from '../block-provider/BlockProvider';
+import { useCollectionDataSourceName } from '../application/data-block';
 
 function getCollectionName(name?: string | CollectionOptions): string {
   if (!name) return undefined;
@@ -20,7 +20,7 @@ export const CollectionProvider: FC<{
   dataSource?: string;
 }> = ({ children, allowNull, name, dataSource, collection }) => {
   const collectionName = getCollectionName(name || collection);
-  const dataSourceName = useDataSourceName();
+  const dataSourceName = useCollectionDataSourceName();
   const dataSourceValue = dataSource || dataSourceName || undefined;
   const cm = useCollectionManagerV2();
   const hasCollection = cm.getCollection(collectionName, { dataSource: dataSourceValue });

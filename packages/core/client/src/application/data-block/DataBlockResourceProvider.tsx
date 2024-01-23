@@ -3,20 +3,26 @@ import { IResource } from '@nocobase/sdk';
 
 import { useAPIClient } from '../../api-client';
 import { useDataBlockPropsV2 } from './DataBlockProvider';
+import { DEFAULT_DATA_SOURCE_NAME } from '../collection';
 
 export const DataBlockResourceContextV2 = createContext<IResource>(null);
 DataBlockResourceContextV2.displayName = 'DataBlockResourceContextV2';
 
 export const DataBlockResourceProviderV2: FC<{ children?: ReactNode }> = ({ children }) => {
   const dataBlockProps = useDataBlockPropsV2();
-  const { association, collection, sourceId } = dataBlockProps;
+  const { association, collection, dataSource, sourceId } = dataBlockProps;
   const api = useAPIClient();
+  const headers = useMemo(() => {
+    if (dataSource && dataSource !== DEFAULT_DATA_SOURCE_NAME) {
+      return { 'x-connection': dataSource };
+    }
+  }, [dataSource]);
   const resource = useMemo(() => {
     if (association) {
-      return api.resource(association, sourceId);
+      return api.resource(association, sourceId, headers);
     }
-    return api.resource(collection);
-  }, [api, association, collection, sourceId]);
+    return api.resource(collection, undefined, headers);
+  }, [api, association, collection, sourceId, headers]);
   return <DataBlockResourceContextV2.Provider value={resource}>{children}</DataBlockResourceContextV2.Provider>;
 };
 
