@@ -958,7 +958,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const collection = useCollection();
   const apiClient = useAPIClient();
   const { theme } = useGlobalTheme();
-  const ctx = useContext(BlockRequestContext);
+  const ctx = useBlockRequestContext();
   const upLevelActiveFields = useFormActiveFields();
   const { locale } = useContext(ConfigProvider.ConfigContext);
 

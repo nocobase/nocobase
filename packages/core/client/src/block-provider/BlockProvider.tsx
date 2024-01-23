@@ -71,7 +71,7 @@ const useResource = (props: UseResourceProps) => {
   const sourceId = useSourceId?.();
   const field = useField();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
-  const __parent = useContext(BlockRequestContext);
+  const __parent = useBlockRequestContext();
   const headers = useMemo(() => {
     if (dataSource && dataSource !== DEFAULT_DATA_SOURCE_NAME) {
       return { 'x-connection': dataSource };
@@ -210,7 +210,7 @@ export const BlockRequestProvider = (props) => {
     });
   }, [serviceAllowedActions]);
 
-  const __parent = useContext(BlockRequestContext);
+  const __parent = useBlockRequestContext();
   return (
     <BlockRequestContext.Provider
       value={{
@@ -345,7 +345,7 @@ export const BlockProvider = (props: {
 };
 
 export const useFilterByTk = () => {
-  const { resource, __parent } = useContext(BlockRequestContext);
+  const { resource, __parent } = useBlockRequestContext();
   const recordIndex = useRecordIndex();
   const record = useRecord();
   const collection = useCollection();
