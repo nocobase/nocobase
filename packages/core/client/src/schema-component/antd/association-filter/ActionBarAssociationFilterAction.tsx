@@ -1,11 +1,11 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SchemaComponentContext, createDesignable } from '../..';
 import { useAPIClient } from '../../../api-client';
-import { createDesignable, SchemaComponentContext, useDesignable } from '../..';
-import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
 import { useBlockRequestContext } from '../../../block-provider';
-import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
+import { mergeFilter } from '../../../filter-provider/utils';
+import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
 
 export const ActionBarAssociationFilterAction = (props) => {
   const { refresh } = useContext(SchemaComponentContext);
