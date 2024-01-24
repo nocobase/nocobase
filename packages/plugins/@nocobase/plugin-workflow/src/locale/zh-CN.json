@@ -116,6 +116,9 @@
   "Rejected from a manual node.": "被人工节点拒绝继续。",
   "General failed but should do another try.": "执行失败，需重试。",
 
+  "Cancel the execution": "取消执行",
+  "Are you sure you want to cancel the execution?": "确定要取消该执行吗？",
+
   "Operations": "操作",
   "This node contains branches, deleting will also be preformed to them, are you sure?":
     "节点包含分支，将同时删除其所有分支下的子节点，确定继续？",

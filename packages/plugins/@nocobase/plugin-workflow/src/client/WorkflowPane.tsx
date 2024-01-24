@@ -6,7 +6,7 @@ import { ExecutionResourceProvider } from './ExecutionResourceProvider';
 import { WorkflowLink } from './WorkflowLink';
 import OpenDrawer from './components/OpenDrawer';
 import { workflowSchema } from './schemas/workflows';
-import { ExecutionStatusSelect } from './components/ExecutionStatusSelect';
+import { ExecutionStatusSelect, ExecutionStatusColumn } from './components/ExecutionStatus';
 import WorkflowPlugin, { RadioWithTooltip } from '.';
 import { onFieldChange } from '@formily/core';
 import { useField, useFormEffects } from '@formily/react';
@@ -62,6 +62,7 @@ export function WorkflowPane() {
             OpenDrawer,
             ExecutionStatusSelect,
             SyncOptionSelect,
+            ExecutionStatusColumn,
           }}
           scope={{
             getTriggersOptions,
