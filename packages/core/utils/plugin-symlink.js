@@ -78,7 +78,7 @@ async function createDevPluginSymLink(pluginName) {
     if (await fsExists(link)) {
       await unlink(link);
     }
-    await symlink(resolve(packagePluginsPath, pluginName), link);
+    await symlink(resolve(packagePluginsPath, pluginName), link, 'dir');
   } catch (error) {
     console.error(error);
   }
