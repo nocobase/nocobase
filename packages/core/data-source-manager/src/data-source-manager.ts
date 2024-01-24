@@ -13,7 +13,8 @@ export class DataSourceManager {
     this.middlewares = [];
   }
 
-  add(dataSource: DataSource) {
+  async add(dataSource: DataSource) {
+    await dataSource.load();
     this.dataSources.set(dataSource.name, dataSource);
   }
 

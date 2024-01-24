@@ -14,6 +14,7 @@ import { ConnectionsRolesModel } from './models/connections-roles-model';
 import { ConnectionsRolesResourcesModel } from './models/connections-roles-resources';
 import { ConnectionsRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { Middleware } from '@nocobase/resourcer';
+import { DataSourceModel } from './models/data-source';
 
 export class PluginDataSourceManagerServer extends Plugin {
   async beforeLoad() {
@@ -24,6 +25,13 @@ export class PluginDataSourceManagerServer extends Plugin {
       ConnectionsRolesModel,
       ConnectionsRolesResourcesModel,
       ConnectionsRolesResourcesActionModel,
+      DataSourceModel,
+    });
+
+    this.app.db.on('dataSources.afterSave', async (model: DataSourceModel) => {
+      await model.loadIntoApplication({
+        app: this.app,
+      });
     });
 
     this.app.db.on('databaseConnections.beforeCreate', async (model: DatabaseConnectionModel, options) => {
