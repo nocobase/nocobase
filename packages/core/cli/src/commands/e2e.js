@@ -4,7 +4,6 @@ const { execSync } = require('node:child_process');
 const axios = require('axios');
 const { pTest } = require('./p-test');
 const os = require('os');
-const treeKill = require('tree-kill');
 
 /**
  * 检查服务是否启动成功
@@ -91,17 +90,6 @@ async function runApp(options = {}) {
   console.log('starting...');
   run('nocobase', [process.env.APP_ENV === 'production' ? 'start' : 'dev'], options);
 }
-
-process.on('SIGINT', async () => {
-  treeKill(process.pid, (error) => {
-    if (error) {
-      console.error(error);
-    } else {
-      console.log('all subprocesses were killed, exiting main process');
-    }
-    process.exit();
-  });
-});
 
 const commonConfig = {
   stdio: 'inherit',

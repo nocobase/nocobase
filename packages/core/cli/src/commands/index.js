@@ -1,5 +1,17 @@
 const { Command } = require('commander');
 const { isPackageValid, generateAppDir } = require('../util');
+const treeKill = require('tree-kill');
+
+process.on('SIGINT', async () => {
+  treeKill(process.pid, (error) => {
+    if (error) {
+      console.error(error);
+    } else {
+      console.log('all subprocesses were killed, exiting main process');
+    }
+    process.exit();
+  });
+});
 
 /**
  *
