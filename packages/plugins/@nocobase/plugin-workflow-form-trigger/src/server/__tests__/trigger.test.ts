@@ -5,7 +5,7 @@ import { MockServer } from '@nocobase/test';
 
 import Plugin from '..';
 
-describe('workflow > instructions > sql', () => {
+describe('workflow > form-trigge[r', () => {
   let app: MockServer;
   let db: Database;
   let agent;
