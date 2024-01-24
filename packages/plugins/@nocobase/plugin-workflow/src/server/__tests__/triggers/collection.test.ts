@@ -383,6 +383,16 @@ describe('workflow > triggers > collection', () => {
         },
       });
 
+      const n1 = await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'comments',
+          params: {
+            values: {},
+          },
+        },
+      });
+
       await PostRepo.create({ values: { title: 't1' } });
 
       const executions = await workflow.getExecutions();

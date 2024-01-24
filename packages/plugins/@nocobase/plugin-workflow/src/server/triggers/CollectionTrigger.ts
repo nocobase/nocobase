@@ -90,6 +90,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     { data: json },
     {
       context,
+      transaction,
     },
   );
 

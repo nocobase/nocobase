@@ -2,7 +2,7 @@ import path from 'path';
 
 import LRUCache from 'lru-cache';
 
-import { Op } from '@nocobase/database';
+import { Op, Transactionable } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
@@ -280,7 +280,7 @@ export default class PluginWorkflowServer extends Plugin {
   public trigger(
     workflow: WorkflowModel,
     context: object,
-    options: { context?: any } = {},
+    options: { context?: any } & Transactionable = {},
   ): void | Promise<Processor | null> {
     const logger = this.getLogger(workflow.id);
     if (!this.ready) {
@@ -298,7 +298,7 @@ export default class PluginWorkflowServer extends Plugin {
       return this.triggerSync(workflow, context, options);
     }
 
-    this.events.push([workflow, context, options]);
+    this.events.push([workflow, context, { context: options.context }]);
     this.eventsCount = this.events.length;
 
     logger.info(`new event triggered, now events: ${this.events.length}`);
@@ -317,7 +317,7 @@ export default class PluginWorkflowServer extends Plugin {
   private async triggerSync(
     workflow: WorkflowModel,
     context: object,
-    options: { context?: any } = {},
+    options: { context?: any } & Transactionable = {},
   ): Promise<Processor | null> {
     let execution;
     try {
@@ -328,7 +328,7 @@ export default class PluginWorkflowServer extends Plugin {
     }
 
     try {
-      return this.process(execution);
+      return this.process(execution, null, options);
     } catch (err) {
       this.getLogger(execution.workflowId).error(`execution (${execution.id}) error: ${err.message}`, err);
     }
@@ -357,6 +357,7 @@ export default class PluginWorkflowServer extends Plugin {
         where: {
           id: options.context.executionId,
         },
+        transaction: options.transaction,
       });
 
       if (existed) {
@@ -368,40 +369,44 @@ export default class PluginWorkflowServer extends Plugin {
       }
     }
 
-    return this.db.sequelize.transaction(async (transaction) => {
-      const execution = await workflow.createExecution(
-        {
-          context,
+    const { transaction = await this.db.sequelize.transaction() } = options;
+
+    const execution = await workflow.createExecution(
+      {
+        context,
+        key: workflow.key,
+        status: EXECUTION_STATUS.QUEUEING,
+      },
+      { transaction },
+    );
+
+    this.getLogger(workflow.id).info(`execution of workflow ${workflow.id} created as ${execution.id}`);
+
+    await workflow.increment(['executed', 'allExecuted'], { transaction });
+    // NOTE: https://sequelize.org/api/v6/class/src/model.js~model#instance-method-increment
+    if (this.db.options.dialect !== 'postgres') {
+      await workflow.reload({ transaction });
+    }
+
+    await (<typeof WorkflowModel>workflow.constructor).update(
+      {
+        allExecuted: workflow.allExecuted,
+      },
+      {
+        where: {
           key: workflow.key,
-          status: EXECUTION_STATUS.QUEUEING,
         },
-        { transaction },
-      );
+        transaction,
+      },
+    );
 
-      this.getLogger(workflow.id).info(`execution of workflow ${workflow.id} created as ${execution.id}`);
+    if (!options.transaction) {
+      await transaction.commit();
+    }
 
-      await workflow.increment(['executed', 'allExecuted'], { transaction });
-      // NOTE: https://sequelize.org/api/v6/class/src/model.js~model#instance-method-increment
-      if (this.db.options.dialect !== 'postgres') {
-        await workflow.reload({ transaction });
-      }
+    execution.workflow = workflow;
 
-      await (<typeof WorkflowModel>workflow.constructor).update(
-        {
-          allExecuted: workflow.allExecuted,
-        },
-        {
-          where: {
-            key: workflow.key,
-          },
-          transaction,
-        },
-      );
-
-      execution.workflow = workflow;
-
-      return execution;
-    });
+    return execution;
   }
 
   private prepare = async () => {
@@ -479,12 +484,16 @@ export default class PluginWorkflowServer extends Plugin {
     })();
   }
 
-  private async process(execution: ExecutionModel, job?: JobModel): Promise<Processor> {
+  private async process(
+    execution: ExecutionModel,
+    job?: JobModel,
+    { transaction }: Transactionable = {},
+  ): Promise<Processor> {
     if (execution.status === EXECUTION_STATUS.QUEUEING) {
-      await execution.update({ status: EXECUTION_STATUS.STARTED });
+      await execution.update({ status: EXECUTION_STATUS.STARTED }, { transaction });
     }
 
-    const processor = this.createProcessor(execution);
+    const processor = this.createProcessor(execution, { transaction });
 
     this.getLogger(execution.workflowId).info(`execution (${execution.id}) ${job ? 'resuming' : 'starting'}...`);
 

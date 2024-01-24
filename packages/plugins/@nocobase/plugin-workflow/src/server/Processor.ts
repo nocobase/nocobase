@@ -24,7 +24,7 @@ export default class Processor {
   };
 
   logger: Logger;
-
+  transaction: Transaction;
   nodes: FlowNodeModel[] = [];
   nodesMap = new Map<number, FlowNodeModel>();
   jobsMap = new Map<number, JobModel>();
@@ -36,6 +36,7 @@ export default class Processor {
     public options: ProcessorOptions,
   ) {
     this.logger = options.plugin.getLogger(execution.workflowId);
+    this.transaction = options.transaction;
   }
 
   // make dual linked nodes list then cache
@@ -67,17 +68,18 @@ export default class Processor {
   }
 
   public async prepare() {
-    const { execution } = this;
+    const { execution, transaction } = this;
     if (!execution.workflow) {
-      execution.workflow = await execution.getWorkflow();
+      execution.workflow = await execution.getWorkflow({ transaction });
     }
 
-    const nodes = await execution.workflow.getNodes();
+    const nodes = await execution.workflow.getNodes({ transaction });
 
     this.makeNodes(nodes);
 
     const jobs = await execution.getJobs({
       order: [['id', 'ASC']],
+      transaction,
     });
 
     this.makeJobs(jobs);
@@ -206,7 +208,7 @@ export default class Processor {
   async exit(s?: number) {
     if (typeof s === 'number') {
       const status = (<typeof Processor>this.constructor).StatusMap[s] ?? Math.sign(s);
-      await this.execution.update({ status });
+      await this.execution.update({ status }, { transaction: this.transaction });
     }
     this.logger.info(`execution (${this.execution.id}) exiting with status ${this.execution.status}`);
     return null;
@@ -215,18 +217,22 @@ export default class Processor {
   // TODO(optimize)
   async saveJob(payload) {
     const { database } = <typeof ExecutionModel>this.execution.constructor;
+    const { transaction } = this;
     const { model } = database.getCollection('jobs');
     let job;
     if (payload instanceof model) {
-      job = await payload.save();
+      job = await payload.save({ transaction });
     } else if (payload.id) {
-      job = await model.findByPk(payload.id);
-      await job.update(payload);
+      job = await model.findByPk(payload.id, { transaction });
+      await job.update(payload, { transaction });
     } else {
-      job = await model.create({
-        ...payload,
-        executionId: this.execution.id,
-      });
+      job = await model.create(
+        {
+          ...payload,
+          executionId: this.execution.id,
+        },
+        { transaction },
+      );
     }
     this.jobsMap.set(job.id, job);
 
