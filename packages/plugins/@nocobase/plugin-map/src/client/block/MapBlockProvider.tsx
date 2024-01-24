@@ -1,5 +1,11 @@
 import { useField, useFieldSchema } from '@formily/react';
-import { BlockProvider, FixedBlockWrapper, SchemaComponentOptions, useBlockRequestContext } from '@nocobase/client';
+import {
+  BlockProvider,
+  FixedBlockWrapper,
+  SchemaComponentOptions,
+  useDataBlockRequestV2,
+  useDataBlockResourceV2,
+} from '@nocobase/client';
 import React, { createContext, useContext, useState } from 'react';
 
 export const MapBlockContext = createContext<any>({});
@@ -8,7 +14,8 @@ const InternalMapBlockProvider = (props) => {
   const { fieldNames } = props;
   const fieldSchema = useFieldSchema();
   const field = useField();
-  const { resource, service } = useBlockRequestContext();
+  const service = useDataBlockRequestV2();
+  const resource = useDataBlockResourceV2();
   const [selectedRecordKeys, setSelectedRecordKeys] = useState([]);
 
   return (

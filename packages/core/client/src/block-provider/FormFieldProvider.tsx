@@ -4,8 +4,9 @@ import { autorun } from '@formily/reactive';
 import { forEach } from '@nocobase/utils/client';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import { useDataBlockRequestV2, useDataBlockResourceV2 } from '../application';
 import { RecordProvider } from '../record-provider';
-import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { BlockProvider } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 
 export const FormFieldContext = createContext<any>({});
@@ -13,6 +14,8 @@ export const FormFieldContext = createContext<any>({});
 const InternalFormFieldProvider = (props) => {
   const { action, readPretty, fieldName } = props;
   const formBlockCtx = useFormBlockContext();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
 
   if (!formBlockCtx?.updateAssociationValues?.includes(fieldName)) {
     formBlockCtx?.updateAssociationValues?.push(fieldName);
@@ -49,7 +52,6 @@ const InternalFormFieldProvider = (props) => {
     return dispose;
   }, []);
 
-  const { resource, service } = useBlockRequestContext();
   if (service.loading) {
     return <Spin />;
   }

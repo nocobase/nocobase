@@ -1,12 +1,13 @@
 import { ArrayField, createForm } from '@formily/core';
 import { FormContext, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useDataBlockRequestV2, useDataBlockResourceV2 } from '../application';
 import { useCollectionManager } from '../collection-manager';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { mergeFilter } from '../filter-provider/utils';
 import { useRecord } from '../record-provider';
 import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
-import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
+import { BlockProvider, RenderChildrenWithAssociationFilter } from './BlockProvider';
 import { findFilterTargets, useParsedFilter } from './hooks';
 
 export const TableBlockContext = createContext<any>({});
@@ -38,7 +39,8 @@ interface Props {
 const InternalTableBlockProvider = (props: Props) => {
   const { params, showIndex, dragSort, rowKey, childrenColumnName, fieldNames, ...others } = props;
   const field: any = useField();
-  const { resource, service } = useBlockRequestContext();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
   const fieldSchema = useFieldSchema();
   const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const [expandFlag, setExpandFlag] = useState(fieldNames ? true : false);

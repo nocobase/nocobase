@@ -1,24 +1,28 @@
+import { SchemaExpressionScopeContext, useField, useFieldSchema } from '@formily/react';
 import {
-  useBlockRequestContext,
-  useTableBlockContext,
-  useCompile,
-  useRecord,
-  useVariables,
-  useCollection,
-  useLocalVariables,
+  TableFieldResource,
   isVariable,
   transformVariableValue,
-  TableFieldResource,
+  useCollection,
+  useCompile,
+  useDataBlockRequestV2,
+  useDataBlockResourceV2,
+  useLocalVariables,
+  useRecord,
+  useTableBlockContext,
+  useVariables,
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
-import { SchemaExpressionScopeContext, useFieldSchema, useField } from '@formily/react';
-import { useNavigate } from 'react-router-dom';
 import { App, message } from 'antd';
+import { useDeprecatedContext } from 'packages/core/client/src/block-provider/DeprecatedContextProviderContext';
 import { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useBulkUpdateTranslation } from './locale';
 
 export const useCustomizeBulkUpdateActionProps = () => {
-  const { field, resource, __parent, service } = useBlockRequestContext();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
+  const deprecatedContext = useDeprecatedContext();
   const expressionScope = useContext(SchemaExpressionScopeContext);
   const actionSchema = useFieldSchema();
   const tableBlockContext = useTableBlockContext();
@@ -42,7 +46,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
         onSuccess,
         updateMode,
       } = actionSchema?.['x-action-settings'] ?? {};
-      actionField.data = field.data || {};
+      actionField.data = deprecatedContext?.blockField.data || {};
       actionField.data.loading = true;
 
       const assignedValues = {};
@@ -100,7 +104,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
           }
           service?.refresh?.();
           if (!(resource instanceof TableFieldResource)) {
-            __parent?.service?.refresh?.();
+            deprecatedContext?.parentService?.refresh?.();
           }
           if (!onSuccess?.successMessage) {
             return;

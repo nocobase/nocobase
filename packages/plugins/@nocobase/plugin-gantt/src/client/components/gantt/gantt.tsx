@@ -1,19 +1,20 @@
 import { css, cx } from '@emotion/css';
 import { createForm } from '@formily/core';
 import { RecursionField, Schema, useFieldSchema } from '@formily/react';
-import { message } from 'antd';
-import { debounce, throttle } from 'lodash';
-import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
+  ActionContextProvider,
+  RecordProvider,
   useAPIClient,
   useCurrentAppInfo,
+  useDataBlockRequestV2,
+  useDataBlockResourceV2,
   useTableBlockContext,
-  useBlockRequestContext,
-  RecordProvider,
   useToken,
-  ActionContextProvider,
 } from '@nocobase/client';
+import { message } from 'antd';
+import { debounce } from 'lodash';
+import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGanttBlockContext } from '../../GanttBlockProvider';
 import { convertToBarTasks } from '../../helpers/bar-helper';
 import { ganttDateRange, seedDates } from '../../helpers/date-helper';
@@ -116,7 +117,6 @@ export const Gantt: any = (props: any) => {
     viewDate,
     TooltipContent = StandardTooltipContent,
     onDoubleClick,
-    onClick,
     onDelete,
     onSelect,
     useProps,
@@ -127,7 +127,8 @@ export const Gantt: any = (props: any) => {
   const { t } = useTranslation();
   const locale = appInfo.data?.lang;
   const tableCtx = useTableBlockContext();
-  const { resource, service } = useBlockRequestContext();
+  const service = useDataBlockRequestV2();
+  const resource = useDataBlockResourceV2();
   const fieldSchema = useFieldSchema();
   const { fieldNames } = useProps(props);
   const viewMode = fieldNames.range || 'day';

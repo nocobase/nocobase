@@ -3,7 +3,6 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   SchemaInitializerItem,
-  useBlockRequestContext,
   useCollection,
   useDataBlockPropsV2,
   useRecordCollectionDataSourceItems,
@@ -76,9 +75,9 @@ export const SnapshotBlockInitializersDetailItem = () => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const collection = targetCollection || useCollection();
   const { association } = useDataBlockPropsV2();
-  const { block } = useBlockRequestContext();
+  const { blockType } = useDataBlockPropsV2();
   const actionInitializers =
-    block !== 'TableField' ? itemConfig.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
+    blockType !== 'TableField' ? itemConfig.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
 
   return (
     <SchemaInitializerItem

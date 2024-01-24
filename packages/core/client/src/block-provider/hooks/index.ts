@@ -8,7 +8,15 @@ import { ChangeEvent, useCallback, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
-import { AssociationFilter, useFormActiveFields, useFormBlockContext, useTableBlockContext } from '../..';
+import {
+  AssociationFilter,
+  useDataBlockPropsV2,
+  useDataBlockRequestV2,
+  useDataBlockResourceV2,
+  useFormActiveFields,
+  useFormBlockContext,
+  useTableBlockContext,
+} from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useCollection, useCollectionManager } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
@@ -20,7 +28,8 @@ import { useCurrentUserContext } from '../../user';
 import { useLocalVariables, useVariables } from '../../variables';
 import { isVariable } from '../../variables/utils/isVariable';
 import { transformVariableValue } from '../../variables/utils/transformVariableValue';
-import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../BlockProvider';
+import { useFilterByTk, useParamsFromRecord } from '../BlockProvider';
+import { useDeprecatedContext } from '../DeprecatedContextProviderContext';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
@@ -68,19 +77,13 @@ const filterValue = (value) => {
 
 export function getFormValues({
   filterByTk,
-  field,
   form,
-  fieldNames,
   getField,
-  resource,
   actionFields,
 }: {
   filterByTk;
-  field;
   form;
-  fieldNames;
   getField;
-  resource;
   actionFields: any[];
 }) {
   if (filterByTk) {
@@ -99,9 +102,7 @@ export function getFormValues({
 export function useCollectValuesToSubmit() {
   const form = useForm();
   const filterByTk = useFilterByTk();
-  const { field, resource } = useBlockRequestContext();
-  const { fields, getField, getTreeParentField, name } = useCollection();
-  const fieldNames = fields.map((field) => field.name);
+  const { getField, getTreeParentField, name } = useCollection();
   const { fieldSchema } = useActionContext();
   const { getActiveFieldsName } = useFormActiveFields() || {};
   const variables = useVariables();
@@ -113,11 +114,8 @@ export function useCollectValuesToSubmit() {
     const { assignedValues: originalAssignedValues = {}, overwriteValues } = actionSchema?.['x-action-settings'] ?? {};
     const values = getFormValues({
       filterByTk,
-      field,
       form,
-      fieldNames,
       getField,
-      resource,
       actionFields: getActiveFieldsName?.('form') || [],
     });
 
@@ -158,8 +156,6 @@ export function useCollectValuesToSubmit() {
   }, [
     actionSchema,
     currentRecord?.__parent,
-    field,
-    fieldNames,
     fieldSchema,
     filterByTk,
     form,
@@ -168,14 +164,14 @@ export function useCollectValuesToSubmit() {
     getTreeParentField,
     localVariables,
     name,
-    resource,
     variables,
   ]);
 }
 
 export const useCreateActionProps = () => {
   const form = useForm();
-  const { field, resource, __parent } = useBlockRequestContext();
+  const deprecatedContext = useDeprecatedContext();
+  const resource = useDataBlockResourceV2();
   const { setVisible } = useActionContext();
   const navigate = useNavigate();
   const actionSchema = useFieldSchema();
@@ -195,7 +191,7 @@ export const useCreateActionProps = () => {
         await form.submit();
       }
       const values = await collectValues();
-      actionField.data = field.data || {};
+      actionField.data = deprecatedContext?.blockField.data || {};
       actionField.data.loading = true;
       try {
         const data = await resource[action]({
@@ -210,7 +206,7 @@ export const useCreateActionProps = () => {
         setVisible?.(false);
         actionField.data.loading = false;
         actionField.data.data = data;
-        __parent?.service?.refresh?.();
+        deprecatedContext?.parentService?.refresh?.();
         if (!onSuccess?.successMessage) {
           message.success(t('Saved successfully'));
           await form.reset();
@@ -250,11 +246,12 @@ export const useCreateActionProps = () => {
 
 export const useAssociationCreateActionProps = () => {
   const form = useForm();
-  const { field, resource, __parent } = useBlockRequestContext();
+  const deprecatedContext = useDeprecatedContext();
+  const resource = useDataBlockResourceV2();
   const { setVisible, fieldSchema } = useActionContext();
   const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField, getTreeParentField, name } = useCollection();
+  const { getField, getTreeParentField, name } = useCollection();
   const compile = useCompile();
   const filterByTk = useFilterByTk();
   const currentRecord = useRecord();
@@ -266,7 +263,6 @@ export const useAssociationCreateActionProps = () => {
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
   return {
     async onClick() {
-      const fieldNames = fields.map((field) => field.name);
       const {
         assignedValues: originalAssignedValues = {},
         onSuccess,
@@ -303,11 +299,8 @@ export const useAssociationCreateActionProps = () => {
       }
       const values = getFormValues({
         filterByTk,
-        field,
         form,
-        fieldNames,
         getField,
-        resource,
         actionFields: getActiveFieldsName?.('form') || [],
       });
       if (addChild) {
@@ -315,7 +308,7 @@ export const useAssociationCreateActionProps = () => {
         values[treeParentField?.name ?? 'parent'] = currentRecord;
         values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord.id;
       }
-      actionField.data = field.data || {};
+      actionField.data = deprecatedContext?.blockField.data || {};
       actionField.data.loading = true;
       try {
         const data = await resource[action]({
@@ -332,7 +325,7 @@ export const useAssociationCreateActionProps = () => {
         });
         actionField.data.loading = false;
         actionField.data.data = data;
-        __parent?.service?.refresh?.();
+        deprecatedContext?.parentService?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
           return;
@@ -480,7 +473,9 @@ export const useResetBlockActionProps = () => {
 };
 
 export const useCustomizeUpdateActionProps = () => {
-  const { resource, __parent, service } = useBlockRequestContext();
+  const deprecatedContext = useDeprecatedContext();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
   const navigate = useNavigate();
@@ -530,7 +525,7 @@ export const useCustomizeUpdateActionProps = () => {
       });
       service?.refresh?.();
       if (!(resource instanceof TableFieldResource)) {
-        __parent?.service?.refresh?.();
+        deprecatedContext?.parentService?.refresh?.();
       }
       if (!onSuccess?.successMessage) {
         return;
@@ -563,7 +558,9 @@ export const useCustomizeUpdateActionProps = () => {
 };
 
 export const useCustomizeBulkUpdateActionProps = () => {
-  const { field, resource, __parent, service } = useBlockRequestContext();
+  const deprecatedContext = useDeprecatedContext();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
   const expressionScope = useContext(SchemaExpressionScopeContext);
   const actionSchema = useFieldSchema();
   const tableBlockContext = useTableBlockContext();
@@ -587,7 +584,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
         onSuccess,
         updateMode,
       } = actionSchema?.['x-action-settings'] ?? {};
-      actionField.data = field.data || {};
+      actionField.data = deprecatedContext?.blockField.data || {};
       actionField.data.loading = true;
 
       const assignedValues = {};
@@ -642,7 +639,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
           }
           service?.refresh?.();
           if (!(resource instanceof TableFieldResource)) {
-            __parent?.service?.refresh?.();
+            deprecatedContext?.parentService?.refresh?.();
           }
           if (!onSuccess?.successMessage) {
             return;
@@ -680,9 +677,10 @@ export const useCustomizeBulkUpdateActionProps = () => {
 };
 
 export const useCustomizeBulkEditActionProps = () => {
+  const deprecatedContext = useDeprecatedContext();
+  const resource = useDataBlockResourceV2();
   const form = useForm();
   const { t } = useTranslation();
-  const { field, resource, __parent } = useBlockRequestContext();
   const expressionScope = useContext(SchemaExpressionScopeContext);
   const actionContext = useActionContext();
   const navigate = useNavigate();
@@ -698,12 +696,12 @@ export const useCustomizeBulkEditActionProps = () => {
   return {
     async onClick() {
       const { onSuccess, skipValidator, updateMode } = actionSchema?.['x-action-settings'] ?? {};
-      const { filter } = __parent.service.params?.[0] ?? {};
+      const { filter } = deprecatedContext?.parentService.params?.[0] ?? {};
       if (!skipValidator) {
         await form.submit();
       }
       const values = cloneDeep(form.values);
-      actionField.data = field.data || {};
+      actionField.data = deprecatedContext?.blockField.data || {};
       actionField.data.loading = true;
       for (const key in values) {
         if (Object.prototype.hasOwnProperty.call(values, key)) {
@@ -735,10 +733,10 @@ export const useCustomizeBulkEditActionProps = () => {
         }
         await resource.update(updateData);
         actionField.data.loading = false;
-        if (!(resource instanceof TableFieldResource)) {
-          __parent?.__parent?.service?.refresh?.();
-        }
-        __parent?.service?.refresh?.();
+        // if (!(resource instanceof TableFieldResource)) {
+        //   __parent?.__parent?.service?.refresh?.();
+        // }
+        deprecatedContext?.parentService?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
           return;
@@ -768,14 +766,15 @@ export const useCustomizeBulkEditActionProps = () => {
 };
 
 export const useCustomizeRequestActionProps = () => {
+  const deprecatedContext = useDeprecatedContext();
+  const service = useDataBlockRequestV2();
   const apiClient = useAPIClient();
   const navigate = useNavigate();
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
-  const { fields, getField } = useCollection();
-  const { field, resource, __parent, service } = useBlockRequestContext();
+  const { getField } = useCollection();
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
@@ -800,14 +799,10 @@ export const useCustomizeRequestActionProps = () => {
       const data = requestSettings['data'] ? JSON.parse(requestSettings['data']) : {};
       const methods = ['POST', 'PUT', 'PATCH'];
       if (xAction === 'customize:form:request' && methods.includes(requestSettings['method'])) {
-        const fieldNames = fields.map((field) => field.name);
         const values = getFormValues({
           filterByTk,
-          field,
           form,
-          fieldNames,
           getField,
-          resource,
           actionFields: getActiveFieldsName?.('form') || [],
         });
         Object.assign(data, values);
@@ -819,16 +814,16 @@ export const useCustomizeRequestActionProps = () => {
         params: parse(params)({ currentRecord, currentUser }),
         data: parse(data)({ currentRecord, currentUser }),
       };
-      actionField.data = field.data || {};
+      actionField.data = deprecatedContext?.blockField.data || {};
       actionField.data.loading = true;
       try {
         await apiClient.request({
           ...requestBody,
         });
         actionField.data.loading = false;
-        if (!(resource instanceof TableFieldResource)) {
-          __parent?.service?.refresh?.();
-        }
+        // if (!(resource instanceof TableFieldResource)) {
+        //   deprecatedContext?.parentService?.refresh?.();
+        // }
         service?.refresh?.();
         if (xAction === 'customize:form:request') {
           setVisible?.(false);
@@ -860,13 +855,14 @@ export const useCustomizeRequestActionProps = () => {
 };
 
 export const useUpdateActionProps = () => {
+  const deprecatedContext = useDeprecatedContext();
+  const resource = useDataBlockResourceV2();
   const form = useForm();
   const filterByTk = useFilterByTk();
-  const { field, resource, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
   const actionSchema = useFieldSchema();
   const navigate = useNavigate();
-  const { fields, getField, name } = useCollection();
+  const { getField, name } = useCollection();
   const compile = useCompile();
   const actionField = useField();
   const { updateAssociationValues } = useFormBlockContext();
@@ -911,17 +907,13 @@ export const useUpdateActionProps = () => {
       if (!skipValidator) {
         await form.submit();
       }
-      const fieldNames = fields.map((field) => field.name);
       const values = getFormValues({
         filterByTk,
-        field,
         form,
-        fieldNames,
         getField,
-        resource,
         actionFields: getActiveFieldsName?.('form') || [],
       });
-      actionField.data = field.data || {};
+      actionField.data = deprecatedContext?.blockField.data || {};
       actionField.data.loading = true;
       try {
         await resource.update({
@@ -939,7 +931,7 @@ export const useUpdateActionProps = () => {
             : undefined,
         });
         actionField.data.loading = false;
-        __parent?.service?.refresh?.();
+        deprecatedContext?.parentService?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
           return;
@@ -976,8 +968,11 @@ export const useUpdateActionProps = () => {
 };
 
 export const useDestroyActionProps = () => {
+  const deprecatedContext = useDeprecatedContext();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
+  const { blockType } = useDataBlockPropsV2();
   const filterByTk = useFilterByTk();
-  const { resource, service, block, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
   const data = useParamsFromRecord();
   return {
@@ -997,8 +992,8 @@ export const useDestroyActionProps = () => {
         service?.refresh?.();
       }
 
-      if (block && block !== 'TableField') {
-        __parent?.service?.refresh?.();
+      if (blockType && blockType !== 'TableField') {
+        deprecatedContext?.parentService?.refresh?.();
         setVisible?.(false);
       }
     },
@@ -1040,24 +1035,26 @@ export const useDetailPrintActionProps = () => {
 };
 
 export const useBulkDestroyActionProps = () => {
-  const { field } = useBlockRequestContext();
-  const { resource, service } = useBlockRequestContext();
+  const deprecatedContext = useDeprecatedContext();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
+
   return {
     async onClick() {
-      if (!field?.data?.selectedRowKeys?.length) {
+      if (!deprecatedContext?.blockField?.data?.selectedRowKeys?.length) {
         return;
       }
       await resource.destroy({
-        filterByTk: field.data?.selectedRowKeys,
+        filterByTk: deprecatedContext?.blockField.data?.selectedRowKeys,
       });
-      field.data.selectedRowKeys = [];
+      deprecatedContext.blockField.data.selectedRowKeys = [];
       service?.refresh?.();
     },
   };
 };
 
 export const useRefreshActionProps = () => {
-  const { service } = useBlockRequestContext();
+  const service = useDataBlockRequestV2();
   return {
     async onClick() {
       service?.refresh?.();
@@ -1086,8 +1083,9 @@ export const useDetailsPaginationProps = () => {
 };
 
 export const useAssociationFilterProps = () => {
+  const service = useDataBlockRequestV2();
   const collectionField = AssociationFilter.useAssociationField();
-  const { service, props: blockProps } = useBlockRequestContext();
+  const blockProps = useDataBlockPropsV2();
   const fieldSchema = useFieldSchema();
   const valueKey = collectionField?.targetKey || 'id';
   const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;

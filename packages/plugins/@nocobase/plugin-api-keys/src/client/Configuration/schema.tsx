@@ -1,17 +1,18 @@
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useActionContext, useBlockRequestContext, useRecord } from '@nocobase/client';
+import { useActionContext, useDataBlockRequestV2, useDataBlockResourceV2, useRecord } from '@nocobase/client';
 import { Alert, Modal, Space, Typography } from 'antd';
 import React from 'react';
-import { generateNTemplate } from '../../locale';
 import apiKeysCollection from '../../collections/apiKeys';
+import { generateNTemplate } from '../../locale';
 import { useTranslation } from '../locale';
 const { useModal } = Modal;
 
 const useCreateAction = () => {
   const form = useForm();
   const { setVisible } = useActionContext();
-  const { resource, service } = useBlockRequestContext();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
   const { t } = useTranslation();
   const [modalIns, element] = useModal();
   return {
@@ -45,7 +46,8 @@ const useCreateAction = () => {
 
 const useDestroyAction = () => {
   const record = useRecord();
-  const { resource, service } = useBlockRequestContext();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
   return {
     async run() {
       await resource.destroy({

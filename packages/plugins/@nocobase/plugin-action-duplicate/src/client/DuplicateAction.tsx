@@ -1,23 +1,25 @@
 import { css, cx } from '@emotion/css';
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
-import { App, Button } from 'antd';
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   ActionContextProvider,
   CollectionProvider,
+  FormBlockContext,
   RecordProvider,
+  fetchTemplateData,
   useAPIClient,
   useActionContext,
-  useBlockRequestContext,
   useCollection,
   useCollectionManager,
+  useDataBlockPropsV2,
+  useDataBlockRequestV2,
+  useDeprecatedContext,
   useDesignable,
-  useRecord,
-  fetchTemplateData,
-  FormBlockContext,
   useFormBlockContext,
+  useRecord,
 } from '@nocobase/client';
+import { App, Button } from 'antd';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -70,7 +72,9 @@ export const DuplicateAction = observer(
     const { designable } = useDesignable();
     const [visible, setVisible] = useState(false);
     const [loading, setLoading] = useState(false);
-    const { service, __parent, block } = useBlockRequestContext();
+    const service = useDataBlockRequestV2();
+    const deprecatedContext = useDeprecatedContext();
+    const { blockType } = useDataBlockPropsV2();
     const { duplicateFields, duplicateMode = 'quickDulicate', duplicateCollection } = fieldSchema['x-component-props'];
     const record = useRecord();
     const { id, __collection } = record;
@@ -101,8 +105,8 @@ export const DuplicateAction = observer(
           },
         });
         message.success(t('Saved successfully'));
-        if (block === 'form') {
-          __parent?.service?.refresh?.();
+        if (blockType === 'form') {
+          deprecatedContext?.parentService?.refresh?.();
         } else {
           await service?.refresh?.();
         }

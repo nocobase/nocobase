@@ -2,7 +2,8 @@ import { ArrayField, Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
 import { APIClient } from '../api-client';
-import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { useDataBlockRequestV2, useDataBlockResourceV2 } from '../application';
+import { BlockProvider } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 import { useFormFieldContext } from './FormFieldProvider';
 
@@ -12,7 +13,8 @@ const InternalTableFieldProvider = (props) => {
   const { params = {}, showIndex, dragSort, fieldName } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { resource, service } = useBlockRequestContext();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
 
   const formBlockCtx = useFormBlockContext();
   const formFieldCtx = useFormFieldContext();

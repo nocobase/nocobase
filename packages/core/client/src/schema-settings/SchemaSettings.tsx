@@ -60,6 +60,7 @@ import {
   useCollectionManager,
   useCollectionManagerV2,
   useCompile,
+  useDataBlockPropsV2,
   useDesignable,
   useFilterBlock,
   useGlobalTheme,
@@ -1350,7 +1351,7 @@ export const SchemaSettingsEnableChildCollections = function EnableChildCollecti
   const { t } = useTranslation();
   const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
   const { getCollectionJoinField } = useCollectionManager();
-  const ctx = useBlockRequestContext();
+  const { collection, resource } = useDataBlockPropsV2();
   const collectionField = getCollectionJoinField(fieldSchema?.parent?.['x-collection-field']) || {};
   const isAssocationAdd = fieldSchema?.parent?.['x-component'] === 'CollectionField';
   return (
@@ -1388,7 +1389,7 @@ export const SchemaSettingsEnableChildCollections = function EnableChildCollecti
               'x-decorator': 'FormItem',
               'x-component': ChildDynamicComponent,
               'x-component-props': {
-                rootCollection: ctx.props.collection || ctx.props.resource,
+                rootCollection: collection || resource,
                 collectionField,
               },
               default: fieldSchema?.['x-component-props']?.['linkageFromForm'],

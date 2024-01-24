@@ -1,4 +1,4 @@
-import { RecordPickerContext, useActionContext, useBlockRequestContext } from '@nocobase/client';
+import { RecordPickerContext, useActionContext, useDataBlockRequestV2 } from '@nocobase/client';
 import { notification } from 'antd';
 import { useContext } from 'react';
 import { useFmTranslation } from '../locale';
@@ -7,7 +7,7 @@ import { useFmTranslation } from '../locale';
 export const FILE_LIMIT_SIZE = 1024 * 1024 * 1024;
 
 export const useUploadFiles = () => {
-  const { service } = useBlockRequestContext();
+  const service = useDataBlockRequestV2();
   const { t } = useFmTranslation();
   const { setVisible } = useActionContext();
   const { setSelectedRows } = useContext(RecordPickerContext) || {};

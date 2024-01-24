@@ -1,12 +1,12 @@
 import { useField } from '@formily/react';
-import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
+  BlockProvider,
+  TableBlockProvider,
   useACLRoleContext,
   useCollection,
-  BlockProvider,
-  useBlockRequestContext,
-  TableBlockProvider,
+  useDataBlockRequestV2,
 } from '@nocobase/client';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 export const GanttBlockContext = createContext<any>({});
 
@@ -54,7 +54,7 @@ const formatData = (
 const InternalGanttBlockProvider = (props) => {
   const { fieldNames, timeRange, resource } = props;
   const field = useField();
-  const { service } = useBlockRequestContext();
+  const service = useDataBlockRequestV2();
   // if (service.loading) {
   //   return <Spin />;
   // }

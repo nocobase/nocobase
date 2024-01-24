@@ -1,22 +1,22 @@
 import { useFieldSchema } from '@formily/react';
 import {
-  useAPIClient,
-  useBlockRequestContext,
   useCollection,
   useCollectionManager,
   useCompile,
+  useDataBlockRequestV2,
+  useDataBlockResourceV2,
 } from '@nocobase/client';
-import lodash from 'lodash';
 import { saveAs } from 'file-saver';
+import lodash from 'lodash';
 import { useTranslation } from 'react-i18next';
 
 export const useExportAction = () => {
-  const { service, resource } = useBlockRequestContext();
-  const apiClient = useAPIClient();
+  const service = useDataBlockRequestV2();
+  const resource = useDataBlockResourceV2();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const { getCollectionJoinField } = useCollectionManager();
-  const { name, title, getField } = useCollection();
+  const { name, title } = useCollection();
   const { t } = useTranslation();
   return {
     async onClick() {

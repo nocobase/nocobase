@@ -1,37 +1,34 @@
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import {
   TableFieldResource,
-  getFormValues,
   useAPIClient,
   useActionContext,
-  useBlockRequestContext,
   useCollection,
   useCompile,
-  useFilterByTk,
-  useFormActiveFields,
+  useDataBlockRequestV2,
+  useDataBlockResourceV2,
+  useDeprecatedContext,
   useRecord,
 } from '@nocobase/client';
-import { App } from 'antd';
 import { isURL } from '@nocobase/utils/client';
+import { App } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { useGetCustomRequest } from './useGetCustomRequest';
-import { useTranslation } from '../locale';
 
 export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
   const navigate = useNavigate();
-  const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
   const { getPrimaryKey } = useCollection();
-  const { resource, __parent, service } = useBlockRequestContext();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
+  const deprecatedContext = useDeprecatedContext();
   const record = useRecord();
   const fieldSchema = useFieldSchema();
   const actionField = useField();
   const { setVisible } = useActionContext();
   const { modal, message } = App.useApp();
-  const { t } = useTranslation();
 
   return {
     async onClick() {
@@ -62,7 +59,7 @@ export const useCustomizeRequestActionProps = () => {
         });
         actionField.data.loading = false;
         if (!(resource instanceof TableFieldResource)) {
-          __parent?.service?.refresh?.();
+          deprecatedContext?.parentService?.refresh?.();
         }
         service?.refresh?.();
         if (xAction === 'customize:form:request') {

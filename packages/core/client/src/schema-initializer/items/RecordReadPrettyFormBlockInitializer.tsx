@@ -6,7 +6,6 @@ import {
   useSchemaInitializer,
   useSchemaInitializerItem,
 } from '../../application';
-import { useBlockRequestContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
@@ -25,10 +24,9 @@ export const RecordReadPrettyFormBlockInitializer = () => {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const currentCollection = useCollection();
   const collection = targetCollection || currentCollection;
-  const { association } = useDataBlockPropsV2();
-  const { block } = useBlockRequestContext();
+  const { association, blockType } = useDataBlockPropsV2();
   const actionInitializers =
-    block !== 'TableField' ? itemConfig.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
+    blockType !== 'TableField' ? itemConfig.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
 
   return (
     <SchemaInitializerItem

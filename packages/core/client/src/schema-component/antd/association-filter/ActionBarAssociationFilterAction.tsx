@@ -3,7 +3,7 @@ import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponentContext, createDesignable } from '../..';
 import { useAPIClient } from '../../../api-client';
-import { useBlockRequestContext } from '../../../block-provider';
+import { useDataBlockPropsV2, useDataBlockRequestV2 } from '../../../application';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { ActionInitializer } from '../../../schema-initializer/items/ActionInitializer';
 
@@ -13,7 +13,8 @@ export const ActionBarAssociationFilterAction = (props) => {
   const api = useAPIClient();
   const { t } = useTranslation();
   const dn = createDesignable({ t, api, refresh, current: fieldSchema });
-  const { service, props: blockProps } = useBlockRequestContext();
+  const blockProps = useDataBlockPropsV2();
+  const service = useDataBlockRequestV2();
 
   dn.loadAPIClientEvents();
 

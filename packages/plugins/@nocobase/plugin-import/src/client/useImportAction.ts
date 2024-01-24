@@ -1,18 +1,17 @@
 import { Schema, useFieldSchema, useForm } from '@formily/react';
 import {
-  useActionContext,
   useAPIClient,
-  useBlockRequestContext,
+  useActionContext,
   useCollection,
   useCollectionManager,
   useCompile,
+  useDataBlockRequestV2,
+  useDataBlockResourceV2,
 } from '@nocobase/client';
-import lodash from 'lodash';
 import { saveAs } from 'file-saver';
-import { useTranslation } from 'react-i18next';
-import { NAMESPACE } from './constants';
-import { useImportContext } from './context';
+import lodash from 'lodash';
 import { ImportStatus } from './ImportModal';
+import { useImportContext } from './context';
 
 const useImportSchema = (s: Schema) => {
   let schema = s;
@@ -30,13 +29,11 @@ const toArr = (v: any) => {
 };
 
 export const useDownloadXlsxTemplateAction = () => {
-  const { service, resource } = useBlockRequestContext();
-  const apiClient = useAPIClient();
+  const resource = useDataBlockResourceV2();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const { getCollectionJoinField, getCollectionField } = useCollectionManager();
-  const { name, title, getField } = useCollection();
-  const { t } = useTranslation(NAMESPACE);
+  const { name, title } = useCollection();
   const { schema: importSchema } = useImportSchema(actionSchema);
   return {
     async run() {
@@ -83,13 +80,12 @@ export const useDownloadXlsxTemplateAction = () => {
 };
 
 export const useImportStartAction = () => {
-  const { service, resource } = useBlockRequestContext();
+  const service = useDataBlockRequestV2();
   const apiClient = useAPIClient();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const { getCollectionJoinField, getCollectionField } = useCollectionManager();
-  const { name, title, getField } = useCollection();
-  const { t } = useTranslation(NAMESPACE);
+  const { name } = useCollection();
   const { schema: importSchema } = useImportSchema(actionSchema);
   const form = useForm();
   const { setVisible } = useActionContext();

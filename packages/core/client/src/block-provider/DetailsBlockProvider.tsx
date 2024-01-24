@@ -3,8 +3,9 @@ import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import { useDataBlockRequestV2, useDataBlockResourceV2 } from '../application';
 import { RecordProvider, useRecord } from '../record-provider';
-import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { BlockProvider } from './BlockProvider';
 import { useParsedFilter } from './hooks';
 
 export const DetailsBlockContext = createContext<any>({});
@@ -19,10 +20,11 @@ const InternalDetailsBlockProvider = (props) => {
       }),
     [],
   );
-  const { resource, service } = useBlockRequestContext();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
   const record = useRecord();
   const currentRecord = service?.data?.data?.[0] || {};
-  const detailsBLockValue = useMemo(() => {
+  const detailsBlockValue = useMemo(() => {
     return {
       action,
       form,
@@ -48,7 +50,7 @@ const InternalDetailsBlockProvider = (props) => {
   field.loaded = true;
 
   return (
-    <DetailsBlockContext.Provider value={detailsBLockValue}>
+    <DetailsBlockContext.Provider value={detailsBlockValue}>
       <RecordProvider record={currentRecord}>{props.children}</RecordProvider>
     </DetailsBlockContext.Provider>
   );

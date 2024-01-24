@@ -11,6 +11,8 @@ import {
   useBlockRequestContext,
   useBlockResource,
   useCollectionManager,
+  useDataBlockRequestV2,
+  useDataBlockResourceV2,
   useDesignable,
   useRecord,
   useResource,
@@ -28,7 +30,8 @@ const InternalFormBlockProvider = (props) => {
       }),
     [],
   );
-  const { resource, service } = useBlockRequestContext();
+  const service = useDataBlockRequestV2();
+  const resource = useDataBlockResourceV2();
   const formBlockRef = useRef();
   if (service.loading) {
     return <Spin />;

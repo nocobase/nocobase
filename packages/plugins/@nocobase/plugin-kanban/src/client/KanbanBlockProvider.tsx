@@ -1,16 +1,17 @@
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
-import { Spin } from 'antd';
-import uniq from 'lodash/uniq';
-import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
+  BlockProvider,
+  FixedBlockWrapper,
   useACLRoleContext,
   useCollection,
   useCollectionManager,
-  FixedBlockWrapper,
-  BlockProvider,
-  useBlockRequestContext,
+  useDataBlockRequestV2,
+  useDataBlockResourceV2,
 } from '@nocobase/client';
+import { Spin } from 'antd';
+import uniq from 'lodash/uniq';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { toColumns } from './Kanban';
 
 export const KanbanBlockContext = createContext<any>({});
@@ -28,7 +29,8 @@ const useGroupField = (props) => {
 
 const InternalKanbanBlockProvider = (props) => {
   const field = useField<any>();
-  const { resource, service } = useBlockRequestContext();
+  const service = useDataBlockRequestV2();
+  const resource = useDataBlockResourceV2();
   const groupField = useGroupField(props);
   if (!groupField) {
     return null;

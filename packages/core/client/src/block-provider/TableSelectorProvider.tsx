@@ -3,12 +3,13 @@ import { Schema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useDataBlockRequestV2, useDataBlockResourceV2 } from '../application';
 import { useCollectionManager } from '../collection-manager';
 import { isInFilterFormBlock } from '../filter-provider';
 import { mergeFilter } from '../filter-provider/utils';
 import { RecordProvider, useRecord } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
-import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
+import { BlockProvider, RenderChildrenWithAssociationFilter } from './BlockProvider';
 import { useParsedFilter } from './hooks';
 
 type Params = {
@@ -47,7 +48,8 @@ export const TableSelectorParamsProvider = ({ params, children }: { params: Para
 const InternalTableSelectorProvider = (props) => {
   const { params, rowKey, extraFilter } = props;
   const field = useField();
-  const { resource, service } = useBlockRequestContext();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
   const [expandFlag, setExpandFlag] = useState(false);
   // if (service.loading) {
   //   return <Spin />;

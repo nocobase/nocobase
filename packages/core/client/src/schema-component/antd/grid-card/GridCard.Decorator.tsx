@@ -2,13 +2,15 @@ import { FormLayout } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { FormContext, useField } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { BlockProvider, useBlockRequestContext, useParsedFilter } from '../../../block-provider';
+import { useDataBlockRequestV2, useDataBlockResourceV2 } from '../../../application';
+import { BlockProvider, useParsedFilter } from '../../../block-provider';
 import { useRecord } from '../../../record-provider';
 import useStyles from './GridCard.Decorator.style';
 export const GridCardBlockContext = createContext<any>({});
 
 const InternalGridCardBlockProvider = (props) => {
-  const { resource, service } = useBlockRequestContext();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
   const field = useField();
   const { wrapSSR, componentCls, hashId } = useStyles();
 

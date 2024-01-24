@@ -1,8 +1,8 @@
-import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
+import { useDataBlockPropsV2 } from '../../../application';
 
 export const useBlockCollection = () => {
-  const ctx = useBlockRequestContext();
-  const name: string = ctx.props?.collection || ctx.props?.resource;
+  const { collection, resource } = useDataBlockPropsV2();
+  const name: string = collection || resource;
 
   return { name };
 };

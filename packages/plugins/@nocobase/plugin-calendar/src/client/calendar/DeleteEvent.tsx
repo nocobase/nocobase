@@ -1,12 +1,19 @@
 import { observer } from '@formily/react';
+import {
+  useActionContext,
+  useDataBlockRequestV2,
+  useDataBlockResourceV2,
+  useDeprecatedContext,
+  useFilterByTk,
+  useRecord,
+} from '@nocobase/client';
 import { Modal, Radio, Space, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from '../../locale';
 import { DeleteEventContext } from './Calendar';
 import { formatDate } from './utils';
-import { useActionContext, useRecord, useFilterByTk, useBlockRequestContext } from '@nocobase/client';
-import { useTranslation } from '../../locale';
 const { Text } = Typography;
 
 export const DeleteEvent = observer(
@@ -16,7 +23,9 @@ export const DeleteEvent = observer(
     const { close } = useContext(DeleteEventContext);
     const startDate = formatDate(dayjs(record.__parent.__event.start));
     const filterByTk = useFilterByTk();
-    const { resource, service, __parent } = useBlockRequestContext();
+    const resource = useDataBlockResourceV2();
+    const service = useDataBlockRequestV2();
+    const deprecatedContext = useDeprecatedContext();
     const [value, onChange] = useState(startDate);
     const [loading, setLoading] = useState(false);
     const onOk = async () => {
@@ -34,7 +43,7 @@ export const DeleteEvent = observer(
         });
       }
       setLoading(false);
-      __parent?.service?.refresh?.();
+      deprecatedContext?.parentService?.refresh?.();
       service?.refresh?.();
       setVisible?.(false, true);
       close();

@@ -3,7 +3,6 @@ import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react
 import { Spin } from 'antd';
 import _, { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import { ACLCollectionProvider } from '../acl';
 import {
   DataBlockProviderV2,
   useDataBlockPropsV2,
@@ -18,6 +17,7 @@ import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { DeprecatedContextProvider } from './DeprecatedContextProviderContext';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider, useAssociationNames } from './hooks';
 
@@ -182,15 +182,22 @@ export const FormBlockProviderV2 = withDynamicSchemaProps((props) => {
   let record = useRecordV2(false);
   let parentRecord = null;
 
+  const parentResource = useDataBlockResourceV2();
+  const parentService = useDataBlockRequestV2();
+  const { blockType: parentBlockType } = useDataBlockPropsV2();
+
   if (association) {
     parentRecord = record;
     record = null;
   }
 
   return (
-    <DataBlockProviderV2 parentRecord={parentRecord} record={record} {...props}>
-      {/* from BlockProvider */}
-      <ACLCollectionProvider>
+    <DataBlockProviderV2 parentRecord={parentRecord} record={record} blockType="form" {...props}>
+      <DeprecatedContextProvider
+        parentResource={parentResource}
+        parentService={parentService}
+        parentBlockType={parentBlockType}
+      >
         <DataBlockCollector>
           <TemplateBlockProvider>
             <FormActiveFieldsProvider name="form">
@@ -198,7 +205,7 @@ export const FormBlockProviderV2 = withDynamicSchemaProps((props) => {
             </FormActiveFieldsProvider>
           </TemplateBlockProvider>
         </DataBlockCollector>
-      </ACLCollectionProvider>
+      </DeprecatedContextProvider>
     </DataBlockProviderV2>
   );
 });

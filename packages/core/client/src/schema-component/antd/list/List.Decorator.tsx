@@ -4,13 +4,15 @@ import { createForm } from '@formily/core';
 import { FormContext, useField } from '@formily/react';
 import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { BlockProvider, useBlockRequestContext, useParsedFilter } from '../../../block-provider';
+import { useDataBlockRequestV2, useDataBlockResourceV2 } from '../../../application';
+import { BlockProvider, useParsedFilter } from '../../../block-provider';
 import { useRecord } from '../../../record-provider';
 
 export const ListBlockContext = createContext<any>({});
 
 const InternalListBlockProvider = (props) => {
-  const { resource, service } = useBlockRequestContext();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
 
   const field = useField();
   const form = useMemo(() => {

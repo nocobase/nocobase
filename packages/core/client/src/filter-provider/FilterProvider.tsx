@@ -1,8 +1,7 @@
 import { useField, useFieldSchema } from '@formily/react';
 import { uniqBy } from 'lodash';
 import React, { createContext, useEffect, useRef } from 'react';
-import { useDataBlockPropsV2 } from '../application';
-import { useBlockRequestContext } from '../block-provider/BlockProvider';
+import { useDataBlockPropsV2, useDataBlockRequestV2 } from '../application';
 import { CollectionFieldOptions, useCollection } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { mergeFilter, useAssociatedFields } from './utils';
@@ -85,7 +84,7 @@ export const DataBlockCollector = ({
   const { params = _params } = useDataBlockPropsV2() || {};
   const collection = useCollection();
   const { recordDataBlocks, removeDataBlock } = useFilterBlock();
-  const { service } = useBlockRequestContext();
+  const service = useDataBlockRequestV2();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const associatedFields = useAssociatedFields();
@@ -100,7 +99,7 @@ export const DataBlockCollector = ({
     recordDataBlocks({
       uid: fieldSchema['x-uid'],
       title: field.componentProps.title,
-      doFilter: service.runAsync,
+      doFilter: service.runAsync as any,
       collection,
       associatedFields,
       foreignKeyFields: collection.foreignKeyFields as ForeignKeyField[],

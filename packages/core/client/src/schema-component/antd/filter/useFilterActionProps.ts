@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import flat from 'flat';
 import { useTranslation } from 'react-i18next';
-import { useBlockRequestContext } from '../../../block-provider';
+import { useDataBlockPropsV2, useDataBlockRequestV2 } from '../../../application';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { mergeFilter } from '../../../filter-provider/utils';
 
@@ -161,8 +161,9 @@ export const removeNullCondition = (filter) => {
 export const useFilterActionProps = () => {
   const { name } = useCollection();
   const options = useFilterOptions(name);
-  const { service, props } = useBlockRequestContext();
-  return useFilterFieldProps({ options, service, params: props?.params });
+  const blockProps = useDataBlockPropsV2();
+  const service = useDataBlockRequestV2();
+  return useFilterFieldProps({ options, service, params: blockProps?.params });
 };
 
 export const useFilterFieldProps = ({ options, service, params }) => {
