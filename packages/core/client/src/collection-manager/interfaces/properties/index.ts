@@ -249,7 +249,7 @@ export const dataSource: ISchema = {
             'x-component': 'Input',
             'x-reactions': (field: Field) => {
               if (!field.initialValue) {
-                const randomUidBlacklist = localStorage.getItem(CONSTANT.RANDOM_UID_OPTIONS);
+                const randomUidBlacklist = localStorage.getItem(CONSTANT.RANDOM_UID_BLACKLIST);
                 const data = getRandomUidName(randomUidBlacklist, ERandomUidType.SELECT_OPTION, uid());
                 field.initialValue = data;
               }

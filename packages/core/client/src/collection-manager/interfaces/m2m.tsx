@@ -2,6 +2,12 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { defaultProps, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
+import { ERandomUidType, CONSTANT } from '../CollectionManageSettingProvider';
+
+const getThroughIsRequired = () => {
+  const randomUidBlacklist = localStorage.getItem(CONSTANT.RANDOM_UID_BLACKLIST);
+  return randomUidBlacklist.includes(ERandomUidType.TABLE_FIELD);
+};
 
 export const m2m: IField = {
   name: 'm2m',
@@ -109,6 +115,7 @@ export const m2m: IField = {
                 through: {
                   type: 'string',
                   title: '{{t("Through collection")}}',
+                  required: getThroughIsRequired(),
                   description: '{{ t("Generated automatically if left blank") }}',
                   'x-decorator': 'FormItem',
                   'x-disabled': '{{ !createOnly }}',

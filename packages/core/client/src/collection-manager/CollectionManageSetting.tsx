@@ -30,11 +30,7 @@ const useSaveSystemSettingsValues = () => {
     async run() {
       await form.submit();
       const values = cloneDeep(form.values);
-      localStorage.setItem(CONSTANT.RANDOM_UID_OPTIONS, values?.options?.randomUidBlacklist);
-      values.options = {
-        ...values.options,
-        type: values?.options?.randomUidBlacklist?.length === 0 ? CONSTANT.ALL_SELECTED_EMPTY : '',
-      };
+      localStorage.setItem(CONSTANT.RANDOM_UID_BLACKLIST, values?.options?.randomUidBlacklist);
       await api.request({
         url: 'applicationPlugins:update',
         method: 'post',
@@ -62,14 +58,14 @@ const schema: ISchema = {
       properties: {
         'options.randomUidBlacklist': {
           type: 'string',
-          title: '{{t("auto generate uid")}}',
+          title: '{{t("Do not generate related identifiers randomly")}}',
           'x-component': 'Checkbox.Group',
           'x-component-props': {
             options: [
-              { label: '{{t("Table name")}}', value: ERandomUidType.TABLE_NAME },
-              { label: '{{t("Table field name")}}', value: ERandomUidType.TABLE_FIELD },
-              { label: '{{t("Foreign key")}}', value: ERandomUidType.FOREIGN_KEY },
-              { label: '{{t("Table select option")}}', value: ERandomUidType.SELECT_OPTION },
+              { label: '{{t("Collection name")}}', value: ERandomUidType.TABLE_NAME },
+              { label: '{{t("Collection field name")}}', value: ERandomUidType.TABLE_FIELD },
+              { label: '{{t("Association fields foreign key")}}', value: ERandomUidType.FOREIGN_KEY },
+              { label: '{{t("Option value for choice-type fields")}}', value: ERandomUidType.SELECT_OPTION },
             ],
           },
           'x-decorator': 'FormItem',

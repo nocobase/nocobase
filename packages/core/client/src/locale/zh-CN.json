@@ -843,9 +843,10 @@
   "Permission denied": "没有权限",
   "Allow add new":"允许新增",
   "Allow selection of existing records":"允许选择已有数据",
-  "Table field name": "字段标识",
-  "Table select option": "选项值",
-  "Table name": "数据表标识",
+  "Collection field name": "数据表字段标识",
+  "Option value for choice-type fields": "选择类型字段选项值",
   "auto generate uid": "自动生成uid",
-  "auto generate uid switch": "uid的自动生成逻辑开关控制"
+  "auto generate uid switch": "自动生成逻辑开关控制",
+  "Do not generate related identifiers randomly": "不随机生成相关标识",
+  "Association fields foreign key": "关系字段外键"
 }

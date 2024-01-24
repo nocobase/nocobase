@@ -49,14 +49,14 @@ const getSchema = (schema: IField, record: any, compile, data) => {
       },
     };
   }
-  const name = getRandomUidName(data, ERandomUidType.TABLE_NAME, `f_${uid()}`);
+  const name = getRandomUidName(data, ERandomUidType.TABLE_FIELD, `f_${uid()}`);
   const initialValue: any = {
     name,
     ...cloneDeep(schema.default),
     interface: schema.name,
   };
   if (initialValue.reverseField) {
-    const name = getRandomUidName(data, ERandomUidType.TABLE_FIELD, `f_${uid()}`);
+    const name = getRandomUidName(data, ERandomUidType.FOREIGN_KEY, `f_${uid()}`);
     initialValue.reverseField.name = name;
   }
   // initialValue.uiSchema.title = schema.title;

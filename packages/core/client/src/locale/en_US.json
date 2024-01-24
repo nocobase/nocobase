@@ -781,9 +781,9 @@
   "Sign in with another account": "Sign in with another account",
   "Return to the main application": "Return to the main application",
   "Permission deined": "Permission denied",
-  "Table field name": "Table field name",
-  "Table select option": "Table select option",
-  "Table name": "Table name",
-  "auto generate uid": "auto generate uid",
-  "auto generate uid switch": "auto generate uid switch"
+  "Option value for choice-type fields": "Option value for choice-type fields",
+  "auto generate uid switch": "auto generate uid switch",
+  "Do not generate related identifiers randomly": "Do not generate related identifiers randomly",
+  "Collection field name": "Collection field name",
+  "Association fields foreign key": "Association fields foreign key"
 }

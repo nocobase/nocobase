@@ -18,6 +18,7 @@ import { EditSubFieldAction } from './EditSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { TemplateSummary } from './components/TemplateSummary';
 import { collectionSchema } from './schemas/collections';
+import { ERandomUidType, getRandomUidName, useRandomUidBlacklist } from '@nocobase/client';
 
 /**
  * @param service
@@ -78,7 +79,9 @@ const useCurrentFields = () => {
 };
 
 const useNewId = (prefix) => {
-  return `${prefix || ''}${uid()}`;
+  const data = useRandomUidBlacklist();
+  const name = getRandomUidName(data, ERandomUidType.FOREIGN_KEY, `${prefix || ''}${uid()}`);
+  return name;
 };
 
 export const ConfigurationTable = () => {
