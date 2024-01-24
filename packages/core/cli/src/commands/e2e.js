@@ -36,6 +36,11 @@ const checkServer = async (duration = 1000, max = 60 * 10) => {
           console.error('Request error:', error?.response?.data?.error);
         });
     }, duration);
+
+    process.on('SIGINT', () => {
+      clearInterval(timer);
+      console.log('checkServer cancel');
+    });
   });
 };
 
@@ -69,6 +74,11 @@ const checkUI = async (duration = 1000, max = 60 * 10) => {
           console.error('Request error:', error.message);
         });
     }, duration);
+
+    process.on('SIGINT', () => {
+      clearInterval(timer);
+      console.log('checkUI cancel');
+    });
   });
 };
 
@@ -88,7 +98,11 @@ async function runApp(options = {}) {
     return;
   }
   console.log('starting...');
-  run('nocobase', [process.env.APP_ENV === 'production' ? 'start' : 'dev'], options);
+  const subprocess = run('nocobase', [process.env.APP_ENV === 'production' ? 'start' : 'dev'], options);
+  process.on('SIGINT', () => {
+    subprocess.cancel();
+    console.log('runApp cancel');
+  });
 }
 
 const commonConfig = {
@@ -150,6 +164,10 @@ module.exports = (cli) => {
       console.log('APP_BASE_URL:', process.env.APP_BASE_URL);
     }
   });
+  process.on('SIGINT', () => {
+    console.log('SIGINT......');
+  });
+
   e2e
     .command('test')
     .allowUnknownOption()
