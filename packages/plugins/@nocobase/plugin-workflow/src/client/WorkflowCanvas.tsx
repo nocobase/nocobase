@@ -23,6 +23,7 @@ import { executionSchema } from './schemas/executions';
 import useStyles from './style';
 import { linkNodes } from './utils';
 import { getWorkflowDetailPath } from './constant';
+import { ExecutionStatusColumn } from './components/ExecutionStatus';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -230,6 +231,7 @@ export function WorkflowCanvas() {
               components={{
                 ExecutionResourceProvider,
                 ExecutionLink,
+                ExecutionStatusColumn,
               }}
             />
           </ActionContextProvider>
