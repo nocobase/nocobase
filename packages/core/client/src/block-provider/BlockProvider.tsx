@@ -23,6 +23,7 @@ import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
 import { useTemplateBlockContext } from './TemplateBlockProvider';
 import { useAssociationNames } from './hooks';
+import { CollectionDataSourceProvider } from '../application/data-block';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
@@ -303,11 +304,6 @@ export const useBlockContext = () => {
   return useContext(BlockContext);
 };
 
-export const DataSourceName = createContext<string>(undefined);
-export const useDataSourceName = () => {
-  return useContext(DataSourceName);
-};
-
 export const BlockProvider = (props: {
   name: string;
   resource: any;
@@ -331,7 +327,7 @@ export const BlockProvider = (props: {
 
   return (
     <BlockContext.Provider value={blockValue}>
-      <DataSourceName.Provider value={dataSource}>
+      <CollectionDataSourceProvider dataSource={dataSource}>
         <MaybeCollectionProvider collection={collection}>
           <BlockAssociationContext.Provider value={association}>
             <BlockResourceContext.Provider value={resource}>
@@ -345,7 +341,7 @@ export const BlockProvider = (props: {
             </BlockResourceContext.Provider>
           </BlockAssociationContext.Provider>
         </MaybeCollectionProvider>
-      </DataSourceName.Provider>
+      </CollectionDataSourceProvider>
     </BlockContext.Provider>
   );
 };

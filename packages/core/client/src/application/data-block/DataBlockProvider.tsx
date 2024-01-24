@@ -6,10 +6,12 @@ import { withDynamicSchemaProps } from '../hoc';
 import { DataBlockResourceProviderV2 } from './DataBlockResourceProvider';
 import { AssociationProviderV2, CollectionProviderV2, RecordV2 } from '../collection';
 import { UseRequestOptions, UseRequestService } from '../../api-client';
+import { CollectionDataSourceProvider } from './CollectionDataSourceProvider';
 
 export interface AllDataBlockProps {
   collection: string;
   association: string;
+  dataSource?: string;
   sourceId: string | number;
   filterByTk: string | number;
   record: RecordV2;
@@ -21,26 +23,39 @@ export interface AllDataBlockProps {
   [index: string]: any;
 }
 
-type CollectionCreate = Pick<AllDataBlockProps, 'collection'>;
+type CollectionCreate = Pick<AllDataBlockProps, 'collection' | 'dataSource'>;
 
 interface CollectionGet
-  extends Pick<AllDataBlockProps, 'collection' | 'filterByTk' | 'params' | 'requestService' | 'requestOptions'> {
+  extends Pick<
+    AllDataBlockProps,
+    'collection' | 'dataSource' | 'filterByTk' | 'params' | 'requestService' | 'requestOptions'
+  > {
   action: 'get';
 }
 
 interface CollectionList
-  extends Pick<AllDataBlockProps, 'collection' | 'params' | 'requestService' | 'requestOptions'> {
+  extends Pick<AllDataBlockProps, 'collection' | 'dataSource' | 'params' | 'requestService' | 'requestOptions'> {
   action: 'list';
 }
 
-type CollectionRecord = Pick<AllDataBlockProps, 'collection' | 'record' | 'requestService' | 'requestOptions'>;
+type CollectionRecord = Pick<
+  AllDataBlockProps,
+  'collection' | 'dataSource' | 'record' | 'requestService' | 'requestOptions'
+>;
 
-type AssociationCreate = Pick<AllDataBlockProps, 'association' | 'sourceId' | 'parentRecord'>;
+type AssociationCreate = Pick<AllDataBlockProps, 'association' | 'dataSource' | 'sourceId' | 'parentRecord'>;
 
 interface AssociationGet
   extends Pick<
     AllDataBlockProps,
-    'association' | 'sourceId' | 'parentRecord' | 'filterByTk' | 'params' | 'requestService' | 'requestOptions'
+    | 'association'
+    | 'dataSource'
+    | 'sourceId'
+    | 'parentRecord'
+    | 'filterByTk'
+    | 'params'
+    | 'requestService'
+    | 'requestOptions'
   > {
   action: 'get';
 }
@@ -48,14 +63,14 @@ interface AssociationGet
 interface AssociationList
   extends Pick<
     AllDataBlockProps,
-    'association' | 'sourceId' | 'parentRecord' | 'params' | 'requestService' | 'requestOptions'
+    'association' | 'dataSource' | 'sourceId' | 'parentRecord' | 'params' | 'requestService' | 'requestOptions'
   > {
   action: 'list';
 }
 
 type AssociationRecord = Pick<
   AllDataBlockProps,
-  'association' | 'record' | 'parentRecord' | 'requestService' | 'requestOptions'
+  'association' | 'dataSource' | 'record' | 'parentRecord' | 'requestService' | 'requestOptions'
 >;
 
 type AllDataBlockType = {
@@ -73,7 +88,7 @@ export type DataBlockProviderProps = AllDataBlockType[keyof AllDataBlockType];
 
 export type UseDataBlockProps<T extends keyof AllDataBlockType> = (
   props: DataBlockProviderProps & { [index: string]: any },
-) => Omit<AllDataBlockType[T], 'association' | 'collection' | 'action'> & { [index: string]: any };
+) => Omit<AllDataBlockType[T], 'association' | 'collection' | 'dataSource' | 'action'> & { [index: string]: any };
 
 export interface DataBlockContextValue<T extends {} = {}> {
   props: AllDataBlockProps & T;
@@ -85,7 +100,7 @@ DataBlockContextV2.displayName = 'DataBlockContextV2';
 
 export const DataBlockProviderV2: FC<DataBlockProviderProps & { children?: ReactNode }> = withDynamicSchemaProps(
   (props) => {
-    const { collection, association, children, ...resets } = props as Partial<AllDataBlockProps>;
+    const { collection, association, dataSource, children, ...resets } = props as Partial<AllDataBlockProps>;
     const AssociationOrCollection = useMemo(() => {
       if (association) {
         return {
@@ -105,14 +120,16 @@ export const DataBlockProviderV2: FC<DataBlockProviderProps & { children?: React
       <DataBlockContextV2.Provider
         value={{
           dn,
-          props: { ...resets, collection, association } as AllDataBlockProps,
+          props: { ...resets, collection, association, dataSource } as AllDataBlockProps,
         }}
       >
-        <AssociationOrCollection.Component name={AssociationOrCollection.name}>
-          <DataBlockResourceProviderV2>
-            <BlockRequestProviderV2>{children}</BlockRequestProviderV2>
-          </DataBlockResourceProviderV2>
-        </AssociationOrCollection.Component>
+        <CollectionDataSourceProvider dataSource={dataSource}>
+          <AssociationOrCollection.Component name={AssociationOrCollection.name}>
+            <DataBlockResourceProviderV2>
+              <BlockRequestProviderV2>{children}</BlockRequestProviderV2>
+            </DataBlockResourceProviderV2>
+          </AssociationOrCollection.Component>
+        </CollectionDataSourceProvider>
       </DataBlockContextV2.Provider>
     );
   },

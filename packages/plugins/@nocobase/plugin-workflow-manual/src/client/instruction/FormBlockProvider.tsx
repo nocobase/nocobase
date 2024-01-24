@@ -4,7 +4,7 @@ import {
   BlockRequestContext,
   CollectionProvider,
   DEFAULT_DATA_SOURCE_NAME,
-  DataSourceName,
+  CollectionDataSourceProvider,
   FormActiveFieldsProvider,
   FormBlockContext,
   FormV2,
@@ -75,7 +75,7 @@ export function FormBlockProvider(props) {
   }, [field, form, params, service, updateAssociationValues]);
 
   return !userJob.status || values ? (
-    <DataSourceName.Provider value={dataSource}>
+    <CollectionDataSourceProvider dataSource={dataSource}>
       <CollectionProvider collection={props.collection}>
         <RecordProvider record={values} parent={false}>
           <FormActiveFieldsProvider name="form">
@@ -92,6 +92,6 @@ export function FormBlockProvider(props) {
           </FormActiveFieldsProvider>
         </RecordProvider>
       </CollectionProvider>
-    </DataSourceName.Provider>
+    </CollectionDataSourceProvider>
   ) : null;
 }

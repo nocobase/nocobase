@@ -52,36 +52,45 @@ export const actionDesignerCss = css`
   }
 `;
 
-const actionAclCheck = function useAclCheck(actionPath) {
+export function useAclCheck(actionPath) {
+  const aclCheck = useAclCheckFn();
+  return aclCheck(actionPath);
+}
+
+function useAclCheckFn() {
   const { data, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const recordPkValue = useRecordPkValue();
   const collection = useCollection();
-  const resource = collection.resource;
-  const parseAction = (actionPath: string, options: any = {}) => {
-    const [resourceName] = actionPath.split(':');
-    if (data?.allowAll) {
-      return {};
+  function actionAclCheck(actionPath: string) {
+    const resource = collection.resource;
+    const parseAction = (actionPath: string, options: any = {}) => {
+      const [resourceName] = actionPath.split(':');
+      if (data?.allowAll) {
+        return {};
+      }
+      if (inResources(resourceName)) {
+        return getResourceActionParams(actionPath);
+      }
+      return getStrategyActionParams(actionPath);
+    };
+    if (!actionPath && resource) {
+      actionPath = `${resource}:create}`;
     }
-    if (inResources(resourceName)) {
-      return getResourceActionParams(actionPath);
+    if (!actionPath?.includes(':')) {
+      actionPath = `${resource}:${actionPath}`;
     }
-    return getStrategyActionParams(actionPath);
-  };
-  if (!actionPath && resource) {
-    actionPath = `${resource}:create}`;
-  }
-  if (!actionPath?.includes(':')) {
-    actionPath = `${resource}:${actionPath}`;
-  }
-  if (!actionPath) {
+    if (!actionPath) {
+      return true;
+    }
+    const params = parseAction(actionPath, { recordPkValue });
+    if (!params) {
+      return false;
+    }
     return true;
   }
-  const params = parseAction(actionPath, { recordPkValue });
-  if (!params) {
-    return false;
-  }
-  return true;
-};
+
+  return actionAclCheck;
+}
 
 export const CreateRecordAction = observer(
   (props: any) => {
@@ -90,12 +99,12 @@ export const CreateRecordAction = observer(
     const fieldSchema = useFieldSchema();
     const field: any = useField();
     const [currentCollection, setCurrentCollection] = useState(collection.name);
+    const [currentCollectionDataSource, setCurrentCollectionDataSource] = useState(collection.dataSource);
     const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
     const values = useRecord();
     const ctx = useActionContext();
     const variables = useVariables();
     const localVariables = useLocalVariables({ currentForm: { values } as any });
-
     useEffect(() => {
       field.stateOfLinkageRules = {};
       linkageRules
@@ -117,12 +126,13 @@ export const CreateRecordAction = observer(
         <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
           <CreateAction
             {...props}
-            onClick={(name) => {
+            onClick={(collectionData) => {
               setVisible(true);
-              setCurrentCollection(name);
+              setCurrentCollection(collectionData.name);
+              setCurrentCollectionDataSource(collectionData.dataSource);
             }}
           />
-          <CollectionProvider name={currentCollection}>
+          <CollectionProvider name={currentCollection} dataSource={currentCollectionDataSource}>
             <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
           </CollectionProvider>
         </ActionContextProvider>
@@ -153,6 +163,7 @@ export const CreateAction = observer(
     const field: any = useField();
     const form = useForm();
     const variables = useVariables();
+    const aclCheck = useAclCheckFn();
 
     const enableChildren = fieldSchema['x-enable-children'] || [];
     const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
@@ -172,12 +183,12 @@ export const CreateAction = observer(
             return;
           }
           return {
-            ...childCollection,
+            ...childCollection.getOptions(),
             title: k.title || childCollection.title,
           };
         })
         .filter((v) => {
-          return v && actionAclCheck(`${v.name}:create`);
+          return v && aclCheck(`${v.name}:create`);
         });
     }, [enableChildren, totalChildCollections]);
     const linkageRules: any[] = fieldSchema?.['x-linkage-rules'] || [];
@@ -190,7 +201,7 @@ export const CreateAction = observer(
       return inheritsCollections.map((option) => ({
         key: option.name,
         label: compile(option.title),
-        onClick: () => onClick?.(option.name),
+        onClick: () => onClick?.(option),
       }));
     }, [inheritsCollections, onClick]);
 
@@ -267,6 +278,7 @@ function FinallyButton({
   form;
   designable: boolean;
 }) {
+  const { getCollection } = useCollectionManager();
   if (inheritsCollections?.length > 0) {
     if (!linkageFromForm) {
       return allowAddToCurrent === undefined || allowAddToCurrent ? (
@@ -281,7 +293,7 @@ function FinallyButton({
           ]}
           menu={menu}
           onClick={(info) => {
-            onClick?.(collection.name);
+            onClick?.(collection);
           }}
         >
           {icon}
@@ -306,9 +318,10 @@ function FinallyButton({
         icon={icon}
         onClick={(info) => {
           const collectionName = getLinkageCollection(linkageFromForm, form, field);
-          const targetCollection = inheritsCollections.find((v) => v.name === collectionName)
+          const targetCollectionName = inheritsCollections.find((v) => v.name === collectionName)
             ? collectionName
             : collection.name;
+          const targetCollection = getCollection(targetCollectionName);
           onClick?.(targetCollection);
         }}
         style={{
@@ -329,7 +342,7 @@ function FinallyButton({
       danger={props.danger}
       icon={icon}
       onClick={(info) => {
-        onClick?.(collection.name);
+        onClick?.(collection);
       }}
       style={{
         display: !designable && field?.data?.hidden && 'none',

@@ -1,41 +1,29 @@
-import { FC, ReactNode } from 'react';
-import { CollectionProviderV2, useCollectionManagerV2 } from '../application';
-import { CollectionOptions } from './types';
+import { FC, ReactNode, useMemo } from 'react';
+import { CollectionContextV2, CollectionOptionsV2, CollectionProviderV2, useCollectionManagerV2 } from '../application';
 import React from 'react';
-import { DeletedPlaceholder } from '../application/collection/DeletedPlaceholder';
-import { CollectionExtendsProvider } from './CollectionManagerProvider';
-import { useDataSourceName } from '../block-provider/BlockProvider';
-
-function getCollectionName(name?: string | CollectionOptions): string {
-  if (!name) return undefined;
-  if (typeof name === 'string') return name;
-  if (typeof name === 'object') return name.name;
-}
+import { useCollectionDataSourceName } from '../application/data-block';
 
 export const CollectionProvider: FC<{
   name?: string;
-  collection?: CollectionOptions | string;
+  collection?: CollectionOptionsV2 | string;
   allowNull?: boolean;
   children?: ReactNode;
   dataSource?: string;
 }> = ({ children, allowNull, name, dataSource, collection }) => {
-  const collectionName = getCollectionName(name || collection);
-  const dataSourceName = useDataSourceName();
+  const dataSourceName = useCollectionDataSourceName();
   const dataSourceValue = dataSource || dataSourceName || undefined;
   const cm = useCollectionManagerV2();
-  const hasCollection = cm.getCollection(collectionName, { dataSource: dataSourceValue });
-  if (hasCollection || (allowNull && !collection))
-    return (
-      <CollectionProviderV2 allowNull={allowNull} name={collectionName} dataSource={dataSourceValue}>
-        {children}
-      </CollectionProviderV2>
-    );
+  const collectionInstance = useMemo(
+    () => cm.getCollection(name || collection, { dataSource: dataSourceValue }),
+    [name, collection, dataSourceValue],
+  );
+
   if (typeof collection === 'object') {
-    return (
-      <CollectionExtendsProvider collections={[collection]}>
-        <CollectionProviderV2 name={collection.name}>{children}</CollectionProviderV2>
-      </CollectionExtendsProvider>
-    );
+    return <CollectionContextV2.Provider value={collectionInstance}>{children}</CollectionContextV2.Provider>;
   }
-  return <DeletedPlaceholder type="Collection" name={name} />;
+  return (
+    <CollectionProviderV2 allowNull={allowNull} name={name || collection} dataSource={dataSourceValue}>
+      {children}
+    </CollectionProviderV2>
+  );
 };
