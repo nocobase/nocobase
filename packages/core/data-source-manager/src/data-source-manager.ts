@@ -1,8 +1,11 @@
 import { ToposortOptions } from '@nocobase/utils';
 import { DataSource } from './data-source';
+import { DataSourceFactory } from './data-source-factory';
 
 export class DataSourceManager {
   dataSources: Map<string, DataSource>;
+  factory: DataSourceFactory = new DataSourceFactory();
+
   protected middlewares = [];
 
   constructor() {

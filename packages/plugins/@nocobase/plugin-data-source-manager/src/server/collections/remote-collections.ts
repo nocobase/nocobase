@@ -18,8 +18,8 @@ export default defineCollection({
     },
     {
       type: 'belongsTo',
-      name: 'databaseConnections',
-      foreignKey: 'connectionName',
+      name: 'dataSources',
+      foreignKey: 'dataSourceKey',
       onDelete: 'CASCADE',
     },
     {

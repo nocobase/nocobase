@@ -1,19 +1,17 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  name: 'databaseConnections',
-  duplicator: 'required',
-  model: 'DatabaseConnectionModel',
+  name: 'dataSources',
   autoGenId: false,
   fields: [
     {
       type: 'string',
-      name: 'name',
+      name: 'key',
       primaryKey: true,
     },
     {
       type: 'string',
-      name: 'description',
+      name: 'displayName',
     },
     {
       type: 'json',
@@ -23,13 +21,13 @@ export default defineCollection({
       type: 'hasMany',
       name: 'collections',
       target: 'remoteCollections',
-      foreignKey: 'connectionName',
+      foreignKey: 'dataSourceKey',
     },
     {
       type: 'hasMany',
       name: 'connectionsRolesResourcesScopes',
       target: 'connectionsRolesResourcesScopes',
-      foreignKey: 'connectionName',
+      foreignKey: 'dataSourceKey',
     },
   ],
 });
