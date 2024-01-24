@@ -283,12 +283,12 @@ export function ExecutionCanvas() {
         </header>
         <aside>
           <Tag color={statusOption.color}>{compile(statusOption.label)}</Tag>
-          <time>{str2moment(execution.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
           {execution.status ? null : (
             <Tooltip title={lang('Cancel the execution')}>
               <Button type="link" danger onClick={onCancel} shape="circle" size="small" icon={<StopOutlined />} />
             </Tooltip>
           )}
+          <time>{str2moment(execution.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
         </aside>
       </div>
       <CanvasContent entry={entry} />

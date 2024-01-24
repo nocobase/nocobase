@@ -62,7 +62,7 @@ export function ExecutionStatusColumn(props) {
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
   const record = useRecord();
-  const onClick = useCallback(() => {
+  const onCancel = useCallback(() => {
     Modal.confirm({
       title: lang('Cancel the execution'),
       icon: <ExclamationCircleFilled />,
@@ -91,7 +91,7 @@ export function ExecutionStatusColumn(props) {
       {props.children}
       {record.status ? null : (
         <Tooltip title={lang('Cancel the execution')}>
-          <Button type="link" danger onClick={onClick} shape="circle" size="small" icon={<StopOutlined />} />
+          <Button type="link" danger onClick={onCancel} shape="circle" size="small" icon={<StopOutlined />} />
         </Tooltip>
       )}
     </div>
