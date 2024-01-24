@@ -2,8 +2,8 @@ import { mockDatabase } from '@nocobase/test';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import supertest from 'supertest';
-import { DataSourceManager } from '../DataSourceManager';
-import { SequelizeDataSource } from '../SequelizeDataSource';
+import { DataSourceManager } from '../data-source-manager';
+import { SequelizeDataSource } from '../sequelize-data-source';
 
 describe('example', () => {
   test('case1', async () => {

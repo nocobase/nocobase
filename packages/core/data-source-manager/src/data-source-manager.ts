@@ -1,5 +1,5 @@
 import { ToposortOptions } from '@nocobase/utils';
-import { DataSource } from './DataSource';
+import { DataSource } from './data-source';
 
 export class DataSourceManager {
   dataSources: Map<string, DataSource>;

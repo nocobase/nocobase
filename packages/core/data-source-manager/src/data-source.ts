@@ -1,8 +1,8 @@
 import { ACL } from '@nocobase/acl';
 import { getNameByParams, parseRequest } from '@nocobase/resourcer';
 import compose from 'koa-compose';
-import { ResourceManager } from './ResourceManager';
-import { loadDefaultActions } from './loadDefaultActions';
+import { ResourceManager } from './resource-manager';
+import { loadDefaultActions } from './load-default-actions';
 import { ICollectionManager } from './types';
 
 export abstract class DataSource {

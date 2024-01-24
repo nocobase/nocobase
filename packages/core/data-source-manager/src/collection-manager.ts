@@ -1,4 +1,4 @@
-import { Collection } from './Collection';
+import { Collection } from './collection';
 import { CollectionOptions, ICollection, ICollectionManager, IRepository, MergeOptions } from './types';
 
 export class CollectionManager implements ICollectionManager {

@@ -1,4 +1,4 @@
-import { type DataSource } from './DataSource';
+import { type DataSource } from './data-source';
 
 export function loadDefaultActions(dataSource: DataSource) {
   return {

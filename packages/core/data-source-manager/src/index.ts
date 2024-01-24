@@ -1,8 +1,8 @@
-export * from './CollectionManager';
-export * from './DataSource';
-export * from './DataSourceManager';
-export * from './ResourceManager';
-export * from './SequelizeCollectionManager';
-export * from './SequelizeDataSource';
+export * from './collection-manager';
+export * from './data-source';
+export * from './data-source-manager';
+export * from './resource-manager';
+export * from './sequelize-collection-manager';
+export * from './sequelize-data-source';
 
-export * from './loadDefaultActions';
+export * from './load-default-actions';

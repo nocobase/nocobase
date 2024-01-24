@@ -1,5 +1,5 @@
 import { createMockServer, mockDatabase, supertest } from '@nocobase/test';
-import { SequelizeDataSource } from '../SequelizeDataSource';
+import { SequelizeDataSource } from '../sequelize-data-source';
 
 describe('example', () => {
   test('case1', async () => {
