@@ -1,7 +1,7 @@
 import { useForm, useField } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import {
@@ -20,6 +20,7 @@ import {
   FieldSummary,
   TemplateSummary,
   ResourceActionContext,
+  useCollectionManagerV2,
 } from '@nocobase/client';
 import { message } from 'antd';
 import { getCollectionSchema } from './schema/collections';
@@ -34,12 +35,14 @@ import { EditCollection } from './EditCollectionAction';
 const useAsyncDataSource = (service: any, exclude?: string[]) => {
   return (field: any, options?: any) => {
     field.loading = true;
-    service(field, options, exclude).then(
-      action.bound((data: any) => {
-        field.dataSource = data;
-        field.loading = false;
-      }),
-    );
+    service(field, options, exclude)
+      .then(
+        action.bound((data: any) => {
+          field.dataSource = data;
+          field.loading = false;
+        }),
+      )
+      .catch((error) => console.log(error));
   };
 };
 
@@ -100,7 +103,13 @@ export const ConfigurationTable = () => {
   const api = useAPIClient();
   const resource = api.resource('dbViews');
   const compile = useCompile();
+  const cm = useCollectionManagerV2();
 
+  useEffect(() => {
+    return () => {
+      cm.reloadThirdDataSource();
+    };
+  }, []);
   const loadCategories = async () => {
     return data.data.map((item: any) => ({
       label: compile(item.name),
@@ -145,7 +154,7 @@ export const ConfigurationTable = () => {
         try {
           await api.request({
             url: `databaseConnections:refresh?filterByTk=${name}`,
-            method:'post'
+            method: 'post',
           });
           field.data.loading = false;
           service?.refresh?.();
