@@ -14,6 +14,8 @@ export interface ResourcerContext {
 }
 
 export interface KoaMiddlewareOptions {
+  skipIfDataSourceExists?: boolean;
+
   /**
    * 前缀
    */
@@ -262,8 +264,15 @@ export class Resourcer {
     this.middlewares.add(middlewares, options);
   }
 
-  restApiMiddleware({ prefix, accessors }: KoaMiddlewareOptions = {}) {
+  restApiMiddleware({ prefix, accessors, skipIfDataSourceExists = false }: KoaMiddlewareOptions = {}) {
     return async (ctx: ResourcerContext, next: () => Promise<any>) => {
+      if (skipIfDataSourceExists) {
+        const dataSource = ctx.get('x-data-source');
+        if (dataSource) {
+          await next();
+          return;
+        }
+      }
       ctx.resourcer = this;
       const connectionName = ctx.get('x-connection');
 
