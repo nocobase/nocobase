@@ -1,5 +1,4 @@
 export * from './antd';
-export * from './antd/AntdSchemaComponentProvider';
 export * from './common';
 export * from './context';
 export * from './core';
