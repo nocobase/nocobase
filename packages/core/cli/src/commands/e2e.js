@@ -4,6 +4,7 @@ const { execSync } = require('node:child_process');
 const axios = require('axios');
 const { pTest } = require('./p-test');
 const os = require('os');
+const treeKill = require('tree-kill');
 
 /**
  * 检查服务是否启动成功
@@ -36,11 +37,6 @@ const checkServer = async (duration = 1000, max = 60 * 10) => {
           console.error('Request error:', error?.response?.data?.error);
         });
     }, duration);
-
-    process.on('SIGINT', () => {
-      clearInterval(timer);
-      console.log('checkServer cancel');
-    });
   });
 };
 
@@ -74,11 +70,6 @@ const checkUI = async (duration = 1000, max = 60 * 10) => {
           console.error('Request error:', error.message);
         });
     }, duration);
-
-    process.on('SIGINT', () => {
-      clearInterval(timer);
-      console.log('checkUI cancel');
-    });
   });
 };
 
@@ -98,12 +89,19 @@ async function runApp(options = {}) {
     return;
   }
   console.log('starting...');
-  const subprocess = run('nocobase', [process.env.APP_ENV === 'production' ? 'start' : 'dev'], options);
-  process.on('SIGINT', () => {
-    subprocess.cancel();
-    console.log('runApp cancel');
-  });
+  run('nocobase', [process.env.APP_ENV === 'production' ? 'start' : 'dev'], options);
 }
+
+process.on('SIGINT', async () => {
+  treeKill(process.pid, (error) => {
+    if (error) {
+      console.error(error);
+    } else {
+      console.log('所有子进程已被杀掉，应用程序即将退出');
+    }
+    process.exit();
+  });
+});
 
 const commonConfig = {
   stdio: 'inherit',
