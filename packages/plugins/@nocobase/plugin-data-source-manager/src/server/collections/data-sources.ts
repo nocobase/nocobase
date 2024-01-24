@@ -21,7 +21,7 @@ export default defineCollection({
     {
       type: 'hasMany',
       name: 'collections',
-      target: 'remoteCollections',
+      target: 'dataSourcesCollections',
       foreignKey: 'dataSourceKey',
     },
     {

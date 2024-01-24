@@ -1,22 +1,24 @@
 import lodash from 'lodash';
 
 export default {
-  name: 'remoteCollections',
+  name: 'dataSources.collections',
   actions: {
     async list(ctx, next) {
-      const databaseName = ctx.get('x-database');
-      const database = ctx.app.getDb(databaseName);
+      const params = ctx.action.params;
+
+      const { associatedIndex: dataSourceKey } = params;
+      const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
+      if (!dataSource) {
+        throw new Error(`dataSource ${dataSourceKey} not found`);
+      }
 
       const { paginate, filter } = ctx.action.params;
 
       const filterTitle = lodash.get(filter, '$and.0.title.$includes');
       const filterName = lodash.get(filter, '$and.0.name.$includes');
 
-      const collections = [...database.collections.values()].filter((collection) => {
-        const cond = collection.options.introspected;
-
+      const collections = dataSource.collectionManager.getCollections().filter((collection) => {
         return (
-          cond &&
           (!filterTitle || lodash.get(collection, 'options.title')?.includes(filterTitle)) &&
           (!filterName || collection.options.name.includes(filterName))
         );

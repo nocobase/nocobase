@@ -2,7 +2,7 @@ import { Application, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { DatabaseConnectionModel } from './models/database-connection';
 import { Database } from '@nocobase/database';
-import remoteCollectionsResourcer from './resourcers/remote-collections';
+import remoteCollectionsResourcer from './resourcers/data-sources-collections';
 import remoteFieldsResourcer from './resourcers/remote-fields';
 import { RemoteCollectionModel } from './models/remote-collection-model';
 import { RemoteFieldModel } from './models/remote-field-model';

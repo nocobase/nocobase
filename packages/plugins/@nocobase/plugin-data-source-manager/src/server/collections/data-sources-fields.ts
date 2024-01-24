@@ -1,7 +1,7 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  name: 'remoteFields',
+  name: 'dataSourcesFields',
   model: 'RemoteFieldModel',
   autoGenId: false,
   timestamps: false,
@@ -37,7 +37,7 @@ export default defineCollection({
     {
       type: 'belongsTo',
       name: 'collection',
-      target: 'remoteCollections',
+      target: 'dataSourcesCollections',
       foreignKey: 'collectionKey',
       targetKey: 'key',
       onDelete: 'CASCADE',

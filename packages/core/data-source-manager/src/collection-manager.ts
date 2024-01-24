@@ -6,7 +6,7 @@ export class CollectionManager implements ICollectionManager {
   protected repositories = new Map<string, IRepository>();
   protected models = new Map<string, any>();
 
-  constructor(options) {}
+  constructor(options = {}) {}
 
   getRegisteredFieldType(type) {}
   getRegisteredFieldInterface(key: string) {}
@@ -55,6 +55,10 @@ export class CollectionManager implements ICollectionManager {
 
   getCollection(name: string) {
     return this.collections.get(name);
+  }
+
+  getCollections(): Array<ICollection> {
+    return [...this.collections.values()];
   }
 
   getRepository<R = IRepository>(name: string, sourceId?: string | number): R {
