@@ -4,6 +4,7 @@ const { execSync } = require('node:child_process');
 const axios = require('axios');
 const { pTest } = require('./p-test');
 const os = require('os');
+const treeKill = require('tree-kill');
 
 /**
  * 检查服务是否启动成功
@@ -91,6 +92,17 @@ async function runApp(options = {}) {
   run('nocobase', [process.env.APP_ENV === 'production' ? 'start' : 'dev'], options);
 }
 
+process.on('SIGINT', async () => {
+  treeKill(process.pid, (error) => {
+    if (error) {
+      console.error(error);
+    } else {
+      console.log('所有子进程已被杀掉，应用程序即将退出');
+    }
+    process.exit();
+  });
+});
+
 const commonConfig = {
   stdio: 'inherit',
 };
@@ -150,6 +162,10 @@ module.exports = (cli) => {
       console.log('APP_BASE_URL:', process.env.APP_BASE_URL);
     }
   });
+  process.on('SIGINT', () => {
+    console.log('SIGINT......');
+  });
+
   e2e
     .command('test')
     .allowUnknownOption()
