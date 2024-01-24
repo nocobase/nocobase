@@ -52,7 +52,7 @@ export class PMPlugin extends Plugin {
     });
 
     this.app.pluginSettingsManager.add('collection-manager.settings', {
-      title: '{{t("Setting")}}',
+      title: '{{t("Settings")}}',
       Component: CollectionManageSetting,
     });
   }
