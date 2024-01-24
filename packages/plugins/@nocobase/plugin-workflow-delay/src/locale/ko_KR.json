@@ -1,0 +1,10 @@
+{
+  "Delay": "지연",
+  "Delay a period of time and then continue or exit the process. Can be used to set wait or timeout times in parallel branches.":
+    "일정 시간 동안 지연한 다음 프로세스를 계속하거나 종료합니다. 병렬 분기에서 대기 또는 타임아웃 시간을 설정하는 데 사용할 수 있습니다.",
+  "Duration": "기간",
+  "End Status": "종료 상태",
+  "Select status": "상태 선택",
+  "Succeed and continue": "성공하고 계속",
+  "Fail and exit": "실패하고 종료"  
+}
