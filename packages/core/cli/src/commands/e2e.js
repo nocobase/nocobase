@@ -97,7 +97,7 @@ process.on('SIGINT', async () => {
     if (error) {
       console.error(error);
     } else {
-      console.log('所有子进程已被杀掉，应用程序即将退出');
+      console.log('all subprocesses were killed, exiting main process');
     }
     process.exit();
   });
