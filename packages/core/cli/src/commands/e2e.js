@@ -162,9 +162,6 @@ module.exports = (cli) => {
       console.log('APP_BASE_URL:', process.env.APP_BASE_URL);
     }
   });
-  process.on('SIGINT', () => {
-    console.log('SIGINT......');
-  });
 
   e2e
     .command('test')
