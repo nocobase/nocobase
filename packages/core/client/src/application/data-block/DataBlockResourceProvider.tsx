@@ -3,7 +3,7 @@ import { IResource } from '@nocobase/sdk';
 
 import { useAPIClient } from '../../api-client';
 import { useDataBlockPropsV2 } from './DataBlockProvider';
-import { DEFAULT_DATA_SOURCE_NAME, useCollectionManagerV2 } from '../collection';
+import { DEFAULT_DATA_SOURCE_NAME, RecordV2, useCollectionManagerV2 } from '../collection';
 
 export const DataBlockResourceContextV2 = createContext<IResource>(null);
 DataBlockResourceContextV2.displayName = 'DataBlockResourceContextV2';
@@ -26,7 +26,8 @@ export const DataBlockResourceProviderV2: FC<{ children?: ReactNode }> = ({ chil
     if (association && parentRecord) {
       const associationCollection = cm.getCollection(association);
       if (associationCollection) {
-        return parentRecord.data[associationCollection.sourceKey || 'id'];
+        const parentRecordData = parentRecord instanceof RecordV2 ? parentRecord.data : parentRecord;
+        return parentRecordData[associationCollection.sourceKey || 'id'];
       }
     }
   }, [sourceId, parentRecord]);

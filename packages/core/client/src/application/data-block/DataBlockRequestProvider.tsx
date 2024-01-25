@@ -1,5 +1,5 @@
 import { useDeepCompareEffect } from 'ahooks';
-import React, { FC, createContext, useContext } from 'react';
+import React, { FC, createContext, useContext, useEffect } from 'react';
 
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
 import { useDataBlockResourceV2 } from './DataBlockResourceProvider';
@@ -35,8 +35,16 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
 
   // 因为修改 Schema 会导致 params 对象发生变化，所以这里使用 `DeepCompare`
   useDeepCompareEffect(() => {
-    request.run();
+    if (action) {
+      request.run();
+    }
   }, [params, action, record]);
+
+  useEffect(() => {
+    if (action) {
+      request.run();
+    }
+  }, [resource]);
 
   return request;
 }
@@ -44,16 +52,16 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
 function useParentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const { sourceId, association, parentRecord } = options;
   const api = useAPIClient();
-
   return useRequest<T>(
-    () => {
+    async () => {
       if (parentRecord) return Promise.resolve({ data: parentRecord });
       if (!association) return Promise.resolve({ data: undefined });
       // "association": "Collection.Field"
       const arr = association.split('.');
       // <collection>:get/<filterByTk>
       const url = `${arr[0]}:get/${sourceId}`;
-      return api.request({ url }).then((res) => res.data);
+      const res = await api.request({ url });
+      return res.data;
     },
     {
       refreshDeps: [association, parentRecord, sourceId],

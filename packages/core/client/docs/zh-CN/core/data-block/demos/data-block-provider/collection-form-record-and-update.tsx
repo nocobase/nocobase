@@ -1,15 +1,16 @@
+import React, { FC, useEffect } from 'react';
+import { Button, Form, FormProps, Input, InputNumber, notification } from 'antd';
 import {
   RecordProviderV2,
   SchemaComponent,
   UseDataBlockProps,
+  useDataBlockResourceV2,
   useRecordDataV2,
-  useRecordV2,
-  withSchemaComponentProps,
+  withDynamicSchemaProps,
 } from '@nocobase/client';
-import { Button, Form, Input, InputNumber } from 'antd';
-import { FormProps } from 'antd/lib';
-import React, { FC, useEffect } from 'react';
-import { createApp } from './createApp';
+import { ISchema } from '@formily/json-schema';
+
+import { createApp } from '../../../collection/demos/createApp';
 
 interface DemoFormFieldType {
   id: number;
@@ -17,7 +18,7 @@ interface DemoFormFieldType {
   age: number;
 }
 type DemoFormProps = FormProps<DemoFormFieldType>;
-const DemoForm: FC<DemoFormProps> = withSchemaComponentProps((props) => {
+const DemoForm: FC<DemoFormProps> = withDynamicSchemaProps((props) => {
   return (
     <Form labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} style={{ maxWidth: 600 }} autoComplete="off" {...props}>
       <Form.Item<DemoFormFieldType>
@@ -45,51 +46,92 @@ const DemoForm: FC<DemoFormProps> = withSchemaComponentProps((props) => {
 
 function useDemoFormProps(): DemoFormProps {
   const data = useRecordDataV2<DemoFormFieldType>();
+  const resource = useDataBlockResourceV2();
+
   const [form] = Form.useForm();
+
   useEffect(() => {
     form.setFieldsValue(data);
   }, [data, form]);
+
+  const onFinish = async (values: DemoFormFieldType) => {
+    console.log('values', values);
+    await resource.update({
+      filterByTk: data.id,
+      values,
+    });
+    notification.success({
+      message: 'Save successfully!',
+    });
+  };
+
   return {
+    initialValues: data,
     preserve: true,
+    onFinish,
     form,
   };
 }
-
 const useFormBlockDecoratorProps: UseDataBlockProps<'CollectionRecord'> = () => {
-  const record = useRecordV2();
+  const record = useRecordDataV2();
   return {
     record,
   };
 };
 
 const collection = 'users';
+const action = 'get';
 
-const schema = {
+const schema: ISchema = {
   type: 'void',
-  name: 'hello',
+  name: 'root',
   'x-decorator': 'DataBlockProviderV2',
   'x-use-decorator-props': 'useFormBlockDecoratorProps',
-  'x-component': 'DemoForm',
-  'x-use-component-props': 'useDemoFormProps',
   'x-decorator-props': {
     collection: collection,
+    action: action,
   },
+  'x-component': 'CardItem',
+  properties: {
+    demo: {
+      type: 'object',
+      'x-component': 'DemoForm',
+      'x-use-component-props': 'useDemoFormProps',
+    },
+  },
+};
+
+const recordData = {
+  id: 1,
+  username: 'Bamboo',
+  age: 18,
 };
 
 const Demo = () => {
   return (
-    <RecordProviderV2
-      record={{
-        id: 1,
-        username: 'Bamboo',
-        age: 18,
-      }}
-    >
-      <SchemaComponent schema={schema}></SchemaComponent>
-    </RecordProviderV2>
+    <>
+      <RecordProviderV2 record={recordData}>
+        <SchemaComponent schema={schema}></SchemaComponent>
+      </RecordProviderV2>
+    </>
   );
 };
 
-const Root = createApp(Demo, { components: { DemoForm }, scopes: { useDemoFormProps, useFormBlockDecoratorProps } });
+const mocks = {
+  [`${collection}:update`]: function (config) {
+    console.log('config.data', config.data);
+    return {
+      data: 'ok',
+    };
+  },
+};
+const Root = createApp(
+  Demo,
+  {
+    components: { DemoForm },
+    scopes: { useDemoFormProps, useFormBlockDecoratorProps },
+  },
+  mocks,
+);
 
 export default Root;

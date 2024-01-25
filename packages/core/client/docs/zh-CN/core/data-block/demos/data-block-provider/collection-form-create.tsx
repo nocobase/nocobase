@@ -1,8 +1,9 @@
 import React, { FC } from 'react';
-import { SchemaComponent, useDataBlockResourceV2, withSchemaComponentProps } from '@nocobase/client';
-import { createApp } from './createApp';
-import { Button, Form, Input, InputNumber } from 'antd';
-import { FormProps } from 'antd/lib';
+import { Button, Form, FormProps, Input, InputNumber, notification } from 'antd';
+import { SchemaComponent, useDataBlockResourceV2, withDynamicSchemaProps } from '@nocobase/client';
+import { ISchema } from '@formily/json-schema';
+
+import { createApp } from '../../../collection/demos/createApp';
 
 interface DemoFormFieldType {
   id: number;
@@ -10,7 +11,7 @@ interface DemoFormFieldType {
   age: number;
 }
 type DemoFormProps = FormProps<DemoFormFieldType>;
-const DemoForm: FC<DemoFormProps> = withSchemaComponentProps((props) => {
+const DemoForm: FC<DemoFormProps> = withDynamicSchemaProps((props) => {
   return (
     <Form labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} style={{ maxWidth: 600 }} autoComplete="off" {...props}>
       <Form.Item<DemoFormFieldType>
@@ -38,23 +39,37 @@ const DemoForm: FC<DemoFormProps> = withSchemaComponentProps((props) => {
 
 function useDemoFormProps(): DemoFormProps {
   const resource = useDataBlockResourceV2();
+  const onFinish = async (values: DemoFormFieldType) => {
+    console.log('values', values);
+    await resource.create({
+      values,
+    });
+    notification.success({
+      message: 'Save successfully!',
+    });
+  };
+
   return {
-    onFinish: (values) => {
-      resource.create({ values });
-    },
+    onFinish,
   };
 }
 
 const collection = 'users';
 
-const schema = {
+const schema: ISchema = {
   type: 'void',
-  name: 'hello',
+  name: 'root',
   'x-decorator': 'DataBlockProviderV2',
-  'x-component': 'DemoForm',
-  'x-use-component-props': 'useDemoFormProps',
   'x-decorator-props': {
     collection: collection,
+  },
+  'x-component': 'CardItem',
+  properties: {
+    demo: {
+      type: 'object',
+      'x-component': 'DemoForm',
+      'x-use-component-props': 'useDemoFormProps',
+    },
   },
 };
 
@@ -64,11 +79,17 @@ const Demo = () => {
 
 const mocks = {
   [`${collection}:create`]: (config) => {
-    console.log('请求结果', config.data);
+    console.log('config.data', config.data);
     return [200, { msg: 'ok' }];
   },
 };
-
-const Root = createApp(Demo, { components: { DemoForm }, scopes: { useDemoFormProps } }, mocks);
+const Root = createApp(
+  Demo,
+  {
+    components: { DemoForm },
+    scopes: { useDemoFormProps },
+  },
+  mocks,
+);
 
 export default Root;
