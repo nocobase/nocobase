@@ -1,0 +1,5 @@
+{
+  "unique violation": "{{field}} 필드 값은 고유해야 합니다.",
+  "notNull violation": "{{field}} 필드는 비어 있을 수 없습니다.",
+  "Validation error": "{{field}} 필드 규칙 유효성 검사에 실패했습니다."  
+}
