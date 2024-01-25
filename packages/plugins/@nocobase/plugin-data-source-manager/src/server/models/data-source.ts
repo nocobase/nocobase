@@ -11,6 +11,7 @@ export class DataSourceModel extends MagicAttributeModel {
       ...createOptions,
       name: this.get('key'),
     });
+
     await app.dataSourceManager.add(instance);
   }
 }

@@ -47,31 +47,32 @@ export default {
 
     async update(ctx, next) {
       const params = ctx.action.params;
-      const { filterByTk: name } = params;
-      const databaseName = ctx.get('x-database');
+      const { filterByTk: name, associatedIndex: collectionWithDataSource } = params;
 
-      let remoteCollectionRecord = await ctx.db.getRepository('remoteCollections').findOne({
+      const [dataSourceKey, collectionName] = collectionWithDataSource.split('.');
+
+      let dataSourceCollectionRecord = await ctx.db.getRepository('dataSourcesCollections').findOne({
         filter: {
-          name,
-          connectionName: databaseName,
+          name: collectionName,
+          dataSourceKey,
         },
       });
 
-      if (!remoteCollectionRecord) {
-        remoteCollectionRecord = await ctx.db.getRepository('remoteCollections').create({
+      if (!dataSourceCollectionRecord) {
+        dataSourceCollectionRecord = await ctx.db.getRepository('dataSourcesCollections').create({
           values: {
             ...params.values,
-            name,
-            connectionName: databaseName,
+            name: collectionName,
+            dataSourceKey,
           },
         });
       } else {
-        await remoteCollectionRecord.update({
+        await dataSourceCollectionRecord.update({
           ...params.values,
         });
       }
 
-      ctx.body = remoteCollectionRecord.toJSON();
+      ctx.body = dataSourceCollectionRecord.toJSON();
 
       await next();
     },

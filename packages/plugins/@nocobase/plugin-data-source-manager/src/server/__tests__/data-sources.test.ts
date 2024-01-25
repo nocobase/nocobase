@@ -44,57 +44,85 @@ describe('data source', async () => {
     expect(mockDataSource).toBeInstanceOf(MockDataSource);
   });
 
-  it('should get collections from datasource', async () => {
-    const loadFn = vi.fn();
+  describe('data source collections', () => {
+    beforeEach(async () => {
+      class MockCollectionManager extends CollectionManager {}
+      class MockDataSource extends DataSource {
+        async load(): Promise<void> {
+          this.collectionManager.defineCollection({
+            name: 'posts',
+            fields: [
+              {
+                type: 'string',
+                name: 'title',
+              },
+              {
+                type: 'hasMany',
+                name: 'comments',
+              },
+            ],
+          });
 
-    class MockCollectionManager extends CollectionManager {}
-    class MockDataSource extends DataSource {
-      async load(): Promise<void> {
-        this.collectionManager.defineCollection({
-          name: 'mock',
-          fields: [
-            {
-              type: 'string',
-              name: 'title',
-            },
-          ],
-        });
+          this.collectionManager.defineCollection({
+            name: 'comments',
+            fields: [
+              {
+                type: 'string',
+                name: 'content',
+              },
+              {
+                type: 'belongsTo',
+                name: 'post',
+              },
+            ],
+          });
+        }
 
-        this.collectionManager.defineCollection({
-          name: 'mock2',
-          fields: [
-            {
-              type: 'string',
-              name: 'title',
-            },
-          ],
-        });
+        createCollectionManager(options?: any) {
+          return new MockCollectionManager();
+        }
       }
 
-      createCollectionManager(options?: any) {
-        return new MockCollectionManager();
-      }
-    }
+      app.dataSourceManager.factory.register('mock', MockDataSource);
 
-    app.dataSourceManager.factory.register('mock', MockDataSource);
-
-    await app.db.getRepository('dataSources').create({
-      values: {
-        key: 'mockInstance1',
-        type: 'mock',
-        displayName: 'Mock',
-        options: {},
-      },
+      await app.db.getRepository('dataSources').create({
+        values: {
+          key: 'mockInstance1',
+          type: 'mock',
+          displayName: 'Mock',
+          options: {},
+        },
+      });
     });
 
-    const listResp = await app.agent().resource('dataSources').list();
-    expect(listResp.status).toBe(200);
+    it('should get collections from datasource', async () => {
+      const listResp = await app.agent().resource('dataSources').list();
+      expect(listResp.status).toBe(200);
 
-    // get collections
-    const collectionsResp = await app.agent().resource('dataSources.collections', 'mockInstance1').list();
-    expect(collectionsResp.status).toBe(200);
-    const data = collectionsResp.body.data;
+      // get collections
+      const collectionsResp = await app.agent().resource('dataSources.collections', 'mockInstance1').list();
+      expect(collectionsResp.status).toBe(200);
+      const data = collectionsResp.body.data;
 
-    expect(data.length).toBe(2);
+      expect(data.length).toBe(2);
+    });
+
+    it('should edit datasource collections', async () => {
+      // edit collections
+      const editResp = await app
+        .agent()
+        .resource('dataSources.collections', 'mockInstance1.posts')
+        .update({
+          values: {
+            title: '标题 Collection',
+          },
+        });
+
+      expect(editResp.status).toBe(200);
+
+      const dataSource = app.dataSourceManager.dataSources.get('mockInstance1');
+      const collection = dataSource.collectionManager.getCollection('posts');
+      expect(collection.options.title).toBe('标题 Collection');
+    });
   });
 });

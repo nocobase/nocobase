@@ -155,7 +155,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
     });
 
-    this.app.db.on('remoteCollections.afterSave', async (model: RemoteCollectionModel) => {
+    this.app.db.on('dataSourcesCollections.afterSave', async (model: RemoteCollectionModel) => {
       model.load({
         app: this.app,
       });

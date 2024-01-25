@@ -7,6 +7,8 @@ export type CollectionOptions = {
 
 export interface ICollection {
   repository: any;
+  updateOptions(options: any): void;
+  setField(name: string, options: any): void;
   [key: string]: any;
 }
 export interface IModel {
@@ -36,11 +38,13 @@ export interface ICollectionManager {
   getRegisteredRepository(key: string): IRepository;
 
   defineCollection(options: CollectionOptions): ICollection;
+
   extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions): ICollection;
 
   hasCollection(name: string): boolean;
   getCollection(name: string): ICollection;
 
+  getCollections(): Array<ICollection>;
   getRepository<R = IRepository>(name: string, sourceId?: string | number): R;
   sync(): Promise<void>;
 }
