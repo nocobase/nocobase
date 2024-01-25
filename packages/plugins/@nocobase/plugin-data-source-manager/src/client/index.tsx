@@ -49,7 +49,7 @@ export class PluginDataSourceManagerClient extends Plugin {
     const service = await this.app.apiClient.request<{
       data: any;
     }>({
-      resource: 'databaseConnections',
+      resource: 'dataSources',
       action: 'list',
       params: {
         paginate: false,

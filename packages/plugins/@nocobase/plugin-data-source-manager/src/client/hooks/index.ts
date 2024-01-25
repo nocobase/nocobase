@@ -46,7 +46,7 @@ export const useTestConnectionAction = () => {
       await form.submit();
       try {
         actionField.data.loading = true;
-        await api.resource('databaseConnections').testConnection({
+        await api.resource('dataSource').testConnection({
           values: {
             ...form.values,
           },
