@@ -21,7 +21,7 @@ const collection = {
       name: 'displayName',
       interface: 'input',
       uiSchema: {
-        title: `{{t("Data source Title",{ ns: "${NAMESPACE}" })}}`,
+        title: `{{t("Data source title",{ ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Input',
         required: true,
