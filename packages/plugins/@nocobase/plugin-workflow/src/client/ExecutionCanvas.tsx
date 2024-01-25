@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Breadcrumb, Dropdown, Result, Space, Spin, Tag } from 'antd';
+import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip } from 'antd';
 
 import {
   ActionContextProvider,
@@ -22,9 +22,10 @@ import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import useStyles from './style';
 import { linkNodes } from './utils';
-import { DownOutlined } from '@ant-design/icons';
+import { DownOutlined, ExclamationCircleFilled, StopOutlined } from '@ant-design/icons';
 import { StatusButton } from './components/StatusButton';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './constant';
+import { useTranslation } from 'react-i18next';
 
 function attachJobs(nodes, jobs: any[] = []): void {
   const nodesMap = new Map();
@@ -210,14 +211,38 @@ function ExecutionsDropdown(props) {
 }
 
 export function ExecutionCanvas() {
+  const { t } = useTranslation();
   const compile = useCompile();
-  const { data, loading } = useResourceActionContext();
+  const { data, loading, refresh } = useResourceActionContext();
   const { setTitle } = useDocumentTitle();
   const [viewJob, setViewJob] = useState(null);
   const app = useApp();
+  const apiClient = useAPIClient();
   useEffect(() => {
     const { workflow } = data?.data ?? {};
     setTitle?.(`${workflow?.title ? `${workflow.title} - ` : ''}${lang('Execution history')}`);
+  }, [data?.data]);
+
+  const onCancel = useCallback(() => {
+    Modal.confirm({
+      title: lang('Cancel the execution'),
+      icon: <ExclamationCircleFilled />,
+      content: lang('Are you sure you want to cancel the execution?'),
+      onOk: () => {
+        apiClient
+          .resource('executions')
+          .cancel({
+            filterByTk: data?.data.id,
+          })
+          .then(() => {
+            message.success(t('Operation succeeded'));
+            refresh();
+          })
+          .catch((response) => {
+            console.error(response.data.error);
+          });
+      },
+    });
   }, [data?.data]);
 
   if (!data?.data) {
@@ -258,6 +283,11 @@ export function ExecutionCanvas() {
         </header>
         <aside>
           <Tag color={statusOption.color}>{compile(statusOption.label)}</Tag>
+          {execution.status ? null : (
+            <Tooltip title={lang('Cancel the execution')}>
+              <Button type="link" danger onClick={onCancel} shape="circle" size="small" icon={<StopOutlined />} />
+            </Tooltip>
+          )}
           <time>{str2moment(execution.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
         </aside>
       </div>
