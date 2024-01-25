@@ -1678,6 +1678,595 @@ export const T2614: PageConfig = {
     'x-index': 1,
   },
 };
+
+export const T2993: PageConfig = {
+  collections: [
+    {
+      name: 'T2993',
+      fields: [
+        {
+          name: 'm2o',
+          interface: 'm2o',
+          target: 'T2993Target1',
+        },
+      ],
+    },
+    {
+      name: 'T2993Target1',
+      fields: [
+        {
+          name: 'm2oOfTarget1',
+          interface: 'm2o',
+          target: 'T2993Target2',
+        },
+      ],
+    },
+    {
+      name: 'T2993Target2',
+      fields: [
+        {
+          name: 'm2oOfTarget2',
+          interface: 'm2o',
+          target: 'users',
+        },
+      ],
+    },
+  ],
+  pageSchema: {
+    _isJSONSchemaObject: true,
+    version: '2.0',
+    type: 'void',
+    'x-component': 'Page',
+    'x-index': 1,
+    properties: {
+      oaeetth18tf: {
+        _isJSONSchemaObject: true,
+        version: '2.0',
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'BlockInitializers',
+        'x-index': 1,
+        properties: {
+          vv0l8wohslb: {
+            _isJSONSchemaObject: true,
+            version: '2.0',
+            type: 'void',
+            'x-component': 'Grid.Row',
+            'x-index': 1,
+            properties: {
+              '7se9siwa4ce': {
+                _isJSONSchemaObject: true,
+                version: '2.0',
+                type: 'void',
+                'x-component': 'Grid.Col',
+                'x-index': 1,
+                properties: {
+                  '249fb0vofov': {
+                    _isJSONSchemaObject: true,
+                    version: '2.0',
+                    type: 'void',
+                    'x-decorator': 'TableBlockProvider',
+                    'x-acl-action': 'T2993:list',
+                    'x-decorator-props': {
+                      collection: 'T2993',
+                      resource: 'T2993',
+                      action: 'list',
+                      params: {
+                        pageSize: 20,
+                      },
+                      rowKey: 'id',
+                      showIndex: true,
+                      dragSort: false,
+                      disableTemplate: false,
+                    },
+                    'x-designer': 'TableBlockDesigner',
+                    'x-component': 'CardItem',
+                    'x-filter-targets': [],
+                    'x-index': 1,
+                    properties: {
+                      actions: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'void',
+                        'x-initializer': 'TableActionInitializers',
+                        'x-component': 'ActionBar',
+                        'x-component-props': {
+                          style: {
+                            marginBottom: 'var(--nb-spacing)',
+                          },
+                        },
+                        'x-index': 1,
+                        properties: {
+                          '320je2i6xjp': {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            'x-action': 'create',
+                            'x-acl-action': 'create',
+                            title: "{{t('Add new')}}",
+                            'x-designer': 'Action.Designer',
+                            'x-component': 'Action',
+                            'x-decorator': 'ACLActionProvider',
+                            'x-component-props': {
+                              openMode: 'drawer',
+                              type: 'primary',
+                              component: 'CreateRecordAction',
+                              icon: 'PlusOutlined',
+                            },
+                            'x-align': 'right',
+                            'x-acl-action-props': {
+                              skipScopeCheck: true,
+                            },
+                            properties: {
+                              drawer: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                title: '{{ t("Add record") }}',
+                                'x-component': 'Action.Container',
+                                'x-component-props': {
+                                  className: 'nb-action-popup',
+                                },
+                                properties: {
+                                  tabs: {
+                                    _isJSONSchemaObject: true,
+                                    version: '2.0',
+                                    type: 'void',
+                                    'x-component': 'Tabs',
+                                    'x-component-props': {},
+                                    'x-initializer': 'TabPaneInitializersForCreateFormBlock',
+                                    properties: {
+                                      tab1: {
+                                        _isJSONSchemaObject: true,
+                                        version: '2.0',
+                                        type: 'void',
+                                        title: '{{t("Add new")}}',
+                                        'x-component': 'Tabs.TabPane',
+                                        'x-designer': 'Tabs.Designer',
+                                        'x-component-props': {},
+                                        properties: {
+                                          grid: {
+                                            _isJSONSchemaObject: true,
+                                            version: '2.0',
+                                            type: 'void',
+                                            'x-component': 'Grid',
+                                            'x-initializer': 'CreateFormBlockInitializers',
+                                            properties: {
+                                              kvyqrrxvggn: {
+                                                _isJSONSchemaObject: true,
+                                                version: '2.0',
+                                                type: 'void',
+                                                'x-component': 'Grid.Row',
+                                                properties: {
+                                                  ohfczsepq4k: {
+                                                    _isJSONSchemaObject: true,
+                                                    version: '2.0',
+                                                    type: 'void',
+                                                    'x-component': 'Grid.Col',
+                                                    properties: {
+                                                      yybs6yl6vvm: {
+                                                        _isJSONSchemaObject: true,
+                                                        version: '2.0',
+                                                        type: 'void',
+                                                        'x-acl-action-props': {
+                                                          skipScopeCheck: true,
+                                                        },
+                                                        'x-acl-action': 'T2993:create',
+                                                        'x-decorator': 'FormBlockProvider',
+                                                        'x-decorator-props': {
+                                                          resource: 'T2993',
+                                                          collection: 'T2993',
+                                                        },
+                                                        'x-designer': 'FormV2.Designer',
+                                                        'x-component': 'CardItem',
+                                                        'x-component-props': {},
+                                                        properties: {
+                                                          myzgzqbjryj: {
+                                                            _isJSONSchemaObject: true,
+                                                            version: '2.0',
+                                                            type: 'void',
+                                                            'x-component': 'FormV2',
+                                                            'x-component-props': {
+                                                              useProps: '{{ useFormBlockProps }}',
+                                                            },
+                                                            properties: {
+                                                              grid: {
+                                                                _isJSONSchemaObject: true,
+                                                                version: '2.0',
+                                                                type: 'void',
+                                                                'x-component': 'Grid',
+                                                                'x-initializer': 'FormItemInitializers',
+                                                                properties: {
+                                                                  itg7al9oxaw: {
+                                                                    _isJSONSchemaObject: true,
+                                                                    version: '2.0',
+                                                                    type: 'void',
+                                                                    'x-component': 'Grid.Row',
+                                                                    properties: {
+                                                                      hejnuwat4oc: {
+                                                                        _isJSONSchemaObject: true,
+                                                                        version: '2.0',
+                                                                        type: 'void',
+                                                                        'x-component': 'Grid.Col',
+                                                                        properties: {
+                                                                          m2o: {
+                                                                            'x-uid': '3pvkdw7siwz',
+                                                                            _isJSONSchemaObject: true,
+                                                                            version: '2.0',
+                                                                            type: 'string',
+                                                                            'x-designer': 'FormItem.Designer',
+                                                                            'x-component': 'CollectionField',
+                                                                            'x-decorator': 'FormItem',
+                                                                            'x-collection-field': 'T2993.m2o',
+                                                                            'x-component-props': {
+                                                                              mode: 'Nester',
+                                                                            },
+                                                                            default: null,
+                                                                            properties: {
+                                                                              xar1gsdp1sr: {
+                                                                                _isJSONSchemaObject: true,
+                                                                                version: '2.0',
+                                                                                type: 'void',
+                                                                                'x-component':
+                                                                                  'AssociationField.Nester',
+                                                                                'x-index': 1,
+                                                                                properties: {
+                                                                                  grid: {
+                                                                                    _isJSONSchemaObject: true,
+                                                                                    version: '2.0',
+                                                                                    type: 'void',
+                                                                                    'x-component': 'Grid',
+                                                                                    'x-initializer':
+                                                                                      'FormItemInitializers',
+                                                                                    properties: {
+                                                                                      um4p1ariq2x: {
+                                                                                        _isJSONSchemaObject: true,
+                                                                                        version: '2.0',
+                                                                                        type: 'void',
+                                                                                        'x-component': 'Grid.Row',
+                                                                                        properties: {
+                                                                                          ako5fc5c6su: {
+                                                                                            _isJSONSchemaObject: true,
+                                                                                            version: '2.0',
+                                                                                            type: 'void',
+                                                                                            'x-component': 'Grid.Col',
+                                                                                            properties: {
+                                                                                              m2oOfTarget1: {
+                                                                                                _isJSONSchemaObject:
+                                                                                                  true,
+                                                                                                version: '2.0',
+                                                                                                type: 'string',
+                                                                                                'x-designer':
+                                                                                                  'FormItem.Designer',
+                                                                                                'x-component':
+                                                                                                  'CollectionField',
+                                                                                                'x-decorator':
+                                                                                                  'FormItem',
+                                                                                                'x-collection-field':
+                                                                                                  'T2993Target1.m2oOfTarget1',
+                                                                                                'x-component-props': {},
+                                                                                                'x-uid': 'k3u04sl4yzk',
+                                                                                                'x-async': false,
+                                                                                                'x-index': 1,
+                                                                                              },
+                                                                                            },
+                                                                                            'x-uid': 'kb67g4ow7rv',
+                                                                                            'x-async': false,
+                                                                                            'x-index': 1,
+                                                                                          },
+                                                                                        },
+                                                                                        'x-uid': 'vd9k8begch0',
+                                                                                        'x-async': false,
+                                                                                        'x-index': 1,
+                                                                                      },
+                                                                                      lgezjw87145: {
+                                                                                        _isJSONSchemaObject: true,
+                                                                                        version: '2.0',
+                                                                                        type: 'void',
+                                                                                        'x-component': 'Grid.Row',
+                                                                                        properties: {
+                                                                                          n3d2krsbvt3: {
+                                                                                            _isJSONSchemaObject: true,
+                                                                                            version: '2.0',
+                                                                                            type: 'void',
+                                                                                            'x-component': 'Grid.Col',
+                                                                                            properties: {
+                                                                                              'm2oOfTarget1.m2oOfTarget2':
+                                                                                                {
+                                                                                                  'x-uid':
+                                                                                                    'tt1wq5dvs3v',
+                                                                                                  _isJSONSchemaObject:
+                                                                                                    true,
+                                                                                                  version: '2.0',
+                                                                                                  type: 'string',
+                                                                                                  'x-designer':
+                                                                                                    'FormItem.Designer',
+                                                                                                  'x-component':
+                                                                                                    'CollectionField',
+                                                                                                  'x-read-pretty': true,
+                                                                                                  'x-component-props': {
+                                                                                                    'pattern-disable':
+                                                                                                      true,
+                                                                                                    fieldNames: {
+                                                                                                      label: 'id',
+                                                                                                      value: 'id',
+                                                                                                    },
+                                                                                                    mode: 'Nester',
+                                                                                                  },
+                                                                                                  'x-decorator':
+                                                                                                    'FormItem',
+                                                                                                  'x-collection-field':
+                                                                                                    'T2993Target1.m2oOfTarget1.m2oOfTarget2',
+                                                                                                  default: null,
+                                                                                                  properties: {
+                                                                                                    ygskw048e1z: {
+                                                                                                      _isJSONSchemaObject:
+                                                                                                        true,
+                                                                                                      version: '2.0',
+                                                                                                      type: 'void',
+                                                                                                      'x-component':
+                                                                                                        'AssociationField.Nester',
+                                                                                                      'x-index': 1,
+                                                                                                      properties: {
+                                                                                                        grid: {
+                                                                                                          _isJSONSchemaObject:
+                                                                                                            true,
+                                                                                                          version:
+                                                                                                            '2.0',
+                                                                                                          type: 'void',
+                                                                                                          'x-component':
+                                                                                                            'Grid',
+                                                                                                          'x-initializer':
+                                                                                                            'FormItemInitializers',
+                                                                                                          properties: {
+                                                                                                            uscd5l8tu2t:
+                                                                                                              {
+                                                                                                                _isJSONSchemaObject:
+                                                                                                                  true,
+                                                                                                                version:
+                                                                                                                  '2.0',
+                                                                                                                type: 'void',
+                                                                                                                'x-component':
+                                                                                                                  'Grid.Row',
+                                                                                                                properties:
+                                                                                                                  {
+                                                                                                                    jna3kowl6n0:
+                                                                                                                      {
+                                                                                                                        _isJSONSchemaObject:
+                                                                                                                          true,
+                                                                                                                        version:
+                                                                                                                          '2.0',
+                                                                                                                        type: 'void',
+                                                                                                                        'x-component':
+                                                                                                                          'Grid.Col',
+                                                                                                                        properties:
+                                                                                                                          {
+                                                                                                                            nickname:
+                                                                                                                              {
+                                                                                                                                _isJSONSchemaObject:
+                                                                                                                                  true,
+                                                                                                                                version:
+                                                                                                                                  '2.0',
+                                                                                                                                type: 'string',
+                                                                                                                                'x-designer':
+                                                                                                                                  'FormItem.Designer',
+                                                                                                                                'x-component':
+                                                                                                                                  'CollectionField',
+                                                                                                                                'x-decorator':
+                                                                                                                                  'FormItem',
+                                                                                                                                'x-collection-field':
+                                                                                                                                  'users.nickname',
+                                                                                                                                'x-component-props':
+                                                                                                                                  {},
+                                                                                                                                'x-uid':
+                                                                                                                                  'kaks1ezjj98',
+                                                                                                                                'x-async':
+                                                                                                                                  false,
+                                                                                                                                'x-index': 1,
+                                                                                                                              },
+                                                                                                                          },
+                                                                                                                        'x-uid':
+                                                                                                                          '9u2d1166uh0',
+                                                                                                                        'x-async':
+                                                                                                                          false,
+                                                                                                                        'x-index': 1,
+                                                                                                                      },
+                                                                                                                  },
+                                                                                                                'x-uid':
+                                                                                                                  'lp13gnw7f9d',
+                                                                                                                'x-async':
+                                                                                                                  false,
+                                                                                                                'x-index': 1,
+                                                                                                              },
+                                                                                                          },
+                                                                                                          'x-uid':
+                                                                                                            'fea7tmd6sbh',
+                                                                                                          'x-async':
+                                                                                                            false,
+                                                                                                          'x-index': 1,
+                                                                                                        },
+                                                                                                      },
+                                                                                                      'x-uid':
+                                                                                                        'ts3zjwyo478',
+                                                                                                      'x-async': false,
+                                                                                                    },
+                                                                                                  },
+                                                                                                  'x-async': false,
+                                                                                                  'x-index': 1,
+                                                                                                },
+                                                                                            },
+                                                                                            'x-uid': 'oin3jlxc4gv',
+                                                                                            'x-async': false,
+                                                                                            'x-index': 1,
+                                                                                          },
+                                                                                        },
+                                                                                        'x-uid': '16aqmqkwhfd',
+                                                                                        'x-async': false,
+                                                                                        'x-index': 2,
+                                                                                      },
+                                                                                    },
+                                                                                    'x-uid': '3gla3xjm61o',
+                                                                                    'x-async': false,
+                                                                                    'x-index': 1,
+                                                                                  },
+                                                                                },
+                                                                                'x-uid': 'i46zhazjn7b',
+                                                                                'x-async': false,
+                                                                              },
+                                                                            },
+                                                                            'x-async': false,
+                                                                            'x-index': 1,
+                                                                          },
+                                                                        },
+                                                                        'x-uid': 'ciiv69n96t8',
+                                                                        'x-async': false,
+                                                                        'x-index': 1,
+                                                                      },
+                                                                    },
+                                                                    'x-uid': 'hiywtpw6on8',
+                                                                    'x-async': false,
+                                                                    'x-index': 1,
+                                                                  },
+                                                                },
+                                                                'x-uid': 'xknx3vzmjpx',
+                                                                'x-async': false,
+                                                                'x-index': 1,
+                                                              },
+                                                              actions: {
+                                                                _isJSONSchemaObject: true,
+                                                                version: '2.0',
+                                                                type: 'void',
+                                                                'x-initializer': 'CreateFormActionInitializers',
+                                                                'x-component': 'ActionBar',
+                                                                'x-component-props': {
+                                                                  layout: 'one-column',
+                                                                  style: {
+                                                                    marginTop: 24,
+                                                                  },
+                                                                },
+                                                                'x-uid': 'zg7tf79gplk',
+                                                                'x-async': false,
+                                                                'x-index': 2,
+                                                              },
+                                                            },
+                                                            'x-uid': 'k1302u47v0e',
+                                                            'x-async': false,
+                                                            'x-index': 1,
+                                                          },
+                                                        },
+                                                        'x-uid': 'yyvjo6gad5o',
+                                                        'x-async': false,
+                                                        'x-index': 1,
+                                                      },
+                                                    },
+                                                    'x-uid': 'u22hbq1ctdb',
+                                                    'x-async': false,
+                                                    'x-index': 1,
+                                                  },
+                                                },
+                                                'x-uid': 'qy5lf41wr0x',
+                                                'x-async': false,
+                                                'x-index': 1,
+                                              },
+                                            },
+                                            'x-uid': 'ylibp9kzpn8',
+                                            'x-async': false,
+                                            'x-index': 1,
+                                          },
+                                        },
+                                        'x-uid': 'so9jo1bpw2s',
+                                        'x-async': false,
+                                        'x-index': 1,
+                                      },
+                                    },
+                                    'x-uid': 'vbhe3vpvwsj',
+                                    'x-async': false,
+                                    'x-index': 1,
+                                  },
+                                },
+                                'x-uid': 'thjjada865a',
+                                'x-async': false,
+                                'x-index': 1,
+                              },
+                            },
+                            'x-uid': 'qki69uj0lrw',
+                            'x-async': false,
+                            'x-index': 1,
+                          },
+                        },
+                        'x-uid': 'dddnddme2k0',
+                        'x-async': false,
+                      },
+                      v76qyn133dr: {
+                        _isJSONSchemaObject: true,
+                        version: '2.0',
+                        type: 'array',
+                        'x-initializer': 'TableColumnInitializers',
+                        'x-component': 'TableV2',
+                        'x-component-props': {
+                          rowKey: 'id',
+                          rowSelection: {
+                            type: 'checkbox',
+                          },
+                          useProps: '{{ useTableBlockProps }}',
+                        },
+                        'x-index': 2,
+                        properties: {
+                          actions: {
+                            _isJSONSchemaObject: true,
+                            version: '2.0',
+                            type: 'void',
+                            title: '{{ t("Actions") }}',
+                            'x-action-column': 'actions',
+                            'x-decorator': 'TableV2.Column.ActionBar',
+                            'x-component': 'TableV2.Column',
+                            'x-designer': 'TableV2.ActionColumnDesigner',
+                            'x-initializer': 'TableActionColumnInitializers',
+                            'x-index': 1,
+                            properties: {
+                              actions: {
+                                _isJSONSchemaObject: true,
+                                version: '2.0',
+                                type: 'void',
+                                'x-decorator': 'DndContext',
+                                'x-component': 'Space',
+                                'x-component-props': {
+                                  split: '|',
+                                },
+                                'x-index': 1,
+                                'x-uid': '5whl9o7b89g',
+                                'x-async': false,
+                              },
+                            },
+                            'x-uid': 'q2mfg78ct2l',
+                            'x-async': false,
+                          },
+                        },
+                        'x-uid': 'h26orxh3oza',
+                        'x-async': false,
+                      },
+                    },
+                    'x-uid': 'cozbcpx31lh',
+                    'x-async': false,
+                  },
+                },
+                'x-uid': 'ogpj115jybu',
+                'x-async': false,
+              },
+            },
+            'x-uid': 'maeo2u6nqxd',
+            'x-async': false,
+          },
+        },
+        'x-uid': 'lc1u2cn2xbn',
+        'x-async': false,
+      },
+    },
+    'x-uid': 'x2q3p8forv1',
+    'x-async': true,
+  },
+};
+
 export const T2615: PageConfig = {
   collections: [
     {

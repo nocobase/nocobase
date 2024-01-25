@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { nextTick } from '@nocobase/utils/client';
 import _ from 'lodash';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useAssociationNames } from '../../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../../collection-manager';
 import { useFlag } from '../../../../flag-provider';
@@ -35,6 +35,9 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const collectionFieldRef = useRef(null);
   const sourceCollectionFieldRef = useRef(null);
 
+  // 是否已经预加载了数据（通过 appends 的形式）
+  const hasPreloadData = useMemo(() => hasPreload(record, schemaName), []);
+
   if (collectionFieldRef.current == null && isDisplayField(schemaName)) {
     collectionFieldRef.current = getCollectionJoinField(`${name}.${schemaName}`);
   }
@@ -55,7 +58,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
       !variables ||
       name === 'fields' ||
       !collectionFieldRef.current ||
-      hasPreload(record, schemaName)
+      hasPreloadData
     ) {
       return;
     }
@@ -106,5 +109,6 @@ export default useLazyLoadDisplayAssociationFieldsOfForm;
  * @returns
  */
 function hasPreload(record: Record<string, any>, path: string) {
-  return _.get(record, path) != null;
+  const value = _.get(record, path);
+  return value != null && JSON.stringify(value) !== '[{}]' && JSON.stringify(value) !== '{}';
 }
