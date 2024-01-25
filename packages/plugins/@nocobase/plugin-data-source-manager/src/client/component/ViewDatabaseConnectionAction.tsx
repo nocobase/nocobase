@@ -12,7 +12,7 @@ export const ViewDatabaseConnectionAction = () => {
     <div>
       <a
         onClick={() => {
-          navigate(getConnectionCollectionPath(record.name));
+          navigate(getConnectionCollectionPath(record.key));
         }}
       >
         {t('Configure')}
