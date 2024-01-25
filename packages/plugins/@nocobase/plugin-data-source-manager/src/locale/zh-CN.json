@@ -1,6 +1,6 @@
 {
-  "Database server": "数据库服务",
-  "Server name": "服务名称",
+  "Data source UID": "数据源标识",
+  "Data source title": "数据源名称",
   "Host": "服务器地址",
   "Port": "端口",
   "Database": "数据库",
