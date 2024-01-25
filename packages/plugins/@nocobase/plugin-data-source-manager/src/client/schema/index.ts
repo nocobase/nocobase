@@ -116,36 +116,36 @@ export const databaseConnectionSchema: ISchema = {
             useDataSource: '{{ cm.useDataSourceFromRAC }}',
           },
           properties: {
-            name: {
+            key: {
               type: 'void',
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
               properties: {
-                name: {
+                key: {
                   type: 'string',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },
               },
             },
-            description: {
+            displayName: {
               type: 'void',
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
               properties: {
-                description: {
+                displayName: {
                   type: 'string',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },
               },
             },
-            dialect: {
+            type: {
               type: 'void',
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
               properties: {
-                dialect: {
+                type: {
                   type: 'string',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
