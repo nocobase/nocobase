@@ -1,11 +1,11 @@
-import { CollectionOptions, ICollection, ICollectionManager, IRepository } from './types';
+import { CollectionOptions, ICollection, ICollectionManager, IField, IRepository } from './types';
 import { default as lodash } from 'lodash';
 import merge from 'deepmerge';
-import { Field } from '@nocobase/database';
+import { CollectionField } from './collection-field';
 
 export class Collection implements ICollection {
   repository: IRepository;
-  fields: Map<string, any> = new Map<string, any>();
+  fields: Map<string, IField> = new Map<string, IField>();
 
   constructor(
     protected options: CollectionOptions,
@@ -27,14 +27,16 @@ export class Collection implements ICollection {
   }
 
   setField(name: string, options: any) {
-    const field = this.getField(name);
-
-    if (field) {
-      field.updateOptions(options);
-    }
+    const field = new CollectionField(options);
+    this.fields.set(name, field);
+    return field;
   }
 
-  getField<F extends Field>(name: string): F {
+  removeField(name: string) {
+    this.fields.delete(name);
+  }
+
+  getField(name: string) {
     return this.fields.get(name);
   }
 

@@ -5,10 +5,31 @@ export type CollectionOptions = {
   [key: string]: any;
 };
 
+export type FieldOptions = {
+  name: string;
+  field: string;
+  rawType: string;
+  type: string;
+  description?: string;
+  interface?: string;
+  uiSchema?: any;
+  possibleTypes?: string[];
+  defaultValue?: any;
+  primaryKey: boolean;
+  unique: boolean;
+  allowNull?: boolean;
+  autoIncrement?: boolean;
+  [key: string]: any;
+};
+
+export interface IField {
+  options: FieldOptions;
+}
 export interface ICollection {
   repository: any;
   updateOptions(options: any): void;
-  setField(name: string, options: any): void;
+  setField(name: string, options: any): IField;
+  removeField(name: string): void;
   [key: string]: any;
 }
 export interface IModel {
