@@ -27,7 +27,7 @@ const defaultCollectionTransform = (collection: CollectionOptionsV2, app: Applic
     ...rest,
     title: rawTitle ? title : app.i18n.t(title),
     rawTitle: rawTitle || title,
-    fields: fields.map(({ uiSchema, ...field }) => {
+    fields: fields?.map(({ uiSchema, ...field }) => {
       if (uiSchema?.title) {
         const title = uiSchema.title;
         uiSchema.title = uiSchema.rawTitle ? title : app.i18n.t(title, { ns: 'lm-collections' });
