@@ -16,7 +16,9 @@ export abstract class DataSource {
       prefix: '/api',
       ...options.resourceManager,
     });
-    this.collectionManager = this.createCollectionManager(options.collectionManager);
+
+    this.collectionManager = this.createCollectionManager(options);
+
     this.resourceManager.registerActionHandlers(loadDefaultActions(this));
     this.resourceManager.use(this.acl.middleware());
   }
@@ -80,7 +82,7 @@ export abstract class DataSource {
     return new ResourceManager(options);
   }
 
-  async load() {}
+  async load(options: any = {}) {}
 
   abstract createCollectionManager(options?: any): ICollectionManager;
 }

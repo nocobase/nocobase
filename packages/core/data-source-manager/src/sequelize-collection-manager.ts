@@ -54,6 +54,10 @@ export class SequelizeCollectionManager implements ICollectionManager {
     return this.db.getCollection(name);
   }
 
+  getCollections() {
+    return [...this.db.collections.values()];
+  }
+
   getRepository<R = IRepository>(name: string, sourceId?: string | number): R {
     return this.db.getRepository(name, sourceId) as R;
   }
