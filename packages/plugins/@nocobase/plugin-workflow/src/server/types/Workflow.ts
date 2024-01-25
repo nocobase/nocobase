@@ -19,16 +19,19 @@ export default class WorkflowModel extends Model {
   declare description?: string;
   declare type: string;
   declare config: any;
+  declare options: any;
   declare executed: number;
+  declare allExecuted: number;
+  declare sync: boolean;
 
   declare createdAt: Date;
   declare updatedAt: Date;
 
-  declare nodes: FlowNodeModel[];
+  declare nodes?: FlowNodeModel[];
   declare getNodes: HasManyGetAssociationsMixin<FlowNodeModel>;
   declare createNode: HasManyCreateAssociationMixin<FlowNodeModel>;
 
-  declare executions: ExecutionModel[];
+  declare executions?: ExecutionModel[];
   declare countExecutions: HasManyCountAssociationsMixin;
   declare getExecutions: HasManyGetAssociationsMixin<ExecutionModel>;
   declare createExecution: HasManyCreateAssociationMixin<ExecutionModel>;
