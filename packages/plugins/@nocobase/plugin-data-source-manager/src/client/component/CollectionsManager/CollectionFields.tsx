@@ -41,7 +41,7 @@ export const CollectionFields = () => {
   const form = useMemo(() => createForm(), []);
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
   const { t } = useTranslation();
-  const { name: xDatabase } = useParams();
+  const { name: dataSourceKey } = useParams();
   const api = useAPIClient();
   const compile = useCompile();
   const service = useContext(ResourceActionContext);
@@ -70,8 +70,8 @@ export const CollectionFields = () => {
     dragSort: false,
     collection,
     request: {
-      url: `remoteCollections/${name}/fields:list`,
-      headers: { 'X-Database': xDatabase },
+      url: `dataSourcesCollections/${name}/fields:list`,
+      headers: { 'X-Database': dataSourceKey },
       params: {
         paginate: false,
         filter: {
@@ -84,10 +84,7 @@ export const CollectionFields = () => {
 
   const handleFieldChange = async (value, filterByTk) => {
     await api.request({
-      url: `remoteCollections/${name}/fields:update?filterByTk=${filterByTk}`,
-      headers: {
-        'X-Database': xDatabase,
-      },
+      url: `dataSourcesCollections/${dataSourceKey}.${name}/fields:update?filterByTk=${filterByTk}`,
       method: 'post',
       data: value,
     });
@@ -97,7 +94,7 @@ export const CollectionFields = () => {
     return {
       filterByTk,
       titleField,
-      xDatabase,
+      dataSourceKey,
       setTitleField,
     };
   };
@@ -113,9 +110,9 @@ export const CollectionFields = () => {
     const { targetScope } = options;
     const isFieldInherits = field.props?.name === 'inherits';
     const { data } = await api.request({
-      url: 'remoteCollections:list',
+      url: 'dataSourcesCollections:list',
       headers: {
-        'X-Database': xDatabase,
+        'X-Database': dataSourceKey,
       },
       params: {
         paginate: false,
@@ -186,7 +183,7 @@ export const CollectionFields = () => {
           </FieldContext.Provider>
         </FormContext.Provider>
       </ResourceActionProvider>
-      <UnSupportFields/>
+      <UnSupportFields />
     </RemoteCollectionContext.Provider>
   );
 };

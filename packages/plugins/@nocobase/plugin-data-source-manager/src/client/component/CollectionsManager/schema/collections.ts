@@ -82,22 +82,19 @@ export const collection: CollectionOptions = {
   ],
 };
 
-export const getCollectionSchema = (xDatabase) => {
+export const getCollectionSchema = (dataSourceKey) => {
   return {
     type: 'object',
     properties: {
       [uid()]: {
         type: 'void',
-        'x-collection': 'remoteCollections',
+        'x-collection': 'dataSources',
         'x-decorator': 'ResourceActionProvider',
         'x-decorator-props': {
           collection: collection,
           dragSort: false,
           request: {
-            headers: {
-              'X-Database': xDatabase,
-            },
-            url: `remoteCollections:list`,
+            url: `dataSources/${dataSourceKey}:list`,
             params: {
               pageSize: 50,
               sort: 'sort',
@@ -190,7 +187,7 @@ export const collectionTableSchema: ISchema = {
           const { t } = useTranslation();
           return {
             async move(from, to) {
-              await api.resource('remoteCollections').move({
+              await api.resource('dataSources').move({
                 sourceId: from.key,
                 targetId: to.key,
               });

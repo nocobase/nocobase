@@ -156,7 +156,7 @@ const useCreateCollectionField = () => {
   const field = useField();
   const api = useAPIClient();
   const record = useRecord();
-  const { name: xDatabase } = useParams();
+  const { name: dataSourceKey } = useParams();
   return {
     async run() {
       await form.submit();
@@ -171,10 +171,7 @@ const useCreateCollectionField = () => {
       delete values.autoCreateReverseField;
       try {
         await api.request({
-          url: `remoteCollections/${record.name}/fields:create`,
-          headers: {
-            'X-Database': xDatabase,
-          },
+          url: `dataSourcesCollections/${dataSourceKey}.${record.name}/fields:create`,
           method: 'post',
           data: values,
         });
@@ -215,7 +212,7 @@ const AddFieldAction = (props) => {
       };
     });
   }, []);
-  const fieldOptions = useFieldInterfaceOptions()
+  const fieldOptions = useFieldInterfaceOptions();
   const getFieldOptions = useCallback(() => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
     const { exclude, include } = availableFieldInterfaces || {};

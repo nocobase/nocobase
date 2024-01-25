@@ -120,10 +120,7 @@ export const useUpdateCollectionActionAndRefreshCM = (options) => {
     async run() {
       await form.submit();
       await api.request({
-        url: `remoteCollections:update?filterByTk=${filterByTk}`,
-        headers: {
-          'X-Database': name,
-        },
+        url: `dataSources/${name}/collections:update?filterByTk=${filterByTk}`,
         method: 'post',
         data: {
           ...omit(form.values, ['fields', 'autoGenId', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy', 'sortable']),

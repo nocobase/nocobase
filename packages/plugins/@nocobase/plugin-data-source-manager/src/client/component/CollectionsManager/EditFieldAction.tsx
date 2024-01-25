@@ -128,7 +128,7 @@ const useUpdateCollectionField = () => {
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { targetCollection } = useRemoteCollectionContext();
-  const { name } = useParams();
+  const { name: dataSourceKey } = useParams();
   const { name: filterByTk } = useRecord();
   return {
     async run() {
@@ -141,10 +141,7 @@ const useUpdateCollectionField = () => {
       }
       delete values.autoCreateReverseField;
       await api.request({
-        url: `remoteCollections/${targetCollection.name}/fields:update?filterByTk=${filterByTk}`,
-        headers: {
-          'X-Database': name,
-        },
+        url: `dataSourcesCollections/${dataSourceKey}.${targetCollection.name}/fields:update?filterByTk=${filterByTk}`,
         method: 'post',
         data: values,
       });
@@ -191,7 +188,7 @@ const EditFieldAction = (props) => {
           {...otherProps}
           onClick={async () => {
             const { data } = await api.request({
-              url: `remoteCollections/${record.__parent.name}/fields:get?filterByTk=${record.name}`,
+              url: `dataSourcesCollections/${record.__parent.name}/fields:get?filterByTk=${record.name}`,
               params: { appends: ['reverseField'] },
               headers: {
                 'X-Database': name,
