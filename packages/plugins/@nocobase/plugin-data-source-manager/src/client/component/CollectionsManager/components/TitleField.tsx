@@ -9,17 +9,14 @@ export const TitleField = (props) => {
   const { t } = useTranslation();
   const { isTitleField } = useCollectionManager();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
-  const { setTitleField, filterByTk, xDatabase } = useProps();
+  const { setTitleField, filterByTk, dataSourceKey } = useProps();
   const record = useRecord();
   const api = useAPIClient();
   const { refreshRM, titleField } = useRemoteCollectionContext();
   const handleChange = async (checked) => {
     setLoadingRecord(record);
     await api.request({
-      url: `remoteCollections:update?filterByTk=${filterByTk}`,
-      headers: {
-        'X-Database': xDatabase,
-      },
+      url: `dataSources/${dataSourceKey}/collections:update?filterByTk=${filterByTk}`,
       method: 'post',
       data: { titleField: checked ? record.name : 'id' },
     });
