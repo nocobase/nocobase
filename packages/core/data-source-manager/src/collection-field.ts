@@ -1,12 +1,15 @@
-import { IField } from './types';
+import { FieldOptions, IField } from './types';
 
 export class CollectionField implements IField {
-  options: any;
-  constructor(options: any) {
+  options;
+  constructor(options: FieldOptions) {
     this.updateOptions(options);
   }
 
   updateOptions(options: any) {
-    Object.assign(this, options);
+    this.options = {
+      ...this.options,
+      ...options,
+    };
   }
 }

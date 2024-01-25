@@ -143,13 +143,13 @@ export class PluginDataSourceManagerServer extends Plugin {
         }),
       );
 
-    this.app.db.on('remoteFields.afterSave', async (model: RemoteFieldModel) => {
+    this.app.db.on('dataSourcesFields.afterSave', async (model: RemoteFieldModel) => {
       model.load({
         app: this.app,
       });
     });
 
-    this.app.db.on('remoteFields.afterDestroy', async (model: RemoteFieldModel) => {
+    this.app.db.on('dataSourcesFields.afterDestroy', async (model: RemoteFieldModel) => {
       model.unload({
         app: this.app,
       });

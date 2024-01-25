@@ -130,6 +130,31 @@ describe('data source', async () => {
       expect(fieldListResp.status).toBe(200);
 
       expect(fieldListResp.body.data.length).toBe(2);
+
+      // detail
+      const fieldDetailResp = await app.agent().resource('dataSourcesCollections.fields', 'mockInstance1.posts').get({
+        filterByTk: 'title',
+      });
+      expect(fieldDetailResp.status).toBe(200);
+    });
+
+    it('should update collection field', async () => {
+      const fieldUpdateResp = await app
+        .agent()
+        .resource('dataSourcesCollections.fields', 'mockInstance1.posts')
+        .update({
+          filterByTk: 'title',
+          values: {
+            title: '标题 Field',
+          },
+        });
+
+      expect(fieldUpdateResp.status).toBe(200);
+
+      const dataSource = app.dataSourceManager.dataSources.get('mockInstance1');
+      const collection = dataSource.collectionManager.getCollection('posts');
+      const field = collection.getField('title');
+      expect(field.options.title).toBe('标题 Field');
     });
   });
 });
