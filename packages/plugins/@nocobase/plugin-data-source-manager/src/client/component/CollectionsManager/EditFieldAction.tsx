@@ -171,7 +171,7 @@ const EditFieldAction = (props) => {
   const { name } = useParams();
   const [data, setData] = useState<any>({});
   const isDialect = (dialect: string) => currentDatabase?.dialect === dialect;
-
+  console.log(record);
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
       return {
@@ -188,11 +188,8 @@ const EditFieldAction = (props) => {
           {...otherProps}
           onClick={async () => {
             const { data } = await api.request({
-              url: `dataSourcesCollections/${record.__parent.name}/fields:get?filterByTk=${record.name}`,
+              url: `dataSourcesCollections/${name}.${record.__parent.name}/fields:get?filterByTk=${record.name}`,
               params: { appends: ['reverseField'] },
-              headers: {
-                'X-Database': name,
-              },
             });
             setData(data?.data);
             const interfaceConf = getInterface(data?.data?.interface);
