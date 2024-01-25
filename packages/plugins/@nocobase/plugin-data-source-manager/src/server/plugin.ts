@@ -162,28 +162,26 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.on('afterStart', async (app: Application) => {
-      const databaseConnections: DatabaseConnectionModel[] = await this.app.db
-        .getRepository('databaseConnections')
-        .find();
-
-      // load all connections
-      for (const databaseConnection of databaseConnections) {
-        await databaseConnection.loadIntoApplication({
+      const dataSourcesRecords: DataSourceModel[] = await this.app.db.getRepository('dataSources').find();
+      for (const dataSourceRecord of dataSourcesRecords) {
+        await dataSourceRecord.loadIntoApplication({
           app,
         });
       }
+    });
 
+    this.app.on('afterStart', async (app: Application) => {
       // load roles
-      const rolesModel: ConnectionsRolesModel[] = await this.app.db.getRepository('connectionsRoles').find();
-      const pluginACL: any = this.app.pm.get('acl');
-
-      for (const roleModel of rolesModel) {
-        await roleModel.writeToAcl({
-          grantHelper: pluginACL.grantHelper,
-          associationFieldsActions: pluginACL.associationFieldsActions,
-          acl: this.app.acls.get(roleModel.get('connectionName')),
-        });
-      }
+      // const rolesModel: ConnectionsRolesModel[] = await this.app.db.getRepository('connectionsRoles').find();
+      // const pluginACL: any = this.app.pm.get('acl');
+      //
+      // for (const roleModel of rolesModel) {
+      //   await roleModel.writeToAcl({
+      //     grantHelper: pluginACL.grantHelper,
+      //     associationFieldsActions: pluginACL.associationFieldsActions,
+      //     acl: this.app.acls.get(roleModel.get('connectionName')),
+      //   });
+      // }
     });
 
     this.app.db.on('connectionsRolesResources.afterSaveWithAssociations', async (model, options) => {
