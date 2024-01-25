@@ -7,6 +7,7 @@ import {
   useCompile,
   useDataBlockRequestV2,
   useDataBlockResourceV2,
+  useDeprecatedContext,
   useLocalVariables,
   useRecord,
   useTableBlockContext,
@@ -14,7 +15,6 @@ import {
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { App, message } from 'antd';
-import { useDeprecatedContext } from 'packages/core/client/src/block-provider/DeprecatedContextProviderContext';
 import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBulkUpdateTranslation } from './locale';
