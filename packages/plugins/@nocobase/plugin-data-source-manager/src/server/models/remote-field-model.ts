@@ -35,6 +35,7 @@ export class RemoteFieldModel extends MagicAttributeModel {
   }
 
   unload(loadOptions: LoadOptions) {
+    const { app } = loadOptions;
     const options = this.get();
     const { collectionName, name, datasSourceKey } = options;
     const dataSource = app.dataSourceManager.dataSources.get(datasSourceKey);
