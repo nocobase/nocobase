@@ -57,7 +57,7 @@ export function dataWrapping() {
       };
     }
 
-    if (ctx.state.messages?.length) {
+    if (ctx.body && ctx.state.messages?.length) {
       ctx.body.messages = ctx.state.messages;
     }
   };
