@@ -6,7 +6,7 @@ import { ERandomUidType, CONSTANT } from '../CollectionManageSettingProvider';
 
 const getThroughIsRequired = () => {
   const randomUidBlacklist = localStorage.getItem(CONSTANT.RANDOM_UID_BLACKLIST);
-  return randomUidBlacklist.includes(ERandomUidType.TABLE_FIELD);
+  return randomUidBlacklist?.includes(ERandomUidType.TABLE_FIELD);
 };
 
 export const m2m: IField = {
