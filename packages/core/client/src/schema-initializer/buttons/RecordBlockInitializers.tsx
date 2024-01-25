@@ -1,4 +1,5 @@
 import { Schema, useFieldSchema } from '@formily/react';
+import { useMemo } from 'react';
 import { useCollection, useCollectionManager } from '../..';
 import { SchemaInitializerItemType, useSchemaInitializer } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
@@ -246,6 +247,49 @@ export const recordBlockInitializers = new SchemaInitializer({
       name: 'currentRecordBlocks',
       title: '{{t("Current record blocks")}}',
       useChildren: useRecordBlocks,
+    },
+    {
+      name: 'filterBlocks',
+      title: '{{t("Filter blocks")}}',
+      type: 'itemGroup',
+      children: [
+        {
+          name: 'filterForm',
+          title: '{{t("Form")}}',
+          Component: 'FilterFormBlockInitializer',
+          useComponentProps() {
+            const collection = useCollection();
+            const toManyField = useMemo(
+              () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
+              [collection.fields],
+            );
+
+            return {
+              filterItems(item) {
+                return toManyField.some((field) => field.target === item.name);
+              },
+            };
+          },
+        },
+        {
+          name: 'filterCollapse',
+          title: '{{t("Collapse")}}',
+          Component: 'FilterCollapseBlockInitializer',
+          useComponentProps() {
+            const collection = useCollection();
+            const toManyField = useMemo(
+              () => collection.fields.filter((field) => ['hasMany', 'belongsToMany'].includes(field.type)),
+              [collection.fields],
+            );
+
+            return {
+              filterItems(item) {
+                return toManyField.some((field) => field.target === item.name);
+              },
+            };
+          },
+        },
+      ],
     },
     {
       type: 'itemGroup',
