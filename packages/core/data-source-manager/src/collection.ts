@@ -12,6 +12,11 @@ export class Collection implements ICollection {
     protected collectionManager: ICollectionManager,
   ) {
     this.setRepository(options.repository);
+    if (options.fields) {
+      for (const field of options.fields) {
+        this.setField(field.name, field);
+      }
+    }
   }
 
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
@@ -38,6 +43,10 @@ export class Collection implements ICollection {
 
   getField(name: string) {
     return this.fields.get(name);
+  }
+
+  getFields() {
+    return [...this.fields.values()];
   }
 
   protected setRepository(repository: any) {

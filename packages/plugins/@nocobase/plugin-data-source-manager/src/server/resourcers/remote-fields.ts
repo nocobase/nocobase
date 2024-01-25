@@ -1,16 +1,16 @@
 import { Database } from '@nocobase/database';
 
 export default {
-  name: 'remoteCollections.fields',
+  name: 'dataSourcesCollections.fields',
   actions: {
     async list(ctx, next) {
-      const databaseName = ctx.get('x-database');
-      const remoteDb = ctx.app.getDb(databaseName) as Database;
+      const { associatedIndex: collectionNameWithDataSourceKey } = ctx.action.params;
+      const [dataSourceKey, collectionName] = collectionNameWithDataSourceKey.split('.');
 
-      const { associatedIndex: collectionName, filterByTk: name } = ctx.action.params;
+      const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
+      const collection = dataSource.collectionManager.getCollection(collectionName);
 
-      const collection = remoteDb.getCollection(collectionName);
-      const fields = [...collection.fields.values()];
+      const fields = collection.getFields();
 
       ctx.body = fields.map((field) => field.options);
 

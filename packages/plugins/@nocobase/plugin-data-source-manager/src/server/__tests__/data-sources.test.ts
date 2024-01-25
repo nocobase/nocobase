@@ -124,5 +124,12 @@ describe('data source', async () => {
       const collection = dataSource.collectionManager.getCollection('posts');
       expect(collection.options.title).toBe('标题 Collection');
     });
+
+    it('should get collection fields', async () => {
+      const fieldListResp = await app.agent().resource('dataSourcesCollections.fields', 'mockInstance1.posts').list();
+      expect(fieldListResp.status).toBe(200);
+
+      expect(fieldListResp.body.data.length).toBe(2);
+    });
   });
 });
