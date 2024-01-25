@@ -86,7 +86,7 @@ describe('workflow > instructions > delay', () => {
       expect(j2.status).toBe(JOB_STATUS.FAILED);
     });
 
-    it('delay to resolve and rollback in downstream node', async () => {
+    it('delay to resolve and downstream node error', async () => {
       const n1 = await workflow.createNode({
         type: 'delay',
         config: {
@@ -97,11 +97,9 @@ describe('workflow > instructions > delay', () => {
       const n2 = await workflow.createNode({
         type: 'create',
         config: {
-          collection: 'comment',
+          collection: 'notExistsTable',
           params: {
-            values: {
-              status: 'should be number but use string to raise an error',
-            },
+            values: {},
           },
         },
         upstreamId: n1.id,

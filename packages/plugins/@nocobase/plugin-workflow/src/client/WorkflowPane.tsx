@@ -6,7 +6,7 @@ import { ExecutionResourceProvider } from './ExecutionResourceProvider';
 import { WorkflowLink } from './WorkflowLink';
 import OpenDrawer from './components/OpenDrawer';
 import { workflowSchema } from './schemas/workflows';
-import { ExecutionStatusSelect } from './components/ExecutionStatusSelect';
+import { ExecutionStatusSelect, ExecutionStatusColumn } from './components/ExecutionStatus';
 import WorkflowPlugin from '.';
 
 export function WorkflowPane() {
@@ -23,6 +23,7 @@ export function WorkflowPane() {
             ExecutionLink,
             OpenDrawer,
             ExecutionStatusSelect,
+            ExecutionStatusColumn,
           }}
           scope={{
             getTriggersOptions,
