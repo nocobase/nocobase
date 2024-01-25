@@ -7,7 +7,7 @@ const collection = {
   fields: [
     {
       type: 'string',
-      name: 'name',
+      name: 'key',
       interface: 'input',
       uiSchema: {
         title: `{{t("Data source name",{ ns: "${NAMESPACE}" })}}`,
@@ -18,7 +18,7 @@ const collection = {
     },
     {
       type: 'string',
-      name: 'description',
+      name: 'displayName',
       interface: 'input',
       uiSchema: {
         title: `{{t("Description",{ ns: "${NAMESPACE}" })}}`,
@@ -29,7 +29,7 @@ const collection = {
     },
     {
       type: 'string',
-      name: 'dialect',
+      name: 'type',
       interface: 'select',
       uiSchema: {
         title: `{{t("type", { ns: "${NAMESPACE}" })}}`,
