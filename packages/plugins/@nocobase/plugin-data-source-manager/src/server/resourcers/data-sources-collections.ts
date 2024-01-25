@@ -47,9 +47,7 @@ export default {
 
     async update(ctx, next) {
       const params = ctx.action.params;
-      const { filterByTk: name, associatedIndex: collectionWithDataSource } = params;
-
-      const [dataSourceKey, collectionName] = collectionWithDataSource.split('.');
+      const { filterByTk: collectionName, associatedIndex: dataSourceKey } = params;
 
       let dataSourceCollectionRecord = await ctx.db.getRepository('dataSourcesCollections').findOne({
         filter: {
