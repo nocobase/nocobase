@@ -1,6 +1,8 @@
 import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+
+import Plugin from '..';
 import { EXECUTION_STATUS } from '../constants';
 
 describe('workflow > Plugin', () => {
@@ -8,12 +10,14 @@ describe('workflow > Plugin', () => {
   let db: Database;
   let PostRepo;
   let WorkflowModel;
+  let plugin;
 
   beforeEach(async () => {
     app = await getApp();
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
+    plugin = app.pm.get(Plugin) as Plugin;
   });
 
   afterEach(() => app.destroy());
@@ -502,6 +506,39 @@ describe('workflow > Plugin', () => {
 
       const executions = await w1.getExecutions();
       expect(executions.length).toBe(0);
+    });
+  });
+
+  describe('sync', () => {
+    it('sync on trigger class', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'syncTrigger',
+      });
+
+      const processor = await plugin.trigger(w1, {});
+
+      const executions = await w1.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(processor.execution.id).toBe(executions[0].id);
+      expect(processor.execution.status).toBe(executions[0].status);
+    });
+
+    it('sync on workflow instance', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+        sync: true,
+      });
+
+      const processor = await plugin.trigger(w1, {});
+
+      const executions = await w1.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(processor.execution.id).toBe(executions[0].id);
+      expect(processor.execution.status).toBe(executions[0].status);
     });
   });
 });

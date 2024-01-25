@@ -392,6 +392,8 @@ function matchNext(this: ScheduleTrigger, workflow, now: Date, range: number = t
 }
 
 export default class ScheduleTrigger extends Trigger {
+  sync = false;
+
   static CacheRules = [
     ({ config, allExecuted }) => (config.limit ? allExecuted < config.limit : true) && config.startsOn,
     matchNext,
