@@ -4,9 +4,8 @@ import { useSchemaInitializerItem } from '../../application';
 import { createFilterFormBlockSchema } from '../utils';
 import { FilterBlockInitializer } from './FilterBlockInitializer';
 
-export const FilterFormBlockInitializer = (props) => {
+export const FilterFormBlockInitializer = ({ filterItems }) => {
   const itemConfig = useSchemaInitializerItem();
-  const items = itemConfig?.name === 'filterFormBlockInTableSelector' ? [] : undefined;
 
   return (
     <FilterBlockInitializer
@@ -24,7 +23,7 @@ export const FilterFormBlockInitializer = (props) => {
         return s;
       }}
       createBlockSchema={createFilterFormBlockSchema}
-      items={items}
+      filterItems={filterItems}
     />
   );
 };
