@@ -44,7 +44,7 @@ export const CreateDatabaseConnectAction = () => {
                     'x-decorator': 'Form',
                     'x-decorator-props': {
                       initialValue: {
-                        dialect: info.key,
+                        type: info.key,
                       },
                     },
                     title: compile("{{t('Add new')}}") + ' - ' + compile(databaseType.label),

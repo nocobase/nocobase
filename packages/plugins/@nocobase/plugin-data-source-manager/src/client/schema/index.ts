@@ -48,9 +48,9 @@ export const databaseConnectionSchema: ISchema = {
       'x-decorator': 'ResourceActionProvider',
       'x-decorator-props': {
         collection,
-        resourceName: 'databaseConnections',
+        resourceName: 'dataSources',
         request: {
-          resource: 'databaseConnections',
+          resource: 'dataSources',
           action: 'list',
           params: {
             pageSize: 50,
@@ -200,68 +200,5 @@ export const databaseConnectionSchema: ISchema = {
         },
       },
     },
-  },
-};
-
-export const connectionFormSchema = {
-  name: {
-    type: 'string',
-    title: `{{t("Connection name",{ ns: "${NAMESPACE}" })}}`,
-    required: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Input',
-    'x-validator': 'uid',
-    'x-disabled': '{{ createOnly }}',
-    description:
-      "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
-  },
-  description: {
-    type: 'string',
-    title: `{{t("Description",{ ns: "${NAMESPACE}" })}}`,
-    required: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Input',
-  },
-  host: {
-    type: 'string',
-    title: `{{t("Host",{ ns: "${NAMESPACE}" })}}`,
-    required: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Input',
-  },
-  port: {
-    type: 'string',
-    title: `{{t("Port",{ ns: "${NAMESPACE}" })}}`,
-    required: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Input',
-  },
-  database: {
-    type: 'string',
-    title: `{{t("Database",{ ns: "${NAMESPACE}" })}}`,
-    required: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Input',
-  },
-  username: {
-    type: 'string',
-    title: `{{t("Username",{ ns: "${NAMESPACE}" })}}`,
-    required: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Input',
-  },
-  password: {
-    type: 'string',
-    title: `{{t("Password",{ ns: "${NAMESPACE}" })}}`,
-    required: true,
-    'x-decorator': 'FormItem',
-    'x-component': 'Password',
-  },
-  allowEditCollection: {
-    type: 'string',
-    'x-content': `{{t("Allow adding and modifying collection",{ ns: "${NAMESPACE}" })}}`,
-    'x-decorator': 'FormItem',
-    'x-component': 'Checkbox',
-    'x-disabled': true,
   },
 };
