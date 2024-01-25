@@ -70,8 +70,7 @@ export const CollectionFields = () => {
     dragSort: false,
     collection,
     request: {
-      url: `dataSourcesCollections/${name}/fields:list`,
-      headers: { 'X-Database': dataSourceKey },
+      url: `dataSourcesCollections/${dataSourceKey}.${name}/fields:list`,
       params: {
         paginate: false,
         filter: {
