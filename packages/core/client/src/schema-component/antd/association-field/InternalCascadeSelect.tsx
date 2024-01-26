@@ -133,6 +133,9 @@ const CascadeSelect = connect((props) => {
     if (value) {
       options[index] = { ...options[index], value: option };
       options[index + 1] = { key: option?.id, children: data?.length > 0 ? data : null };
+    } else {
+      // fix https://nocobase.height.app/T-2980
+      options[index] = { ...options[index], value: null };
     }
     setSelectedOptions(options);
     if (['o2m', 'm2m'].includes(collectionField.interface)) {
