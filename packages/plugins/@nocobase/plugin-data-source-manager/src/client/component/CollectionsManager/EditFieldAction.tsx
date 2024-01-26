@@ -171,7 +171,6 @@ const EditFieldAction = (props) => {
   const { name } = useParams();
   const [data, setData] = useState<any>({});
   const isDialect = (dialect: string) => currentDatabase?.dialect === dialect;
-  console.log(record);
   const currentCollections = useMemo(() => {
     return collections.map((v) => {
       return {
