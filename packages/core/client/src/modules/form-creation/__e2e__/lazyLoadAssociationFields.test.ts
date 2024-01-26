@@ -6,7 +6,7 @@ import {
   oneTableSubtableWithMultiLevelAssociationFields,
   test,
 } from '@nocobase/test/e2e';
-import { T2200, T2614, T2615, T2845 } from './templatesOfBug';
+import { T2200, T2614, T2615, T2845, T2993 } from './templatesOfBug';
 
 test.describe('display association fields', () => {
   test('form: should display correctly', async ({ page, mockPage, mockRecord }) => {
@@ -162,6 +162,24 @@ test.describe('display association fields', () => {
     await expect(
       page.getByLabel('block-item-CollectionField-T2614Target1-form-T2614Target1.m2oOfTarget1.id'),
     ).toHaveText(`ID:1`);
+  });
+
+  // https://nocobase.height.app/T-2993
+  test('should load association data of sub details', async ({ page, mockPage, mockRecord }) => {
+    const nocoPage = await mockPage(T2993).waitForInit();
+    const record = await mockRecord('T2993');
+    await nocoPage.goto();
+
+    await page.getByLabel('action-Action-Add new-create-').click();
+    await page
+      .getByLabel('block-item-CollectionField-T2993Target1-form-T2993Target1.m2oOfTarget1-')
+      .getByTestId('select-object-single')
+      .click();
+    await page.getByRole('option', { name: '1' }).click();
+
+    await expect(page.getByLabel('block-item-CollectionField-users-form-users.nickname-Nickname')).toHaveText(
+      new RegExp(record.m2o.m2oOfTarget1.m2oOfTarget2.nickname),
+    );
   });
 });
 

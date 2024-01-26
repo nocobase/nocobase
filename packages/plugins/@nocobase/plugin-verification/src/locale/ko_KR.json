@@ -1,0 +1,22 @@
+{
+  "Verification": "인증",
+  "Verification providers": "인증 제공자",
+  "Provider type": "제공자 유형",
+  "Aliyun SMS": "알리바바 클라우드 SMS",
+  "Access Key ID": "액세스 키 ID",
+  "Access Key Secret": "액세스 키 비밀",
+  "Endpoint": "엔드포인트",
+  "Sign": "서명",
+  "Template code": "템플릿 코드",
+  "Secret Id": "비밀 ID",
+  "Secret Key": "비밀 키",
+  "Region": "지역",
+  "Sign name": "서명 이름",
+  "Sms sdk app id": "SMS SDK 앱 ID",
+  "Template Id": "템플릿 ID",
+  "Verification send failed, please try later or contact the administrator": "인증 코드 전송 실패, 나중에 다시 시도하거나 관리자에게 문의하십시오",
+  "Not a valid cellphone number, please re-enter": "유효한 휴대폰 번호가 아닙니다. 다시 입력하세요",
+  "Please don't retry in {{time}} seconds": "{{time}} 초 동안 다시 시도하지 마세요",
+  "You are trying so frequently, please slow down": "너무 자주 시도하고 있습니다. 잠시 기다려 주세요",
+  "Verification code is invalid": "유효하지 않은 인증 코드"  
+}

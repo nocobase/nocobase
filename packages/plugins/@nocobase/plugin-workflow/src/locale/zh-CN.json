@@ -116,6 +116,9 @@
   "Rejected from a manual node.": "被人工节点拒绝继续。",
   "General failed but should do another try.": "执行失败，需重试。",
 
+  "Cancel the execution": "取消执行",
+  "Are you sure you want to cancel the execution?": "确定要取消该执行吗？",
+
   "Operations": "操作",
   "This node contains branches, deleting will also be preformed to them, are you sure?":
     "节点包含分支，将同时删除其所有分支下的子节点，确定继续？",
@@ -174,5 +177,10 @@
   "Executed workflow cannot be modified": "已经执行过的工作流不能被修改",
   "Can not delete": "无法删除",
   "The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.":
-    "该节点的执行结果已被其他节点（{{nodes}}）引用，删除前请先移除引用。"
+    "该节点的执行结果已被其他节点（{{nodes}}）引用，删除前请先移除引用。",
+
+  "End process": "结束流程",
+  "End the process immediately, with set status.": "以设置的状态立即结束流程。",
+  "End status": "结束状态",
+  "Succeeded": "成功"
 }
