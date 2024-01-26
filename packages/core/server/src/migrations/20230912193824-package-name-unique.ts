@@ -8,12 +8,20 @@ export default class extends Migration {
   async up() {
     const tableNameWithSchema = this.pm.collection.getTableNameWithSchema();
     const field = this.pm.collection.getField('packageName');
-    await this.db.sequelize.getQueryInterface().addColumn(tableNameWithSchema, field.columnName(), {
-      type: DataTypes.STRING,
-    });
-    await this.db.sequelize.getQueryInterface().addConstraint(tableNameWithSchema, {
-      type: 'unique',
-      fields: [field.columnName()],
-    });
+    const exists = await field.existsInDb();
+    if (exists) {
+      return;
+    }
+    try {
+      await this.db.sequelize.getQueryInterface().addColumn(tableNameWithSchema, field.columnName(), {
+        type: DataTypes.STRING,
+      });
+      await this.db.sequelize.getQueryInterface().addConstraint(tableNameWithSchema, {
+        type: 'unique',
+        fields: [field.columnName()],
+      });
+    } catch (error) {
+      //
+    }
   }
 }
