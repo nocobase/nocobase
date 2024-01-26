@@ -4,7 +4,7 @@ import { Application } from '@nocobase/server';
 type LoadOptions = {
   app: Application;
 };
-export class RemoteFieldModel extends MagicAttributeModel {
+export class DataSourcesFieldModel extends MagicAttributeModel {
   load(loadOptions: LoadOptions) {
     const { app } = loadOptions;
 

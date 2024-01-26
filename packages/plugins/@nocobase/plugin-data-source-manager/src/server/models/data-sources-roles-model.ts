@@ -1,9 +1,9 @@
 import { Model } from '@nocobase/database';
 import { ACL } from '@nocobase/acl';
 import { Transaction } from 'sequelize';
-import { ConnectionsRolesResourcesModel } from './connections-roles-resources';
+import { DataSourcesRolesResourcesModel } from './connections-roles-resources';
 
-export class ConnectionsRolesModel extends Model {
+export class DataSourcesRolesModel extends Model {
   async writeToAcl(options: { acl: ACL; transaction?: Transaction; associationFieldsActions: any; grantHelper: any }) {
     const { acl, transaction } = options;
     const roleName = this.get('roleName') as string;
@@ -19,7 +19,7 @@ export class ConnectionsRolesModel extends Model {
       ...((this.get('strategy') as object) || {}),
     });
 
-    const resources: Array<ConnectionsRolesResourcesModel> = await this.db
+    const resources: Array<DataSourcesRolesResourcesModel> = await this.db
       .getRepository('dataSourcesRolesResources')
       .find({
         filter: {

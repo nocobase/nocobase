@@ -1,7 +1,7 @@
 import { MagicAttributeModel } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 
-export class RemoteCollectionModel extends MagicAttributeModel {
+export class DataSourcesCollectionModel extends MagicAttributeModel {
   load(loadOptions: { app: Application }) {
     const { app } = loadOptions;
 

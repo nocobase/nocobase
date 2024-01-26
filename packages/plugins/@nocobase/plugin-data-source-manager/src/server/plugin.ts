@@ -1,30 +1,28 @@
 import { Application, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
-import { DatabaseConnectionModel } from './models/database-connection';
 import { Database } from '@nocobase/database';
 import remoteCollectionsResourcer from './resourcers/data-sources-collections';
 import remoteFieldsResourcer from './resourcers/data-sources-collections-fields';
-import { RemoteCollectionModel } from './models/remote-collection-model';
-import { RemoteFieldModel } from './models/remote-field-model';
+import { DataSourcesCollectionModel } from './models/data-sources-collection-model';
+import { DataSourcesFieldModel } from './models/data-sources-field-model';
 import { rolesRemoteCollectionsResourcer } from './resourcers/roles-data-sources-collections';
 import databaseConnectionsRolesResourcer from './resourcers/data-sources-roles';
 import rolesConnectionResourcesResourcer from './resourcers/data-sources-resources';
 
-import { ConnectionsRolesModel } from './models/connections-roles-model';
-import { ConnectionsRolesResourcesModel } from './models/connections-roles-resources';
-import { ConnectionsRolesResourcesActionModel } from './models/connections-roles-resources-action';
+import { DataSourcesRolesModel } from './models/data-sources-roles-model';
+import { DataSourcesRolesResourcesModel } from './models/connections-roles-resources';
+import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { Middleware } from '@nocobase/resourcer';
 import { DataSourceModel } from './models/data-source';
 
 export class PluginDataSourceManagerServer extends Plugin {
   async beforeLoad() {
     this.app.db.registerModels({
-      DatabaseConnectionModel,
-      RemoteCollectionModel,
-      RemoteFieldModel,
-      ConnectionsRolesModel,
-      ConnectionsRolesResourcesModel,
-      ConnectionsRolesResourcesActionModel,
+      DataSourcesCollectionModel,
+      DataSourcesFieldModel,
+      DataSourcesRolesModel,
+      DataSourcesRolesResourcesModel,
+      DataSourcesRolesResourcesActionModel,
       DataSourceModel,
     });
 
@@ -34,21 +32,21 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
     });
 
-    this.app.db.on('databaseConnections.beforeCreate', async (model: DatabaseConnectionModel, options) => {
-      await model.checkConnection();
-    });
+    // this.app.db.on('databaseConnections.beforeCreate', async (model: DatabaseConnectionModel, options) => {
+    //   await model.checkConnection();
+    // });
+    //
+    // this.app.db.on('databaseConnections.afterSave', async (model: DatabaseConnectionModel) => {
+    //   await model.loadIntoApplication({
+    //     app: this.app,
+    //   });
+    // });
 
-    this.app.db.on('databaseConnections.afterSave', async (model: DatabaseConnectionModel) => {
-      await model.loadIntoApplication({
-        app: this.app,
-      });
-    });
-
-    this.app.db.on('databaseConnections.afterCreate', async (model: DatabaseConnectionModel, options) => {
+    this.app.db.on('dataSources.afterCreate', async (model: DataSourceModel, options) => {
       const { transaction } = options;
-      await this.app.db.getRepository('connectionsRolesResourcesScopes').create({
+      await this.app.db.getRepository('dataSourcesRolesResourcesScopes').create({
         values: {
-          connectionName: model.get('name'),
+          dataSourceKey: model.get('key'),
           key: 'all',
           name: '{{t("All records")}}',
           scope: {},
@@ -143,19 +141,19 @@ export class PluginDataSourceManagerServer extends Plugin {
         }),
       );
 
-    this.app.db.on('dataSourcesFields.afterSave', async (model: RemoteFieldModel) => {
+    this.app.db.on('dataSourcesFields.afterSave', async (model: DataSourcesFieldModel) => {
       model.load({
         app: this.app,
       });
     });
 
-    this.app.db.on('dataSourcesFields.afterDestroy', async (model: RemoteFieldModel) => {
+    this.app.db.on('dataSourcesFields.afterDestroy', async (model: DataSourcesFieldModel) => {
       model.unload({
         app: this.app,
       });
     });
 
-    this.app.db.on('dataSourcesCollections.afterSave', async (model: RemoteCollectionModel) => {
+    this.app.db.on('dataSourcesCollections.afterSave', async (model: DataSourcesCollectionModel) => {
       model.load({
         app: this.app,
       });
@@ -170,7 +168,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       }
 
       // load roles
-      const rolesModel: ConnectionsRolesModel[] = await this.app.db.getRepository('dataSourcesRoles').find();
+      const rolesModel: DataSourcesRolesModel[] = await this.app.db.getRepository('dataSourcesRoles').find();
       const pluginACL: any = this.app.pm.get('acl');
 
       for (const roleModel of rolesModel) {
@@ -195,7 +193,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
     });
 
-    this.app.db.on('dataSourcesRoles.afterSave', async (model: ConnectionsRolesModel, options) => {
+    this.app.db.on('dataSourcesRoles.afterSave', async (model: DataSourcesRolesModel, options) => {
       const { transaction } = options;
 
       const pluginACL: any = this.app.pm.get('acl');
