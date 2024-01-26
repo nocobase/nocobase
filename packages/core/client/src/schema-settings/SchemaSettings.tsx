@@ -64,7 +64,6 @@ import {
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
   useRecord,
-  useSchemaSettingsItem,
   useSortFields,
 } from '..';
 import { BlockRequestContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
@@ -454,7 +453,6 @@ export const SchemaSettingsItem: FC<SchemaSettingsItemProps> = (props) => {
   const { pushMenuItem } = useCollectMenuItems();
   const { collectMenuItem } = useCollectMenuItem();
   const { eventKey, title } = props;
-  const { name } = useSchemaSettingsItem();
 
   if (process.env.NODE_ENV !== 'production' && !title) {
     throw new Error('SchemaSettingsItem must have a title');
@@ -728,14 +726,14 @@ export const SchemaSettingsConnectDataBlocks: FC<SchemaSettingsConnectDataBlocks
 export interface SchemaSettingsSelectItemProps
   extends Omit<SchemaSettingsItemProps, 'onChange' | 'onClick'>,
     Omit<SelectWithTitleProps, 'title' | 'defaultValue'> {
-  value?: SelectWithTitleProps['defaultValue'];
+  value?: SelectWithTitleProps['value'];
 }
 export const SchemaSettingsSelectItem: FC<SchemaSettingsSelectItemProps> = (props) => {
   const { title, options, value, onChange, ...others } = props;
 
   return (
     <SchemaSettingsItem title={title} {...others}>
-      <SelectWithTitle {...{ title, defaultValue: value, onChange, options }} />
+      <SelectWithTitle {...{ title, value, onChange, options }} />
     </SchemaSettingsItem>
   );
 };

@@ -21,7 +21,7 @@ export const useSwitchRole = () => {
             value: 'name',
           }}
           options={roles}
-          defaultValue={api.auth.role}
+          value={api.auth.role}
           onChange={async (roleName) => {
             api.auth.setRole(roleName);
             await api.resource('users').setDefaultRole({ values: { roleName } });

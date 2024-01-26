@@ -1,4 +1,4 @@
-import { SelectWithTitle, useAPIClient, useCurrentUserContext, useSystemSettings } from '@nocobase/client';
+import { SelectWithTitle, useCurrentUserContext, useSystemSettings } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import { MenuProps } from 'antd';
 import React, { useEffect, useMemo } from 'react';
@@ -59,7 +59,7 @@ function Label() {
     <SelectWithTitle
       title={t('Theme')}
       options={options}
-      defaultValue={currentThemeId}
+      value={currentThemeId}
       onChange={(value) => {
         updateUserThemeSettings(value);
       }}
