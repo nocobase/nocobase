@@ -153,7 +153,7 @@ export const ConfigurationTable = () => {
         field.data.loading = true;
         try {
           await api.request({
-            url: `databaseConnections:refresh?filterByTk=${name}`,
+            url: `dataSources:refresh?filterByTk=${name}`,
             method: 'post',
           });
           field.data.loading = false;
