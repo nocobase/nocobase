@@ -1,6 +1,5 @@
 import { Application, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
-import { Database } from '@nocobase/database';
 import remoteCollectionsResourcer from './resourcers/data-sources-collections';
 import remoteFieldsResourcer from './resourcers/data-sources-collections-fields';
 import { DataSourcesCollectionModel } from './models/data-sources-collection-model';
@@ -56,17 +55,17 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.actions({
-      async ['databaseConnections:testConnection'](ctx, next) {
+      async ['dataSources:testConnection'](ctx, next) {
         const { values } = ctx.action.params;
 
-        const db = new Database(values);
+        const { options, type } = values;
+
+        const klass = this.app.dataSourceManager.factory.getClass(type);
 
         try {
-          await db.sequelize.authenticate();
+          await klass.testConnection(options);
         } catch (error) {
-          throw new Error(`Unable to connect to the database: ${error.message}`);
-        } finally {
-          await db.close();
+          throw new Error(`Test connection failed: ${error.message}`);
         }
 
         ctx.body = {
