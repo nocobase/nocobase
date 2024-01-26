@@ -55,7 +55,7 @@ export const EditDatabaseConnectionAction = () => {
         <a
           onClick={() => {
             setVisible(true);
-            const databaseType = plugin.databaseTypes.get(record.dialect);
+            const databaseType = plugin.databaseTypes.get(record.type);
             setSchema({
               type: 'object',
               properties: {
@@ -68,7 +68,7 @@ export const EditDatabaseConnectionAction = () => {
                       ...record,
                     },
                   },
-                  title: compile("{{t('Edit')}}") + ' - ' + compile(record.name),
+                  title: compile("{{t('Edit')}}") + ' - ' + compile(record.displayName),
                   properties: {
                     body: {
                       type: 'void',
