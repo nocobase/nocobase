@@ -351,7 +351,7 @@ export const useFilterByTk = () => {
   const record = useRecord();
   const collection = useCollection();
   const { getCollectionField } = useCollectionManager();
-  const { association: assoc } = useDataBlockPropsV2();
+  const { association } = useDataBlockPropsV2();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   if (!withoutTableFieldResource) {
     if (resource instanceof TableFieldResource || __parent?.block === 'TableField') {
@@ -359,9 +359,9 @@ export const useFilterByTk = () => {
     }
   }
 
-  if (assoc) {
-    const association = getCollectionField(assoc);
-    return record?.[association.targetKey || 'id'];
+  if (association) {
+    const collectionField = getCollectionField(association);
+    return record?.[collectionField.targetKey || 'id'];
   }
   return record?.[collection.filterTargetKey || 'id'];
 };
