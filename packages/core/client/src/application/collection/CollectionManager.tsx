@@ -325,7 +325,7 @@ export class CollectionManagerV2 {
     this.initDataSourceMap();
 
     data.forEach(({ key, collections, ...others }) => {
-      this.dataSourceMap[key] = { ...others, name };
+      this.dataSourceMap[key] = { ...others, key };
       this.setCollections(collections, { dataSource: key });
       this.reloadCallbacks[key]?.forEach((cb) => cb(collections));
     });
