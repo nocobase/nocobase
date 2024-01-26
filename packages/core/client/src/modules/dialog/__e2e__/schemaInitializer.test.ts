@@ -74,7 +74,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     // add blocks
     await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Details' }).click();
-    await page.getByText('Form').click();
+    await page.getByText('Form').first().click();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
 
     await expect(page.getByText('GeneralConfigure actionsConfigure fields')).toBeVisible();
@@ -163,7 +163,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     // add blocks
     await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-general').hover();
     await page.getByRole('menuitem', { name: 'Details' }).click();
-    await page.getByText('Form').click();
+    await page.getByText('Form').first().click();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
 
     await expect(page.getByText('GeneralConfigure actionsConfigure fields')).toBeVisible();
