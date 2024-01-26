@@ -16,6 +16,7 @@ import {
   useDataBlockPropsV2,
   useDesignable,
   useRecord,
+  useRecordV2,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
 import { CollectionDataSourceProvider } from '../application/data-block';
@@ -387,33 +388,33 @@ export const useSourceIdFromParentRecord = () => {
 
 export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
-  const record = useRecord();
+  const recordData = useRecordV2<any>(false)?.data || {};
   const { fields } = useCollection();
   const fieldSchema = useFieldSchema();
   const { getCollectionJoinField } = useCollectionManager();
-  const collectionField = getCollectionJoinField(fieldSchema?.['x-decorator-props']?.resource);
+  const collectionField = getCollectionJoinField(fieldSchema?.['x-decorator-props']?.association);
   const filterFields = fields
     .filter((v) => {
       return ['boolean', 'date', 'integer', 'radio', 'sort', 'string', 'time', 'uid', 'uuid'].includes(v.type);
     })
     .map((v) => v.name);
-  const filter = Object.keys(record)
+  const filter = Object.keys(recordData)
     .filter((key) => filterFields.includes(key))
     .reduce((result, key) => {
-      result[key] = record[key];
+      result[key] = recordData[key];
       return result;
     }, {});
 
-  const obj = {
+  const params = {
     filterByTk: filterByTk,
   };
-  if (record.__collection && !['oho', 'm2o', 'obo'].includes(collectionField?.interface)) {
-    obj['targetCollection'] = record.__collection;
+  if (recordData.__collection && !['oho', 'm2o', 'obo'].includes(collectionField?.interface)) {
+    params['targetCollection'] = recordData.__collection;
   }
   if (!filterByTk) {
-    obj['filter'] = filter;
+    params['filter'] = filter;
   }
-  return obj;
+  return params;
 };
 
 export const RecordLink = (props) => {
