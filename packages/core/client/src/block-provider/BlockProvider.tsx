@@ -345,13 +345,12 @@ export const BlockProvider = (props: {
   );
 };
 
-export const useFilterByTk = () => {
+export const useFilterByTk = ({ association }) => {
   const { resource, __parent } = useBlockRequestContext();
   const recordIndex = useRecordIndex();
   const record = useRecord();
   const collection = useCollection();
   const { getCollectionField } = useCollectionManager();
-  const { association } = useDataBlockPropsV2();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   if (!withoutTableFieldResource) {
     if (resource instanceof TableFieldResource || __parent?.block === 'TableField') {
