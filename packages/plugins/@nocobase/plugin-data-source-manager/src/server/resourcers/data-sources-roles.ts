@@ -1,23 +1,23 @@
 export default {
-  name: 'databaseConnections.roles',
+  name: 'dataSources.roles',
   actions: {
     async update(ctx, next) {
       const params = ctx.action.params;
-      const { filterByTk: name, associatedIndex: databaseName } = params;
+      const { filterByTk: name, associatedIndex: dataSourceKey } = params;
 
-      let connectionRoleRecord = await ctx.db.getRepository('connectionsRoles').findOne({
+      let connectionRoleRecord = await ctx.db.getRepository('dataSourcesRoles').findOne({
         filter: {
           roleName: name,
-          connectionName: databaseName,
+          dataSourceKey,
         },
       });
 
       if (!connectionRoleRecord) {
-        connectionRoleRecord = await ctx.db.getRepository('connectionsRoles').create({
+        connectionRoleRecord = await ctx.db.getRepository('dataSourcesRoles').create({
           values: {
             ...params.values,
             roleName: name,
-            connectionName: databaseName,
+            dataSourceKey,
           },
         });
       } else {
@@ -33,20 +33,20 @@ export default {
 
     async get(ctx, next) {
       const params = ctx.action.params;
-      const { filterByTk: name, associatedIndex: databaseName } = params;
+      const { filterByTk: name, associatedIndex: dataSourceKey } = params;
 
-      let connectionRoleRecord = await ctx.db.getRepository('connectionsRoles').findOne({
+      let connectionRoleRecord = await ctx.db.getRepository('dataSourcesRoles').findOne({
         filter: {
           roleName: name,
-          connectionName: databaseName,
+          dataSourceKey,
         },
       });
 
       if (!connectionRoleRecord) {
-        connectionRoleRecord = await ctx.db.getRepository('connectionsRoles').create({
+        connectionRoleRecord = await ctx.db.getRepository('dataSourcesRoles').create({
           values: {
             roleName: name,
-            connectionName: databaseName,
+            dataSourceKey,
           },
         });
       }

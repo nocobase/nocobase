@@ -20,11 +20,11 @@ export class ConnectionsRolesModel extends Model {
     });
 
     const resources: Array<ConnectionsRolesResourcesModel> = await this.db
-      .getRepository('connectionsRolesResources')
+      .getRepository('dataSourcesRolesResources')
       .find({
         filter: {
           roleName,
-          connectionName: this.get('connectionName'),
+          dataSourceKey: this.get('dataSourceKey'),
         },
         transaction,
       });

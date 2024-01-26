@@ -107,8 +107,9 @@ describe('data source', async () => {
       // edit collections
       const editResp = await app
         .agent()
-        .resource('dataSources.collections', 'mockInstance1.posts')
+        .resource('dataSources.collections', 'mockInstance1')
         .update({
+          filterByTk: 'posts',
           values: {
             title: '标题 Collection',
           },

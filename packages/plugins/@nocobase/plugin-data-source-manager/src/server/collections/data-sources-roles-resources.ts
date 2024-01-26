@@ -2,14 +2,13 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   dumpRules: 'required',
-  name: 'connectionsRolesResources',
+  name: 'dataSourcesRolesResources',
   model: 'ConnectionsRolesResourcesModel',
   fields: [
     {
       type: 'belongsTo',
-      name: 'connection',
-      target: 'databaseConnections',
-      foreignKey: 'connectionName',
+      name: 'dataSources',
+      foreignKey: 'dataSourceKey',
       onDelete: 'CASCADE',
     },
     {

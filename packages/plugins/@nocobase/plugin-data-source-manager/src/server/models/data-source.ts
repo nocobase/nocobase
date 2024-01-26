@@ -1,6 +1,45 @@
 import { MagicAttributeModel } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { LocalData } from '../services/database-introspector';
+import { setCurrentRole } from '@nocobase/plugin-acl';
+import { AvailableActionOptions } from '@nocobase/acl';
+
+const availableActions: {
+  [key: string]: AvailableActionOptions;
+} = {
+  create: {
+    displayName: '{{t("Add new")}}',
+    type: 'new-data',
+    onNewRecord: true,
+    allowConfigureFields: true,
+  },
+  // import: {
+  //   displayName: '{{t("Import")}}',
+  //   type: 'new-data',
+  //   scope: false,
+  // },
+  // export: {
+  //   displayName: '{{t("Export")}}',
+  //   type: 'old-data',
+  //   allowConfigureFields: true,
+  // },
+  view: {
+    displayName: '{{t("View")}}',
+    type: 'old-data',
+    aliases: ['get', 'list'],
+    allowConfigureFields: true,
+  },
+  update: {
+    displayName: '{{t("Edit")}}',
+    type: 'old-data',
+    aliases: ['update', 'move'],
+    allowConfigureFields: true,
+  },
+  destroy: {
+    displayName: '{{t("Delete")}}',
+    type: 'old-data',
+  },
+};
 
 export class DataSourceModel extends MagicAttributeModel {
   async loadIntoApplication(options: { app: Application }) {
@@ -8,14 +47,20 @@ export class DataSourceModel extends MagicAttributeModel {
     const type = this.get('type');
     const createOptions = this.get('options');
 
-    const instance = app.dataSourceManager.factory.create(type, {
+    const dataSource = app.dataSourceManager.factory.create(type, {
       ...createOptions,
       name: this.get('key'),
     });
 
     const localData = await this.loadLocalData();
 
-    await app.dataSourceManager.add(instance, {
+    for (const [actionName, actionParams] of Object.entries(availableActions)) {
+      dataSource.acl.setAvailableAction(actionName, actionParams);
+    }
+
+    dataSource.resourceManager.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'auth' });
+
+    await app.dataSourceManager.add(dataSource, {
       localData,
     });
   }

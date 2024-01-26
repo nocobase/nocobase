@@ -1,7 +1,7 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  name: 'connectionsRoles',
+  name: 'dataSourcesRoles',
   autoGenId: false,
   timestamps: false,
   model: 'ConnectionsRolesModel',
@@ -13,9 +13,8 @@ export default defineCollection({
     },
     {
       type: 'belongsTo',
-      name: 'connection',
-      target: 'databaseConnections',
-      foreignKey: 'connectionName',
+      name: 'dataSources',
+      foreignKey: 'dataSourceKey',
       onDelete: 'CASCADE',
     },
     {

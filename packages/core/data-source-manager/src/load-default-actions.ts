@@ -1,4 +1,5 @@
 import { type DataSource } from './data-source';
+import { list } from './default-actions/list';
 
 export function loadDefaultActions(dataSource: DataSource) {
   return {
@@ -10,5 +11,7 @@ export function loadDefaultActions(dataSource: DataSource) {
       ctx.body = instance;
       await next();
     },
+
+    list,
   };
 }

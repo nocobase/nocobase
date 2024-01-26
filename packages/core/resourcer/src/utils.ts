@@ -186,10 +186,6 @@ export function parseRequest(request: ParseRequest, options: ParseOptions = {}):
       params.resourceName = resourceName;
       params.actionName = actionName;
     }
-
-    if (request.namespace) {
-      params.resourceName = `${request.namespace}@${params.resourceName}`;
-    }
   }
 
   return params;

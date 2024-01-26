@@ -12,6 +12,7 @@ export abstract class DataSource {
 
   constructor(protected options: any) {
     this.acl = this.createACL();
+
     this.resourceManager = this.createResourceManager({
       prefix: '/api',
       ...options.resourceManager,
@@ -20,7 +21,7 @@ export abstract class DataSource {
     this.collectionManager = this.createCollectionManager(options);
 
     this.resourceManager.registerActionHandlers(loadDefaultActions(this));
-    this.resourceManager.use(this.acl.middleware());
+    this.resourceManager.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
   }
 
   get name() {

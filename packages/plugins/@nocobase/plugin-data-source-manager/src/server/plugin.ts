@@ -7,7 +7,7 @@ import remoteFieldsResourcer from './resourcers/data-sources-collections-fields'
 import { RemoteCollectionModel } from './models/remote-collection-model';
 import { RemoteFieldModel } from './models/remote-field-model';
 import { rolesRemoteCollectionsResourcer } from './resourcers/roles-remote-collections';
-import databaseConnectionsRolesResourcer from './resourcers/database-connections-roles';
+import databaseConnectionsRolesResourcer from './resourcers/data-sources-roles';
 import rolesConnectionResourcesResourcer from './resourcers/connection-resources';
 
 import { ConnectionsRolesModel } from './models/connections-roles-model';
@@ -196,15 +196,17 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
     });
 
-    this.app.db.on('connectionsRoles.afterSave', async (model: ConnectionsRolesModel, options) => {
+    this.app.db.on('dataSourcesRoles.afterSave', async (model: ConnectionsRolesModel, options) => {
       const { transaction } = options;
 
       const pluginACL: any = this.app.pm.get('acl');
 
+      const dataSource = this.app.dataSourceManager.dataSources.get(model.get('dataSourceKey'));
+
       await model.writeToAcl({
         grantHelper: pluginACL.grantHelper,
         associationFieldsActions: pluginACL.associationFieldsActions,
-        acl: this.app.acls.get(model.get('connectionName')),
+        acl: dataSource.acl,
         transaction,
       });
     });

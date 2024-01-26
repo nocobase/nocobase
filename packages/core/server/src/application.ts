@@ -288,15 +288,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.options.name || 'main';
   }
 
-  createNewACL(name: string) {
-    this._acls.set(name, createACL());
-    return this._acls.get(name);
-  }
-
   protected _dataSourceManager: DataSourceManager;
 
   get dataSourceManager() {
     return this._dataSourceManager;
+  }
+
+  createNewACL(name: string) {
+    this._acls.set(name, createACL());
+    return this._acls.get(name);
   }
 
   isMaintaining() {
