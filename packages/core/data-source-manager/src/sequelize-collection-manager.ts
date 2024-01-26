@@ -55,7 +55,7 @@ export class SequelizeCollectionManager implements ICollectionManager {
   }
 
   getCollections() {
-    return [...this.db.collections.values()];
+    return [...this.db.collections.values()].filter((collection) => collection.options.introspected);
   }
 
   getRepository<R = IRepository>(name: string, sourceId?: string | number): R {
