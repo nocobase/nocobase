@@ -70,10 +70,6 @@ describe('data source', async () => {
                 type: 'string',
                 name: 'content',
               },
-              {
-                type: 'belongsTo',
-                name: 'post',
-              },
             ],
           });
         }
@@ -155,6 +151,40 @@ describe('data source', async () => {
       const collection = dataSource.collectionManager.getCollection('posts');
       const field = collection.getField('title');
       expect(field.options.title).toBe('标题 Field');
+    });
+
+    it('should create collection field', async () => {
+      const dataSource = app.dataSourceManager.dataSources.get('mockInstance1');
+      const collection = dataSource.collectionManager.getCollection('comments');
+
+      expect(collection.getField('post')).toBeFalsy();
+
+      const createResp = await app
+        .agent()
+        .resource('dataSourcesCollections.fields', 'mockInstance1.comments')
+        .create({
+          values: {
+            type: 'belongsTo',
+            name: 'post',
+            target: 'posts',
+            foreignKey: 'post_id',
+          },
+        });
+
+      expect(createResp.status).toBe(200);
+
+      expect(collection.getField('post')).toBeTruthy();
+
+      // destroy field
+      const destroyResp = await app
+        .agent()
+        .resource('dataSourcesCollections.fields', 'mockInstance1.comments')
+        .destroy({
+          filterByTk: 'post',
+        });
+
+      expect(destroyResp.status).toBe(200);
+      expect(collection.getField('post')).toBeFalsy();
     });
   });
 });

@@ -1,5 +1,3 @@
-import { Database } from '@nocobase/database';
-
 export default {
   name: 'dataSourcesCollections.fields',
   actions: {
@@ -66,17 +64,16 @@ export default {
     },
 
     async create(ctx, next) {
-      const databaseName = ctx.get('x-database');
-      const mainDb = ctx.app.getDb() as Database;
-      const params = ctx.action.params;
+      const { associatedIndex: collectionNameWithDataSourceKey, values } = ctx.action.params;
+      const [dataSourceKey, collectionName] = collectionNameWithDataSourceKey.split('.');
 
-      const { associatedIndex: collectionName } = params;
+      const mainDb = ctx.app.db;
 
-      const fieldRecord = await mainDb.getRepository('remoteFields').create({
+      const fieldRecord = await mainDb.getRepository('dataSourcesFields').create({
         values: {
-          ...params.values,
+          ...values,
           collectionName,
-          connectionName: databaseName,
+          dataSourceKey,
         },
       });
 
@@ -86,17 +83,16 @@ export default {
     },
 
     async destroy(ctx, next) {
-      const databaseName = ctx.get('x-database');
-      const mainDb = ctx.app.getDb() as Database;
-      const params = ctx.action.params;
+      const { associatedIndex: collectionNameWithDataSourceKey, filterByTk: name } = ctx.action.params;
+      const [dataSourceKey, collectionName] = collectionNameWithDataSourceKey.split('.');
 
-      const { associatedIndex: collectionName, filterByTk: name } = params;
+      const mainDb = ctx.app.db;
 
-      const fieldRecord = await mainDb.getRepository('remoteFields').findOne({
+      const fieldRecord = await mainDb.getRepository('dataSourcesFields').findOne({
         filter: {
           name,
           collectionName,
-          connectionName: databaseName,
+          dataSourceKey,
         },
       });
 

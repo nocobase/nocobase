@@ -3,7 +3,7 @@ import { resolve } from 'path';
 import { DatabaseConnectionModel } from './models/database-connection';
 import { Database } from '@nocobase/database';
 import remoteCollectionsResourcer from './resourcers/data-sources-collections';
-import remoteFieldsResourcer from './resourcers/remote-fields';
+import remoteFieldsResourcer from './resourcers/data-sources-collections-fields';
 import { RemoteCollectionModel } from './models/remote-collection-model';
 import { RemoteFieldModel } from './models/remote-field-model';
 import { rolesRemoteCollectionsResourcer } from './resourcers/roles-remote-collections';
