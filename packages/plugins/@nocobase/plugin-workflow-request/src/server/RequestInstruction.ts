@@ -41,14 +41,32 @@ async function request(config) {
 
 export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
+    const config = processor.getParsedValue(node.config, node.id) as RequestConfig;
+
+    const { workflow } = processor.execution;
+    const sync = this.workflow.isWorkflowSync(workflow);
+
+    if (sync) {
+      try {
+        const response = await request(config);
+        return {
+          status: JOB_STATUS.RESOLVED,
+          result: response.data,
+        };
+      } catch (error) {
+        return {
+          status: JOB_STATUS.FAILED,
+          result: error.isAxiosError ? error.toJSON() : error.message,
+        };
+      }
+    }
+
     const job = await processor.saveJob({
       status: JOB_STATUS.PENDING,
       nodeId: node.id,
       nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
-
-    const config = processor.getParsedValue(node.config, node.id) as RequestConfig;
 
     // eslint-disable-next-line promise/catch-or-return
     request(config)

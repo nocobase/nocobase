@@ -4,6 +4,7 @@ import { ApplicationOptions, Plugin } from '@nocobase/server';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import functions from './functions';
+import triggers from './triggers';
 import instructions from './instructions';
 
 export interface MockServerOptions extends ApplicationOptions {
@@ -38,6 +39,7 @@ export async function getApp(options: MockServerOptions = {}): Promise<MockServe
       [
         'workflow',
         {
+          triggers,
           instructions,
           functions,
         },
