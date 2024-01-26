@@ -221,7 +221,9 @@ export class CollectionV2 {
   }
   getField(name: SchemaKey) {
     const fieldsMap = this.getFieldsMap();
-
+    if (typeof name === 'string' && name.startsWith(`${this.name}.`)) {
+      name = name.replace(`${this.name}.`, '');
+    }
     if (String(name).split('.').length > 1) {
       const [fieldName, ...others] = String(name).split('.');
       const field = fieldsMap[fieldName];

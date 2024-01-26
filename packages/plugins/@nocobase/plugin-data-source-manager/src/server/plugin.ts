@@ -1,30 +1,28 @@
 import { Application, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
-import { DatabaseConnectionModel } from './models/database-connection';
 import { Database } from '@nocobase/database';
 import remoteCollectionsResourcer from './resourcers/data-sources-collections';
 import remoteFieldsResourcer from './resourcers/data-sources-collections-fields';
-import { RemoteCollectionModel } from './models/remote-collection-model';
-import { RemoteFieldModel } from './models/remote-field-model';
+import { DataSourcesCollectionModel } from './models/data-sources-collection-model';
+import { DataSourcesFieldModel } from './models/data-sources-field-model';
 import { rolesRemoteCollectionsResourcer } from './resourcers/roles-data-sources-collections';
 import databaseConnectionsRolesResourcer from './resourcers/data-sources-roles';
 import rolesConnectionResourcesResourcer from './resourcers/data-sources-resources';
 
-import { ConnectionsRolesModel } from './models/connections-roles-model';
-import { ConnectionsRolesResourcesModel } from './models/connections-roles-resources';
-import { ConnectionsRolesResourcesActionModel } from './models/connections-roles-resources-action';
+import { DataSourcesRolesModel } from './models/data-sources-roles-model';
+import { DataSourcesRolesResourcesModel } from './models/connections-roles-resources';
+import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { Middleware } from '@nocobase/resourcer';
 import { DataSourceModel } from './models/data-source';
 
 export class PluginDataSourceManagerServer extends Plugin {
   async beforeLoad() {
     this.app.db.registerModels({
-      DatabaseConnectionModel,
-      RemoteCollectionModel,
-      RemoteFieldModel,
-      ConnectionsRolesModel,
-      ConnectionsRolesResourcesModel,
-      ConnectionsRolesResourcesActionModel,
+      DataSourcesCollectionModel,
+      DataSourcesFieldModel,
+      DataSourcesRolesModel,
+      DataSourcesRolesResourcesModel,
+      DataSourcesRolesResourcesActionModel,
       DataSourceModel,
     });
 
@@ -34,21 +32,21 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
     });
 
-    this.app.db.on('databaseConnections.beforeCreate', async (model: DatabaseConnectionModel, options) => {
-      await model.checkConnection();
-    });
+    // this.app.db.on('databaseConnections.beforeCreate', async (model: DatabaseConnectionModel, options) => {
+    //   await model.checkConnection();
+    // });
+    //
+    // this.app.db.on('databaseConnections.afterSave', async (model: DatabaseConnectionModel) => {
+    //   await model.loadIntoApplication({
+    //     app: this.app,
+    //   });
+    // });
 
-    this.app.db.on('databaseConnections.afterSave', async (model: DatabaseConnectionModel) => {
-      await model.loadIntoApplication({
-        app: this.app,
-      });
-    });
-
-    this.app.db.on('databaseConnections.afterCreate', async (model: DatabaseConnectionModel, options) => {
+    this.app.db.on('dataSources.afterCreate', async (model: DataSourceModel, options) => {
       const { transaction } = options;
-      await this.app.db.getRepository('connectionsRolesResourcesScopes').create({
+      await this.app.db.getRepository('dataSourcesRolesResourcesScopes').create({
         values: {
-          connectionName: model.get('name'),
+          dataSourceKey: model.get('key'),
           key: 'all',
           name: '{{t("All records")}}',
           scope: {},
@@ -105,11 +103,11 @@ export class PluginDataSourceManagerServer extends Plugin {
     this.app.resourcer.define(rolesConnectionResourcesResourcer);
 
     this.app.resourcer.define({
-      name: 'databaseConnections',
+      name: 'dataSources',
     });
 
     this.app.resourcer
-      .getResource('databaseConnections')
+      .getResource('dataSources')
       .getAction('list')
       .middlewares.push(
         new Middleware(async (ctx, next) => {
@@ -119,10 +117,10 @@ export class PluginDataSourceManagerServer extends Plugin {
           const mapData = (row) => {
             const data = row.toJSON();
             if (hasCollections) {
-              const database = ctx.app.getDb(data.name);
-              const collections = [...database.collections.values()].filter(
-                (collection) => collection.options.introspected,
-              );
+              const dataSource = this.app.dataSourceManager.dataSources.get(data.key);
+
+              const collections = dataSource.collectionManager.getCollections();
+
               data.collections = collections.map((collection) => {
                 const collectionOptions = collection.options;
                 const fields = [...collection.fields.values()].map((field) => field.options);
@@ -143,19 +141,19 @@ export class PluginDataSourceManagerServer extends Plugin {
         }),
       );
 
-    this.app.db.on('dataSourcesFields.afterSave', async (model: RemoteFieldModel) => {
+    this.app.db.on('dataSourcesFields.afterSave', async (model: DataSourcesFieldModel) => {
       model.load({
         app: this.app,
       });
     });
 
-    this.app.db.on('dataSourcesFields.afterDestroy', async (model: RemoteFieldModel) => {
+    this.app.db.on('dataSourcesFields.afterDestroy', async (model: DataSourcesFieldModel) => {
       model.unload({
         app: this.app,
       });
     });
 
-    this.app.db.on('dataSourcesCollections.afterSave', async (model: RemoteCollectionModel) => {
+    this.app.db.on('dataSourcesCollections.afterSave', async (model: DataSourcesCollectionModel) => {
       model.load({
         app: this.app,
       });
@@ -168,20 +166,18 @@ export class PluginDataSourceManagerServer extends Plugin {
           app,
         });
       }
-    });
 
-    this.app.on('afterStart', async (app: Application) => {
       // load roles
-      // const rolesModel: ConnectionsRolesModel[] = await this.app.db.getRepository('connectionsRoles').find();
-      // const pluginACL: any = this.app.pm.get('acl');
-      //
-      // for (const roleModel of rolesModel) {
-      //   await roleModel.writeToAcl({
-      //     grantHelper: pluginACL.grantHelper,
-      //     associationFieldsActions: pluginACL.associationFieldsActions,
-      //     acl: this.app.acls.get(roleModel.get('connectionName')),
-      //   });
-      // }
+      const rolesModel: DataSourcesRolesModel[] = await this.app.db.getRepository('dataSourcesRoles').find();
+      const pluginACL: any = this.app.pm.get('acl');
+
+      for (const roleModel of rolesModel) {
+        await roleModel.writeToAcl({
+          grantHelper: pluginACL.grantHelper,
+          associationFieldsActions: pluginACL.associationFieldsActions,
+          acl: this.app.dataSourceManager.dataSources.get(roleModel.get('dataSourceKey')).acl,
+        });
+      }
     });
 
     this.app.db.on('dataSourcesRolesResources.afterSaveWithAssociations', async (model, options) => {
@@ -197,7 +193,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
     });
 
-    this.app.db.on('dataSourcesRoles.afterSave', async (model: ConnectionsRolesModel, options) => {
+    this.app.db.on('dataSourcesRoles.afterSave', async (model: DataSourcesRolesModel, options) => {
       const { transaction } = options;
 
       const pluginACL: any = this.app.pm.get('acl');
@@ -219,11 +215,13 @@ export class PluginDataSourceManagerServer extends Plugin {
       const { resourceName, actionName } = action.params;
       if (resourceName === 'roles' && actionName == 'check') {
         const roleName = ctx.state.currentRole;
-        const connections = await ctx.db.getRepository('databaseConnections').find();
+        const dataSources = await ctx.db.getRepository('dataSources').find();
 
         ctx.bodyMeta = {
-          dataSources: connections.reduce((carry, connectionModel) => {
-            const aclInstance = this.app.acls.get(connectionModel.get('name'));
+          dataSources: dataSources.reduce((carry, dataSourceModel) => {
+            const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
+
+            const aclInstance = dataSource.acl;
             const roleInstance = aclInstance.getRole(roleName);
 
             const dataObj = {
@@ -239,7 +237,7 @@ export class PluginDataSourceManagerServer extends Plugin {
               dataObj['actions'] = data['actions'];
             }
 
-            carry[connectionModel.get('name')] = dataObj;
+            carry[dataSourceModel.get('key')] = dataObj;
 
             return carry;
           }, {}),
@@ -249,7 +247,7 @@ export class PluginDataSourceManagerServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}`,
-      actions: ['databaseConnections:*', 'remoteCollections:*', 'roles.connectionResources'],
+      actions: ['dataSources:*', 'roles.dataSourceResources'],
     });
   }
 

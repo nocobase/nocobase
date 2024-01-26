@@ -4,7 +4,7 @@ export default defineCollection({
   name: 'dataSourcesRoles',
   autoGenId: false,
   timestamps: false,
-  model: 'ConnectionsRolesModel',
+  model: 'DataSourcesRolesModel',
   fields: [
     {
       type: 'uid',

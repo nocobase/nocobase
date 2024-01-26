@@ -1,3 +1,3 @@
 import { RoleResourceActionModel } from '@nocobase/plugin-acl';
 
-export class ConnectionsRolesResourcesActionModel extends RoleResourceActionModel {}
+export class DataSourcesRolesResourcesActionModel extends RoleResourceActionModel {}

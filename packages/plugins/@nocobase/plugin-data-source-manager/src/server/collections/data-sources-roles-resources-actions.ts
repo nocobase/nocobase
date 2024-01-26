@@ -3,7 +3,7 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   dumpRules: 'required',
   name: 'dataSourcesRolesResourcesActions',
-  model: 'ConnectionsRolesResourcesActionModel',
+  model: 'DataSourcesRolesResourcesActionModel',
   fields: [
     {
       type: 'belongsTo',

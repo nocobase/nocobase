@@ -40,6 +40,8 @@ export interface IModel {
 export interface IRepository {
   find(options?: any): Promise<IModel[]>;
   findOne(options?: any): Promise<IModel>;
+  count(options?: any): Promise<Number>;
+  findAndCount(options?: any): Promise<[IModel[], Number]>;
   create(options: any): void;
   update(options: any): void;
   destroy(options: any): void;

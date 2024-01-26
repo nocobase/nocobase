@@ -1,7 +1,7 @@
 import { createMockServer, MockServer } from '@nocobase/test';
 import { CollectionManager, DataSource, IRepository } from '@nocobase/data-source-manager';
 import { SuperAgentTest } from 'supertest';
-import { ICollectionManager } from '@nocobase/data-source-manager/src/types';
+import { ICollectionManager, IModel } from '@nocobase/data-source-manager/src/types';
 
 describe('data source with acl', () => {
   let app: MockServer;
@@ -17,6 +17,14 @@ describe('data source with acl', () => {
     });
 
     class MockRepository implements IRepository {
+      count(options?: any): Promise<Number> {
+        return Promise.resolve(0);
+      }
+
+      findAndCount(options?: any): Promise<[IModel[], Number]> {
+        return Promise.resolve([[], 0]);
+      }
+
       async find() {
         return [];
       }
@@ -253,5 +261,15 @@ describe('data source with acl', () => {
       },
     });
     expect(collectionListRep.status).toBe(200);
+
+    // call roles check
+    // @ts-ignore
+    const checkRep = await app.agent().login(testUser).resource('roles').check({});
+    expect(checkRep.status).toBe(200);
+
+    const checkData = checkRep.body;
+
+    expect(checkData.meta.dataSources.mockInstance1).toBeDefined();
+    console.log(JSON.stringify(checkData, null, 2));
   });
 });
