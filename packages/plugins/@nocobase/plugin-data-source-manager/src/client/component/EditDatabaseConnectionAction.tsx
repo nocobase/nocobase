@@ -30,7 +30,7 @@ export const EditDatabaseConnectionAction = () => {
     const ctx = useActionContext();
     const { refresh } = useResourceActionContext();
     const { resource } = useResourceContext();
-    const { name: filterByTk } = useRecord();
+    const { key: filterByTk } = useRecord();
     return {
       async run() {
         await form.submit();
@@ -65,8 +65,10 @@ export const EditDatabaseConnectionAction = () => {
                   'x-decorator': 'Form',
                   'x-decorator-props': {
                     initialValue: {
-                      ...record,
-                      options: { ...record },
+                      type: record.type,
+                      displayName: record.displayName,
+                      key: record.key,
+                      options: _.omit(record, ['displayName', 'type', 'key']),
                     },
                   },
                   title: compile("{{t('Edit')}}") + ' - ' + compile(record.displayName),
