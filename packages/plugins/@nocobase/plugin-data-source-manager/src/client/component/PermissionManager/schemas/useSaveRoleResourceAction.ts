@@ -11,16 +11,16 @@ export const useSaveRoleResourceAction = () => {
   const { name } = useParams();
   return {
     async run() {
-      await api.resource('roles.connectionResources', record.roleName)[record.exists ? 'update' : 'create']({
+      await api.resource('roles.dataSourceResources', record.roleName)[record.exists ? 'update' : 'create']({
         filterByTk: record.name,
         filter: {
-          connectionName: name,
+          dataSourceKey: name,
           name: record.name,
         },
         values: {
           ...form.values,
           name: record.name,
-          connectionName: name,
+          dataSourceKey: name,
         },
       });
       ctx.setVisible(false);

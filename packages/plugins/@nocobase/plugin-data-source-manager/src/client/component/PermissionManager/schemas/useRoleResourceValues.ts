@@ -9,14 +9,14 @@ export const useRoleResourceValues = (options) => {
 
   const result = useRequest(
     {
-      resource: 'roles.connectionResources',
+      resource: 'roles.dataSourceResources',
       resourceOf: record.roleName,
       action: 'get',
       params: {
         appends: ['actions', 'actions.scope'],
         filterByTk: record.name,
         filter: {
-          connectionName: name,
+          dataSourceKey: name,
           name: record.name,
         },
       },

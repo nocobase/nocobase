@@ -19,7 +19,7 @@ export const PermissionProvider = (props) => {
   const record = useRecord();
   const { t } = useTranslation();
   const { snippets } = record;
-  const { name } = useParams();
+  const { name: dataSourceKey } = useParams();
   snippets?.forEach((key) => {
     record[key] = true;
   });
@@ -31,7 +31,7 @@ export const PermissionProvider = (props) => {
         currentRecord,
         update: async (field, form) => {
           await api.request({
-            url: `databaseConnections/${name}/roles:update`,
+            url: `dataSources/${dataSourceKey}/roles:update`,
             data: form.values,
             method: 'post',
             params: { filterByTk: record.name },

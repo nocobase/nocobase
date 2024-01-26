@@ -8,7 +8,7 @@ import { PermissionContext } from './PermisionProvider';
 export const RoleConfigure = () => {
   const { update, currentRecord } = useContext(PermissionContext);
   const { t } = useTranslation();
-  const { name } = useParams();
+  const { name: dataSourceKey } = useParams();
 
   return (
     <SchemaComponent
@@ -22,7 +22,7 @@ export const RoleConfigure = () => {
             return useRequest(
               () =>
                 api
-                  .resource(`databaseConnections/${name}/roles`)
+                  .resource(`dataSources/${dataSourceKey}/roles`)
                   .get({
                     filterByTk: currentRecord.name,
                   })

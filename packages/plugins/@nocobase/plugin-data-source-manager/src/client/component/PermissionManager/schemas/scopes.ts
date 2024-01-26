@@ -33,7 +33,7 @@ const useFormBlockProps = () => {
   };
 };
 
-export const getScopesSchema = (connectionName) => {
+export const getScopesSchema = (dataSourceKey) => {
   return {
     type: 'object',
     properties: {
@@ -65,7 +65,7 @@ export const getScopesSchema = (connectionName) => {
                 'x-decorator': 'TableSelectorProvider',
                 'x-decorator-props': {
                   collection: rolesResourcesScopesCollection,
-                  resource: `databaseConnections/${connectionName}/connectionsRolesResourcesScopes`,
+                  resource: `dataSources/${dataSourceKey}/rolesResourcesScopes`,
                   action: 'list',
                   params: {
                     pageSize: 20,
@@ -114,7 +114,7 @@ export const getScopesSchema = (connectionName) => {
                                 type: 'void',
                                 'x-decorator': 'FormBlockProvider',
                                 'x-decorator-props': {
-                                  resource: `databaseConnections/${connectionName}/connectionsRolesResourcesScopes`,
+                                  resource: `databaseConnections/${dataSourceKey}/connectionsRolesResourcesScopes`,
                                   collection: rolesResourcesScopesCollection,
                                 },
                                 'x-component': 'CardItem',
@@ -240,7 +240,7 @@ export const getScopesSchema = (connectionName) => {
                                         type: 'void',
                                         'x-decorator': 'FormBlockProvider',
                                         'x-decorator-props': {
-                                          resource: `databaseConnections/${connectionName}/connectionsRolesResourcesScopes`,
+                                          resource: `dataSources/${dataSourceKey}/connectionsRolesResourcesScopes`,
                                           collection: rolesResourcesScopesCollection,
                                           action: 'get',
                                           useParams: '{{ useParamsFromRecord }}',
