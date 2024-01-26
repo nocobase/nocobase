@@ -386,20 +386,16 @@ export const useSourceIdFromParentRecord = () => {
   }
 };
 
-export const useParamsFromRecord = () => {
+export const useParamsFromRecord = ({ association }) => {
   const filterByTk = useFilterByTk();
   const recordData = useRecordV2<any>(false)?.data || {};
   const { fields } = useCollection();
-  const fieldSchema = useFieldSchema();
   const { getCollectionJoinField } = useCollectionManager();
   const params = {
     filterByTk: filterByTk,
   };
 
-  if (
-    recordData.__collection &&
-    !['oho', 'm2o', 'obo'].includes(getCollectionJoinField(fieldSchema?.['x-decorator-props']?.association)?.interface)
-  ) {
+  if (recordData.__collection && !['oho', 'm2o', 'obo'].includes(getCollectionJoinField(association)?.interface)) {
     params['targetCollection'] = recordData.__collection;
   }
 
