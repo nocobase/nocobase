@@ -28,6 +28,10 @@ export abstract class DataSource {
     return this.options.name;
   }
 
+  static testConnection(options?: any): Promise<boolean> {
+    return Promise.resolve(true);
+  }
+
   collectionToResourceMiddleware() {
     return async (ctx, next) => {
       const params = parseRequest(
