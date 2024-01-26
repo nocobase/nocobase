@@ -22,7 +22,6 @@ import { ACLCollectionProvider } from '../acl/ACLProvider';
 import { CollectionDataSourceProvider } from '../application/data-block';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
-import { useRecordIndex } from '../record-provider';
 import { useTemplateBlockContext } from './TemplateBlockProvider';
 import { useAssociationNames } from './hooks';
 
@@ -346,22 +345,15 @@ export const BlockProvider = (props: {
 };
 
 export const useFilterByTk = ({ association }) => {
-  const { resource, __parent } = useBlockRequestContext();
-  const recordIndex = useRecordIndex();
   const record = useRecord();
   const collection = useCollection();
   const { getCollectionField } = useCollectionManager();
-  const withoutTableFieldResource = useContext(WithoutTableFieldResource);
-  if (!withoutTableFieldResource) {
-    if (resource instanceof TableFieldResource || __parent?.block === 'TableField') {
-      return recordIndex;
-    }
-  }
 
   if (association) {
     const collectionField = getCollectionField(association);
     return record?.[collectionField.targetKey || 'id'];
   }
+
   return record?.[collection.filterTargetKey || 'id'];
 };
 
