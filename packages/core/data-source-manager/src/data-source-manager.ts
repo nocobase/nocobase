@@ -8,7 +8,7 @@ export class DataSourceManager {
 
   protected middlewares = [];
 
-  constructor() {
+  constructor(public options = {}) {
     this.dataSources = new Map();
     this.middlewares = [];
   }

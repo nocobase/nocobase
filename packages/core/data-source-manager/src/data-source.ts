@@ -19,9 +19,11 @@ export abstract class DataSource {
     });
 
     this.collectionManager = this.createCollectionManager(options);
-
     this.resourceManager.registerActionHandlers(loadDefaultActions(this));
-    this.resourceManager.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
+
+    if (options.acl !== false) {
+      this.resourceManager.use(this.acl.middleware(), { tag: 'acl', after: ['auth'] });
+    }
   }
 
   get name() {
