@@ -1,7 +1,7 @@
 import { createMockServer, MockServer } from '@nocobase/test';
 import { CollectionManager, DataSource, IRepository } from '@nocobase/data-source-manager';
 import { SuperAgentTest } from 'supertest';
-import { ICollectionManager } from '@nocobase/data-source-manager/src/types';
+import { ICollectionManager, IModel } from '@nocobase/data-source-manager/src/types';
 
 describe('data source with acl', () => {
   let app: MockServer;
@@ -17,6 +17,14 @@ describe('data source with acl', () => {
     });
 
     class MockRepository implements IRepository {
+      count(options?: any): Promise<Number> {
+        return Promise.resolve(0);
+      }
+
+      findAndCount(options?: any): Promise<[IModel[], Number]> {
+        return Promise.resolve([[], 0]);
+      }
+
       async find() {
         return [];
       }
