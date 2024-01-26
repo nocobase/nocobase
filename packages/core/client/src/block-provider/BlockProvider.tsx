@@ -345,16 +345,16 @@ export const BlockProvider = (props: {
 };
 
 export const useFilterByTk = ({ association }) => {
-  const record = useRecord();
+  const record = useRecordV2(false)?.data || {};
   const collection = useCollection();
   const { getCollectionField } = useCollectionManager();
 
   if (association) {
     const collectionField = getCollectionField(association);
-    return record?.[collectionField.targetKey || 'id'];
+    return record[collectionField.targetKey || 'id'];
   }
 
-  return record?.[collection.filterTargetKey || 'id'];
+  return record[collection.filterTargetKey || 'id'];
 };
 
 export const useSourceIdFromRecord = () => {
@@ -378,7 +378,7 @@ export const useSourceIdFromParentRecord = () => {
 };
 
 export const useParamsFromRecord = ({ association }) => {
-  const filterByTk = useFilterByTk();
+  const filterByTk = useFilterByTk({ association });
   const recordData = useRecordV2<any>(false)?.data || {};
   const { fields } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
