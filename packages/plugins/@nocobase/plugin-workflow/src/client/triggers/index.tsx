@@ -54,6 +54,7 @@ function useUpdateConfigAction() {
 }
 
 export abstract class Trigger {
+  sync: boolean;
   title: string;
   description?: string;
   // group: string;

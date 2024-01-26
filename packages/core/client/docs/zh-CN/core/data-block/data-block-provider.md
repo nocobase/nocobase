@@ -43,8 +43,9 @@ Table 中的字段信息及列表数据，都是存储在数据库中的。
 
 ```tsx | pure
 const DataBlockProvider = (props) => {
-  return <DataBlock.Provider value={props}>
-    <CollectionProvider> / <AssociationProvider>
+  return <DataBlockContextV2.Provider>
+    <CollectionDataSourceProvider>
+      <CollectionProvider> / <AssociationProvider>
         <BlockResourceProvider>
           <BlockRequestProvider>
             {action !== 'list' && <RecordProvider record={blocRequest.data}>
@@ -53,7 +54,8 @@ const DataBlockProvider = (props) => {
           </BlockRequestProvider>
         </BlockResourceProvider>  / </AssociationProvider>
       </CollectionProvider>
-  </DataBlock.Provider>
+    </CollectionDataSourceProvider>
+  </DataBlockContextV2.Provider>
 }
 ```
 
@@ -71,6 +73,7 @@ const DataBlockProvider = (props) => {
   'x-decorator': 'DataBlockProvider',
   'x-decorator-props': {
     collection: 'users',
+    dataSource: 'main',
     action: 'list',
     tableProps: {
       bordered: true,
@@ -82,7 +85,7 @@ const DataBlockProvider = (props) => {
 
 ### 完整示例
 
-<code src="./demos/data-block-provider/demo1.tsx"></code>
+<code src="./demos/data-block-provider/complete-demo.tsx"></code>
 
 ## 属性
 
@@ -111,6 +114,7 @@ interface AllDataBlockProps {
 
 - collection（`x-decorator-props`）：区块的 collection 表名，用于获取区块的字段信息和区块数据
 - association（`x-decorator-props`）：区块的关系字段名，用于获取区块的关系字段信息和关系字段数据
+- dataSource(`x-decorator-props`): 数据源，具体可参考 [Data Modeling](https://docs.nocobase.com/manual/data-modeling)
 - action（`x-decorator-props`）：区块的请求类型，`list` 或 `get`
 - params（`x-decorator-props` 和 `x-use-decorator-props`）：区块的请求参数，同时存在于
 - filterByTk（`x-use-decorator-props`）：相当于 `params.filterByTk`，可理解为 `id`，用于获取单条数据
@@ -120,16 +124,18 @@ interface AllDataBlockProps {
 
 ```tsx | pure
 const DataBlockProvider = (props) => {
-  return <DataBlock.Provider value={props}>
-    <CollectionProvider name={props.collection}> / <CollectionProvider name={props.association}>
-        <BlockResourceProvider {...props}>
-          <BlockRequestProvider resource={resource}>
-            {action !== 'list' && <RecordProvider record={blocRequest.data}>
-              {props.children}
-            </Record>}
-          </BlockRequestProvider>
-        </BlockResourceProvider>
-      </CollectionProvider>
+  return <DataBlockContextV2.Provider value={props}>
+    <CollectionDataSourceProvider>
+      <CollectionProvider name={props.collection}> / <CollectionProvider name={props.association}>
+          <BlockResourceProvider {...props}>
+            <BlockRequestProvider resource={resource}>
+              {action !== 'list' && <RecordProvider record={blocRequest.data}>
+                {props.children}
+              </Record>}
+            </BlockRequestProvider>
+          </BlockResourceProvider>
+        </CollectionProvider>
+    </CollectionDataSourceProvider>
   </DataBlock.Provider>
 }
 ```
@@ -212,18 +218,29 @@ const checked = props.tableProps.bordered;
 
 <code src="./demos/data-block-provider/collection-table-list.tsx"></code>
 
-#### Form get
+#### Form get & update
+
+<code src="./demos/data-block-provider/collection-form-get-and-update.tsx"></code>
 
 #### Form create
 
-#### Form record
+<code src="./demos/data-block-provider/collection-form-create.tsx"></code>
+
+#### Form record & update
+
+<code src="./demos/data-block-provider/collection-form-record-and-update.tsx"></code>
 
 ### association
 
-#### Table list
+association 与 collection 类似，只是需要提供 `sourceId`，我们以 `Table list` 为例。
 
-#### Form get
+#### Table list & sourceId
 
-#### Form create
+<code src="./demos/data-block-provider/association-table-list-and-source-id.tsx"></code>
 
-#### Form record
+#### Table list & parentRecord
+
+如果不提供 `sourceId`，则需要提供 `parentRecord`，我们以 `Table list` 为例。
+
+<code src="./demos/data-block-provider/association-table-list-and-parent-record.tsx"></code>
+

@@ -8,7 +8,7 @@ import React from 'react';
 import { executionSchema } from './executions';
 
 const collection = {
-  name: 'workflows-1',
+  name: 'workflows',
   fields: [
     {
       type: 'string',
@@ -88,6 +88,27 @@ const workflowFieldset = {
   type: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
+  },
+  sync: {
+    type: 'boolean',
+    title: `{{ t("Execute mode", { ns: "${NAMESPACE}" }) }}`,
+    description: `{{ t("Could not be changed after created.", { ns: "${NAMESPACE}" }) }}`,
+    'x-decorator': 'FormItem',
+    'x-component': 'SyncOptionSelect',
+    'x-component-props': {
+      options: [
+        {
+          label: `{{ t("Asynchronously", { ns: "${NAMESPACE}" }) }}`,
+          value: false,
+          tooltip: `{{ t("Will be executed in the background as a queued task.", { ns: "${NAMESPACE}" }) }}`,
+        },
+        {
+          label: `{{ t("Synchronously", { ns: "${NAMESPACE}" }) }}`,
+          value: true,
+          tooltip: `{{ t("For user actions that require immediate feedback. Can not use asynchronous nodes in such mode.", { ns: "${NAMESPACE}" }) }}`,
+        },
+      ],
+    },
   },
   enabled: {
     'x-component': 'CollectionField',
@@ -196,6 +217,7 @@ export const workflowSchema: ISchema = {
                   properties: {
                     title: workflowFieldset.title,
                     type: workflowFieldset.type,
+                    sync: workflowFieldset.sync,
                     description: workflowFieldset.description,
                     options: workflowFieldset.options,
                     footer: {
@@ -333,6 +355,7 @@ export const workflowSchema: ISchema = {
                           properties: {
                             title: workflowFieldset.title,
                             enabled: workflowFieldset.enabled,
+                            sync: workflowFieldset.sync,
                             description: workflowFieldset.description,
                             options: workflowFieldset.options,
                             footer: {

@@ -13,7 +13,6 @@ export default {
   error: {
     run(node, input, processor) {
       throw new Error('definite error');
-      return null;
     },
   },
 

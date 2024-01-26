@@ -1,0 +1,32 @@
+{
+  "Manual": "수동",
+  "Could be used for manually submitting data, and determine whether to continue or exit. Workflow will generate a todo item for assigned user when it reaches a manual node, and continue processing after user submits the form.":
+    "수동으로 데이터를 제출하고 계속 진행할지 종료할지를 결정하는 데 사용될 수 있습니다. 워크플로우가 수동 노드에 도달하면 지정된 사용자에 대해 할 일 항목을 생성하고 사용자가 양식을 제출한 후 처리를 계속합니다.",
+  "Values preset in this form will override user submitted ones when continue or reject.": 
+    "이 양식에 사전 설정된 값은 계속 또는 거부될 때 사용자가 제출한 값이 덮어씁니다.",
+  "Assignee": "담당자",
+  "Assignees": "담당자",
+  "User interface": "사용자 인터페이스",
+  "Configure user interface": "사용자 인터페이스 구성",
+  "View user interface": "사용자 인터페이스 보기",
+  "Separately": "별도로",
+  "Each user has own task": "각 사용자는 고유한 작업을 갖습니다.",
+  "Collaboratively": "협력하여",
+  "Everyone shares one task": "모두가 하나의 작업을 공유합니다.",
+  "Negotiation": "협상",
+  "All pass": "모두 통과",
+  "Everyone should pass": "모든 사람이 통과해야 합니다.",
+  "Any pass": "어떤 통과",
+  "Anyone pass": "누구든 통과하면 됩니다.",
+  "Field name existed in form": "양식에 이미 존재하는 필드 이름",
+  "Continue the process": "프로세스 계속 진행",
+  "Terminate the process": "프로세스 종료",
+  "Save temporarily": "임시로 저장",
+  "Custom form": "사용자 정의 양식",
+  "Data record": "데이터 레코드",
+  "Create record form": "레코드 생성 양식",
+  "Update record form": "레코드 업데이트 양식",
+  "Filter settings": "필터 설정",
+  "Workflow todos": "워크플로우 할 일",
+  "Task node": "작업 노드"
+}

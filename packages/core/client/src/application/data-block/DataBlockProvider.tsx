@@ -12,7 +12,7 @@ export interface AllDataBlockProps {
   collection: string;
   association: string;
   dataSource?: string;
-  sourceId: string | number;
+  sourceId?: string | number;
   filterByTk: string | number;
   record: RecordV2;
   action?: 'list' | 'get';

@@ -7,6 +7,7 @@ export abstract class Trigger {
   abstract on(workflow: WorkflowModel): void;
   abstract off(workflow: WorkflowModel): void;
   duplicateConfig?(workflow: WorkflowModel, options: Transactionable): object | Promise<object>;
+  sync?: boolean;
 }
 
 export default Trigger;
