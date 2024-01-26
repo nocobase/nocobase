@@ -42,10 +42,10 @@ export const ForeignKey = observer(
     const { value, disabled } = props;
     const api = useAPIClient();
     const [options, setOptions] = useState([]);
-    const { connectionName, name: collectionName, fields } = useRecord();
+    const { name: dataSourceKey } = useParams();
+    const { name: collectionName, fields } = useRecord();
     const compile = useCompile();
     const form = useForm();
-    const { name } = useParams();
     const { target, type, through } = form.values;
     const [initialValue, setInitialValue] = useState(value);
     const field: any = useField();
@@ -86,8 +86,7 @@ export const ForeignKey = observer(
                 : target;
             if (effectField && open) {
               const { data } = await api.request({
-                url: `remoteCollections/${effectField}/fields:list`,
-                headers: { 'X-Database': connectionName || name },
+                url: `dataSourcesCollections/${dataSourceKey}.${effectField}/fields:list`,
                 params: {
                   paginate: false,
                   filter: {
@@ -123,12 +122,12 @@ export const ForeignKey = observer(
 export const TargetKey = observer(
   (props: any) => {
     const { value, disabled } = props;
-    const { connectionName, targetKey } = useRecord();
+    const { targetKey } = useRecord();
+    const { name: dataSourceKey } = useParams();
     const api = useAPIClient();
     const [options, setOptions] = useState([]);
     const [initialValue, setInitialValue] = useState(value || targetKey);
     const form = useForm();
-    const { name } = useParams();
     const compile = useCompile();
     const field: any = useField();
     field.required = true;
@@ -140,8 +139,7 @@ export const TargetKey = observer(
             const { target } = form.values;
             if (target && open) {
               const { data } = await api.request({
-                url: `remoteCollections/${target}/fields:list`,
-                headers: { 'X-Database': connectionName || name },
+                url: `dataSourcesCollections/${dataSourceKey}.${target}/fields:list`,
                 params: {
                   paginate: false,
                   filter: {
