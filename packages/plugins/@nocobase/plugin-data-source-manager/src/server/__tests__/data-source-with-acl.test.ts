@@ -261,5 +261,15 @@ describe('data source with acl', () => {
       },
     });
     expect(collectionListRep.status).toBe(200);
+
+    // call roles check
+    // @ts-ignore
+    const checkRep = await app.agent().login(testUser).resource('roles').check({});
+    expect(checkRep.status).toBe(200);
+
+    const checkData = checkRep.body;
+
+    expect(checkData.meta.dataSources.mockInstance1).toBeDefined();
+    console.log(JSON.stringify(checkData, null, 2));
   });
 });

@@ -105,11 +105,11 @@ export class PluginDataSourceManagerServer extends Plugin {
     this.app.resourcer.define(rolesConnectionResourcesResourcer);
 
     this.app.resourcer.define({
-      name: 'databaseConnections',
+      name: 'dataSources',
     });
 
     this.app.resourcer
-      .getResource('databaseConnections')
+      .getResource('dataSources')
       .getAction('list')
       .middlewares.push(
         new Middleware(async (ctx, next) => {
@@ -119,10 +119,10 @@ export class PluginDataSourceManagerServer extends Plugin {
           const mapData = (row) => {
             const data = row.toJSON();
             if (hasCollections) {
-              const database = ctx.app.getDb(data.name);
-              const collections = [...database.collections.values()].filter(
-                (collection) => collection.options.introspected,
-              );
+              const dataSource = this.app.dataSourceManager.dataSources.get(data.key);
+
+              const collections = dataSource.collectionManager.getCollections();
+
               data.collections = collections.map((collection) => {
                 const collectionOptions = collection.options;
                 const fields = [...collection.fields.values()].map((field) => field.options);
@@ -168,20 +168,18 @@ export class PluginDataSourceManagerServer extends Plugin {
           app,
         });
       }
-    });
 
-    this.app.on('afterStart', async (app: Application) => {
       // load roles
-      // const rolesModel: ConnectionsRolesModel[] = await this.app.db.getRepository('connectionsRoles').find();
-      // const pluginACL: any = this.app.pm.get('acl');
-      //
-      // for (const roleModel of rolesModel) {
-      //   await roleModel.writeToAcl({
-      //     grantHelper: pluginACL.grantHelper,
-      //     associationFieldsActions: pluginACL.associationFieldsActions,
-      //     acl: this.app.acls.get(roleModel.get('connectionName')),
-      //   });
-      // }
+      const rolesModel: ConnectionsRolesModel[] = await this.app.db.getRepository('dataSourcesRoles').find();
+      const pluginACL: any = this.app.pm.get('acl');
+
+      for (const roleModel of rolesModel) {
+        await roleModel.writeToAcl({
+          grantHelper: pluginACL.grantHelper,
+          associationFieldsActions: pluginACL.associationFieldsActions,
+          acl: this.app.dataSourceManager.dataSources.get(roleModel.get('dataSourceKey')).acl,
+        });
+      }
     });
 
     this.app.db.on('dataSourcesRolesResources.afterSaveWithAssociations', async (model, options) => {
@@ -219,11 +217,13 @@ export class PluginDataSourceManagerServer extends Plugin {
       const { resourceName, actionName } = action.params;
       if (resourceName === 'roles' && actionName == 'check') {
         const roleName = ctx.state.currentRole;
-        const connections = await ctx.db.getRepository('databaseConnections').find();
+        const dataSources = await ctx.db.getRepository('dataSources').find();
 
         ctx.bodyMeta = {
-          dataSources: connections.reduce((carry, connectionModel) => {
-            const aclInstance = this.app.acls.get(connectionModel.get('name'));
+          dataSources: dataSources.reduce((carry, dataSourceModel) => {
+            const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
+
+            const aclInstance = dataSource.acl;
             const roleInstance = aclInstance.getRole(roleName);
 
             const dataObj = {
@@ -239,7 +239,7 @@ export class PluginDataSourceManagerServer extends Plugin {
               dataObj['actions'] = data['actions'];
             }
 
-            carry[connectionModel.get('name')] = dataObj;
+            carry[dataSourceModel.get('key')] = dataObj;
 
             return carry;
           }, {}),
@@ -249,7 +249,7 @@ export class PluginDataSourceManagerServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}`,
-      actions: ['databaseConnections:*', 'remoteCollections:*', 'roles.connectionResources'],
+      actions: ['dataSources:*', 'roles.dataSourceResources'],
     });
   }
 
