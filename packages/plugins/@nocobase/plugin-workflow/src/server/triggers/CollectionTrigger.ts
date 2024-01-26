@@ -85,13 +85,18 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
   // TODO: `result.toJSON()` throws error
   const json = toJSON(result);
 
-  this.workflow.trigger(
+  const promise = this.workflow.trigger(
     workflow,
     { data: json },
     {
       context,
+      transaction,
     },
   );
+
+  if (workflow.sync) {
+    await promise;
+  }
 }
 
 export default class CollectionTrigger extends Trigger {

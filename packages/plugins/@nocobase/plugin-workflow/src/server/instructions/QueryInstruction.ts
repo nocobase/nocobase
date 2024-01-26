@@ -33,7 +33,7 @@ export class QueryInstruction extends Instruction {
         .filter((item) => item.field)
         .map((item) => `${item.direction?.toLowerCase() === 'desc' ? '-' : ''}${item.field}`),
       appends,
-      // transaction: processor.transaction,
+      transaction: processor.transaction,
     });
 
     if (failOnEmpty && (multiple ? !result.length : !result)) {

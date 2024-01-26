@@ -1,0 +1,9 @@
+{
+  "Form event": "폼 이벤트",
+  "Event triggers when submitted a workflow bound form action.": "작업 흐름에 바인딩된 폼 작업이 제출될 때 이벤트가 트리거됩니다.",
+  "Form data model": "폼 데이터 모델",
+  "Use a collection to match form data.": "폼 데이터를 일치시키기 위해 데이터 테이블을 사용합니다.",
+  "Associations to use": "사용할 관련 데이터",
+  "User submitted form": "사용자가 제출한 폼",
+  "Role of user submitted form": "사용자 제출 폼의 역할"  
+}
