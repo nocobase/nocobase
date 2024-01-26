@@ -4,7 +4,7 @@ import { useRoleResourceValues } from './useRoleResourceValues';
 import { useSaveRoleResourceAction } from './useSaveRoleResourceAction';
 
 const collection = {
-  name: 'remoteCollections',
+  name: 'dataSourcesCollections',
   targetKey: 'name',
   filterTargetKey: 'name',
   fields: [
@@ -78,13 +78,13 @@ export const roleCollectionsSchema: ISchema = {
       sourceKey: 'name',
       targetKey: 'name',
     },
-    resourceName: 'roles.remoteCollections',
+    resourceName: 'roles.dataSourcesCollections',
     request: {
-      resource: 'roles.remoteCollections',
+      resource: 'roles.dataSourcesCollections',
       action: 'list',
       params: {
         pageSize: 20,
-        filter: { hidden: { $isFalsy: true }, connectionName:"{{connectionName}}" },
+        filter: { hidden: { $isFalsy: true }, connectionName: '{{connectionName}}' },
         sort: ['sort'],
         appends: ['fields'],
       },
