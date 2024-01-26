@@ -76,15 +76,15 @@ export class PluginDataSourceManagerServer extends Plugin {
         await next();
       },
 
-      async ['databaseConnections:refresh'](ctx, next) {
+      async ['dataSources:refresh'](ctx, next) {
         const { filterByTk } = ctx.action.params;
-        const databaseConnection = await ctx.db.getRepository('databaseConnections').findOne({
+        const dataSourceModel: DataSourceModel = await ctx.db.getRepository('dataSources').findOne({
           filter: {
-            name: filterByTk,
+            key: filterByTk,
           },
         });
 
-        await databaseConnection.loadIntoApplication({
+        await dataSourceModel.loadIntoApplication({
           app: ctx.app,
         });
 
