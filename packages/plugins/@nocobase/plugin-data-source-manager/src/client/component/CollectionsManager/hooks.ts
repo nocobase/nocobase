@@ -6,15 +6,13 @@ import { useAPIClient, useRecord, useResourceActionContext, useActionContext } f
 
 export const useDestroyAction = () => {
   const { refresh } = useResourceActionContext();
-  const { name: filterByTk, collectionName, connectionName } = useRecord();
+  const { name: dataSourceKey } = useParams();
+  const { name: filterByTk, collectionName } = useRecord();
   const api = useAPIClient();
   return {
     async run() {
       await api.request({
-        url: `remoteCollections/${collectionName}/fields:destroy?filterByTk=${filterByTk}`,
-        headers: {
-          'X-Database': connectionName,
-        },
+        url: `dataSourcesCollections/${dataSourceKey}.${collectionName}/fields:destroy?filterByTk=${filterByTk}`,
         method: 'post',
       });
       refresh();
@@ -25,7 +23,7 @@ export const useDestroyAction = () => {
 export const useBulkDestroyAction = () => {
   const { state, setState, refresh } = useResourceActionContext();
   const { t } = useTranslation();
-  const { name: xDatabase } = useParams();
+  const { name: dataSourceKey } = useParams();
   const api = useAPIClient();
   const { name } = useRecord();
   return {
@@ -34,10 +32,7 @@ export const useBulkDestroyAction = () => {
         return message.error(t('Please select the records you want to delete'));
       }
       await api.request({
-        url: `remoteCollections/${name}/fields:destroy`,
-        headers: {
-          'X-Database': xDatabase,
-        },
+        url: `dataSourcesCollections/${dataSourceKey}.${name}/fields:destroy`,
         method: 'post',
         params: { filterByTk: state?.selectedRowKeys || [] },
       });
@@ -65,39 +60,6 @@ export const useDestroyActionAndRefreshCM = () => {
     async run() {
       await run();
       // await refreshCM();
-    },
-  };
-};
-
-export const useUpdateAction = () => {
-  const field = useField();
-  const form = useForm();
-  const ctx = useActionContext();
-  const api = useAPIClient();
-  const { refresh } = useResourceActionContext();
-  const { name: filterByTk, collectionName, connectionName } = useRecord();
-  return {
-    async run() {
-      await form.submit();
-      field.data = field.data || {};
-      field.data.loading = true;
-      try {
-        await api.request({
-          url: `remoteCollections/${collectionName}/fields:update?filterByTk=${filterByTk}`,
-          headers: {
-            'X-Database': connectionName,
-          },
-          method: 'post',
-          data: form.values,
-        });
-        ctx.setVisible(false);
-        await form.reset();
-        refresh();
-      } catch (e) {
-        console.log(e);
-      } finally {
-        field.data.loading = false;
-      }
     },
   };
 };
