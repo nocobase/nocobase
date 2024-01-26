@@ -7,6 +7,7 @@ import {
   SchemaSettings,
   SchemaSettingsActionModalItem,
   SchemaSettingsItemGroup,
+  SchemaSettingsItemType,
   SchemaSettingsModalItem,
   SchemaSettingsSelectItem,
   useCompile,
@@ -178,60 +179,71 @@ function AssignedFieldValues() {
   );
 }
 
-const bulkUpdateActionSettings = new SchemaSettings({
-  name: 'ActionSettings:bulkUpdate',
-  items: [
-    {
-      name: 'Customize',
-      Component: MenuGroup,
-      children: [
-        {
-          name: 'editButton',
-          Component: ActionDesigner.ButtonEditor,
-          useComponentProps() {
-            const { buttonEditorProps } = useSchemaToolbar();
-            return buttonEditorProps;
-          },
+const schemaSettingsItems: SchemaSettingsItemType[] = [
+  {
+    name: 'Customize',
+    Component: MenuGroup,
+    children: [
+      {
+        name: 'editButton',
+        Component: ActionDesigner.ButtonEditor,
+        useComponentProps() {
+          const { buttonEditorProps } = useSchemaToolbar();
+          return buttonEditorProps;
         },
-        {
-          name: 'updateMode',
-          Component: UpdateMode,
-          useVisible() {
-            const fieldSchema = useFieldSchema();
-            const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(
-              fieldSchema['x-action'],
-            );
-            return isUpdateModePopupAction;
-          },
+      },
+      {
+        name: 'updateMode',
+        Component: UpdateMode,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(
+            fieldSchema['x-action'],
+          );
+          return isUpdateModePopupAction;
         },
-        {
-          name: 'assignFieldValues',
-          Component: AssignedFieldValues,
-          useVisible() {
-            const fieldSchema = useFieldSchema();
-            return isValid(fieldSchema?.['x-action-settings']?.assignedValues);
-          },
+      },
+      {
+        name: 'assignFieldValues',
+        Component: AssignedFieldValues,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return isValid(fieldSchema?.['x-action-settings']?.assignedValues);
         },
-        {
-          name: 'afterSuccess',
-          Component: AfterSuccess,
-          useVisible() {
-            const fieldSchema = useFieldSchema();
-            return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
-          },
+      },
+      {
+        name: 'afterSuccess',
+        Component: AfterSuccess,
+        useVisible() {
+          const fieldSchema = useFieldSchema();
+          return isValid(fieldSchema?.['x-action-settings']?.onSuccess);
         },
-        {
-          name: 'remove',
-          sort: 100,
-          Component: ActionDesigner.RemoveButton as any,
-          useComponentProps() {
-            const { removeButtonProps } = useSchemaToolbar();
-            return removeButtonProps;
-          },
+      },
+      {
+        name: 'remove',
+        sort: 100,
+        Component: ActionDesigner.RemoveButton as any,
+        useComponentProps() {
+          const { removeButtonProps } = useSchemaToolbar();
+          return removeButtonProps;
         },
-      ],
-    },
-  ],
+      },
+    ],
+  },
+];
+
+/**
+ * @deprecated
+ * 用于兼容之前版本的 name
+ */
+const deprecatedBulkUpdateActionSettings = new SchemaSettings({
+  name: 'ActionSettings:customize:bulkUpdate',
+  items: schemaSettingsItems,
 });
 
-export { bulkUpdateActionSettings };
+const bulkUpdateActionSettings = new SchemaSettings({
+  name: 'actionSettings:bulkUpdate',
+  items: schemaSettingsItems,
+});
+
+export { bulkUpdateActionSettings, deprecatedBulkUpdateActionSettings };

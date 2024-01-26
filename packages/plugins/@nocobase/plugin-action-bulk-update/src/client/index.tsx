@@ -1,9 +1,10 @@
 import { Plugin, useCollection } from '@nocobase/client';
-import { bulkUpdateActionSettings } from './BulkUpdateAction.Settings';
+import { bulkUpdateActionSettings, deprecatedBulkUpdateActionSettings } from './BulkUpdateAction.Settings';
 import { BulkUpdatePluginProvider } from './BulkUpdatePluginProvider';
 export class BulkUpdatePlugin extends Plugin {
   async load() {
     this.app.use(BulkUpdatePluginProvider);
+    this.app.schemaSettingsManager.add(deprecatedBulkUpdateActionSettings);
     this.app.schemaSettingsManager.add(bulkUpdateActionSettings);
 
     const initializerData = {
@@ -22,7 +23,7 @@ export class BulkUpdatePlugin extends Plugin {
         },
         'x-action': 'customize:bulkUpdate',
         'x-toolbar': 'ActionSchemaToolbar',
-        'x-settings': 'ActionSettings:bulkUpdate',
+        'x-settings': 'actionSettings:bulkUpdate',
         'x-action-settings': {
           assignedValues: {},
           updateMode: 'selected',

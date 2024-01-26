@@ -1,10 +1,11 @@
 import { Plugin, useCollection } from '@nocobase/client';
-import { duplicateActionSettings } from './DuplicateAction.Settings';
+import { deprecatedDuplicateActionSettings, duplicateActionSettings } from './DuplicateAction.Settings';
 import { DuplicatePluginProvider } from './DuplicatePluginProvider';
 
 export class DuplicatePlugin extends Plugin {
   async load() {
     this.app.use(DuplicatePluginProvider);
+    this.app.schemaSettingsManager.add(deprecatedDuplicateActionSettings);
     this.app.schemaSettingsManager.add(duplicateActionSettings);
 
     const initializerData = {
@@ -14,7 +15,7 @@ export class DuplicatePlugin extends Plugin {
         'x-component': 'Action',
         'x-action': 'duplicate',
         'x-toolbar': 'ActionSchemaToolbar',
-        'x-settings': 'ActionSettings:duplicate',
+        'x-settings': 'actionSettings:duplicate',
         'x-decorator': 'ACLActionProvider',
         'x-component-props': {
           type: 'primary',
@@ -37,7 +38,7 @@ export class DuplicatePlugin extends Plugin {
         'x-component': 'Action.Link',
         'x-action': 'duplicate',
         'x-toolbar': 'ActionSchemaToolbar',
-        'x-settings': 'ActionSettings:duplicate',
+        'x-settings': 'actionSettings:duplicate',
         'x-decorator': 'ACLActionProvider',
         'x-component-props': {
           type: 'primary',
