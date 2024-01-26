@@ -89,7 +89,10 @@ export const SchemaSettingOpenModeSchemaItems: React.FC<Options> = (options) => 
   const field = useField();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const openModeValue = fieldSchema?.['x-component-props']?.['openMode'] || 'drawer';
+  const modeValue = fieldSchema?.['x-component-props']?.['openMode'] || 'drawer';
+  const sizeValue =
+    fieldSchema?.['x-component-props']?.['openSize'] ??
+    (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle');
 
   return (
     <>
@@ -100,7 +103,7 @@ export const SchemaSettingOpenModeSchemaItems: React.FC<Options> = (options) => 
             { label: t('Drawer'), value: 'drawer' },
             { label: t('Dialog'), value: 'modal' },
           ]}
-          value={openModeValue}
+          value={modeValue}
           onChange={(value) => {
             field.componentProps.openMode = value;
             const schema = {
@@ -118,7 +121,7 @@ export const SchemaSettingOpenModeSchemaItems: React.FC<Options> = (options) => 
           }}
         />
       ) : null}
-      {openSize && ['modal', 'drawer'].includes(openModeValue) ? (
+      {openSize && ['modal', 'drawer'].includes(modeValue) ? (
         <SchemaSettingsSelectItem
           title={t('Popup size')}
           options={[
@@ -126,10 +129,7 @@ export const SchemaSettingOpenModeSchemaItems: React.FC<Options> = (options) => 
             { label: t('Middle'), value: 'middle' },
             { label: t('Large'), value: 'large' },
           ]}
-          value={
-            fieldSchema?.['x-component-props']?.['openSize'] ??
-            (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle')
-          }
+          value={sizeValue}
           onChange={(value) => {
             field.componentProps.openSize = value;
             const schema = {
