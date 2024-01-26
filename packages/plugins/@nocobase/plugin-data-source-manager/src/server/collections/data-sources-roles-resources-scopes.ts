@@ -2,7 +2,7 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   dumpRules: 'required',
-  name: 'connectionsRolesResourcesScopes',
+  name: 'dataSourcesRolesResourcesScopes',
   fields: [
     {
       type: 'uid',
@@ -10,9 +10,8 @@ export default defineCollection({
     },
     {
       type: 'belongsTo',
-      name: 'connection',
-      target: 'databaseConnections',
-      foreignKey: 'connectionName',
+      name: 'dataSources',
+      foreignKey: 'dataSourceKey',
       onDelete: 'CASCADE',
     },
     {

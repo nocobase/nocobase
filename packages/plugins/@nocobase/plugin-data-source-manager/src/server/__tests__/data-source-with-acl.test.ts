@@ -139,28 +139,9 @@ describe('data source with acl', () => {
   });
 
   it('should create resources', async () => {
-    class MockDataSource extends DataSource {
-      async load(): Promise<void> {}
-
-      createCollectionManager(options?: any): any {
-        return undefined;
-      }
-    }
-
-    app.dataSourceManager.factory.register('mock', MockDataSource);
-
     const adminUser = await app.db.getRepository('users').create({
       values: {
         roles: ['root'],
-      },
-    });
-
-    const adminAgent: any = app.agent().login(adminUser);
-
-    await app.db.getRepository('dataSources').create({
-      values: {
-        key: 'test',
-        type: 'mock',
       },
     });
 
@@ -177,37 +158,36 @@ describe('data source with acl', () => {
       },
     });
 
-    const testUserAgent = app.agent().login(testUser);
+    const adminAgent: any = app.agent().login(adminUser);
 
-    const createResourceResp = await adminAgent
-      .resource('databaseConnections.connectionsRolesResourcesScopes', 'test')
-      .create({
-        values: {
-          name: 'articles title starts with test',
-          resourceName: 'Articles',
-          scope: {
-            title: {
-              $startsWith: 'test',
-            },
+    // should get permission error
+    const testUserAgent = getDataSourceAgent(app.agent().login(testUser), 'mockInstance1');
+
+    const createResourceResp = await adminAgent.resource('dataSources.rolesResourcesScopes', 'mockInstance1').create({
+      values: {
+        name: 'posts title starts with test',
+        resourceName: 'posts',
+        scope: {
+          title: {
+            $startsWith: 'test',
           },
         },
-      });
+      },
+    });
 
     expect(createResourceResp.status).toBe(200);
 
     // list scopes
-    const listScopesResp = await adminAgent
-      .resource('databaseConnections.connectionsRolesResourcesScopes', 'test')
-      .list({});
+    const listScopesResp = await adminAgent.resource('dataSources.rolesResourcesScopes', 'mockInstance1').list({});
 
     expect(listScopesResp.status).toBe(200);
 
-    const scope = listScopesResp.body.data.find((item) => item.name === 'articles title starts with test');
+    const scope = listScopesResp.body.data.find((item) => item.name === 'posts title starts with test');
 
     // create user resource permission
-    const createConnectionResourceResp = await adminAgent.resource('roles.connectionResources', 'testRole').create({
+    const createConnectionResourceResp = await adminAgent.resource('roles.dataSourceResources', 'testRole').create({
       values: {
-        connectionName: 'test',
+        dataSourceKey: 'mockInstance1',
         usingActionsConfig: true,
         actions: [
           {
@@ -218,7 +198,7 @@ describe('data source with acl', () => {
             },
           },
         ],
-        name: 'Articles',
+        name: 'posts',
       },
     });
 
@@ -227,10 +207,10 @@ describe('data source with acl', () => {
     const data = createConnectionResourceResp.body.data;
 
     // update scope to null
-    const updateScopeResp = await adminAgent.resource('roles.connectionResources', 'testRole').update({
+    const updateScopeResp = await adminAgent.resource('roles.dataSourceResources', 'testRole').update({
       filter: {
-        connectionName: 'test',
-        name: 'Articles',
+        dataSourceKey: 'mockInstance1',
+        name: 'posts',
       },
       values: {
         actions: data.actions.map((action) => {
@@ -246,10 +226,10 @@ describe('data source with acl', () => {
     expect(updateScopeResp.status).toBe(200);
 
     // get resourcers
-    const getResourceResp = await adminAgent.resource('roles.connectionResources', 'testRole').get({
+    const getResourceResp = await adminAgent.resource('roles.dataSourceResources', 'testRole').get({
       filter: {
-        connectionName: 'test',
-        name: 'Articles',
+        dataSourceKey: 'mockInstance1',
+        name: 'posts',
       },
       appends: ['actions.scope'],
     });

@@ -1,5 +1,5 @@
 export default {
-  name: 'roles.connectionResources',
+  name: 'roles.dataSourceResources',
   actions: {
     async create(ctx, next) {
       const { associatedIndex: roleName } = ctx.action.params;
@@ -8,31 +8,31 @@ export default {
 
       const transaction = await db.sequelize.transaction();
 
-      const connectionName = ctx.action.params.values.connectionName;
+      const dataSourceKey = ctx.action.params.values.dataSourceKey;
 
-      if (!connectionName) {
-        throw new Error('connectionName is required');
+      if (!dataSourceKey) {
+        throw new Error('dataSourceKey is required');
       }
 
-      const connectionRole = await db.getRepository('connectionsRoles').findOne({
+      const connectionRole = await db.getRepository('dataSourcesRoles').findOne({
         filter: {
           roleName,
-          connectionName,
+          dataSourceKey,
         },
         transaction,
       });
 
       if (!connectionRole) {
-        await db.getRepository('connectionsRoles').create({
+        await db.getRepository('dataSourcesRoles').create({
           values: {
             roleName,
-            connectionName,
+            dataSourceKey,
           },
           transaction,
         });
       }
 
-      const record = await db.getRepository('connectionsRolesResources').create({
+      const record = await db.getRepository('dataSourcesRolesResources').create({
         values: {
           roleName,
           ...ctx.action.params.values,
@@ -52,11 +52,11 @@ export default {
 
       ctx.body = await ctx.app
         .getDb()
-        .getRepository('connectionsRolesResources')
+        .getRepository('dataSourcesRolesResources')
         .update({
           filter: {
             roleName,
-            connectionName: ctx.action.params.filter.connectionName,
+            dataSourceKey: ctx.action.params.filter.dataSourceKey,
             name: ctx.action.params.filter.name,
           },
           values: ctx.action.params.values,
@@ -71,11 +71,11 @@ export default {
 
       const record = await ctx.app
         .getDb()
-        .getRepository('connectionsRolesResources')
+        .getRepository('dataSourcesRolesResources')
         .findOne({
           filter: {
             roleName,
-            connectionName: ctx.action.params.filter.connectionName,
+            dataSourceKey: ctx.action.params.filter.dataSourceKey,
             name: ctx.action.params.filter.name,
           },
           appends: ctx.action.params.appends,

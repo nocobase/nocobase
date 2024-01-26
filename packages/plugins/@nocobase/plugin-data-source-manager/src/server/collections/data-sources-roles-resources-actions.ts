@@ -2,14 +2,14 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   dumpRules: 'required',
-  name: 'connectionsRolesResourcesActions',
+  name: 'dataSourcesRolesResourcesActions',
   model: 'ConnectionsRolesResourcesActionModel',
   fields: [
     {
       type: 'belongsTo',
       name: 'resource',
       foreignKey: 'rolesResourceId',
-      target: 'connectionRolesResources',
+      target: 'dataSourcesRolesResources',
     },
     {
       type: 'string',
@@ -23,8 +23,9 @@ export default defineCollection({
     {
       type: 'belongsTo',
       name: 'scope',
-      target: 'connectionsRolesResourcesScopes',
+      target: 'dataSourcesRolesResourcesScopes',
       onDelete: 'RESTRICT',
+      foreignKey: 'scopeId',
     },
   ],
 });

@@ -8,7 +8,7 @@ import { RemoteCollectionModel } from './models/remote-collection-model';
 import { RemoteFieldModel } from './models/remote-field-model';
 import { rolesRemoteCollectionsResourcer } from './resourcers/roles-remote-collections';
 import databaseConnectionsRolesResourcer from './resourcers/data-sources-roles';
-import rolesConnectionResourcesResourcer from './resourcers/connection-resources';
+import rolesConnectionResourcesResourcer from './resourcers/data-sources-resources';
 
 import { ConnectionsRolesModel } from './models/connections-roles-model';
 import { ConnectionsRolesResourcesModel } from './models/connections-roles-resources';

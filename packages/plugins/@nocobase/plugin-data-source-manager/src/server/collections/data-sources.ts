@@ -26,8 +26,8 @@ export default defineCollection({
     },
     {
       type: 'hasMany',
-      name: 'connectionsRolesResourcesScopes',
-      target: 'connectionsRolesResourcesScopes',
+      name: 'rolesResourcesScopes',
+      target: 'dataSourcesRolesResourcesScopes',
       foreignKey: 'dataSourceKey',
     },
   ],
