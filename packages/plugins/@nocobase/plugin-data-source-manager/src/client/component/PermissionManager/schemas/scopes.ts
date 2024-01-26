@@ -4,7 +4,7 @@ import { useFormBlockContext, useFilterOptions, VariableInput, useFilterFieldOpt
 import { RoleResourceCollectionContext } from '../RolesResourcesActions';
 
 export const rolesResourcesScopesCollection = {
-  name: 'connectionsRolesResourcesScopes',
+  name: 'rolesResourcesScopes',
   fields: [
     {
       type: 'string',
@@ -47,7 +47,7 @@ export const getScopesSchema = (dataSourceKey) => {
           },
           multiple: false,
           association: {
-            target: 'connectionsRolesResourcesScopes',
+            target: 'rolesResourcesScopes',
           },
           onChange: '{{ onChange }}',
         },
@@ -114,7 +114,7 @@ export const getScopesSchema = (dataSourceKey) => {
                                 type: 'void',
                                 'x-decorator': 'FormBlockProvider',
                                 'x-decorator-props': {
-                                  resource: `databaseConnections/${dataSourceKey}/connectionsRolesResourcesScopes`,
+                                  resource: `dataSources/${dataSourceKey}/rolesResourcesScopes`,
                                   collection: rolesResourcesScopesCollection,
                                 },
                                 'x-component': 'CardItem',
@@ -240,7 +240,7 @@ export const getScopesSchema = (dataSourceKey) => {
                                         type: 'void',
                                         'x-decorator': 'FormBlockProvider',
                                         'x-decorator-props': {
-                                          resource: `dataSources/${dataSourceKey}/connectionsRolesResourcesScopes`,
+                                          resource: `dataSources/${dataSourceKey}/rolesResourcesScopes`,
                                           collection: rolesResourcesScopesCollection,
                                           action: 'get',
                                           useParams: '{{ useParamsFromRecord }}',
