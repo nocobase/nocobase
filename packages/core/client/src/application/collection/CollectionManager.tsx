@@ -54,8 +54,8 @@ export interface GetCollectionOptions {
 }
 
 interface DataSource {
-  name: string;
-  description: string;
+  key: string;
+  displayName: string;
   collections?: CollectionOptionsV2[];
   [key: string]: any;
 }
@@ -85,7 +85,7 @@ export class CollectionManagerV2 {
   protected mainDataSourceFn: MainDataSOurceFn;
   protected thirdDataSourceFn: ThirdDataResourceFn;
   protected reloadCallbacks: Record<string, ReloadCallback[]> = {};
-  protected collectionArr: Record<string, CollectionV2[]> = {};
+  protected collectionCachedArr: Record<string, CollectionV2[]> = {};
   protected options: CollectionManagerOptionsV2 = {};
 
   constructor(options: CollectionManagerOptionsV2 = {}, app: Application) {
@@ -106,8 +106,8 @@ export class CollectionManagerV2 {
   private initDataSourceMap() {
     this.dataSourceMap = {
       [DEFAULT_DATA_SOURCE_NAME]: {
-        name: DEFAULT_DATA_SOURCE_NAME,
-        description: DEFAULT_DATA_SOURCE_TITLE,
+        key: DEFAULT_DATA_SOURCE_NAME,
+        displayName: DEFAULT_DATA_SOURCE_TITLE,
       },
     };
   }
@@ -138,7 +138,7 @@ export class CollectionManagerV2 {
   // collections
   addCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}) {
     const { dataSource = DEFAULT_DATA_SOURCE_NAME } = options;
-    this.collectionArr[dataSource] = undefined;
+    this.collectionCachedArr[dataSource] = undefined;
 
     collections
       .map((collection) => {
@@ -173,13 +173,13 @@ export class CollectionManagerV2 {
   }
   getCollections(options: { predicate?: (collection: CollectionV2) => boolean; dataSource?: string } = {}) {
     const { dataSource = DEFAULT_DATA_SOURCE_NAME, predicate } = options;
-    if (!this.collectionArr[dataSource]?.length) {
-      this.collectionArr[dataSource] = Object.values(this.collections[dataSource] || {});
+    if (!this.collectionCachedArr[dataSource]?.length) {
+      this.collectionCachedArr[dataSource] = Object.values(this.collections[dataSource] || {});
     }
     if (predicate) {
-      return this.collectionArr[dataSource].filter(predicate);
+      return this.collectionCachedArr[dataSource].filter(predicate);
     }
-    return this.collectionArr[dataSource];
+    return this.collectionCachedArr[dataSource];
   }
   /**
    * 获取数据表
@@ -323,15 +323,11 @@ export class CollectionManagerV2 {
     if (!this.thirdDataSourceFn) return;
     const data = await this.thirdDataSourceFn();
     this.initDataSourceMap();
-    data.forEach((dataSource) => {
-      const { collections: _unUse, ...rest } = dataSource;
-      this.dataSourceMap[dataSource.name] = rest;
-    });
 
-    data.forEach(({ name, collections, ...others }) => {
-      this.dataSourceMap[name] = { ...others, name };
-      this.setCollections(collections, { dataSource: name });
-      this.reloadCallbacks[name]?.forEach((cb) => cb(collections));
+    data.forEach(({ key, collections, ...others }) => {
+      this.dataSourceMap[key] = { ...others, name };
+      this.setCollections(collections, { dataSource: key });
+      this.reloadCallbacks[key]?.forEach((cb) => cb(collections));
     });
     callback && callback();
   }
@@ -361,7 +357,7 @@ export class CollectionManagerV2 {
       mainDataSourceFn: this.mainDataSourceFn,
       thirdDataSourceFn: this.thirdDataSourceFn,
       reloadCallbacks: this.reloadCallbacks,
-      collectionArr: this.collectionArr,
+      collectionCachedArr: this.collectionCachedArr,
       options: this.options,
     };
   }

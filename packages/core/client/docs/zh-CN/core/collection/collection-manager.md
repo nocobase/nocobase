@@ -31,7 +31,7 @@ class CollectionManagerV2 {
 
   addCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}): void
   setCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}): void
-  getAllCollections(): Record<string, Record<string, CollectionV2>>
+  getAllCollections(): { name: string; displayName: string; collections: CollectionV2 }[]
   getCollections(predicate?: (collection: CollectionV2) => boolean, options: GetCollectionOptions = {})
   getCollection<Mixins = {}>(path: string, options: GetCollectionOptions = {}): (Mixins & CollectionV2) | undefined
   getCollectionName(path: string, options?: GetCollectionOptions): Promise<string | undefined>;

@@ -8,11 +8,11 @@ import template from 'lodash/template';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  DEFAULT_DATA_SOURCE_NAME,
   TableFieldResource,
   WithoutTableFieldResource,
   useAPIClient,
   useActionContext,
+  useDataSourceHeaders,
   useDesignable,
   useRecord,
 } from '../';
@@ -72,11 +72,7 @@ const useResource = (props: UseResourceProps) => {
   const field = useField();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   const __parent = useContext(BlockRequestContext);
-  const headers = useMemo(() => {
-    if (dataSource && dataSource !== DEFAULT_DATA_SOURCE_NAME) {
-      return { 'x-connection': dataSource };
-    }
-  }, [dataSource]);
+  const headers = useDataSourceHeaders(dataSource);
 
   if (block === 'TableField') {
     const options = {

@@ -47,7 +47,6 @@ import {
   TreeCollectionTemplate,
   ViewCollectionTemplate,
 } from './templates';
-import { collection as collectionData } from './Configuration/schemas/collections';
 
 export class CollectionPlugin extends Plugin {
   async load() {
