@@ -335,9 +335,9 @@ export class CollectionManagerV2 {
 
   async reloadThirdDataSource(callback?: () => void) {
     if (!this.thirdDataSourceFn) return;
-    this.initDataSource();
     const data = await this.thirdDataSourceFn();
-    this.addDataSources(data);
+    this.initDataSource();
+    this.addDataSources([...(this.options.dataSources || []), ...data]);
     callback && callback();
   }
 
