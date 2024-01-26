@@ -45,7 +45,7 @@ export default class extends Trigger {
       return;
     }
 
-    this.trigger(context);
+    return this.trigger(context);
   };
 
   private async trigger(context) {
@@ -67,11 +67,17 @@ export default class extends Trigger {
         enabled: true,
       },
     });
-    workflows.forEach((workflow) => {
+    const syncGroup = [];
+    const asyncGroup = [];
+    for (const workflow of workflows) {
       const trigger = triggers.find((trigger) => trigger[0] == workflow.key);
-      if (context.body?.data) {
-        const { data } = context.body;
-        (Array.isArray(data) ? data : [data]).forEach(async (row: Model) => {
+      const event = [workflow];
+      if (context.action.resourceName !== 'workflows') {
+        if (!context.body) {
+          continue;
+        }
+        const { body: data } = context;
+        for (const row of Array.isArray(data) ? data : [data]) {
           let payload = row;
           if (trigger[1]) {
             const paths = trigger[1].split('.');
@@ -87,7 +93,7 @@ export default class extends Trigger {
           const { collection, appends = [] } = workflow.config;
           const model = <typeof Model>payload.constructor;
           if (collection !== model.collection.name) {
-            return;
+            continue;
           }
           if (appends.length) {
             payload = await model.collection.repository.findOne({
@@ -95,16 +101,34 @@ export default class extends Trigger {
               appends,
             });
           }
-          this.workflow.trigger(workflow, { data: toJSON(payload), ...userInfo });
-        });
+          // this.workflow.trigger(workflow, { data: toJSON(payload), ...userInfo });
+          event.push({ data: toJSON(payload), ...userInfo });
+        }
       } else {
         const data = trigger[1] ? get(values, trigger[1]) : values;
-        this.workflow.trigger(workflow, {
-          data,
-          ...userInfo,
-        });
+        // this.workflow.trigger(workflow, {
+        //   data,
+        //   ...userInfo,
+        // });
+        event.push({ data, ...userInfo });
       }
-    });
+      (workflow.sync ? syncGroup : asyncGroup).push(event);
+    }
+
+    for (const event of syncGroup) {
+      await this.workflow.trigger(event[0], event[1]);
+      // if (processor.execution.status < EXECUTION_STATUS.STARTED) {
+      //   // error handling
+      //   return context.throw(
+      //     500,
+      //     'Your data saved, but some workflow on your action failed, please contact the administrator.',
+      //   );
+      // }
+    }
+
+    for (const event of asyncGroup) {
+      this.workflow.trigger(event[0], event[1]);
+    }
   }
 
   on(workflow: WorkflowModel) {}

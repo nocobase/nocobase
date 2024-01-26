@@ -20,8 +20,7 @@ export default class extends Plugin {
 
     // this.app.addProvider(Provider);
     const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
-    const manualInstruction = new Manual();
-    workflow.instructions.register(manualInstruction.type, manualInstruction);
+    workflow.registerInstruction('manual', Manual);
 
     this.app.schemaInitializerManager.add(addBlockButton);
     this.app.schemaInitializerManager.add(addActionButton);

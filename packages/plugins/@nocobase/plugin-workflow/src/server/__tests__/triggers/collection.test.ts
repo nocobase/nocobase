@@ -370,4 +370,34 @@ describe('workflow > triggers > collection', () => {
       });
     });
   });
+
+  describe('sync', () => {
+    it('sync collection trigger', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'comments',
+          params: {
+            values: {},
+          },
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+  });
 });

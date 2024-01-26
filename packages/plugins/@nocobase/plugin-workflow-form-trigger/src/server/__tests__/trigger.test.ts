@@ -5,7 +5,7 @@ import { MockServer } from '@nocobase/test';
 
 import Plugin from '..';
 
-describe('workflow > instructions > sql', () => {
+describe('workflow > form-trigge[r', () => {
   let app: MockServer;
   let db: Database;
   let agent;
@@ -398,6 +398,67 @@ describe('workflow > instructions > sql', () => {
       expect(e3.length).toBe(1);
       expect(e3[0].status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e3[0].context.data).toMatchObject({ title: 't2' });
+    });
+  });
+
+  describe('sync', () => {
+    it('sync form trigger', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'form',
+        sync: true,
+        config: {
+          collection: 'posts',
+        },
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(200);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
+    it('sync and async will all be triggered in one action', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'form',
+        config: {
+          collection: 'posts',
+        },
+      });
+
+      const w2 = await WorkflowModel.create({
+        enabled: true,
+        type: 'form',
+        sync: true,
+        config: {
+          collection: 'posts',
+        },
+      });
+
+      const res1 = await userAgents[0].resource('posts').create({
+        values: { title: 't1' },
+        triggerWorkflows: [w1.key, w2.key].join(),
+      });
+      expect(res1.status).toBe(200);
+
+      const e1s = await w1.getExecutions();
+      expect(e1s.length).toBe(0);
+
+      const e2s = await w2.getExecutions();
+      expect(e2s.length).toBe(1);
+      expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      await sleep(500);
+
+      const e3s = await w1.getExecutions();
+      expect(e3s.length).toBe(1);
+      expect(e3s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
     });
   });
 });

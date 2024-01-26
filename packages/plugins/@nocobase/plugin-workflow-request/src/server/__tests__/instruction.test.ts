@@ -6,7 +6,7 @@ import bodyParser from 'koa-bodyparser';
 import Database from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 
-import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import PluginWorkflow, { Processor, EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import { RequestConfig } from '../RequestInstruction';
@@ -347,6 +347,33 @@ describe('workflow > instructions > request', () => {
       expect(job.result.data).toMatchObject({});
 
       server.close();
+    });
+  });
+
+  describe('sync request', () => {
+    it('sync trigger', async () => {
+      const syncFlow = await WorkflowModel.create({
+        type: 'syncTrigger',
+        enabled: true,
+      });
+      await syncFlow.createNode({
+        type: 'request',
+        config: {
+          url: api.URL_DATA,
+          method: 'GET',
+        } as RequestConfig,
+      });
+
+      const workflowPlugin = app.pm.get(PluginWorkflow) as PluginWorkflow;
+      const processor = (await workflowPlugin.trigger(syncFlow, { data: { title: 't1' } })) as Processor;
+
+      const [execution] = await syncFlow.getExecutions();
+      expect(processor.execution.id).toEqual(execution.id);
+      expect(processor.execution.status).toEqual(execution.status);
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.status).toEqual(JOB_STATUS.RESOLVED);
+      expect(job.result).toEqual({ meta: {}, data: {} });
     });
   });
 });

@@ -66,6 +66,11 @@ export default function () {
         defaultValue: false,
       },
       {
+        type: 'boolean',
+        name: 'sync',
+        defaultValue: false,
+      },
+      {
         type: 'hasMany',
         name: 'revisions',
         target: 'workflows',
