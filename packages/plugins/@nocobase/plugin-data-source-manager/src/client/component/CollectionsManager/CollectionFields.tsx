@@ -109,10 +109,7 @@ export const CollectionFields = () => {
     const { targetScope } = options;
     const isFieldInherits = field.props?.name === 'inherits';
     const { data } = await api.request({
-      url: 'dataSourcesCollections:list',
-      headers: {
-        'X-Database': dataSourceKey,
-      },
+      url: `dataSources/${dataSourceKey}/collections:list`,
       params: {
         paginate: false,
         appends: ['fields'],
