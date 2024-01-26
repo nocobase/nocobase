@@ -1,11 +1,6 @@
 import { Spin } from 'antd';
 import React, { createContext, useContext } from 'react';
-import {
-  useRequest,
-  SchemaComponent,
-  SchemaComponentContext,
-  SettingCenterPermissionProvider,
-} from '@nocobase/client';
+import { useRequest, SchemaComponent, SchemaComponentContext, SettingCenterPermissionProvider } from '@nocobase/client';
 import { roleSchema } from './schemas/roles';
 import { PermissionProvider } from './PermisionProvider';
 import { useParams } from 'react-router-dom';
@@ -30,7 +25,7 @@ export const useAvailableActions = () => {
 };
 
 export const RoleTable = () => {
-  const { name: xDatabase } = useParams();
+  const { name: dataSourceKey } = useParams();
   return (
     <div>
       <SchemaComponentContext.Provider value={{ designable: false }}>
@@ -38,7 +33,7 @@ export const RoleTable = () => {
           <SchemaComponent
             schema={roleSchema}
             components={{ SettingCenterPermissionProvider, PermissionProvider }}
-            scope={{ connectionName: xDatabase }}
+            scope={{ dataSourceKey }}
           />
         </AvailableActionsProver>
       </SchemaComponentContext.Provider>

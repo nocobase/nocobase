@@ -84,7 +84,7 @@ export const roleCollectionsSchema: ISchema = {
       action: 'list',
       params: {
         pageSize: 20,
-        filter: { hidden: { $isFalsy: true }, connectionName: '{{connectionName}}' },
+        filter: { hidden: { $isFalsy: true }, dataSourceKey: '{{dataSourceKey}}' },
         sort: ['sort'],
         appends: ['fields'],
       },
