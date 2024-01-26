@@ -236,5 +236,14 @@ describe('data source with acl', () => {
 
     expect(getResourceResp.status).toBe(200);
     expect(getResourceResp.body.data.actions[0].scope).toBeNull();
+
+    // get collection list
+
+    const collectionListRep = await adminAgent.resource('roles.dataSourcesCollections', 'testRole').list({
+      filter: {
+        dataSourceKey: 'mockInstance1',
+      },
+    });
+    expect(collectionListRep.status).toBe(200);
   });
 });

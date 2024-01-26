@@ -1,4 +1,3 @@
-import { Database } from '@nocobase/database';
 import { FullDataRepository } from '../services/full-data-repository';
 
 type UsingConfigType = 'strategy' | 'resourceAction';
@@ -8,27 +7,25 @@ function totalPage(total, pageSize): number {
 }
 
 const rolesRemoteCollectionsResourcer = {
-  name: 'roles.remoteCollections',
+  name: 'roles.dataSourcesCollections',
   actions: {
     async list(ctx, next) {
       const role = ctx.action.params.associatedIndex;
       const { page = 1, pageSize = 20 } = ctx.action.params;
 
-      const { connectionName } = ctx.action.params.filter;
+      const { dataSourceKey } = ctx.action.params.filter;
 
-      const db: Database = ctx.app.getDb(connectionName);
+      const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
 
-      const mainDb = ctx.app.getDb('main');
-
-      const collectionRepository = new FullDataRepository([...db.collections.values()]);
+      const collectionRepository = new FullDataRepository<any>(dataSource.collectionManager.getCollections());
 
       // all collections
       const [collections, count] = await collectionRepository.findAndCount();
 
-      const roleResources = await mainDb.getRepository('connectionsRolesResources').find({
+      const roleResources = await ctx.app.db.getRepository('dataSourcesRolesResources').find({
         filter: {
           roleName: role,
-          connectionName: connectionName,
+          dataSourceKey,
         },
       });
 
@@ -40,7 +37,7 @@ const rolesRemoteCollectionsResourcer = {
         .map((roleResources) => roleResources.get('name'));
 
       const items = collections.map((collection, i) => {
-        const collectionName = collection.name;
+        const collectionName = collection.options.name;
         const exists = roleResourcesNames.includes(collectionName);
 
         const usingConfig: UsingConfigType = roleResourceActionResourceNames.includes(collectionName)

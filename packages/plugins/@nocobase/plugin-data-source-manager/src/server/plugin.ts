@@ -6,7 +6,7 @@ import remoteCollectionsResourcer from './resourcers/data-sources-collections';
 import remoteFieldsResourcer from './resourcers/data-sources-collections-fields';
 import { RemoteCollectionModel } from './models/remote-collection-model';
 import { RemoteFieldModel } from './models/remote-field-model';
-import { rolesRemoteCollectionsResourcer } from './resourcers/roles-remote-collections';
+import { rolesRemoteCollectionsResourcer } from './resourcers/roles-data-sources-collections';
 import databaseConnectionsRolesResourcer from './resourcers/data-sources-roles';
 import rolesConnectionResourcesResourcer from './resourcers/data-sources-resources';
 
