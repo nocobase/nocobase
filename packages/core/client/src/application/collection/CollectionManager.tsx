@@ -68,6 +68,7 @@ export interface CollectionManagerOptionsV2 {
   fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionMixins?: CollectionMixinConstructor[];
+  dataSources?: DataSource[];
 }
 
 type ThirdDataResourceFn = () => Promise<DataSource[]>;
@@ -80,7 +81,12 @@ export class CollectionManagerV2 {
   protected collectionTemplateInstances: Record<string, CollectionTemplateBase> = {};
   protected fieldInterfaceInstances: Record<string, CollectionFieldInterfaceBase> = {};
   protected collectionMixins: CollectionMixinConstructor[] = [];
-  protected dataSourceMap: Record<DataSourceNameType, Omit<DataSource, 'collections'>> = {};
+  protected dataSourceMap: Record<DataSourceNameType, Omit<DataSource, 'collections'>> = {
+    [DEFAULT_DATA_SOURCE_NAME]: {
+      key: DEFAULT_DATA_SOURCE_NAME,
+      displayName: DEFAULT_DATA_SOURCE_TITLE,
+    },
+  };
   protected collectionFieldGroups: Record<string, { label: string; order?: number }> = {};
   protected mainDataSourceFn: MainDataSOurceFn;
   protected thirdDataSourceFn: ThirdDataResourceFn;
@@ -95,21 +101,12 @@ export class CollectionManagerV2 {
   }
 
   private init(options: CollectionManagerOptionsV2) {
-    this.initDataSourceMap();
+    this.addDataSources(options.dataSources || []);
     this.collectionMixins.push(...(options.collectionMixins || []));
     this.addCollectionTemplates(options.collectionTemplates || []);
     this.addFieldInterfaces(options.fieldInterfaces || []);
     this.addFieldGroups(options.fieldGroups || {});
     this.addCollections(options.collections || []);
-  }
-
-  private initDataSourceMap() {
-    this.dataSourceMap = {
-      [DEFAULT_DATA_SOURCE_NAME]: {
-        key: DEFAULT_DATA_SOURCE_NAME,
-        displayName: DEFAULT_DATA_SOURCE_TITLE,
-      },
-    };
   }
 
   // collection mixins
@@ -319,16 +316,28 @@ export class CollectionManagerV2 {
     this.reloadCallbacks[DEFAULT_DATA_SOURCE_NAME]?.forEach((cb) => cb(collections));
   }
 
-  async reloadThirdDataSource(callback?: () => void) {
-    if (!this.thirdDataSourceFn) return;
-    const data = await this.thirdDataSourceFn();
-    this.initDataSourceMap();
-
-    data.forEach(({ key, collections, ...others }) => {
-      this.dataSourceMap[key] = { ...others, name };
+  addDataSources(dataSources: DataSource[] = []) {
+    dataSources.forEach(({ key, collections, ...others }) => {
+      this.dataSourceMap[key] = { ...others, key };
       this.setCollections(collections, { dataSource: key });
       this.reloadCallbacks[key]?.forEach((cb) => cb(collections));
     });
+  }
+
+  private initDataSource() {
+    this.dataSourceMap = {
+      [DEFAULT_DATA_SOURCE_NAME]: {
+        key: DEFAULT_DATA_SOURCE_NAME,
+        displayName: DEFAULT_DATA_SOURCE_TITLE,
+      },
+    };
+  }
+
+  async reloadThirdDataSource(callback?: () => void) {
+    if (!this.thirdDataSourceFn) return;
+    this.initDataSource();
+    const data = await this.thirdDataSourceFn();
+    this.addDataSources(data);
     callback && callback();
   }
 
