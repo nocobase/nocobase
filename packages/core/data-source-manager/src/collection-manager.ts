@@ -61,9 +61,9 @@ export class CollectionManager implements ICollectionManager {
     return [...this.collections.values()];
   }
 
-  getRepository<R = IRepository>(name: string, sourceId?: string | number): R {
+  getRepository(name: string, sourceId?: string | number): IRepository {
     const collection = this.getCollection(name);
-    return collection.repository as R;
+    return collection.repository;
   }
 
   async sync() {}

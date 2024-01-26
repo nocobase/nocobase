@@ -184,12 +184,13 @@ export class PluginDataSourceManagerServer extends Plugin {
       // }
     });
 
-    this.app.db.on('connectionsRolesResources.afterSaveWithAssociations', async (model, options) => {
+    this.app.db.on('dataSourcesRolesResources.afterSaveWithAssociations', async (model, options) => {
       const { transaction } = options;
       const pluginACL: any = this.app.pm.get('acl');
 
+      const dataSource = this.app.dataSourceManager.dataSources.get(model.get('dataSourceKey'));
       await model.writeToACL({
-        acl: this.app.acls.get(model.get('connectionName')),
+        acl: dataSource.acl,
         associationFieldsActions: pluginACL.associationFieldsActions,
         transaction: transaction,
         grantHelper: pluginACL.grantHelper,

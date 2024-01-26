@@ -1,6 +1,7 @@
 import { createMockServer, MockServer } from '@nocobase/test';
-import { CollectionManager, DataSource } from '@nocobase/data-source-manager';
+import { CollectionManager, DataSource, IRepository } from '@nocobase/data-source-manager';
 import { SuperAgentTest } from 'supertest';
+import { ICollectionManager } from '@nocobase/data-source-manager/src/types';
 
 describe('data source with acl', () => {
   let app: MockServer;
@@ -15,17 +16,25 @@ describe('data source with acl', () => {
       acl: true,
     });
 
+    class MockRepository implements IRepository {
+      async find() {
+        return [];
+      }
+
+      async findOne() {
+        return {};
+      }
+
+      async create() {}
+
+      async update() {}
+
+      async destroy() {}
+    }
+
     class MockCollectionManager extends CollectionManager {
-      // @ts-ignore
-      getRepository(name, sourceId) {
-        return {
-          async find() {
-            return [];
-          },
-          async findAndCount() {
-            return [0, []];
-          },
-        };
+      getRepository(name: string, sourceId?: string | number): IRepository {
+        return new MockRepository();
       }
     }
 
@@ -56,7 +65,7 @@ describe('data source with acl', () => {
         });
       }
 
-      createCollectionManager(options?: any) {
+      createCollectionManager(options?: any): ICollectionManager {
         return new MockCollectionManager();
       }
     }
@@ -238,7 +247,6 @@ describe('data source with acl', () => {
     expect(getResourceResp.body.data.actions[0].scope).toBeNull();
 
     // get collection list
-
     const collectionListRep = await adminAgent.resource('roles.dataSourcesCollections', 'testRole').list({
       filter: {
         dataSourceKey: 'mockInstance1',
