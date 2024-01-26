@@ -1,7 +1,10 @@
+import { useMemo } from 'react';
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { ButtonEditor, RemoveButton } from '../../../schema-component/antd/action/Action.Designer';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
+import { SchemaSettingsEnableChildCollections } from '../../../schema-settings/SchemaSettings';
 
 export const addNewActionSettings = new SchemaSettings({
   name: 'actionSettings:addNew',
@@ -20,6 +23,25 @@ export const addNewActionSettings = new SchemaSettings({
       componentProps: {
         openMode: true,
         openSize: true,
+      },
+    },
+    {
+      name: 'enableChildCollections',
+      Component: SchemaSettingsEnableChildCollections,
+      useComponentProps() {
+        const { name } = useCollection();
+        return {
+          collectionName: name,
+        };
+      },
+      useVisible() {
+        const { name } = useCollection();
+        const { getChildrenCollections } = useCollectionManager();
+        const isChildCollectionAction = useMemo(
+          () => getChildrenCollections(name).length > 0,
+          [getChildrenCollections, name],
+        );
+        return isChildCollectionAction;
       },
     },
     {
