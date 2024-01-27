@@ -1,4 +1,5 @@
 import { IModel, IRepository } from './types';
+import * as console from 'console';
 
 export class Repository implements IRepository {
   async create(options) {
@@ -12,4 +13,12 @@ export class Repository implements IRepository {
     return {};
   }
   async destroy(options) {}
+
+  count(options?: any): Promise<Number> {
+    return Promise.resolve(undefined);
+  }
+
+  findAndCount(options?: any): Promise<[IModel[], Number]> {
+    return Promise.resolve([[], undefined]);
+  }
 }
