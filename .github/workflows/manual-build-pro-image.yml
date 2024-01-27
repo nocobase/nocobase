@@ -25,6 +25,7 @@ jobs:
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
+          ref: refs/pull/20/head
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - run: cd packages/pro-plugins && gh pr checkout 20
         env:
