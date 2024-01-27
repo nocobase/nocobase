@@ -61,7 +61,8 @@ jobs:
           pluginNames="${trimmed_variable//plugin-/}"
           BEFORE_PACK_NOCOBASE="yarn add @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add $packageNames -W"
           APPEND_PRESET_LOCAL_PLUGINS="notifications,demo-platform,disable-pm-add,${pluginNames// /,}"
-          echo "::set-output name=var1::$BEFORE_PACK_NOCOBASE\n::set-output name=var2::$APPEND_PRESET_LOCAL_PLUGINS"
+          echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
+          echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
         id: vars
       - name: Build and push - pr-20-pro
         uses: docker/build-push-action@v3
