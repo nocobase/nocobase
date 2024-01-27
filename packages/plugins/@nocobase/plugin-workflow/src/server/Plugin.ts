@@ -265,7 +265,7 @@ export default class PluginWorkflowServer extends Plugin {
       this.getLogger(workflow.id).error(`trigger type ${workflow.type} of workflow ${workflow.id} is not implemented`);
       return;
     }
-    if (typeof enable !== 'undefined' ? enable : workflow.get('enabled')) {
+    if (enable ?? workflow.get('enabled')) {
       // NOTE: remove previous listener if config updated
       const prev = workflow.previous();
       if (prev.config) {
@@ -351,25 +351,16 @@ export default class PluginWorkflowServer extends Plugin {
   }
 
   private async createExecution(workflow: WorkflowModel, context, options): Promise<ExecutionModel | null> {
-    if (options.context?.executionId) {
-      // NOTE: no transaction here for read-uncommitted execution
-      const existed = await workflow.countExecutions({
-        where: {
-          id: options.context.executionId,
-        },
-        transaction: options.transaction,
-      });
-
-      if (existed) {
-        this.getLogger(workflow.id).warn(
-          `workflow ${workflow.id} has already been triggered in same execution (${options.context.executionId}), and newly triggering will be skipped.`,
-        );
-
-        return null;
-      }
-    }
-
     const { transaction = await this.db.sequelize.transaction() } = options;
+
+    const trigger = this.triggers.get(workflow.type);
+    const valid = await trigger.validateEvent(workflow, context, { ...options, transaction });
+    if (!valid) {
+      if (!options.transaction) {
+        await transaction.commit();
+      }
+      return null;
+    }
 
     const execution = await workflow.createExecution(
       {
@@ -423,7 +414,7 @@ export default class PluginWorkflowServer extends Plugin {
     try {
       const execution = await this.createExecution(...event);
       // NOTE: cache first execution for most cases
-      if (!this.executing && !this.pending.length) {
+      if (execution && !this.executing && !this.pending.length) {
         this.pending.push([execution]);
       }
     } catch (err) {
