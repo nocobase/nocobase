@@ -64,6 +64,9 @@ jobs:
           build-args: |
             VERDACCIO_URL=http://localhost:4873/
             COMMIT_HASH=${GITHUB_SHA}
+            PLUGINS_DIRS=pro-plugins
+            APPEND_PRESET_LOCAL_PLUGINS=notifications,demo-platform,disable-pm-add,workflow-json-query,collection-fdw,workflow-variable,telemetry-prometheus,workflow-approval
+            BEFORE_PACK_NOCOBASE=yarn add @nocobase/plugin-demo-platform @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add @nocobase/plugin-workflow-json-query @nocobase/plugin-collection-fdw @nocobase/plugin-workflow-variable @nocobase/plugin-telemetry-prometheus @nocobase/plugin-workflow-approval -W
           push: true
           tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:pr-${{ inputs.pr_number }}-pro
       - name: Deploy NocoBase
