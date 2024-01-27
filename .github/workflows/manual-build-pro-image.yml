@@ -27,10 +27,8 @@ jobs:
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
+          ref: refs/pull/${{ inputs.pr_number }}/head
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - run: cd packages/pro-plugins && gh pr checkout ${{ inputs.pr_number }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: rm .git
         run: rm -rf packages/pro-plugins/.git &&  git config --global user.email "you@example.com"  &&  git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
       - name: Set up QEMU
@@ -56,6 +54,18 @@ jobs:
           registry: ${{ secrets.ALI_DOCKER_REGISTRY }}
           username: ${{ secrets.ALI_DOCKER_USERNAME }}
           password: ${{ secrets.ALI_DOCKER_PASSWORD }}
+      - name: Set variables
+        run: |
+          target_directory="./packages/pro-plugins/@nocobase"
+          subdirectories=$(find "$target_directory" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | tr '\n' ' ')
+          trimmed_variable=$(echo "$subdirectories" | xargs)
+          packageNames="@nocobase/${trimmed_variable// / @nocobase/}"
+          pluginNames="${trimmed_variable//plugin-/}"
+          BEFORE_PACK_NOCOBASE="yarn add @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add $packageNames -W"
+          APPEND_PRESET_LOCAL_PLUGINS="notifications,demo-platform,disable-pm-add,${pluginNames// /,}"
+          echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
+          echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
+        id: vars
       - name: Build and push - pr-${{ inputs.pr_number }}-pro
         uses: docker/build-push-action@v3
         with:
@@ -65,8 +75,8 @@ jobs:
             VERDACCIO_URL=http://localhost:4873/
             COMMIT_HASH=${GITHUB_SHA}
             PLUGINS_DIRS=pro-plugins
-            APPEND_PRESET_LOCAL_PLUGINS=notifications,demo-platform,disable-pm-add,workflow-json-query,collection-fdw,workflow-variable,telemetry-prometheus,workflow-approval
-            BEFORE_PACK_NOCOBASE=yarn add @nocobase/plugin-demo-platform @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add @nocobase/plugin-workflow-json-query @nocobase/plugin-collection-fdw @nocobase/plugin-workflow-variable @nocobase/plugin-telemetry-prometheus @nocobase/plugin-workflow-approval -W
+            BEFORE_PACK_NOCOBASE=${{ steps.vars.outputs.var1 }}
+            APPEND_PRESET_LOCAL_PLUGINS=${{ steps.vars.outputs.var2 }}
           push: true
           tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:pr-${{ inputs.pr_number }}-pro
       - name: Deploy NocoBase
