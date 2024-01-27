@@ -15,6 +15,7 @@ describe('data source factory', () => {
       resourcer: {
         prefix: '/api/',
       },
+      name: 'test-app-1',
     });
 
     app.dataSourceManager.factory.register('mock', MockDataSource);
@@ -30,6 +31,7 @@ describe('data source factory', () => {
       resourcer: {
         prefix: '/api/',
       },
+      name: 'test-app-2',
     });
 
     expect(() => {
