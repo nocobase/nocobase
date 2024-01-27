@@ -1,5 +1,8 @@
 import { type DataSource } from './data-source';
 import { list } from './default-actions/list';
+import { get } from './default-actions/get';
+import { update } from './default-actions/update';
+import { destroy } from './default-actions/destroy';
 
 export function loadDefaultActions(dataSource: DataSource) {
   return {
@@ -13,5 +16,8 @@ export function loadDefaultActions(dataSource: DataSource) {
     },
 
     list,
+    get,
+    update,
+    destroy,
   };
 }

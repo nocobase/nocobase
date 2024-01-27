@@ -1,9 +1,8 @@
 import lodash from 'lodash';
-import { Context } from '../index';
-import { getRepositoryFromParams } from '../utils';
+import { getRepositoryFromParams } from './utils';
 
 export function proxyToRepository(paramKeys: string[], repositoryMethod: string) {
-  return async function (ctx: Context, next) {
+  return async function (ctx, next) {
     const repository = getRepositoryFromParams(ctx);
 
     const callObj = lodash.pick(ctx.action.params, paramKeys);
