@@ -52,16 +52,20 @@ export class DataSourceModel extends MagicAttributeModel {
       name: this.get('key'),
     });
 
-    const localData = await this.loadLocalData();
+    const acl = dataSource.acl;
 
     for (const [actionName, actionParams] of Object.entries(availableActions)) {
-      dataSource.acl.setAvailableAction(actionName, actionParams);
+      acl.setAvailableAction(actionName, actionParams);
     }
+
+    acl.allow('*', '*', (ctx) => {
+      return ctx.state.currentRole === 'root';
+    });
 
     dataSource.resourceManager.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'auth' });
 
     await app.dataSourceManager.add(dataSource, {
-      localData,
+      localData: await this.loadLocalData(),
     });
   }
 

@@ -94,6 +94,18 @@ describe('data source with acl', () => {
     await app.destroy();
   });
 
+  it('should allow root user', async () => {
+    const adminUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['root'],
+      },
+    });
+
+    const adminAgent: any = app.agent().login(adminUser).set('x-data-source', 'mockInstance1');
+    const postRes = await adminAgent.resource('api/posts').list({});
+    expect(postRes.status).toBe(200);
+  });
+
   it('should create strategy', async () => {
     const adminUser = await app.db.getRepository('users').create({
       values: {
