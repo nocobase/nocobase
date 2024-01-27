@@ -5,13 +5,14 @@ export class SequelizeCollectionManager implements ICollectionManager {
   db: Database;
 
   constructor(options) {
-    this.db = this.createDB(options.database);
+    this.db = this.createDB(options);
   }
 
-  createDB(options) {
-    if (options instanceof Database) {
-      return options;
+  createDB(options: any = {}) {
+    if (options.database instanceof Database) {
+      return options.database;
     }
+
     return new Database(options);
   }
 

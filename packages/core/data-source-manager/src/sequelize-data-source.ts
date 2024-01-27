@@ -5,6 +5,6 @@ export class SequelizeDataSource extends DataSource {
   async load() {}
 
   createCollectionManager(options?: any) {
-    return new SequelizeCollectionManager(options);
+    return new SequelizeCollectionManager(options.collectionManager);
   }
 }

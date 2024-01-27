@@ -26,6 +26,7 @@ describe('example', () => {
         database,
       },
     });
+
     ds1.collectionManager.defineCollection({
       name: 'test1',
       fields: [{ type: 'string', name: 'name' }],
