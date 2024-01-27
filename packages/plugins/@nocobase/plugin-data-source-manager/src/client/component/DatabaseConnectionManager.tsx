@@ -45,7 +45,7 @@ export const DatabaseConnectionManagerPane = () => {
   const useDestroyAction = () => {
     const { refresh } = useResourceActionContext();
     const { resource } = useResourceContext();
-    const { name: filterByTk } = useRecord();
+    const { key: filterByTk } = useRecord();
     return {
       async run() {
         await resource.destroy({ filterByTk });
