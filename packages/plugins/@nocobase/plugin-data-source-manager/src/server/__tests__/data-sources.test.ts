@@ -14,6 +14,40 @@ describe('data source', async () => {
     await app.destroy();
   });
 
+  it('should test datasource connection', async () => {
+    const testConnectionFn = vi.fn();
+
+    class MockDataSource extends DataSource {
+      static testConnection(options?: any): Promise<boolean> {
+        testConnectionFn();
+        return Promise.resolve(true);
+      }
+      async load(): Promise<void> {}
+
+      createCollectionManager(options?: any): any {
+        return undefined;
+      }
+    }
+
+    app.dataSourceManager.factory.register('mock', MockDataSource);
+
+    const testArgs = {
+      test: '123',
+    };
+
+    await app
+      .agent()
+      .resource('dataSources')
+      .testConnection({
+        values: {
+          options: testArgs,
+          type: 'mock',
+        },
+      });
+
+    expect(testConnectionFn).toBeCalledTimes(1);
+  });
+
   it('should create data source', async () => {
     const loadFn = vi.fn();
 

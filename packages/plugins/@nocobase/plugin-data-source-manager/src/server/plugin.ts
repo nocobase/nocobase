@@ -60,7 +60,7 @@ export class PluginDataSourceManagerServer extends Plugin {
 
         const { options, type } = values;
 
-        const klass = this.app.dataSourceManager.factory.getClass(type);
+        const klass = ctx.app.dataSourceManager.factory.getClass(type);
 
         try {
           await klass.testConnection(options);
