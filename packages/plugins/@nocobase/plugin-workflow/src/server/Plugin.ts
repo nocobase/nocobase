@@ -352,7 +352,6 @@ export default class PluginWorkflowServer extends Plugin {
 
   private async createExecution(workflow: WorkflowModel, context, options): Promise<ExecutionModel | null> {
     const { transaction = await this.db.sequelize.transaction() } = options;
-
     const trigger = this.triggers.get(workflow.type);
     const valid = await trigger.validateEvent(workflow, context, { ...options, transaction });
     if (!valid) {
@@ -401,6 +400,10 @@ export default class PluginWorkflowServer extends Plugin {
   }
 
   private prepare = async () => {
+    if (this.executing && this.db.options.dialect === 'sqlite') {
+      await this.executing;
+    }
+
     const event = this.events.shift();
     this.eventsCount = this.events.length;
     if (!event) {
@@ -438,6 +441,10 @@ export default class PluginWorkflowServer extends Plugin {
     if (this.executing) {
       this.getLogger('dispatcher').warn(`workflow executing is not finished, new dispatching will be ignored`);
       return;
+    }
+
+    if (this.events.length) {
+      return this.prepare();
     }
 
     this.executing = (async () => {
