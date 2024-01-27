@@ -1,11 +1,9 @@
 name: manual-build-pro-image
 
 on:
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: 'Please enter a pull request number'
-        required: true
+  pull_request:
+    branches:
+      - '**'
 
 jobs:
   build-and-push:
@@ -28,9 +26,9 @@ jobs:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
-      - run: cd packages/pro-plugins && gh pr checkout ${{ inputs.pr_number }}
+      - run: cd packages/pro-plugins && gh pr checkout 20
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: rm .git
         run: rm -rf packages/pro-plugins/.git &&  git config --global user.email "you@example.com"  &&  git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
       - name: Set up QEMU
@@ -56,7 +54,7 @@ jobs:
           registry: ${{ secrets.ALI_DOCKER_REGISTRY }}
           username: ${{ secrets.ALI_DOCKER_USERNAME }}
           password: ${{ secrets.ALI_DOCKER_PASSWORD }}
-      - name: Build and push - pr-${{ inputs.pr_number }}-pro
+      - name: Build and push - pr-20-pro
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -68,12 +66,12 @@ jobs:
             APPEND_PRESET_LOCAL_PLUGINS=notifications,demo-platform,disable-pm-add,workflow-json-query,collection-fdw,workflow-variable,telemetry-prometheus,workflow-approval
             BEFORE_PACK_NOCOBASE=yarn add @nocobase/plugin-demo-platform @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add @nocobase/plugin-workflow-json-query @nocobase/plugin-collection-fdw @nocobase/plugin-workflow-variable @nocobase/plugin-telemetry-prometheus @nocobase/plugin-workflow-approval -W
           push: true
-          tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:pr-${{ inputs.pr_number }}-pro
+          tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:pr-20-pro
       - name: Deploy NocoBase
         run: |
-          curl --retry 2 --location --request POST "${{secrets.NOCOBASE_DEPLOY_HOST}}pr-${{ inputs.pr_number }}-pro" \
+          curl --retry 2 --location --request POST "${{secrets.NOCOBASE_DEPLOY_HOST}}pr-20-pro" \
           --header 'Content-Type: application/json' \
           -d "{
-              \"tag\": \"pr-${{ inputs.pr_number }}-pro\",
+              \"tag\": \"pr-20-pro\",
               \"dialect\": \"postgres\"
           }"
