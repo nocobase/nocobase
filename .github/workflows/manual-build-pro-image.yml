@@ -52,6 +52,17 @@ jobs:
           registry: ${{ secrets.ALI_DOCKER_REGISTRY }}
           username: ${{ secrets.ALI_DOCKER_USERNAME }}
           password: ${{ secrets.ALI_DOCKER_PASSWORD }}
+      - name: Set variables
+        run: |
+          target_directory="./packages/pro-plugins/@nocobase"
+          subdirectories=$(find "$target_directory" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | tr '\n' ' ')
+          trimmed_variable=$(echo "$subdirectories" | xargs)
+          packageNames="@nocobase/${trimmed_variable// / @nocobase/}"
+          pluginNames="${trimmed_variable//plugin-/}"
+          BEFORE_PACK_NOCOBASE="yarn add @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add $packageNames -W"
+          APPEND_PRESET_LOCAL_PLUGINS="notifications,demo-platform,disable-pm-add,${pluginNames// /,}"
+          echo "::set-output name=var1::$BEFORE_PACK_NOCOBASE\n::set-output name=var2::$APPEND_PRESET_LOCAL_PLUGINS"
+        id: vars
       - name: Build and push - pr-20-pro
         uses: docker/build-push-action@v3
         with:
@@ -61,8 +72,8 @@ jobs:
             VERDACCIO_URL=http://localhost:4873/
             COMMIT_HASH=${GITHUB_SHA}
             PLUGINS_DIRS=pro-plugins
-            APPEND_PRESET_LOCAL_PLUGINS=notifications,demo-platform,disable-pm-add,workflow-json-query,collection-fdw,workflow-variable,telemetry-prometheus,workflow-approval
-            BEFORE_PACK_NOCOBASE=yarn add @nocobase/plugin-demo-platform @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add @nocobase/plugin-workflow-json-query @nocobase/plugin-collection-fdw @nocobase/plugin-workflow-variable @nocobase/plugin-telemetry-prometheus @nocobase/plugin-workflow-approval -W
+            BEFORE_PACK_NOCOBASE=${{ steps.vars.outputs.var1 }}
+            APPEND_PRESET_LOCAL_PLUGINS=${{ steps.vars.outputs.var2 }}
           push: true
           tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:pr-20-pro
       - name: Deploy NocoBase
