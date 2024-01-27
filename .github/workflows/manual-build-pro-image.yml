@@ -1,9 +1,11 @@
 name: manual-build-pro-image
 
 on:
-  pull_request:
-    branches:
-      - '**'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Please enter a pull request number'
+        required: true
 
 jobs:
   build-and-push:
@@ -25,7 +27,7 @@ jobs:
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
-          ref: refs/pull/20/head
+          ref: refs/pull/${{ inputs.pr_number }}/head
           ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
       - name: rm .git
         run: rm -rf packages/pro-plugins/.git &&  git config --global user.email "you@example.com"  &&  git config --global user.name "Your Name" && git add -A && git commit -m "tmp commit"
@@ -64,7 +66,7 @@ jobs:
           echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
           echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
         id: vars
-      - name: Build and push - pr-20-pro
+      - name: Build and push - pr-${{ inputs.pr_number }}-pro
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -76,12 +78,12 @@ jobs:
             BEFORE_PACK_NOCOBASE=${{ steps.vars.outputs.var1 }}
             APPEND_PRESET_LOCAL_PLUGINS=${{ steps.vars.outputs.var2 }}
           push: true
-          tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:pr-20-pro
+          tags: ${{ secrets.ALI_DOCKER_REGISTRY }}/nocobase/nocobase:pr-${{ inputs.pr_number }}-pro
       - name: Deploy NocoBase
         run: |
-          curl --retry 2 --location --request POST "${{secrets.NOCOBASE_DEPLOY_HOST}}pr-20-pro" \
+          curl --retry 2 --location --request POST "${{secrets.NOCOBASE_DEPLOY_HOST}}pr-${{ inputs.pr_number }}-pro" \
           --header 'Content-Type: application/json' \
           -d "{
-              \"tag\": \"pr-20-pro\",
+              \"tag\": \"pr-${{ inputs.pr_number }}-pro\",
               \"dialect\": \"postgres\"
           }"
