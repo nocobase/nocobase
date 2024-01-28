@@ -25,21 +25,14 @@ export class PluginDataSourceManagerServer extends Plugin {
       DataSourceModel,
     });
 
-    this.app.db.on('dataSources.afterSave', async (model: DataSourceModel) => {
+    this.app.db.on('dataSources.afterSave', async (model: DataSourceModel, options) => {
+      const { transaction } = options;
+
       await model.loadIntoApplication({
         app: this.app,
+        transaction,
       });
     });
-
-    // this.app.db.on('databaseConnections.beforeCreate', async (model: DatabaseConnectionModel, options) => {
-    //   await model.checkConnection();
-    // });
-    //
-    // this.app.db.on('databaseConnections.afterSave', async (model: DatabaseConnectionModel) => {
-    //   await model.loadIntoApplication({
-    //     app: this.app,
-    //   });
-    // });
 
     this.app.db.on('dataSources.afterCreate', async (model: DataSourceModel, options) => {
       const { transaction } = options;
@@ -163,18 +156,6 @@ export class PluginDataSourceManagerServer extends Plugin {
       for (const dataSourceRecord of dataSourcesRecords) {
         await dataSourceRecord.loadIntoApplication({
           app,
-        });
-      }
-
-      // load roles
-      const rolesModel: DataSourcesRolesModel[] = await this.app.db.getRepository('dataSourcesRoles').find();
-      const pluginACL: any = this.app.pm.get('acl');
-
-      for (const roleModel of rolesModel) {
-        await roleModel.writeToAcl({
-          grantHelper: pluginACL.grantHelper,
-          associationFieldsActions: pluginACL.associationFieldsActions,
-          acl: this.app.dataSourceManager.dataSources.get(roleModel.get('dataSourceKey')).acl,
         });
       }
     });

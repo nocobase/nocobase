@@ -1,8 +1,10 @@
-import { MagicAttributeModel } from '@nocobase/database';
+import { MagicAttributeModel, Transaction } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { LocalData } from '../services/database-introspector';
 import { setCurrentRole } from '@nocobase/plugin-acl';
 import { AvailableActionOptions } from '@nocobase/acl';
+import { DataSourcesRolesModel } from './data-sources-roles-model';
+import { DataSource } from '@nocobase/data-source-manager';
 
 const availableActions: {
   [key: string]: AvailableActionOptions;
@@ -42,8 +44,18 @@ const availableActions: {
 };
 
 export class DataSourceModel extends MagicAttributeModel {
-  async loadIntoApplication(options: { app: Application }) {
+  async loadIntoApplication(options: { app: Application; transaction?: Transaction }) {
     const { app } = options;
+    const loadRoleIntoDataSource = async (model: DataSourcesRolesModel, dataSource: DataSource) => {
+      const pluginACL: any = app.pm.get('acl');
+
+      await model.writeToAcl({
+        grantHelper: pluginACL.grantHelper,
+        associationFieldsActions: pluginACL.associationFieldsActions,
+        acl: dataSource.acl,
+      });
+    };
+
     const type = this.get('type');
     const createOptions = this.get('options');
 
@@ -63,6 +75,17 @@ export class DataSourceModel extends MagicAttributeModel {
     });
 
     dataSource.resourceManager.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'auth' });
+
+    const rolesModel: DataSourcesRolesModel[] = await app.db.getRepository('dataSourcesRoles').find({
+      transaction: options.transaction,
+      filter: {
+        dataSourceKey: this.get('key'),
+      },
+    });
+
+    for (const roleModel of rolesModel) {
+      await loadRoleIntoDataSource(roleModel, dataSource);
+    }
 
     await app.dataSourceManager.add(dataSource, {
       localData: await this.loadLocalData(),
