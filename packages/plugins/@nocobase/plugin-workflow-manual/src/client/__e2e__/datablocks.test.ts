@@ -962,6 +962,13 @@ test.describe('field data', () => {
     const preManualNodeRecord = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
     await page.getByRole('textbox').fill(preManualNodeRecord);
     await page.getByRole('button', { name: 'Continue the process' }).click();
+    await page.getByLabel('action-Filter.Action-Filter-filter-users_jobs-workflow-todo').click();
+    await page.getByText('Add condition', { exact: true }).click();
+    await page.getByTestId('select-filter-field').click();
+    await page.getByRole('menuitemcheckbox', { name: 'Task right' }).click();
+    await page.getByRole('menuitemcheckbox', { name: 'Title' }).click();
+    await page.getByRole('textbox').fill(manualNodeName);
+    await page.getByRole('button', { name: 'Submit' }).click();
     await page
       .locator(`//td[span[text()="${manualNodeName}"]]`)
       .locator('xpath=preceding-sibling::td[1]')
