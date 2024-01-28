@@ -9,6 +9,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { Link } from 'react-router-dom';
 import {
   DEFAULT_DATA_SOURCE_NAME,
+  DeprecatedContextProvider,
   TableFieldResource,
   WithoutTableFieldResource,
   useAPIClient,
@@ -19,7 +20,12 @@ import {
   useRecordV2,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
-import { CollectionDataSourceProvider } from '../application/data-block';
+import {
+  CollectionDataSourceProvider,
+  DataBlockProviderV2,
+  useDataBlockRequestV2,
+  useDataBlockResourceV2,
+} from '../application/data-block';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { useTemplateBlockContext } from './TemplateBlockProvider';
@@ -427,5 +433,32 @@ export const RecordLink = (props) => {
     <Link {...others} to={compiled({ record: record || {} })}>
       {field.title}
     </Link>
+  );
+};
+
+export const BlockProviderV2 = (props) => {
+  const { association } = props;
+  let record = useRecordV2(false);
+  let parentRecord = null;
+
+  const parentResource = useDataBlockResourceV2();
+  const parentService = useDataBlockRequestV2();
+  const { blockType: parentBlockType } = useDataBlockPropsV2<any>() || {};
+
+  if (association) {
+    parentRecord = record;
+    record = null;
+  }
+
+  return (
+    <DataBlockProviderV2 parentRecord={parentRecord} record={record} blockType="form" {...props}>
+      <DeprecatedContextProvider
+        parentResource={parentResource}
+        parentService={parentService}
+        parentBlockType={parentBlockType}
+      >
+        <DataBlockCollector>{props.children}</DataBlockCollector>
+      </DeprecatedContextProvider>
+    </DataBlockProviderV2>
   );
 };

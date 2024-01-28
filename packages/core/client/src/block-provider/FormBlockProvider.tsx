@@ -3,21 +3,13 @@ import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react
 import { Spin } from 'antd';
 import _, { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import {
-  DataBlockProviderV2,
-  useDataBlockPropsV2,
-  useDataBlockRequestV2,
-  useDataBlockResourceV2,
-  useRecordV2,
-} from '../application';
+import { useDataBlockPropsV2, useDataBlockRequestV2, useDataBlockResourceV2 } from '../application';
 import { withDynamicSchemaProps } from '../application/hoc';
 import { useCollection } from '../collection-manager';
-import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
-import { BlockProvider, useBlockRequestContext, useParamsOfRelationshipBlocks } from './BlockProvider';
-import { DeprecatedContextProvider } from './DeprecatedContextProviderContext';
+import { BlockProvider, BlockProviderV2, useBlockRequestContext, useParamsOfRelationshipBlocks } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider, useAssociationNames } from './hooks';
 
@@ -178,35 +170,14 @@ export const FormBlockProvider = (props) => {
 };
 
 export const FormBlockProviderV2 = withDynamicSchemaProps((props) => {
-  const { association } = props;
-  let record = useRecordV2(false);
-  let parentRecord = null;
-
-  const parentResource = useDataBlockResourceV2();
-  const parentService = useDataBlockRequestV2();
-  const { blockType: parentBlockType } = useDataBlockPropsV2<any>() || {};
-
-  if (association) {
-    parentRecord = record;
-    record = null;
-  }
-
   return (
-    <DataBlockProviderV2 parentRecord={parentRecord} record={record} blockType="form" {...props}>
-      <DeprecatedContextProvider
-        parentResource={parentResource}
-        parentService={parentService}
-        parentBlockType={parentBlockType}
-      >
-        <DataBlockCollector>
-          <TemplateBlockProvider>
-            <FormActiveFieldsProvider name="form">
-              <InternalFormBlockProviderV2 {...props} />
-            </FormActiveFieldsProvider>
-          </TemplateBlockProvider>
-        </DataBlockCollector>
-      </DeprecatedContextProvider>
-    </DataBlockProviderV2>
+    <BlockProviderV2 {...props}>
+      <TemplateBlockProvider>
+        <FormActiveFieldsProvider name="form">
+          <InternalFormBlockProviderV2 {...props} />
+        </FormActiveFieldsProvider>
+      </TemplateBlockProvider>
+    </BlockProviderV2>
   );
 });
 
