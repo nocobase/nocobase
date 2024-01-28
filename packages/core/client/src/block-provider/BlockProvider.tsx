@@ -377,11 +377,16 @@ export const useSourceIdFromParentRecord = () => {
   }
 };
 
-export const useParamsFromRecord = ({ association }) => {
+export const useParamsOfRelationshipBlocks = ({ association }) => {
   const filterByTk = useFilterByTk({ association });
   const recordData = useRecordV2<any>(false)?.data || {};
   const { fields } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
+
+  if (!association) {
+    return {};
+  }
+
   const params = {
     filterByTk: filterByTk,
   };

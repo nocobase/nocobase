@@ -16,7 +16,7 @@ import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
-import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { BlockProvider, useBlockRequestContext, useParamsOfRelationshipBlocks } from './BlockProvider';
 import { DeprecatedContextProvider } from './DeprecatedContextProviderContext';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
 import { FormActiveFieldsProvider, useAssociationNames } from './hooks';
@@ -241,12 +241,13 @@ export const useFormBlockProps = () => {
 export const useFormDataBlockProps = (props: any = {}) => {
   const { getAssociationAppends } = useAssociationNames(props?.dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
+  const paramsFromRecord = useParamsOfRelationshipBlocks({ association: props.association });
   const params = useMemo(() => {
     if (!props?.params?.['appends']) {
-      return { ...props?.params, appends };
+      return { ...props?.params, appends, ...paramsFromRecord };
     }
-    return { ...props?.params };
-  }, [appends, props?.params]);
+    return { ...props?.params, ...paramsFromRecord };
+  }, [appends, paramsFromRecord, props?.params]);
 
   return {
     ...props,

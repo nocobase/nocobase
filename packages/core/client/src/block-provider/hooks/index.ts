@@ -28,7 +28,7 @@ import { useCurrentUserContext } from '../../user';
 import { useLocalVariables, useVariables } from '../../variables';
 import { isVariable } from '../../variables/utils/isVariable';
 import { transformVariableValue } from '../../variables/utils/transformVariableValue';
-import { useFilterByTk, useParamsFromRecord } from '../BlockProvider';
+import { useFilterByTk, useParamsOfRelationshipBlocks } from '../BlockProvider';
 import { useDeprecatedContext } from '../DeprecatedContextProviderContext';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
@@ -867,7 +867,7 @@ export const useUpdateActionProps = () => {
   const actionField = useField();
   const { updateAssociationValues } = useFormBlockContext();
   const { modal } = App.useApp();
-  const data = useParamsFromRecord();
+  const data = useParamsOfRelationshipBlocks();
   const variables = useVariables();
   const localVariables = useLocalVariables({ currentForm: form });
   const { getActiveFieldsName } = useFormActiveFields() || {};
@@ -974,7 +974,7 @@ export const useDestroyActionProps = () => {
   const { blockType } = useDataBlockPropsV2();
   const filterByTk = useFilterByTk();
   const { setVisible } = useActionContext();
-  const data = useParamsFromRecord();
+  const data = useParamsOfRelationshipBlocks();
   return {
     async onClick() {
       await resource.destroy({

@@ -1,7 +1,12 @@
 import React from 'react';
 import { Plugin } from '../application/Plugin';
 import { SchemaComponentOptions } from '../schema-component';
-import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
+import {
+  RecordLink,
+  useParamsOfRelationshipBlocks,
+  useSourceIdFromParentRecord,
+  useSourceIdFromRecord,
+} from './BlockProvider';
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';
 import { FilterFormBlockProvider } from './FilterFormBlockProvider';
 import { FormBlockProviderV2, useFormBlockProps, useFormDataBlockProps } from './FormBlockProvider';
@@ -29,7 +34,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         ...bp,
         useSourceIdFromRecord,
         useSourceIdFromParentRecord,
-        useParamsFromRecord,
+        useParamsFromRecord: useParamsOfRelationshipBlocks,
         useFormBlockProps,
         useFormFieldProps,
         useDetailsBlockProps,
@@ -67,7 +72,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       ...bp,
       useSourceIdFromRecord,
       useSourceIdFromParentRecord,
-      useParamsFromRecord,
+      useParamsFromRecord: useParamsOfRelationshipBlocks,
       useFormBlockProps,
       useFormFieldProps,
       useDetailsBlockProps,
