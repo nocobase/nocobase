@@ -222,7 +222,7 @@ export class Application {
         code: 'LOAD_ERROR',
         ...others,
       };
-      console.error(this.error);
+      console.error(error, this.error);
     }
     this.loading = false;
   }

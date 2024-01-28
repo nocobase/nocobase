@@ -1,4 +1,4 @@
-import { Collection, Model } from '@nocobase/database';
+import { Collection, Model, Transactionable } from '@nocobase/database';
 import Trigger from '.';
 import { toJSON } from '../utils';
 import type { WorkflowModel } from '../types';
@@ -85,13 +85,24 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
   // TODO: `result.toJSON()` throws error
   const json = toJSON(result);
 
-  this.workflow.trigger(
-    workflow,
-    { data: json },
-    {
-      context,
-    },
-  );
+  if (workflow.sync) {
+    await this.workflow.trigger(
+      workflow,
+      { data: json },
+      {
+        context,
+        transaction,
+      },
+    );
+  } else {
+    this.workflow.trigger(
+      workflow,
+      { data: json },
+      {
+        context,
+      },
+    );
+  }
 }
 
 export default class CollectionTrigger extends Trigger {
@@ -142,5 +153,34 @@ export default class CollectionTrigger extends Trigger {
         }
       }
     }
+  }
+
+  async validateEvent(
+    workflow: WorkflowModel,
+    context: any,
+    options: { context?: { stack?: number[] } } & Transactionable,
+  ): Promise<boolean> {
+    if (options.context?.stack) {
+      const existed = await workflow.countExecutions({
+        where: {
+          id: options.context.stack,
+        },
+        transaction: options.transaction,
+      });
+
+      if (existed) {
+        this.workflow
+          .getLogger(workflow.id)
+          .warn(
+            `workflow ${workflow.id} has already been triggered in stack executions (${options.context.stack}), and newly triggering will be skipped.`,
+          );
+
+        return false;
+      }
+
+      context.stack = options.context.stack;
+    }
+
+    return true;
   }
 }

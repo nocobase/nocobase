@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/cli",
-  "version": "0.19.0-alpha.3",
+  "version": "0.19.0-alpha.4",
   "description": "",
   "license": "Apache-2.0",
   "main": "./src/index.js",
@@ -8,7 +8,7 @@
     "nocobase": "./bin/index.js"
   },
   "dependencies": {
-    "@nocobase/app": "0.19.0-alpha.3",
+    "@nocobase/app": "0.19.0-alpha.4",
     "@types/fs-extra": "^11.0.1",
     "@umijs/utils": "3.5.20",
     "chalk": "^4.1.1",
@@ -21,10 +21,11 @@
     "pm2": "^5.2.0",
     "portfinder": "^1.0.28",
     "serve": "^13.0.2",
+    "tree-kill": "^1.2.2",
     "tsx": "^4.6.2"
   },
   "devDependencies": {
-    "@nocobase/devtools": "0.19.0-alpha.3"
+    "@nocobase/devtools": "0.19.0-alpha.4"
   },
   "repository": {
     "type": "git",

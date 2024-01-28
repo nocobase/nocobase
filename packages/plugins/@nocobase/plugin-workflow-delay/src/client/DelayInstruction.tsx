@@ -1,7 +1,7 @@
 import React from 'react';
 import { InputNumber, Select } from 'antd';
-import { css, useCompile } from '@nocobase/client';
-import { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow/client';
+import { css, useCompile, usePlugin } from '@nocobase/client';
+import WorkflowPlugin, { Instruction, JOB_STATUS } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE } from '../locale';
 
@@ -70,7 +70,7 @@ export default class extends Instruction {
     },
     endStatus: {
       type: 'number',
-      title: `{{t("End Status", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("End status", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
       enum: [
@@ -84,4 +84,7 @@ export default class extends Instruction {
   components = {
     Duration,
   };
+  isAvailable({ engine, workflow, upstream, branchIndex }) {
+    return !engine.isWorkflowSync(workflow);
+  }
 }

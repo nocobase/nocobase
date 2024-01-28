@@ -31,7 +31,7 @@ import WorkflowPlugin, {
 import { DetailsBlockProvider } from './instruction/DetailsBlockProvider';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
-import { NAMESPACE } from '../locale';
+import { NAMESPACE, useLang } from '../locale';
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
@@ -211,6 +211,15 @@ const UserColumn = observer(
   { displayName: 'UserColumn' },
 );
 
+function UserJobStatusColumn(props) {
+  const record = useRecord();
+  const labelUnprocessed = useLang('Unprocessed');
+  if (record.execution.status && !record.status) {
+    return <Tag>{labelUnprocessed}</Tag>;
+  }
+  return props.children;
+}
+
 export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } = () => {
   return (
     <SchemaComponent
@@ -218,6 +227,7 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
         NodeColumn,
         WorkflowColumn,
         UserColumn,
+        UserJobStatusColumn,
       }}
       schema={{
         type: 'void',
@@ -326,6 +336,8 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
                 title: `{{t("Status", { ns: "workflow" })}}`,
                 properties: {
                   status: {
+                    type: 'number',
+                    'x-decorator': 'UserJobStatusColumn',
                     'x-component': 'CollectionField',
                     'x-read-pretty': true,
                   },
@@ -400,16 +412,16 @@ function ActionBarProvider(props) {
 const ManualActionStatusContext = createContext<number | null>(null);
 
 function ManualActionStatusProvider({ value, children }) {
-  const { userJob } = useFlowContext();
+  const { userJob, execution } = useFlowContext();
   const button = useField();
   const buttonSchema = useFieldSchema();
 
   useEffect(() => {
-    if (userJob.status) {
+    if (execution.status || userJob.status) {
       button.disabled = true;
       button.visible = userJob.status === value && userJob.result._ === buttonSchema.name;
     }
-  }, [userJob, value, button, buttonSchema.name]);
+  }, [execution, userJob, value, button, buttonSchema.name]);
 
   return <ManualActionStatusContext.Provider value={value}>{children}</ManualActionStatusContext.Provider>;
 }
@@ -420,12 +432,12 @@ function useSubmit() {
   const { values, submit } = useForm();
   const buttonSchema = useFieldSchema();
   const { service } = useTableBlockContext();
-  const { userJob } = useFlowContext();
+  const { userJob, execution } = useFlowContext();
   const { name: actionKey } = buttonSchema;
   const { name: formKey } = buttonSchema.parent.parent;
   return {
     async run() {
-      if (userJob.status) {
+      if (execution.status || userJob.status) {
         return;
       }
       await submit();
@@ -456,7 +468,7 @@ function FlowContextProvider(props) {
       .resource('users_jobs')
       .get?.({
         filterByTk: id,
-        appends: ['node', 'workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
+        appends: ['node', 'job', 'workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
       })
       .then(({ data }) => {
         const { node, workflow: { nodes = [], ...workflow } = {}, execution, ...userJob } = data?.data ?? {};
@@ -517,18 +529,19 @@ function FlowContextProvider(props) {
 }
 
 function useFormBlockProps() {
-  const { userJob } = useFlowContext();
+  const { userJob, execution } = useFlowContext();
   const record = useRecord();
   const { data: user } = useCurrentUserContext();
   const { form } = useFormBlockContext();
 
-  const pattern = userJob.status
-    ? record
-      ? 'readPretty'
-      : 'disabled'
-    : user?.data?.id !== userJob.userId
-      ? 'disabled'
-      : 'editable';
+  const pattern =
+    execution.status || userJob.status
+      ? record
+        ? 'readPretty'
+        : 'disabled'
+      : user?.data?.id !== userJob.userId
+        ? 'disabled'
+        : 'editable';
 
   useEffect(() => {
     form?.setPattern(pattern);
@@ -613,7 +626,7 @@ function Decorator({ params = {}, children }) {
       pageSize: 20,
       sort: ['-createdAt'],
       ...params,
-      appends: ['user', 'node', 'workflow'],
+      appends: ['user', 'node', 'workflow', 'execution.status'],
       except: ['node.config', 'workflow.config', 'workflow.options'],
     },
     rowKey: 'id',

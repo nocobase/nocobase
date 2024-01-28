@@ -370,4 +370,141 @@ describe('workflow > triggers > collection', () => {
       });
     });
   });
+
+  describe('cycling trigger', () => {
+    it('trigger should not be triggered more than once in same execution', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'posts',
+          params: {
+            values: {
+              title: 't2',
+            },
+          },
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(2);
+
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(1);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      // NOTE: second trigger to ensure no skipped event
+      const p3 = await PostRepo.create({ values: { title: 't3' } });
+
+      await sleep(500);
+
+      const posts2 = await PostRepo.find();
+      expect(posts2.length).toBe(4);
+
+      const e2s = await workflow.getExecutions({ order: [['createdAt', 'DESC']] });
+      expect(e2s.length).toBe(2);
+      expect(e2s[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+
+    it('multiple cycling trigger should not trigger more than once', async () => {
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await w1.createNode({
+        type: 'create',
+        config: {
+          collection: 'categories',
+          params: {
+            values: {
+              title: 'c1',
+            },
+          },
+        },
+      });
+
+      const w2 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'categories',
+        },
+      });
+
+      const n2 = await w2.createNode({
+        type: 'create',
+        config: {
+          collection: 'posts',
+          params: {
+            values: {
+              title: 't2',
+            },
+          },
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const posts = await PostRepo.find();
+      expect(posts.length).toBe(2);
+
+      const e1s = await w1.getExecutions();
+      expect(e1s.length).toBe(1);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      const e2s = await w2.getExecutions();
+      expect(e2s.length).toBe(1);
+      expect(e2s[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+  });
+
+  describe('sync', () => {
+    it('sync collection trigger', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'comments',
+          params: {
+            values: {},
+          },
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+    });
+  });
 });

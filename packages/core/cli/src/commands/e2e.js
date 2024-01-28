@@ -5,6 +5,7 @@ const axios = require('axios');
 const { pTest } = require('./p-test');
 const os = require('os');
 const treeKill = require('tree-kill');
+const chalk = require('chalk');
 
 /**
  * 检查服务是否启动成功
@@ -97,7 +98,7 @@ process.on('SIGINT', async () => {
     if (error) {
       console.error(error);
     } else {
-      console.log('所有子进程已被杀掉，应用程序即将退出');
+      console.log(chalk.yellow('Force killing...'));
     }
     process.exit();
   });
@@ -161,9 +162,6 @@ module.exports = (cli) => {
       process.env.APP_BASE_URL = process.env.APP_BASE_URL.replace('localhost', '127.0.0.1');
       console.log('APP_BASE_URL:', process.env.APP_BASE_URL);
     }
-  });
-  process.on('SIGINT', () => {
-    console.log('SIGINT......');
   });
 
   e2e

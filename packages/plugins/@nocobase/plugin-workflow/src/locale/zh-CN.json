@@ -27,6 +27,14 @@
   "Trigger time": "触发时间",
   "Triggered at": "触发时间",
 
+  "Execute mode": "执行模式",
+  "Execute workflow asynchronously or synchronously based on trigger type, and could not be changed after created.": "基于触发类型异步或同步执行工作流，创建后不可更改。",
+  "Asynchronously": "异步",
+  "Synchronously": "同步",
+  "Will be executed in the background as a queued task.": "将作为队列任务在后台执行。",
+  "For user actions that require immediate feedback. Can not use asynchronous nodes in such mode, and it is not recommended to perform time-consuming operations under synchronous mode.":
+    "适用于需要即时反馈的用户操作。不能在此模式下使用异步节点，并且不建议在同步模式下执行耗时的操作。",
+
   "Bind workflows": "绑定工作流",
   "Workflow will be triggered after submitting succeeded.": "提交成功后触发工作流。",
   "Workflow will be triggered after saving succeeded.": "保存成功后触发工作流。",
@@ -116,6 +124,9 @@
   "Rejected from a manual node.": "被人工节点拒绝继续。",
   "General failed but should do another try.": "执行失败，需重试。",
 
+  "Cancel the execution": "取消执行",
+  "Are you sure you want to cancel the execution?": "确定要取消该执行吗？",
+
   "Operations": "操作",
   "This node contains branches, deleting will also be preformed to them, are you sure?":
     "节点包含分支，将同时删除其所有分支下的子节点，确定继续？",
@@ -174,5 +185,10 @@
   "Executed workflow cannot be modified": "已经执行过的工作流不能被修改",
   "Can not delete": "无法删除",
   "The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.":
-    "该节点的执行结果已被其他节点（{{nodes}}）引用，删除前请先移除引用。"
+    "该节点的执行结果已被其他节点（{{nodes}}）引用，删除前请先移除引用。",
+
+  "End process": "结束流程",
+  "End the process immediately, with set status.": "以设置的状态立即结束流程。",
+  "End status": "结束状态",
+  "Succeeded": "成功"
 }
