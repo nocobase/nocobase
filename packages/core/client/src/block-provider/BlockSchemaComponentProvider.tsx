@@ -11,7 +11,7 @@ import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvid
 import { FilterFormBlockProvider } from './FilterFormBlockProvider';
 import { FormBlockProviderV2, useFormBlockProps, useFormDataBlockProps } from './FormBlockProvider';
 import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
-import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
+import { TableBlockProviderV2, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
 import * as bp from './hooks';
@@ -22,7 +22,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
     <SchemaComponentOptions
       components={{
         TableFieldProvider,
-        TableBlockProvider,
+        TableBlockProvider: TableBlockProviderV2,
         TableSelectorProvider,
         FormBlockProvider: FormBlockProviderV2,
         FilterFormBlockProvider,
@@ -57,7 +57,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
   addComponents() {
     this.app.addComponents({
       TableFieldProvider,
-      TableBlockProvider,
+      TableBlockProvider: TableBlockProviderV2,
       TableSelectorProvider,
       FormBlockProvider: FormBlockProviderV2,
       FilterFormBlockProvider,

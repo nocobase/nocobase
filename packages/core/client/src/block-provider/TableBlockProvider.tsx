@@ -2,12 +2,13 @@ import { ArrayField, createForm } from '@formily/core';
 import { FormContext, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useDataBlockRequestV2, useDataBlockResourceV2 } from '../application';
+import { withDynamicSchemaProps } from '../application/hoc';
 import { useCollectionManager } from '../collection-manager';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { mergeFilter } from '../filter-provider/utils';
 import { useRecord } from '../record-provider';
 import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
-import { BlockProvider, RenderChildrenWithAssociationFilter } from './BlockProvider';
+import { BlockProvider, BlockProviderV2, RenderChildrenWithAssociationFilter } from './BlockProvider';
 import { findFilterTargets, useParsedFilter } from './hooks';
 
 export const TableBlockContext = createContext<any>({});
@@ -124,6 +125,56 @@ export const TableBlockProvider = (props) => {
     </SchemaComponentOptions>
   );
 };
+
+export const TableBlockProviderV2 = withDynamicSchemaProps((props) => {
+  const resourceName = props.resource;
+  const params = useMemo(() => ({ ...props.params }), [props.params]);
+  const fieldSchema = useFieldSchema();
+  const { getCollection, getCollectionField } = useCollectionManager(props.dataSource);
+  const record = useRecord();
+  const collection = getCollection(props.collection);
+  const { treeTable, dragSortBy } = fieldSchema?.['x-decorator-props'] || {};
+  if (props.dragSort) {
+    params['sort'] = dragSortBy || ['sort'];
+  }
+  let childrenColumnName = 'children';
+  if (collection?.tree && treeTable !== false) {
+    if (resourceName?.includes('.')) {
+      const f = getCollectionField(resourceName);
+      if (f?.treeChildren) {
+        childrenColumnName = f.name;
+        params['tree'] = true;
+      }
+    } else {
+      const f = collection.fields.find((f) => f.treeChildren);
+      if (f) {
+        childrenColumnName = f.name;
+      }
+      params['tree'] = true;
+    }
+  }
+  const form = useMemo(() => createForm(), [treeTable]);
+  const { filter: parsedFilter } = useParsedFilter({
+    filterOption: params?.filter,
+    currentRecord: { __parent: record, __collectionName: props.collection },
+  });
+  const paramsWithFilter = useMemo(() => {
+    return {
+      ...params,
+      filter: parsedFilter,
+    };
+  }, [parsedFilter, params]);
+
+  return (
+    <SchemaComponentOptions scope={{ treeTable }}>
+      <FormContext.Provider value={form}>
+        <BlockProviderV2 blockType={'table'} {...props} params={paramsWithFilter} runWhenParamsChanged>
+          <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={paramsWithFilter} />
+        </BlockProviderV2>
+      </FormContext.Provider>
+    </SchemaComponentOptions>
+  );
+});
 
 export const useTableBlockContext = () => {
   return useContext(TableBlockContext);
