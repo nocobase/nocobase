@@ -44,9 +44,9 @@ export const DataBlockResourceProviderV2: FC<{ children?: ReactNode }> = ({ chil
 export function useDataBlockResourceV2() {
   const context = useContext(DataBlockResourceContextV2);
 
-  if (!context) {
-    throw new Error('useDataBlockResourceV2() must be used within a DataBlockResourceProviderV2');
-  }
+  // if (!context) {
+  //   throw new Error('useDataBlockResourceV2() must be used within a DataBlockResourceProviderV2');
+  // }
 
   return context;
 }

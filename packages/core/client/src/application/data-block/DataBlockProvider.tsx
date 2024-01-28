@@ -138,9 +138,9 @@ export const DataBlockProviderV2: FC<DataBlockProviderProps & { children?: React
 
 export const useDataBlockV2 = <T extends {}>() => {
   const context = useContext<DataBlockContextValue<T>>(DataBlockContextV2);
-  if (!context) {
-    throw new Error('useDataBlockV2() must be used within a DataBlockProviderV2');
-  }
+  // if (!context) {
+  //   throw new Error('useDataBlockV2() must be used within a DataBlockProviderV2');
+  // }
 
   return context;
 };

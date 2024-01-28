@@ -122,9 +122,9 @@ export const BlockRequestProviderV2: FC = ({ children }) => {
 
 export const useDataBlockRequestV2 = <T extends {}>(): UseRequestResult<{ data: T }> => {
   const context = useContext(BlockRequestContextV2);
-  if (!context) {
-    console.error('useBlockRequest() must be used within a DataBlockRequestProvider');
-  }
+  // if (!context) {
+  //   console.error('useBlockRequest() must be used within a DataBlockRequestProvider');
+  // }
 
   return context;
 };

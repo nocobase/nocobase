@@ -184,7 +184,7 @@ export const FormBlockProviderV2 = withDynamicSchemaProps((props) => {
 
   const parentResource = useDataBlockResourceV2();
   const parentService = useDataBlockRequestV2();
-  const { blockType: parentBlockType } = useDataBlockPropsV2();
+  const { blockType: parentBlockType } = useDataBlockPropsV2<any>() || {};
 
   if (association) {
     parentRecord = record;
