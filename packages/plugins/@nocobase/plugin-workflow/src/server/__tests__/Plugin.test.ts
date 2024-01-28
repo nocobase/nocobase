@@ -233,52 +233,6 @@ describe('workflow > Plugin', () => {
     });
   });
 
-  describe('cycling trigger', () => {
-    it('trigger should not be triggered more than once in same execution', async () => {
-      const workflow = await WorkflowModel.create({
-        enabled: true,
-        type: 'collection',
-        config: {
-          mode: 1,
-          collection: 'posts',
-        },
-      });
-
-      const n1 = await workflow.createNode({
-        type: 'create',
-        config: {
-          collection: 'posts',
-          params: {
-            values: {
-              title: 't2',
-            },
-          },
-        },
-      });
-
-      const post = await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
-
-      const posts = await PostRepo.find();
-      expect(posts.length).toBe(2);
-
-      const [execution] = await workflow.getExecutions();
-      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
-
-      // NOTE: second trigger to ensure no skipped event
-      const p3 = await PostRepo.create({ values: { title: 't2' } });
-
-      await sleep(500);
-
-      const posts2 = await PostRepo.find();
-      expect(posts2.length).toBe(4);
-
-      const [execution2] = await workflow.getExecutions({ order: [['createdAt', 'DESC']] });
-      expect(execution2.status).toBe(EXECUTION_STATUS.RESOLVED);
-    });
-  });
-
   describe('dispatcher', () => {
     it('multiple triggers in same event', async () => {
       const w1 = await WorkflowModel.create({

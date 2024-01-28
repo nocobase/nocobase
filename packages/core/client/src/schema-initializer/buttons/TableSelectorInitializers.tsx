@@ -31,12 +31,22 @@ export const tableSelectorInitializers = new SchemaInitializer({
             name: 'filterFormBlockInTableSelector',
             title: '{{t("Form")}}',
             Component: 'FilterFormBlockInitializer',
+            componentProps: {
+              filterItems() {
+                return false;
+              },
+            },
             collectionName: name,
           },
           {
             name: 'filterCollapseBlockInTableSelector',
             title: '{{t("Collapse")}}',
             Component: 'FilterCollapseBlockInitializer',
+            componentProps: {
+              filterItems() {
+                return false;
+              },
+            },
             collectionName: name,
           },
         ];
