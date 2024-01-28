@@ -13,7 +13,7 @@ export class CreateInstruction extends Instruction {
     const created = await repository.create({
       ...options,
       context: {
-        executionId: processor.execution.id,
+        stack: Array.from(new Set((processor.execution.context.stack ?? []).concat(processor.execution.id))),
       },
       transaction: processor.transaction,
     });
