@@ -1,6 +1,7 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { CollectionOptions } from '@nocobase/client';
+import { NAMESPACE } from '../../../locale';
 
 export const collection: CollectionOptions = {
   name: 'fields',
@@ -175,7 +176,7 @@ export const fieldsTableSchema: ISchema = {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
           'x-component': 'Table.Column',
-          title: '{{t("Field interface")}}',
+          title: `{{t("Field interface", { ns: "${NAMESPACE}" })}}`,
           properties: {
             interface: {
               'x-component': 'CollectionFieldInterface',
