@@ -92,7 +92,7 @@ const workflowFieldset = {
   sync: {
     type: 'boolean',
     title: `{{ t("Execute mode", { ns: "${NAMESPACE}" }) }}`,
-    description: `{{ t("Could not be changed after created.", { ns: "${NAMESPACE}" }) }}`,
+    description: `{{ t("Execute workflow asynchronously or synchronously based on trigger type, and could not be changed after created.", { ns: "${NAMESPACE}" }) }}`,
     'x-decorator': 'FormItem',
     'x-component': 'SyncOptionSelect',
     'x-component-props': {
@@ -105,7 +105,7 @@ const workflowFieldset = {
         {
           label: `{{ t("Synchronously", { ns: "${NAMESPACE}" }) }}`,
           value: true,
-          tooltip: `{{ t("For user actions that require immediate feedback. Can not use asynchronous nodes in such mode.", { ns: "${NAMESPACE}" }) }}`,
+          tooltip: `{{ t("For user actions that require immediate feedback. Can not use asynchronous nodes in such mode, and it is not recommended to perform time-consuming operations under synchronous mode.", { ns: "${NAMESPACE}" }) }}`,
         },
       ],
     },

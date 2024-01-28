@@ -5,6 +5,7 @@ const axios = require('axios');
 const { pTest } = require('./p-test');
 const os = require('os');
 const treeKill = require('tree-kill');
+const chalk = require('chalk');
 
 /**
  * 检查服务是否启动成功
@@ -97,7 +98,7 @@ process.on('SIGINT', async () => {
     if (error) {
       console.error(error);
     } else {
-      console.log('all subprocesses were killed, exiting main process');
+      console.log(chalk.yellow('Force killing...'));
     }
     process.exit();
   });

@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-export const NAMESPACE = 'workflow-sql';
+export const NAMESPACE = '@nocobase/plugin-workflow-sql';
 
 export function useLang(key: string, options = {}) {
   const { t } = usePluginTranslation(options);
