@@ -344,10 +344,12 @@ export const BlockProvider = (props: {
   );
 };
 
-export const useFilterByTk = ({ association }) => {
+export const useFilterByTk = (props?: { association: string }) => {
   const record = useRecordV2(false)?.data || {};
   const collection = useCollection();
   const { getCollectionField } = useCollectionManager();
+  const dataBlockProps = useDataBlockPropsV2();
+  const association = props?.association || dataBlockProps?.association;
 
   if (association) {
     const collectionField = getCollectionField(association);
@@ -377,11 +379,13 @@ export const useSourceIdFromParentRecord = () => {
   }
 };
 
-export const useParamsOfRelationshipBlocks = ({ association }) => {
-  const filterByTk = useFilterByTk({ association });
+export const useParamsOfRelationshipBlocks = (props?: { association: string }) => {
+  const filterByTk = useFilterByTk({ association: props?.association });
   const recordData = useRecordV2<any>(false)?.data || {};
   const { fields } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
+  const dataBlockProps = useDataBlockPropsV2();
+  const association = props?.association || dataBlockProps?.association;
 
   if (!association) {
     return {};
