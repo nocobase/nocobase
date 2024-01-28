@@ -171,7 +171,7 @@ export const FormBlockProvider = (props) => {
 
 export const FormBlockProviderV2 = withDynamicSchemaProps((props) => {
   return (
-    <BlockProviderV2 {...props}>
+    <BlockProviderV2 {...props} blockType="form">
       <TemplateBlockProvider>
         <FormActiveFieldsProvider name="form">
           <InternalFormBlockProviderV2 {...props} />

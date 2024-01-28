@@ -451,7 +451,7 @@ export const BlockProviderV2 = (props) => {
   }
 
   return (
-    <DataBlockProviderV2 parentRecord={parentRecord} record={record} blockType="form" {...props}>
+    <DataBlockProviderV2 parentRecord={parentRecord} record={record} blockType={props.blockType} {...props}>
       <DeprecatedContextProvider
         parentResource={parentResource}
         parentService={parentService}
