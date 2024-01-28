@@ -5,10 +5,9 @@ import { useSchemaInitializer, useSchemaInitializerItem } from '../../applicatio
 import { createCollapseBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
 
-export const FilterCollapseBlockInitializer = () => {
+export const FilterCollapseBlockInitializer = ({ filterItems }) => {
   const itemConfig = useSchemaInitializerItem();
   const { insert } = useSchemaInitializer();
-  const items = itemConfig?.name === 'filterCollapseBlockInTableSelector' ? [] : undefined;
 
   return (
     <DataBlockInitializer
@@ -23,7 +22,7 @@ export const FilterCollapseBlockInitializer = () => {
         });
         insert(schema);
       }}
-      items={items}
+      filterItems={filterItems}
     />
   );
 };
