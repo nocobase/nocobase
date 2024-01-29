@@ -351,7 +351,7 @@ export const BlockProvider = (props: {
 };
 
 export const useFilterByTk = (props?: { association: string }) => {
-  const record = useRecordV2(false)?.data || {};
+  const recordData = useRecordV2(false)?.data || {};
   const collection = useCollection();
   const { getCollectionField } = useCollectionManager();
   const dataBlockProps = useDataBlockPropsV2();
@@ -359,10 +359,10 @@ export const useFilterByTk = (props?: { association: string }) => {
 
   if (association) {
     const collectionField = getCollectionField(association);
-    return record[collectionField.targetKey || 'id'];
+    return recordData[collectionField.targetKey || 'id'];
   }
 
-  return record[collection.filterTargetKey || 'id'];
+  return recordData[collection.filterTargetKey || 'id'];
 };
 
 export const useSourceIdFromRecord = () => {
