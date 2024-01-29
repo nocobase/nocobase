@@ -18,14 +18,14 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const request = useRequest<T>(
     requestService
       ? requestService
-      : () => {
+      : (customParams) => {
           if (record) return Promise.resolve({ data: record instanceof RecordV2 ? record.data : record });
           if (!action) {
             throw new Error(
               `[nocobase]: The 'action' parameter is missing in the 'DataBlockRequestProvider' component`,
             );
           }
-          return resource[action](params).then((res) => res.data);
+          return resource[action]({ ...params, ...customParams }).then((res) => res.data);
         },
     {
       ...requestOptions,
