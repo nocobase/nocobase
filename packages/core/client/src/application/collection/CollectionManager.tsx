@@ -22,7 +22,7 @@ function applyMixins(instance: any, mixins: any[]) {
 }
 
 const defaultCollectionTransform = (collection: CollectionOptionsV2, app: Application) => {
-  const { rawTitle, title, fields, ...rest } = collection;
+  const { rawTitle, title, fields = [], ...rest } = collection;
   return {
     ...rest,
     title: rawTitle ? title : app.i18n.t(title),
@@ -68,10 +68,11 @@ export interface CollectionManagerOptionsV2 {
   fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionMixins?: CollectionMixinConstructor[];
+  dataSources?: DataSource[];
 }
 
 type ThirdDataResourceFn = () => Promise<DataSource[]>;
-type MainDataSOurceFn = () => Promise<CollectionOptionsV2[]>;
+type MainDataSourceFn = () => Promise<CollectionOptionsV2[]>;
 type ReloadCallback = (collections: CollectionOptionsV2[]) => void;
 
 export class CollectionManagerV2 {
@@ -80,12 +81,17 @@ export class CollectionManagerV2 {
   protected collectionTemplateInstances: Record<string, CollectionTemplateBase> = {};
   protected fieldInterfaceInstances: Record<string, CollectionFieldInterfaceBase> = {};
   protected collectionMixins: CollectionMixinConstructor[] = [];
-  protected dataSourceMap: Record<DataSourceNameType, Omit<DataSource, 'collections'>> = {};
+  protected dataSourceMap: Record<DataSourceNameType, Omit<DataSource, 'collections'>> = {
+    [DEFAULT_DATA_SOURCE_NAME]: {
+      name: DEFAULT_DATA_SOURCE_NAME,
+      description: DEFAULT_DATA_SOURCE_TITLE,
+    },
+  };
   protected collectionFieldGroups: Record<string, { label: string; order?: number }> = {};
-  protected mainDataSourceFn: MainDataSOurceFn;
+  protected mainDataSourceFn: MainDataSourceFn;
   protected thirdDataSourceFn: ThirdDataResourceFn;
   protected reloadCallbacks: Record<string, ReloadCallback[]> = {};
-  protected collectionArr: Record<string, CollectionV2[]> = {};
+  protected collectionCachedArr: Record<string, CollectionV2[]> = {};
   protected options: CollectionManagerOptionsV2 = {};
 
   constructor(options: CollectionManagerOptionsV2 = {}, app: Application) {
@@ -95,7 +101,7 @@ export class CollectionManagerV2 {
   }
 
   private init(options: CollectionManagerOptionsV2) {
-    this.initDataSourceMap();
+    this.addDataSources(options.dataSources || []);
     this.collectionMixins.push(...(options.collectionMixins || []));
     this.addCollectionTemplates(options.collectionTemplates || []);
     this.addFieldInterfaces(options.fieldInterfaces || []);
@@ -103,28 +109,19 @@ export class CollectionManagerV2 {
     this.addCollections(options.collections || []);
   }
 
-  private initDataSourceMap() {
-    this.dataSourceMap = {
-      [DEFAULT_DATA_SOURCE_NAME]: {
-        name: DEFAULT_DATA_SOURCE_NAME,
-        description: DEFAULT_DATA_SOURCE_TITLE,
-      },
-    };
-  }
-
   // collection mixins
-  addCollectionMixins(mixins: CollectionMixinConstructor[]) {
-    if (mixins.length === 0) return;
+  addCollectionMixins(mixins: CollectionMixinConstructor[] = []) {
     const newMixins = mixins.filter((mixin) => !this.collectionMixins.includes(mixin));
     this.collectionMixins.push(...newMixins);
 
-    // 重新添加数据表
+    // Re-add tables
     Object.keys(this.collections).forEach((dataSource) => {
       const collections = this.getCollections({ dataSource }).map((item) => item.getOptions());
       this.addCollections(collections, { dataSource });
     });
   }
 
+  // collections
   protected getCollectionInstance(collection: CollectionOptionsV2, dataSource?: string) {
     const collectionTemplateInstance = this.getCollectionTemplate(collection.template);
     const Cls = collectionTemplateInstance?.Collection || CollectionV2;
@@ -135,10 +132,9 @@ export class CollectionManagerV2 {
     return instance;
   }
 
-  // collections
-  addCollections(collections: CollectionOptionsV2[], options: GetCollectionOptions = {}) {
+  addCollections(collections: CollectionOptionsV2[] = [], options: GetCollectionOptions = {}) {
     const { dataSource = DEFAULT_DATA_SOURCE_NAME } = options;
-    this.collectionArr[dataSource] = undefined;
+    this.collectionCachedArr[dataSource] = undefined;
 
     collections
       .map((collection) => {
@@ -173,23 +169,23 @@ export class CollectionManagerV2 {
   }
   getCollections(options: { predicate?: (collection: CollectionV2) => boolean; dataSource?: string } = {}) {
     const { dataSource = DEFAULT_DATA_SOURCE_NAME, predicate } = options;
-    if (!this.collectionArr[dataSource]?.length) {
-      this.collectionArr[dataSource] = Object.values(this.collections[dataSource] || {});
+    if (!this.collectionCachedArr[dataSource]?.length) {
+      this.collectionCachedArr[dataSource] = Object.values(this.collections[dataSource] || {});
     }
     if (predicate) {
-      return this.collectionArr[dataSource].filter(predicate);
+      return this.collectionCachedArr[dataSource].filter(predicate);
     }
-    return this.collectionArr[dataSource];
+    return this.collectionCachedArr[dataSource];
   }
   /**
-   * 获取数据表
+   * Get a collection
    * @example
-   * getCollection('users'); // 获取 users 表
-   * getCollection('users.profile'); // 获取 users 表的 profile 字段的关联表
-   * getCollection('a.b.c'); // 获取 a 表的 b 字段的关联表，然后 b.target 表对应的 c 字段的关联表
+   * getCollection('users'); // Get the 'users' collection
+   * getCollection('users.profile'); // Get the associated collection of the 'profile' field in the 'users' collection
+   * getCollection('a.b.c'); // Get the associated collection of the 'c' field in the 'a' collection, which is associated with the 'b' field in the 'a' collection
    */
   getCollection<Mixins = {}>(
-    path: string | CollectionOptionsV2,
+    path: SchemaKey | CollectionOptionsV2,
     options: GetCollectionOptions = {},
   ): (Mixins & CollectionV2) | undefined {
     if (typeof path === 'object') {
@@ -197,11 +193,10 @@ export class CollectionManagerV2 {
     }
 
     const { dataSource = DEFAULT_DATA_SOURCE_NAME } = options;
-    if (!path || typeof path !== 'string') return undefined;
-    if (path.split('.').length > 1) {
-      // 获取到关联字段
+    if (!path) return undefined;
+    if (String(path).split('.').length > 1) {
       const associationField = this.getCollectionField(path);
-
+      if (!associationField) return undefined;
       return this.getCollection(associationField.target, { dataSource });
     }
     return this.collections[dataSource]?.[path] as Mixins & CollectionV2;
@@ -215,19 +210,25 @@ export class CollectionManagerV2 {
     return this.getCollection(collectionName, options)?.getFields() || [];
   }
   /**
-   * 获取数据表字段
+   * Get collection fields
    * @example
-   * getCollection('users.username'); // 获取 users 表的 username 字段
-   * getCollection('a.b.c'); // 获取 a 表的 b 字段的关联表，然后 b.target 表对应的 c 字段
+   * getCollection('users.username'); // Get the 'username' field of the 'users' collection
+   * getCollection('a.b.c'); // Get the associated collection of the 'c' field in the 'a' collection, which is associated with the 'b' field in the 'a' collection
    */
-  getCollectionField(path: SchemaKey, options: GetCollectionOptions = {}): CollectionFieldOptionsV2 | undefined {
+  getCollectionField(
+    path: SchemaKey | object,
+    options: GetCollectionOptions = {},
+  ): CollectionFieldOptionsV2 | undefined {
     if (!path) return;
-    if (typeof path === 'object' || String(path).split('.').length < 2) {
+    if (typeof path === 'object') {
+      return path;
+    }
+    if (String(path).split('.').length < 2) {
       console.error(`[@nocobase/client]: CollectionManager.getCollectionField() path "${path}" is invalid`);
       return;
     }
     const [collectionName, ...fieldNames] = String(path).split('.');
-    const { dataSource = DEFAULT_DATA_SOURCE_NAME } = options || {};
+    const { dataSource = DEFAULT_DATA_SOURCE_NAME } = options;
     const collection = this.getCollection(collectionName, { dataSource });
     if (!collection) {
       return;
@@ -304,7 +305,7 @@ export class CollectionManagerV2 {
     return this.collectionFieldGroups[name];
   }
 
-  setMainDataSource(fn: MainDataSOurceFn) {
+  setMainDataSource(fn: MainDataSourceFn) {
     this.mainDataSourceFn = fn;
   }
 
@@ -313,26 +314,35 @@ export class CollectionManagerV2 {
   }
 
   async reloadMain(callback?: ReloadCallback) {
+    if (!this.mainDataSourceFn) return;
     const collections = await this.mainDataSourceFn();
     this.setCollections(collections);
     callback && callback(collections);
     this.reloadCallbacks[DEFAULT_DATA_SOURCE_NAME]?.forEach((cb) => cb(collections));
   }
 
-  async reloadThirdDataSource(callback?: () => void) {
-    if (!this.thirdDataSourceFn) return;
-    const data = await this.thirdDataSourceFn();
-    this.initDataSourceMap();
-    data.forEach((dataSource) => {
-      const { collections: _unUse, ...rest } = dataSource;
-      this.dataSourceMap[dataSource.name] = rest;
-    });
-
-    data.forEach(({ name, collections, ...others }) => {
+  addDataSources(dataSources: DataSource[] = []) {
+    dataSources.forEach(({ name, collections, ...others }) => {
       this.dataSourceMap[name] = { ...others, name };
       this.setCollections(collections, { dataSource: name });
       this.reloadCallbacks[name]?.forEach((cb) => cb(collections));
     });
+  }
+
+  private initDataSource() {
+    this.dataSourceMap = {
+      [DEFAULT_DATA_SOURCE_NAME]: {
+        name: DEFAULT_DATA_SOURCE_NAME,
+        description: DEFAULT_DATA_SOURCE_TITLE,
+      },
+    };
+  }
+
+  async reloadThirdDataSource(callback?: () => void) {
+    if (!this.thirdDataSourceFn) return;
+    const data = await this.thirdDataSourceFn();
+    this.initDataSource();
+    this.addDataSources([...(this.options.dataSources || []), ...data]);
     callback && callback();
   }
 
@@ -361,7 +371,7 @@ export class CollectionManagerV2 {
       mainDataSourceFn: this.mainDataSourceFn,
       thirdDataSourceFn: this.thirdDataSourceFn,
       reloadCallbacks: this.reloadCallbacks,
-      collectionArr: this.collectionArr,
+      collectionCachedArr: this.collectionCachedArr,
       options: this.options,
     };
   }

@@ -3,7 +3,7 @@ import React, { FC, ReactNode, createContext, useContext } from 'react';
 export const CollectionDataSourceName = createContext<string>(undefined);
 CollectionDataSourceName.displayName = 'CollectionDataSourceName';
 
-export const CollectionDataSourceProvider: FC<{ dataSource: string; children: ReactNode }> = ({
+export const CollectionDataSourceProvider: FC<{ dataSource: string; children?: ReactNode }> = ({
   dataSource,
   children,
 }) => {

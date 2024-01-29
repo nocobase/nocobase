@@ -40,6 +40,7 @@ import { Router } from 'react-router-dom';
 import {
   APIClientProvider,
   ActionContextProvider,
+  CollectionDataSourceProvider,
   CollectionFieldOptions,
   CollectionManagerProviderV2,
   CollectionProvider,
@@ -57,6 +58,7 @@ import {
   useActionContext,
   useBlockRequestContext,
   useCollection,
+  useCollectionDataSourceName,
   useCollectionManager,
   useCollectionManagerV2,
   useCompile,
@@ -962,6 +964,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const ctx = useBlockRequestContext();
   const upLevelActiveFields = useFormActiveFields();
   const { locale } = useContext(ConfigProvider.ConfigContext);
+  const dataSourceName = useCollectionDataSourceName();
 
   if (hidden) {
     return null;
@@ -980,32 +983,34 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
               <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
                 <Router location={location} navigator={null}>
                   <BlockRequestContext.Provider value={ctx}>
-                    <CollectionManagerProviderV2 collectionManager={cm}>
-                      <CollectionProvider allowNull name={collection.name}>
-                        <SchemaComponentOptions scope={options.scope} components={options.components}>
-                          <FormLayout
-                            layout={'vertical'}
-                            className={css`
-                              // screen > 576px
-                              @media (min-width: 576px) {
-                                min-width: 520px;
-                              }
+                    <CollectionDataSourceProvider dataSource={dataSourceName}>
+                      <CollectionManagerProviderV2 collectionManager={cm}>
+                        <CollectionProvider allowNull name={collection.name}>
+                          <SchemaComponentOptions scope={options.scope} components={options.components}>
+                            <FormLayout
+                              layout={'vertical'}
+                              className={css`
+                                // screen > 576px
+                                @media (min-width: 576px) {
+                                  min-width: 520px;
+                                }
 
-                              // screen <= 576px
-                              @media (max-width: 576px) {
-                                min-width: 320px;
-                              }
-                            `}
-                          >
-                            <APIClientProvider apiClient={apiClient}>
-                              <ConfigProvider locale={locale}>
-                                <SchemaComponent components={components} scope={scope} schema={schema} />
-                              </ConfigProvider>
-                            </APIClientProvider>
-                          </FormLayout>
-                        </SchemaComponentOptions>
-                      </CollectionProvider>
-                    </CollectionManagerProviderV2>
+                                // screen <= 576px
+                                @media (max-width: 576px) {
+                                  min-width: 320px;
+                                }
+                              `}
+                            >
+                              <APIClientProvider apiClient={apiClient}>
+                                <ConfigProvider locale={locale}>
+                                  <SchemaComponent components={components} scope={scope} schema={schema} />
+                                </ConfigProvider>
+                              </APIClientProvider>
+                            </FormLayout>
+                          </SchemaComponentOptions>
+                        </CollectionProvider>
+                      </CollectionManagerProviderV2>
+                    </CollectionDataSourceProvider>
                   </BlockRequestContext.Provider>
                 </Router>
               </FormActiveFieldsProvider>
