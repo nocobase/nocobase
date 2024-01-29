@@ -1,22 +1,21 @@
+import { SchemaExpressionScopeContext, useField, useForm } from '@formily/react';
 import {
+  SchemaInitializerItemType,
+  useActionContext,
   useCollection,
   useCollectionManager,
-  useRemoveGridFormItem,
-  SchemaInitializerItemType,
-  useBlockRequestContext,
-  useActionContext,
   useCompile,
+  useDataBlockResourceV2,
+  useDeprecatedContext,
+  useRemoveGridFormItem,
   useTableBlockContext,
-  TableFieldResource,
 } from '@nocobase/client';
-import React, { useContext } from 'react';
-import { App, message } from 'antd';
-import { useNavigate } from 'react-router-dom';
-import { SchemaExpressionScopeContext, useField, useForm } from '@formily/react';
-import { cloneDeep } from 'lodash';
 import { isURL } from '@nocobase/utils/client';
-import { useMemo } from 'react';
+import { App, message } from 'antd';
+import { cloneDeep } from 'lodash';
+import { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { BulkEditFormItemValueType } from './component/BulkEditField';
 
 export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
@@ -71,9 +70,10 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
 };
 
 export const useCustomizeBulkEditActionProps = () => {
+  const deprecatedContext = useDeprecatedContext();
+  const resource = useDataBlockResourceV2();
   const form = useForm();
   const { t } = useTranslation();
-  const { field, resource, __parent } = useBlockRequestContext();
   const expressionScope = useContext(SchemaExpressionScopeContext);
   const actionContext = useActionContext();
   const navigate = useNavigate();
@@ -89,12 +89,12 @@ export const useCustomizeBulkEditActionProps = () => {
   return {
     async onClick() {
       const { onSuccess, skipValidator, updateMode } = actionSchema?.['x-action-settings'] ?? {};
-      const { filter } = __parent.service.params?.[0] ?? {};
+      const { filter } = deprecatedContext?.parentService.params?.[0] ?? {};
       if (!skipValidator) {
         await form.submit();
       }
       const values = cloneDeep(form.values);
-      actionField.data = field.data || {};
+      actionField.data = deprecatedContext?.blockField.data || {};
       actionField.data.loading = true;
       for (const key in values) {
         if (Object.prototype.hasOwnProperty.call(values, key)) {
@@ -126,10 +126,10 @@ export const useCustomizeBulkEditActionProps = () => {
         }
         await resource.update(updateData);
         actionField.data.loading = false;
-        if (!(resource instanceof TableFieldResource)) {
-          __parent?.__parent?.service?.refresh?.();
-        }
-        __parent?.service?.refresh?.();
+        // if (!(resource instanceof TableFieldResource)) {
+        //   __parent?.__parent?.service?.refresh?.();
+        // }
+        deprecatedContext?.parentService?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
           return;
