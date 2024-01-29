@@ -9,15 +9,10 @@ import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
-import {
-  BlockProvider,
-  BlockProviderV2,
-  useBlockRequestContext,
-  useFilterByTk,
-  useParamsOfRelationshipBlocks,
-} from './BlockProvider';
+import { BlockProvider, BlockProviderV2, useBlockRequestContext, useFilterByTk } from './BlockProvider';
 import { TemplateBlockProvider } from './TemplateBlockProvider';
-import { FormActiveFieldsProvider, useAssociationNames } from './hooks';
+import { FormActiveFieldsProvider } from './hooks';
+import { useCommonParamsOfBlock } from './hooks/useCommonParamsOfBlock';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -216,16 +211,8 @@ export const useFormBlockProps = () => {
 };
 
 export const useFormDataBlockProps = (props: any = {}) => {
-  const { getAssociationAppends } = useAssociationNames(props?.dataSource);
-  const { appends, updateAssociationValues } = getAssociationAppends();
-  const paramsFromRecord = useParamsOfRelationshipBlocks({ association: props.association });
   const filterByTk = useFilterByTk({ association: props?.association });
-  const params = useMemo(() => {
-    if (!props?.params?.['appends']) {
-      return { ...props?.params, appends, ...paramsFromRecord };
-    }
-    return { ...props?.params, ...paramsFromRecord };
-  }, [appends, paramsFromRecord, props?.params]);
+  const { params, updateAssociationValues } = useCommonParamsOfBlock(props);
 
   return {
     ...props,
