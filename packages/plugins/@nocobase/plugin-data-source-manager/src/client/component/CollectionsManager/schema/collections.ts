@@ -37,16 +37,16 @@ export const collection: CollectionOptions = {
           '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
       },
     },
-    {
-      type: 'string',
-      name: 'template',
-      interface: 'input',
-      uiSchema: {
-        title: '{{ t("Collection Template") }}',
-        type: 'string',
-        'x-component': 'Input',
-      },
-    },
+    // {
+    //   type: 'string',
+    //   name: 'template',
+    //   interface: 'input',
+    //   uiSchema: {
+    //     title: '{{ t("Collection Template") }}',
+    //     type: 'string',
+    //     'x-component': 'Input',
+    //   },
+    // },
     {
       type: 'hasMany',
       name: 'fields',
@@ -220,18 +220,18 @@ export const collectionTableSchema: ISchema = {
             },
           },
         },
-        column3: {
-          type: 'void',
-          'x-decorator': 'Table.Column.Decorator',
-          'x-component': 'Table.Column',
-          title: '{{t("Collection template")}}',
-          properties: {
-            template: {
-              'x-component': CollectionTemplate,
-              'x-read-pretty': true,
-            },
-          },
-        },
+        // column3: {
+        //   type: 'void',
+        //   'x-decorator': 'Table.Column.Decorator',
+        //   'x-component': 'Table.Column',
+        //   title: '{{t("Collection template")}}',
+        //   properties: {
+        //     template: {
+        //       'x-component': CollectionTemplate,
+        //       'x-read-pretty': true,
+        //     },
+        //   },
+        // },
         column5: {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',

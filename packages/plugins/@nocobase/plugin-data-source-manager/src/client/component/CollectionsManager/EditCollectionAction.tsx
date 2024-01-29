@@ -55,7 +55,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
         },
         title: '{{ t("Edit collection") }}',
         properties: {
-          ...omit(properties, 'category'),
+          ...omit(properties, 'category', 'inherits', 'moreOptions'),
           footer: {
             type: 'void',
             'x-component': 'Action.Drawer.Footer',
