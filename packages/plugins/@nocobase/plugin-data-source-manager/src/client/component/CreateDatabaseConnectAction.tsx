@@ -17,8 +17,8 @@ export const CreateDatabaseConnectAction = () => {
   const { t } = useTranslation();
   const [dialect, setDialect] = useState(null);
   const useDialectDataSource = (field) => {
-    const options = [...plugin.databaseTypes.keys()].map((key) => {
-      const databaseType = plugin.databaseTypes.get(key);
+    const options = [...plugin.types.keys()].map((key) => {
+      const databaseType = plugin.types.get(key);
       return {
         value: databaseType.name,
         label: compile(databaseType.label),
@@ -32,7 +32,7 @@ export const CreateDatabaseConnectAction = () => {
         <Dropdown
           menu={{
             onClick(info) {
-              const databaseType = plugin.databaseTypes.get(info.key);
+              const databaseType = plugin.types.get(info.key);
               setDialect(info.key);
               setVisible(true);
               setSchema({
@@ -86,8 +86,8 @@ export const CreateDatabaseConnectAction = () => {
                 },
               });
             },
-            items: [...plugin.databaseTypes.keys()].map((key) => {
-              const databaseType = plugin.databaseTypes.get(key);
+            items: [...plugin.types.keys()].map((key) => {
+              const databaseType = plugin.types.get(key);
               return {
                 key: key,
                 label: compile(databaseType?.label),

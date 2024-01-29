@@ -8,7 +8,7 @@ import { BreadcumbTitle } from './component/BreadcumbTitle';
 import React from 'react';
 
 export class PluginDataSourceManagerClient extends Plugin {
-  databaseTypes = new Map();
+  types = new Map();
   async load() {
     this.app.use(DatabaseConnectionProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {
@@ -60,8 +60,8 @@ export class PluginDataSourceManagerClient extends Plugin {
     return service?.data?.data;
   }
 
-  registerDatabaseType(name: string, options) {
-    this.databaseTypes.set(name, options);
+  registerType(name: string, options) {
+    this.types.set(name, options);
   }
 }
 

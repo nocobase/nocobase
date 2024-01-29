@@ -55,7 +55,7 @@ export const EditDatabaseConnectionAction = () => {
         <a
           onClick={() => {
             setVisible(true);
-            const databaseType = plugin.databaseTypes.get(record.type);
+            const databaseType = plugin.types.get(record.type);
             setSchema({
               type: 'object',
               properties: {

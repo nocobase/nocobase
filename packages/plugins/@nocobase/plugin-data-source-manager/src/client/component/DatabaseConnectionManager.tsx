@@ -20,7 +20,7 @@ import { ViewDatabaseConnectionAction } from './ViewDatabaseConnectionAction';
 export const DatabaseConnectionManagerPane = () => {
   const compile = useCompile();
   const plugin = usePlugin(PluginDatabaseConnectionsClient);
-  const databaseTypes = [...plugin.databaseTypes.values()].map((databaseType) => {
+  const databaseTypes = [...plugin.types.values()].map((databaseType) => {
     return {
       value: databaseType.name,
       label: compile(databaseType.title),
