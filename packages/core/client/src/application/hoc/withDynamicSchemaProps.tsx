@@ -1,4 +1,5 @@
 import React, { ComponentType, useMemo } from 'react';
+import { merge } from 'lodash';
 import { useDesignable, useSchemaComponentContext } from '../../schema-component';
 
 const useDefaultSchemaProps = () => undefined;
@@ -38,7 +39,7 @@ export function withDynamicSchemaProps<T = any>(Component: ComponentType<T>, opt
     }, [scope, useComponentPropsStr]);
     const schemaProps = useSchemaProps(props);
 
-    return <Component {...props} {...schemaProps} />;
+    return <Component {...merge(schemaProps, props)} />;
   };
 
   Component.displayName = displayName;
