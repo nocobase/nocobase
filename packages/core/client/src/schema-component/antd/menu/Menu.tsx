@@ -30,6 +30,8 @@ const subMenuDesignerCss = css`
   padding: 0 34px 0 24px;
   width: calc(100% + 58px);
   height: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   &:hover {
     > .general-schema-designer {
       display: block;

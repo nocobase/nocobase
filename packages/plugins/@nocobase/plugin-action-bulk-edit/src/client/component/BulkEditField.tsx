@@ -5,11 +5,19 @@ import { merge, uid } from '@formily/shared';
 import { Checkbox, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormBlockContext } from '../../block-provider';
-import { CollectionFieldProvider, useCollection, useCollectionField } from '../../collection-manager';
-import { useCompile, useComponent } from '../../schema-component';
-import { DeletedField } from './DeletedField';
+import {
+  useFormBlockContext,
+  CollectionFieldProvider,
+  useCollection,
+  useCollectionField,
+  useCompile,
+  useComponent,
+} from '@nocobase/client';
 
+export const DeletedField = () => {
+  const { t } = useTranslation();
+  return <div style={{ color: '#ccc' }}>{t('The field has bee deleted')}</div>;
+};
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
@@ -83,7 +91,7 @@ export const BulkEditField = (props: any) => {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const field = useField<Field>();
-  const [type, setType] = useState<number>(BulkEditFormItemValueType.RemainsTheSame);
+  const [type, setType] = useState<number>(BulkEditFormItemValueType.ChangedTo);
   const [value, setValue] = useState(null);
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name) || {};
@@ -135,15 +143,9 @@ export const BulkEditField = (props: any) => {
           <Select.Option value={BulkEditFormItemValueType.AddAttach}>{t('Add attach')}</Select.Option>
         )}
       </Select>
-      {/* XXX: Not a best practice */}
       {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) &&
         collectionField?.interface !== 'checkbox' && (
           <CollectionField {...props} value={value} onChange={valueChangeHandler} style={{ minWidth: 150 }} />
-          // <SchemaComponent
-          //   schema={collectionSchema}
-          //   components={{ BulkEditCollectionField: CollectionField }}
-          //   onlyRenderProperties
-          // />
         )}
       {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) &&
         collectionField?.interface === 'checkbox' && <Checkbox checked={value} onChange={valueChangeHandler} />}

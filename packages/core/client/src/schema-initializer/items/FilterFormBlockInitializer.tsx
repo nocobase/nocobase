@@ -16,7 +16,7 @@ export const FilterFormBlockInitializer = ({ filterMenuItemChildren, isItem }) =
         const s = createFilterFormBlockSchema({
           template: templateSchema,
           dataSource: item.dataSource,
-          collection: item.collectionName,
+          collection: item.name || item.collectionName,
         });
         if (item.template && item.mode === 'reference') {
           s['x-template-key'] = item.template.key;
