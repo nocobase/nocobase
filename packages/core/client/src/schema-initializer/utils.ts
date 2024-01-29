@@ -1224,14 +1224,12 @@ export const createFilterFormBlockSchema = (options) => {
     template,
     ...others
   } = options;
-  const resourceName = resource || association || collection;
   const schema: ISchema = {
     type: 'void',
     'x-decorator': 'FilterFormBlockProvider',
     'x-decorator-props': {
       ...others,
       action,
-      resource: resourceName,
       dataSource,
       collection,
       association,
