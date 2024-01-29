@@ -200,8 +200,7 @@ const useStyles = createStyles(({ css, token }) => {
         align-items: center;
         justify-content: center;
         width: 0;
-        height: 4em;
-        padding: 1em 0;
+        height: 6em;
         border-left: 1px dashed ${token.colorBgLayout};
 
         .anticon {
