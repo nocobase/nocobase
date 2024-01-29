@@ -2,6 +2,7 @@ import { Plugin, useCollection } from '@nocobase/client';
 import { BulkEditPluginProvider } from './BulkEditPluginProvider';
 import { BulkEditFormItemInitializers } from './BulkEditFormItemInitializers';
 import { CreateFormBulkEditBlockInitializers } from './CreateFormBulkEditBlockInitializers';
+import { BulkEditFormActionInitializers } from './BulkEditFormActionInitializers';
 import { bulkEditactionSettings } from './BulkEditAction.Settings';
 export class BulkEditPlugin extends Plugin {
   async load() {
@@ -9,6 +10,7 @@ export class BulkEditPlugin extends Plugin {
     this.app.schemaSettingsManager.add(bulkEditactionSettings);
     this.app.schemaInitializerManager.add(BulkEditFormItemInitializers);
     this.app.schemaInitializerManager.add(CreateFormBulkEditBlockInitializers);
+    this.app.schemaInitializerManager.add(BulkEditFormActionInitializers);
 
     const initializerData = {
       type: 'item',
