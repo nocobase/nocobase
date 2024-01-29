@@ -6,7 +6,7 @@
   "displayName": "Database source manager ",
   "displayName.zh-CN": "外部数据源管理",
   "description": "Connect external data source to NocoBase",
-  "description.zh-CN": "将外部数据源接入NocoBase",
+  "description.zh-CN": "将外部数据源接入 NocoBase",
   "peerDependencies": {
     "@nocobase/client": "0.x",
     "@nocobase/server": "0.x",
