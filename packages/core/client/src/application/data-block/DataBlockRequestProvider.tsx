@@ -2,7 +2,7 @@ import { useDeepCompareEffect, useUpdateEffect } from 'ahooks';
 import React, { FC, createContext, useContext } from 'react';
 
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
-import { RecordProviderV2 } from '../collection';
+import { RecordProviderV2, RecordV2 } from '../collection';
 import { AllDataBlockProps, useDataBlockPropsV2 } from './DataBlockProvider';
 import { useDataBlockResourceV2 } from './DataBlockResourceProvider';
 
@@ -19,7 +19,7 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
     requestService
       ? requestService
       : () => {
-          if (record) return Promise.resolve({ data: record });
+          if (record) return Promise.resolve({ data: record instanceof RecordV2 ? record.data : record });
           if (!action) {
             throw new Error(
               `[nocobase]: The 'action' parameter is missing in the 'DataBlockRequestProvider' component`,
