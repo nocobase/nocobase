@@ -3,7 +3,7 @@ import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react
 import { Spin } from 'antd';
 import _, { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import { useDataBlockPropsV2, useDataBlockRequestV2, useDataBlockResourceV2 } from '../application';
+import { useDataBlockPropsV2, useDataBlockRequestV2, useDataBlockResourceV2, useRecordV2 } from '../application';
 import { withDynamicSchemaProps } from '../application/hoc';
 import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
@@ -193,23 +193,23 @@ export const useFormBlockContext = () => {
 
 export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
-  const record = useRecord();
+  const recordV2 = useRecordV2();
   const { fieldSchema } = useActionContext();
   const addChild = fieldSchema?.['x-component-props']?.addChild;
   useEffect(() => {
     if (addChild) {
       ctx.form?.query('parent').take((field) => {
         field.disabled = true;
-        field.value = new Proxy({ ...record?.__parent }, {});
+        field.value = new Proxy({ ...recordV2?.parentRecord?.data }, {});
       });
     }
   });
 
   useEffect(() => {
-    if (!ctx?.service?.loading) {
-      ctx.form?.setInitialValues(ctx.service?.data?.data);
+    if (ctx.service?.data?.data) {
+      ctx.form?.setInitialValues(ctx.service.data.data);
     }
-  }, [ctx?.service?.loading]);
+  }, [ctx.service?.data?.data]);
   return {
     form: ctx.form,
   };
