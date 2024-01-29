@@ -20,7 +20,7 @@ export const AssociationProviderV2: FC<AssociationProviderProps> = (props) => {
   if (!collectionName) return <DeletedPlaceholder type="Collection" name={collectionName} />;
 
   return (
-    <CollectionProviderV2 name={name.split('.')[0]} dataSource={dataSource}>
+    <CollectionProviderV2 name={String(name).split('.')[0]} dataSource={dataSource}>
       <CollectionFieldProviderV2 name={name}>
         <CollectionProviderV2 name={collectionName} dataSource={dataSource}>
           {children}

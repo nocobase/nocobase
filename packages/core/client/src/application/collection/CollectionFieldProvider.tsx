@@ -10,7 +10,6 @@ CollectionFieldContextV2.displayName = 'CollectionFieldContextV2';
 export type CollectionFieldProviderProps = {
   name?: SchemaKey;
   children?: ReactNode;
-  fallback?: React.ReactElement;
 };
 
 export const CollectionFieldProviderV2: FC<CollectionFieldProviderProps> = (props) => {

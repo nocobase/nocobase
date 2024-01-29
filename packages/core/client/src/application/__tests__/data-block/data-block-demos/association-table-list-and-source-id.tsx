@@ -1,9 +1,10 @@
 import React from 'react';
-import { Table, TableProps } from 'antd';
+import { Select, Table, TableProps } from 'antd';
 import { SchemaComponent, UseDataBlockProps, useDataBlockRequestV2, withDynamicSchemaProps } from '@nocobase/client';
 import { ISchema } from '@formily/json-schema';
 
-import { createApp } from '../../../collection/demos/createApp';
+import useUrlState from '@ahooksjs/use-url-state';
+import { createApp } from './createApp';
 
 const collection = 'users';
 const associationField = 'roles';
@@ -55,17 +56,29 @@ function useTableProps(): TableProps<any> {
 }
 
 const useBlockDecoratorProps: UseDataBlockProps<'CollectionList'> = () => {
-  const parentRecord = {
-    id: 1,
-    username: 'Tom',
-  };
+  const [state] = useUrlState({ userId: '1' });
   return {
-    parentRecord,
+    sourceId: state.userId,
   };
 };
 
 const Demo = () => {
-  return <SchemaComponent schema={schema}></SchemaComponent>;
+  const [state, setState] = useUrlState({ userId: '1' });
+  return (
+    <>
+      <Select
+        defaultValue={state.userId}
+        options={[
+          { key: 1, value: '1', label: 'Tom' },
+          { key: 2, value: '2', label: 'Jack' },
+        ]}
+        onChange={(v) => {
+          setState({ userId: v });
+        }}
+      ></Select>
+      <SchemaComponent schema={schema}></SchemaComponent>
+    </>
+  );
 };
 
 const mocks = {
@@ -82,6 +95,28 @@ const mocks = {
         description: 'Developer description',
       },
     ],
+  },
+  [`${collection}/2/${associationField}:${action}`]: {
+    data: [
+      {
+        name: 'developer',
+        title: 'Developer',
+        description: 'Developer description',
+      },
+      {
+        name: 'tester',
+        title: 'Tester',
+        description: 'Tester description',
+      },
+    ],
+  },
+  [`${collection}:get/1`]: {
+    id: 1,
+    username: 'Tom',
+  },
+  [`${collection}:get/2`]: {
+    id: 1,
+    username: 'Jack',
   },
 };
 

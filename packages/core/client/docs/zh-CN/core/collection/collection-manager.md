@@ -614,7 +614,7 @@ class CollectionManagerV2 {
 ```tsx | pure
 collectionManager.getCollectionName('users'); // 'users'
 
-collectionManager.getCollectionName('users.profileId'); // 'profiles'
+collectionManager.getCollectionName('users.profiles'); // 'profiles'
 ```
 
 

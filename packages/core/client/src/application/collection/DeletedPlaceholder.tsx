@@ -10,6 +10,10 @@ export const DeletedPlaceholder: FC<{ type: string; name?: string | number }> = 
     console.error(`DeletedPlaceholder: ${type} name is required`);
     return null;
   }
-  if (!designable && process.env.NODE_ENV !== 'development') return null;
-  return <Result status="warning" title={t(`${type}: "${name}" has been deleted`)} />;
+
+  if (designable || process.env.NODE_ENV === 'development') {
+    return <Result status="warning" title={t(`${type}: "${name}" not exists`)} />;
+  }
+
+  return null;
 };
