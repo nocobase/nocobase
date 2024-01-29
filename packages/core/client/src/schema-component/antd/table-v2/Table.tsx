@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
-  RecordProvider,
+  RecordProviderV2,
   useSchemaInitializerRender,
   useTableBlockContext,
   useTableSelectorContext,
@@ -59,22 +59,22 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
         sorter: s['x-component-props']?.['sorter'],
         width: 200,
         ...s['x-component-props'],
-        render: (v, record) => {
-          const index = field.value?.indexOf(record);
+        render: (v, recordData) => {
+          const index = field.value?.indexOf(recordData);
           return (
-            <SubFormProvider value={record}>
-              <RecordIndexProvider index={record.__index || index}>
-                <RecordProvider record={record}>
-                  <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
+            <SubFormProvider value={recordData}>
+              <RecordIndexProvider index={recordData.__index || index}>
+                <RecordProviderV2 isNew={false} record={recordData}>
+                  <ColumnFieldProvider schema={s} basePath={field.address.concat(recordData.__index || index)}>
                     <span role="button">
                       <RecursionField
-                        basePath={field.address.concat(record.__index || index)}
+                        basePath={field.address.concat(recordData.__index || index)}
                         schema={s}
                         onlyRenderProperties
                       />
                     </span>
                   </ColumnFieldProvider>
-                </RecordProvider>
+                </RecordProviderV2>
               </RecordIndexProvider>
             </SubFormProvider>
           );
