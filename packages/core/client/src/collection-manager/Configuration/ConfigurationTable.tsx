@@ -18,7 +18,7 @@ import { EditSubFieldAction } from './EditSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { TemplateSummary } from './components/TemplateSummary';
 import { collectionSchema } from './schemas/collections';
-import { ERandomUidType, getRandomUidName, useRandomUidBlacklist } from '@nocobase/client';
+import { ERandomUidType, getRandomUidName, useRandomUidBlacklist } from '../CollectionManageSettingProvider';
 
 /**
  * @param service

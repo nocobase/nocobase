@@ -36,10 +36,11 @@ const useSaveSystemSettingsValues = () => {
         method: 'post',
         data: values,
         params: {
-          filterByTk: 2,
+          filter: { packageName: '@nocobase/plugin-collection-manager' },
         },
       });
       message.success(t('Saved successfully'));
+      window.location.reload();
     },
   };
 };

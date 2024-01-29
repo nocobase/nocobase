@@ -12,7 +12,11 @@ export const useCollectionManageSetting = () => {
 export const CollectionManageSettingProvider: React.FC<{ children?: ReactNode }> = (props) => {
   const { render } = useAppSpin();
   const result = useRequest({
-    url: 'applicationPlugins:get/1?filterByTk=2',
+    resource: 'applicationPlugins',
+    action: 'get',
+    params: {
+      filter: { packageName: '@nocobase/plugin-collection-manager' },
+    },
   });
 
   useEffect(() => {
