@@ -2,6 +2,7 @@ import { observer, RecursionField, useField, useFieldSchema } from '@formily/rea
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
 import { useDesignable } from '../../';
+import { RecordProviderV2 } from '../../../application';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionProvider, useCollectionManager } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
@@ -114,7 +115,9 @@ export const ReadPrettyInternalViewer: React.FC = observer(
           <RecordProvider record={record}>{renderWithoutTableFieldResourceProvider()}</RecordProvider>
         </RecordProvider>
       ) : (
-        <RecordProvider record={record}>{renderWithoutTableFieldResourceProvider()}</RecordProvider>
+        <RecordProviderV2 isNew={false} record={record}>
+          {renderWithoutTableFieldResourceProvider()}
+        </RecordProviderV2>
       );
     };
 
