@@ -99,6 +99,9 @@ export function CustomRequestACL() {
   );
 }
 
+/**
+ * @deprecated
+ */
 export const customRequestActionSettings = new SchemaSettings({
   name: 'CustomRequestActionSettings',
   items: [
@@ -119,6 +122,9 @@ export const customRequestActionSettings = new SchemaSettings({
   ],
 });
 
+/**
+ * @deprecated
+ */
 export const CustomRequestActionDesigner: React.FC = () => {
   const customRequestsResource = useCustomRequestsResource();
   const fieldSchema = useFieldSchema();

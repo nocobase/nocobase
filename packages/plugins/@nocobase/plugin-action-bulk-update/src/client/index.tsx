@@ -1,15 +1,16 @@
 import { Plugin, useCollection } from '@nocobase/client';
 import { bulkUpdateActionSettings, deprecatedBulkUpdateActionSettings } from './BulkUpdateAction.Settings';
-import { BulkUpdatePluginProvider } from './BulkUpdatePluginProvider';
-export class BulkUpdatePlugin extends Plugin {
+import { CustomizeActionInitializer } from './CustomizeActionInitializer';
+import { useCustomizeBulkUpdateActionProps } from './utils';
+export class PluginBulkUpdateClient extends Plugin {
   async load() {
-    this.app.use(BulkUpdatePluginProvider);
+    this.app.addScopes({ useCustomizeBulkUpdateActionProps });
     this.app.schemaSettingsManager.add(deprecatedBulkUpdateActionSettings);
     this.app.schemaSettingsManager.add(bulkUpdateActionSettings);
 
     const initializerData = {
       title: '{{t("Bulk update")}}',
-      Component: 'CustomizeActionInitializer',
+      Component: CustomizeActionInitializer,
       name: 'bulkUpdate',
       schema: {
         type: 'void',
@@ -48,11 +49,10 @@ export class BulkUpdatePlugin extends Plugin {
       },
     };
 
-    const tableActionInitializers = this.app.schemaInitializerManager.get('TableActionInitializers');
-    tableActionInitializers?.add('customize.bulkUpdate', initializerData);
+    this.app.schemaInitializerManager.addItem('TableActionInitializers', 'customize.bulkUpdate', initializerData);
     this.app.schemaInitializerManager.addItem('GanttActionInitializers', 'customize.bulkUpdate', initializerData);
     this.app.schemaInitializerManager.addItem('MapActionInitializers', 'customize.bulkUpdate', initializerData);
   }
 }
 
-export default BulkUpdatePlugin;
+export default PluginBulkUpdateClient;

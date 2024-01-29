@@ -1,4 +1,5 @@
 import { SchemaInitializer, gridRowColWrap } from '@nocobase/client';
+import { CreateFormBulkEditBlockInitializer } from './CreateFormBulkEditBlockInitializer';
 
 export const CreateFormBulkEditBlockInitializers: SchemaInitializer = new SchemaInitializer({
   name: 'CreateFormBulkEditBlockInitializers',
@@ -14,7 +15,7 @@ export const CreateFormBulkEditBlockInitializers: SchemaInitializer = new Schema
         {
           name: 'form',
           title: '{{t("Form")}}',
-          Component: 'CreateFormBulkEditBlockInitializer',
+          Component: CreateFormBulkEditBlockInitializer,
         },
       ],
     },

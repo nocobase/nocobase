@@ -1,12 +1,11 @@
 import { Plugin, useCollection } from '@nocobase/client';
 import { bulkEditActionSettings, deprecatedBulkEditActionSettings } from './BulkEditAction.Settings';
 import { BulkEditFormItemInitializers } from './BulkEditFormItemInitializers';
-import { BulkEditPluginProvider } from './BulkEditPluginProvider';
 import { CreateFormBulkEditBlockInitializers } from './CreateFormBulkEditBlockInitializers';
+import { CustomizeBulkEditActionInitializer } from './CustomizeBulkEditActionInitializer';
 import { bulkEditFormItemSettings } from './bulkEditFormItemSettings';
 export class BulkEditPlugin extends Plugin {
   async load() {
-    this.app.use(BulkEditPluginProvider);
     this.app.schemaSettingsManager.add(deprecatedBulkEditActionSettings);
     this.app.schemaSettingsManager.add(bulkEditActionSettings);
     this.app.schemaSettingsManager.add(bulkEditFormItemSettings);
@@ -17,7 +16,7 @@ export class BulkEditPlugin extends Plugin {
       type: 'item',
       title: '{{t("Bulk edit")}}',
       name: 'bulkEdit',
-      Component: 'CustomizeBulkEditActionInitializer',
+      Component: CustomizeBulkEditActionInitializer,
       schema: {
         'x-align': 'right',
         'x-decorator': 'ACLActionProvider',
@@ -39,8 +38,7 @@ export class BulkEditPlugin extends Plugin {
       },
     };
 
-    const tableActionInitializers = this.app.schemaInitializerManager.get('TableActionInitializers');
-    tableActionInitializers?.add('customize.bulkEdit', initializerData);
+    this.app.schemaInitializerManager.addItem('TableActionInitializers', 'customize.bulkEdit', initializerData);
     this.app.schemaInitializerManager.addItem('GanttActionInitializers', 'customize.bulkEdit', initializerData);
     this.app.schemaInitializerManager.addItem('MapActionInitializers', 'customize.bulkEdit', initializerData);
   }
