@@ -28,14 +28,14 @@ export class CollectionRepository extends Repository {
       [key: string]: CollectionModel;
     } = {};
 
-    // const viewCollections = [];
+    const viewCollections = [];
 
     // set all graph nodes
     for (const instance of instances) {
       graph.setNode(instance.get('name'));
-      // if (instance.get('view')) {
-      //   viewCollections.push(instance.get('name'));
-      // }
+      if (instance.get('view') || instance.get('sql')) {
+        viewCollections.push(instance.get('name'));
+      }
     }
 
     // set graph edges by inherits
@@ -71,16 +71,16 @@ export class CollectionRepository extends Repository {
       // can be a true value or an array of field names
       const skipField = (() => {
         // skip load collection field if collection is view
-        // if (viewCollections.includes(instanceName)) {
-        //   return true;
-        // }
-        //
+        if (viewCollections.includes(instanceName)) {
+          return true;
+        }
+
         const fields = nameMap[instanceName].get('fields');
 
         return fields
           .filter(
             (field) =>
-              // (field['type'] === 'belongsTo' && viewCollections.includes(field.options?.['target'])) ||
+              (field['type'] === 'belongsTo' && viewCollections.includes(field.options?.['target'])) ||
               field['type'] === 'belongsToMany',
           )
           .map((field) => field.get('name'));
@@ -100,15 +100,15 @@ export class CollectionRepository extends Repository {
     }
 
     // load view fields
-    // for (const viewCollectionName of viewCollections) {
-    //   this.database.logger.debug(`load collection fields`, {
-    //     submodule: 'CollectionRepository',
-    //     method: 'load',
-    //     viewCollectionName,
-    //   });
-    //   this.app.setMaintainingMessage(`load ${viewCollectionName} collection fields`);
-    //   await nameMap[viewCollectionName].loadFields({});
-    // }
+    for (const viewCollectionName of viewCollections) {
+      this.database.logger.debug(`load collection fields`, {
+        submodule: 'CollectionRepository',
+        method: 'load',
+        viewCollectionName,
+      });
+      this.app.setMaintainingMessage(`load ${viewCollectionName} collection fields`);
+      await nameMap[viewCollectionName].loadFields({});
+    }
 
     // load lazy collection field
     for (const [collectionName, skipField] of lazyCollectionFields) {
