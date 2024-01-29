@@ -9,9 +9,14 @@ interface Config {
 
 export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
-    const { endStatus } = <Config>node.config;
-    return {
-      status: endStatus ?? JOB_STATUS.RESOLVED,
-    };
+    const { endStatus = JOB_STATUS.RESOLVED } = <Config>node.config;
+    await processor.saveJob({
+      status: endStatus,
+      nodeId: node.id,
+      nodeKey: node.key,
+      upstreamId: prevJob?.id ?? null,
+    });
+
+    return processor.exit(endStatus);
   }
 }
