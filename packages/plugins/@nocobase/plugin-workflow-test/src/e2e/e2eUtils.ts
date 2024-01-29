@@ -605,6 +605,44 @@ export const apiGetList = async (collectionName: string) => {
   return await result.json();
 };
 
+// 查询业务表list
+export const apiFilterList = async (collectionName: string, filter: string) => {
+  const api = await request.newContext({
+    storageState: process.env.PLAYWRIGHT_AUTH_FILE,
+  });
+  const state = await api.storageState();
+  const headers = getHeaders(state);
+  const result = await api.get(`/api/${collectionName}:list?${filter}`, {
+    headers,
+  });
+
+  if (!result.ok()) {
+    throw new Error(await result.text());
+  }
+  /*
+        {
+            "data": [
+                {
+                    "id": 1,
+                    "createdAt": "2023-12-12T02:43:53.793Z",
+                    "updatedAt": "2023-12-12T05:41:33.300Z",
+                    "key": "fzk3j2oj4el",
+                    "title": "a11",
+                    "enabled": true,
+                    "description": null
+                }
+            ],
+            "meta": {
+                "count": 1,
+                "page": 1,
+                "pageSize": 20,
+                "totalPage": 1
+            }
+        }
+    */
+  return await result.json();
+};
+
 // 添加业务表单条数据触发工作流表单事件,triggerWorkflows=key1!field,key2,key3!field.subfield
 export const apiCreateRecordTriggerFormEvent = async (collectionName: string, triggerWorkflows: string, data: any) => {
   const api = await request.newContext({
@@ -744,4 +782,5 @@ export default module.exports = {
   apiGetList,
   apiCreateRecordTriggerFormEvent,
   apiSubmitRecordTriggerFormEvent,
+  apiFilterList,
 };
