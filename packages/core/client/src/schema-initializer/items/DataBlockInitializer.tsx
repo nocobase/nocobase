@@ -6,8 +6,8 @@ import {
   CollectionV2,
   SchemaInitializerItem,
   SchemaInitializerMenu,
-  useSchemaInitializer,
   useGetSchemaInitializerMenuItems,
+  useSchemaInitializer,
 } from '../../application';
 import { useCompile } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
@@ -129,8 +129,8 @@ export function useMenuSearch(data: any[], openKeys: string[], showType?: boolea
       if (!openKey) return [];
       return data.find((item) => (item.key || item.name) === openKey)?.children || [];
     }
-    return data[0].children || [];
-  }, [data, openKey]);
+    return data[0]?.children || [];
+  }, [data, isMuliSource, openKey]);
 
   // 根据搜索的值进行处理
   const searchedItems = useMemo(() => {
@@ -257,8 +257,10 @@ export interface DataBlockInitializerProps {
   name: string;
   title: string;
   filter?: (collection: CollectionV2) => boolean;
-  componentType: string;
+  filterMenuItemChildren?: (item: any, index: number, items: any[]) => boolean;
+  /** 如果为 true 则会渲染成 item 的形式，而非 menu */
   isItem?: boolean;
+  componentType: string;
 }
 
 export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
@@ -272,6 +274,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     name,
     title,
     filter,
+    filterMenuItemChildren,
     isItem,
   } = props;
   const { insert } = useSchemaInitializer();
@@ -300,7 +303,16 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
   );
   const items = useCollectionDataSourceItems(componentType, filter);
   const getMenuItems = useGetSchemaInitializerMenuItems(onClick);
-  const childItems = useMemo(() => getMenuItems(items, name), [items]);
+  const childItems = useMemo(() => {
+    const _items = items.map((item) => {
+      if (item?.children?.length && filterMenuItemChildren) {
+        item.children = item.children.filter(filterMenuItemChildren);
+        return item;
+      }
+      return item;
+    });
+    return getMenuItems(_items, name);
+  }, [filterMenuItemChildren, getMenuItems, items, name]);
   const [openMenuKeys, setOpenMenuKeys] = useState([]);
   const searchedChildren = useMenuSearch(childItems, openMenuKeys);
   const compiledMenuItems = useMemo(
@@ -318,6 +330,7 @@ export const DataBlockInitializer = (props: DataBlockInitializerProps) => {
     ],
     [name, compile, title, icon, childItems, onClick, props],
   );
+
   if (!isItem && childItems.length > 0) {
     return (
       <SchemaInitializerMenu

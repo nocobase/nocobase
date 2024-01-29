@@ -27,6 +27,14 @@
   "Trigger time": "触发时间",
   "Triggered at": "触发时间",
 
+  "Execute mode": "执行模式",
+  "Execute workflow asynchronously or synchronously based on trigger type, and could not be changed after created.": "基于触发类型异步或同步执行工作流，创建后不可更改。",
+  "Asynchronously": "异步",
+  "Synchronously": "同步",
+  "Will be executed in the background as a queued task.": "将作为队列任务在后台执行。",
+  "For user actions that require immediate feedback. Can not use asynchronous nodes in such mode, and it is not recommended to perform time-consuming operations under synchronous mode.":
+    "适用于需要即时反馈的用户操作。不能在此模式下使用异步节点，并且不建议在同步模式下执行耗时的操作。",
+
   "Bind workflows": "绑定工作流",
   "Workflow will be triggered after submitting succeeded.": "提交成功后触发工作流。",
   "Workflow will be triggered after saving succeeded.": "保存成功后触发工作流。",

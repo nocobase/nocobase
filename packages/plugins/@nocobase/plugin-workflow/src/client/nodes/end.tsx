@@ -3,7 +3,7 @@ import { NAMESPACE } from '../locale';
 import { JOB_STATUS } from '../constants';
 
 export default class extends Instruction {
-  title = '{{t("End process")}}';
+  title = `{{t("End process", { ns: "${NAMESPACE}" })}}`;
   type = 'end';
   group = 'control';
   description = `{{t("End the process immediately, with set status.", { ns: "${NAMESPACE}" })}}`;

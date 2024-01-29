@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/test",
-  "version": "0.19.0-alpha.3",
+  "version": "0.19.0-alpha.4",
   "main": "lib/index.js",
   "module": "./src/index.ts",
   "types": "./lib/index.d.ts",
@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@faker-js/faker": "8.1.0",
-    "@nocobase/server": "0.19.0-alpha.3",
+    "@nocobase/server": "0.19.0-alpha.4",
     "@playwright/test": "^1.40.1",
     "@testing-library/react": "^14.0.0",
     "@testing-library/user-event": "^14.4.3",

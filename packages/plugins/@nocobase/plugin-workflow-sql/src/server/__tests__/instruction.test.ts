@@ -1,4 +1,4 @@
-import Database from '@nocobase/database';
+import Database, { fn } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
@@ -164,6 +164,35 @@ describe('workflow > instructions > sql', () => {
       expect(sqlJob.status).toBe(JOB_STATUS.RESOLVED);
       expect(queryJob.status).toBe(JOB_STATUS.RESOLVED);
       expect(queryJob.result).toBeNull();
+    });
+  });
+
+  describe('run in sync mode', () => {
+    it('sync workflow', async () => {
+      const w2 = await WorkflowModel.create({
+        enabled: true,
+        sync: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'categories',
+        },
+      });
+
+      const n1 = await w2.createNode({
+        type: 'sql',
+        config: {
+          sql: `select count(id) from ${PostCollection.quotedTableName()}`,
+        },
+      });
+
+      const CategoryRepo = db.getCollection('categories').repository;
+      const category = await CategoryRepo.create({ values: { title: 't1' } });
+
+      const [execution] = await w2.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.RESOLVED);
     });
   });
 });
