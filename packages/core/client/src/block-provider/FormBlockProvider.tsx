@@ -215,7 +215,6 @@ export const useFormDataBlockProps = (props: any = {}) => {
   const { params, updateAssociationValues } = useCommonParamsOfBlock(props);
 
   return {
-    ...props,
     params,
     updateAssociationValues,
     filterByTk,
