@@ -1,6 +1,6 @@
 {
-  "Data source UID": "数据源标识",
-  "Data source title": "数据源名称",
+  "Data source name": "数据源标识",
+  "Data source display name": "数据源名称",
   "Host": "服务器地址",
   "Port": "端口",
   "Database": "数据库",
@@ -11,7 +11,6 @@
   "Username": "用户名",
   "Password": "密码",
   "Type": "类型",
-  "Data source name": "数据源",
   "Description": "描述",
   "Storage": "文件地址",
   "Collections": "数据表",
