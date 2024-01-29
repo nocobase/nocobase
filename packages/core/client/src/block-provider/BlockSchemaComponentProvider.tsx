@@ -11,7 +11,7 @@ import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvid
 import { FilterFormBlockProvider } from './FilterFormBlockProvider';
 import { FormBlockProviderV2, useFormBlockProps, useFormDataBlockProps } from './FormBlockProvider';
 import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
-import { TableBlockProviderV2, useTableBlockProps } from './TableBlockProvider';
+import { TableBlockProviderV2, useTableBlockProps, useTableDataBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
 import * as bp from './hooks';
@@ -80,6 +80,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useTableBlockProps,
       useTableSelectorProps,
       useFormDataBlockProps,
+      useTableDataBlockProps,
     });
   }
 }

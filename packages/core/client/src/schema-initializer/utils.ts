@@ -11,7 +11,7 @@ import {
   useFormActiveFields,
   useFormBlockContext,
 } from '../';
-import { CollectionFieldOptions, FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
+import { FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
@@ -1372,6 +1372,7 @@ export const createTableBlockSchema = (options) => {
       blockType,
       ...others,
     },
+    'x-use-decorator-props': 'useFormDataBlockProps',
     'x-designer': TableBlockDesigner ?? 'TableBlockDesigner',
     'x-component': 'CardItem',
     'x-filter-targets': [],

@@ -10,6 +10,7 @@ import { useRecord } from '../record-provider';
 import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
 import { BlockProvider, BlockProviderV2, RenderChildrenWithAssociationFilter } from './BlockProvider';
 import { findFilterTargets, useParsedFilter } from './hooks';
+import { useCommonParamsOfBlock } from './hooks/useCommonParamsOfBlock';
 
 export const TableBlockContext = createContext<any>({});
 export function getIdsWithChildren(nodes) {
@@ -175,6 +176,15 @@ export const TableBlockProviderV2 = withDynamicSchemaProps((props) => {
     </SchemaComponentOptions>
   );
 });
+
+export const useTableDataBlockProps = (props: any = {}) => {
+  const { params, updateAssociationValues } = useCommonParamsOfBlock(props);
+
+  return {
+    params,
+    updateAssociationValues,
+  };
+};
 
 export const useTableBlockContext = () => {
   return useContext(TableBlockContext);
