@@ -1,9 +1,9 @@
 import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
 
+import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 import { useCollection } from '../../collection-manager';
 import { createTableSelectorSchema } from '../utils';
-import { SchemaInitializerItem, useSchemaInitializer, useSchemaInitializerItem } from '../../application';
 
 export const TableSelectorInitializer = () => {
   const itemConfig = useSchemaInitializerItem();
@@ -20,7 +20,6 @@ export const TableSelectorInitializer = () => {
             rowKey: collection.filterTargetKey,
             collection: collection.name,
             dataSource: collection.dataSource,
-            resource: collection.name,
           }),
         );
       }}

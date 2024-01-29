@@ -13,8 +13,9 @@ import { FormBlockProviderV2, useFormBlockProps, useFormDataBlockProps } from '.
 import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
 import { TableBlockProviderV2, useTableBlockProps, useTableDataBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
-import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
+import { TableSelectorProviderV2, useTableSelectorProps } from './TableSelectorProvider';
 import * as bp from './hooks';
+import { useTableSelectorDataBlockProps } from './hooks/useTableSelectorDataBlockProps';
 
 // TODO: delete this, replaced by `BlockSchemaComponentPlugin`
 export const BlockSchemaComponentProvider: React.FC = (props) => {
@@ -23,7 +24,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
       components={{
         TableFieldProvider,
         TableBlockProvider: TableBlockProviderV2,
-        TableSelectorProvider,
+        TableSelectorProvider: TableSelectorProviderV2,
         FormBlockProvider: FormBlockProviderV2,
         FilterFormBlockProvider,
         FormFieldProvider,
@@ -58,7 +59,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
     this.app.addComponents({
       TableFieldProvider,
       TableBlockProvider: TableBlockProviderV2,
-      TableSelectorProvider,
+      TableSelectorProvider: TableSelectorProviderV2,
       FormBlockProvider: FormBlockProviderV2,
       FilterFormBlockProvider,
       FormFieldProvider,
@@ -81,6 +82,7 @@ export class BlockSchemaComponentPlugin extends Plugin {
       useTableSelectorProps,
       useFormDataBlockProps,
       useTableDataBlockProps,
+      useTableSelectorDataBlockProps,
     });
   }
 }

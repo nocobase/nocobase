@@ -1458,14 +1458,13 @@ export const createCollapseBlockSchema = (options) => {
 };
 
 export const createTableSelectorSchema = (options) => {
-  const { collection, dataSource, resource, rowKey, ...others } = options;
+  const { collection, dataSource, rowKey, ...others } = options;
   const schema: ISchema = {
     type: 'void',
-    'x-acl-action': `${resource || collection}:list`,
+    'x-acl-action': `${collection}:list`,
     'x-decorator': 'TableSelectorProvider',
     'x-decorator-props': {
       collection,
-      resource: resource || collection,
       dataSource,
       action: 'list',
       params: {
@@ -1474,6 +1473,7 @@ export const createTableSelectorSchema = (options) => {
       rowKey,
       ...others,
     },
+    'x-use-decorator-props': 'useTableSelectorDataBlockProps',
     'x-designer': 'TableSelectorDesigner',
     'x-component': 'CardItem',
     properties: {

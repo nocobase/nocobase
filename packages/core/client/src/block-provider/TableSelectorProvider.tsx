@@ -9,7 +9,7 @@ import { isInFilterFormBlock } from '../filter-provider';
 import { mergeFilter } from '../filter-provider/utils';
 import { RecordProvider, useRecord } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
-import { BlockProvider, RenderChildrenWithAssociationFilter } from './BlockProvider';
+import { BlockProviderV2, RenderChildrenWithAssociationFilter } from './BlockProvider';
 import { useParsedFilter } from './hooks';
 
 type Params = {
@@ -76,12 +76,33 @@ const InternalTableSelectorProvider = (props) => {
   );
 };
 
-const useAssociationNames2 = (collection) => {
-  const { getCollectionFields } = useCollectionManager();
-  const names = getCollectionFields(collection)
-    ?.filter((field) => field.target)
-    .map((field) => field.name);
-  return names;
+const InternalTableSelectorProviderV2 = (props) => {
+  const { params, rowKey, extraFilter } = props;
+  const field = useField();
+  const resource = useDataBlockResourceV2();
+  const service = useDataBlockRequestV2();
+  const [expandFlag, setExpandFlag] = useState(false);
+  // if (service.loading) {
+  //   return <Spin />;
+  // }
+  return (
+    <TableSelectorContext.Provider
+      value={{
+        field,
+        service,
+        resource,
+        params,
+        extraFilter,
+        rowKey,
+        expandFlag,
+        setExpandFlag: () => {
+          setExpandFlag(!expandFlag);
+        },
+      }}
+    >
+      <RenderChildrenWithAssociationFilter {...props} />
+    </TableSelectorContext.Provider>
+  );
 };
 
 export const recursiveParent = (schema: Schema, component) => {
@@ -256,9 +277,133 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
 
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
-      <BlockProvider name="table-selector" {...props} params={params}>
+      <BlockProviderV2 blockType="table-selector" {...props} params={params}>
         <InternalTableSelectorProvider {...props} params={params} extraFilter={extraFilter} />
-      </BlockProvider>
+      </BlockProviderV2>
+    </SchemaComponentOptions>
+  );
+};
+
+export const TableSelectorProviderV2 = (props: TableSelectorProviderProps) => {
+  const parentParams = useTableSelectorParams();
+  const fieldSchema = useFieldSchema();
+  const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
+  const record = useRecord();
+  const { getCollection } = useCollectionManager();
+  const collection = getCollection(props.collection);
+  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
+  const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
+  const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
+  const appends = useAssociationNames(props.collection);
+  let params = { ...props.params };
+  if (props.dragSort) {
+    params['sort'] = ['sort'];
+  }
+  if (collectionField?.target === collectionField?.collectionName && collection?.tree && treeTable !== false) {
+    params['tree'] = true;
+    if (collectionFieldSchema.name === 'parent') {
+      params.filter = {
+        ...(params.filter ?? {}),
+        id: record.id && {
+          $ne: record.id,
+        },
+      };
+    }
+  }
+  if (!Object.keys(params).includes('appends')) {
+    params['appends'] = appends;
+  }
+  let extraFilter;
+  if (collectionField) {
+    if (['oho', 'o2m'].includes(collectionField.interface) && !isInFilterFormBlock(fieldSchema)) {
+      if (record?.[collectionField.sourceKey]) {
+        extraFilter = {
+          $or: [
+            {
+              [collectionField.foreignKey]: {
+                $is: null,
+              },
+            },
+            {
+              [collectionField.foreignKey]: {
+                $eq: record?.[collectionField.sourceKey],
+              },
+            },
+          ],
+        };
+      } else {
+        extraFilter = {
+          [collectionField.foreignKey]: {
+            $is: null,
+          },
+        };
+      }
+    }
+    if (['obo'].includes(collectionField.interface) && !isInFilterFormBlock(fieldSchema)) {
+      const fields = getCollectionFields(collectionField.target);
+      const targetField = fields.find((f) => f.foreignKey && f.foreignKey === collectionField.foreignKey);
+      if (targetField) {
+        if (record?.[collectionField.foreignKey]) {
+          extraFilter = {
+            $or: [
+              {
+                [`${targetField.name}.${targetField.foreignKey}`]: {
+                  $is: null,
+                },
+              },
+              {
+                [`${targetField.name}.${targetField.foreignKey}`]: {
+                  $eq: record?.[collectionField.foreignKey],
+                },
+              },
+            ],
+          };
+        } else {
+          extraFilter = {
+            [`${targetField.name}.${targetField.foreignKey}`]: {
+              $is: null,
+            },
+          };
+        }
+      }
+    }
+  }
+
+  if (extraFilter) {
+    if (params?.filter) {
+      params['filter'] = {
+        $and: [extraFilter, params['filter']],
+      };
+    } else {
+      params['filter'] = extraFilter;
+    }
+  }
+
+  try {
+    params.filter = mergeFilter([parentParams.filter, params.filter]);
+    params = { ...parentParams, ...params };
+  } catch (err) {
+    console.error(err);
+  }
+
+  const { filter: parsedFilter } = useParsedFilter({
+    filterOption: params?.filter,
+    currentRecord: { __parent: record, __collectionName: props.collection },
+  });
+
+  if (!_.isEmpty(params?.filter) && _.isEmpty(parsedFilter)) {
+    return null;
+  }
+
+  if (params?.filter) {
+    params.filter = parsedFilter;
+  }
+
+  return (
+    <SchemaComponentOptions scope={{ treeTable }}>
+      <BlockProviderV2 blockType="table-selector" {...props} params={params}>
+        <InternalTableSelectorProviderV2 {...props} params={params} extraFilter={extraFilter} />
+      </BlockProviderV2>
     </SchemaComponentOptions>
   );
 };
