@@ -33,7 +33,7 @@ export class CollectionRepository extends Repository {
     // set all graph nodes
     for (const instance of instances) {
       graph.setNode(instance.get('name'));
-      if (instance.get('view')) {
+      if (instance.get('view') || instance.get('sql')) {
         viewCollections.push(instance.get('name'));
       }
     }
