@@ -1,10 +1,10 @@
 import { useDeepCompareEffect, useUpdateEffect } from 'ahooks';
-import React, { FC, createContext, useContext, useEffect } from 'react';
+import React, { FC, createContext, useContext } from 'react';
 
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
-import { useDataBlockResourceV2 } from './DataBlockResourceProvider';
 import { RecordProviderV2 } from '../collection';
 import { AllDataBlockProps, useDataBlockPropsV2 } from './DataBlockProvider';
+import { useDataBlockResourceV2 } from './DataBlockResourceProvider';
 
 export const BlockRequestContextV2 = createContext<UseRequestResult<any>>(null);
 BlockRequestContextV2.displayName = 'BlockRequestContextV2';
@@ -18,14 +18,14 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
   const request = useRequest<T>(
     requestService
       ? requestService
-      : () => {
+      : (customParams) => {
           if (record) return Promise.resolve({ data: record });
           if (!action) {
             throw new Error(
               `[nocobase]: The 'action' parameter is missing in the 'DataBlockRequestProvider' component`,
             );
           }
-          return resource[action](params).then((res) => res.data);
+          return resource[action]({ ...params, ...customParams }).then((res) => res.data);
         },
     {
       ...requestOptions,
