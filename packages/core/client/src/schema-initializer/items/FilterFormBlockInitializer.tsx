@@ -15,7 +15,7 @@ export const FilterFormBlockInitializer = ({ filterItems }) => {
       templateWrap={(templateSchema, { item }) => {
         const s = createFilterFormBlockSchema({
           template: templateSchema,
-          collection: item.collectionName,
+          collection: item.name || item.collectionName,
         });
         if (item.template && item.mode === 'reference') {
           s['x-template-key'] = item.template.key;
