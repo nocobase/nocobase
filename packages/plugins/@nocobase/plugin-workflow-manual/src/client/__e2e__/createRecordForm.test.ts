@@ -813,7 +813,7 @@ test.describe('field data entry', () => {
       .locator('xpath=preceding-sibling::td[1]')
       .locator('text=View')
       .click();
-    const manualNodeRecord = faker.number.float();
+    const manualNodeRecord = faker.number.float({ min: 0, max: 999999999, precision: 2 });
     await page.getByRole('spinbutton').fill(manualNodeRecord.toString());
     await page.getByRole('button', { name: 'Continue the process' }).click();
 
