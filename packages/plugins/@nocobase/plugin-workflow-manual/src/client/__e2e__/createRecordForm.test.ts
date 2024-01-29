@@ -2028,9 +2028,11 @@ test.describe('action button', () => {
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
-    await page.mouse.click(300, 0);
+    // await page.mouse.click(300, 0);
     await page.getByLabel(`schema-initializer-ActionBar-AddActionButton-${manualNodeCollectionName}`).hover();
     await page.getByRole('menuitem', { name: 'Terminate the process' }).getByRole('switch').click();
+    await page.mouse.move(300, 0, { steps: 100 });
+    await page.mouse.click(300, 0);
     await manualNode.submitButton.click();
     await page.waitForLoadState('networkidle');
 
@@ -2165,9 +2167,11 @@ test.describe('action button', () => {
       .hover();
     await page.getByRole('menuitem', { name: manualNodeFieldDisplayName }).getByRole('switch').click();
     await page.mouse.move(300, 0, { steps: 100 });
-    await page.mouse.click(300, 0);
+    // await page.mouse.click(300, 0);
     await page.getByLabel(`schema-initializer-ActionBar-AddActionButton-${manualNodeCollectionName}`).hover();
-    await page.getByRole('menuitem', { name: 'Terminate the process' }).getByRole('switch').click();
+    await page.getByRole('menuitem', { name: 'Save temporarily' }).getByRole('switch').click();
+    await page.mouse.move(300, 0, { steps: 100 });
+    await page.mouse.click(300, 0);
     await manualNode.submitButton.click();
     await page.waitForLoadState('networkidle');
 
@@ -2209,7 +2213,7 @@ test.describe('action button', () => {
     const jobs = getWorkflowNodeExecutionsObj[0].jobs;
     const manualNodeJob = jobs.find((job) => job.nodeId.toString() === manualNodeId);
     const manualNodeJobStatus = manualNodeJob.status;
-    expect(manualNodeJobStatus).toBe(-5);
+    expect(manualNodeJobStatus).toBe(0);
 
     const manualNodeJobResult = manualNodeJob.result;
     const hasOrgname = Object.values(manualNodeJobResult).some(
@@ -2219,7 +2223,7 @@ test.describe('action button', () => {
 
     const getRecords = await apiGetRecord(manualNodeCollectionName, 1);
     const getRecordsObj = JSON.parse(JSON.stringify(getRecords));
-    expect(getRecordsObj.orgname.toString()).toBe(manualNodeRecord.toString());
+    expect(getRecordsObj).toBe(null);
 
     // 4、后置处理：删除工作流
     await apiDeleteWorkflow(workflowId);
