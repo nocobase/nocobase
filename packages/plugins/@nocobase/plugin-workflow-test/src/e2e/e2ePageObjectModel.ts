@@ -435,11 +435,11 @@ export class ManualNode {
     this.assigneesDropDown = page.getByTestId('select-single');
     this.configureUserInterfaceButton = page.getByRole('button', { name: 'Configure user interface' });
     this.addBlockButton = page.getByLabel('schema-initializer-Grid-AddBlockButton-workflows');
-    this.triggerDataMenu = page.getByLabel('Data blocks-triggerData');
-    this.nodeDataMenu = page.getByLabel('nodes', { exact: true });
+    this.triggerDataMenu = page.getByRole('menuitem', { name: 'Trigger data' });
+    this.nodeDataMenu = page.getByRole('menuitem', { name: 'Node result right' });
     this.customFormMenu = page.getByRole('menuitem', { name: 'Custom form' });
-    this.createRecordFormMenu = page.getByRole('menuitem', { name: 'Create record form' });
-    this.updateRecordFormMenu = page.getByRole('menuitem', { name: 'Update record form' });
+    this.createRecordFormMenu = page.getByRole('menuitem', { name: 'Create record form right' });
+    this.updateRecordFormMenu = page.getByRole('menuitem', { name: 'Update record form right' });
     this.submitButton = page.getByLabel('action-Action-Submit-workflows');
     this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
     this.addNodeButton = page.getByLabel(`add-button-manual-${nodeName}`, { exact: true });
