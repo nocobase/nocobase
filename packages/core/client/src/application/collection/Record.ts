@@ -31,4 +31,8 @@ export class RecordV2<DataType = {}, ParentDataType = {}> {
   setParentRecord(parentRecord: RecordV2<ParentDataType>) {
     this.parentRecord = parentRecord;
   }
+
+  isEmpty() {
+    return !this.data;
+  }
 }
