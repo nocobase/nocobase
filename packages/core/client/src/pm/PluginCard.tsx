@@ -155,7 +155,6 @@ function PluginInfo(props: IPluginInfo) {
               if (!checked) {
                 modal.confirm({
                   title: t('Are you sure to disable this plugin?'),
-                  content: title,
                   onOk: async () => {
                     await api.request({
                       url: `pm:disable`,
