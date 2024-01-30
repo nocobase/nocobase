@@ -45,6 +45,7 @@ const collection = {
         title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Select',
+        enum: '{{types}}',
       } as ISchema,
     },
     {

@@ -18,10 +18,10 @@ export const CreateDatabaseConnectAction = () => {
   const [dialect, setDialect] = useState(null);
   const useDialectDataSource = (field) => {
     const options = [...plugin.types.keys()].map((key) => {
-      const databaseType = plugin.types.get(key);
+      const type = plugin.types.get(key);
       return {
-        value: databaseType.name,
-        label: compile(databaseType.label),
+        value: type.name,
+        label: compile(type.label),
       };
     });
     field.dataSource = options;
@@ -32,7 +32,7 @@ export const CreateDatabaseConnectAction = () => {
         <Dropdown
           menu={{
             onClick(info) {
-              const databaseType = plugin.types.get(info.key);
+              const type = plugin.types.get(info.key);
               setDialect(info.key);
               setVisible(true);
               setSchema({
@@ -47,11 +47,11 @@ export const CreateDatabaseConnectAction = () => {
                         type: info.key,
                       },
                     },
-                    title: compile("{{t('Add new')}}") + ' - ' + compile(databaseType.label),
+                    title: compile("{{t('Add new')}}") + ' - ' + compile(type.label),
                     properties: {
                       body: {
                         type: 'void',
-                        'x-component': databaseType.DataSourceSettingsForm,
+                        'x-component': type.DataSourceSettingsForm,
                       },
                       footer: {
                         type: 'void',
@@ -87,10 +87,10 @@ export const CreateDatabaseConnectAction = () => {
               });
             },
             items: [...plugin.types.keys()].map((key) => {
-              const databaseType = plugin.types.get(key);
+              const type = plugin.types.get(key);
               return {
                 key: key,
-                label: compile(databaseType?.label),
+                label: compile(type?.label),
               };
             }),
           }}

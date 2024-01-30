@@ -20,10 +20,11 @@ import { ViewDatabaseConnectionAction } from './ViewDatabaseConnectionAction';
 export const DatabaseConnectionManagerPane = () => {
   const compile = useCompile();
   const plugin = usePlugin(PluginDatabaseConnectionsClient);
-  const databaseTypes = [...plugin.types.values()].map((databaseType) => {
+  const types = [...plugin.types.keys()].map((key) => {
+    const type = plugin.types.get(key);
     return {
-      value: databaseType.name,
-      label: compile(databaseType.title),
+      value: key,
+      label: compile(type?.label),
     };
   });
   const cm = useCollectionManagerV2();
@@ -61,7 +62,7 @@ export const DatabaseConnectionManagerPane = () => {
           EditDatabaseConnectionAction,
           ViewDatabaseConnectionAction,
         }}
-        scope={{ useNewId: (prefix) => `${prefix}${uid()}`, databaseTypes, useRefreshActionProps, useDestroyAction }}
+        scope={{ useNewId: (prefix) => `${prefix}${uid()}`, types, useRefreshActionProps, useDestroyAction }}
         schema={databaseConnectionSchema}
       />
     </Card>

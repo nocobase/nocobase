@@ -55,7 +55,7 @@ export const EditDatabaseConnectionAction = () => {
         <a
           onClick={() => {
             setVisible(true);
-            const databaseType = plugin.types.get(record.type);
+            const type = plugin.types.get(record.type);
             setSchema({
               type: 'object',
               properties: {
@@ -75,7 +75,7 @@ export const EditDatabaseConnectionAction = () => {
                   properties: {
                     body: {
                       type: 'void',
-                      'x-component': databaseType.DataSourceSettingsForm,
+                      'x-component': type.DataSourceSettingsForm,
                     },
                     footer: {
                       type: 'void',
