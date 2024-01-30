@@ -91,7 +91,7 @@ const LocalPlugins = () => {
 
   const keyWordsfilterList = useMemo(() => {
     const list = keyWordList.map((i) => {
-      const result = data?.data.filter((v) => v.keywords.includes(i));
+      const result = data?.data.filter((v) => v.keywords?.includes(i));
       return {
         key: i,
         list: result,
