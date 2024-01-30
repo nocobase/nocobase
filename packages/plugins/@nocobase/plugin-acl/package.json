@@ -9,6 +9,7 @@
   "main": "./dist/server/index.js",
   "homepage": "https://docs-cn.nocobase.com/plugins/acl",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/acl",
+  "keywords":["security","users"],
   "devDependencies": {
     "@types/jsonwebtoken": "^8.5.8",
     "async-mutex": "^0.3.2",
