@@ -24,10 +24,6 @@ export default defineCollection({
       defaultValue: true,
     },
     {
-      type: 'string',
-      name: 'status',
-    },
-    {
       type: 'hasMany',
       name: 'collections',
       target: 'dataSourcesCollections',

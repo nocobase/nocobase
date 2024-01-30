@@ -13,7 +13,17 @@ import { DataSourcesRolesResourcesModel } from './models/connections-roles-resou
 import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { DataSourceModel } from './models/data-source';
 
+type DataSourceState = 'loading' | 'loaded' | 'failed';
+
 export class PluginDataSourceManagerServer extends Plugin {
+  public dataSourceErrors: {
+    [dataSourceKey: string]: Error;
+  } = {};
+
+  public dataSourceStatus: {
+    [dataSourceKey: string]: DataSourceState;
+  } = {};
+
   async beforeLoad() {
     this.app.db.registerModels({
       DataSourcesCollectionModel,
@@ -36,7 +46,7 @@ export class PluginDataSourceManagerServer extends Plugin {
         throw new Error(`Test connection failed: ${error.message}`);
       }
 
-      model.set('status', 'loading');
+      this.dataSourceStatus[model.get('key')] = 'loading';
     });
 
     this.app.db.on('dataSources.afterSave', async (model: DataSourceModel, options) => {
@@ -59,6 +69,29 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     const app = this.app;
+
+    this.app.use(async (ctx, next) => {
+      await next();
+      const { actionName, resourceName, params } = ctx.action;
+
+      if (resourceName === 'dataSources' && (actionName == 'list' || actionName === 'listEnabled')) {
+        const data = ctx.body;
+        let items = data;
+
+        if (Array.isArray(data['data'])) {
+          items = data.data;
+        }
+
+        for (const item of items) {
+          const dataSourceStatus = this.dataSourceStatus[item.get('key')];
+          item.set('status', dataSourceStatus);
+
+          if (dataSourceStatus === 'failed') {
+            item.set('errorMessage', this.dataSourceErrors[item.get('key')].message);
+          }
+        }
+      }
+    });
 
     this.app.actions({
       async ['dataSources:listEnabled'](ctx, next) {
@@ -165,7 +198,7 @@ export class PluginDataSourceManagerServer extends Plugin {
     this.app.on('afterStart', async (app: Application) => {
       const dataSourcesRecords: DataSourceModel[] = await this.app.db.getRepository('dataSources').find();
       for (const dataSourceRecord of dataSourcesRecords) {
-        await dataSourceRecord.loadIntoApplication({
+        dataSourceRecord.loadIntoApplication({
           app,
         });
       }

@@ -40,14 +40,15 @@ describe('data source', async () => {
       },
     });
 
-    const listData = await app.db.getRepository('dataSources').find({});
-    const item1 = listData[0];
+    const listResp = await app.agent().resource('dataSources').list();
+
+    const item1 = listResp.body.data[0];
 
     expect(item1.status).toBe('loading');
     await waitSecond(2000);
 
-    const listData2 = await app.db.getRepository('dataSources').find({});
-    expect(listData2[0].status).toBe('loaded');
+    const listResp2 = await app.agent().resource('dataSources').list();
+    expect(listResp2.body.data[0].status).toBe('loaded');
   });
 
   it('should test datasource connection', async () => {

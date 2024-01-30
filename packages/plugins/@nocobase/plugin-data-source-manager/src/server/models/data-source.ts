@@ -5,6 +5,7 @@ import { setCurrentRole } from '@nocobase/plugin-acl';
 import { AvailableActionOptions } from '@nocobase/acl';
 import { DataSourcesRolesModel } from './data-sources-roles-model';
 import { DataSource } from '@nocobase/data-source-manager';
+import PluginDataSourceManagerServer from '../plugin';
 
 const availableActions: {
   [key: string]: AvailableActionOptions;
@@ -47,16 +48,11 @@ export class DataSourceModel extends MagicAttributeModel {
   async loadIntoApplication(options: { app: Application; transaction?: Transaction }) {
     const { app, transaction } = options;
 
-    await this.update(
-      {
-        status: 'loading',
-      },
-      {
-        hooks: false,
-        silent: true,
-        transaction,
-      },
-    );
+    const dataSourceKey = this.get('key');
+
+    const pluginDataSourceManagerServer = app.pm.get('data-source-manager') as PluginDataSourceManagerServer;
+
+    pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'loading';
 
     const loadRoleIntoDataSource = async (model: DataSourcesRolesModel, dataSource: DataSource) => {
       const pluginACL: any = app.pm.get('acl');
@@ -106,28 +102,11 @@ export class DataSourceModel extends MagicAttributeModel {
     } catch (e) {
       this.app.logger.error(`load data source failed, ${e.message}`);
 
-      await this.update(
-        {
-          status: 'failed',
-        },
-        {
-          hooks: false,
-          silent: true,
-          transaction,
-        },
-      );
+      pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'failed';
+      pluginDataSourceManagerServer.dataSourceErrors[dataSourceKey] = e;
     }
 
-    await this.update(
-      {
-        status: 'loaded',
-      },
-      {
-        hooks: false,
-        silent: true,
-        transaction,
-      },
-    );
+    pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'loaded';
   }
 
   private async loadLocalData(): Promise<LocalData> {
