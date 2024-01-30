@@ -179,7 +179,7 @@ export const fieldsTableSchema: ISchema = {
           title: `{{t("Field interface", { ns: "${NAMESPACE}" })}}`,
           properties: {
             interface: {
-              'x-component': 'CollectionFieldInterface',
+              'x-component': 'CollectionFieldInterfaceSelect',
               'x-component-props': {
                 handleFieldChange: '{{handleFieldChange}}',
               },

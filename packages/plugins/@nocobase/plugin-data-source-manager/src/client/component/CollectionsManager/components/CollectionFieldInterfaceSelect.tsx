@@ -16,7 +16,7 @@ const getInterfaceOptions = (data, type) => {
   return interfaceOptions.filter((v) => v.children.length > 0);
 };
 
-export const CollectionFieldInterface = observer(
+export const CollectionFieldInterfaceSelect = observer(
   (props: any) => {
     const { value, handleFieldChange } = props;
     const record = useRecord();
@@ -63,5 +63,5 @@ export const CollectionFieldInterface = observer(
       </Select>
     );
   },
-  { displayName: 'CollectionFieldInterface' },
+  { displayName: 'CollectionFieldInterfaceSelect' },
 );

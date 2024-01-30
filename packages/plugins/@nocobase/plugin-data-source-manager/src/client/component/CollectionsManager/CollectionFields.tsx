@@ -18,7 +18,7 @@ import {
 } from '@nocobase/client';
 import { collection, fieldsTableSchema } from './schema/collectionFields';
 import { TitleField } from './components/TitleField';
-import { CollectionFieldInterface } from './components/CollectionFieldInterface';
+import { CollectionFieldInterfaceSelect } from './components/CollectionFieldInterfaceSelect';
 import { AddCollectionField } from './AddFieldAction';
 import { FieldTitleInput } from './components/FieldTitleInput';
 import { useBulkDestroyActionAndRefreshCM, useDestroyActionAndRefreshCM } from './hooks';
@@ -153,7 +153,7 @@ export const CollectionFields = () => {
             <SchemaComponentOptions
               components={{
                 TitleField,
-                CollectionFieldInterface,
+                CollectionFieldInterfaceSelect,
                 AddCollectionField,
                 SourceCollection,
                 TargetKey,
