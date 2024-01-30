@@ -73,7 +73,7 @@ test('Collection event add data trigger, determine trigger node integer field va
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.number.int();
-  await page.keyboard.type(`==${conditionalRightConstant}`);
+  await page.keyboard.type(`==${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}==${conditionalRightConstant}`,
   );
@@ -189,7 +189,7 @@ test('Collection event Add Data Trigger, determines that the trigger node intege
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.number.int();
-  await page.keyboard.type(`==${conditionalRightConstant}`);
+  await page.keyboard.type(`==${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}==${conditionalRightConstant}`,
   );
@@ -302,7 +302,7 @@ test('Collection event Add Data Trigger, determines that the trigger node intege
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.number.int();
-  await page.keyboard.type(`!=${conditionalRightConstant}`);
+  await page.keyboard.type(`!=${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!=${conditionalRightConstant}`,
   );
@@ -415,7 +415,7 @@ test('Collection event add data trigger, determines that the trigger node intege
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   const conditionalRightConstant = faker.number.int();
-  await page.keyboard.type(`!=${conditionalRightConstant}`);
+  await page.keyboard.type(`!=${conditionalRightConstant}`, { delay: 50 });
   await expect(conditionNode.conditionExpressionEditBox).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}!=${conditionalRightConstant}`,
   );
