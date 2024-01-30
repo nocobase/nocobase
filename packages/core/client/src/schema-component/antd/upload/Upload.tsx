@@ -124,6 +124,7 @@ Upload.Attachment = connect((props: UploadProps) => {
                             setFileList((prevFileList) => {
                               if (!multiple) {
                                 onChange?.(null as any);
+                                setSync(true);
                                 return [];
                               }
                               const index = prevFileList.indexOf(file);
