@@ -383,20 +383,20 @@ export const useFilterByTk = () => {
 export const useSourceIdFromRecord = () => {
   const record = useRecord();
   const { getCollectionField } = useCollectionManager();
-  const assoc = useBlockAssociationContext();
-  if (assoc) {
-    const association = getCollectionField(assoc);
-    return record?.[association.sourceKey || 'id'];
+  const association = useBlockAssociationContext();
+  if (association) {
+    const collectionField = getCollectionField(association);
+    return record?.[collectionField.sourceKey || 'id'];
   }
 };
 
 export const useSourceIdFromParentRecord = () => {
   const record = useRecord();
   const { getCollectionField } = useCollectionManager();
-  const assoc = useBlockAssociationContext();
-  if (assoc) {
-    const association = getCollectionField(assoc);
-    return record?.__parent?.[association.sourceKey || 'id'];
+  const association = useBlockAssociationContext();
+  if (association) {
+    const collectionField = getCollectionField(association);
+    return record?.__parent?.[collectionField.sourceKey || 'id'];
   }
 };
 
