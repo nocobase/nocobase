@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen } from '@nocobase/test/client';
-import { CollectionDataSourceProvider, useCollectionDataSourceName } from '../../data-block';
+import { CollectionDataSourceProvider } from '../../data-block';
+import { useCollectionDataSourceName } from '../../data-block/CollectionDataSourceProvider';
 
 describe('CollectionDataSourceProvider', () => {
   test('should work', () => {

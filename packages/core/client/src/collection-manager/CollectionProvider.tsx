@@ -1,7 +1,7 @@
 import { FC, ReactNode, useMemo } from 'react';
 import { CollectionContextV2, CollectionOptionsV2, CollectionProviderV2, useCollectionManagerV2 } from '../application';
 import React from 'react';
-import { useCollectionDataSourceName } from '../application/data-block';
+import { useCollectionDataSourceName } from '../application/data-block/CollectionDataSourceProvider';
 
 export const CollectionProvider: FC<{
   name?: string;
