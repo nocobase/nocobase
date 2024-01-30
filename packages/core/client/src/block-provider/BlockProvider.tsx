@@ -17,7 +17,7 @@ import {
   useRecord,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
-import { DataBlockProviderV2, useDataBlockPropsV2 } from '../application/data-block';
+import { DataBlockProviderV2, useDataBlockPropsV2, useDataBlockResourceV2 } from '../application/data-block';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
@@ -38,7 +38,8 @@ export const BlockRequestContext = createContext<{
 }>({});
 
 export const useBlockResource = () => {
-  return useContext(BlockResourceContext);
+  const resource = useDataBlockResourceV2();
+  return useContext(BlockResourceContext) || resource;
 };
 
 interface UseResourceProps {
@@ -313,7 +314,6 @@ export const BlockProvider = (props: {
   children?: any;
 }) => {
   const { name, dataSource } = props;
-  const resource = useResource(props);
   const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
   const params = useMemo(() => {
@@ -327,13 +327,11 @@ export const BlockProvider = (props: {
   return (
     <BlockContext.Provider value={blockValue}>
       <DataBlockProviderV2 {...(props as any)} params={params}>
-        <BlockResourceContext.Provider value={resource}>
-          <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
-            <DataBlockCollector {...props} params={params}>
-              {props.children}
-            </DataBlockCollector>
-          </BlockRequestProvider>
-        </BlockResourceContext.Provider>
+        <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
+          <DataBlockCollector {...props} params={params}>
+            {props.children}
+          </DataBlockCollector>
+        </BlockRequestProvider>
       </DataBlockProviderV2>
     </BlockContext.Provider>
   );
