@@ -24,8 +24,15 @@ import { useRecordIndex } from '../record-provider';
 import { useTemplateBlockContext } from './TemplateBlockProvider';
 import { useAssociationNames } from './hooks';
 
+/**
+ * @deprecated
+ */
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
+
+/**
+ * @deprecated
+ */
 export const BlockRequestContext = createContext<{
   block?: string;
   props?: any;
