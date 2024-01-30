@@ -155,7 +155,10 @@ const LocalPlugins = () => {
             dataSource={keyWordsfilterList}
             split={false}
             renderItem={(item) => (
-              <List.Item style={{ padding: '3px 15px' }} onClick={() => setKeyword(item.key)}>
+              <List.Item
+                style={{ padding: '3px 15px' }}
+                onClick={() => (item.key !== keyword ? setKeyword(item.key) : setKeyword(null))}
+              >
                 <a style={{ fontWeight: keyword === item.key ? 'bold' : 'normal' }}>
                   {item.key?.charAt?.(0).toUpperCase() + item.key?.slice?.(1)}
                 </a>
