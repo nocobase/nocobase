@@ -124,6 +124,31 @@
             }
           }
         }
+      },
+      {
+        "key": "1pz0art9mt7",
+        "name": "f_n2fu6hvprct",
+        "type": "string",
+        "interface": "select",
+        "description": null,
+        "collectionName": "t_vwpds9fs4xs",
+        "parentKey": null,
+        "reverseKey": null,
+        "uiSchema": {
+          "enum": [
+            {
+              "value": "test1",
+              "label": "test1"
+            },
+            {
+              "value": "test2",
+              "label": "test2"
+            }
+          ],
+          "type": "string",
+          "x-component": "Select",
+          "title": "test"
+        }
       }
     ]
   },

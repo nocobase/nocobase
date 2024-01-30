@@ -155,7 +155,7 @@ export class Application {
   private addRoutes() {
     this.router.add('not-found', {
       path: '*',
-      Component: this.components['AppNotFound'] || BlankComponent,
+      Component: this.components['AppNotFound'],
     });
   }
 
