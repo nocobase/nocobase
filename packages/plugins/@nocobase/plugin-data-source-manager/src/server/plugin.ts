@@ -59,6 +59,7 @@ export class PluginDataSourceManagerServer extends Plugin {
         ctx.body = dataSources.map((dataSourceModel) => {
           const item: any = {
             key: dataSourceModel.get('key'),
+            displayName: dataSourceModel.get('displayName'),
           };
 
           const dataSource = app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
