@@ -130,8 +130,8 @@ const CascadeSelect = connect((props) => {
     const data = await handleGetOptions({ parentId: option?.id });
     const options = [...selectedOptions];
     options.splice(index + 1);
-    if (value) {
-      options[index] = { ...options[index], value: option };
+    options[index] = { ...options[index], value: option };
+    if (option?.id) {
       options[index + 1] = { key: option?.id, children: data?.length > 0 ? data : null };
     }
     setSelectedOptions(options);

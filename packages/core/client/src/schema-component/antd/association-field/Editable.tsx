@@ -3,17 +3,17 @@ import { observer, useField, useForm } from '@formily/react';
 import React from 'react';
 import { SchemaComponentOptions } from '../../';
 import { useAssociationCreateActionProps as useCAP } from '../../../block-provider/hooks';
+import { useCollection } from '../../../collection-manager';
 import { AssociationFieldProvider } from './AssociationFieldProvider';
 import { AssociationSelect } from './AssociationSelect';
 import { InternalFileManager } from './FileManager';
+import { InternalCascadeSelect } from './InternalCascadeSelect';
 import { InternalNester } from './InternalNester';
 import { InternalPicker } from './InternalPicker';
-import { InternalSubTable } from './InternalSubTable';
 import { InternaPopoverNester } from './InternalPopoverNester';
-import { InternalCascadeSelect } from './InternalCascadeSelect';
+import { InternalSubTable } from './InternalSubTable';
 import { CreateRecordAction } from './components/CreateRecordAction';
 import { useAssociationFieldContext } from './hooks';
-import { useCollection } from '../../../collection-manager';
 
 const EditableAssociationField = observer(
   (props: any) => {
