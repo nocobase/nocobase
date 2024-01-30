@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
+import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 
 export const o2m: IField = {
   name: 'o2m',
@@ -49,7 +49,9 @@ export const o2m: IField = {
     // schema['type'] = 'array';
     if (targetCollection?.titleField) {
       schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+        value: targetCollection.filterTargetKey || 'id',
+      };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
     if (['Table', 'Kanban'].includes(block)) {
@@ -248,7 +250,9 @@ export class O2MFieldInterface extends CollectionFieldInterfaceBase {
     // schema['type'] = 'array';
     if (targetCollection?.titleField) {
       schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+        value: targetCollection.filterTargetKey || 'id',
+      };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
     if (['Table', 'Kanban'].includes(block)) {

@@ -1,8 +1,8 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 import { defaultProps } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 
 export const linkTo: IField = {
   name: 'linkTo',
@@ -48,7 +48,9 @@ export const linkTo: IField = {
   // availableTypes: ['belongsToMany'],
   schemaInitialize(schema: ISchema, { readPretty, block, targetCollection }) {
     if (targetCollection?.titleField && schema['x-component-props']) {
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+        value: targetCollection.filterTargetKey || 'id',
+      };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
     if (['Table', 'Kanban'].includes(block)) {
@@ -179,7 +181,9 @@ export class LinkToFieldInterface extends CollectionFieldInterfaceBase {
   availableTypes = ['belongsToMany'];
   schemaInitialize(schema: ISchema, { readPretty, block, targetCollection }) {
     if (targetCollection?.titleField && schema['x-component-props']) {
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+        value: targetCollection.filterTargetKey || 'id',
+      };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
     if (['Table', 'Kanban'].includes(block)) {

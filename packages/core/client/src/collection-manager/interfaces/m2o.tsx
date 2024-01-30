@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
+import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 
 export const m2o: IField = {
   name: 'm2o',
@@ -49,7 +49,9 @@ export const m2o: IField = {
     // schema['type'] = 'object';
     if (targetCollection?.titleField) {
       schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+        value: targetCollection.filterTargetKey || 'id',
+      };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
     if (['Table', 'Kanban'].includes(block)) {
@@ -224,7 +226,9 @@ export class M2OFieldInterface extends CollectionFieldInterfaceBase {
     // schema['type'] = 'object';
     if (targetCollection?.titleField) {
       schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+        value: targetCollection.filterTargetKey || 'id',
+      };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
     if (['Table', 'Kanban'].includes(block)) {

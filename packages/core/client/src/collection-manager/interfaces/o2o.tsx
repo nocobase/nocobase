@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
+import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
 
 export const o2o: IField = {
   name: 'o2o',
@@ -405,7 +405,9 @@ export const obo: IField = {
 
     if (targetCollection?.titleField) {
       schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+        value: targetCollection.filterTargetKey || 'id',
+      };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
   },
@@ -930,7 +932,9 @@ export class OBOFieldInterface extends CollectionFieldInterfaceBase {
 
     if (targetCollection?.titleField) {
       schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || {
+        value: targetCollection.filterTargetKey || 'id',
+      };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
   }
