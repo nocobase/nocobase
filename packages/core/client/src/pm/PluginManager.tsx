@@ -74,23 +74,30 @@ const LocalPlugins = () => {
   const [keyword, setKeyword] = useState(null);
   const debouncedSearchValue = useDebounce(searchValue, { wait: 100 });
 
-  const keyWordList = useMemo(() => {
+  const keywordList = useMemo(() => {
     let keyWordlists = [];
     data?.data.forEach((v) => {
-      keyWordlists = keyWordlists.concat(v.keywords);
+      if (v.keywords) {
+        keyWordlists = keyWordlists.concat(v.keywords);
+      }
     });
     keyWordlists.sort((a, b) => {
       if (a === 'data model') return -1;
       if (b === 'data model') return 1;
-      if (a === 'other') return 1;
-      if (b === 'other') return -1;
       return 0;
     });
-    return _.uniq(keyWordlists);
+    return _.uniq(keyWordlists).concat('other');
   }, [data?.data]);
 
   const keyWordsfilterList = useMemo(() => {
-    const list = keyWordList.map((i) => {
+    const list = keywordList.map((i) => {
+      if (i === 'other') {
+        const result = data?.data.filter((v) => !v.keywords);
+        return {
+          key: i,
+          list: result,
+        };
+      }
       const result = data?.data.filter((v) => v.keywords?.includes(i));
       return {
         key: i,
@@ -98,7 +105,7 @@ const LocalPlugins = () => {
       };
     });
     return list;
-  }, [debouncedSearchValue, keyWordList]);
+  }, [keywordList]);
 
   const pluginList = useMemo(() => {
     let list = filterList[filterIndex]?.list || [];

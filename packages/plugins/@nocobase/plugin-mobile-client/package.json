@@ -33,6 +33,5 @@
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
-  "keywords":["other"]
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
 }
