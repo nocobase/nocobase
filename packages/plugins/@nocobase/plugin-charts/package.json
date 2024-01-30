@@ -4,7 +4,7 @@
   "displayName.zh-CN": "图表（废弃）",
   "description": "Out-of-the-box, feature-rich chart plugins.",
   "description.zh-CN": "开箱即用、丰富的报表。",
-  "version": "0.19.0-alpha.4",
+  "version": "0.19.0-alpha.5",
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {
