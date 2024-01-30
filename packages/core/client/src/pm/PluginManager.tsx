@@ -101,11 +101,13 @@ const LocalPlugins = () => {
   }, [debouncedSearchValue, keyWordList]);
 
   const pluginList = useMemo(() => {
-    if (keyword) {
-      console.log(keyWordsfilterList, keyword);
-      return keyWordsfilterList.find((v) => v.key === keyword).list;
-    }
     let list = filterList[filterIndex]?.list || [];
+    if (!filterIndex && keyword) {
+      list = keyWordsfilterList.find((v) => v.key === keyword).list;
+    } else if (filterIndex && keyword) {
+      const keyList = keyWordsfilterList.find((v) => v.key === keyword).list;
+      list = keyList.filter((value) => list.find((k) => k.name === value.name));
+    }
     const searchLowerCaseValue = debouncedSearchValue.toLocaleLowerCase().trim();
     if (searchLowerCaseValue) {
       list = _.filter(
@@ -129,7 +131,6 @@ const LocalPlugins = () => {
   if (loading) {
     return <Spin />;
   }
-
   return (
     <>
       <PluginAddModal
@@ -175,7 +176,8 @@ const LocalPlugins = () => {
                       key={item.type}
                       style={{ fontWeight: filterIndex === index ? 'bold' : 'normal' }}
                     >
-                      {t(item.type)}({item.list?.length})
+                      {t(item.type)}
+                      {filterIndex === index ? `(${pluginList?.length})` : null}
                     </a>
                   ))}
                   <Input
