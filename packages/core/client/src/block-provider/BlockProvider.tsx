@@ -327,18 +327,22 @@ export const BlockProvider = (props: {
   dataSource?: string;
   params?: any;
   children?: any;
+  /** @deprecated */
   useSourceId?: any;
+  /** @deprecated */
+  useParams?: any;
 }) => {
-  const { name, dataSource, useSourceId } = props;
+  const { name, dataSource, useSourceId, useParams } = props;
   const sourceId = useSourceId?.();
+  const paramsFromHook = useParams?.();
   const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
   const params = useMemo(() => {
     if (!props.params?.['appends']) {
-      return { ...props.params, appends };
+      return { ...props.params, appends, ...paramsFromHook };
     }
-    return { ...props.params };
-  }, [appends, props.params]);
+    return { ...props.params, ...paramsFromHook };
+  }, [appends, paramsFromHook, props.params]);
   const blockValue = useMemo(() => ({ name }), [name]);
 
   return (
