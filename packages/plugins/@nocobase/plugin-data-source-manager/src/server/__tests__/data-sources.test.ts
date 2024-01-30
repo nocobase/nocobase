@@ -1,4 +1,4 @@
-import { createMockServer, MockServer } from '@nocobase/test';
+import { createMockServer, MockServer, waitSecond } from '@nocobase/test';
 import { CollectionManager, DataSource } from '@nocobase/data-source-manager';
 
 describe('data source', async () => {
@@ -12,6 +12,42 @@ describe('data source', async () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should load datasource async', async () => {
+    class MockDataSource extends DataSource {
+      static testConnection(options?: any): Promise<boolean> {
+        return Promise.resolve(true);
+      }
+
+      async load(): Promise<void> {
+        await waitSecond(1000);
+      }
+
+      createCollectionManager(options?: any): any {
+        return undefined;
+      }
+    }
+
+    app.dataSourceManager.factory.register('mock', MockDataSource);
+
+    await app.db.getRepository('dataSources').create({
+      values: {
+        key: 'mockInstance1',
+        type: 'mock',
+        displayName: 'Mock',
+        options: {},
+      },
+    });
+
+    const listData = await app.db.getRepository('dataSources').find({});
+    const item1 = listData[0];
+
+    expect(item1.status).toBe('loading');
+    await waitSecond(2000);
+
+    const listData2 = await app.db.getRepository('dataSources').find({});
+    expect(listData2[0].status).toBe('loaded');
   });
 
   it('should test datasource connection', async () => {

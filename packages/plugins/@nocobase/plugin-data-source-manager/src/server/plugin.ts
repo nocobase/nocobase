@@ -24,12 +24,24 @@ export class PluginDataSourceManagerServer extends Plugin {
       DataSourceModel,
     });
 
-    this.app.db.on('dataSources.afterSave', async (model: DataSourceModel, options) => {
-      const { transaction } = options;
+    this.app.db.on('dataSources.beforeCreate', async (model: DataSourceModel, options) => {
+      const dataSourceOptions = model.get('options');
+      const type = model.get('type');
 
-      await model.loadIntoApplication({
+      const klass = this.app.dataSourceManager.factory.getClass(type);
+
+      try {
+        await klass.testConnection(dataSourceOptions);
+      } catch (error) {
+        throw new Error(`Test connection failed: ${error.message}`);
+      }
+
+      model.set('status', 'loading');
+    });
+
+    this.app.db.on('dataSources.afterSave', async (model: DataSourceModel, options) => {
+      model.loadIntoApplication({
         app: this.app,
-        transaction,
       });
     });
 

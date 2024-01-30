@@ -45,7 +45,19 @@ const availableActions: {
 
 export class DataSourceModel extends MagicAttributeModel {
   async loadIntoApplication(options: { app: Application; transaction?: Transaction }) {
-    const { app } = options;
+    const { app, transaction } = options;
+
+    await this.update(
+      {
+        status: 'loading',
+      },
+      {
+        hooks: false,
+        silent: true,
+        transaction,
+      },
+    );
+
     const loadRoleIntoDataSource = async (model: DataSourcesRolesModel, dataSource: DataSource) => {
       const pluginACL: any = app.pm.get('acl');
 
@@ -87,9 +99,35 @@ export class DataSourceModel extends MagicAttributeModel {
       await loadRoleIntoDataSource(roleModel, dataSource);
     }
 
-    await app.dataSourceManager.add(dataSource, {
-      localData: await this.loadLocalData(),
-    });
+    try {
+      await app.dataSourceManager.add(dataSource, {
+        localData: await this.loadLocalData(),
+      });
+    } catch (e) {
+      this.app.logger.error(`load data source failed, ${e.message}`);
+
+      await this.update(
+        {
+          status: 'failed',
+        },
+        {
+          hooks: false,
+          silent: true,
+          transaction,
+        },
+      );
+    }
+
+    await this.update(
+      {
+        status: 'loaded',
+      },
+      {
+        hooks: false,
+        silent: true,
+        transaction,
+      },
+    );
   }
 
   private async loadLocalData(): Promise<LocalData> {
