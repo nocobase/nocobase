@@ -150,7 +150,7 @@ const LocalPlugins = () => {
             renderItem={(item) => (
               <List.Item style={{ padding: '3px 15px' }} onClick={() => setKeyword(item.key)}>
                 <a style={{ fontWeight: keyword === item.key ? 'bold' : 'normal' }}>
-                  {item.key.charAt(0).toUpperCase() + item.key.slice(1)}
+                  {item.key?.charAt?.(0).toUpperCase() + item.key.slice(1)}
                 </a>
               </List.Item>
             )}
