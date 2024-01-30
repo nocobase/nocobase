@@ -47,7 +47,9 @@ export class CollectionTemplateBase {
   }
   name: string;
   Collection?: typeof CollectionV2;
-  transform?: (collection: CollectionOptionsV2, app: Application) => CollectionOptionsV2;
+  transform(collection: CollectionOptionsV2, app: Application): CollectionOptionsV2 {
+    return collection;
+  }
   title?: string;
   color?: string;
   /** 排序 */

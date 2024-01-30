@@ -66,7 +66,7 @@ describe('PluginManager', () => {
     expect(fn2).toBeCalledWith(config);
   });
 
-  it('dynamic Plugins', async () => {
+  it('Load other plugins through plugins', async () => {
     const fn2 = vitest.fn();
     const config = { a: 1 };
     class Demo2 extends Plugin {
@@ -93,6 +93,10 @@ describe('PluginManager', () => {
       async afterAdd() {
         expect(this.pm).toBe(this.app.pm);
         expect(this.router).toBe(this.app.router);
+        expect(this.pluginManager).toBe(this.app.pluginManager);
+        expect(this.pluginSettingsManager).toBe(this.app.pluginSettingsManager);
+        expect(this.schemaInitializerManager).toBe(this.app.schemaInitializerManager);
+        expect(this.schemaSettingsManager).toBe(this.app.schemaSettingsManager);
       }
     }
     const app = new Application({ plugins: [[DemoPlugin, { name: 'demo' }]] });

@@ -1,10 +1,9 @@
 import React from 'react';
-import { Select, Table, TableProps } from 'antd';
+import { Table, TableProps } from 'antd';
 import { SchemaComponent, UseDataBlockProps, useDataBlockRequestV2, withDynamicSchemaProps } from '@nocobase/client';
 import { ISchema } from '@formily/json-schema';
 
 import { createApp } from '../../../collection/demos/createApp';
-import useUrlState from '@ahooksjs/use-url-state';
 
 const collection = 'users';
 const associationField = 'roles';

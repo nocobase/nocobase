@@ -1,4 +1,4 @@
-import { useDeepCompareEffect } from 'ahooks';
+import { useDeepCompareEffect, useUpdateEffect } from 'ahooks';
 import React, { FC, createContext, useContext, useEffect } from 'react';
 
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
@@ -40,7 +40,7 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockProps, 'type'>) {
     }
   }, [params, action, record]);
 
-  useEffect(() => {
+  useUpdateEffect(() => {
     if (action) {
       request.run();
     }

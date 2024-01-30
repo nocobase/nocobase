@@ -4,10 +4,9 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { useFormBlockContext, useTableBlockContext } from '../../../block-provider';
-import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useSortFields } from '../../../collection-manager/action-hooks';
-import { FilterBlockType } from '../../../filter-provider/utils';
+import { FilterBlockType, mergeFilter } from '../../../filter-provider/utils';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import {
   GeneralSchemaDesigner,

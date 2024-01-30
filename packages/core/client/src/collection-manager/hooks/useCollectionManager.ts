@@ -3,7 +3,7 @@ import _ from 'lodash';
 import { useCallback, useMemo, useState } from 'react';
 import { useCompile, useSchemaComponentContext } from '../../schema-component';
 import { CollectionFieldOptions, CollectionOptions } from '../types';
-import { useCollectionManagerV2 } from '../../application';
+import { useCollectionManagerV2 } from '../../application/collection/CollectionManagerProvider';
 import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
 import { uid } from '@formily/shared';
 import { useCollectionDataSourceName } from '../../application/data-block';
@@ -56,13 +56,11 @@ export const useCollectionManager = (dataSourceName?: string) => {
   const getCollectionFields = useCallback(
     (name: any, customDataSource?: string): CollectionFieldOptions[] => {
       if (!name) return [];
-      return (
-        cm
-          ?.getCollection<InheritanceCollectionMixin>(name, {
-            dataSource: customDataSource || dataSourceNameValue,
-          })
-          ?.getAllFields() || []
-      );
+      const collection = cm?.getCollection<InheritanceCollectionMixin>(name, {
+        dataSource: customDataSource || dataSourceNameValue,
+      });
+
+      return collection?.getAllFields?.() || collection?.getFields() || [];
     },
     [cm],
   );

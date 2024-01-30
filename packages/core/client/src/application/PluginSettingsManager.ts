@@ -44,11 +44,9 @@ export interface PluginSettingsPageType {
 export class PluginSettingsManager {
   protected settings: Record<string, PluginSettingOptions> = {};
   protected aclSnippets: string[] = [];
+  public app: Application;
 
-  constructor(
-    _pluginSettings: Record<string, PluginSettingOptions>,
-    protected app: Application,
-  ) {
+  constructor(_pluginSettings: Record<string, PluginSettingOptions>, app: Application) {
     this.app = app;
     Object.entries(_pluginSettings || {}).forEach(([name, pluginSettingOptions]) => {
       this.add(name, pluginSettingOptions);

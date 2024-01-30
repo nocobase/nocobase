@@ -23,7 +23,7 @@ export function useCollectionManagerV2() {
 
 export const useCollectionsV2 = (options?: {
   predicate?: (collection: CollectionV2) => boolean;
-  dataSources?: string;
+  dataSource?: string;
 }) => {
   const collectionManager = useCollectionManagerV2();
   const collections = useMemo(() => collectionManager.getCollections(options), [collectionManager, options]);

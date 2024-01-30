@@ -1,6 +1,6 @@
 import { SchemaKey } from '@formily/react';
 import { useAPIClient } from '../../api-client';
-import { useCollectionV2 } from '../../application';
+import { useCollectionV2 } from '../../application/collection/CollectionProvider';
 import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
 import { useCallback, useMemo } from 'react';
 
@@ -11,9 +11,9 @@ export const useCollection = () => {
   const api = useAPIClient();
   const resource = api?.resource(collection?.name);
   const currentFields = useMemo(() => collection?.fields || [], [collection]);
-  const inheritedFields = useMemo(() => collection?.getInheritedFields() || [], [collection]);
-  const totalFields = useMemo(() => collection?.getAllFields() || [], [collection]);
-  const foreignKeyFields = useMemo(() => collection?.getForeignKeyFields() || [], [collection]);
+  const inheritedFields = useMemo(() => collection?.getInheritedFields?.() || [], [collection]);
+  const totalFields = useMemo(() => collection?.getAllFields?.() || collection?.getFields() || [], [collection]);
+  const foreignKeyFields = useMemo(() => collection?.getForeignKeyFields?.() || [], [collection]);
   const getTreeParentField = useCallback(() => totalFields?.find((field) => field.treeParent), [totalFields]);
   const getField = useCallback(
     (name: SchemaKey) => {

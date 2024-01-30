@@ -90,7 +90,7 @@ export class CollectionV2 {
     this.options = options;
   }
   get fields() {
-    return this.options?.fields || [];
+    return this.options.fields || [];
   }
 
   get dataSource() {
@@ -113,8 +113,38 @@ export class CollectionV2 {
   get inherit() {
     return this.options.inherit;
   }
+  get hidden() {
+    return this.options.hidden;
+  }
+  get description() {
+    return this.options.description;
+  }
+  get duplicator() {
+    return this.options.duplicator;
+  }
+  get category() {
+    return this.options.category;
+  }
   get targetKey() {
     return this.options.targetKey;
+  }
+  get model() {
+    return this.options.model;
+  }
+  get createdBy() {
+    return this.options.createdBy;
+  }
+  get updatedBy() {
+    return this.options.updatedBy;
+  }
+  get logging() {
+    return this.options.logging;
+  }
+  get from() {
+    return this.options.from;
+  }
+  get rawTitle() {
+    return this.options.rawTitle;
   }
   get isLocal() {
     return this.options.isLocal;
@@ -126,7 +156,7 @@ export class CollectionV2 {
     if (this.options.targetKey) {
       return this.options.targetKey;
     }
-    const field = this.getFields('primaryKey')[0];
+    const field = this.getFields({ primaryKey: true })[0];
     this.primaryKey = field ? field.name : 'id';
 
     return this.primaryKey;
@@ -137,7 +167,7 @@ export class CollectionV2 {
   }
 
   get titleField() {
-    return this.hasField(this.options.titleField) ? this.options.titleField : this.primaryKey;
+    return this.hasField(this.options.titleField) ? this.options.titleField : this.getPrimaryKey();
   }
 
   get sources() {
@@ -220,6 +250,7 @@ export class CollectionV2 {
     return this.fieldsMap;
   }
   getField(name: SchemaKey) {
+    if (!name) return undefined;
     const fieldsMap = this.getFieldsMap();
     if (typeof name === 'string' && name.startsWith(`${this.name}.`)) {
       name = name.replace(`${this.name}.`, '');
@@ -227,13 +258,13 @@ export class CollectionV2 {
     if (String(name).split('.').length > 1) {
       const [fieldName, ...others] = String(name).split('.');
       const field = fieldsMap[fieldName];
-      if (!field) return null;
+      if (!field) return undefined;
 
       const collectionName = field?.target;
-      if (!collectionName) return null;
+      if (!collectionName) return undefined;
 
       const collection = this.collectionManager.getCollection(collectionName);
-      if (!collection) return null;
+      if (!collection) return undefined;
 
       return collection.getField(others.join('.'));
     }
