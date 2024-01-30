@@ -28,6 +28,7 @@ import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { useTemplateBlockContext } from './TemplateBlockProvider';
 import { useAssociationNames } from './hooks';
+import { useDataBlockSourceId } from './hooks/useDataBlockSourceId';
 
 /**
  * @deprecated
@@ -63,7 +64,7 @@ interface UseResourceProps {
   block?: any;
 }
 
-export const useAssociation = (props) => {
+const useAssociation = (props) => {
   const { association } = props;
   const { getCollectionField } = useCollectionManager();
   if (typeof association === 'string') {
@@ -332,8 +333,8 @@ export const BlockProvider = (props: {
   /** @deprecated */
   useParams?: any;
 }) => {
-  const { name, dataSource, useSourceId, useParams } = props;
-  const sourceId = useSourceId?.();
+  const { name, dataSource, association, useSourceId, useParams } = props;
+  const sourceId = useDataBlockSourceId({ association, useSourceId });
   const paramsFromHook = useParams?.();
   const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
