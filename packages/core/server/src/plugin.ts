@@ -212,6 +212,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
       changelogUrl: getExposeChangelogUrl(packageName),
       displayName: packageJson[`displayName.${locale}`] || packageJson.displayName || name,
       description: packageJson[`description.${locale}`] || packageJson.description,
+      homepage: packageJson[`homepage.${locale}`] || packageJson.homepage,
     };
 
     if (!options.withOutOpenFile) {

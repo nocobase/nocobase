@@ -2,6 +2,8 @@
   "name": "@nocobase/plugin-kanban",
   "version": "0.19.0-alpha.4",
   "main": "dist/server/index.js",
+  "homepage": "https://docs-cn.nocobase.com/plugins/kanban",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/kanban",
   "license": "AGPL-3.0",
   "displayName": "Kanban",
   "displayName.zh-CN": "看板",

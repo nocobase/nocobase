@@ -6,6 +6,8 @@
   "description": "Data addition, modification, deletion logs",
   "description.zh-CN": "数据的增删改日志",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs-cn.nocobase.com/plugins/audit-logs",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/audit-logs",
   "license": "AGPL-3.0",
   "devDependencies": {
     "@ant-design/icons": "5.x",

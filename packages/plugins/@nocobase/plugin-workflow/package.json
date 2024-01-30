@@ -7,6 +7,8 @@
   "version": "0.19.0-alpha.4",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs-cn.nocobase.com/plugins/workflow",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/workflow",
   "dependencies": {
     "@nocobase/plugin-workflow-test": "0.19.0-alpha.4"
   },

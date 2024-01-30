@@ -20,7 +20,8 @@ interface IPluginInfo extends IPluginCard {
 function PluginInfo(props: IPluginInfo) {
   const { data, onClick } = props;
   const app = useApp();
-  const { name, displayName, isCompatible, packageName, updatable, builtIn, enabled, description, type, error } = data;
+  const { name, displayName, isCompatible, packageName, updatable, builtIn, enabled, description, error, homepage } =
+    data;
   const { styles, theme } = useStyles();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -78,7 +79,15 @@ function PluginInfo(props: IPluginInfo) {
         `}
         actions={[
           <Space split={<Divider type="vertical" />} key={'1'}>
-            <a key={'5'}>
+            <a
+              key={'5'}
+              href={homepage}
+              target="_blank"
+              onClick={(event) => {
+                event.stopPropagation();
+              }}
+              rel="noreferrer"
+            >
               <ReadOutlined /> {t('Docs')}
             </a>
             {updatable && (

@@ -20,4 +20,5 @@ export interface IPluginData {
   changelogUrl: string;
   error: boolean;
   updatable?: boolean;
+  homepage?: string;
 }

@@ -7,6 +7,8 @@
   "description.zh-CN": "提供甘特图区块",
   "license": "AGPL-3.0",
   "main": "dist/server/index.js",
+  "homepage": "https://docs-cn.nocobase.com/plugins/gantt",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/gantt",
   "dependencies": {
     "antd-style": "3.4.5"
   },

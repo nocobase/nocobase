@@ -116,6 +116,7 @@ export default {
       const locale = ctx.getCurrentLocale();
       const pm = ctx.app.pm as PluginManager;
       ctx.body = await pm.list({ locale, isPreset: false });
+      console.log(locale, 99999999);
       await next();
     },
     async listEnabled(ctx, next) {

@@ -7,6 +7,8 @@
   "version": "0.19.0-alpha.4",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs-cn.nocobase.com/plugins/ui-schema-storage",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/ui-schema-storage",
   "devDependencies": {
     "@formily/json-schema": "2.x"
   },
