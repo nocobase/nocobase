@@ -46,6 +46,11 @@ const collection = {
         title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Select',
+        enum: [
+          { value: 'loading', label: `{{t("Loading",{ns:"${NAMESPACE}"})}}`, color: 'orange' },
+          { value: 'failed', label: `{{t("Failed",{ns:"${NAMESPACE}"})}}`, color: 'red' },
+          { value: 'loaded', label: `{{t("Loaded",{ns:"${NAMESPACE}"})}}`, color: 'green' },
+        ],
       } as ISchema,
     },
     {
