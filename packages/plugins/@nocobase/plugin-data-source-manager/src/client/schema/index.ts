@@ -35,6 +35,7 @@ const collection = {
         title: `{{t("Type", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Select',
+        enum: '{{types}}',
       } as ISchema,
     },
     {
@@ -45,7 +46,6 @@ const collection = {
         title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Select',
-        enum: '{{types}}',
       } as ISchema,
     },
     {
