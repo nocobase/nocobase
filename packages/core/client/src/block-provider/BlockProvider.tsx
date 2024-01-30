@@ -327,8 +327,10 @@ export const BlockProvider = (props: {
   dataSource?: string;
   params?: any;
   children?: any;
+  useSourceId?: any;
 }) => {
-  const { name, dataSource } = props;
+  const { name, dataSource, useSourceId } = props;
+  const sourceId = useSourceId?.();
   const { getAssociationAppends } = useAssociationNames(dataSource);
   const { appends, updateAssociationValues } = getAssociationAppends();
   const params = useMemo(() => {
@@ -341,7 +343,7 @@ export const BlockProvider = (props: {
 
   return (
     <BlockContext.Provider value={blockValue}>
-      <DataBlockProviderV2 {...(props as any)} params={params}>
+      <DataBlockProviderV2 {...(props as any)} params={params} sourceId={sourceId}>
         <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
           <DataBlockCollector {...props} params={params}>
             {props.children}
