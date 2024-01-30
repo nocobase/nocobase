@@ -50,7 +50,7 @@ export class PluginDataSourceManagerClient extends Plugin {
       data: any;
     }>({
       resource: 'dataSources',
-      action: 'list',
+      action: 'listEnabled',
       params: {
         paginate: false,
         appends: ['collections'],
