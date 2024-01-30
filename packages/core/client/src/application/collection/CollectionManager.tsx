@@ -57,6 +57,8 @@ interface DataSource {
   key: string;
   displayName: string;
   collections?: CollectionOptionsV2[];
+  errorMessage?: string;
+  status?: 'success' | 'failed';
   [key: string]: any;
 }
 
@@ -241,7 +243,7 @@ export class CollectionManagerV2 {
     return Object.values(this.dataSourceMap);
   }
   getDataSource(name: string) {
-    return this.dataSourceMap[name];
+    return name ? this.dataSourceMap[name] : this.dataSourceMap[DEFAULT_DATA_SOURCE_NAME];
   }
 
   // CollectionTemplates
