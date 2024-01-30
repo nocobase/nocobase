@@ -17,7 +17,12 @@ import {
   useRecord,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
-import { DataBlockProviderV2, useDataBlockPropsV2, useDataBlockResourceV2 } from '../application/data-block';
+import {
+  DataBlockProviderV2,
+  useDataBlockPropsV2,
+  useDataBlockRequestV2,
+  useDataBlockResourceV2,
+} from '../application/data-block';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
@@ -206,12 +211,7 @@ export const BlockRequestProvider = (props) => {
   const field = useField<Field>();
   const resource = useDataBlockResourceV2();
   const [allowedActions, setAllowedActions] = useState({});
-  const service = useResourceAction(
-    { ...props, resource },
-    {
-      ...props.requestOptions,
-    },
-  );
+  const service = useDataBlockRequestV2();
 
   // Infinite scroll support
   const serviceAllowedActions = (service?.data as any)?.meta?.allowedActions;
