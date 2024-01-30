@@ -1,8 +1,8 @@
 import { useFieldSchema } from '@formily/react';
 import { useCallback, useMemo } from 'react';
-import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { isInFilterFormBlock } from '../../../filter-provider';
+import { mergeFilter } from '../../../filter-provider/utils';
 import { useRecord } from '../../../record-provider';
 
 export default function useServiceOptions(props) {
