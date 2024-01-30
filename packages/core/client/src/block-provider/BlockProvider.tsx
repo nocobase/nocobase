@@ -197,9 +197,14 @@ export const MaybeCollectionProvider = (props) => {
   );
 };
 
+/**
+ * @deprecated
+ * @param props
+ * @returns
+ */
 export const BlockRequestProvider = (props) => {
   const field = useField<Field>();
-  const resource = useBlockResource();
+  const resource = useDataBlockResourceV2();
   const [allowedActions, setAllowedActions] = useState({});
   const service = useResourceAction(
     { ...props, resource },
@@ -236,6 +241,9 @@ export const BlockRequestProvider = (props) => {
   );
 };
 
+/**
+ * @deprecated
+ */
 export const useBlockRequestContext = () => {
   return useContext(BlockRequestContext);
 };
