@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { defaultProps } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
 
 export const subTable: IField = {
   name: 'subTable',
@@ -211,7 +211,7 @@ export const subTable: IField = {
   },
 };
 
-export class SubTableFieldInterface extends CollectionFieldInterfaceBase {
+export class SubTableFieldInterface extends CollectionFieldInterface {
   name = 'subTable';
   type = 'object';
   group = 'relation';

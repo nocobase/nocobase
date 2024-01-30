@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { CollectionOptions } from '../../types';
-import { CollectionFieldInterface } from '../components/CollectionFieldInterface';
+import { CollectionFieldInterfaceTag } from '../components/CollectionFieldInterfaceTag';
 
 export const collection: CollectionOptions = {
   name: 'fields',
@@ -184,7 +184,7 @@ export const collectionFieldSchema: ISchema = {
           title: '{{t("Field interface")}}',
           properties: {
             interface: {
-              'x-component': CollectionFieldInterface,
+              'x-component': CollectionFieldInterfaceTag,
               'x-read-pretty': true,
             },
           },

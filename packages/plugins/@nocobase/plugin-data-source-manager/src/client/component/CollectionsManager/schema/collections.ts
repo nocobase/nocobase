@@ -2,7 +2,7 @@ import { ISchema, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useAPIClient, i18n, CollectionOptions, CollectionTemplate } from '@nocobase/client';
+import { useAPIClient, i18n, CollectionOptions } from '@nocobase/client';
 
 export const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });
@@ -227,7 +227,7 @@ export const collectionTableSchema: ISchema = {
         //   title: '{{t("Collection template")}}',
         //   properties: {
         //     template: {
-        //       'x-component': CollectionTemplate,
+        //       'x-component': CollectionTemplateTag,
         //       'x-read-pretty': true,
         //     },
         //   },

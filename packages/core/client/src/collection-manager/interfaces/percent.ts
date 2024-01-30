@@ -3,7 +3,7 @@ import { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
 import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
 
 registerValidateRules({
   percentMode(value, rule) {
@@ -167,7 +167,7 @@ export const percent: IField = {
   },
 };
 
-export class PercentFieldInterface extends CollectionFieldInterfaceBase {
+export class PercentFieldInterface extends CollectionFieldInterface {
   name = 'percent';
   type = 'object';
   group = 'basic';

@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
 
 export const email: IField = {
   name: 'email',
@@ -38,7 +38,7 @@ export const email: IField = {
   },
 };
 
-export class EmailFieldInterface extends CollectionFieldInterfaceBase {
+export class EmailFieldInterface extends CollectionFieldInterface {
   name = 'email';
   type = 'object';
   group = 'basic';

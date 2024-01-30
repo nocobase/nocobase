@@ -20,9 +20,9 @@ export * from './AddSubFieldAction';
 export * from './EditSubFieldAction';
 export * from './components/FieldSummary';
 export * from './components/TemplateSummary';
-export * from './components/CollectionFieldInterface';
+export * from './components/CollectionFieldInterfaceTag';
 export * from './components/CollectionCategory';
-export * from './components/CollectionTemplate';
+export * from './components/CollectionTemplateTag';
 
 registerValidateFormats({
   uid: /^[a-zA-Z][a-zA-Z0-9_-]*$/,

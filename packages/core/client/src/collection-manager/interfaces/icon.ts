@@ -1,4 +1,4 @@
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
 import { defaultProps } from './properties';
 import { IField } from './types';
 
@@ -24,7 +24,7 @@ export const icon: IField = {
   },
 };
 
-export class IconFieldInterface extends CollectionFieldInterfaceBase {
+export class IconFieldInterface extends CollectionFieldInterface {
   name = 'icon';
   type = 'object';
   group = 'basic';

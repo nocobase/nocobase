@@ -1,4 +1,4 @@
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
 import { dateTimeProps, defaultProps, operators } from './properties';
 import { IField } from './types';
 
@@ -32,7 +32,7 @@ export const updatedAt: IField = {
   titleUsable: true,
 };
 
-export class UpdatedAtFieldInterface extends CollectionFieldInterfaceBase {
+export class UpdatedAtFieldInterface extends CollectionFieldInterface {
   name = 'updatedAt';
   type = 'object';
   group = 'systemInfo';

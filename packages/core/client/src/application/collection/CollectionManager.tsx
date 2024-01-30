@@ -1,5 +1,5 @@
-import { CollectionFieldInterfaceBase } from './CollectionFieldInterface';
-import { CollectionTemplateBase } from './CollectionTemplate';
+import { CollectionFieldInterface } from './CollectionFieldInterface';
+import { CollectionTemplate } from './CollectionTemplate';
 import { CollectionFieldOptionsV2, CollectionOptionsV2, CollectionV2 } from './Collection';
 import type { Application } from '../Application';
 import { SchemaKey } from '@formily/react';
@@ -64,8 +64,8 @@ type DataSourceNameType = string;
 
 export interface CollectionManagerOptionsV2 {
   collections?: CollectionOptionsV2[];
-  collectionTemplates?: (typeof CollectionTemplateBase)[];
-  fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
+  collectionTemplates?: (typeof CollectionTemplate)[];
+  fieldInterfaces?: (typeof CollectionFieldInterface)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionMixins?: CollectionMixinConstructor[];
   dataSources?: DataSource[];
@@ -78,8 +78,8 @@ type ReloadCallback = (collections: CollectionOptionsV2[]) => void;
 export class CollectionManagerV2 {
   public app: Application;
   protected collections: Record<string, Record<DataSourceNameType, CollectionV2>> = {};
-  protected collectionTemplateInstances: Record<string, CollectionTemplateBase> = {};
-  protected fieldInterfaceInstances: Record<string, CollectionFieldInterfaceBase> = {};
+  protected collectionTemplateInstances: Record<string, CollectionTemplate> = {};
+  protected fieldInterfaceInstances: Record<string, CollectionFieldInterface> = {};
   protected collectionMixins: CollectionMixinConstructor[] = [];
   protected dataSourceMap: Record<DataSourceNameType, Omit<DataSource, 'collections'>> = {
     [DEFAULT_DATA_SOURCE_NAME]: {
@@ -245,7 +245,7 @@ export class CollectionManagerV2 {
   }
 
   // CollectionTemplates
-  addCollectionTemplates(templateClasses: (typeof CollectionTemplateBase)[]) {
+  addCollectionTemplates(templateClasses: (typeof CollectionTemplate)[]) {
     const newCollectionTemplateInstances = templateClasses.reduce((acc, Template) => {
       const instance = new Template(this.app, this);
       acc[instance.name] = instance;
@@ -274,12 +274,12 @@ export class CollectionManagerV2 {
   getCollectionTemplates() {
     return Object.values(this.collectionTemplateInstances).sort((a, b) => (a.order || 0) - (b.order || 0));
   }
-  getCollectionTemplate<T extends CollectionTemplateBase>(name: string): T {
+  getCollectionTemplate<T extends CollectionTemplate>(name: string): T {
     return this.collectionTemplateInstances[name] as T;
   }
 
   // field interface
-  addFieldInterfaces(interfaces: (typeof CollectionFieldInterfaceBase)[]) {
+  addFieldInterfaces(interfaces: (typeof CollectionFieldInterface)[]) {
     const newCollectionFieldInterfaces = interfaces.reduce((acc, Interface) => {
       const instance = new Interface(this.app, this);
       acc[instance.name] = instance;
@@ -291,7 +291,7 @@ export class CollectionManagerV2 {
   getFieldInterfaces() {
     return this.fieldInterfaceInstances;
   }
-  getFieldInterface<T extends CollectionFieldInterfaceBase>(name: string) {
+  getFieldInterface<T extends CollectionFieldInterface>(name: string) {
     return this.fieldInterfaceInstances[name] as T;
   }
 

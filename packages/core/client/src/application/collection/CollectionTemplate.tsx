@@ -38,7 +38,7 @@ interface CollectionTemplateDefaultOptions {
   [key: string]: any;
 }
 
-export class CollectionTemplateBase {
+export class CollectionTemplate {
   app: Application;
   collectionManager: CollectionManagerV2;
   constructor(app: Application, collectionManager: CollectionManagerV2) {

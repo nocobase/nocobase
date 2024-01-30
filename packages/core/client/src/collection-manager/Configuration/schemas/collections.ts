@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { i18n } from '../../../i18n';
 import { CollectionCategory } from '../components/CollectionCategory';
-import { CollectionTemplate } from '../components/CollectionTemplate';
+import { CollectionTemplateTag } from '../components/CollectionTemplateTag';
 import { CollectionOptionsV2 } from '../../../application';
 
 const compile = (source) => {
@@ -220,7 +220,7 @@ export const collectionTableSchema: ISchema = {
           title: '{{t("Collection template")}}',
           properties: {
             template: {
-              'x-component': CollectionTemplate,
+              'x-component': CollectionTemplateTag,
               'x-read-pretty': true,
             },
           },
