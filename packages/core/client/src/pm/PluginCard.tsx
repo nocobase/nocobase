@@ -152,12 +152,27 @@ function PluginInfo(props: IPluginInfo) {
                 message.error(t("Dependencies check failed, can't enable."));
                 return;
               }
-              await api.request({
-                url: `pm:${checked ? 'enable' : 'disable'}`,
-                params: {
-                  filterByTk: name,
-                },
-              });
+              if (!checked) {
+                modal.confirm({
+                  title: t('Are you sure to disable this plugin?'),
+                  content: title,
+                  onOk: async () => {
+                    await api.request({
+                      url: `pm:disable`,
+                      params: {
+                        filterByTk: name,
+                      },
+                    });
+                  },
+                });
+              } else {
+                await api.request({
+                  url: `pm:enable`,
+                  params: {
+                    filterByTk: name,
+                  },
+                });
+              }
             }}
             checked={enabledVal}
           ></Switch>,

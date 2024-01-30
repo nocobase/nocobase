@@ -208,6 +208,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
     const results = {
       ...this.options,
+      keywords: packageJson.keywords,
       readmeUrl: getExposeReadmeUrl(packageName, locale),
       changelogUrl: getExposeChangelogUrl(packageName),
       displayName: packageJson[`displayName.${locale}`] || packageJson.displayName || name,

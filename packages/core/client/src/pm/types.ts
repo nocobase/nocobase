@@ -21,4 +21,5 @@ export interface IPluginData {
   error: boolean;
   updatable?: boolean;
   homepage?: string;
+  keywords?: string[];
 }
