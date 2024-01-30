@@ -3,10 +3,10 @@ import { FormContext, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
+import { mergeFilter } from '../filter-provider/utils';
 import { useRecord } from '../record-provider';
 import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
-import { mergeFilter } from './SharedFilterProvider';
 import { findFilterTargets, useParsedFilter } from './hooks';
 
 export const TableBlockContext = createContext<any>({});
