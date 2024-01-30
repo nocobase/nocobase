@@ -74,7 +74,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       await next();
       const { actionName, resourceName, params } = ctx.action;
 
-      if (resourceName === 'dataSources' && (actionName == 'list' || actionName === 'listEnabled')) {
+      if (resourceName === 'dataSources' && actionName == 'list') {
         const data = ctx.body;
         let items = data;
 
@@ -93,6 +93,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       }
     });
 
+    const plugin = this;
     this.app.actions({
       async ['dataSources:listEnabled'](ctx, next) {
         const dataSources = await ctx.db.getRepository('dataSources').find({
@@ -102,12 +103,23 @@ export class PluginDataSourceManagerServer extends Plugin {
         });
 
         ctx.body = dataSources.map((dataSourceModel) => {
+          const dataSourceStatus = plugin.dataSourceStatus[dataSourceModel.get('key')];
+
           const item: any = {
             key: dataSourceModel.get('key'),
             displayName: dataSourceModel.get('displayName'),
+            status: dataSourceStatus,
           };
 
+          if (dataSourceStatus === 'failed') {
+            item['errorMessage'] = this.dataSourceErrors[dataSourceModel.get('key')].message;
+          }
+
           const dataSource = app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
+
+          if (!dataSource) {
+            return item;
+          }
 
           const collections = dataSource.collectionManager.getCollections();
 
@@ -244,6 +256,14 @@ export class PluginDataSourceManagerServer extends Plugin {
         ctx.bodyMeta = {
           dataSources: dataSources.reduce((carry, dataSourceModel) => {
             const dataSource = this.app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
+            if (!dataSource) {
+              return carry;
+            }
+
+            const dataSourceStatus = this.dataSourceStatus[dataSourceModel.get('key')];
+            if (dataSourceStatus !== 'loaded') {
+              return carry;
+            }
 
             const aclInstance = dataSource.acl;
             const roleInstance = aclInstance.getRole(roleName);
