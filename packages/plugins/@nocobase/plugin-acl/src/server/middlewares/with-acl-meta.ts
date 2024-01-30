@@ -7,7 +7,7 @@ function createWithACLMetaMiddleware() {
     await next();
 
     const dataSourceKey = ctx.get('x-data-source');
-    const dataSource = ctx.app.dataSources.get(dataSourceKey);
+    const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
     const db = dataSource ? dataSource.collectionManager.db : ctx.db;
 
     if (!db) {
