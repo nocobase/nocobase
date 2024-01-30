@@ -11,6 +11,7 @@ import {
   useRoutes,
 } from 'react-router-dom';
 import { BlankComponent, RouterContextCleaner } from './components';
+import { Application } from './Application';
 
 export interface BrowserRouterOptions extends Omit<BrowserRouterProps, 'children'> {
   type?: 'browser';
@@ -32,9 +33,12 @@ export type RenderComponentType = (Component: ComponentTypeAndString, props?: an
 
 export class RouterManager {
   protected routes: Record<string, RouteType> = {};
+  protected options: RouterOptions;
+  public app: Application;
 
-  constructor(protected options: RouterOptions) {
-    this.options = options || {};
+  constructor(options: RouterOptions = {}, app: Application) {
+    this.options = options;
+    this.app = app;
   }
 
   getRoutesTree(): RouteObject[] {
@@ -67,7 +71,7 @@ export class RouterManager {
           let ele = element;
           if (Component) {
             if (typeof Component === 'string') {
-              ele = this.options.renderComponent ? this.options.renderComponent(Component) : Component;
+              ele = this.app.renderComponent(Component);
             } else {
               ele = React.createElement(Component);
             }
@@ -99,7 +103,7 @@ export class RouterManager {
   }
 
   getRouterComponent() {
-    const { type = 'browser', ...opts } = this.options || {};
+    const { type = 'browser', ...opts } = this.options;
     const Routers = {
       hash: HashRouter,
       browser: BrowserRouter,
@@ -146,6 +150,6 @@ export class RouterManager {
   }
 }
 
-export function createRouterManager(options?: RouterOptions) {
-  return new RouterManager(options);
+export function createRouterManager(options?: RouterOptions, app?: Application) {
+  return new RouterManager(options, app);
 }
