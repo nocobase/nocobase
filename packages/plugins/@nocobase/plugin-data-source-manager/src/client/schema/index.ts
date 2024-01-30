@@ -37,6 +37,16 @@ const collection = {
         'x-component': 'Select',
       } as ISchema,
     },
+    {
+      type: 'string',
+      name: 'status',
+      interface: 'select',
+      uiSchema: {
+        title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
+        type: 'string',
+        'x-component': 'Select',
+      } as ISchema,
+    },
   ],
 };
 
@@ -146,6 +156,18 @@ export const databaseConnectionSchema: ISchema = {
               'x-component': 'Table.Column',
               properties: {
                 type: {
+                  type: 'string',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            status: {
+              type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                status: {
                   type: 'string',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
