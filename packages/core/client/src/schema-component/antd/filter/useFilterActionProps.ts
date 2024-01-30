@@ -3,8 +3,8 @@ import { useField, useFieldSchema } from '@formily/react';
 import flat from 'flat';
 import { useTranslation } from 'react-i18next';
 import { useBlockRequestContext } from '../../../block-provider';
-import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { mergeFilter } from '../../../filter-provider/utils';
 
 export const useGetFilterOptions = () => {
   const { getCollectionFields } = useCollectionManager();
