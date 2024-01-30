@@ -11,7 +11,6 @@ import rolesConnectionResourcesResourcer from './resourcers/data-sources-resourc
 import { DataSourcesRolesModel } from './models/data-sources-roles-model';
 import { DataSourcesRolesResourcesModel } from './models/connections-roles-resources';
 import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
-import { Middleware } from '@nocobase/resourcer';
 import { DataSourceModel } from './models/data-source';
 
 export class PluginDataSourceManagerServer extends Plugin {
@@ -47,7 +46,41 @@ export class PluginDataSourceManagerServer extends Plugin {
       });
     });
 
+    const app = this.app;
+
     this.app.actions({
+      async ['dataSources:listEnabled'](ctx, next) {
+        const dataSources = await ctx.db.getRepository('dataSources').find({
+          filter: {
+            enabled: true,
+          },
+        });
+
+        ctx.body = dataSources.map((dataSourceModel) => {
+          const item: any = {
+            key: dataSourceModel.get('key'),
+          };
+
+          const dataSource = app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));
+
+          const collections = dataSource.collectionManager.getCollections();
+
+          item.collections = collections.map((collection) => {
+            const collectionOptions = collection.options;
+            const fields = [...collection.fields.values()].map((field) => field.options);
+
+            return {
+              ...collectionOptions,
+              fields,
+            };
+          });
+
+          return item;
+        });
+
+        await next();
+      },
+
       async ['dataSources:testConnection'](ctx, next) {
         const { values } = ctx.action.params;
 
@@ -97,41 +130,6 @@ export class PluginDataSourceManagerServer extends Plugin {
     this.app.resourcer.define({
       name: 'dataSources',
     });
-
-    this.app.resourcer
-      .getResource('dataSources')
-      .getAction('list')
-      .middlewares.push(
-        new Middleware(async (ctx, next) => {
-          await next();
-          const hasCollections = ctx.action.params.appends?.includes('collections');
-
-          const mapData = (row) => {
-            const data = row.toJSON();
-            if (hasCollections) {
-              const dataSource = this.app.dataSourceManager.dataSources.get(data.key);
-
-              const collections = dataSource.collectionManager.getCollections();
-
-              data.collections = collections.map((collection) => {
-                const collectionOptions = collection.options;
-                const fields = [...collection.fields.values()].map((field) => field.options);
-
-                return {
-                  ...collectionOptions,
-                  fields,
-                };
-              });
-            }
-            return data;
-          };
-          if (Array.isArray(ctx.body)) {
-            ctx.body = ctx.body.map(mapData);
-          } else {
-            ctx.body.rows = ctx.body.rows.map(mapData);
-          }
-        }),
-      );
 
     this.app.db.on('dataSourcesFields.afterSave', async (model: DataSourcesFieldModel) => {
       model.load({

@@ -19,6 +19,11 @@ export default defineCollection({
       name: 'options',
     },
     {
+      type: 'boolean',
+      name: 'enabled',
+      defaultValue: true,
+    },
+    {
       type: 'hasMany',
       name: 'collections',
       target: 'dataSourcesCollections',

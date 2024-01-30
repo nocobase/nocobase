@@ -120,9 +120,24 @@ describe('data source', async () => {
           key: 'mockInstance1',
           type: 'mock',
           displayName: 'Mock',
-          options: {},
+          options: {
+            password: '123456',
+          },
         },
       });
+    });
+
+    it('should get data source collections', async () => {
+      const listResp = await app.agent().resource('dataSources').list({
+        appends: 'collections',
+      });
+      expect(listResp.status).toBe(200);
+
+      const listEnabledResp = await app.agent().resource('dataSources').listEnabled({});
+      expect(listEnabledResp.status).toBe(200);
+      const data = listEnabledResp.body.data;
+      const item = data[0];
+      expect(item.collections).toBeDefined();
     });
 
     it('should get collections from datasource', async () => {
