@@ -19,5 +19,6 @@
   "Unknown field type": "未知字段类型",
   "The following field types are not compatible and do not support output and display": "以下字段类型未适配，不支持输出和显示",
   "Field database type": "字段数据库类型",
-  "Field interface": "UI类型"
+  "Field interface": "UI类型",
+  "Status":"状态"
 }
