@@ -47,6 +47,15 @@ const collection = {
         'x-component': 'Select',
       } as ISchema,
     },
+    {
+      type: 'boolean',
+      name: 'enabled',
+      uiSchema: {
+        type: 'boolean',
+        title: '{{t("Enabled")}}',
+        'x-component': 'Checkbox',
+      },
+    },
   ],
 };
 
@@ -168,6 +177,18 @@ export const databaseConnectionSchema: ISchema = {
               'x-component': 'Table.Column',
               properties: {
                 status: {
+                  type: 'string',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            enabled: {
+              type: 'void',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                enabled: {
                   type: 'string',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
