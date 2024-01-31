@@ -15,7 +15,7 @@ interface Props {
 
 const useLocalVariables = (props?: Props) => {
   const { name: currentCollectionName } = useCollection();
-  const { subFormValue, shouldDisplayCurrentObject } = useCurrentObjectVariables();
+  const { currentObjectCtx, shouldDisplayCurrentObject } = useCurrentObjectVariables();
   let { name } = useBlockCollection();
   const currentRecord = useRecordV2(false);
   let { form } = useFormBlockContext();
@@ -86,10 +86,14 @@ const useLocalVariables = (props?: Props) => {
           name: '$date',
           ctx: dateVars,
         },
-        shouldDisplayCurrentObject && { name: '$iteration', ctx: subFormValue, collectionName: currentCollectionName },
+        shouldDisplayCurrentObject && {
+          name: '$iteration',
+          ctx: currentObjectCtx,
+          collectionName: currentCollectionName,
+        },
       ] as VariableOption[]
     ).filter(Boolean);
-  }, [currentRecord, name, form?.values, subFormValue, currentCollectionName, shouldDisplayCurrentObject]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
+  }, [currentRecord, name, form?.values, currentObjectCtx, currentCollectionName, shouldDisplayCurrentObject]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
 };
 
 export default useLocalVariables;
