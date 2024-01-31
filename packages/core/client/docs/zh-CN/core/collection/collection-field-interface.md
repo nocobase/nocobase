@@ -5,7 +5,7 @@
 ![](./images/collection-field-interface.png)
 
 ```ts
-class CollectionFieldInterfaceBase {
+class CollectionFieldInterface {
   app: Application;
   collectionManager: CollectionManagerV2;
 
@@ -44,7 +44,7 @@ class CollectionFieldInterfaceBase {
 其需要结合 [CollectionManager](/core/collection/collection-manager#cmaddcollectionfieldinterfacesinterfaces) 使用。
 
 ```ts
-class EmailFieldInterface extends CollectionFieldInterfaceBase {
+class EmailFieldInterface extends CollectionFieldInterface {
   name = 'email';
   type = 'object';
   group = 'basic';

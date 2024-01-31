@@ -874,16 +874,16 @@ export const useCollectionDataSourceItems = (
   const allCollections = cm.getAllCollections((collection) => notLocal(collection) && filter(collection));
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const res = useMemo(() => {
-    return allCollections.map(({ name, description, collections }) => ({
-      name: name,
-      label: description,
+    return allCollections.map(({ key, displayName, collections }) => ({
+      name: key,
+      label: displayName,
       type: 'subMenu',
       children: getChildren({
         collections,
         collectionManager: cm,
         componentName,
         searchValue: '',
-        dataSource: name,
+        dataSource: key,
         getTemplatesByCollection,
         t,
       }),

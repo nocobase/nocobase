@@ -1,4 +1,4 @@
-import { CollectionFieldInterfaceBase, i18n, IField, interfacesProperties } from '@nocobase/client';
+import { CollectionFieldInterface, i18n, IField, interfacesProperties } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { lodash, Registry } from '@nocobase/utils/client';
 import { NAMESPACE } from '../locale';
@@ -200,7 +200,7 @@ export const formula = {
   titleUsable: true,
 } as IField;
 
-export class FormulaFieldInterface extends CollectionFieldInterfaceBase {
+export class FormulaFieldInterface extends CollectionFieldInterface {
   name = 'formula';
   type = 'object';
   group = 'advanced';

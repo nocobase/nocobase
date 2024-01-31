@@ -2,7 +2,7 @@ import { registerValidateFormats } from '@formily/core';
 import { i18n } from '../../i18n';
 import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
 
 registerValidateFormats({
   odd: /^-?\d*[13579]$/,
@@ -110,7 +110,7 @@ export const integer: IField = {
   },
 };
 
-export class IntegerFieldInterface extends CollectionFieldInterfaceBase {
+export class IntegerFieldInterface extends CollectionFieldInterface {
   name = 'integer';
   type = 'object';
   group = 'basic';

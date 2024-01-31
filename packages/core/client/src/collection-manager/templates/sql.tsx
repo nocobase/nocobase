@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { SQLInput, PreviewTable, FieldsConfigure, SQLRequestProvider } from './components/sql-collection';
 import { getConfigurableProperties } from './properties';
 import { i18n } from '../../i18n';
-import { CollectionTemplateBase } from '../../application/collection/CollectionTemplate';
+import { CollectionTemplate } from '../../application/collection/CollectionTemplate';
 import { ICollectionTemplate } from './types';
 
 export const sql: ICollectionTemplate = {
@@ -79,7 +79,7 @@ export const sql: ICollectionTemplate = {
   },
 };
 
-export class SqlCollectionTemplate extends CollectionTemplateBase {
+export class SqlCollectionTemplate extends CollectionTemplate {
   name = 'sql';
   title = '{{t("SQL collection")}}';
   order = 4;

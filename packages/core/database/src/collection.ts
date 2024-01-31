@@ -270,6 +270,9 @@ export class Collection<
     return this.fields.get(name);
   }
 
+  getFields() {
+    return [...this.fields.values()];
+  }
   addField(name: string, options: FieldOptions): Field {
     return this.setField(name, options);
   }

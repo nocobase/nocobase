@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { dataSource, defaultProps, operators } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
 
 export const multipleSelect: IField = {
   name: 'multipleSelect',
@@ -45,7 +45,7 @@ export const multipleSelect: IField = {
   },
 };
 
-export class MultipleSelectFieldInterface extends CollectionFieldInterfaceBase {
+export class MultipleSelectFieldInterface extends CollectionFieldInterface {
   name = 'multipleSelect';
   type = 'object';
   group = 'choices';

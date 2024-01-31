@@ -88,16 +88,16 @@ describe('Collection', () => {
       collectionManager: {
         dataSources: [
           {
-            name: 'test',
-            description: 'test',
+            key: 'a',
+            displayName: 'a',
             collections: [{ name: 'user' }],
           },
         ],
       },
     });
 
-    const user = app.collectionManager.getCollection('user', { dataSource: 'test' });
-    expect(user.dataSource).toBe('test');
+    const user = app.collectionManager.getCollection('user', { dataSource: 'a' });
+    expect(user.dataSource).toBe('a');
   });
 
   describe('getFields()', () => {

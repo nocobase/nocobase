@@ -1,4 +1,4 @@
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
 import { i18n } from '../../i18n';
 import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
@@ -116,7 +116,7 @@ export const number: IField = {
   },
 };
 
-export class NumberFieldInterface extends CollectionFieldInterfaceBase {
+export class NumberFieldInterface extends CollectionFieldInterface {
   name = 'number';
   type = 'object';
   group = 'basic';

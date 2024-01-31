@@ -1,4 +1,4 @@
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
 import { i18n } from '../../i18n';
 import { defaultProps, unique } from './properties';
 import { IField } from './types';
@@ -68,7 +68,7 @@ export const password: IField = {
   },
 };
 
-export class PasswordFieldInterface extends CollectionFieldInterfaceBase {
+export class PasswordFieldInterface extends CollectionFieldInterface {
   name = 'password';
   type = 'object';
   group = 'basic';

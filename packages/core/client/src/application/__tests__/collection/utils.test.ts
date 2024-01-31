@@ -1,14 +1,14 @@
-import { CollectionFieldInterfaceBase, isTitleField } from '../../collection';
+import { CollectionFieldInterface, isTitleField } from '../../collection';
 import { Application } from '../../Application';
 import collections from './collections.json';
 
 describe('utils', () => {
   describe('isTitleField', () => {
-    class Demo1FieldInterface extends CollectionFieldInterfaceBase {
+    class Demo1FieldInterface extends CollectionFieldInterface {
       name = 'demo1';
       titleUsable = false;
     }
-    class Demo2FieldInterface extends CollectionFieldInterfaceBase {
+    class Demo2FieldInterface extends CollectionFieldInterface {
       name = 'demo2';
       titleUsable = true;
     }

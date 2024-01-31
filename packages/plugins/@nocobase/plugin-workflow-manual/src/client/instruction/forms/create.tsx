@@ -43,10 +43,10 @@ export default {
     useInitializer({ allCollections }) {
       const childItems = useMemo(
         () =>
-          allCollections.map(({ dataSourceName, dataSourceDescription, collections }) => ({
-            key: dataSourceName,
-            name: dataSourceName,
-            label: dataSourceDescription,
+          allCollections.map(({ key, displayName, collections }) => ({
+            key: key,
+            name: key,
+            label: displayName,
             type: 'subMenu',
             children: collections.map((item) => ({
               name: _.camelCase(`createRecordForm-child-${item.name}`),
@@ -54,7 +54,7 @@ export default {
               title: item.title || item.tableName,
               schema: {
                 collection: item.name,
-                dataSource: dataSourceName,
+                dataSource: key,
                 title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
                 formType: 'create',
                 'x-designer': 'CreateFormDesigner',

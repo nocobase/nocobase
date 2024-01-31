@@ -6,7 +6,7 @@ import { CollectionFieldOptions, CollectionOptions } from '../types';
 import { useCollectionManagerV2 } from '../../application/collection/CollectionManagerProvider';
 import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
 import { uid } from '@formily/shared';
-import { useCollectionDataSourceName } from '../../application/data-block';
+import { useCollectionDataSourceName } from '../../application/data-block/CollectionDataSourceProvider';
 
 export const useCollectionManager = (dataSourceName?: string) => {
   const cm = useCollectionManagerV2();

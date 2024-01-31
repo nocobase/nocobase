@@ -6,9 +6,15 @@ function createWithACLMetaMiddleware() {
   return async (ctx: any, next) => {
     await next();
 
-    const connection = ctx.get('x-connection') || 'main';
-    const db = ctx.app.getDb(connection);
-    const acl = connection === 'main' ? ctx.app.acl : ctx.app.acls.get(connection);
+    const dataSourceKey = ctx.get('x-data-source');
+    const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
+    const db = dataSource ? dataSource.collectionManager.db : ctx.db;
+
+    if (!db) {
+      return;
+    }
+
+    const acl = dataSource ? dataSource.acl : ctx.app.acl;
 
     if (!ctx.action || !ctx.get('X-With-ACL-Meta') || ctx.status !== 200) {
       return;

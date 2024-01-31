@@ -1,4 +1,4 @@
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
 import { operators } from './properties';
 import { IField } from './types';
 
@@ -49,7 +49,7 @@ export const id: IField = {
   titleUsable: true,
 };
 
-export class IdFieldInterface extends CollectionFieldInterfaceBase {
+export class IdFieldInterface extends CollectionFieldInterface {
   name = 'id';
   type = 'object';
   group = 'systemInfo';

@@ -1,4 +1,4 @@
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
 import { defaultProps, operators } from './properties';
 import { IField } from './types';
 
@@ -26,7 +26,7 @@ export const color: IField = {
   },
 };
 
-export class ColorFieldInterface extends CollectionFieldInterfaceBase {
+export class ColorFieldInterface extends CollectionFieldInterface {
   name = 'color';
   type = 'object';
   group = 'basic';

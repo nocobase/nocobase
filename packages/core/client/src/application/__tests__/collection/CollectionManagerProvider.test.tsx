@@ -15,8 +15,8 @@ function renderApp(Demo: ComponentType) {
       collections: collections as any,
       dataSources: [
         {
-          name: 'a',
-          description: 'a',
+          key: 'a',
+          displayName: 'a',
           collections: [collections[0]] as any,
         },
       ],

@@ -46,6 +46,7 @@ import { Locale } from './locale';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 
+import { DataSourceManager } from '@nocobase/data-source-manager';
 import packageJson from '../package.json';
 import { MultipleInstanceManager } from './helpers/multiple-instance-manager';
 import { AclSelectorMiddleware } from './middlewares/acl-selector';
@@ -285,6 +286,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get name() {
     return this.options.name || 'main';
+  }
+
+  protected _dataSourceManager: DataSourceManager;
+
+  get dataSourceManager() {
+    return this._dataSourceManager;
   }
 
   createNewACL(name: string) {
@@ -989,6 +996,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       actions: authActions,
     });
 
+    this._dataSourceManager = new DataSourceManager();
+    this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
     this._resourcer.use(this._authManager.middleware(), { tag: 'auth' });
 
     if (this.options.acl !== false) {

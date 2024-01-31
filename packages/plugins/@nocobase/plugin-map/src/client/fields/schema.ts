@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/react';
-import { CollectionFieldInterfaceBase, interfacesProperties } from '@nocobase/client';
+import { CollectionFieldInterface, interfacesProperties } from '@nocobase/client';
 import { MapTypes } from '../constants';
 import { generateNTemplate } from '../locale';
 
@@ -53,7 +53,7 @@ export const commonSchema = {
   },
 };
 
-export class CommonSchema extends CollectionFieldInterfaceBase {
+export class CommonSchema extends CollectionFieldInterface {
   properties = {
     ...defaultProps,
     'uiSchema.x-component-props.mapType': {

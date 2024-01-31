@@ -1,5 +1,5 @@
-import { CollectionFieldInterfaceBase } from './CollectionFieldInterface';
-import { CollectionTemplateBase } from './CollectionTemplate';
+import { CollectionFieldInterface } from './CollectionFieldInterface';
+import { CollectionTemplate } from './CollectionTemplate';
 import { CollectionFieldOptionsV2, CollectionOptionsV2, CollectionV2 } from './Collection';
 import type { Application } from '../Application';
 import { SchemaKey } from '@formily/react';
@@ -27,7 +27,7 @@ const defaultCollectionTransform = (collection: CollectionOptionsV2, app: Applic
     ...rest,
     title: rawTitle ? title : app.i18n.t(title),
     rawTitle: rawTitle || title,
-    fields: fields.map(({ uiSchema, ...field }) => {
+    fields: fields?.map(({ uiSchema, ...field }) => {
       if (uiSchema?.title) {
         const title = uiSchema.title;
         uiSchema.title = uiSchema.rawTitle ? title : app.i18n.t(title, { ns: 'lm-collections' });
@@ -54,9 +54,11 @@ export interface GetCollectionOptions {
 }
 
 interface DataSource {
-  name: string;
-  description: string;
+  key: string;
+  displayName: string;
   collections?: CollectionOptionsV2[];
+  errorMessage?: string;
+  status?: 'success' | 'failed';
   [key: string]: any;
 }
 
@@ -64,8 +66,8 @@ type DataSourceNameType = string;
 
 export interface CollectionManagerOptionsV2 {
   collections?: CollectionOptionsV2[];
-  collectionTemplates?: (typeof CollectionTemplateBase)[];
-  fieldInterfaces?: (typeof CollectionFieldInterfaceBase)[];
+  collectionTemplates?: (typeof CollectionTemplate)[];
+  fieldInterfaces?: (typeof CollectionFieldInterface)[];
   fieldGroups?: Record<string, { label: string; order?: number }>;
   collectionMixins?: CollectionMixinConstructor[];
   dataSources?: DataSource[];
@@ -78,13 +80,13 @@ type ReloadCallback = (collections: CollectionOptionsV2[]) => void;
 export class CollectionManagerV2 {
   public app: Application;
   protected collections: Record<string, Record<DataSourceNameType, CollectionV2>> = {};
-  protected collectionTemplateInstances: Record<string, CollectionTemplateBase> = {};
-  protected fieldInterfaceInstances: Record<string, CollectionFieldInterfaceBase> = {};
+  protected collectionTemplateInstances: Record<string, CollectionTemplate> = {};
+  protected fieldInterfaceInstances: Record<string, CollectionFieldInterface> = {};
   protected collectionMixins: CollectionMixinConstructor[] = [];
   protected dataSourceMap: Record<DataSourceNameType, Omit<DataSource, 'collections'>> = {
     [DEFAULT_DATA_SOURCE_NAME]: {
-      name: DEFAULT_DATA_SOURCE_NAME,
-      description: DEFAULT_DATA_SOURCE_TITLE,
+      key: DEFAULT_DATA_SOURCE_NAME,
+      displayName: DEFAULT_DATA_SOURCE_TITLE,
     },
   };
   protected collectionFieldGroups: Record<string, { label: string; order?: number }> = {};
@@ -241,11 +243,11 @@ export class CollectionManagerV2 {
     return Object.values(this.dataSourceMap);
   }
   getDataSource(name: string) {
-    return this.dataSourceMap[name];
+    return name ? this.dataSourceMap[name] : this.dataSourceMap[DEFAULT_DATA_SOURCE_NAME];
   }
 
   // CollectionTemplates
-  addCollectionTemplates(templateClasses: (typeof CollectionTemplateBase)[]) {
+  addCollectionTemplates(templateClasses: (typeof CollectionTemplate)[]) {
     const newCollectionTemplateInstances = templateClasses.reduce((acc, Template) => {
       const instance = new Template(this.app, this);
       acc[instance.name] = instance;
@@ -274,12 +276,12 @@ export class CollectionManagerV2 {
   getCollectionTemplates() {
     return Object.values(this.collectionTemplateInstances).sort((a, b) => (a.order || 0) - (b.order || 0));
   }
-  getCollectionTemplate<T extends CollectionTemplateBase>(name: string): T {
+  getCollectionTemplate<T extends CollectionTemplate>(name: string): T {
     return this.collectionTemplateInstances[name] as T;
   }
 
   // field interface
-  addFieldInterfaces(interfaces: (typeof CollectionFieldInterfaceBase)[]) {
+  addFieldInterfaces(interfaces: (typeof CollectionFieldInterface)[]) {
     const newCollectionFieldInterfaces = interfaces.reduce((acc, Interface) => {
       const instance = new Interface(this.app, this);
       acc[instance.name] = instance;
@@ -291,7 +293,7 @@ export class CollectionManagerV2 {
   getFieldInterfaces() {
     return this.fieldInterfaceInstances;
   }
-  getFieldInterface<T extends CollectionFieldInterfaceBase>(name: string) {
+  getFieldInterface<T extends CollectionFieldInterface>(name: string) {
     return this.fieldInterfaceInstances[name] as T;
   }
 
@@ -322,18 +324,18 @@ export class CollectionManagerV2 {
   }
 
   addDataSources(dataSources: DataSource[] = []) {
-    dataSources.forEach(({ name, collections, ...others }) => {
-      this.dataSourceMap[name] = { ...others, name };
-      this.setCollections(collections, { dataSource: name });
-      this.reloadCallbacks[name]?.forEach((cb) => cb(collections));
+    dataSources.forEach(({ key, collections, ...others }) => {
+      this.dataSourceMap[key] = { ...others, key };
+      this.setCollections(collections, { dataSource: key });
+      this.reloadCallbacks[key]?.forEach((cb) => cb(collections));
     });
   }
 
   private initDataSource() {
     this.dataSourceMap = {
       [DEFAULT_DATA_SOURCE_NAME]: {
-        name: DEFAULT_DATA_SOURCE_NAME,
-        description: DEFAULT_DATA_SOURCE_TITLE,
+        key: DEFAULT_DATA_SOURCE_NAME,
+        displayName: DEFAULT_DATA_SOURCE_TITLE,
       },
     };
   }

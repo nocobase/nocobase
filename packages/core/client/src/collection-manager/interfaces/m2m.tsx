@@ -1,6 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { CollectionFieldInterfaceBase } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
 import { defaultProps, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
 
@@ -248,7 +248,7 @@ export const m2m: IField = {
   },
 };
 
-export class M2MFieldInterface extends CollectionFieldInterfaceBase {
+export class M2MFieldInterface extends CollectionFieldInterface {
   name = 'm2m';
   type = 'object';
   group = 'relation';

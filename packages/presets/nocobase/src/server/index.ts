@@ -59,6 +59,7 @@ export class PresetNocoBase extends Plugin {
     'theme-editor>=0.11.1-alpha.1',
     'api-doc>=0.13.0-alpha.1',
     'cas>=0.13.0-alpha.5',
+    'data-source-manager>=0.19.0-alpha.3',
   ];
 
   splitNames(name: string) {

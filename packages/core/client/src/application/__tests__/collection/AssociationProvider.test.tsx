@@ -4,7 +4,6 @@ import {
   AssociationProviderV2,
   CollectionManagerProviderV2,
   useCollectionFieldV2,
-  useCollectionFieldsV2,
   useCollectionV2,
 } from '../../collection';
 import { Application } from '../../Application';
@@ -17,8 +16,8 @@ function renderApp(Demo: ComponentType, props: any = {}) {
       collections: collections as any,
       dataSources: [
         {
-          name: 'a',
-          description: 'a',
+          key: 'a',
+          displayName: 'a',
           collections: collections as any,
         },
       ],

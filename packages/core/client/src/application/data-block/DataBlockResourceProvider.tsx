@@ -1,9 +1,9 @@
-import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 import { IResource } from '@nocobase/sdk';
+import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
 import { useAPIClient } from '../../api-client';
+import { RecordV2, useCollectionManagerV2, useDataSourceHeaders } from '../collection';
 import { useDataBlockPropsV2 } from './DataBlockProvider';
-import { DEFAULT_DATA_SOURCE_NAME, RecordV2, useCollectionManagerV2 } from '../collection';
 
 export const DataBlockResourceContextV2 = createContext<IResource>(null);
 DataBlockResourceContextV2.displayName = 'DataBlockResourceContextV2';
@@ -13,11 +13,7 @@ export const DataBlockResourceProviderV2: FC<{ children?: ReactNode }> = ({ chil
   const cm = useCollectionManagerV2();
   const { association, collection, dataSource, sourceId, parentRecord } = dataBlockProps;
   const api = useAPIClient();
-  const headers = useMemo(() => {
-    if (dataSource && dataSource !== DEFAULT_DATA_SOURCE_NAME) {
-      return { 'x-connection': dataSource };
-    }
-  }, [dataSource]);
+  const headers = useDataSourceHeaders(dataSource);
 
   const sourceIdValue = useMemo(() => {
     if (sourceId) {

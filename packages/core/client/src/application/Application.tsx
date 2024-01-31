@@ -108,10 +108,7 @@ export class Application {
     this.apiClient = options.apiClient instanceof APIClient ? options.apiClient : new APIClient(options.apiClient);
     this.apiClient.app = this;
     this.i18n = options.i18n || i18n;
-    this.router = new RouterManager({
-      ...options.router,
-      renderComponent: this.renderComponent.bind(this),
-    });
+    this.router = new RouterManager(options.router, this);
     this.schemaSettingsManager = new SchemaSettingsManager(options.schemaSettings, this);
     this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
@@ -158,7 +155,7 @@ export class Application {
   private addRoutes() {
     this.router.add('not-found', {
       path: '*',
-      Component: this.components['AppNotFound'] || BlankComponent,
+      Component: this.components['AppNotFound'],
     });
   }
 

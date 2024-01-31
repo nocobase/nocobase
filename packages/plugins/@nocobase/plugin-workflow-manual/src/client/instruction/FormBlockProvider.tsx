@@ -14,6 +14,7 @@ import {
   useBlockRequestContext,
   useDesignable,
   useRecord,
+  useDataSourceHeaders,
 } from '@nocobase/client';
 import React, { useMemo, useRef } from 'react';
 
@@ -55,11 +56,7 @@ export function FormBlockProvider(props) {
     };
   }, [values]);
   const api = useAPIClient();
-  const headers = useMemo(() => {
-    if (dataSource && dataSource !== DEFAULT_DATA_SOURCE_NAME) {
-      return { 'x-connection': dataSource };
-    }
-  }, [dataSource]);
+  const headers = useDataSourceHeaders(dataSource);
 
   const resource = api.resource(props.collection, undefined, headers);
   const __parent = useBlockRequestContext();

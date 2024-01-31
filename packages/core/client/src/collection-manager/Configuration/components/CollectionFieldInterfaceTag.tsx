@@ -4,14 +4,16 @@ import React from 'react';
 import { useCompile } from '../../../schema-component';
 import { useCollectionManager } from '../../hooks';
 
-export const CollectionTemplate = observer(
+export const CollectionFieldInterfaceTag = observer(
   (props: any) => {
     const { value } = props;
-    const { getTemplate } = useCollectionManager();
+    const { getInterface } = useCollectionManager();
     const compile = useCompile();
-    const schema = getTemplate(value);
+    const schema = getInterface(value);
 
-    return <Tag>{compile(schema?.title || '{{t("General collection")}}')}</Tag>;
+    if (!schema) return null;
+
+    return <Tag>{compile(schema.title)}</Tag>;
   },
-  { displayName: 'CollectionTemplate' },
+  { displayName: 'CollectionFieldInterfaceTag' },
 );

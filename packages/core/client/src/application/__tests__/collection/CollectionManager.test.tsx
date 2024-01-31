@@ -1,7 +1,7 @@
 import {
   Application,
-  CollectionFieldInterfaceBase,
-  CollectionTemplateBase,
+  CollectionFieldInterface,
+  CollectionTemplate,
   CollectionV2,
   DEFAULT_DATA_SOURCE_NAME,
   Plugin,
@@ -78,8 +78,8 @@ describe('CollectionManager', () => {
           collectionManager: {
             dataSources: [
               {
-                name: 'a',
-                description: 'A',
+                key: 'a',
+                displayName: 'a',
               },
             ],
           },
@@ -106,8 +106,8 @@ describe('CollectionManager', () => {
           collectionManager: {
             dataSources: [
               {
-                name: 'a',
-                description: 'A',
+                key: 'a',
+                displayName: 'a',
               },
             ],
           },
@@ -128,8 +128,8 @@ describe('CollectionManager', () => {
           collectionManager: {
             dataSources: [
               {
-                name: 'a',
-                description: 'A',
+                key: 'a',
+                displayName: 'a',
               },
             ],
           },
@@ -165,8 +165,8 @@ describe('CollectionManager', () => {
           collectionManager: {
             dataSources: [
               {
-                name: 'a',
-                description: 'A',
+                key: 'a',
+                displayName: 'a',
               },
             ],
           },
@@ -219,8 +219,8 @@ describe('CollectionManager', () => {
           collectionManager: {
             dataSources: [
               {
-                name: 'a',
-                description: 'A',
+                key: 'a',
+                displayName: 'a',
               },
             ],
           },
@@ -278,8 +278,8 @@ describe('CollectionManager', () => {
           collectionManager: {
             dataSources: [
               {
-                name: 'a',
-                description: 'A',
+                key: 'a',
+                displayName: 'a',
               },
             ],
           },
@@ -330,8 +330,8 @@ describe('CollectionManager', () => {
           collectionManager: {
             dataSources: [
               {
-                name: 'a',
-                description: 'A',
+                key: 'a',
+                displayName: 'a',
                 collections: collections as any,
               },
             ],
@@ -396,8 +396,8 @@ describe('CollectionManager', () => {
           collectionManager: {
             dataSources: [
               {
-                name: 'a',
-                description: 'A',
+                key: 'a',
+                displayName: 'a',
                 collections: collections as any,
               },
             ],
@@ -523,7 +523,7 @@ describe('CollectionManager', () => {
 
   describe('templates', () => {
     test('init should work', () => {
-      class DemoTemplate extends CollectionTemplateBase {
+      class DemoTemplate extends CollectionTemplate {
         name = 'demo';
         title = 'Demo';
       }
@@ -540,7 +540,7 @@ describe('CollectionManager', () => {
     });
 
     test('plugin should work', async () => {
-      class DemoTemplate extends CollectionTemplateBase {
+      class DemoTemplate extends CollectionTemplate {
         name = 'demo';
         title = 'Demo';
       }
@@ -569,7 +569,7 @@ describe('CollectionManager', () => {
         }
       }
 
-      class DemoTemplate extends CollectionTemplateBase {
+      class DemoTemplate extends CollectionTemplate {
         name = 'demo';
         title = 'Demo';
         Collection = CustomCollection;
@@ -593,7 +593,7 @@ describe('CollectionManager', () => {
         }
       }
 
-      class DemoTemplate extends CollectionTemplateBase {
+      class DemoTemplate extends CollectionTemplate {
         name = 'demo';
         title = 'Demo';
         Collection = CustomCollection;
@@ -614,7 +614,7 @@ describe('CollectionManager', () => {
     });
 
     test('getCollectionTemplate', () => {
-      class DemoTemplate extends CollectionTemplateBase {
+      class DemoTemplate extends CollectionTemplate {
         name = 'demo';
         title = 'Demo';
       }
@@ -632,7 +632,7 @@ describe('CollectionManager', () => {
     test('transformCollection', () => {
       const mockFn = vitest.fn();
 
-      class DemoTemplate extends CollectionTemplateBase {
+      class DemoTemplate extends CollectionTemplate {
         name = 'demo';
         title = 'Demo';
         transform(collection) {
@@ -654,7 +654,7 @@ describe('CollectionManager', () => {
 
   describe('field interface', () => {
     test('init should work', () => {
-      class DemoFieldInterface extends CollectionFieldInterfaceBase {
+      class DemoFieldInterface extends CollectionFieldInterface {
         name = 'demo';
         title = 'Demo';
       }
@@ -671,7 +671,7 @@ describe('CollectionManager', () => {
     });
 
     test('plugin should work', async () => {
-      class DemoFieldInterface extends CollectionFieldInterfaceBase {
+      class DemoFieldInterface extends CollectionFieldInterface {
         name = 'demo';
         title = 'Demo';
       }
@@ -694,7 +694,7 @@ describe('CollectionManager', () => {
     });
 
     test('getFieldInterface()', () => {
-      class DemoFieldInterface extends CollectionFieldInterfaceBase {
+      class DemoFieldInterface extends CollectionFieldInterface {
         name = 'demo';
         title = 'Demo';
       }
@@ -711,11 +711,11 @@ describe('CollectionManager', () => {
     });
 
     test('getFieldInterfaces()', () => {
-      class DemoFieldInterface extends CollectionFieldInterfaceBase {
+      class DemoFieldInterface extends CollectionFieldInterface {
         name = 'demo';
         title = 'Demo';
       }
-      class Demo2FieldInterface extends CollectionFieldInterfaceBase {
+      class Demo2FieldInterface extends CollectionFieldInterface {
         name = 'demo2';
         title = 'Demo';
       }
@@ -825,8 +825,8 @@ describe('CollectionManager', () => {
       const dataSourceFn = () => {
         return Promise.resolve([
           {
-            name: 'a',
-            description: 'a',
+            key: 'a',
+            displayName: 'a',
             collections: collections as any,
           },
         ]);
@@ -858,8 +858,8 @@ describe('CollectionManager', () => {
       app.collectionManager.setThirdDataSource(() => {
         return Promise.resolve([
           {
-            name: 'a',
-            description: 'a',
+            key: 'a',
+            displayName: 'a',
             collections: collections as any,
           },
         ]);
