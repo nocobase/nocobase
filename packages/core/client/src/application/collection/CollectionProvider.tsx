@@ -1,7 +1,7 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
 import { useCollectionManagerV2 } from './CollectionManagerProvider';
-import { DeletedPlaceholder } from './DeletedPlaceholder';
+import { CollectionDeletedPlaceholder } from './CollectionDeletedPlaceholder';
 import type { CollectionV2, GetCollectionFieldPredicate } from './Collection';
 
 export const CollectionContextV2 = createContext<CollectionV2>(null);
@@ -22,7 +22,7 @@ export const CollectionProviderV2: FC<CollectionProviderProps> = (props) => {
     [collectionManager, name, dataSource],
   );
   if (!collection && allowNull) return <>{props.children}</>;
-  if (!collection && !allowNull) return <DeletedPlaceholder type="Collection" name={name} />;
+  if (!collection && !allowNull) return <CollectionDeletedPlaceholder type="Collection" name={name} />;
   return <CollectionContextV2.Provider value={collection}>{children}</CollectionContextV2.Provider>;
 };
 

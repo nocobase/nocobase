@@ -731,5 +731,9 @@
   "Enable link": "Activar enlace",
   "Data template": "Plantilla de datos",
   "Not found": "No encontrado",
-  "Add": "Añadir"
+  "Add": "Añadir",
+  "loading": "cargando",
+  "name is required": "el nombre es obligatorio",
+  "data source": "fuente de datos",
+  "DataSource": "Fuente de datos"
 }

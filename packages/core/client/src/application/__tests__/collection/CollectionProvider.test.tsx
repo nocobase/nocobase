@@ -63,7 +63,7 @@ describe('CollectionProvider', () => {
     expect(screen.getByTestId('children')).toHaveTextContent('children');
   });
 
-  test('collection not exists and { allowNull: false }, should render `DeletedPlaceholder` content', () => {
+  test('collection not exists and { allowNull: false }, should render `CollectionDeletedPlaceholder` content', () => {
     const Demo = () => {
       const collection = useCollectionV2();
       expect(collection).toBeFalsy();

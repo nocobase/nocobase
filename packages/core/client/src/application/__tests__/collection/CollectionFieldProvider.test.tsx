@@ -47,7 +47,7 @@ describe('CollectionFieldProvider', () => {
     expect(screen.getByTestId('demo')).toHaveTextContent('nickname');
   });
 
-  test('field not exists, should render `DeletedPlaceholder`', () => {
+  test('field not exists, should render `CollectionDeletedPlaceholder`', () => {
     const Demo = () => {
       return <div>children</div>;
     };

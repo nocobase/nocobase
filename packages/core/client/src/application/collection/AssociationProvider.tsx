@@ -3,7 +3,7 @@ import React, { FC, ReactNode } from 'react';
 import { CollectionProviderV2 } from './CollectionProvider';
 import { CollectionFieldProviderV2 } from './CollectionFieldProvider';
 import { useCollectionManagerV2 } from './CollectionManagerProvider';
-import { DeletedPlaceholder } from './DeletedPlaceholder';
+import { CollectionDeletedPlaceholder } from './CollectionDeletedPlaceholder';
 
 export interface AssociationProviderProps {
   dataSource?: string;
@@ -17,7 +17,7 @@ export const AssociationProviderV2: FC<AssociationProviderProps> = (props) => {
   const collectionManager = useCollectionManagerV2();
   const collectionName = collectionManager.getCollectionName(name, { dataSource });
 
-  if (!collectionName) return <DeletedPlaceholder type="Collection" name={collectionName} />;
+  if (!collectionName) return <CollectionDeletedPlaceholder type="Collection" name={collectionName} />;
 
   return (
     <CollectionProviderV2 name={String(name).split('.')[0]} dataSource={dataSource}>

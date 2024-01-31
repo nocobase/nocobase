@@ -842,5 +842,9 @@
   "Return to the main application": "返回主应用",
   "Permission denied": "没有权限",
   "Allow add new":"允许新增",
-  "Allow selection of existing records":"允许选择已有数据"
+  "Allow selection of existing records": "允许选择已有数据",
+  "loading": "加载中",
+  "name is required": "名称不能为空",
+  "data source": "数据源",
+  "DataSource": "数据源"
 }

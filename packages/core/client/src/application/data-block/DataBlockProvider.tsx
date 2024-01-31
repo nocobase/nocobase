@@ -4,8 +4,8 @@ import { ACLCollectionProvider } from '../../acl';
 import { UseRequestOptions, UseRequestService } from '../../api-client';
 import { Designable, useDesignable } from '../../schema-component';
 import { AssociationProviderV2, CollectionProviderV2, RecordV2 } from '../collection';
+import { CollectionDataSourceProvider } from '../collection/CollectionDataSourceProvider';
 import { withDynamicSchemaProps } from '../hoc';
-import { CollectionDataSourceProvider } from './CollectionDataSourceProvider';
 import { BlockRequestProviderV2 } from './DataBlockRequestProvider';
 import { DataBlockResourceProviderV2 } from './DataBlockResourceProvider';
 
