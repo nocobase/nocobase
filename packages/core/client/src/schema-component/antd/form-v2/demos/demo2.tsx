@@ -1,11 +1,9 @@
 import { ISchema, useForm } from '@formily/react';
 import {
-  APIClientProvider,
   Action,
   Application,
   BlockSchemaComponentProvider,
   CollectionField,
-  CollectionManagerProvider,
   CollectionPlugin,
   CurrentUserProvider,
   FormBlockProvider,
@@ -14,7 +12,6 @@ import {
   Input,
   Password,
   SchemaComponent,
-  SchemaComponentProvider,
   useFormBlockContext,
 } from '@nocobase/client';
 import { notification } from 'antd';

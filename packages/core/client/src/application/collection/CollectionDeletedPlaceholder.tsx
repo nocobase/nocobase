@@ -22,7 +22,7 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
       return `[nocobase]: ${t(type)} ${'name is required'}`;
     }
 
-    return t(`${t('type')}: "${name}" ${t('not exists')}`);
+    return t(`${t(type)}: "${name}" ${t('not exists')}`);
   }, [message, name, type, t]);
 
   const WrapperComponent = useMemo(() => {

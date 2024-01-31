@@ -1,5 +1,5 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
-import { useCollectionManagerV2 } from '../collection';
+import { useCollectionManagerV2 } from '../collection/CollectionManagerProvider';
 import { Button, Result } from 'antd';
 import { CollectionDeletedPlaceholder } from './CollectionDeletedPlaceholder';
 import { CardItem } from '../../schema-component';

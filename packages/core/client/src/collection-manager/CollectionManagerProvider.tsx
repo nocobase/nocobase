@@ -3,7 +3,8 @@ import { useAPIClient, useRequest } from '../api-client';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
 import { CollectionCategroriesContext } from './context';
 import { CollectionManagerOptions } from './types';
-import { CollectionManagerProviderV2, CollectionOptionsV2, useCollectionManagerV2 } from '../application';
+import { CollectionManagerProviderV2, CollectionOptionsV2 } from '../application';
+import { useCollectionManagerV2 } from '../application/collection/CollectionManagerProvider';
 import { useCollectionHistory } from './CollectionHistoryProvider';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 

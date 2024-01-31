@@ -17,7 +17,7 @@ export const AssociationProviderV2: FC<AssociationProviderProps> = (props) => {
   const collectionManager = useCollectionManagerV2();
   const collectionName = collectionManager.getCollectionName(name, { dataSource });
 
-  if (!collectionName) return <CollectionDeletedPlaceholder type="Collection" name={collectionName} />;
+  if (!collectionName) return <CollectionDeletedPlaceholder type="Collection" name={name} />;
 
   return (
     <CollectionProviderV2 name={String(name).split('.')[0]} dataSource={dataSource}>

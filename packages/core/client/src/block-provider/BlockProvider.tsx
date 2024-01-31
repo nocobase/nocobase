@@ -12,7 +12,6 @@ import {
   WithoutTableFieldResource,
   useAPIClient,
   useActionContext,
-  useDataSourceHeaders,
   useDesignable,
   useRecord,
 } from '../';
@@ -23,6 +22,7 @@ import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { useTemplateBlockContext } from './TemplateBlockProvider';
 import { useAssociationNames } from './hooks';
+import { useDataSourceHeaders } from '../application/collection/utils';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
