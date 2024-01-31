@@ -7,7 +7,7 @@ export const KanbanDesigner = () => {
 
   return (
     <GeneralSchemaDesigner
-      schemaSettings="KanbanSettings"
+      schemaSettings="blockSettings:kanban"
       template={template}
       title={title || name}
     ></GeneralSchemaDesigner>
