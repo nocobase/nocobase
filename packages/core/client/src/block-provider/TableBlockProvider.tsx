@@ -4,7 +4,6 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { useCollectionManager } from '../collection-manager';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { mergeFilter } from '../filter-provider/utils';
-import { useRecord } from '../record-provider';
 import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { findFilterTargets, useParsedFilter } from './hooks';
@@ -78,7 +77,6 @@ export const TableBlockProvider = (props) => {
   const params = useMemo(() => ({ ...props.params }), [props.params]);
   const fieldSchema = useFieldSchema();
   const { getCollection, getCollectionField } = useCollectionManager(props.dataSource);
-  const record = useRecord();
   const collection = getCollection(props.collection);
   const { treeTable, dragSortBy } = fieldSchema?.['x-decorator-props'] || {};
   if (props.dragSort) {
@@ -103,7 +101,6 @@ export const TableBlockProvider = (props) => {
   const form = useMemo(() => createForm(), [treeTable]);
   const { filter: parsedFilter } = useParsedFilter({
     filterOption: params?.filter,
-    currentRecord: { __parent: record, __collectionName: props.collection },
   });
   const paramsWithFilter = useMemo(() => {
     return {

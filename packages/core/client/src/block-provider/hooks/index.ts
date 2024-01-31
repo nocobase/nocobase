@@ -1,7 +1,7 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { isURL, parse } from '@nocobase/utils/client';
 import { App, message } from 'antd';
-import _, { cloneDeep } from 'lodash';
+import _ from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useCallback, useContext, useEffect } from 'react';
@@ -577,7 +577,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const variables = useVariables();
   const record = useRecord();
   const { name, getField } = useCollection();
-  const localVariables = useLocalVariables({ currentRecord: { __parent: record, __collectionName: name } });
+  const localVariables = useLocalVariables();
 
   return {
     async onClick() {

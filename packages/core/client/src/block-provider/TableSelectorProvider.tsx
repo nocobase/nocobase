@@ -241,7 +241,6 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
 
   const { filter: parsedFilter } = useParsedFilter({
     filterOption: params?.filter,
-    currentRecord: { __parent: record, __collectionName: props.collection },
   });
 
   if (!_.isEmpty(params?.filter) && _.isEmpty(parsedFilter)) {

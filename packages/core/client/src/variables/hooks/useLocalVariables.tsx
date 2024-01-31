@@ -1,8 +1,8 @@
 import { Form } from '@formily/core';
 import { useMemo } from 'react';
+import { useRecordV2 } from '../../application';
 import { useFormBlockContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
-import { useRecord } from '../../record-provider';
 import { useSubFormValue } from '../../schema-component/antd/association-field/hooks';
 import { getDateRanges } from '../../schema-component/antd/date-picker/util';
 import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/useBlockCollection';
@@ -10,7 +10,6 @@ import { VariableOption } from '../types';
 
 interface Props {
   collectionName?: string;
-  currentRecord?: Record<string, any>;
   currentForm?: Form;
 }
 
@@ -18,15 +17,13 @@ const useLocalVariables = (props?: Props) => {
   const { name: currentCollectionName } = useCollection();
   const { formValue: subFormValue } = useSubFormValue();
   let { name } = useBlockCollection();
-  let currentRecord = useRecord();
+  const currentRecord = useRecordV2(false);
   let { form } = useFormBlockContext();
 
   if (props?.currentForm) {
     form = props.currentForm;
   }
-  if (props?.currentRecord) {
-    currentRecord = props.currentRecord;
-  }
+
   if (props?.collectionName) {
     name = props.collectionName;
   }
@@ -41,8 +38,8 @@ const useLocalVariables = (props?: Props) => {
          */
         {
           name: 'currentRecord',
-          ctx: currentRecord,
-          collectionName: name,
+          ctx: currentRecord?.data,
+          collectionName: currentRecord?.collectionName,
         },
         /**
          * @deprecated
@@ -50,7 +47,7 @@ const useLocalVariables = (props?: Props) => {
          */
         {
           name,
-          ctx: form?.values || currentRecord,
+          ctx: form?.values || currentRecord?.data,
           collectionName: name,
         },
         /**
@@ -64,13 +61,13 @@ const useLocalVariables = (props?: Props) => {
         },
         {
           name: '$nRecord',
-          ctx: currentRecord,
-          collectionName: currentRecord?.__collectionName,
+          ctx: currentRecord?.data,
+          collectionName: currentRecord?.collectionName,
         },
         {
           name: '$nParentRecord',
-          ctx: currentRecord?.__parent,
-          collectionName: currentRecord?.__parent?.__collectionName,
+          ctx: currentRecord?.parentRecord?.data,
+          collectionName: currentRecord?.parentRecord?.collectionName,
         },
         {
           name: '$nForm',
