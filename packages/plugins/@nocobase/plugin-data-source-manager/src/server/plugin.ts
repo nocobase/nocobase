@@ -12,6 +12,7 @@ import { DataSourcesRolesModel } from './models/data-sources-roles-model';
 import { DataSourcesRolesResourcesModel } from './models/connections-roles-resources';
 import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { DataSourceModel } from './models/data-source';
+import lodash from 'lodash';
 
 type DataSourceState = 'loading' | 'loaded' | 'failed';
 
@@ -82,21 +83,28 @@ export class PluginDataSourceManagerServer extends Plugin {
       const { actionName, resourceName, params } = ctx.action;
 
       if (resourceName === 'dataSources' && actionName == 'list') {
-        const data = ctx.body;
-        let items = data;
+        let dataPath = 'body';
 
-        if (Array.isArray(data['data'])) {
-          items = data.data;
+        if (Array.isArray(ctx.body['data'])) {
+          dataPath = 'body.data';
         }
 
-        for (const item of items) {
-          const dataSourceStatus = this.dataSourceStatus[item.get('key')];
-          item.set('status', dataSourceStatus);
+        const items = lodash.get(ctx, dataPath);
 
-          if (dataSourceStatus === 'failed') {
-            item.set('errorMessage', this.dataSourceErrors[item.get('key')].message);
-          }
-        }
+        lodash.set(
+          ctx,
+          dataPath,
+          items.map((item) => {
+            const data = item.toJSON();
+            const dataSourceStatus = this.dataSourceStatus[item.get('key')];
+            data['status'] = dataSourceStatus;
+
+            if (dataSourceStatus === 'failed') {
+              data['errorMessage'] = this.dataSourceErrors[item.get('key')].message;
+            }
+            return data;
+          }),
+        );
       }
     });
 
