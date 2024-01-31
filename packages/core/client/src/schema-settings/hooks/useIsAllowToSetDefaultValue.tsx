@@ -1,14 +1,11 @@
 import { Form } from '@formily/core';
 import { Schema, useFieldSchema } from '@formily/react';
 import React, { useContext, useMemo } from 'react';
-import {
-  CollectionFieldOptions,
-  useCollection,
-  useCollectionManager,
-  useFormBlockContext,
-  useFormBlockType,
-} from '../..';
+import { CollectionFieldOptions } from '../..';
 import { isPatternDisabled, isSystemField } from '../SchemaSettings';
+import { useFormBlockContext, useFormBlockType } from '../../block-provider';
+import { useCollectionManager } from '../../collection-manager/hooks/useCollectionManager';
+import { useCollection } from '../../collection-manager/hooks/useCollection';
 
 interface DefaultValueProviderProps {
   isAllowToSetDefaultValue: (params: IsAllowToSetDefaultValueParams) => boolean;

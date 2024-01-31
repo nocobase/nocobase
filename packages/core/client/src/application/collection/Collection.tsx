@@ -249,24 +249,34 @@ export class CollectionV2 {
     }
     return this.fieldsMap;
   }
+
+  private getFieldByAssociationName(name: SchemaKey) {
+    const fieldsMap = this.getFieldsMap();
+    const [fieldName, ...others] = String(name).split('.');
+    const field = fieldsMap[fieldName];
+    if (!field) return undefined;
+
+    const collectionName = field?.target;
+    if (!collectionName) return undefined;
+
+    const collection = this.collectionManager.getCollection(collectionName);
+    if (!collection) return undefined;
+
+    return collection.getField(others.join('.'));
+  }
+
   getField(name: SchemaKey) {
     if (!name) return undefined;
     const fieldsMap = this.getFieldsMap();
-    if (typeof name === 'string' && name.startsWith(`${this.name}.`)) {
-      name = name.replace(`${this.name}.`, '');
-    }
     if (String(name).split('.').length > 1) {
-      const [fieldName, ...others] = String(name).split('.');
-      const field = fieldsMap[fieldName];
-      if (!field) return undefined;
+      const associationRes = this.getFieldByAssociationName(name);
+      if (associationRes) return associationRes;
 
-      const collectionName = field?.target;
-      if (!collectionName) return undefined;
-
-      const collection = this.collectionManager.getCollection(collectionName);
-      if (!collection) return undefined;
-
-      return collection.getField(others.join('.'));
+      if (typeof name === 'string' && name.startsWith(`${this.name}.`)) {
+        name = name.replace(`${this.name}.`, '');
+        return this.getField(name);
+      }
+      return undefined;
     }
     return fieldsMap[name];
   }
