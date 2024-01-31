@@ -39,22 +39,26 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.db.on('dataSources.beforeSave', async (model: DataSourceModel) => {
-      const dataSourceOptions = model.get('options');
-      const type = model.get('type');
+      if (model.changed('options')) {
+        const dataSourceOptions = model.get('options');
+        const type = model.get('type');
 
-      const klass = this.app.dataSourceManager.factory.getClass(type);
+        const klass = this.app.dataSourceManager.factory.getClass(type);
 
-      try {
-        await klass.testConnection(dataSourceOptions);
-      } catch (error) {
-        throw new Error(`Test connection failed: ${error.message}`);
+        try {
+          await klass.testConnection(dataSourceOptions);
+        } catch (error) {
+          throw new Error(`Test connection failed: ${error.message}`);
+        }
       }
     });
 
     this.app.db.on('dataSources.afterSave', async (model: DataSourceModel, options) => {
-      model.loadIntoApplication({
-        app: this.app,
-      });
+      if (model.changed('options')) {
+        model.loadIntoApplication({
+          app: this.app,
+        });
+      }
     });
 
     this.app.db.on('dataSources.afterCreate', async (model: DataSourceModel, options) => {
@@ -74,6 +78,7 @@ export class PluginDataSourceManagerServer extends Plugin {
 
     this.app.use(async (ctx, next) => {
       await next();
+
       const { actionName, resourceName, params } = ctx.action;
 
       if (resourceName === 'dataSources' && actionName == 'list') {
