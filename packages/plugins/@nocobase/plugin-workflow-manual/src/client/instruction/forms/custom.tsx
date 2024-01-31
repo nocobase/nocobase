@@ -7,7 +7,7 @@ import lodash from 'lodash';
 
 import {
   ActionContextProvider,
-  CollectionContextV2,
+  CollectionProvider,
   FormBlockContext,
   RecordProvider,
   SchemaComponent,
@@ -46,8 +46,8 @@ function CustomFormBlockProvider(props) {
   );
 
   return !userJob.status || values ? (
-    <CollectionContextV2.Provider
-      value={{
+    <CollectionProvider
+      collection={{
         ...props.collection,
         fields,
       }}
@@ -63,7 +63,7 @@ function CustomFormBlockProvider(props) {
           {props.children}
         </FormBlockContext.Provider>
       </RecordProvider>
-    </CollectionContextV2.Provider>
+    </CollectionProvider>
   ) : null;
 }
 

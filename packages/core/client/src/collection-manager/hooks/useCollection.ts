@@ -12,12 +12,12 @@ export const useCollection = () => {
   const resource = api?.resource(collection?.name);
   const currentFields = useMemo(() => collection?.fields || [], [collection]);
   const inheritedFields = useMemo(() => collection?.getInheritedFields?.() || [], [collection]);
-  const totalFields = useMemo(() => collection?.getAllFields?.() || collection?.getFields() || [], [collection]);
+  const totalFields = useMemo(() => collection?.getAllFields?.() || collection?.getFields?.() || [], [collection]);
   const foreignKeyFields = useMemo(() => collection?.getForeignKeyFields?.() || [], [collection]);
   const getTreeParentField = useCallback(() => totalFields?.find((field) => field.treeParent), [totalFields]);
   const getField = useCallback(
     (name: SchemaKey) => {
-      return collection?.getField(name);
+      return collection?.getField?.(name);
     },
     [collection],
   );
@@ -26,7 +26,7 @@ export const useCollection = () => {
   }, [collection]);
 
   return {
-    ...collection?.getOptions(),
+    ...collection?.getOptions?.(),
     resource,
     getTreeParentField,
     fields: totalFields,
