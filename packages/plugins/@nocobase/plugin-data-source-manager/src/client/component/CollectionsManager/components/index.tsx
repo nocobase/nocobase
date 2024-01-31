@@ -30,6 +30,7 @@ export const SourceKey = observer(
           options={options}
           defaultValue={options?.[0]?.value || sourceKey}
           onChange={props?.onChange}
+          showSearch
         />
       </div>
     );
@@ -78,6 +79,7 @@ export const ForeignKey = observer(
           disabled={disabled}
           value={initialValue}
           options={options}
+          showSearch
           onDropdownVisibleChange={async (open) => {
             const effectField = ['belongsTo'].includes(type)
               ? collectionName
@@ -134,6 +136,7 @@ export const TargetKey = observer(
     return (
       <div>
         <Select
+          showSearch
           options={options}
           onDropdownVisibleChange={async (open) => {
             const { target } = form.values;
@@ -184,6 +187,7 @@ export const SourceCollection = observer(
       <div>
         <Select
           disabled
+          showSearch
           popupMatchSelectWidth={false}
           value={targetCollection.name}
           options={[{ value: targetCollection.name, label: compile(targetCollection.title || targetCollection.name) }]}
