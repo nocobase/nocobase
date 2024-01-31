@@ -5,6 +5,7 @@ import { concat } from 'lodash';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useActionContext, useCompile, useComponent, useFormBlockContext, useRecord } from '..';
+import useIsAllowToSetDefaultValue from '../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { CollectionFieldProvider } from './CollectionFieldProvider';
 import { useCollectionField } from './hooks';
 
@@ -19,6 +20,7 @@ const InternalField: React.FC = (props: Props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { uiSchema, defaultValue } = useCollectionField();
+  const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
   const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
   const compile = useCompile();
   const setFieldProps = (key, value) => {
@@ -46,7 +48,7 @@ const InternalField: React.FC = (props: Props) => {
     setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
     if (ctx?.form) {
-      const defaultVal = fieldSchema.default || defaultValue;
+      const defaultVal = isAllowToSetDefaultValue() ? fieldSchema.default || defaultValue : undefined;
       defaultVal !== null && defaultVal !== undefined && setFieldProps('initialValue', defaultVal);
     }
     if (!field.validator && (uiSchema['x-validator'] || fieldSchema['x-validator'])) {
