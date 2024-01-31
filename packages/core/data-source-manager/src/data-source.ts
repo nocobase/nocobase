@@ -77,6 +77,7 @@ export abstract class DataSource {
         const { resourceName, resourceOf } = ctx.action;
         return this.collectionManager.getRepository(resourceName, resourceOf);
       };
+
       return compose([this.collectionToResourceMiddleware(), this.resourceManager.restApiMiddleware()])(ctx, next);
     };
   }

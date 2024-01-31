@@ -9,7 +9,7 @@ import fs from 'fs';
 import i18next from 'i18next';
 import bodyParser from 'koa-bodyparser';
 import { resolve } from 'path';
-import { RecordableHistogram, createHistogram } from 'perf_hooks';
+import { createHistogram, RecordableHistogram } from 'perf_hooks';
 import Application, { ApplicationOptions } from './application';
 import { parseVariables } from './middlewares';
 import { dateTemplate } from './middlewares/data-template';
@@ -98,7 +98,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
 
   app.use(db2resource, { tag: 'db2resource', after: 'dataWrapping' });
   app.use(app.resourcer.restApiMiddleware({ skipIfDataSourceExists: true }), { tag: 'restApi', after: 'db2resource' });
-  app.use(app.dataSourceManager.middleware());
+  app.use(app.dataSourceManager.middleware(), { tag: 'dataSource', after: 'dataWrapping' });
 }
 
 export const createAppProxy = (app: Application) => {

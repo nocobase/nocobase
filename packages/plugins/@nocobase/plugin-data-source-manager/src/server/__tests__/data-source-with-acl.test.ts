@@ -94,6 +94,25 @@ describe('data source with acl', () => {
     await app.destroy();
   });
 
+  it('should call application middleware', async () => {
+    const middlewareFn = vi.fn();
+    app.use(async (ctx, next) => {
+      middlewareFn();
+      await next();
+    });
+
+    const adminUser = await app.db.getRepository('users').create({
+      values: {
+        roles: ['root'],
+      },
+    });
+
+    const adminAgent: any = app.agent().login(adminUser).set('x-data-source', 'mockInstance1');
+    const listRes = await adminAgent.resource('api/posts').list();
+    expect(listRes.status).toBe(200);
+    expect(middlewareFn).toBeCalledTimes(1);
+  });
+
   it('should allow root user', async () => {
     const adminUser = await app.db.getRepository('users').create({
       values: {
