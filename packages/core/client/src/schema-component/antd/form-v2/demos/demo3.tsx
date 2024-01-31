@@ -1,11 +1,9 @@
 import { ISchema } from '@formily/react';
 import {
-  APIClientProvider,
   Action,
   Application,
   BlockSchemaComponentProvider,
   CollectionField,
-  CollectionManagerProvider,
   CollectionPlugin,
   CurrentUserProvider,
   FormBlockProvider,
@@ -15,7 +13,6 @@ import {
   Input,
   Password,
   SchemaComponent,
-  SchemaComponentProvider,
 } from '@nocobase/client';
 import React from 'react';
 import { mockAPIClient } from '../../../../testUtils';

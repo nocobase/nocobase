@@ -177,8 +177,8 @@ describe('CollectionManager', () => {
         const allCollections = app.collectionManager.getAllCollections();
 
         expect(allCollections.length).toBe(2);
-        expect(allCollections[0].name).toBe(DEFAULT_DATA_SOURCE_NAME);
-        expect(allCollections[1].name).toBe('a');
+        expect(allCollections[0].key).toBe(DEFAULT_DATA_SOURCE_NAME);
+        expect(allCollections[1].key).toBe('a');
 
         expect(allCollections[0].collections.length).toBe(2);
         expect(allCollections[1].collections.length).toBe(1);
@@ -843,7 +843,7 @@ describe('CollectionManager', () => {
       expect(app.collectionManager.getCollections().length).toBe(collectionLength);
       expect(app.collectionManager.getCollections({ dataSource: 'a' }).length).toBe(collectionLength);
       expect(app.collectionManager.getDataSources().length).toBe(2);
-      expect(app.collectionManager.getDataSource('a').name).toBe('a');
+      expect(app.collectionManager.getDataSource('a').key).toBe('a');
 
       expect(mockFn).toBeCalledTimes(1);
       expect(mockFn2).toBeCalledTimes(1);
@@ -875,7 +875,7 @@ describe('CollectionManager', () => {
       expect(app.collectionManager.getCollections().length).toBe(collectionLength);
       expect(app.collectionManager.getCollections({ dataSource: 'a' }).length).toBe(collectionLength);
       expect(app.collectionManager.getDataSources().length).toBe(2);
-      expect(app.collectionManager.getDataSource('a').name).toBe('a');
+      expect(app.collectionManager.getDataSource('a').key).toBe('a');
 
       expect(mockFn).toBeCalledTimes(2);
       expect(mockFn2).toBeCalledTimes(1);

@@ -12,7 +12,6 @@ import {
   WithoutTableFieldResource,
   useAPIClient,
   useActionContext,
-  useDataSourceHeaders,
   useDesignable,
   useRecord,
 } from '../';
@@ -23,6 +22,7 @@ import {
   useDataBlockRequestV2,
   useDataBlockResourceV2,
 } from '../application/collection/CollectionDataSourceProvider';
+import { useDataSourceHeaders } from '../application/collection/utils';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';

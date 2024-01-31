@@ -2,7 +2,9 @@ import { IResource } from '@nocobase/sdk';
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
 import { useAPIClient } from '../../api-client';
-import { RecordV2, useCollectionManagerV2, useDataSourceHeaders } from '../collection';
+import { useCollectionManagerV2 } from '../collection/CollectionManagerProvider';
+import { RecordV2 } from '../collection/Record';
+import { useDataSourceHeaders } from '../collection/utils';
 import { useDataBlockPropsV2 } from './DataBlockProvider';
 
 export const DataBlockResourceContextV2 = createContext<IResource>(null);

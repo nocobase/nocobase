@@ -16,7 +16,7 @@ export const CardItem = (props: Props) => {
   const { children, name, ...restProps } = props;
   const template = useSchemaTemplate();
   const fieldSchema = useFieldSchema();
-  const templateKey = fieldSchema['x-template-key'];
+  const templateKey = fieldSchema?.['x-template-key'];
   const { wrapSSR, componentCls, hashId } = useStyles();
   return wrapSSR(
     templateKey && !template ? null : (

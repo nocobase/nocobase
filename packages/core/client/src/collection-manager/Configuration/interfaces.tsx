@@ -1,4 +1,5 @@
-import { CollectionFieldInterface, useCollectionManagerV2 } from '../../application';
+import { CollectionFieldInterface } from '../../application';
+import { useCollectionManagerV2 } from '../../application/collection/CollectionManagerProvider';
 import { useMemo } from 'react';
 
 export const getOptions = (

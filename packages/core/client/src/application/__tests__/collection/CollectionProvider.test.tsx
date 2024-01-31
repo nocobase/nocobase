@@ -8,7 +8,7 @@ import {
 } from '../../collection';
 import { Application } from '../../Application';
 import collections from './collections.json';
-import { SchemaComponentProvider } from '../../../schema-component';
+import { SchemaComponent, SchemaComponentProvider } from '../../../schema-component';
 
 function renderApp(Demo: ComponentType, props: any = {}) {
   const app = new Application({
@@ -16,13 +16,19 @@ function renderApp(Demo: ComponentType, props: any = {}) {
       collections: collections as any,
     },
   });
+  const schema = {
+    name: 'root',
+    type: 'void',
+    'x-component': 'Demo',
+    'x-decorator': 'CollectionProviderV2',
+    'x-decorator-props': props,
+  };
+
   return render(
     <div data-testid="app">
       <SchemaComponentProvider designable={true}>
         <CollectionManagerProviderV2 collectionManager={app.collectionManager}>
-          <CollectionProviderV2 {...props}>
-            <Demo></Demo>
-          </CollectionProviderV2>
+          <SchemaComponent schema={schema} components={{ Demo, CollectionProviderV2 }} />
         </CollectionManagerProviderV2>
       </SchemaComponentProvider>
     </div>,

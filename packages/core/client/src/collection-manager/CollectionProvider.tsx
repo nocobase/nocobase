@@ -1,5 +1,7 @@
 import { FC, ReactNode, useMemo } from 'react';
-import { CollectionContextV2, CollectionOptionsV2, CollectionProviderV2, useCollectionManagerV2 } from '../application';
+import { CollectionContextV2, CollectionOptionsV2, CollectionProviderV2 } from '../application';
+import { useCollectionManagerV2 } from '../application/collection/CollectionManagerProvider';
+
 import React from 'react';
 import { useCollectionDataSourceName } from '../application/collection/CollectionDataSourceProvider';
 

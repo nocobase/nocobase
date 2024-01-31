@@ -8,7 +8,7 @@ import {
 } from '../../collection';
 import { Application } from '../../Application';
 import collections from './collections.json';
-import { SchemaComponentProvider } from '../../../schema-component';
+import { SchemaComponent, SchemaComponentProvider } from '../../../schema-component';
 
 function renderApp(Demo: ComponentType, props: any = {}) {
   const app = new Application({
@@ -23,13 +23,20 @@ function renderApp(Demo: ComponentType, props: any = {}) {
       ],
     },
   });
+
+  const schema = {
+    name: 'root',
+    type: 'void',
+    'x-component': 'Demo',
+    'x-decorator': 'AssociationProviderV2',
+    'x-decorator-props': props,
+  };
+
   return render(
     <div data-testid="app">
       <SchemaComponentProvider designable={true}>
         <CollectionManagerProviderV2 collectionManager={app.collectionManager}>
-          <AssociationProviderV2 {...props}>
-            <Demo></Demo>
-          </AssociationProviderV2>
+          <SchemaComponent schema={schema} components={{ Demo, AssociationProviderV2 }} />
         </CollectionManagerProviderV2>
       </SchemaComponentProvider>
     </div>,
@@ -75,10 +82,10 @@ describe('AssociationProvider', () => {
 
   test('not exists, should render `CollectionDeletedPlaceholder`', () => {
     const Demo = () => {
-      return <div>children</div>;
+      return <div>Demo</div>;
     };
     renderApp(Demo, { name: 'users.not-exists' });
 
-    expect(screen.getByTestId('app').innerHTML).not.toContain('children');
+    expect(screen.getByText('Collection: "users.not-exists" not exists')).toBeInTheDocument();
   });
 });
