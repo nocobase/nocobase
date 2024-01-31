@@ -3,8 +3,8 @@ import { ISchema, Schema } from '@formily/react';
 import _ from 'lodash';
 import { useMemo } from 'react';
 import { CollectionFieldOptions, useCollection } from '../../../collection-manager';
-import { useFlag } from '../../../flag-provider';
 import { useBlockCollection } from './useBlockCollection';
+import { useCurrentObjectVariables } from './useCurrentObjectVariables';
 import { useDateVariable } from './useDateVariable';
 import { useFormVariable } from './useFormVariable';
 import { useIterationVariable } from './useIterationVariable';
@@ -54,8 +54,8 @@ export const useVariableOptions = ({
   currentFormCollectionName,
   currentIterationCollectionName,
 }: Props) => {
+  const { shouldDisplayCurrentObject } = useCurrentObjectVariables();
   const { name: blockCollectionName = record?.__collectionName } = useBlockCollection();
-  const { isInSubForm, isInSubTable } = useFlag() || {};
   const { name } = useCollection();
   const blockParentCollectionName = record?.__parent?.__collectionName;
   const userVariable = useUserVariable({
@@ -107,7 +107,7 @@ export const useVariableOptions = ({
       roleVariable,
       dateVariable,
       form && !form.readPretty && formVariable,
-      (isInSubForm || isInSubTable) && iterationVariable,
+      shouldDisplayCurrentObject && iterationVariable,
       blockCollectionName && !_.isEmpty(_.omit(record, ['__parent', '__collectionName'])) && currentRecordVariable,
       blockParentCollectionName &&
         !_.isEmpty(_.omit(record?.__parent, ['__parent', '__collectionName'])) &&
@@ -119,8 +119,7 @@ export const useVariableOptions = ({
     dateVariable,
     form,
     formVariable,
-    isInSubForm,
-    isInSubTable,
+    shouldDisplayCurrentObject,
     iterationVariable,
     blockCollectionName,
     record,
