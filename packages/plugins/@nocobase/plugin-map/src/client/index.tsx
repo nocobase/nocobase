@@ -7,7 +7,7 @@ import { interfaces } from './fields';
 import { MapInitializer } from './initialize';
 import { generateNTemplate } from './locale';
 import { NAMESPACE } from './locale';
-
+import { mapBlockSettings } from './block/MapBlock.Settings';
 const MapProvider = React.memo((props) => {
   const ctx = useContext(CollectionManagerContext);
   return (
@@ -31,6 +31,7 @@ export class MapPlugin extends Plugin {
     this.app.use(MapProvider);
 
     this.app.schemaInitializerManager.add(mapActionInitializers);
+    this.schemaSettingsManager.add(mapBlockSettings);
 
     const blockInitializers = this.app.schemaInitializerManager.get('BlockInitializers');
     blockInitializers?.add('dataBlocks.map', {
