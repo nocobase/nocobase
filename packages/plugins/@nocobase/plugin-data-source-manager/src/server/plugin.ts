@@ -79,6 +79,9 @@ export class PluginDataSourceManagerServer extends Plugin {
 
     this.app.use(async (ctx, next) => {
       await next();
+      if (!ctx.action) {
+        return;
+      }
 
       const { actionName, resourceName, params } = ctx.action;
 
