@@ -127,7 +127,7 @@ export class PluginDataSourceManagerServer extends Plugin {
           };
 
           if (dataSourceStatus === 'failed') {
-            item['errorMessage'] = this.dataSourceErrors[dataSourceModel.get('key')].message;
+            item['errorMessage'] = plugin.dataSourceErrors[dataSourceModel.get('key')].message;
           }
 
           const dataSource = app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));

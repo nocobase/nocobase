@@ -100,10 +100,11 @@ export class DataSourceModel extends Model {
         localData: await this.loadLocalData(),
       });
     } catch (e) {
-      this.app.logger.error(`load data source failed, ${e.message}`);
+      app.logger.error(`load data source failed, ${e.message}`);
 
       pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'failed';
       pluginDataSourceManagerServer.dataSourceErrors[dataSourceKey] = e;
+      return;
     }
 
     pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'loaded';
