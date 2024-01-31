@@ -8,20 +8,18 @@ import template from 'lodash/template';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  DataBlockProviderV2,
   TableFieldResource,
   WithoutTableFieldResource,
   useAPIClient,
   useActionContext,
+  useDataBlockPropsV2,
+  useDataBlockRequestV2,
+  useDataBlockResourceV2,
   useDesignable,
   useRecord,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
-import {
-  DataBlockProviderV2,
-  useDataBlockPropsV2,
-  useDataBlockRequestV2,
-  useDataBlockResourceV2,
-} from '../application/collection/CollectionDataSourceProvider';
 import { useDataSourceHeaders } from '../application/collection/utils';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
