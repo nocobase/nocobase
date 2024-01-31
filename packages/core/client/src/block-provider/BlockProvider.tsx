@@ -17,7 +17,7 @@ import {
   useRecord,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
-import { CollectionDataSourceProvider } from '../application/data-block';
+import { CollectionDataSourceProvider } from '../application/collection/CollectionDataSourceProvider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';

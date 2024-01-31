@@ -982,8 +982,8 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
               <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
                 <Router location={location} navigator={null}>
                   <BlockRequestContext.Provider value={ctx}>
-                    <CollectionDataSourceProvider dataSource={dataSourceName}>
-                      <CollectionManagerProviderV2 collectionManager={cm}>
+                    <CollectionManagerProviderV2 collectionManager={cm}>
+                      <CollectionDataSourceProvider dataSource={dataSourceName}>
                         <CollectionProvider allowNull name={collection.name}>
                           <SchemaComponentOptions scope={options.scope} components={options.components}>
                             <FormLayout
@@ -1008,8 +1008,8 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                             </FormLayout>
                           </SchemaComponentOptions>
                         </CollectionProvider>
-                      </CollectionManagerProviderV2>
-                    </CollectionDataSourceProvider>
+                      </CollectionDataSourceProvider>
+                    </CollectionManagerProviderV2>
                   </BlockRequestContext.Provider>
                 </Router>
               </FormActiveFieldsProvider>

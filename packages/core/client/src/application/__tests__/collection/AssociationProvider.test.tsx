@@ -73,7 +73,7 @@ describe('AssociationProvider', () => {
     expect(screen.getByTestId('field')).toHaveTextContent('roles');
   });
 
-  test('not exists, should render `DeletedPlaceholder`', () => {
+  test('not exists, should render `CollectionDeletedPlaceholder`', () => {
     const Demo = () => {
       return <div>children</div>;
     };

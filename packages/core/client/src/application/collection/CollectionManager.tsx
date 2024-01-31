@@ -58,8 +58,7 @@ interface DataSource {
   displayName: string;
   collections?: CollectionOptionsV2[];
   errorMessage?: string;
-  status?: 'success' | 'failed';
-  [key: string]: any;
+  status?: 'loaded' | 'failed' | 'loading';
 }
 
 type DataSourceNameType = string;
@@ -157,17 +156,16 @@ export class CollectionManagerV2 {
   getAllCollections(
     predicate?: (collection: CollectionV2) => boolean,
   ): (Omit<DataSource, 'collections'> & { collections: CollectionV2[] })[] {
-    return Object.keys(this.dataSourceMap).reduce<Omit<DataSource, 'collections'> & { collections: CollectionV2[] }[]>(
-      (acc, dataSourceName) => {
-        const dataSource = this.dataSourceMap[dataSourceName];
-        acc.push({
-          ...dataSource,
-          collections: this.getCollections({ predicate, dataSource: dataSourceName }),
-        });
-        return acc;
-      },
-      [],
-    );
+    return Object.keys(this.dataSourceMap).reduce<
+      (Omit<DataSource, 'collections'> & { collections: CollectionV2[] })[]
+    >((acc, dataSourceName) => {
+      const dataSource = this.dataSourceMap[dataSourceName];
+      acc.push({
+        ...dataSource,
+        collections: this.getCollections({ predicate, dataSource: dataSourceName }),
+      });
+      return acc;
+    }, []);
   }
   getCollections(options: { predicate?: (collection: CollectionV2) => boolean; dataSource?: string } = {}) {
     const { dataSource = DEFAULT_DATA_SOURCE_NAME, predicate } = options;

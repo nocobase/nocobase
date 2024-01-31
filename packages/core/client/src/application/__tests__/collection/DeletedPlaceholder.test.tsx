@@ -1,20 +1,20 @@
 import React from 'react';
 
 import { render, screen } from '@nocobase/test/client';
-import { DeletedPlaceholder } from '../../collection/DeletedPlaceholder';
+import { CollectionDeletedPlaceholder } from '../../collection/CollectionDeletedPlaceholder';
 import { SchemaComponentProvider } from '../../../schema-component';
 
 function renderApp(name?: any, designable?: boolean) {
   render(
     <div data-testid="app">
       <SchemaComponentProvider designable={designable}>
-        <DeletedPlaceholder type="test" name={name}></DeletedPlaceholder>
+        <CollectionDeletedPlaceholder type="Collection" name={name}></CollectionDeletedPlaceholder>
       </SchemaComponentProvider>
     </div>,
   );
 }
 
-describe('DeletedPlaceholder', () => {
+describe('CollectionDeletedPlaceholder', () => {
   test('name is undefined, render nothing', () => {
     renderApp();
 

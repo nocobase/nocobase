@@ -780,5 +780,9 @@
   "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects": "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects",
   "Sign in with another account": "Sign in with another account",
   "Return to the main application": "Return to the main application",
-  "Permission deined": "Permission denied"
+  "Permission deined": "Permission denied",
+  "loading": "loading",
+  "name is required": "name is required",
+  "data source": "data source",
+  "DataSource": "DataSource"
 }

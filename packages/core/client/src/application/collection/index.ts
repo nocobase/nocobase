@@ -14,4 +14,6 @@ export * from './CollectionTemplate';
 export * from './CollectionManager';
 export * from './CollectionManagerProvider';
 
+export * from './CollectionDataSourceProvider';
+
 export * from './utils';
