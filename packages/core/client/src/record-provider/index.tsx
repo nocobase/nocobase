@@ -1,4 +1,5 @@
 import React, { createContext, useContext } from 'react';
+import { useRecordDataV2 } from '../application';
 import { useCollection } from '../collection-manager';
 import { useCurrentUserContext } from '../user';
 
@@ -25,7 +26,8 @@ export const RecordIndexProvider: React.FC<{ index: any }> = (props) => {
 };
 
 export function useRecord<D = any>() {
-  return useContext(RecordContext) as D;
+  const recordDataV2 = useRecordDataV2(false);
+  return (useContext(RecordContext) as D) || recordDataV2;
 }
 
 export function useRecordIndex() {

@@ -63,7 +63,7 @@ export function useRecordV2<DataType = {}, ParentDataType = {}>(
 
 export function useRecordDataV2<DataType = any>(showErrorWhenNotExists = true): DataType {
   const record = useRecordV2<DataType>(showErrorWhenNotExists);
-  return record.data;
+  return record?.data;
 }
 
 export function useParentRecordV2<ParentDataType>(showErrorWhenNotExists = true): RecordV2<ParentDataType> {
