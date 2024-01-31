@@ -81,6 +81,7 @@ export const CalendarBlockInitializer = () => {
             fieldNames: {
               ...values,
             },
+            settings: 'blockSettings:calendar',
           }),
         );
       }}

@@ -3,7 +3,7 @@ import { uid } from '@formily/shared';
 import { generateNTemplate } from '../../locale';
 
 export const createCalendarBlockSchema = (options) => {
-  const { collection, resource, fieldNames, ...others } = options;
+  const { collection, resource, fieldNames, settings, ...others } = options;
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resource || collection}:list`,
@@ -21,7 +21,8 @@ export const createCalendarBlockSchema = (options) => {
       },
       ...others,
     },
-    'x-designer': 'CalendarV2.Designer',
+    'x-toolbar': 'BlockSchemaToolbar',
+    'x-settings': settings,
     'x-component': 'CardItem',
     properties: {
       [uid()]: {

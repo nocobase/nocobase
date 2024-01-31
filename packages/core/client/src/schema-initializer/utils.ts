@@ -1445,7 +1445,7 @@ export const createTableSelectorSchema = (options) => {
       ...others,
     },
     'x-toolbar': 'BlockSchemaToolbar',
-    'x-settings': 'blockSettings:dataSelector',
+    'x-settings': 'blockSettings:tableSelector',
     'x-component': 'CardItem',
     properties: {
       actions: {
