@@ -51,6 +51,55 @@ describe('data source', async () => {
     expect(listResp2.body.data[0].status).toBe('loaded');
   });
 
+  it('should call test connection after options change', async () => {
+    const testConnectionFn = vi.fn();
+
+    class MockDataSource extends DataSource {
+      static testConnection(options?: any): Promise<boolean> {
+        testConnectionFn();
+        return Promise.resolve(true);
+      }
+      async load(): Promise<void> {}
+
+      createCollectionManager(options?: any): any {
+        return undefined;
+      }
+    }
+
+    app.dataSourceManager.factory.register('mock', MockDataSource);
+
+    const testArgs = {
+      test: '123',
+    };
+
+    await app
+      .agent()
+      .resource('dataSources')
+      .create({
+        values: {
+          options: {
+            ...testArgs,
+          },
+          type: 'mock',
+          key: 'mockInstance1',
+        },
+      });
+
+    testConnectionFn.mockClear();
+
+    await app
+      .agent()
+      .resource('dataSources')
+      .update({
+        filterByTk: 'mockInstance1',
+        options: {
+          otherOptions: 'test',
+        },
+      });
+
+    expect(testConnectionFn).toBeCalledTimes(1);
+  });
+
   it('should test datasource connection', async () => {
     const testConnectionFn = vi.fn();
 

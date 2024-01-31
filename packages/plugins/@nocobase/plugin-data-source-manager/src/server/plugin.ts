@@ -35,6 +35,10 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.db.on('dataSources.beforeCreate', async (model: DataSourceModel, options) => {
+      this.dataSourceStatus[model.get('key')] = 'loading';
+    });
+
+    this.app.db.on('dataSources.beforeSave', async (model: DataSourceModel) => {
       const dataSourceOptions = model.get('options');
       const type = model.get('type');
 
@@ -45,8 +49,6 @@ export class PluginDataSourceManagerServer extends Plugin {
       } catch (error) {
         throw new Error(`Test connection failed: ${error.message}`);
       }
-
-      this.dataSourceStatus[model.get('key')] = 'loading';
     });
 
     this.app.db.on('dataSources.afterSave', async (model: DataSourceModel, options) => {
