@@ -2,7 +2,7 @@ import { useDeepCompareEffect, useUpdateEffect } from 'ahooks';
 import React, { FC, createContext, useContext } from 'react';
 
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
-import { RecordProviderV2 } from '../collection';
+import { RecordProviderV2, RecordV2 } from '../collection';
 import { AllDataBlockProps, useDataBlockPropsV2 } from './DataBlockProvider';
 import { useDataBlockResourceV2 } from './DataBlockResourceProvider';
 
@@ -109,7 +109,11 @@ export const BlockRequestProviderV2: FC = ({ children }) => {
         <RecordProviderV2
           isNew={action === undefined}
           record={currentRequest.data?.data}
-          parentRecord={parentRequest.data?.data}
+          parentRecord={
+            parentRequest.data?.data &&
+            new RecordV2({ isNew: false, data: parentRequest.data?.data, collectionName: association.split('.')[0] })
+          }
+          collectionName={collection}
         >
           {children}
         </RecordProviderV2>
