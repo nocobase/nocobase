@@ -98,7 +98,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
 
   app.use(db2resource, { tag: 'db2resource', after: 'dataWrapping' });
   app.use(app.resourcer.restApiMiddleware({ skipIfDataSourceExists: true }), { tag: 'restApi', after: 'db2resource' });
-  app.use(app.dataSourceManager.middleware(), { tag: 'dataSource', after: 'dataWrapping' });
+  app.use(app.dataSourceManager.middleware(), { tag: 'dataSource', after: 'restApi' });
 }
 
 export const createAppProxy = (app: Application) => {
