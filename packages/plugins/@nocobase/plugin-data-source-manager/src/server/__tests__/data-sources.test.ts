@@ -213,6 +213,7 @@ describe('data source', async () => {
         options: {},
       },
     });
+    await waitSecond(1000);
 
     expect(loadFn).toBeCalledTimes(1);
 
@@ -267,6 +268,8 @@ describe('data source', async () => {
           },
         },
       });
+
+      await waitSecond(1000);
     });
 
     it('should get data source collections', async () => {
