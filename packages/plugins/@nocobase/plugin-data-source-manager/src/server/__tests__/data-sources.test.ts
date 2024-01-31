@@ -51,6 +51,111 @@ describe('data source', async () => {
     expect(listResp2.body.data[0].status).toBe('loaded');
   });
 
+  it('should not load connection after change enabled status', async () => {
+    const testConnectionFn = vi.fn();
+
+    class MockDataSource extends DataSource {
+      static testConnection(options?: any): Promise<boolean> {
+        testConnectionFn();
+        return Promise.resolve(true);
+      }
+      async load(): Promise<void> {}
+
+      createCollectionManager(options?: any): any {
+        return undefined;
+      }
+    }
+
+    app.dataSourceManager.factory.register('mock', MockDataSource);
+
+    await app
+      .agent()
+      .resource('dataSources')
+      .create({
+        values: {
+          options: {},
+          type: 'mock',
+          key: 'mockInstance1',
+          enabled: true,
+        },
+      });
+
+    testConnectionFn.mockClear();
+
+    const findDataSourceInstance = async () => {
+      return await app.db.getRepository('dataSources').findOne({
+        filterByTk: 'mockInstance1',
+      });
+    };
+
+    expect((await findDataSourceInstance()).get('enabled')).toBeTruthy();
+
+    await app
+      .agent()
+      .resource('dataSources')
+      .update({
+        filterByTk: 'mockInstance1',
+        values: {
+          enabled: false,
+        },
+      });
+
+    expect(testConnectionFn).toBeCalledTimes(0);
+    expect((await findDataSourceInstance()).get('enabled')).toBeFalsy();
+  });
+
+  it('should call test connection after options change', async () => {
+    const testConnectionFn = vi.fn();
+
+    class MockDataSource extends DataSource {
+      static testConnection(options?: any): Promise<boolean> {
+        testConnectionFn();
+        return Promise.resolve(true);
+      }
+      async load(): Promise<void> {}
+
+      createCollectionManager(options?: any): any {
+        return undefined;
+      }
+    }
+
+    app.dataSourceManager.factory.register('mock', MockDataSource);
+
+    const testArgs = {
+      test: '123',
+    };
+
+    await app
+      .agent()
+      .resource('dataSources')
+      .create({
+        values: {
+          options: {
+            ...testArgs,
+          },
+          type: 'mock',
+          key: 'mockInstance1',
+        },
+      });
+
+    testConnectionFn.mockClear();
+
+    await app
+      .agent()
+      .resource('dataSources')
+      .update({
+        filterByTk: 'mockInstance1',
+        values: {
+          options: {
+            otherOptions: 'test',
+          },
+        },
+      });
+
+    await waitSecond(1000);
+    expect(testConnectionFn).toBeCalledTimes(1);
+  });
+
   it('should test datasource connection', async () => {
     const testConnectionFn = vi.fn();
 

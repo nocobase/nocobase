@@ -35,24 +35,30 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.db.on('dataSources.beforeCreate', async (model: DataSourceModel, options) => {
-      const dataSourceOptions = model.get('options');
-      const type = model.get('type');
-
-      const klass = this.app.dataSourceManager.factory.getClass(type);
-
-      try {
-        await klass.testConnection(dataSourceOptions);
-      } catch (error) {
-        throw new Error(`Test connection failed: ${error.message}`);
-      }
-
       this.dataSourceStatus[model.get('key')] = 'loading';
     });
 
+    this.app.db.on('dataSources.beforeSave', async (model: DataSourceModel) => {
+      if (model.changed('options')) {
+        const dataSourceOptions = model.get('options');
+        const type = model.get('type');
+
+        const klass = this.app.dataSourceManager.factory.getClass(type);
+
+        try {
+          await klass.testConnection(dataSourceOptions);
+        } catch (error) {
+          throw new Error(`Test connection failed: ${error.message}`);
+        }
+      }
+    });
+
     this.app.db.on('dataSources.afterSave', async (model: DataSourceModel, options) => {
-      model.loadIntoApplication({
-        app: this.app,
-      });
+      if (model.changed('options')) {
+        model.loadIntoApplication({
+          app: this.app,
+        });
+      }
     });
 
     this.app.db.on('dataSources.afterCreate', async (model: DataSourceModel, options) => {
@@ -72,6 +78,7 @@ export class PluginDataSourceManagerServer extends Plugin {
 
     this.app.use(async (ctx, next) => {
       await next();
+
       const { actionName, resourceName, params } = ctx.action;
 
       if (resourceName === 'dataSources' && actionName == 'list') {
