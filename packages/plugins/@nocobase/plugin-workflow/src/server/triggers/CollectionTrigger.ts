@@ -90,7 +90,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
       workflow,
       { data: json },
       {
-        stack: context.stack,
+        stack: context?.stack,
         transaction,
       },
     );
@@ -99,7 +99,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
       workflow,
       { data: json },
       {
-        stack: context.stack,
+        stack: context?.stack,
       },
     );
   }
