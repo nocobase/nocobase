@@ -7,6 +7,7 @@ import { useBaseVariable } from './useBaseVariable';
 interface Props {
   collectionField?: CollectionFieldOptions;
   schema?: any;
+  /** @deprecated */
   collectionName?: string;
   noDisabled?: boolean;
   /** 消费变量值的字段 */
@@ -45,12 +46,14 @@ export const useCurrentParentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
   const record = useRecordV2(false);
 
+  const collectionName = record?.parentRecord?.collectionName;
+
   const currentParentRecordSettings = useBaseVariable({
     collectionField: props.collectionField,
     uiSchema: props.schema,
     name: '$nParentRecord',
     title: t('Parent record'),
-    collectionName: props.collectionName,
+    collectionName: collectionName,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
   });
@@ -59,6 +62,6 @@ export const useCurrentParentRecordVariable = (props: Props = {}) => {
     currentParentRecordSettings,
     currentParentRecordCtx: record?.parentRecord?.data,
     shouldDisplayCurrentParentRecord: !!record?.parentRecord?.data,
-    collectionName: record?.parentRecord?.collectionName,
+    collectionName: collectionName,
   };
 };
