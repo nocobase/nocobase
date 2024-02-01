@@ -6,6 +6,11 @@ import { useCurrentUserContext } from '../user';
 export const RecordContext = createContext({});
 export const RecordIndexContext = createContext(null);
 
+/**
+ * @deprecated
+ * @param props
+ * @returns
+ */
 export const RecordProvider: React.FC<{ record: any; parent?: any; collectionName?: string }> = (props) => {
   const { record, children, collectionName, parent = false } = props;
   const { name: __collectionName } = useCollection();
@@ -25,6 +30,10 @@ export const RecordIndexProvider: React.FC<{ index: any }> = (props) => {
   return <RecordIndexContext.Provider value={index}>{children}</RecordIndexContext.Provider>;
 };
 
+/**
+ * @deprecated
+ * @returns
+ */
 export function useRecord<D = any>() {
   const recordDataV2 = useRecordDataV2(false);
   return (useContext(RecordContext) as D) || recordDataV2;
