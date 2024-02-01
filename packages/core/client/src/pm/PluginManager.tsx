@@ -192,16 +192,18 @@ const LocalPlugins = () => {
               size="small"
               dataSource={keyWordsfilterList}
               split={false}
-              renderItem={(item) => (
-                <List.Item
-                  style={{ padding: '3px 0' }}
-                  onClick={() => (item.key !== keyword ? setKeyword(item.key) : setKeyword(null))}
-                >
-                  <a style={{ fontWeight: keyword === item.key ? 'bold' : 'normal' }}>
-                    {item.key?.charAt?.(0).toUpperCase() + item.key?.slice?.(1)}
-                  </a>
-                </List.Item>
-              )}
+              renderItem={(item) => {
+                return (
+                  <List.Item
+                    style={{ padding: '3px 0' }}
+                    onClick={() => (item.key !== keyword ? setKeyword(item.key) : setKeyword(null))}
+                  >
+                    <a style={{ fontWeight: keyword === item.key ? 'bold' : 'normal' }}>
+                      {t(item.key?.charAt?.(0).toUpperCase() + item.key?.slice?.(1))}
+                    </a>
+                  </List.Item>
+                );
+              }}
             />
           </Col>
           <Col flex="auto">
