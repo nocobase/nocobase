@@ -68,7 +68,7 @@ const VariablesProvider = ({ children }) => {
       let current = mergeCtxWithLocalVariables(ctxRef.current, localVariables);
       let collectionName = getFieldPath(variableName, _variableToCollectionName);
 
-      if (!current[variableName]) {
+      if (!(variableName in current)) {
         throw new Error(`VariablesProvider: ${variableName} is not found`);
       }
 

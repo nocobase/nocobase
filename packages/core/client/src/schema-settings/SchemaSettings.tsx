@@ -48,6 +48,7 @@ import {
   Designable,
   FormDialog,
   FormProvider,
+  RecordProviderV2,
   RemoteSchemaComponent,
   SchemaComponent,
   SchemaComponentContext,
@@ -67,6 +68,7 @@ import {
   useGlobalTheme,
   useLinkageCollectionFilterOptions,
   useRecord,
+  useRecordV2,
   useSchemaSettingsItem,
   useSortFields,
 } from '..';
@@ -88,6 +90,7 @@ import {
 } from '../filter-provider/utils';
 import { FlagProvider, useFlag } from '../flag-provider';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
+import { SubFormProvider, useSubFormValue } from '../schema-component/antd/association-field/hooks';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 import { DynamicComponentProps } from '../schema-component/antd/filter/DynamicComponent';
 import { useSchemaTemplateManager } from '../schema-templates';
@@ -964,6 +967,10 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const upLevelActiveFields = useFormActiveFields();
   const { locale } = useContext(ConfigProvider.ConfigContext);
   const dataSourceName = useCollectionDataSourceName();
+  const record = useRecordV2(false);
+
+  // 解决变量`当前对象`值在弹窗中丢失的问题
+  const { formValue: subFormValue } = useSubFormValue();
 
   if (hidden) {
     return null;
@@ -979,40 +986,44 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
           { title: schema.title || title, width },
           () => {
             return (
-              <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
-                <Router location={location} navigator={null}>
-                  <BlockRequestContext.Provider value={ctx}>
-                    <CollectionManagerProviderV2 collectionManager={cm}>
-                      <CollectionDataSourceProvider dataSource={dataSourceName}>
-                        <CollectionProvider allowNull name={collection.name}>
-                          <SchemaComponentOptions scope={options.scope} components={options.components}>
-                            <FormLayout
-                              layout={'vertical'}
-                              className={css`
-                                // screen > 576px
-                                @media (min-width: 576px) {
-                                  min-width: 520px;
-                                }
+              <RecordProviderV2 record={record}>
+                <SubFormProvider value={subFormValue}>
+                  <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
+                    <Router location={location} navigator={null}>
+                      <BlockRequestContext.Provider value={ctx}>
+                        <CollectionManagerProviderV2 collectionManager={cm}>
+                          <CollectionDataSourceProvider dataSource={dataSourceName}>
+                            <CollectionProvider allowNull name={collection.name}>
+                              <SchemaComponentOptions scope={options.scope} components={options.components}>
+                                <FormLayout
+                                  layout={'vertical'}
+                                  className={css`
+                                    // screen > 576px
+                                    @media (min-width: 576px) {
+                                      min-width: 520px;
+                                    }
 
-                                // screen <= 576px
-                                @media (max-width: 576px) {
-                                  min-width: 320px;
-                                }
-                              `}
-                            >
-                              <APIClientProvider apiClient={apiClient}>
-                                <ConfigProvider locale={locale}>
-                                  <SchemaComponent components={components} scope={scope} schema={schema} />
-                                </ConfigProvider>
-                              </APIClientProvider>
-                            </FormLayout>
-                          </SchemaComponentOptions>
-                        </CollectionProvider>
-                      </CollectionDataSourceProvider>
-                    </CollectionManagerProviderV2>
-                  </BlockRequestContext.Provider>
-                </Router>
-              </FormActiveFieldsProvider>
+                                    // screen <= 576px
+                                    @media (max-width: 576px) {
+                                      min-width: 320px;
+                                    }
+                                  `}
+                                >
+                                  <APIClientProvider apiClient={apiClient}>
+                                    <ConfigProvider locale={locale}>
+                                      <SchemaComponent components={components} scope={scope} schema={schema} />
+                                    </ConfigProvider>
+                                  </APIClientProvider>
+                                </FormLayout>
+                              </SchemaComponentOptions>
+                            </CollectionProvider>
+                          </CollectionDataSourceProvider>
+                        </CollectionManagerProviderV2>
+                      </BlockRequestContext.Provider>
+                    </Router>
+                  </FormActiveFieldsProvider>
+                </SubFormProvider>
+              </RecordProviderV2>
             );
           },
           theme,

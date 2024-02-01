@@ -1,6 +1,7 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions } from '../../../collection-manager';
+import { useFlag } from '../../../flag-provider';
 import { useSubFormValue } from '../../../schema-component/antd/association-field/hooks';
 import { useBaseVariable } from './useBaseVariable';
 
@@ -74,6 +75,7 @@ export const useCurrentObjectVariable = ({
 } = {}) => {
   // const { getActiveFieldsName } = useFormActiveFields() || {};
   const { formValue: currentObjectCtx } = useSubFormValue();
+  const { isInSubForm, isInSubTable } = useFlag() || {};
   const { t } = useTranslation();
   const currentObjectSettings = useBaseVariable({
     collectionField,
@@ -99,7 +101,7 @@ export const useCurrentObjectVariable = ({
 
   return {
     /** 是否显示变量 */
-    shouldDisplayCurrentObject: !!currentObjectCtx,
+    shouldDisplayCurrentObject: !!currentObjectCtx && (isInSubForm || isInSubTable),
     /** 变量的值 */
     currentObjectCtx,
     /** 变量的配置项 */

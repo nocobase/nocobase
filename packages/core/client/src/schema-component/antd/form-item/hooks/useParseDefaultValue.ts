@@ -136,7 +136,7 @@ const useParseDefaultValue = () => {
 
       return dispose;
     }
-  }, [fieldSchema.default]);
+  }, [fieldSchema.default, localVariables]);
 };
 
 export default useParseDefaultValue;
