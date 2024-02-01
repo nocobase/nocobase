@@ -4,7 +4,7 @@ import _ from 'lodash';
 import { useMemo } from 'react';
 import { CollectionFieldOptions, useCollection } from '../../../collection-manager';
 import { useBlockCollection } from './useBlockCollection';
-import { useDateVariable } from './useDateVariable';
+import { useDatetimeVariable } from './useDateVariable';
 import { useFormVariable } from './useFormVariable';
 import { useCurrentObjectVariable } from './useIterationVariable';
 import { useParentRecordVariable } from './useParentRecordVariable';
@@ -69,7 +69,7 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
-  const dateVariable = useDateVariable({ operator, schema: uiSchema, noDisabled });
+  const { datetimeSettings } = useDatetimeVariable({ operator, schema: uiSchema, noDisabled });
   const formVariable = useFormVariable({
     schema: uiSchema,
     collectionName: currentFormCollectionName || blockCollectionName,
@@ -103,7 +103,7 @@ export const useVariableOptions = ({
     return [
       currentUserSettings,
       currentRoleSettings,
-      dateVariable,
+      datetimeSettings,
       form && !form.readPretty && formVariable,
       shouldDisplayCurrentObject && currentObjectSettings,
       blockCollectionName && !_.isEmpty(_.omit(record, ['__parent', '__collectionName'])) && currentRecordVariable,
@@ -114,7 +114,7 @@ export const useVariableOptions = ({
   }, [
     currentUserSettings,
     currentRoleSettings,
-    dateVariable,
+    datetimeSettings,
     form,
     formVariable,
     shouldDisplayCurrentObject,

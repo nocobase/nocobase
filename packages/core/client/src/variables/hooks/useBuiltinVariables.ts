@@ -1,15 +1,13 @@
 import { dayjs } from '@nocobase/utils/client';
 import { useMemo } from 'react';
-import { getDateRanges } from '../../schema-component/antd/date-picker/util';
-import { useCurrentUserVariable } from '../../schema-settings';
+import { useCurrentUserVariable, useDatetimeVariable } from '../../schema-settings';
 import { useCurrentRoleVariable } from '../../schema-settings/VariableInput/hooks/useRoleVariable';
 import { VariableOption } from '../types';
 
 const useBuiltInVariables = () => {
   const { currentUserCtx } = useCurrentUserVariable();
   const { currentRoleCtx } = useCurrentRoleVariable();
-
-  const dateVars = getDateRanges();
+  const { datetimeCtx } = useDatetimeVariable();
   const builtinVariables: VariableOption[] = useMemo(() => {
     return [
       {
@@ -33,7 +31,7 @@ const useBuiltInVariables = () => {
       },
       {
         name: '$nDate',
-        ctx: dateVars,
+        ctx: datetimeCtx,
       },
       /**
        * @deprecated
@@ -41,7 +39,7 @@ const useBuiltInVariables = () => {
        */
       {
         name: '$date',
-        ctx: dateVars,
+        ctx: datetimeCtx,
       },
       /**
        * @deprecated

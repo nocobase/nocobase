@@ -4,7 +4,7 @@ import {
   VariableScopeProvider,
   getShouldChange,
   useCurrentUserVariable,
-  useDateVariable,
+  useDatetimeVariable,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import React, { useEffect, useMemo } from 'react';
@@ -15,14 +15,14 @@ export const ChartFilterVariableInput: React.FC<any> = (props) => {
     collectionField: { uiSchema: fieldSchema },
     uiSchema: fieldSchema,
   });
-  const dateVariable = useDateVariable({
+  const { datetimeSettings } = useDatetimeVariable({
     operator: fieldSchema['x-component-props']?.['filter-operator'],
     schema: fieldSchema,
     noDisabled: true,
   });
   const options = useMemo(
-    () => [currentUserSettings, dateVariable].filter(Boolean),
-    [dateVariable, currentUserSettings],
+    () => [currentUserSettings, datetimeSettings].filter(Boolean),
+    [datetimeSettings, currentUserSettings],
   );
   const schema = {
     ...fieldSchema,

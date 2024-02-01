@@ -1,5 +1,5 @@
 import { useField } from '@formily/react';
-import { useCurrentUserVariable, useDateVariable } from '@nocobase/client';
+import { useCurrentUserVariable, useDatetimeVariable } from '@nocobase/client';
 import { useMemo } from 'react';
 import { useFilterVariable } from './filter';
 
@@ -10,12 +10,12 @@ export const useVariableOptions = () => {
     collectionField: { uiSchema: schema },
     uiSchema: schema,
   });
-  const dateVariable = useDateVariable({ operator, schema });
+  const { datetimeSettings } = useDatetimeVariable({ operator, schema });
   const filterVariable = useFilterVariable();
 
   const result = useMemo(
-    () => [currentUserSettings, dateVariable, filterVariable].filter(Boolean),
-    [dateVariable, currentUserSettings, filterVariable],
+    () => [currentUserSettings, datetimeSettings, filterVariable].filter(Boolean),
+    [datetimeSettings, currentUserSettings, filterVariable],
   );
 
   if (!operator || !schema) return [];
