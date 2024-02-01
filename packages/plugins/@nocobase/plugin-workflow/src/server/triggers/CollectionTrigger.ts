@@ -90,7 +90,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
       workflow,
       { data: json },
       {
-        context,
+        stack: context.stack,
         transaction,
       },
     );
@@ -99,7 +99,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
       workflow,
       { data: json },
       {
-        context,
+        stack: context.stack,
       },
     );
   }
@@ -158,12 +158,12 @@ export default class CollectionTrigger extends Trigger {
   async validateEvent(
     workflow: WorkflowModel,
     context: any,
-    options: { context?: { stack?: number[] } } & Transactionable,
+    options: { stack?: number[] } & Transactionable,
   ): Promise<boolean> {
-    if (options.context?.stack) {
+    if (options.stack) {
       const existed = await workflow.countExecutions({
         where: {
-          id: options.context.stack,
+          id: options.stack,
         },
         transaction: options.transaction,
       });
@@ -172,13 +172,11 @@ export default class CollectionTrigger extends Trigger {
         this.workflow
           .getLogger(workflow.id)
           .warn(
-            `workflow ${workflow.id} has already been triggered in stack executions (${options.context.stack}), and newly triggering will be skipped.`,
+            `workflow ${workflow.id} has already been triggered in stack executions (${options.stack}), and newly triggering will be skipped.`,
           );
 
         return false;
       }
-
-      context.stack = options.context.stack;
     }
 
     return true;
