@@ -3,14 +3,17 @@ import { observer, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo } from 'react';
 import { useCompile } from '../../schema-component';
 import { Variable } from '.././../schema-component';
-import { useFormVariable } from '../VariableInput/hooks/useFormVariable';
+import { useCurrentFormVariable } from '../VariableInput/hooks/useFormVariable';
 import { useCurrentObjectVariable } from '../VariableInput/hooks/useIterationVariable';
 
 export const ChildDynamicComponent = observer(
   (props: { rootCollection: string; onChange; value; default; collectionField }) => {
     const { rootCollection, onChange, value, collectionField } = props;
     const fieldSchema = useFieldSchema();
-    const formVariable = useFormVariable({ collectionName: rootCollection, collectionField });
+    const { currentFormSettings } = useCurrentFormVariable({
+      collectionName: rootCollection,
+      collectionField,
+    });
     const { currentObjectSettings } = useCurrentObjectVariable({
       currentCollection: collectionField?.collectionName,
       schema: collectionField?.uiSchema,
@@ -19,8 +22,8 @@ export const ChildDynamicComponent = observer(
 
     const compile = useCompile();
     const result = useMemo(
-      () => [formVariable, currentObjectSettings].filter(Boolean),
-      [formVariable, currentObjectSettings],
+      () => [currentFormSettings, currentObjectSettings].filter(Boolean),
+      [currentFormSettings, currentObjectSettings],
     );
     const scope = compile(result);
     useEffect(() => {

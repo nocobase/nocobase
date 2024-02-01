@@ -1,9 +1,9 @@
 import { Form } from '@formily/core';
 import { useMemo } from 'react';
-import { useFormBlockContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useDatetimeVariable } from '../../schema-settings';
 import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/useBlockCollection';
+import { useCurrentFormVariable } from '../../schema-settings/VariableInput/hooks/useFormVariable';
 import { useCurrentObjectVariable } from '../../schema-settings/VariableInput/hooks/useIterationVariable';
 import { useCurrentParentRecordVariable } from '../../schema-settings/VariableInput/hooks/useParentRecordVariable';
 import { useCurrentRecordVariable } from '../../schema-settings/VariableInput/hooks/useRecordVariable';
@@ -19,13 +19,9 @@ const useLocalVariables = (props?: Props) => {
   const { currentRecordCtx, collectionName: collectionNameOfRecord } = useCurrentRecordVariable();
   const { currentParentRecordCtx, collectionName: collectionNameOfParentRecord } = useCurrentParentRecordVariable();
   const { datetimeCtx } = useDatetimeVariable();
+  const { currentFormCtx } = useCurrentFormVariable({ form: props?.currentForm });
   const { name: currentCollectionName } = useCollection();
   let { name } = useBlockCollection();
-  let { form } = useFormBlockContext();
-
-  if (props?.currentForm) {
-    form = props.currentForm;
-  }
 
   if (props?.collectionName) {
     name = props.collectionName;
@@ -49,7 +45,7 @@ const useLocalVariables = (props?: Props) => {
          */
         {
           name,
-          ctx: form?.values || currentRecordCtx,
+          ctx: currentFormCtx || currentRecordCtx,
           collectionName: name,
         },
         /**
@@ -58,7 +54,7 @@ const useLocalVariables = (props?: Props) => {
          */
         {
           name: '$form',
-          ctx: form?.values,
+          ctx: currentFormCtx,
           collectionName: name,
         },
         {
@@ -73,7 +69,7 @@ const useLocalVariables = (props?: Props) => {
         },
         {
           name: '$nForm',
-          ctx: form?.values,
+          ctx: currentFormCtx,
           collectionName: name,
         },
         {
@@ -99,7 +95,7 @@ const useLocalVariables = (props?: Props) => {
     currentRecordCtx,
     collectionNameOfRecord,
     name,
-    form?.values,
+    currentFormCtx,
     currentParentRecordCtx,
     collectionNameOfParentRecord,
     datetimeCtx,

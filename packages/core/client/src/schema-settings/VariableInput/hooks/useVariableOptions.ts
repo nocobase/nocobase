@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { CollectionFieldOptions, useCollection } from '../../../collection-manager';
 import { useBlockCollection } from './useBlockCollection';
 import { useDatetimeVariable } from './useDateVariable';
-import { useFormVariable } from './useFormVariable';
+import { useCurrentFormVariable } from './useFormVariable';
 import { useCurrentObjectVariable } from './useIterationVariable';
 import { useCurrentParentRecordVariable } from './useParentRecordVariable';
 import { useCurrentRecordVariable } from './useRecordVariable';
@@ -69,12 +69,13 @@ export const useVariableOptions = ({
     targetFieldSchema,
   });
   const { datetimeSettings } = useDatetimeVariable({ operator, schema: uiSchema, noDisabled });
-  const formVariable = useFormVariable({
+  const { currentFormSettings, shouldDisplayCurrentForm } = useCurrentFormVariable({
     schema: uiSchema,
     collectionName: currentFormCollectionName || blockCollectionName,
     collectionField,
     noDisabled,
     targetFieldSchema,
+    form,
   });
   const { currentObjectSettings, shouldDisplayCurrentObject } = useCurrentObjectVariable({
     currentCollection: currentIterationCollectionName || name,
@@ -103,7 +104,7 @@ export const useVariableOptions = ({
       currentUserSettings,
       currentRoleSettings,
       datetimeSettings,
-      form && !form.readPretty && formVariable,
+      shouldDisplayCurrentForm && currentFormSettings,
       shouldDisplayCurrentObject && currentObjectSettings,
       shouldDisplayCurrentRecord && currentRecordSettings,
       shouldDisplayCurrentParentRecord && currentParentRecordSettings,
@@ -112,8 +113,8 @@ export const useVariableOptions = ({
     currentUserSettings,
     currentRoleSettings,
     datetimeSettings,
-    form,
-    formVariable,
+    shouldDisplayCurrentForm,
+    currentFormSettings,
     shouldDisplayCurrentObject,
     currentObjectSettings,
     shouldDisplayCurrentRecord,
