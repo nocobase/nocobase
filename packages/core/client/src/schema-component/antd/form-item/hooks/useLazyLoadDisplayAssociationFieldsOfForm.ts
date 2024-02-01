@@ -3,10 +3,10 @@ import { useField, useFieldSchema, useForm } from '@formily/react';
 import { nextTick } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useEffect, useMemo, useRef } from 'react';
+import { useRecordDataV2 } from '../../../../application';
 import { useAssociationNames } from '../../../../block-provider/hooks';
 import { useCollection, useCollectionManager } from '../../../../collection-manager';
 import { useFlag } from '../../../../flag-provider';
-import { useRecord } from '../../../../record-provider';
 import { useVariables } from '../../../../variables';
 import { transformVariableValue } from '../../../../variables/utils/transformVariableValue';
 import { useSubFormValue } from '../../association-field/hooks';
@@ -22,7 +22,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const { name } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
   const form = useForm();
-  const record = useRecord();
+  const recordData = useRecordDataV2(false);
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const field = useField<Field>();
@@ -36,7 +36,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const sourceCollectionFieldRef = useRef(null);
 
   // 是否已经预加载了数据（通过 appends 的形式）
-  const hasPreloadData = useMemo(() => hasPreload(record, schemaName), []);
+  const hasPreloadData = useMemo(() => hasPreload(recordData, schemaName), [recordData, schemaName]);
 
   if (collectionFieldRef.current == null && isDisplayField(schemaName)) {
     collectionFieldRef.current = getCollectionJoinField(`${name}.${schemaName}`);
@@ -75,7 +75,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
     const variableString = `{{ $nForm.${schemaName} }}`;
 
     // 如果关系字段的 id 为空，则说明请求的数据还没有返回，此时还不能去解析变量
-    if (sourceKeyValue === undefined) {
+    if (sourceKeyValue == null) {
       return;
     }
 
