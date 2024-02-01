@@ -537,6 +537,33 @@ export class SQLNode {
   }
 }
 
+export class ParallelBranchNode {
+  readonly page: Page;
+  node: Locator;
+  nodeTitle: Locator;
+  nodeConfigure: Locator;
+  addBranchButton: Locator;
+  allSucceededRadio: Locator;
+  anySucceededRadio: Locator;
+  anySucceededOrFailedRadio: Locator;
+  submitButton: Locator;
+  cancelButton: Locator;
+  addNodeButton: Locator;
+  constructor(page: Page, nodeName: string) {
+    this.page = page;
+    this.node = page.getByLabel(`Parallel branch-${nodeName}`, { exact: true });
+    this.nodeTitle = page.locator('textarea').filter({ hasText: nodeName });
+    this.nodeConfigure = page.getByLabel(`Parallel branch-${nodeName}`).getByRole('button', { name: 'Configure' });
+    this.addBranchButton = page.getByLabel(`add-button-parallel-${nodeName}-add-branch`, { exact: true });
+    this.allSucceededRadio = page.getByLabel('All succeeded', { exact: true });
+    this.anySucceededRadio = page.getByLabel('Any succeeded', { exact: true });
+    this.anySucceededOrFailedRadio = page.getByLabel('Any succeeded or failed', { exact: true });
+    this.submitButton = page.getByLabel('action-Action-Submit-workflows');
+    this.cancelButton = page.getByLabel('action-Action-Cancel-workflows');
+    this.addNodeButton = page.getByLabel(`add-button-parallel-${nodeName}`, { exact: true });
+  }
+}
+
 export default module.exports = {
   CreateWorkFlow,
   EditWorkFlow,
@@ -557,4 +584,5 @@ export default module.exports = {
   ConditionYesNode,
   ConditionBranchNode,
   SQLNode,
+  ParallelBranchNode,
 };
