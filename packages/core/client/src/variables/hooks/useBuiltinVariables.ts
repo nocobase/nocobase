@@ -1,13 +1,13 @@
 import { dayjs } from '@nocobase/utils/client';
 import { useMemo } from 'react';
-import { useAPIClient } from '../../api-client';
 import { getDateRanges } from '../../schema-component/antd/date-picker/util';
 import { useCurrentUserVariable } from '../../schema-settings';
+import { useCurrentRoleVariable } from '../../schema-settings/VariableInput/hooks/useRoleVariable';
 import { VariableOption } from '../types';
 
 const useBuiltInVariables = () => {
   const { currentUserCtx } = useCurrentUserVariable();
-  const apiClient = useAPIClient();
+  const { currentRoleCtx } = useCurrentRoleVariable();
 
   const dateVars = getDateRanges();
   const builtinVariables: VariableOption[] = useMemo(() => {
@@ -19,7 +19,7 @@ const useBuiltInVariables = () => {
       },
       {
         name: '$nRole',
-        ctx: apiClient.auth?.role,
+        ctx: currentRoleCtx,
         collectionName: 'roles',
       },
       /**

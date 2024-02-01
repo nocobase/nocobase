@@ -9,7 +9,7 @@ import { useFormVariable } from './useFormVariable';
 import { useCurrentObjectVariable } from './useIterationVariable';
 import { useParentRecordVariable } from './useParentRecordVariable';
 import { useRecordVariable } from './useRecordVariable';
-import { useRoleVariable } from './useRoleVariable';
+import { useCurrentRoleVariable } from './useRoleVariable';
 import { useCurrentUserVariable } from './useUserVariable';
 
 interface Props {
@@ -63,7 +63,7 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
-  const roleVariable = useRoleVariable({
+  const { currentRoleSettings } = useCurrentRoleVariable({
     uiSchema: uiSchema,
     collectionField,
     noDisabled,
@@ -102,7 +102,7 @@ export const useVariableOptions = ({
   return useMemo(() => {
     return [
       currentUserSettings,
-      roleVariable,
+      currentRoleSettings,
       dateVariable,
       form && !form.readPretty && formVariable,
       shouldDisplayCurrentObject && currentObjectSettings,
@@ -113,7 +113,7 @@ export const useVariableOptions = ({
     ].filter(Boolean);
   }, [
     currentUserSettings,
-    roleVariable,
+    currentRoleSettings,
     dateVariable,
     form,
     formVariable,
