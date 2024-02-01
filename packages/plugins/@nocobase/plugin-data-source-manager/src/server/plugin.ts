@@ -185,7 +185,7 @@ export class PluginDataSourceManagerServer extends Plugin {
           },
         });
 
-        await dataSourceModel.loadIntoApplication({
+        dataSourceModel.loadIntoApplication({
           app: ctx.app,
         });
 
