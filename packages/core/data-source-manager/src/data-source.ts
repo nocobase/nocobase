@@ -4,13 +4,16 @@ import compose from 'koa-compose';
 import { ResourceManager } from './resource-manager';
 import { loadDefaultActions } from './load-default-actions';
 import { ICollectionManager } from './types';
+import EventEmitter from 'events';
 
-export abstract class DataSource {
+export abstract class DataSource extends EventEmitter {
   public collectionManager: ICollectionManager;
   public resourceManager: ResourceManager;
   public acl: ACL;
 
   constructor(protected options: any) {
+    super();
+
     this.acl = this.createACL();
 
     this.resourceManager = this.createResourceManager({
