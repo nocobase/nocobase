@@ -1,6 +1,7 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions } from '../../../collection-manager';
+import { useSubFormValue } from '../../../schema-component/antd/association-field/hooks';
 import { useBaseVariable } from './useBaseVariable';
 
 /**
@@ -15,16 +16,17 @@ export const useIterationVariable = ({
   noDisabled,
   targetFieldSchema,
 }: {
-  currentCollection: string;
-  collectionField: CollectionFieldOptions;
+  currentCollection?: string;
+  collectionField?: CollectionFieldOptions;
   schema?: any;
   noDisabled?: boolean;
   /** 消费变量值的字段 */
   targetFieldSchema?: Schema;
-}) => {
+} = {}) => {
   // const { getActiveFieldsName } = useFormActiveFields() || {};
+  const { formValue: currentObjectCtx } = useSubFormValue();
   const { t } = useTranslation();
-  const result = useBaseVariable({
+  const currentObjectSettings = useBaseVariable({
     collectionField,
     uiSchema: schema,
     targetFieldSchema,
@@ -46,5 +48,12 @@ export const useIterationVariable = ({
     },
   });
 
-  return result;
+  return {
+    /** 是否显示变量 */
+    shouldDisplayCurrentObject: !!currentObjectCtx,
+    /** 变量的值 */
+    currentObjectCtx,
+    /** 变量的配置项 */
+    currentObjectSettings,
+  };
 };

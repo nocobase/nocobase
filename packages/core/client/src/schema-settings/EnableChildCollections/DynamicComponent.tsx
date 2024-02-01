@@ -11,14 +11,17 @@ export const ChildDynamicComponent = observer(
     const { rootCollection, onChange, value, collectionField } = props;
     const fieldSchema = useFieldSchema();
     const formVariable = useFormVariable({ collectionName: rootCollection, collectionField });
-    const iterationVariable = useIterationVariable({
+    const { currentObjectSettings } = useIterationVariable({
       currentCollection: collectionField?.collectionName,
       schema: collectionField?.uiSchema,
       collectionField,
     });
 
     const compile = useCompile();
-    const result = useMemo(() => [formVariable, iterationVariable].filter(Boolean), [formVariable, iterationVariable]);
+    const result = useMemo(
+      () => [formVariable, currentObjectSettings].filter(Boolean),
+      [formVariable, currentObjectSettings],
+    );
     const scope = compile(result);
     useEffect(() => {
       onChange(fieldSchema.default);

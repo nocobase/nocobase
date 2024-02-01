@@ -4,7 +4,6 @@ import _ from 'lodash';
 import { useMemo } from 'react';
 import { CollectionFieldOptions, useCollection } from '../../../collection-manager';
 import { useBlockCollection } from './useBlockCollection';
-import { useCurrentObjectVariables } from './useCurrentObjectVariables';
 import { useDateVariable } from './useDateVariable';
 import { useFormVariable } from './useFormVariable';
 import { useIterationVariable } from './useIterationVariable';
@@ -54,7 +53,6 @@ export const useVariableOptions = ({
   currentFormCollectionName,
   currentIterationCollectionName,
 }: Props) => {
-  const { shouldDisplayCurrentObject } = useCurrentObjectVariables();
   const { name: blockCollectionName = record?.__collectionName } = useBlockCollection();
   const { name } = useCollection();
   const blockParentCollectionName = record?.__parent?.__collectionName;
@@ -79,7 +77,7 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
-  const iterationVariable = useIterationVariable({
+  const { currentObjectSettings, shouldDisplayCurrentObject } = useIterationVariable({
     currentCollection: currentIterationCollectionName || name,
     collectionField,
     schema: uiSchema,
@@ -107,7 +105,7 @@ export const useVariableOptions = ({
       roleVariable,
       dateVariable,
       form && !form.readPretty && formVariable,
-      shouldDisplayCurrentObject && iterationVariable,
+      shouldDisplayCurrentObject && currentObjectSettings,
       blockCollectionName && !_.isEmpty(_.omit(record, ['__parent', '__collectionName'])) && currentRecordVariable,
       blockParentCollectionName &&
         !_.isEmpty(_.omit(record?.__parent, ['__parent', '__collectionName'])) &&
@@ -120,7 +118,7 @@ export const useVariableOptions = ({
     form,
     formVariable,
     shouldDisplayCurrentObject,
-    iterationVariable,
+    currentObjectSettings,
     blockCollectionName,
     record,
     currentRecordVariable,
