@@ -2,7 +2,7 @@ import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react'
 import { useCollectionManagerV2 } from '../collection/CollectionManagerProvider';
 import { Button, Result } from 'antd';
 import { CollectionDeletedPlaceholder } from './CollectionDeletedPlaceholder';
-import { CardItem } from '../../schema-component';
+import { CardItem, useSchemaComponentContext } from '../../schema-component';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
@@ -14,8 +14,10 @@ export const CollectionDataSourceProvider: FC<{ dataSource: string; children?: R
   children,
 }) => {
   const cm = useCollectionManagerV2();
+  const { refresh } = useSchemaComponentContext();
+  const [random, setRandom] = React.useState(0);
   const { t } = useTranslation();
-  const dataSourceData = useMemo(() => cm.getDataSource(dataSource), [cm, dataSource]);
+  const dataSourceData = useMemo(() => cm.getDataSource(dataSource), [cm, dataSource, random]);
   if (!dataSourceData) {
     return <CollectionDeletedPlaceholder type="DataSource" name={dataSource}></CollectionDeletedPlaceholder>;
   }
@@ -31,7 +33,15 @@ export const CollectionDataSourceProvider: FC<{ dataSource: string; children?: R
           icon={<LoadingOutlined />}
           title={`${dataSource} ${t('data source')} ${t('loading')}...`}
           extra={
-            <Button type="primary" onClick={() => cm.reloadThirdDataSource()}>
+            <Button
+              type="primary"
+              onClick={() =>
+                cm.reloadThirdDataSource(() => {
+                  refresh();
+                  setRandom(Math.random());
+                })
+              }
+            >
               Refresh
             </Button>
           }
