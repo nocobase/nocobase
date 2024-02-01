@@ -6,7 +6,7 @@ import { CollectionFieldOptions, useCollection } from '../../../collection-manag
 import { useBlockCollection } from './useBlockCollection';
 import { useDateVariable } from './useDateVariable';
 import { useFormVariable } from './useFormVariable';
-import { useIterationVariable } from './useIterationVariable';
+import { useCurrentObjectVariable } from './useIterationVariable';
 import { useParentRecordVariable } from './useParentRecordVariable';
 import { useRecordVariable } from './useRecordVariable';
 import { useRoleVariable } from './useRoleVariable';
@@ -77,7 +77,7 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
-  const { currentObjectSettings, shouldDisplayCurrentObject } = useIterationVariable({
+  const { currentObjectSettings, shouldDisplayCurrentObject } = useCurrentObjectVariable({
     currentCollection: currentIterationCollectionName || name,
     collectionField,
     schema: uiSchema,

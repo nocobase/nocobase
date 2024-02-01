@@ -5,7 +5,7 @@ import { useFormBlockContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { getDateRanges } from '../../schema-component/antd/date-picker/util';
 import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/useBlockCollection';
-import { useIterationVariable } from '../../schema-settings/VariableInput/hooks/useIterationVariable';
+import { useCurrentObjectVariable } from '../../schema-settings/VariableInput/hooks/useIterationVariable';
 import { VariableOption } from '../types';
 
 interface Props {
@@ -15,7 +15,7 @@ interface Props {
 
 const useLocalVariables = (props?: Props) => {
   const { name: currentCollectionName } = useCollection();
-  const { currentObjectCtx, shouldDisplayCurrentObject } = useIterationVariable();
+  const { currentObjectCtx, shouldDisplayCurrentObject } = useCurrentObjectVariable();
   let { name } = useBlockCollection();
   const currentRecord = useRecordV2(false);
   let { form } = useFormBlockContext();

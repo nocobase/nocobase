@@ -9,7 +9,7 @@ import { useBaseVariable } from './useBaseVariable';
  * @param param0
  * @returns
  */
-export const useIterationVariable = ({
+export const useCurrentObjectVariable = ({
   currentCollection,
   collectionField,
   schema,
