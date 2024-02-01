@@ -128,7 +128,7 @@ const LocalPlugins = () => {
             .includes(searchLowerCaseValue),
       );
     }
-    return list;
+    return list.sort((a, b) => a.displayName.localeCompare(b.displayName));
   }, [filterIndex, filterList, debouncedSearchValue, keyword]);
 
   const handleSearch = (value: string) => {

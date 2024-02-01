@@ -145,7 +145,9 @@ export const PluginDetail: FC<IPluginDetail> = ({ plugin, onCancel }) => {
             <Col span={24}>
               <div className={styles.PluginDetailBaseInfo}>
                 <Typography.Text type="secondary">{t('Homepage')}</Typography.Text>
-                <Typography.Text strong>{data?.data?.packageJson.homepage}</Typography.Text>
+                <a href={data?.data?.packageJson.homepage} target="_blank" rel="noreferrer">
+                  {data?.data?.packageJson.homepage}
+                </a>
               </div>
             </Col>
           )}
