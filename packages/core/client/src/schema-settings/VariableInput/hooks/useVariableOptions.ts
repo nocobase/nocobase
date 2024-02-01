@@ -10,7 +10,7 @@ import { useCurrentObjectVariable } from './useIterationVariable';
 import { useParentRecordVariable } from './useParentRecordVariable';
 import { useRecordVariable } from './useRecordVariable';
 import { useRoleVariable } from './useRoleVariable';
-import { useUserVariable } from './useUserVariable';
+import { useCurrentUserVariable } from './useUserVariable';
 
 interface Props {
   /**
@@ -56,7 +56,7 @@ export const useVariableOptions = ({
   const { name: blockCollectionName = record?.__collectionName } = useBlockCollection();
   const { name } = useCollection();
   const blockParentCollectionName = record?.__parent?.__collectionName;
-  const userVariable = useUserVariable({
+  const { currentUserSettings } = useCurrentUserVariable({
     maxDepth: 3,
     uiSchema: uiSchema,
     collectionField,
@@ -101,7 +101,7 @@ export const useVariableOptions = ({
 
   return useMemo(() => {
     return [
-      userVariable,
+      currentUserSettings,
       roleVariable,
       dateVariable,
       form && !form.readPretty && formVariable,
@@ -112,7 +112,7 @@ export const useVariableOptions = ({
         currentParentRecordVariable,
     ].filter(Boolean);
   }, [
-    userVariable,
+    currentUserSettings,
     roleVariable,
     dateVariable,
     form,

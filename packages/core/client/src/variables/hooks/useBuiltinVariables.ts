@@ -2,20 +2,19 @@ import { dayjs } from '@nocobase/utils/client';
 import { useMemo } from 'react';
 import { useAPIClient } from '../../api-client';
 import { getDateRanges } from '../../schema-component/antd/date-picker/util';
-import { useCurrentUserContext } from '../../user';
+import { useCurrentUserVariable } from '../../schema-settings';
 import { VariableOption } from '../types';
 
 const useBuiltInVariables = () => {
-  const data = useCurrentUserContext();
+  const { currentUserCtx } = useCurrentUserVariable();
   const apiClient = useAPIClient();
 
-  const currentUser = data?.data?.data;
   const dateVars = getDateRanges();
   const builtinVariables: VariableOption[] = useMemo(() => {
     return [
       {
         name: '$user',
-        ctx: currentUser,
+        ctx: currentUserCtx,
         collectionName: 'users',
       },
       {
@@ -29,7 +28,7 @@ const useBuiltInVariables = () => {
        */
       {
         name: 'currentUser',
-        ctx: currentUser,
+        ctx: currentUserCtx,
         collectionName: 'users',
       },
       {
@@ -63,7 +62,7 @@ const useBuiltInVariables = () => {
         ctx: () => dayjs().toISOString(),
       },
     ];
-  }, [currentUser]);
+  }, [currentUserCtx]);
 
   return { builtinVariables };
 };

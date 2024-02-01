@@ -12,7 +12,7 @@ import { isVariable } from '../../variables/utils/isVariable';
 import { useBlockCollection } from './hooks/useBlockCollection';
 import { useContextAssociationFields } from './hooks/useContextAssociationFields';
 import { useRecordVariable } from './hooks/useRecordVariable';
-import { useUserVariable } from './hooks/useUserVariable';
+import { useCurrentUserVariable } from './hooks/useUserVariable';
 import { useVariableOptions } from './hooks/useVariableOptions';
 import { Option } from './type';
 
@@ -236,7 +236,7 @@ export function useCompatOldVariables(props: {
 }) {
   const { uiSchema, collectionField, noDisabled, targetFieldSchema, blockCollectionName } = props;
   const { t } = useTranslation();
-  const lowLevelUserVariable = useUserVariable({
+  const { currentUserSettings } = useCurrentUserVariable({
     maxDepth: 1,
     uiSchema: uiSchema,
     collectionField,
@@ -304,7 +304,7 @@ export function useCompatOldVariables(props: {
         if (userVariable) {
           userVariable.value = 'currentUser';
         } else {
-          variables.unshift({ ...lowLevelUserVariable, value: 'currentUser' });
+          variables.unshift({ ...currentUserSettings, value: 'currentUser' });
         }
       }
 
