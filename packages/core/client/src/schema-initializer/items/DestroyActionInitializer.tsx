@@ -16,6 +16,9 @@ export const DestroyActionInitializer = (props) => {
       },
       useProps: '{{ useDestroyActionProps }}',
     },
+    'x-action-settings': {
+      triggerWorkflows: [],
+    },
   };
   return <ActionInitializer {...props} schema={schema} />;
 };

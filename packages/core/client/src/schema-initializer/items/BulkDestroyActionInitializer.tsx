@@ -22,6 +22,9 @@ export const BulkDestroyActionInitializer = (props) => {
       },
       useProps: '{{ useBulkDestroyActionProps }}',
     },
+    'x-action-settings': {
+      triggerWorkflows: [],
+    },
   };
   if (collection) {
     schema['x-acl-action'] = `${collection.name}:destroy`;
