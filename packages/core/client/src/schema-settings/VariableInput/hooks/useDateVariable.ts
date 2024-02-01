@@ -331,8 +331,6 @@ export const useDatetimeVariable = ({ operator, schema, noDisabled }: Props = {}
 
   const datetimeCtx = useMemo(() => getDateRanges(), []);
 
-  if (!schema) return {};
-
   return {
     datetimeSettings,
     datetimeCtx,

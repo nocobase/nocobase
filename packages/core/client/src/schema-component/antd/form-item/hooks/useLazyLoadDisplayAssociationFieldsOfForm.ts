@@ -3,7 +3,7 @@ import { useField, useFieldSchema, useForm } from '@formily/react';
 import { nextTick } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useEffect, useMemo, useRef } from 'react';
-import { useAssociationNames } from '../../../../block-provider';
+import { useAssociationNames } from '../../../../block-provider/hooks';
 import { useCollection, useCollectionManager } from '../../../../collection-manager';
 import { useFlag } from '../../../../flag-provider';
 import { useRecord } from '../../../../record-provider';

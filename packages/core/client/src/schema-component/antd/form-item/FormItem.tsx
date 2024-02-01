@@ -5,7 +5,7 @@ import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo } from 'react';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { useApp } from '../../../application';
-import { useFormActiveFields } from '../../../block-provider';
+import { useFormActiveFields } from '../../../block-provider/hooks/useFormActiveFields';
 import { Collection } from '../../../collection-manager';
 import { GeneralSchemaDesigner } from '../../../schema-settings';
 import { useVariables } from '../../../variables';
