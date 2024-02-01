@@ -319,7 +319,7 @@ export default class PluginWorkflowServer extends Plugin {
   private async triggerSync(
     workflow: WorkflowModel,
     context: object,
-    options: { context?: any } & Transactionable = {},
+    options: { [key: string]: any } & Transactionable = {},
   ): Promise<Processor | null> {
     let execution;
     try {

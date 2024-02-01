@@ -12,7 +12,7 @@ export class DestroyInstruction extends Instruction {
     const result = await repo.destroy({
       ...options,
       context: {
-        stack: Array.from(new Set((processor.options.stack ?? []).concat(processor.execution.id))),
+        stack: Array.from(new Set((processor.execution.context.stack ?? []).concat(processor.execution.id))),
       },
       transaction: processor.transaction,
     });
