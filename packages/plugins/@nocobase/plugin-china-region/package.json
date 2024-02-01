@@ -6,7 +6,7 @@
   "description": "Provides China region data and field interface",
   "description.zh-CN": "提供中国行政区数据和字段（Interface）类型",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs-cn.nocobase.com/plugins/china-region",
+  "homepage": "https://docs.nocobase.com/plugins/china-region",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/china-region",
   "license": "AGPL-3.0",
   "devDependencies": {

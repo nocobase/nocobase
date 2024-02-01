@@ -7,7 +7,7 @@
   "version": "0.19.0-alpha.4",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs-cn.nocobase.com/plugins/workflow-request",
+  "homepage": "https://docs.nocobase.com/plugins/workflow-request",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/workflow-request",
   "devDependencies": {
     "antd": "5.x",

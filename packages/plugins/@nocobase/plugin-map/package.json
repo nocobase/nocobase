@@ -7,7 +7,7 @@
   "description.zh-CN": "提供地图字段和区块",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs-cn.nocobase.com/plugins/map",
+  "homepage": "https://docs.nocobase.com/plugins/map",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/map",
   "devDependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",

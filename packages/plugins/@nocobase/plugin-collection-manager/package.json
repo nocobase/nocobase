@@ -6,7 +6,7 @@
   "description.zh-CN": "提供便捷的数据表管理能力",
   "version": "0.19.0-alpha.4",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs-cn.nocobase.com/plugins/collection-manager",
+  "homepage": "https://docs.nocobase.com/plugins/collection-manager",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/collection-manager",
   "license": "AGPL-3.0",
   "devDependencies": {

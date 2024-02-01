@@ -6,7 +6,7 @@
   "description.zh-CN": "SMS authentication for NocoBase",
   "version": "0.19.0-alpha.4",
   "main": "./dist/server/index.js",
-  "homepage": "https://docs-cn.nocobase.com/plugins/sms-auth",
+  "homepage": "https://docs.nocobase.com/plugins/sms-auth",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/sms-auth",
   "license": "AGPL-3.0",
   "devDependencies": {
