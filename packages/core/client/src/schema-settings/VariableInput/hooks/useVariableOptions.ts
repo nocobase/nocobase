@@ -1,13 +1,12 @@
 import { Form } from '@formily/core';
 import { ISchema, Schema } from '@formily/react';
-import _ from 'lodash';
 import { useMemo } from 'react';
 import { CollectionFieldOptions, useCollection } from '../../../collection-manager';
 import { useBlockCollection } from './useBlockCollection';
 import { useDatetimeVariable } from './useDateVariable';
 import { useFormVariable } from './useFormVariable';
 import { useCurrentObjectVariable } from './useIterationVariable';
-import { useParentRecordVariable } from './useParentRecordVariable';
+import { useCurrentParentRecordVariable } from './useParentRecordVariable';
 import { useCurrentRecordVariable } from './useRecordVariable';
 import { useCurrentRoleVariable } from './useRoleVariable';
 import { useCurrentUserVariable } from './useUserVariable';
@@ -91,7 +90,7 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
-  const currentParentRecordVariable = useParentRecordVariable({
+  const { currentParentRecordSettings, shouldDisplayCurrentParentRecord } = useCurrentParentRecordVariable({
     schema: uiSchema,
     collectionName: blockParentCollectionName,
     collectionField,
@@ -107,9 +106,7 @@ export const useVariableOptions = ({
       form && !form.readPretty && formVariable,
       shouldDisplayCurrentObject && currentObjectSettings,
       shouldDisplayCurrentRecord && currentRecordSettings,
-      blockParentCollectionName &&
-        !_.isEmpty(_.omit(record?.__parent, ['__parent', '__collectionName'])) &&
-        currentParentRecordVariable,
+      shouldDisplayCurrentParentRecord && currentParentRecordSettings,
     ].filter(Boolean);
   }, [
     currentUserSettings,
@@ -121,8 +118,7 @@ export const useVariableOptions = ({
     currentObjectSettings,
     shouldDisplayCurrentRecord,
     currentRecordSettings,
-    blockParentCollectionName,
-    record?.__parent,
-    currentParentRecordVariable,
+    shouldDisplayCurrentParentRecord,
+    currentParentRecordSettings,
   ]);
 };

@@ -1,11 +1,11 @@
 import { Form } from '@formily/core';
 import { useMemo } from 'react';
-import { useRecordV2 } from '../../application';
 import { useFormBlockContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
-import { getDateRanges } from '../../schema-component/antd/date-picker/util';
+import { useDatetimeVariable } from '../../schema-settings';
 import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/useBlockCollection';
 import { useCurrentObjectVariable } from '../../schema-settings/VariableInput/hooks/useIterationVariable';
+import { useCurrentParentRecordVariable } from '../../schema-settings/VariableInput/hooks/useParentRecordVariable';
 import { useCurrentRecordVariable } from '../../schema-settings/VariableInput/hooks/useRecordVariable';
 import { VariableOption } from '../types';
 
@@ -17,9 +17,10 @@ interface Props {
 const useLocalVariables = (props?: Props) => {
   const { currentObjectCtx, shouldDisplayCurrentObject } = useCurrentObjectVariable();
   const { currentRecordCtx, collectionName: collectionNameOfRecord } = useCurrentRecordVariable();
+  const { currentParentRecordCtx, collectionName: collectionNameOfParentRecord } = useCurrentParentRecordVariable();
+  const { datetimeCtx } = useDatetimeVariable();
   const { name: currentCollectionName } = useCollection();
   let { name } = useBlockCollection();
-  const currentRecord = useRecordV2(false);
   let { form } = useFormBlockContext();
 
   if (props?.currentForm) {
@@ -31,7 +32,6 @@ const useLocalVariables = (props?: Props) => {
   }
 
   return useMemo(() => {
-    const dateVars = getDateRanges();
     return (
       [
         /**
@@ -68,8 +68,8 @@ const useLocalVariables = (props?: Props) => {
         },
         {
           name: '$nParentRecord',
-          ctx: currentRecord?.parentRecord?.data,
-          collectionName: currentRecord?.parentRecord?.collectionName,
+          ctx: currentParentRecordCtx,
+          collectionName: collectionNameOfParentRecord,
         },
         {
           name: '$nForm',
@@ -78,7 +78,7 @@ const useLocalVariables = (props?: Props) => {
         },
         {
           name: '$nDate',
-          ctx: dateVars,
+          ctx: datetimeCtx,
         },
         /**
          * @deprecated
@@ -86,7 +86,7 @@ const useLocalVariables = (props?: Props) => {
          */
         {
           name: '$date',
-          ctx: dateVars,
+          ctx: datetimeCtx,
         },
         shouldDisplayCurrentObject && {
           name: '$iteration',
@@ -100,8 +100,9 @@ const useLocalVariables = (props?: Props) => {
     collectionNameOfRecord,
     name,
     form?.values,
-    currentRecord?.parentRecord?.data,
-    currentRecord?.parentRecord?.collectionName,
+    currentParentRecordCtx,
+    collectionNameOfParentRecord,
+    datetimeCtx,
     shouldDisplayCurrentObject,
     currentObjectCtx,
     currentCollectionName,
