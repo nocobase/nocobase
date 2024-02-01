@@ -269,18 +269,16 @@ export class Resourcer {
       if (skipIfDataSourceExists) {
         const dataSource = ctx.get('x-data-source');
         if (dataSource) {
-          await next();
-          return;
+          return next();
         }
       }
+
       ctx.resourcer = this;
-      const connectionName = ctx.get('x-connection');
 
       let params = parseRequest(
         {
           path: ctx.request.path,
           method: ctx.request.method,
-          namespace: connectionName,
         },
         {
           prefix: this.options.prefix || prefix,
@@ -302,7 +300,6 @@ export class Resourcer {
               path: ctx.request.path,
               method: ctx.request.method,
               type: resource.options.type,
-              namespace: connectionName,
             },
             {
               prefix: this.options.prefix || prefix,
@@ -317,10 +314,6 @@ export class Resourcer {
 
         // action 需要 clone 之后再赋给 ctx
         ctx.action = this.getAction(getNameByParams(params), params.actionName).clone();
-
-        if (params && params.resourceName && params.resourceName.includes('@')) {
-          params.resourceName = params.resourceName.replace(`${connectionName}@`, '');
-        }
 
         ctx.action.setContext(ctx);
         ctx.action.actionName = params.actionName;

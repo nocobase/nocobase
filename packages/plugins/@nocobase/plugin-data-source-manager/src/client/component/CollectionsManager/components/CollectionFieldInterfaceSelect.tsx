@@ -29,6 +29,7 @@ export const CollectionFieldInterfaceSelect = observer(
     const [options, setOptions] = useState(data);
     return (
       <Select
+        disabled={['oho', 'obo', 'o2m', 'm2o', 'm2m'].includes(record.interface)}
         defaultValue={value}
         style={{ width: '100%' }}
         popupMatchSelectWidth={false}

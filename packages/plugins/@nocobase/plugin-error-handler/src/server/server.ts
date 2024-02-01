@@ -21,10 +21,12 @@ export class PluginErrorHandler extends Plugin {
       }
 
       const model = instance.constructor;
-      const connectionName = ctx.get('x-connection') || 'main';
-      const database = this.app.getDb(connectionName);
+      const dataSourceKey = ctx.get('x-data-source');
+      const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
+      const database = dataSource ? dataSource.collectionManager.db : ctx.db;
 
       const collection = database.modelCollection.get(model);
+
       const field = collection.getField(path);
       const fieldOptions = Schema.compile(field?.options, { t: tFunc });
       const title = lodash.get(fieldOptions, 'uiSchema.title', path);

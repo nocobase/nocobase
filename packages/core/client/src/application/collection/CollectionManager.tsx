@@ -126,8 +126,10 @@ export class CollectionManagerV2 {
   protected getCollectionInstance(collection: CollectionOptionsV2, dataSource?: string) {
     const collectionTemplateInstance = this.getCollectionTemplate(collection.template);
     const Cls = collectionTemplateInstance?.Collection || CollectionV2;
-    const transform = collectionTemplateInstance?.transform || defaultCollectionTransform;
-    const transformedCollection = transform(collection, this.app);
+    const transform = collectionTemplateInstance?.transform;
+    const transformedCollection = transform
+      ? transform(defaultCollectionTransform(collection, this.app), this.app)
+      : defaultCollectionTransform(collection, this.app);
     const instance = new Cls({ ...transformedCollection, dataSource }, this.app, this);
     applyMixins(instance, this.collectionMixins);
     return instance;

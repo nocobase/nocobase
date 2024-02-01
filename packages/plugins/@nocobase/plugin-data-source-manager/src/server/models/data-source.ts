@@ -1,4 +1,4 @@
-import { MagicAttributeModel, Transaction } from '@nocobase/database';
+import { Model, Transaction } from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { LocalData } from '../services/database-introspector';
 import { setCurrentRole } from '@nocobase/plugin-acl';
@@ -44,7 +44,7 @@ const availableActions: {
   },
 };
 
-export class DataSourceModel extends MagicAttributeModel {
+export class DataSourceModel extends Model {
   async loadIntoApplication(options: { app: Application; transaction?: Transaction }) {
     const { app, transaction } = options;
 
@@ -100,10 +100,11 @@ export class DataSourceModel extends MagicAttributeModel {
         localData: await this.loadLocalData(),
       });
     } catch (e) {
-      this.app.logger.error(`load data source failed, ${e.message}`);
+      app.logger.error(`load data source failed, ${e.message}`);
 
       pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'failed';
       pluginDataSourceManagerServer.dataSourceErrors[dataSourceKey] = e;
+      return;
     }
 
     pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'loaded';

@@ -15,6 +15,10 @@ export default defineCollection({
       name: 'displayName',
     },
     {
+      type: 'string',
+      name: 'type',
+    },
+    {
       type: 'json',
       name: 'options',
     },

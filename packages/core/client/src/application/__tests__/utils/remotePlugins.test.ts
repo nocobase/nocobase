@@ -3,6 +3,7 @@ import {
   configRequirejs,
   defineDevPlugins,
   definePluginClient,
+  getPlugins,
   getRemotePlugins,
   processRemotePlugins,
 } from '../../utils/remotePlugins';
@@ -169,8 +170,98 @@ describe('remotePlugins', () => {
   });
 
   describe('getPlugins()', () => {
-    it('should get plugins', async () => {
+    it('If there is no devDynamicImport, all plugins are obtained through API requests', async () => {
+      const remoteFn = vi.fn();
       const mockPluginsModules = (pluginData, resolve) => {
+        remoteFn();
+        resolve({ default: 'default' }, { default: 'default' });
+      };
+
+      const requirejs: any = {
+        requirejs: mockPluginsModules,
+      };
+
+      requirejs.requirejs.config = vi.fn();
+      requirejs.requirejs.requirejs = vi.fn();
+      const pluginData: any = [
+        {
+          name: '@nocobase/demo',
+          packageName: '@nocobase/demo',
+          url: 'https://demo1.com',
+        },
+        {
+          name: '@nocobase/demo2',
+          packageName: '@nocobase/demo2',
+          url: 'https://demo2.com',
+        },
+      ];
+      const mockDefine: any = vi.fn();
+      window.define = mockDefine;
+
+      const plugins = await getPlugins({ requirejs, pluginData });
+      expect(plugins).toEqual([
+        ['@nocobase/demo', 'default'],
+        ['@nocobase/demo2', 'default'],
+      ]);
+      expect(remoteFn).toBeCalledTimes(1);
+      expect(mockDefine).toBeCalledTimes(2);
+      expect(requirejs.requirejs.config).toBeCalledWith({
+        waitSeconds: 120,
+        paths: {
+          '@nocobase/demo': 'https://demo1.com',
+          '@nocobase/demo2': 'https://demo2.com',
+        },
+      });
+    });
+
+    it('If there is devDynamicImport and devDynamicImport returns all, remote API will not be requested', async () => {
+      const remoteFn = vi.fn();
+      const mockPluginsModules = (pluginData, resolve) => {
+        remoteFn();
+        resolve({ default: 'default' }, { default: 'default' });
+      };
+
+      const requirejs: any = {
+        requirejs: mockPluginsModules,
+      };
+
+      requirejs.requirejs.config = vi.fn();
+      requirejs.requirejs.requirejs = vi.fn();
+      const pluginData: any = [
+        {
+          name: '@nocobase/demo',
+          packageName: '@nocobase/demo',
+          url: 'https://demo1.com',
+        },
+        {
+          name: '@nocobase/demo2',
+          packageName: '@nocobase/demo2',
+          url: 'https://demo2.com',
+        },
+      ];
+      const mockDefine: any = vi.fn();
+      window.define = mockDefine;
+
+      const plugins = await getPlugins({
+        requirejs,
+        pluginData,
+        devDynamicImport: (() => {
+          return Promise.resolve({ default: 'default' });
+        }) as any,
+      });
+      expect(plugins).toEqual([
+        ['@nocobase/demo', 'default'],
+        ['@nocobase/demo2', 'default'],
+      ]);
+      expect(remoteFn).toBeCalledTimes(0);
+      expect(mockDefine).toBeCalledTimes(2);
+      expect(requirejs.requirejs.config).toBeCalledTimes(0);
+    });
+
+    it('If there is devDynamicImport and devDynamicImport returns partial, remote API will be requested', async () => {
+      const remoteFn = vi.fn();
+      const mockPluginsModules = (pluginData, resolve) => {
+        remoteFn();
         resolve({ default: 'default' });
       };
 
@@ -184,13 +275,39 @@ describe('remotePlugins', () => {
         {
           name: '@nocobase/demo',
           packageName: '@nocobase/demo',
-          url: 'https://demo.com',
+          url: 'https://demo1.com',
+        },
+        {
+          name: '@nocobase/demo2',
+          packageName: '@nocobase/demo2',
+          url: 'https://demo2.com',
         },
       ];
       const mockDefine: any = vi.fn();
       window.define = mockDefine;
-      const plugins = await getRemotePlugins(requirejs, pluginData);
-      expect(plugins).toEqual([['@nocobase/demo', 'default']]);
+
+      const plugins = await getPlugins({
+        requirejs,
+        pluginData,
+        devDynamicImport: ((packageName) => {
+          if (packageName === '@nocobase/demo') {
+            return Promise.resolve({ default: 'default' });
+          }
+          return Promise.resolve(null);
+        }) as any,
+      });
+      expect(plugins).toEqual([
+        ['@nocobase/demo', 'default'],
+        ['@nocobase/demo2', 'default'],
+      ]);
+      expect(remoteFn).toBeCalled();
+      expect(mockDefine).toBeCalledTimes(2);
+      expect(requirejs.requirejs.config).toBeCalledWith({
+        waitSeconds: 120,
+        paths: {
+          '@nocobase/demo2': 'https://demo2.com',
+        },
+      });
     });
   });
 });

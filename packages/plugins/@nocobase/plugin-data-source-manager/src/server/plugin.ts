@@ -12,6 +12,7 @@ import { DataSourcesRolesModel } from './models/data-sources-roles-model';
 import { DataSourcesRolesResourcesModel } from './models/connections-roles-resources';
 import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { DataSourceModel } from './models/data-source';
+import lodash from 'lodash';
 
 type DataSourceState = 'loading' | 'loaded' | 'failed';
 
@@ -35,24 +36,30 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.db.on('dataSources.beforeCreate', async (model: DataSourceModel, options) => {
-      const dataSourceOptions = model.get('options');
-      const type = model.get('type');
-
-      const klass = this.app.dataSourceManager.factory.getClass(type);
-
-      try {
-        await klass.testConnection(dataSourceOptions);
-      } catch (error) {
-        throw new Error(`Test connection failed: ${error.message}`);
-      }
-
       this.dataSourceStatus[model.get('key')] = 'loading';
     });
 
+    this.app.db.on('dataSources.beforeSave', async (model: DataSourceModel) => {
+      if (model.changed('options')) {
+        const dataSourceOptions = model.get('options');
+        const type = model.get('type');
+
+        const klass = this.app.dataSourceManager.factory.getClass(type);
+
+        try {
+          await klass.testConnection(dataSourceOptions);
+        } catch (error) {
+          throw new Error(`Test connection failed: ${error.message}`);
+        }
+      }
+    });
+
     this.app.db.on('dataSources.afterSave', async (model: DataSourceModel, options) => {
-      model.loadIntoApplication({
-        app: this.app,
-      });
+      if (model.changed('options')) {
+        model.loadIntoApplication({
+          app: this.app,
+        });
+      }
     });
 
     this.app.db.on('dataSources.afterCreate', async (model: DataSourceModel, options) => {
@@ -72,24 +79,35 @@ export class PluginDataSourceManagerServer extends Plugin {
 
     this.app.use(async (ctx, next) => {
       await next();
+      if (!ctx.action) {
+        return;
+      }
+
       const { actionName, resourceName, params } = ctx.action;
 
       if (resourceName === 'dataSources' && actionName == 'list') {
-        const data = ctx.body;
-        let items = data;
+        let dataPath = 'body';
 
-        if (Array.isArray(data['data'])) {
-          items = data.data;
+        if (Array.isArray(ctx.body['data'])) {
+          dataPath = 'body.data';
         }
 
-        for (const item of items) {
-          const dataSourceStatus = this.dataSourceStatus[item.get('key')];
-          item.set('status', dataSourceStatus);
+        const items = lodash.get(ctx, dataPath);
 
-          if (dataSourceStatus === 'failed') {
-            item.set('errorMessage', this.dataSourceErrors[item.get('key')].message);
-          }
-        }
+        lodash.set(
+          ctx,
+          dataPath,
+          items.map((item) => {
+            const data = item.toJSON();
+            const dataSourceStatus = this.dataSourceStatus[item.get('key')];
+            data['status'] = dataSourceStatus;
+
+            if (dataSourceStatus === 'failed') {
+              data['errorMessage'] = this.dataSourceErrors[item.get('key')].message;
+            }
+            return data;
+          }),
+        );
       }
     });
 
@@ -112,7 +130,7 @@ export class PluginDataSourceManagerServer extends Plugin {
           };
 
           if (dataSourceStatus === 'failed') {
-            item['errorMessage'] = this.dataSourceErrors[dataSourceModel.get('key')].message;
+            item['errorMessage'] = plugin.dataSourceErrors[dataSourceModel.get('key')].message;
           }
 
           const dataSource = app.dataSourceManager.dataSources.get(dataSourceModel.get('key'));

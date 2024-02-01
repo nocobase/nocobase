@@ -6,6 +6,7 @@ import React, { useEffect, useMemo } from 'react';
 import { CollectionFieldProviderV2, useCollectionFieldV2 } from './CollectionFieldProvider';
 import { useCompile, useComponent } from '../../schema-component';
 import { useFormBlockContext } from '../../block-provider';
+import useIsAllowToSetDefaultValue from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 
 type Props = {
   component: any;
@@ -19,6 +20,7 @@ export const CollectionFieldInternalFieldV2: React.FC = (props: Props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { uiSchema: uiSchemaOrigin, defaultValue } = useCollectionFieldV2();
+  const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
   const uiSchema = useMemo(() => compile(uiSchemaOrigin), [JSON.stringify(uiSchemaOrigin)]);
   const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
   const setFieldProps = (key, value) => {
@@ -46,7 +48,7 @@ export const CollectionFieldInternalFieldV2: React.FC = (props: Props) => {
     setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
     if (ctx?.form) {
-      const defaultVal = fieldSchema.default || defaultValue;
+      const defaultVal = isAllowToSetDefaultValue() ? fieldSchema.default || defaultValue : undefined;
       defaultVal !== null && defaultVal !== undefined && setFieldProps('initialValue', defaultVal);
     }
 

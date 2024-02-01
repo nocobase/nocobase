@@ -64,12 +64,7 @@ export const EditDatabaseConnectionAction = () => {
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
                   'x-decorator-props': {
-                    initialValue: {
-                      type: record.type,
-                      displayName: record.displayName,
-                      key: record.key,
-                      options: _.omit(record, ['displayName', 'type', 'key']),
-                    },
+                    initialValue: record,
                   },
                   title: compile("{{t('Edit')}}") + ' - ' + compile(record.displayName),
                   properties: {
