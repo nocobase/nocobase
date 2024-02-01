@@ -6,6 +6,7 @@ import { useCollection } from '../../collection-manager';
 import { getDateRanges } from '../../schema-component/antd/date-picker/util';
 import { useBlockCollection } from '../../schema-settings/VariableInput/hooks/useBlockCollection';
 import { useCurrentObjectVariable } from '../../schema-settings/VariableInput/hooks/useIterationVariable';
+import { useCurrentRecordVariable } from '../../schema-settings/VariableInput/hooks/useRecordVariable';
 import { VariableOption } from '../types';
 
 interface Props {
@@ -14,8 +15,9 @@ interface Props {
 }
 
 const useLocalVariables = (props?: Props) => {
-  const { name: currentCollectionName } = useCollection();
   const { currentObjectCtx, shouldDisplayCurrentObject } = useCurrentObjectVariable();
+  const { currentRecordCtx, collectionName: collectionNameOfRecord } = useCurrentRecordVariable();
+  const { name: currentCollectionName } = useCollection();
   let { name } = useBlockCollection();
   const currentRecord = useRecordV2(false);
   let { form } = useFormBlockContext();
@@ -38,8 +40,8 @@ const useLocalVariables = (props?: Props) => {
          */
         {
           name: 'currentRecord',
-          ctx: currentRecord?.data,
-          collectionName: currentRecord?.collectionName,
+          ctx: currentRecordCtx,
+          collectionName: collectionNameOfRecord,
         },
         /**
          * @deprecated
@@ -47,7 +49,7 @@ const useLocalVariables = (props?: Props) => {
          */
         {
           name,
-          ctx: form?.values || currentRecord?.data,
+          ctx: form?.values || currentRecordCtx,
           collectionName: name,
         },
         /**
@@ -61,8 +63,8 @@ const useLocalVariables = (props?: Props) => {
         },
         {
           name: '$nRecord',
-          ctx: currentRecord?.data,
-          collectionName: currentRecord?.collectionName,
+          ctx: currentRecordCtx,
+          collectionName: collectionNameOfRecord,
         },
         {
           name: '$nParentRecord',
@@ -93,7 +95,17 @@ const useLocalVariables = (props?: Props) => {
         },
       ] as VariableOption[]
     ).filter(Boolean);
-  }, [currentRecord, name, form?.values, currentObjectCtx, currentCollectionName, shouldDisplayCurrentObject]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
+  }, [
+    currentRecordCtx,
+    collectionNameOfRecord,
+    name,
+    form?.values,
+    currentRecord?.parentRecord?.data,
+    currentRecord?.parentRecord?.collectionName,
+    shouldDisplayCurrentObject,
+    currentObjectCtx,
+    currentCollectionName,
+  ]); // 尽量保持返回的值不变，这样可以减少接口的请求次数，因为关系字段会缓存到变量的 ctx 中
 };
 
 export default useLocalVariables;

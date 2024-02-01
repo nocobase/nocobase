@@ -8,7 +8,7 @@ import { useDatetimeVariable } from './useDateVariable';
 import { useFormVariable } from './useFormVariable';
 import { useCurrentObjectVariable } from './useIterationVariable';
 import { useParentRecordVariable } from './useParentRecordVariable';
-import { useRecordVariable } from './useRecordVariable';
+import { useCurrentRecordVariable } from './useRecordVariable';
 import { useCurrentRoleVariable } from './useRoleVariable';
 import { useCurrentUserVariable } from './useUserVariable';
 
@@ -84,7 +84,7 @@ export const useVariableOptions = ({
     noDisabled,
     targetFieldSchema,
   });
-  const currentRecordVariable = useRecordVariable({
+  const { currentRecordSettings, shouldDisplayCurrentRecord } = useCurrentRecordVariable({
     schema: uiSchema,
     collectionName: blockCollectionName,
     collectionField,
@@ -106,7 +106,7 @@ export const useVariableOptions = ({
       datetimeSettings,
       form && !form.readPretty && formVariable,
       shouldDisplayCurrentObject && currentObjectSettings,
-      blockCollectionName && !_.isEmpty(_.omit(record, ['__parent', '__collectionName'])) && currentRecordVariable,
+      shouldDisplayCurrentRecord && currentRecordSettings,
       blockParentCollectionName &&
         !_.isEmpty(_.omit(record?.__parent, ['__parent', '__collectionName'])) &&
         currentParentRecordVariable,
@@ -119,10 +119,10 @@ export const useVariableOptions = ({
     formVariable,
     shouldDisplayCurrentObject,
     currentObjectSettings,
-    blockCollectionName,
-    record,
-    currentRecordVariable,
+    shouldDisplayCurrentRecord,
+    currentRecordSettings,
     blockParentCollectionName,
+    record?.__parent,
     currentParentRecordVariable,
   ]);
 };

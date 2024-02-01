@@ -11,7 +11,7 @@ import { VariableOption, VariablesContextType } from '../../variables/types';
 import { isVariable } from '../../variables/utils/isVariable';
 import { useBlockCollection } from './hooks/useBlockCollection';
 import { useContextAssociationFields } from './hooks/useContextAssociationFields';
-import { useRecordVariable } from './hooks/useRecordVariable';
+import { useCurrentRecordVariable } from './hooks/useRecordVariable';
 import { useCurrentUserVariable } from './hooks/useUserVariable';
 import { useVariableOptions } from './hooks/useVariableOptions';
 import { Option } from './type';
@@ -243,7 +243,7 @@ export function useCompatOldVariables(props: {
     noDisabled,
     targetFieldSchema,
   });
-  const currentRecordVariable = useRecordVariable({
+  const { currentRecordSettings } = useCurrentRecordVariable({
     schema: uiSchema,
     collectionName: blockCollectionName,
     collectionField,
@@ -313,7 +313,7 @@ export function useCompatOldVariables(props: {
         if (formVariable) {
           formVariable.value = 'currentRecord';
         } else {
-          variables.unshift({ ...currentRecordVariable, value: 'currentRecord' });
+          variables.unshift({ ...currentRecordSettings, value: 'currentRecord' });
         }
       }
 
