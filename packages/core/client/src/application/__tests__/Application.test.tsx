@@ -242,8 +242,7 @@ describe('Application', () => {
       expect(screen.getByText('AboutComponent')).toBeInTheDocument();
     });
 
-    // TODO: 会一直 loading，暂时不知道怎么解决，先跳过
-    it.skip('mount', async () => {
+    it('mount', async () => {
       const Hello = () => <div>Hello</div>;
       const app = new Application({
         router,
