@@ -2,6 +2,8 @@
   "name": "@nocobase/plugin-action-bulk-update",
   "version": "0.19.0-alpha.5",
   "main": "dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/action-bulk-update",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/action-bulk-update",
   "displayName": "Bulk update action",
   "displayName.zh-CN": "批量更新操作",
   "description": "Provides bulk update action",
@@ -12,5 +14,6 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords":["action"]
 }

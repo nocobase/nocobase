@@ -661,6 +661,7 @@
   "Plugin starting...": "プラグインを起動しています...",
   "Plugin stopping...": "プラグインを停止しています...",
   "Are you sure to delete this plugin?": "このプラグインを削除してもよろしいですか？",
+  "Are you sure to delete this plugin":"本当にこのプラグインを無効にしますか？",
   "re-download file": "ファイルを再ダウンロード",
   "Not enabled": "有効になっていません",
   "Search plugin": "プラグインを検索",

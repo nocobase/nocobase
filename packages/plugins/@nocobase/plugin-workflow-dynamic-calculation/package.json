@@ -7,6 +7,8 @@
   "version": "0.19.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/workflow-dynamic-calculation",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/workflow-dynamic-calculation",
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@formily/antd-v5": "1.x",
@@ -28,5 +30,8 @@
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords": [
+    "workflow"
+  ]
 }

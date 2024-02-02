@@ -6,6 +6,8 @@
   "description.zh-CN": "SMS authentication for NocoBase",
   "version": "0.19.0-alpha.5",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/sms-auth",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/sms-auth",
   "license": "AGPL-3.0",
   "devDependencies": {
     "@formily/react": "2.x",
@@ -23,5 +25,9 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords": [
+    "security",
+    "users"
+  ]
 }
