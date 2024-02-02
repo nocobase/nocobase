@@ -1,31 +1,10 @@
 import { SchemaInitializerItemType } from '../../application';
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
 
-// TODO(refactor): should be moved to workflow plugin
 const formTriggerWorkflowActionInitializerV2: SchemaInitializerItemType = {
   name: 'submitToWorkflow',
   title: '{{t("Submit to workflow", { ns: "workflow" })}}',
-  Component: 'CustomizeActionInitializer',
-  schema: {
-    title: '{{t("Submit to workflow", { ns: "workflow" })}}',
-    'x-component': 'Action',
-    'x-component-props': {
-      useProps: '{{ useTriggerWorkflowsActionProps }}',
-    },
-    'x-toolbar': 'ActionSchemaToolbar',
-    'x-settings': 'actionSettings:submitToWorkflow',
-    'x-action-settings': {
-      assignedValues: {},
-      skipValidator: false,
-      onSuccess: {
-        manualClose: true,
-        redirecting: false,
-        successMessage: '{{t("Submitted successfully")}}',
-      },
-      triggerWorkflows: [],
-    },
-    'x-action': 'customize:triggerWorkflows',
-  },
+  Component: 'FormTriggerWorkflowActionInitializerV2',
 };
 
 // 表单的操作配置

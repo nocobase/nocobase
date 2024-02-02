@@ -31,6 +31,7 @@ import CreateInstruction from './nodes/create';
 import UpdateInstruction from './nodes/update';
 import DestroyInstruction from './nodes/destroy';
 import { useTriggerWorkflowsActionProps } from './hooks/useTriggerWorkflowActionProps';
+import { FormTriggerWorkflowActionInitializerV2 } from './components/FormTriggerWorkflowActionInitializerV2';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './constant';
 import { NAMESPACE } from './locale';
 
@@ -105,6 +106,7 @@ export default class PluginWorkflowClient extends Plugin {
     this.app.addComponents({
       WorkflowPage,
       ExecutionPage,
+      FormTriggerWorkflowActionInitializerV2,
     });
   }
 
