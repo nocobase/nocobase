@@ -2,7 +2,7 @@ import { ArrayTable } from '@formily/antd-v5';
 import { Field, onFieldValueChange } from '@formily/core';
 import { ISchema, connect, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Alert, Tree as AntdTree, ModalProps } from 'antd';
+import { Alert, Tree as AntdTree, Flex, ModalProps, Space, Tag } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
@@ -29,6 +29,7 @@ import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowT
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
 import { useFormBlockContext } from '../../../block-provider';
+import { useRequest } from '../../../api-client';
 
 const Tree = connect(
   AntdTree,
@@ -448,13 +449,14 @@ function RemoveButton(
   );
 }
 
-function WorkflowSelect({ actionType, ...props }) {
+function WorkflowSelect({ actionType, direct = false, ...props }) {
   const { t } = useTranslation();
   const index = ArrayTable.useIndex();
   const { setValuesIn } = useForm();
   const baseCollection = useCollection();
   const { getCollection } = useCollectionManager();
   const [workflowCollection, setWorkflowCollection] = useState(baseCollection.name);
+  const compile = useCompile();
 
   const workflowPlugin = usePlugin('workflow') as any;
   const workflowTypes = useMemo(
@@ -493,11 +495,11 @@ function WorkflowSelect({ actionType, ...props }) {
         return true;
       }
       if (typeof trigger.isActionTriggerable === 'function') {
-        return trigger.isActionTriggerable(config, { action: actionType });
+        return trigger.isActionTriggerable(config, { action: actionType, direct });
       }
       return false;
     },
-    [workflowPlugin, actionType],
+    [workflowPlugin.triggers, actionType, direct],
   );
 
   return (
@@ -520,6 +522,17 @@ function WorkflowSelect({ actionType, ...props }) {
         },
       }}
       optionFilter={optionFilter}
+      optionRender={({ label, data }) => {
+        const typeOption = workflowPlugin.getTriggersOptions().find((item) => item.value === data.type);
+        return typeOption ? (
+          <Flex justify="space-between">
+            <span>{label}</span>
+            <Tag color={typeOption.color}>{compile(typeOption.label)}</Tag>
+          </Flex>
+        ) : (
+          label
+        );
+      }}
       {...props}
     />
   );
@@ -538,7 +551,7 @@ function WorkflowConfig() {
     submit: t('Workflow will be triggered before or after submitting succeeded based on workflow type.', {
       ns: 'workflow',
     }),
-    'customize:save': t('Workflow will be triggered before or after saving succeeded based on workflow type.', {
+    'customize:save': t('Workflow will be triggered before or after submitting succeeded based on workflow type.', {
       ns: 'workflow',
     }),
     'customize:triggerWorkflows': t(
@@ -625,6 +638,7 @@ function WorkflowConfig() {
                         'x-component-props': {
                           placeholder: t('Select workflow', { ns: 'workflow' }),
                           actionType,
+                          direct: fieldSchema['x-action'] === 'customize:triggerWorkflows',
                         },
                         required: true,
                       },
