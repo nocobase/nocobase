@@ -9,6 +9,7 @@ import type { ExecutionModel, FlowNodeModel, JobModel } from './types';
 
 export interface ProcessorOptions extends Transactionable {
   plugin: Plugin;
+  [key: string]: any;
 }
 
 export default class Processor {

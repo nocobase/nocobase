@@ -7,6 +7,8 @@
   "version": "0.19.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/backup-restore",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/backup-restore",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
@@ -35,5 +37,6 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
-  }
+  },
+  "keywords":["system"]
 }

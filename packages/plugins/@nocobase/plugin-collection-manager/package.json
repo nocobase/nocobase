@@ -6,6 +6,8 @@
   "description.zh-CN": "提供便捷的数据表管理能力",
   "version": "0.19.0-alpha.5",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/collection-manager",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/collection-manager",
   "license": "AGPL-3.0",
   "devDependencies": {
     "@hapi/topo": "^6.0.0",
@@ -20,5 +22,6 @@
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords":["data model"]
 }
