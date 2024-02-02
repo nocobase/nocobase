@@ -69,7 +69,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(submitActionSettings);
     this.schemaSettingsManager.add(customizeSaveRecordActionSettings);
     this.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);
-    this.pluginSettingsManager.add(addChildActionSettings);
+    this.schemaSettingsManager.add(addChildActionSettings);
 
     // field settings
     this.schemaSettingsManager.add(formItemSettings);
