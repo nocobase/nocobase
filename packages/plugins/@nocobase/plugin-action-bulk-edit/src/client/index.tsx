@@ -1,7 +1,7 @@
 import { Plugin, useCollection } from '@nocobase/client';
 import { bulkEditActionSettings, deprecatedBulkEditActionSettings } from './BulkEditAction.Settings';
 import { BulkEditFormItemInitializers } from './BulkEditFormItemInitializers';
-import { CreateFormBulkEditBlockInitializers } from './CreateFormBulkEditBlockInitializers';
+import { CreateFormBulkEditBlockInitializers, BulkEditBlockInitializers } from './BulkEditBlockInitializers';
 import { BulkEditFormActionInitializers } from './BulkEditFormActionInitializers';
 import { BulkEditActionInitializer } from './BulkEditActionInitializer';
 import { bulkEditFormItemSettings } from './bulkEditFormItemSettings';
@@ -16,6 +16,7 @@ export class BulkEditPlugin extends Plugin {
     this.app.schemaSettingsManager.add(bulkEditFormItemSettings);
     this.app.schemaInitializerManager.add(BulkEditFormItemInitializers);
     this.app.schemaInitializerManager.add(CreateFormBulkEditBlockInitializers);
+    this.app.schemaInitializerManager.add(BulkEditBlockInitializers);
     this.app.schemaInitializerManager.add(BulkEditFormActionInitializers);
 
     const initializerData = {
