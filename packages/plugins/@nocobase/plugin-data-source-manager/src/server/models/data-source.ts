@@ -52,7 +52,11 @@ export class DataSourceModel extends Model {
 
     const pluginDataSourceManagerServer = app.pm.get('data-source-manager') as PluginDataSourceManagerServer;
 
-    pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'loading';
+    if (pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] === 'loaded') {
+      pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'reloading';
+    } else {
+      pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'loading';
+    }
 
     const loadRoleIntoDataSource = async (model: DataSourcesRolesModel, dataSource: DataSource) => {
       const pluginACL: any = app.pm.get('acl');
@@ -108,7 +112,14 @@ export class DataSourceModel extends Model {
     } catch (e) {
       app.logger.error(`load data source failed, ${e.message}`);
 
-      pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'failed';
+      if (pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] === 'loading') {
+        pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'loading-failed';
+      }
+
+      if (pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] === 'reloading') {
+        pluginDataSourceManagerServer.dataSourceStatus[dataSourceKey] = 'reloading-failed';
+      }
+
       pluginDataSourceManagerServer.dataSourceErrors[dataSourceKey] = e;
       return;
     }
