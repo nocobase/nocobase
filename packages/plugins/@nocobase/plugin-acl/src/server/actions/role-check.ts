@@ -1,7 +1,6 @@
 import { ACLRole } from '@nocobase/acl';
 import { Context, Next } from '@nocobase/actions';
 import { assign } from '@nocobase/utils';
-import lodash from 'lodash';
 
 const map2obj = (map: Map<string, string>) => {
   const obj = {};
@@ -73,18 +72,9 @@ const mergeStrategyActions = (roles: ACLRole[]) => {
 const mergeSnippets = (roles: ACLRole[]) => {
   const merge = (a: string[], b: string[]) => {
     const set = new Set();
-    a.forEach((snippet) => {
+    new Set([...a, ...b]).forEach((snippet) => {
       if (snippet.startsWith('!')) {
-        if (b.includes(snippet)) {
-          set.add(snippet);
-        }
-      } else {
-        set.add(snippet);
-      }
-    });
-    b.forEach((snippet) => {
-      if (snippet.startsWith('!')) {
-        if (a.includes(snippet)) {
+        if (a.includes(snippet) && b.includes(snippet)) {
           set.add(snippet);
         }
       } else {
@@ -98,29 +88,36 @@ const mergeSnippets = (roles: ACLRole[]) => {
   }, []);
 };
 
-const mergeActions = (roles: ACLRole[]) => {
-  const all = roles.some((role) => lodash.isEmpty(role.toJSON().actions));
-  if (all) {
-    return {};
-  }
-  const actions = {};
-  roles.forEach((role) => {
-    Object.entries(role.toJSON().actions).forEach(([key, value]) => {
-      if (!actions[key]) {
-        actions[key] = value;
+const mergeActions = (roles: ACLRole[], globalActions: string[]) => {
+  const merge = (a: any, b: any) => {
+    const result = {};
+    new Set([...Object.keys(a), ...Object.keys(b)]).forEach((key) => {
+      const [_, action] = key.split(':');
+      if (a[key] && b[key]) {
+        result[key] = assign(a[key], b[key], {
+          filter: 'orMerge',
+          fields: 'union',
+          append: 'union',
+          except: 'union',
+          whitelist: 'union',
+          blacklist: 'union',
+          own: (x, y) => (x === false ? x : y),
+        });
+      } else if (a[key]) {
+        if (!globalActions.includes(action)) {
+          result[key] = a[key];
+        }
+      } else if (b[key]) {
+        if (!globalActions.includes(action)) {
+          result[key] = b[key];
+        }
       }
-      actions[key] = assign(actions[key], value, {
-        filter: 'orMerge',
-        fields: 'union',
-        append: 'union',
-        except: 'union',
-        whitelist: 'union',
-        blacklist: 'union',
-        own: (x, y) => (x === false ? x : y),
-      });
     });
-  });
-  return actions;
+    return result;
+  };
+  return roles.reduce((actions, role) => {
+    return merge(actions, role.toJSON().actions);
+  }, {});
 };
 
 export async function checkAction(ctx: Context, next: Next) {
@@ -160,14 +157,15 @@ export async function checkAction(ctx: Context, next: Next) {
   const role = roles.find((role) => role.name === currentRole);
   const roleObj = role.toJSON();
   const availableActions = ctx.app.acl.getAvailableActions();
+  const strategryActions = mergeStrategyActions(roles);
 
   ctx.body = {
     ...roleObj,
     snippets: mergeSnippets(roles),
-    actions: mergeActions(roles),
-    stategy: {
+    actions: mergeActions(roles, strategryActions),
+    strategy: {
       ...roleObj.strategy,
-      actions: mergeStrategyActions(roles),
+      actions: strategryActions,
     },
     roles: roles.map((role) => role.toJSON()),
     availableActions: [...availableActions.keys()],
