@@ -149,6 +149,7 @@ const useResourceName = () => {
 };
 
 export function useACLRoleContext() {
+  const { name } = useCollection();
   const { data, getActionAlias, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const allowedActions = useAllowedActions();
   const { getCollectionJoinField } = useCollectionManager();
@@ -164,7 +165,7 @@ export function useACLRoleContext() {
     parseAction: (actionPath: string, options: any = {}) => {
       const [resourceName, actionName] = actionPath.split(':');
       const targetResource = resourceName?.includes('.') && getCollectionJoinField(resourceName)?.target;
-      if (!getIgnoreScope(options)) {
+      if (!getIgnoreScope(options) && name === resourceName) {
         const r = verifyScope(actionName, options.recordPkValue);
         if (r !== null) {
           return r ? {} : null;
