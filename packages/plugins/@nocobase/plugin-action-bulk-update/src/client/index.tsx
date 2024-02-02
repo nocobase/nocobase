@@ -1,9 +1,11 @@
 import { Plugin, useCollection } from '@nocobase/client';
-import { BulkUpdatePluginProvider } from './BulkUpdatePluginProvider';
 import { bulkUpdateActionSettings } from './BulkUpdateAction.Settings';
+import { CustomizeActionInitializer } from './CustomizeActionInitializer';
+import { useCustomizeBulkUpdateActionProps } from './utils';
 export class BulkUpdatePlugin extends Plugin {
   async load() {
-    this.app.use(BulkUpdatePluginProvider);
+    this.app.addComponents({ CustomizeActionInitializer });
+    this.app.addScopes({ useCustomizeBulkUpdateActionProps });
     this.app.schemaSettingsManager.add(bulkUpdateActionSettings);
 
     const initializerData = {

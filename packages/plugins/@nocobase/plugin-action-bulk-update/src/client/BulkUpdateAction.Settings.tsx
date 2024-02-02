@@ -126,19 +126,12 @@ function AssignedFieldValues() {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-  const field = useField();
-  const [initialSchema, setInitialSchema] = useState<ISchema>();
-  useEffect(() => {
-    const schemaUid = uid();
-    const schema: ISchema = {
-      type: 'void',
-      'x-uid': schemaUid,
-      'x-component': 'Grid',
-      'x-initializer': 'CustomFormItemInitializers',
-    };
-    setInitialSchema(schema);
-  }, [field.address]);
-
+  const initialSchema = {
+    type: 'void',
+    'x-uid': uid(),
+    'x-component': 'Grid',
+    'x-initializer': 'CustomFormItemInitializers',
+  };
   const tips = {
     'customize:update': t(
       'After clicking the custom button, the following fields of the current record will be saved according to the following form.',
@@ -160,7 +153,6 @@ function AssignedFieldValues() {
     },
     [dn, fieldSchema],
   );
-
   return (
     <FlagProvider isInAssignFieldValues={true}>
       <DefaultValueProvider isAllowToSetDefaultValue={() => false}>
