@@ -7,13 +7,6 @@ import { creationFormBlockSettings } from '../modules/form-creation/schema-setti
 import { customizeSaveRecordActionSettings } from '../modules/form-creation/schema-settings/customizeSaveRecordActionSettings';
 import { customizeSubmitToWorkflowActionSettings } from '../modules/form-creation/schema-settings/customizeSubmitToWorkflowActionSettings';
 import { cascadeSelectComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/cascadeSelectComponentFieldSettings';
-import { columnDatePickerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/columnDatePickerComponentFieldSettings';
-import { columnNesterComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/columnNesterComponentFieldSettings';
-import { columnPickerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/columnPickerComponentFieldSettings';
-import { columnPopoverNesterComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/columnPopoverNesterComponentFieldSettings';
-import { columnSelectComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/columnSelectComponentFieldSettings';
-import { columnSubTableComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/columnSubTableComponentFieldSettings';
-import { columnTagComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/columnTagComponentFieldSettings';
 import { datePickerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/datePickerComponentFieldSettings';
 import { fileManagerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/fileManagerComponentFieldSettings';
 import { recordPickerComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/recordPickerComponentFieldSettings';
@@ -92,12 +85,5 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(tagComponentFieldSettings);
     this.schemaSettingsManager.add(cascadeSelectComponentFieldSettings);
     this.schemaSettingsManager.add(uploadAttachmentComponentFieldSettings);
-    this.schemaSettingsManager.add(columnDatePickerComponentFieldSettings);
-    this.schemaSettingsManager.add(columnSelectComponentFieldSettings);
-    this.schemaSettingsManager.add(columnNesterComponentFieldSettings);
-    this.schemaSettingsManager.add(columnSubTableComponentFieldSettings);
-    this.schemaSettingsManager.add(columnPickerComponentFieldSettings);
-    this.schemaSettingsManager.add(columnPopoverNesterComponentFieldSettings);
-    this.schemaSettingsManager.add(columnTagComponentFieldSettings);
   }
 }

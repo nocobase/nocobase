@@ -7,6 +7,8 @@ import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../..
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useCollectionField } from './utils';
+import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
+import { titleField } from './recordPickerComponentFieldSettings';
 
 export const allowMultiple: any = {
   name: 'allowMultiple',
@@ -51,16 +53,17 @@ export const fieldComponent: any = {
   useComponentProps() {
     const { t } = useTranslation();
     const field = useField<Field>();
-    const fieldSchema = useFieldSchema();
+    const { fieldSchema: tableColumnSchema, collectionField } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = tableColumnSchema || schema;
+    const fieldModeOptions = useFieldModeOptions({ fieldSchema: tableColumnSchema, collectionField });
     const { dn } = useDesignable();
-    const fieldModeOptions = useFieldModeOptions();
     const isAddNewForm = useIsAddNewForm();
-    const fieldComponentName = useFieldComponentName();
-
+    const fieldMode = useFieldComponentName();
     return {
       title: t('Field component'),
       options: fieldModeOptions,
-      value: fieldComponentName,
+      value: fieldMode,
       onChange(mode) {
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
@@ -91,5 +94,5 @@ export const fieldComponent: any = {
 
 export const subformPopoverComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:PopoverNester',
-  items: [fieldComponent, allowMultiple],
+  items: [fieldComponent, allowMultiple, titleField],
 });

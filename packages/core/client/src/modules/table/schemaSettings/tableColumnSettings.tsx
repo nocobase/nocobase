@@ -291,13 +291,13 @@ export const tableColumnSettings = new SchemaSettings({
         const app = useApp();
         const fieldComponentName = useFieldComponentName();
         const map = {
-          Select: 'ColumnSelect',
-          DatePicker: 'ColumnDatePicker',
-          Nester: 'ColumnNester',
-          SubTable: 'ColumnSubTable',
-          Picker: 'ColumnPicker',
-          PopoverNester: 'ColumnPopoverNester',
-          Tag: 'ColumnTag',
+          Select: 'Select',
+          DatePicker: 'DatePicker',
+          Nester: 'Nester',
+          SubTable: 'SubTable',
+          Picker: 'Picker',
+          PopoverNester: 'PopoverNester',
+          Tag: 'Tag',
         };
         const componentSettings = app.schemaSettingsManager.get(
           `fieldSettings:component:${map[fieldComponentName] || fieldComponentName}`,

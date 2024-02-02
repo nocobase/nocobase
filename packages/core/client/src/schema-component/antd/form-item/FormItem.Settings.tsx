@@ -27,6 +27,7 @@ import { removeNullCondition } from '../filter';
 import { DynamicComponentProps } from '../filter/DynamicComponent';
 import { getTempFieldState } from '../form-v2/utils';
 import { useColorFields } from '../table-v2/Table.Column.Designer';
+import { useColumnSchema } from '../../../schema-component/antd/table-v2/Table.Column.Decorator';
 
 export const formItemSettings = new SchemaSettings({
   name: 'FormItemSettings',
@@ -937,8 +938,9 @@ export function useIsFormReadPretty() {
 }
 
 export function useIsFieldReadPretty() {
+  const { fieldSchema: tableColumnSchema } = useColumnSchema();
   const field = useField<Field>();
-  return field.readPretty;
+  return field.readPretty || tableColumnSchema?.['x-read-pretty'];
 }
 
 /**
@@ -950,7 +952,8 @@ function useCollectionField() {
   const { getField } = useCollection();
   const fieldSchema = useFieldSchema();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  return collectionField;
+  const { collectionField: columnCollectionField } = useColumnSchema();
+  return collectionField || columnCollectionField;
 }
 
 export function useIsAssociationField() {

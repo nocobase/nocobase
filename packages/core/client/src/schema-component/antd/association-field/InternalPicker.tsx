@@ -88,7 +88,6 @@ export const InternalPicker = observer(
       }
       return [];
     }, [value, fieldNames?.label]);
-
     const pickerProps = {
       size: 'small',
       fieldNames,
@@ -186,7 +185,7 @@ export const InternalPicker = observer(
         </Input.Group>
         <ActionContextProvider
           value={{
-            openSize,
+            openSize: fieldSchema['x-component-props']?.['openSize'] || openSize,
             openMode: 'drawer',
             visible: visibleSelector,
             setVisible: setVisibleSelector,

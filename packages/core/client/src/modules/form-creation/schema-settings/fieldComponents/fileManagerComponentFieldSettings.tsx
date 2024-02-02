@@ -1,49 +1,12 @@
 import { Field } from '@formily/core';
-import { useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema, useForm } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
-import { useTitleFieldOptions } from '../../../../schema-component/antd/form-item/FormItem.Settings';
-import { useCollectionField } from './utils';
-
-export const titleField: any = {
-  name: 'titleField',
-  type: 'select',
-  useComponentProps() {
-    const { t } = useTranslation();
-    const field = useField<Field>();
-    const fieldSchema = useFieldSchema();
-    const { dn } = useDesignable();
-    const options = useTitleFieldOptions();
-    const collectionField = useCollectionField();
-
-    return {
-      title: t('Title field'),
-      options,
-      value: field?.componentProps?.fieldNames?.label,
-      onChange(label) {
-        const schema = {
-          ['x-uid']: fieldSchema['x-uid'],
-        };
-        const fieldNames = {
-          ...collectionField?.uiSchema?.['x-component-props']?.['fieldNames'],
-          ...field.componentProps.fieldNames,
-          label,
-        };
-        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        fieldSchema['x-component-props']['fieldNames'] = fieldNames;
-        schema['x-component-props'] = fieldSchema['x-component-props'];
-        field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
-        dn.emit('patch', {
-          schema,
-        });
-        dn.refresh();
-      },
-    };
-  },
-};
+import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
+import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 
 const fieldComponent: any = {
   name: 'fieldComponent',
@@ -51,11 +14,13 @@ const fieldComponent: any = {
   useComponentProps() {
     const { t } = useTranslation();
     const field = useField<Field>();
-    const fieldSchema = useFieldSchema();
-    const { dn } = useDesignable();
-    const fieldModeOptions = useFieldModeOptions();
     const isAddNewForm = useIsAddNewForm();
     const fieldComponentName = useFieldComponentName();
+    const { fieldSchema: tableColumnSchema, collectionField } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = tableColumnSchema || schema;
+    const fieldModeOptions = useFieldModeOptions({ fieldSchema: tableColumnSchema, collectionField });
+    const { dn } = useDesignable();
 
     return {
       title: t('Field component'),
@@ -99,7 +64,9 @@ export const fileManagerComponentFieldSettings = new SchemaSettings({
       useComponentProps() {
         const { t } = useTranslation();
         const field = useField<Field>();
-        const fieldSchema = useFieldSchema();
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const schema = useFieldSchema();
+        const fieldSchema = tableColumnSchema || schema;
         const { dn, refresh } = useDesignable();
         return {
           title: t('Quick upload'),
@@ -119,6 +86,13 @@ export const fileManagerComponentFieldSettings = new SchemaSettings({
           },
         };
       },
+      useVisible() {
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const field = useField();
+        const form = useForm();
+        const isReadPretty = tableColumnSchema?.['x-read-pretty'] || field.readPretty || form.readPretty;
+        return !isReadPretty;
+      },
     },
     {
       name: 'selectFile',
@@ -126,7 +100,9 @@ export const fileManagerComponentFieldSettings = new SchemaSettings({
       useComponentProps() {
         const { t } = useTranslation();
         const field = useField<Field>();
-        const fieldSchema = useFieldSchema();
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const schema = useFieldSchema();
+        const fieldSchema = tableColumnSchema || schema;
         const { dn, refresh } = useDesignable();
         return {
           title: t('Select file'),
@@ -146,7 +122,51 @@ export const fileManagerComponentFieldSettings = new SchemaSettings({
           },
         };
       },
+      useVisible() {
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const field = useField();
+        const form = useForm();
+        const isReadPretty = tableColumnSchema?.['x-read-pretty'] || field.readPretty || form.readPretty;
+        return !isReadPretty;
+      },
     },
-    titleField,
+    {
+      name: 'size',
+      type: 'select',
+      useVisible() {
+        const readPretty = useIsFieldReadPretty();
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        return readPretty && !tableColumnSchema;
+      },
+      useComponentProps() {
+        const { t } = useTranslation();
+        const field = useField<Field>();
+        const fieldSchema = useFieldSchema();
+        const { dn } = useDesignable();
+        return {
+          title: t('Size'),
+          options: [
+            { label: t('Large'), value: 'large' },
+            { label: t('Default'), value: 'default' },
+            { label: t('Small'), value: 'small' },
+          ],
+          value: field?.componentProps?.size || 'default',
+          onChange(size) {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['size'] = size;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.size = size;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
   ],
 });

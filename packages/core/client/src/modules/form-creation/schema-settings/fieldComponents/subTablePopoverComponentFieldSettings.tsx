@@ -13,10 +13,10 @@ export const fieldComponent: any = {
     const { t } = useTranslation();
     const field = useField<Field>();
     const fieldSchema = useFieldSchema();
-    const { dn } = useDesignable();
     const fieldModeOptions = useFieldModeOptions();
     const isAddNewForm = useIsAddNewForm();
     const fieldComponentName = useFieldComponentName();
+    const { dn } = useDesignable();
 
     return {
       title: t('Field component'),

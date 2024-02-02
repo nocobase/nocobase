@@ -10,6 +10,7 @@ import {
   useIsFormReadPretty,
 } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useCollectionField } from './utils';
+import { useFormBlockType } from '../../../../block-provider';
 
 export const allowMultiple: any = {
   name: 'allowMultiple',
@@ -55,11 +56,10 @@ export const fieldComponent: any = {
     const { t } = useTranslation();
     const field = useField<Field>();
     const fieldSchema = useFieldSchema();
-    const { dn } = useDesignable();
     const fieldModeOptions = useFieldModeOptions();
     const isAddNewForm = useIsAddNewForm();
     const fieldComponentName = useFieldComponentName();
-
+    const { dn } = useDesignable();
     return {
       title: t('Field component'),
       options: fieldModeOptions,
@@ -101,7 +101,8 @@ export const subformComponentFieldSettings = new SchemaSettings({
       name: 'allowDissociate',
       type: 'switch',
       useVisible() {
-        return !useIsFormReadPretty();
+        const { type } = useFormBlockType();
+        return !useIsFormReadPretty() && type === 'update';
       },
       useComponentProps() {
         const { t } = useTranslation();

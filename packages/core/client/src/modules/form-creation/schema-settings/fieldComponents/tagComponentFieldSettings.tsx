@@ -7,6 +7,7 @@ import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../..
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { useTitleFieldOptions } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColorFields } from '../../../../schema-component/antd/table-v2/Table.Column.Designer';
+import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { useCollectionField } from './utils';
 
 export const enableLink = {
@@ -50,11 +51,13 @@ export const titleField: any = {
   useComponentProps() {
     const { t } = useTranslation();
     const field = useField<Field>();
-    const fieldSchema = useFieldSchema();
-    const { dn } = useDesignable();
+    const { fieldSchema: tableColumnSchema, collectionField: tableColumnField } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = tableColumnSchema || schema;
     const options = useTitleFieldOptions();
-    const collectionField = useCollectionField();
-
+    const targetCollectionField = useCollectionField();
+    const collectionField = tableColumnField || targetCollectionField;
+    const { dn } = useDesignable();
     return {
       title: t('Title field'),
       options,
@@ -87,11 +90,13 @@ export const fieldComponent: any = {
   useComponentProps() {
     const { t } = useTranslation();
     const field = useField<Field>();
-    const fieldSchema = useFieldSchema();
-    const { dn } = useDesignable();
-    const fieldModeOptions = useFieldModeOptions();
     const isAddNewForm = useIsAddNewForm();
+    const { fieldSchema: tableColumnSchema, collectionField } = useColumnSchema();
+    const fieldModeOptions = useFieldModeOptions({ fieldSchema: tableColumnSchema, collectionField });
+    const schema = useFieldSchema();
+    const fieldSchema = tableColumnSchema || schema;
     const fieldComponentName = useFieldComponentName();
+    const { dn } = useDesignable();
 
     return {
       title: t('Field component'),

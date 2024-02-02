@@ -9,6 +9,7 @@ import {
   useIsFieldReadPretty,
   useTitleFieldOptions,
 } from '../../../../schema-component/antd/form-item/FormItem.Settings';
+import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
 import { useCollectionField } from './utils';
 
 export const titleField: any = {
@@ -17,15 +18,21 @@ export const titleField: any = {
   useComponentProps() {
     const { t } = useTranslation();
     const field = useField<Field>();
-    const fieldSchema = useFieldSchema();
-    const { dn } = useDesignable();
+    const { uiSchema, fieldSchema: tableColumnSchema, collectionField: tableColumnField } = useColumnSchema();
     const options = useTitleFieldOptions();
-    const collectionField = useCollectionField();
-
+    const schema = useFieldSchema();
+    const fieldSchema = tableColumnSchema || schema;
+    const targetCollectionField = useCollectionField();
+    const collectionField = tableColumnField || targetCollectionField;
+    const { dn } = useDesignable();
+    const fieldNames =
+      field?.componentProps?.fieldNames ||
+      fieldSchema?.['x-component-props']?.['fieldNames'] ||
+      uiSchema?.['x-component-props']?.['fieldNames'];
     return {
       title: t('Title field'),
       options,
-      value: field?.componentProps?.fieldNames?.label,
+      value: fieldNames?.label,
       onChange(label) {
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
@@ -91,12 +98,13 @@ export const fieldComponent: any = {
   useComponentProps() {
     const { t } = useTranslation();
     const field = useField<Field>();
-    const fieldSchema = useFieldSchema();
-    const { dn } = useDesignable();
-    const fieldModeOptions = useFieldModeOptions();
     const isAddNewForm = useIsAddNewForm();
     const fieldComponentName = useFieldComponentName();
-
+    const { fieldSchema: tableColumnSchema, collectionField } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = tableColumnSchema || schema;
+    const fieldModeOptions = useFieldModeOptions({ fieldSchema: tableColumnSchema, collectionField });
+    const { dn } = useDesignable();
     return {
       title: t('Field component'),
       options: fieldModeOptions,
@@ -116,8 +124,8 @@ export const fieldComponent: any = {
           // @ts-ignore
           schema.default = null;
           fieldSchema.default = null;
-          field.setInitialValue(null);
-          field.setValue(null);
+          field?.setInitialValue?.(null);
+          field?.setValue?.(null);
         }
 
         void dn.emit('patch', {
@@ -143,7 +151,9 @@ export const recordPickerComponentFieldSettings = new SchemaSettings({
       useComponentProps() {
         const { t } = useTranslation();
         const field = useField<Field>();
-        const fieldSchema = useFieldSchema();
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const schema = useFieldSchema();
+        const fieldSchema = tableColumnSchema || schema;
         const { dn } = useDesignable();
         return {
           title: t('Popup size'),
@@ -157,7 +167,7 @@ export const recordPickerComponentFieldSettings = new SchemaSettings({
             (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle'),
           onChange: (value) => {
             field.componentProps.openSize = value;
-            fieldSchema['x-component-props'] = field.componentProps;
+            fieldSchema['x-component-props'] = { ...fieldSchema['x-component-props'], openSize: value };
             dn.emit('patch', {
               schema: {
                 'x-uid': fieldSchema['x-uid'],
@@ -165,59 +175,6 @@ export const recordPickerComponentFieldSettings = new SchemaSettings({
               },
             });
             dn.refresh();
-          },
-        };
-      },
-    },
-    {
-      name: 'allowAddNewData',
-      type: 'switch',
-      useVisible() {
-        const isFieldReadPretty = useIsFieldReadPretty();
-        return !isFieldReadPretty;
-      },
-      useComponentProps() {
-        const { t } = useTranslation();
-        const field = useField<Field>();
-        const fieldSchema = useFieldSchema();
-        const { dn, refresh, insertAdjacent } = useDesignable();
-        return {
-          title: t('Allow add new data'),
-          checked: fieldSchema['x-add-new'] as boolean,
-          onChange(allowAddNew) {
-            const hasAddNew = fieldSchema.reduceProperties((buf, schema) => {
-              if (schema['x-component'] === 'Action') {
-                return schema;
-              }
-              return buf;
-            }, null);
-
-            if (!hasAddNew) {
-              const addNewActionSchema = {
-                'x-action': 'create',
-                'x-acl-action': 'create',
-                title: "{{t('Add new')}}",
-                'x-designer': 'Action.Designer',
-                'x-component': 'Action',
-                'x-decorator': 'ACLActionProvider',
-                'x-component-props': {
-                  openMode: 'drawer',
-                  type: 'default',
-                  component: 'CreateRecordAction',
-                },
-              };
-              insertAdjacent('afterBegin', addNewActionSchema);
-            }
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            field['x-add-new'] = allowAddNew;
-            fieldSchema['x-add-new'] = allowAddNew;
-            schema['x-add-new'] = allowAddNew;
-            dn.emit('patch', {
-              schema,
-            });
-            refresh();
           },
         };
       },
