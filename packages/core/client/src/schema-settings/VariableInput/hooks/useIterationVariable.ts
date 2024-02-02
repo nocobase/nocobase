@@ -101,7 +101,7 @@ export const useCurrentObjectVariable = ({
 
   return {
     /** 是否显示变量 */
-    shouldDisplayCurrentObject: !!currentObjectCtx && (isInSubForm || isInSubTable),
+    shouldDisplayCurrentObject: isInSubForm || isInSubTable,
     /** 变量的值 */
     currentObjectCtx,
     /** 变量的配置项 */
