@@ -48,3 +48,4 @@ export * from './UpdateActionInitializer';
 export * from './UpdateSubmitActionInitializer';
 export * from './ViewActionInitializer';
 export * from './MarkdownFormItemInitializer';
+export * from './PopupActionInitializer';
