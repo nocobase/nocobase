@@ -10,7 +10,7 @@ import {
 } from '../../../schema-settings';
 
 export const creationFormBlockSettings = new SchemaSettings({
-  name: 'blockSettings:creationForm',
+  name: 'blockSettings:createForm',
   items: [
     {
       name: 'title',
