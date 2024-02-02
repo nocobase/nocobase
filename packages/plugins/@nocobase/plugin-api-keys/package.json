@@ -7,6 +7,8 @@
   "version": "0.19.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/api-keys",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/api-keys",
   "devDependencies": {
     "@formily/react": "2.x",
     "@formily/shared": "2.x",
