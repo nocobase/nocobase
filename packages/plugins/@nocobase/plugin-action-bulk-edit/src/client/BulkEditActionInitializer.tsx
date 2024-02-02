@@ -1,7 +1,7 @@
 import { BlockInitializer, useSchemaInitializerItem } from '@nocobase/client';
 import React from 'react';
 
-export const CustomizeBulkEditActionInitializer = () => {
+export const BulkEditActionInitializer = () => {
   const schema = {
     type: 'void',
     title: '{{t("Bulk edit")}}',

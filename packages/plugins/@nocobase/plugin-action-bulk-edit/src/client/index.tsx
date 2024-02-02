@@ -3,7 +3,7 @@ import { bulkEditActionSettings, deprecatedBulkEditActionSettings } from './Bulk
 import { BulkEditFormItemInitializers } from './BulkEditFormItemInitializers';
 import { CreateFormBulkEditBlockInitializers } from './CreateFormBulkEditBlockInitializers';
 import { BulkEditFormActionInitializers } from './BulkEditFormActionInitializers';
-import { CustomizeBulkEditActionInitializer } from './CustomizeBulkEditActionInitializer';
+import { BulkEditActionInitializer } from './BulkEditActionInitializer';
 import { bulkEditFormItemSettings } from './bulkEditFormItemSettings';
 import { BulkEditField } from './component/BulkEditField';
 import { useCustomizeBulkEditActionProps } from './utils';
@@ -22,7 +22,7 @@ export class BulkEditPlugin extends Plugin {
       type: 'item',
       title: '{{t("Bulk edit")}}',
       name: 'bulkEdit',
-      Component: CustomizeBulkEditActionInitializer,
+      Component: BulkEditActionInitializer,
       schema: {
         'x-align': 'right',
         'x-decorator': 'ACLActionProvider',
