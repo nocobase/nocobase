@@ -51,6 +51,7 @@ const schema2: ISchema = {
   properties: {
     [uid()]: {
       // 'x-decorator': 'CollectionCategroriesProvider',
+      'x-decorator': 'CollectionManageSettingProvider',
       'x-component': 'ConfigurationTable',
     },
   },

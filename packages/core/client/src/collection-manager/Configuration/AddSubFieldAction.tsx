@@ -13,14 +13,16 @@ import { useCollectionManager } from '../hooks';
 import { useOptions } from '../hooks/useOptions';
 import { IField } from '../interfaces/types';
 import * as components from './components';
+import { ERandomUidType, getRandomUidName, useRandomUidBlacklist } from '../CollectionManageSettingProvider';
 
-const getSchema = (schema: IField): ISchema => {
+const getSchema = (schema: IField, data): ISchema => {
   if (!schema) {
     return;
   }
   const properties = cloneDeep(schema.properties) as any;
+  const name = getRandomUidName(data, ERandomUidType.TABLE_FIELD, `f_${uid()}`);
   const initialValue = {
-    name: `f_${uid()}`,
+    name,
     ...cloneDeep(schema.default),
     interface: schema.name,
   };
@@ -113,6 +115,7 @@ export const AddSubFieldAction = () => {
       };
     });
   }, [options]);
+  const randomUidBlacklist = useRandomUidBlacklist();
   const menu = useMemo<MenuProps>(() => {
     return {
       style: {
@@ -120,7 +123,7 @@ export const AddSubFieldAction = () => {
         overflow: 'auto',
       },
       onClick: (info) => {
-        const schema = getSchema(getInterface(info.key));
+        const schema = getSchema(getInterface(info.key), randomUidBlacklist);
         setSchema(schema);
         setVisible(true);
       },

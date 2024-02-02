@@ -780,5 +780,10 @@
   "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects": "Automatically drop objects that depend on the collection (such as views), and in turn all objects that depend on those objects",
   "Sign in with another account": "Sign in with another account",
   "Return to the main application": "Return to the main application",
-  "Permission deined": "Permission denied"
+  "Permission deined": "Permission denied",
+  "Option value for choice-type fields": "Option value for choice-type fields",
+  "auto generate uid switch": "auto generate uid switch",
+  "Do not generate related identifiers randomly": "Do not generate related identifiers randomly",
+  "Collection field name": "Collection field name",
+  "Association fields foreign key": "Association fields foreign key"
 }

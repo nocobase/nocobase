@@ -11,6 +11,7 @@ import { ActionContextProvider, SchemaComponent, useCompile } from '../../schema
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
 import * as components from './components';
+import { ERandomUidType, getRandomUidName, useRandomUidBlacklist } from '../CollectionManageSettingProvider';
 
 const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
   if (!schema) {
@@ -89,6 +90,7 @@ export const ViewFieldAction = (props) => {
       };
     });
   }, []);
+  const randomUidBlacklist = useRandomUidBlacklist();
   return (
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>
@@ -104,7 +106,8 @@ export const ViewFieldAction = (props) => {
             if (!defaultValues?.reverseField) {
               defaultValues.autoCreateReverseField = false;
               defaultValues.reverseField = interfaceConf.default?.reverseField;
-              set(defaultValues.reverseField, 'name', `f_${uid()}`);
+              const name = getRandomUidName(randomUidBlacklist, ERandomUidType.TABLE_FIELD, `f_${uid()}`);
+              set(defaultValues.reverseField, 'name', name);
               set(defaultValues.reverseField, 'uiSchema.title', record.__parent.title);
             }
             const schema = getSchema(

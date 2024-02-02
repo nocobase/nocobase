@@ -15,8 +15,9 @@ import { useCollectionManager } from '../hooks';
 import * as components from './components';
 import { TemplateSummary } from './components/TemplateSummary';
 import { templateOptions } from './templates';
+import { ERandomUidType, getRandomUidName, useRandomUidBlacklist } from '../CollectionManageSettingProvider';
 
-const getSchema = (schema, category, compile): ISchema => {
+const getSchema = (schema, category, compile, data): ISchema => {
   if (!schema) {
     return;
   }
@@ -28,15 +29,17 @@ const getSchema = (schema, category, compile): ISchema => {
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
+  const name = getRandomUidName(data, ERandomUidType.TABLE_NAME, `t_${uid()}`);
   const initialValue: any = {
-    name: `t_${uid()}`,
+    name,
     template: schema.name,
     view: schema.name === 'view',
     category,
     ...cloneDeep(schema.default),
   };
   if (initialValue.reverseField) {
-    initialValue.reverseField.name = `f_${uid()}`;
+    const name = getRandomUidName(data, ERandomUidType.TABLE_FIELD, `f_${uid()}`);
+    initialValue.reverseField.name = name;
   }
   return {
     type: 'object',
@@ -267,6 +270,7 @@ export const AddCollectionAction = (props) => {
   const {
     state: { category },
   } = useResourceActionContext();
+  const randomUidBlacklist = useRandomUidBlacklist();
   const menu = useMemo<MenuProps>(() => {
     return {
       style: {
@@ -274,7 +278,7 @@ export const AddCollectionAction = (props) => {
         overflow: 'auto',
       },
       onClick: (info) => {
-        const schema = getSchema(getTemplate(info.key), category, compile);
+        const schema = getSchema(getTemplate(info.key), category, compile, randomUidBlacklist);
         setSchema(schema);
         setVisible(true);
       },
