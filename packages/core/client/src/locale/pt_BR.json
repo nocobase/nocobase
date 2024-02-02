@@ -651,6 +651,7 @@
   "Plugin starting...": "Plugin iniciando...",
   "Plugin stopping...": "Plugin parando...",
   "Are you sure to delete this plugin?": "Tem certeza de que deseja excluir este plugin?",
+  "Are you sure to delete this plugin":"Tem a certeza que deseja desactivar este plugin",
   "re-download file": "re-fazer download do arquivo",
   "Not enabled": "Não habilitado",
   "Search plugin": "Pesquisar plugin",

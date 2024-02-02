@@ -190,6 +190,7 @@ export default class PluginWorkflowServer extends Plugin {
         'workflows.nodes:*',
         'executions:list',
         'executions:get',
+        'executions:cancel',
         'flow_nodes:update',
         'flow_nodes:destroy',
       ],
@@ -239,8 +240,8 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     this.app.on('beforeStop', async () => {
-      const collection = db.getCollection('workflows');
-      const workflows = await collection.repository.find({
+      const repository = db.getRepository('workflows');
+      const workflows = await repository.find({
         filter: { enabled: true },
       });
 
@@ -280,7 +281,7 @@ export default class PluginWorkflowServer extends Plugin {
   public trigger(
     workflow: WorkflowModel,
     context: object,
-    options: { context?: any } & Transactionable = {},
+    options: { [key: string]: any } & Transactionable = {},
   ): void | Promise<Processor | null> {
     const logger = this.getLogger(workflow.id);
     if (!this.ready) {
@@ -298,7 +299,8 @@ export default class PluginWorkflowServer extends Plugin {
       return this.triggerSync(workflow, context, options);
     }
 
-    this.events.push([workflow, context, { context: options.context }]);
+    const { transaction, ...rest } = options;
+    this.events.push([workflow, context, rest]);
     this.eventsCount = this.events.length;
 
     logger.info(`new event triggered, now events: ${this.events.length}`);
@@ -317,7 +319,7 @@ export default class PluginWorkflowServer extends Plugin {
   private async triggerSync(
     workflow: WorkflowModel,
     context: object,
-    options: { context?: any } & Transactionable = {},
+    options: { [key: string]: any } & Transactionable = {},
   ): Promise<Processor | null> {
     let execution;
     try {

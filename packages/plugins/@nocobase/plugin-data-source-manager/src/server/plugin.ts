@@ -14,7 +14,7 @@ import { DataSourcesRolesResourcesActionModel } from './models/connections-roles
 import { DataSourceModel } from './models/data-source';
 import lodash from 'lodash';
 
-type DataSourceState = 'loading' | 'loaded' | 'failed';
+type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
 
 export class PluginDataSourceManagerServer extends Plugin {
   public dataSourceErrors: {
@@ -102,9 +102,10 @@ export class PluginDataSourceManagerServer extends Plugin {
             const dataSourceStatus = this.dataSourceStatus[item.get('key')];
             data['status'] = dataSourceStatus;
 
-            if (dataSourceStatus === 'failed') {
+            if (dataSourceStatus === 'loading-failed' || dataSourceStatus === 'reloading-failed') {
               data['errorMessage'] = this.dataSourceErrors[item.get('key')].message;
             }
+
             return data;
           }),
         );
@@ -129,7 +130,7 @@ export class PluginDataSourceManagerServer extends Plugin {
             status: dataSourceStatus,
           };
 
-          if (dataSourceStatus === 'failed') {
+          if (dataSourceStatus === 'loading-failed' || dataSourceStatus === 'reloading-failed') {
             item['errorMessage'] = plugin.dataSourceErrors[dataSourceModel.get('key')].message;
           }
 

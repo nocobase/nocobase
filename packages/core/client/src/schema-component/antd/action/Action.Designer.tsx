@@ -3,7 +3,7 @@ import { Field, onFieldValueChange } from '@formily/core';
 import { ISchema, connect, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Alert, Tree as AntdTree, ModalProps } from 'antd';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
 import { useApp } from '../../../application';
@@ -28,6 +28,7 @@ import {
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
+import { useFormBlockContext } from '../../../block-provider';
 
 const Tree = connect(
   AntdTree,
@@ -447,13 +448,26 @@ function RemoveButton(
   );
 }
 
-function WorkflowSelect({ types, ...props }) {
+function WorkflowSelect({ actionType, ...props }) {
   const { t } = useTranslation();
   const index = ArrayTable.useIndex();
   const { setValuesIn } = useForm();
   const baseCollection = useCollection();
   const { getCollection } = useCollectionManager();
   const [workflowCollection, setWorkflowCollection] = useState(baseCollection.name);
+
+  const workflowPlugin = usePlugin('workflow') as any;
+  const workflowTypes = useMemo(
+    () =>
+      workflowPlugin
+        .getTriggersOptions()
+        .filter((item) => {
+          return typeof item.options.isActionTriggerable === 'function' || item.options.isActionTriggerable === true;
+        })
+        .map((item) => item.value),
+    [workflowPlugin],
+  );
+
   useFormEffects(() => {
     onFieldValueChange(`group[${index}].context`, (field) => {
       let collection: any = baseCollection;
@@ -472,6 +486,20 @@ function WorkflowSelect({ types, ...props }) {
     });
   });
 
+  const optionFilter = useCallback(
+    ({ type, config }) => {
+      const trigger = workflowPlugin.triggers.get(type);
+      if (trigger.isActionTriggerable === true) {
+        return true;
+      }
+      if (typeof trigger.isActionTriggerable === 'function') {
+        return trigger.isActionTriggerable(config, { action: actionType });
+      }
+      return false;
+    },
+    [workflowPlugin, actionType],
+  );
+
   return (
     <RemoteSelect
       manual={false}
@@ -485,12 +513,13 @@ function WorkflowSelect({ types, ...props }) {
         action: 'list',
         params: {
           filter: {
-            type: types,
+            type: workflowTypes,
             enabled: true,
             'config.collection': workflowCollection,
           },
         },
       }}
+      optionFilter={optionFilter}
       {...props}
     />
   );
@@ -501,23 +530,26 @@ function WorkflowConfig() {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const { name: collection } = useCollection();
-  const workflowPlugin = usePlugin('workflow') as any;
-  const workflowTypes = workflowPlugin.getTriggersOptions().filter((item) => {
-    return typeof item.options.useActionTriggerable === 'function'
-      ? item.options.useActionTriggerable()
-      : Boolean(item.options.useActionTriggerable);
-  });
+  // TODO(refactor): should refactor for getting certain action type, better from 'x-action'.
+  const formBlock = useFormBlockContext();
+  const actionType = formBlock?.type || fieldSchema['x-action'];
+
   const description = {
-    submit: t('Workflow will be triggered after submitting succeeded.', { ns: 'workflow' }),
-    'customize:save': t('Workflow will be triggered after saving succeeded.', { ns: 'workflow' }),
+    submit: t('Workflow will be triggered before or after submitting succeeded based on workflow type.', {
+      ns: 'workflow',
+    }),
+    'customize:save': t('Workflow will be triggered before or after saving succeeded based on workflow type.', {
+      ns: 'workflow',
+    }),
     'customize:triggerWorkflows': t(
       'Workflow will be triggered directly once the button clicked, without data saving.',
       { ns: 'workflow' },
     ),
+    destroy: t('Workflow will be triggered before deleting succeeded.', { ns: 'workflow' }),
   }[fieldSchema?.['x-action']];
 
   return (
-    <SchemaSettingsModalItem
+    <SchemaSettingsActionModalItem
       title={t('Bind workflows', { ns: 'workflow' })}
       scope={{
         fieldFilter(field) {
@@ -573,6 +605,7 @@ function WorkflowConfig() {
                             value: '',
                           },
                           allowClear: false,
+                          loadData: actionType === 'destroy' ? null : undefined,
                         },
                         default: '',
                       },
@@ -590,7 +623,8 @@ function WorkflowConfig() {
                         'x-decorator': 'FormItem',
                         'x-component': 'WorkflowSelect',
                         'x-component-props': {
-                          types: workflowTypes.map((item) => item.value),
+                          placeholder: t('Select workflow', { ns: 'workflow' }),
+                          actionType,
                         },
                         required: true,
                       },

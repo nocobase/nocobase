@@ -7,6 +7,8 @@
   "version": "0.19.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/logger",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/logger",
   "devDependencies": {
     "@types/tar-fs": "^2.0.2",
     "tar-fs": "^3.0.4"
@@ -17,5 +19,6 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords":["system"]
 }

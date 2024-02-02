@@ -7,6 +7,8 @@
   "description.zh-CN": "提供日历模板和区块",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/calendar",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/calendar",
   "types": "./dist/server/index.d.ts",
   "devDependencies": {
     "@ant-design/icons": "5.x",
@@ -34,5 +36,8 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugins/calendar"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords": [
+    "block"
+  ]
 }
