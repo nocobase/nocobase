@@ -203,7 +203,7 @@ export class CollectionManagerV2 {
     }
     return this.collections[dataSource]?.[path] as Mixins & CollectionV2;
   }
-  getCollectionName(path: string, options: GetCollectionOptions = {}): string | undefined {
+  getCollectionName(path: string | CollectionOptionsV2, options: GetCollectionOptions = {}): string | undefined {
     const res = this.getCollection(path, options);
     return res?.name;
   }

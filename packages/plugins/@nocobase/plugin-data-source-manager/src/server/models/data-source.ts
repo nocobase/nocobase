@@ -45,8 +45,8 @@ const availableActions: {
 };
 
 export class DataSourceModel extends Model {
-  async loadIntoApplication(options: { app: Application; transaction?: Transaction }) {
-    const { app, transaction } = options;
+  async loadIntoApplication(options: { app: Application; transaction?: Transaction; loadAtAfterStart?: boolean }) {
+    const { app, loadAtAfterStart } = options;
 
     const dataSourceKey = this.get('key');
 
@@ -71,6 +71,12 @@ export class DataSourceModel extends Model {
       ...createOptions,
       name: this.get('key'),
     });
+
+    if (loadAtAfterStart) {
+      dataSource.on('loadMessage', ({ message }) => {
+        app.setMaintainingMessage(`${message} in data source ${this.get('displayName')}`);
+      });
+    }
 
     const acl = dataSource.acl;
 
