@@ -698,6 +698,7 @@
   "Plugin starting...": "Plugin starting...",
   "Plugin stopping...": "Plugin stopping...",
   "Are you sure to delete this plugin?": "Are you sure to delete this plugin?",
+  "Are you sure to disable this plugin?": "Are you sure to disable this plugin?",
   "re-download file": "re-download file",
   "Not enabled": "Not enabled",
   "Search plugin": "Search plugin",

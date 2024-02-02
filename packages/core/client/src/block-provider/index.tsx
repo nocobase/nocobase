@@ -3,7 +3,6 @@ export * from './BlockSchemaComponentProvider';
 export * from './FilterFormBlockProvider';
 export * from './FormBlockProvider';
 export * from './FormFieldProvider';
-export * from './SharedFilterProvider';
 export * from './TableBlockProvider';
 export * from './TableFieldProvider';
 export * from './TableSelectorProvider';

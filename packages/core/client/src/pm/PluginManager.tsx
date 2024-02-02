@@ -1,7 +1,7 @@
 export * from './PluginManagerLink';
 import { PageHeader } from '@ant-design/pro-layout';
 import { useDebounce } from 'ahooks';
-import { Button, Divider, Input, Result, Space, Spin, Tabs } from 'antd';
+import { Button, Col, Divider, Input, List, Result, Row, Space, Spin, Tabs } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -71,10 +71,50 @@ const LocalPlugins = () => {
   const [filterIndex, setFilterIndex] = useState(0);
   const [isShowAddForm, setShowAddForm] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const [keyword, setKeyword] = useState(null);
   const debouncedSearchValue = useDebounce(searchValue, { wait: 100 });
+
+  const keywordList = useMemo(() => {
+    let keyWordlists = [];
+    data?.data.forEach((v) => {
+      if (v.keywords) {
+        keyWordlists = keyWordlists.concat(v.keywords);
+      }
+    });
+    keyWordlists.sort((a, b) => {
+      if (a === 'data model') return -1;
+      if (b === 'data model') return 1;
+      return 0;
+    });
+    return _.uniq(keyWordlists).concat('other');
+  }, [data?.data]);
+
+  const keyWordsfilterList = useMemo(() => {
+    const list = keywordList.map((i) => {
+      if (i === 'other') {
+        const result = data?.data.filter((v) => !v.keywords);
+        return {
+          key: i,
+          list: result,
+        };
+      }
+      const result = data?.data.filter((v) => v.keywords?.includes(i));
+      return {
+        key: i,
+        list: result,
+      };
+    });
+    return list;
+  }, [keywordList]);
 
   const pluginList = useMemo(() => {
     let list = filterList[filterIndex]?.list || [];
+    if (!filterIndex && keyword) {
+      list = keyWordsfilterList.find((v) => v.key === keyword).list;
+    } else if (filterIndex && keyword) {
+      const keyList = keyWordsfilterList.find((v) => v.key === keyword).list;
+      list = keyList.filter((value) => list.find((k) => k.name === value.name));
+    }
     const searchLowerCaseValue = debouncedSearchValue.toLocaleLowerCase().trim();
     if (searchLowerCaseValue) {
       list = _.filter(
@@ -88,8 +128,8 @@ const LocalPlugins = () => {
             .includes(searchLowerCaseValue),
       );
     }
-    return list;
-  }, [filterIndex, filterList, debouncedSearchValue]);
+    return list.sort((a, b) => a.displayName.localeCompare(b.displayName));
+  }, [filterIndex, filterList, debouncedSearchValue, keyword]);
 
   const handleSearch = (value: string) => {
     setSearchValue(value);
@@ -98,7 +138,6 @@ const LocalPlugins = () => {
   if (loading) {
     return <Spin />;
   }
-
   return (
     <>
       <PluginAddModal
@@ -108,6 +147,7 @@ const LocalPlugins = () => {
           // if (isRefresh) refresh();
         }}
       />
+
       <div style={{ width: '100%' }}>
         <div
           style={{ marginBottom: theme.marginLG }}
@@ -117,7 +157,7 @@ const LocalPlugins = () => {
             align-items: center;
           `}
         >
-          <div>
+          <div style={{ marginLeft: 200 }}>
             <Space size={theme.marginXXS} split={<Divider type="vertical" />}>
               {filterList.map((item, index) => (
                 <a
@@ -127,7 +167,8 @@ const LocalPlugins = () => {
                   key={item.type}
                   style={{ fontWeight: filterIndex === index ? 'bold' : 'normal' }}
                 >
-                  {t(item.type)}({item.list?.length})
+                  {t(item.type)}
+                  {filterIndex === index ? `(${pluginList?.length})` : null}
                 </a>
               ))}
               <Input
@@ -145,22 +186,45 @@ const LocalPlugins = () => {
             </Space>
           </div>
         </div>
-        <div
-          className={css`
-            --grid-gutter: ${theme.margin}px;
-            --extensions-card-width: 350px;
-            display: grid;
-            grid-column-gap: var(--grid-gutter);
-            grid-row-gap: var(--grid-gutter);
-            grid-template-columns: repeat(auto-fill, var(--extensions-card-width));
-            justify-content: center;
-            margin: auto;
-          `}
-        >
-          {pluginList.map((item) => (
-            <PluginCard key={item.name} data={item} />
-          ))}
-        </div>
+        <Row style={{ width: '100%' }}>
+          <Col flex="200px">
+            <List
+              size="small"
+              dataSource={keyWordsfilterList}
+              split={false}
+              renderItem={(item) => {
+                return (
+                  <List.Item
+                    style={{ padding: '3px 0' }}
+                    onClick={() => (item.key !== keyword ? setKeyword(item.key) : setKeyword(null))}
+                  >
+                    <a style={{ fontWeight: keyword === item.key ? 'bold' : 'normal' }}>
+                      {t(item.key?.charAt?.(0).toUpperCase() + item.key?.slice?.(1))}
+                    </a>
+                  </List.Item>
+                );
+              }}
+            />
+          </Col>
+          <Col flex="auto">
+            <div
+              className={css`
+                --grid-gutter: ${theme.margin}px;
+                --extensions-card-width: calc(25% - var(--grid-gutter) + var(--grid-gutter) / 4);
+                display: grid;
+                grid-column-gap: var(--grid-gutter);
+                grid-row-gap: var(--grid-gutter);
+                grid-template-columns: repeat(auto-fill, var(--extensions-card-width));
+                justify-content: left;
+                margin: auto;
+              `}
+            >
+              {pluginList.map((item) => (
+                <PluginCard key={item.name} data={item} />
+              ))}
+            </div>
+          </Col>
+        </Row>
       </div>
     </>
   );

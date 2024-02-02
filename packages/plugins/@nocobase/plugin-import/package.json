@@ -4,9 +4,11 @@
   "displayName.zh-CN": "数据导入",
   "description": "Import data according to the excel template provided",
   "description.zh-CN": "根据提供的 excel 模板导入数据",
-  "version": "0.19.0-alpha.4",
+  "version": "0.19.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/import",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/import",
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@formily/antd-v5": "1.x",
@@ -32,5 +34,6 @@
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords":["action"]
 }

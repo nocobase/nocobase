@@ -59,7 +59,9 @@ export default class extends Trigger {
   scope = {
     useCollectionDataSource,
   };
-  useActionTriggerable = true;
+  isActionTriggerable = (config, context) => {
+    return ['create', 'update'].includes(context.action);
+  };
   useVariables(config, options) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const compile = useCompile();

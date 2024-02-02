@@ -2,10 +2,18 @@ import { useField, useFieldSchema } from '@formily/react';
 import { uniqBy } from 'lodash';
 import React, { createContext, useEffect, useRef } from 'react';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
-import { SharedFilter, mergeFilter } from '../block-provider/SharedFilterProvider';
 import { CollectionFieldOptions, useCollection } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
-import { useAssociatedFields } from './utils';
+import { mergeFilter, useAssociatedFields } from './utils';
+
+enum FILTER_OPERATOR {
+  AND = '$and',
+  OR = '$or',
+}
+
+export type FilterParam = {
+  [K in FILTER_OPERATOR]?: any;
+};
 
 export interface ForeignKeyField {
   /** 外键字段所在的数据表的名称 */
@@ -37,7 +45,7 @@ export interface DataBlock {
   /** 数据区块表中所有的外键字段 */
   foreignKeyFields?: ForeignKeyField[];
   /** 数据区块已经存在的过滤条件（通过 `设置数据范围` 或者其它能设置筛选条件的功能） */
-  defaultFilter?: SharedFilter;
+  defaultFilter?: FilterParam;
   /** 数据区块用于请求数据的接口 */
   service?: any;
   /** 数据区块所的 DOM 容器 */
@@ -71,7 +79,7 @@ export const FilterBlockRecord = ({
   params,
 }: {
   children: React.ReactNode;
-  params?: { filter: SharedFilter };
+  params?: { filter: FilterParam };
 }) => {
   const collection = useCollection();
   const { recordDataBlocks, removeDataBlock } = useFilterBlock();
