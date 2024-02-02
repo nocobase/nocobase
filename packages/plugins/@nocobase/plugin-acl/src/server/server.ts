@@ -148,6 +148,21 @@ export class PluginACL extends Plugin {
     }
   }
 
+  onUpdateCacheEvent() {
+    // Delete cache when the roles of a user changed
+    this.app.db.on('rolesUsers.afterSave', async (model) => {
+      const cache = this.app.cache as Cache;
+      await cache.del(`roles:${model.get('userId')}`);
+    });
+    this.app.db.on('rolesUsers.afterDestroy', async (model) => {
+      const cache = this.app.cache as Cache;
+      await cache.del(`roles:${model.get('userId')}`);
+    });
+    this.app.on('beforeSignOut', ({ userId }) => {
+      this.app.cache.del(`roles:${userId}`);
+    });
+  }
+
   async beforeLoad() {
     this.db.addMigrations({
       namespace: this.name,
@@ -348,16 +363,6 @@ export class PluginACL extends Plugin {
       });
     });
 
-    // Delete cache when the roles of a user changed
-    this.app.db.on('rolesUsers.afterSave', async (model) => {
-      const cache = this.app.cache as Cache;
-      await cache.del(`roles:${model.get('userId')}`);
-    });
-    this.app.db.on('rolesUsers.afterDestroy', async (model) => {
-      const cache = this.app.cache as Cache;
-      await cache.del(`roles:${model.get('userId')}`);
-    });
-
     const writeRolesToACL = async (app, options) => {
       const exists = await this.app.db.collectionExistsInDb('roles');
       if (exists) {
@@ -444,9 +449,6 @@ export class PluginACL extends Plugin {
       });
     });
 
-    this.app.on('beforeSignOut', ({ userId }) => {
-      this.app.cache.del(`roles:${userId}`);
-    });
     this.app.resourcer.use(setCurrentRole, { tag: 'setCurrentRole', before: 'acl', after: 'auth' });
 
     this.app.acl.allow('users', 'setDefaultRole', 'loggedIn');
@@ -875,11 +877,13 @@ export class PluginACL extends Plugin {
         try {
           await withACLMeta(ctx, next);
         } catch (error) {
-          ctx.logger.error(error);
+          ctx.logger.error(error.message, { method: 'withACLMeta', stack: error.stack });
         }
       },
       { after: 'restApi', group: 'after' },
     );
+
+    this.onUpdateCacheEvent();
   }
 
   async install() {

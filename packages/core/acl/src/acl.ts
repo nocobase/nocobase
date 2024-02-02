@@ -9,6 +9,7 @@ import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
 import { AllowManager, ConditionFunc } from './allow-manager';
 import FixedParamsManager, { Merger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
+import { Context } from '@nocobase/actions';
 
 interface CanResult {
   role: string;
@@ -274,6 +275,35 @@ export class ACL extends EventEmitter {
     return json;
   }
 
+  collectCanResult(ctx: Context, options: Omit<CanArgs, 'role'>): CanResult | null {
+    const role = ctx.state.currentRole || 'anonymous';
+    let canResult = this.can({ role, ...options });
+    const attachRoles = ctx.state.attachRoles || [];
+    attachRoles.forEach((attachRole) => {
+      if (role === attachRole) {
+        return;
+      }
+      const attachCanResult = this.can({ role: attachRole, ...options });
+      if (!attachCanResult?.params) {
+        return;
+      }
+      if (!canResult) {
+        canResult = attachCanResult;
+      } else {
+        canResult.params = assign(canResult?.params || {}, attachCanResult.params, {
+          filter: 'orMerge',
+          fields: 'union',
+          append: 'union',
+          except: 'union',
+          whitelist: 'union',
+          blacklist: 'union',
+          own: (x, y) => (x === false ? x : y),
+        });
+      }
+    });
+    return canResult;
+  }
+
   middleware() {
     const acl = this;
 
@@ -282,9 +312,7 @@ export class ACL extends EventEmitter {
       const { resourceName, actionName } = ctx.action;
 
       ctx.can = (options: Omit<CanArgs, 'role'>) => {
-        const canResult = acl.can({ role: roleName, ...options });
-
-        return canResult;
+        return acl.collectCanResult(ctx, options);
       };
 
       ctx.permission = {
@@ -300,7 +328,7 @@ export class ACL extends EventEmitter {
     const { resourceName, actionName } = ctx.action;
 
     ctx.can = (options: Omit<CanArgs, 'role'>) => {
-      const can = this.can({ role: roleName, ...options });
+      const can = this.collectCanResult(ctx, options);
       if (!can) {
         return null;
       }

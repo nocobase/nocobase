@@ -69,16 +69,6 @@ export class AuthPlugin extends Plugin {
       name: `pm.${this.name}.authenticators`,
       actions: ['authenticators:*'],
     });
-
-    // Change cache when user changed
-    this.app.db.on('users.afterSave', async (user: Model) => {
-      const cache = this.app.cache as Cache;
-      await cache.set(`auth:${user.id}`, user.toJSON());
-    });
-    this.app.db.on('users.afterDestroy', async (user: Model) => {
-      const cache = this.app.cache as Cache;
-      await cache.del(`auth:${user.id}`);
-    });
   }
 
   async install(options?: InstallOptions) {

@@ -115,6 +115,16 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
         plugin: this,
       },
     });
+
+    // Update cache when user changed
+    this.app.db.on('users.afterSave', async (user: Model) => {
+      const cache = this.app.cache as Cache;
+      await cache.set(`profile:${user.id}`, user.toJSON());
+    });
+    this.app.db.on('users.afterDestroy', async (user: Model) => {
+      const cache = this.app.cache as Cache;
+      await cache.del(`profile:${user.id}`);
+    });
   }
 
   getInstallingData(options: any = {}) {
