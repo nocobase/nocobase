@@ -10,6 +10,7 @@ export class CreateInstruction extends Instruction {
 
     const { repository, model } = (<typeof FlowNodeModel>node.constructor).database.getCollection(collection);
     const options = processor.getParsedValue(params, node.id);
+
     const created = await repository.create({
       ...options,
       context: {
