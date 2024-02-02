@@ -3,7 +3,10 @@ import { filterCollapseBlockSettings } from '../modules/collapse-filter/schemaSe
 import { filterCollapseItemFieldSettings } from '../modules/collapse-filter/schemaSettings/filterCollapseItemFieldSettings';
 import { multiDataDetailsBlockSettings } from '../modules/details-multi-data/schemaSettings/multiDataDetailsBlockSettings';
 import { singleDataDetailsBlockSettings } from '../modules/details-single-data/schemaSettings/singleDataDetailsBlockSettings';
-import { creationFormBlockSettings } from '../modules/form-creation/schema-settings/creationFormBlockSettings';
+import {
+  creationFormBlockSettings,
+  createFormBlockSettings,
+} from '../modules/form-creation/schema-settings/createFormBlockSettings';
 import { customizeSaveRecordActionSettings } from '../modules/form-creation/schema-settings/customizeSaveRecordActionSettings';
 import { customizeSubmitToWorkflowActionSettings } from '../modules/form-creation/schema-settings/customizeSubmitToWorkflowActionSettings';
 import { cascadeSelectComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/cascadeSelectComponentFieldSettings';
@@ -17,7 +20,11 @@ import { subformPopoverComponentFieldSettings } from '../modules/form-creation/s
 import { tagComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/tagComponentFieldSettings';
 import { uploadAttachmentComponentFieldSettings } from '../modules/form-creation/schema-settings/fieldComponents/uploadAttachmentComponentFieldSettings';
 import { formItemSettings } from '../modules/form-creation/schema-settings/formItemSettings';
-import { submitActionSettings } from '../modules/form-creation/schema-settings/submitActionSettings';
+import { createSubmitActionSettings } from '../modules/form-creation/schema-settings/createSubmitActionSettings';
+import {
+  updateSubmitActionSettings,
+  submitActionSettings,
+} from '../modules/form-creation/schema-settings/updateSubmitActionSettings';
 import { editFormBlockSettings } from '../modules/form-edit/schemaSettings/editFormBlockSettings';
 import { filterFormBlockSettings } from '../modules/form-filter/schemaSettings/filterFormBlockSettings';
 import { filterFormItemFieldSettings } from '../modules/form-filter/schemaSettings/filterFormItemFieldSettings';
@@ -44,6 +51,7 @@ export class SchemaSettingsPlugin extends Plugin {
     // block settings
     this.schemaSettingsManager.add(tableBlockSettings);
     this.schemaSettingsManager.add(creationFormBlockSettings);
+    this.schemaSettingsManager.add(createFormBlockSettings);
     this.schemaSettingsManager.add(editFormBlockSettings);
     this.schemaSettingsManager.add(filterFormBlockSettings);
     this.schemaSettingsManager.add(filterFormItemFieldSettings);
@@ -66,6 +74,8 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(customizeAddRecordActionSettings);
     this.schemaSettingsManager.add(customizePopupActionSettings);
     this.schemaSettingsManager.add(customizeUpdateRecordActionSettings);
+    this.schemaSettingsManager.add(createSubmitActionSettings);
+    this.schemaSettingsManager.add(updateSubmitActionSettings);
     this.schemaSettingsManager.add(submitActionSettings);
     this.schemaSettingsManager.add(customizeSaveRecordActionSettings);
     this.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);

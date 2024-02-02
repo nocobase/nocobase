@@ -7,7 +7,7 @@ export const CreateSubmitActionInitializer = (props) => {
     'x-action': 'submit',
     'x-component': 'Action',
     'x-toolbar': 'ActionSchemaToolbar',
-    'x-settings': 'actionSettings:submit',
+    'x-settings': 'actionSettings:createSubmit',
     'x-component-props': {
       type: 'primary',
       htmlType: 'submit',

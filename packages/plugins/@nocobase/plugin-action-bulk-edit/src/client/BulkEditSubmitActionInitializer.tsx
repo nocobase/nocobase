@@ -8,7 +8,7 @@ export const BulkEditSubmitActionInitializer = (props) => {
     'x-component': 'Action',
     // 'x-designer': 'Action.Designer',
     'x-toolbar': 'ActionSchemaToolbar',
-    'x-settings': 'actionSettings:submit',
+    'x-settings': 'actionSettings:updateSubmit',
     'x-component-props': {
       type: 'primary',
       htmlType: 'submit',

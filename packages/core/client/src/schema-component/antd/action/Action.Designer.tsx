@@ -1,8 +1,8 @@
 import { ArrayTable } from '@formily/antd-v5';
 import { Field, onFieldValueChange } from '@formily/core';
-import { ISchema, connect, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
+import { ISchema, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Alert, Tree as AntdTree, Flex, ModalProps, Space, Tag } from 'antd';
+import { Alert, Flex, ModalProps, Tag } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
@@ -13,7 +13,6 @@ import { useSchemaToolbar } from '../../../application/schema-toolbar';
 import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
-import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
   SchemaSettingsActionModalItem,
@@ -29,27 +28,7 @@ import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowT
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
 import { useFormBlockContext } from '../../../block-provider';
-import { useRequest } from '../../../api-client';
 
-const Tree = connect(
-  AntdTree,
-  mapProps((props, field: any) => {
-    useEffect(() => {
-      field.value = props.defaultCheckedKeys || [];
-    }, []);
-    const [checkedKeys, setCheckedKeys] = useState(props.defaultCheckedKeys || []);
-    const onCheck = (checkedKeys) => {
-      setCheckedKeys(checkedKeys);
-      field.value = checkedKeys;
-    };
-    field.onCheck = onCheck;
-    return {
-      ...props,
-      checkedKeys,
-      onCheck,
-    };
-  }),
-);
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
@@ -129,95 +108,6 @@ export function ButtonEditor(props) {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
             title,
-            'x-component-props': {
-              ...fieldSchema['x-component-props'],
-            },
-          },
-        });
-        dn.refresh();
-      }}
-    />
-  );
-}
-
-function SaveMode() {
-  const { dn } = useDesignable();
-  const { t } = useTranslation();
-  const field = useField();
-  const fieldSchema = useFieldSchema();
-  const { name } = useCollection();
-  const { getEnableFieldTree, getOnLoadData } = useCollectionState(name);
-
-  return (
-    <SchemaSettingsModalItem
-      title={t('Save mode')}
-      components={{ Tree }}
-      scope={{ getEnableFieldTree, name, getOnLoadData }}
-      schema={
-        {
-          type: 'object',
-          title: t('Save mode'),
-          properties: {
-            saveMode: {
-              'x-decorator': 'FormItem',
-              'x-component': 'Radio.Group',
-              // title: t('Save mode'),
-              default: field.componentProps.saveMode || 'create',
-              enum: [
-                { value: 'create', label: '{{t("Insert")}}' },
-                { value: 'firstOrCreate', label: '{{t("Insert if not exists")}}' },
-                { value: 'updateOrCreate', label: '{{t("Insert if not exists, or update")}}' },
-              ],
-            },
-            filterKeys: {
-              type: 'array',
-              title: '{{ t("Determine whether a record exists by the following fields") }}',
-              required: true,
-              default: field.componentProps.filterKeys,
-              'x-decorator': 'FormItem',
-              'x-component': 'Tree',
-              'x-component-props': {
-                treeData: [],
-                checkable: true,
-                checkStrictly: true,
-                selectable: false,
-                loadData: '{{ getOnLoadData($self) }}',
-                defaultCheckedKeys: field.componentProps.filterKeys,
-                rootStyle: {
-                  padding: '8px 0',
-                  border: '1px solid #d9d9d9',
-                  borderRadius: '2px',
-                  maxHeight: '30vh',
-                  overflow: 'auto',
-                  margin: '2px 0',
-                },
-              },
-              'x-reactions': [
-                {
-                  dependencies: ['.saveMode'],
-                  fulfill: {
-                    state: {
-                      hidden: '{{ $deps[0]==="create"}}',
-                      componentProps: {
-                        treeData: '{{ getEnableFieldTree(name, $self) }}',
-                      },
-                    },
-                  },
-                },
-              ],
-            },
-          },
-        } as ISchema
-      }
-      onSubmit={({ saveMode, filterKeys }) => {
-        field.componentProps.saveMode = saveMode;
-        field.componentProps.filterKeys = filterKeys;
-        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        fieldSchema['x-component-props'].saveMode = saveMode;
-        fieldSchema['x-component-props'].filterKeys = filterKeys;
-        dn.emit('patch', {
-          schema: {
-            ['x-uid']: fieldSchema['x-uid'],
             'x-component-props': {
               ...fieldSchema['x-component-props'],
             },
@@ -695,17 +585,6 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
         useComponentProps() {
           const { buttonEditorProps } = useSchemaToolbar();
           return buttonEditorProps;
-        },
-      },
-      {
-        name: 'saveMode',
-        Component: SaveMode,
-        useVisible() {
-          const fieldSchema = useFieldSchema();
-          return (
-            fieldSchema['x-action'] === 'submit' &&
-            fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers'
-          );
         },
       },
       {
