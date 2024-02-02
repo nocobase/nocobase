@@ -5,7 +5,8 @@ export const CreateChildInitializer = (props) => {
     type: 'void',
     title: '{{ t("Add child") }}',
     'x-action': 'create',
-    'x-designer': 'Action.Designer',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:addChild',
     'x-component': 'Action',
     'x-visible': '{{treeTable}}',
     'x-component-props': {

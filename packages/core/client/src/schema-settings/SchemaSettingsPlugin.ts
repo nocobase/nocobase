@@ -37,6 +37,7 @@ import { refreshActionSettings } from '../modules/table/schemaSettings/refreshAc
 import { tableBlockSettings } from '../modules/table/schemaSettings/tableBlockSettings';
 import { tableColumnSettings } from '../modules/table/schemaSettings/tableColumnSettings';
 import { viewActionSettings } from '../modules/table/schemaSettings/viewActionSettings';
+import { addChildActionSettings } from '../modules/table/schemaSettings/addChildActionSettings';
 
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
@@ -68,6 +69,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(submitActionSettings);
     this.schemaSettingsManager.add(customizeSaveRecordActionSettings);
     this.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);
+    this.pluginSettingsManager.add(addChildActionSettings);
 
     // field settings
     this.schemaSettingsManager.add(formItemSettings);
