@@ -1,6 +1,6 @@
 import { Plugin, useCollection } from '@nocobase/client';
 import { bulkUpdateActionSettings, deprecatedBulkUpdateActionSettings } from './BulkUpdateAction.Settings';
-import { CustomizeActionInitializer } from './CustomizeActionInitializer';
+import { BulkUpdateActionInitializer } from './BulkUpdateActionInitializer';
 import { useCustomizeBulkUpdateActionProps } from './utils';
 export class PluginBulkUpdateClient extends Plugin {
   async load() {
@@ -10,35 +10,8 @@ export class PluginBulkUpdateClient extends Plugin {
 
     const initializerData = {
       title: '{{t("Bulk update")}}',
-      Component: CustomizeActionInitializer,
+      Component: BulkUpdateActionInitializer,
       name: 'bulkUpdate',
-      schema: {
-        type: 'void',
-        title: '{{ t("Bulk update") }}',
-        'x-component': 'Action',
-        'x-align': 'right',
-        'x-acl-action': 'update',
-        'x-decorator': 'ACLActionProvider',
-        'x-acl-action-props': {
-          skipScopeCheck: true,
-        },
-        'x-action': 'customize:bulkUpdate',
-        'x-toolbar': 'ActionSchemaToolbar',
-        'x-settings': 'actionSettings:bulkUpdate',
-        'x-action-settings': {
-          assignedValues: {},
-          updateMode: 'selected',
-          onSuccess: {
-            manualClose: true,
-            redirecting: false,
-            successMessage: '{{t("Updated successfully")}}',
-          },
-        },
-        'x-component-props': {
-          icon: 'EditOutlined',
-          useProps: '{{ useCustomizeBulkUpdateActionProps }}',
-        },
-      },
       useVisible() {
         const collection = useCollection();
         return (
