@@ -4,12 +4,12 @@ import { BlockRequestProviderV2 } from './DataBlockRequestProvider';
 import { Designable, useDesignable } from '../../schema-component';
 import { withDynamicSchemaProps } from '../hoc';
 import { DataBlockResourceProviderV2 } from './DataBlockResourceProvider';
-import { AssociationProviderV2, CollectionProviderV2, RecordV2 } from '../collection';
+import { AssociationProviderV2, CollectionOptionsV2, CollectionProviderV2, RecordV2 } from '../collection';
 import { UseRequestOptions, UseRequestService } from '../../api-client';
 import { CollectionDataSourceProvider } from '../collection/CollectionDataSourceProvider';
 
 export interface AllDataBlockProps {
-  collection: string;
+  collection: string | CollectionOptionsV2;
   association: string;
   dataSource?: string;
   sourceId?: string | number;
@@ -124,7 +124,7 @@ export const DataBlockProviderV2: FC<DataBlockProviderProps & { children?: React
         }}
       >
         <CollectionDataSourceProvider dataSource={dataSource}>
-          <AssociationOrCollection.Component name={AssociationOrCollection.name}>
+          <AssociationOrCollection.Component name={AssociationOrCollection.name as any}>
             <DataBlockResourceProviderV2>
               <BlockRequestProviderV2>{children}</BlockRequestProviderV2>
             </DataBlockResourceProviderV2>

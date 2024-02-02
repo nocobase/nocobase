@@ -16,6 +16,7 @@ export const DataBlockResourceProviderV2: FC<{ children?: ReactNode }> = ({ chil
   const { association, collection, dataSource, sourceId, parentRecord } = dataBlockProps;
   const api = useAPIClient();
   const headers = useDataSourceHeaders(dataSource);
+  const collectionName = useMemo(() => (typeof collection === 'string' ? collection : collection?.name), [collection]);
 
   const sourceIdValue = useMemo(() => {
     if (sourceId) {
@@ -34,7 +35,7 @@ export const DataBlockResourceProviderV2: FC<{ children?: ReactNode }> = ({ chil
     if (association) {
       return api.resource(association, sourceIdValue, headers);
     }
-    return api.resource(collection, undefined, headers);
+    return api.resource(collectionName, undefined, headers);
   }, [api, association, collection, sourceIdValue, headers]);
   return <DataBlockResourceContextV2.Provider value={resource}>{children}</DataBlockResourceContextV2.Provider>;
 };
