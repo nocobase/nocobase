@@ -61,31 +61,7 @@ export const formActionInitializers = new SchemaInitializer({
         {
           name: 'saveRecord',
           title: '{{t("Save record")}}',
-          Component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{ t("Save record") }}',
-            'x-action': 'customize:save',
-            'x-component': 'Action',
-            'x-toolbar': 'ActionSchemaToolbar',
-            'x-settings': 'actionSettings:saveRecord',
-            'x-designer-props': {
-              modalTip:
-                '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
-            },
-            'x-action-settings': {
-              assignedValues: {},
-              skipValidator: false,
-              onSuccess: {
-                manualClose: true,
-                redirecting: false,
-                successMessage: '{{t("Submitted successfully")}}',
-              },
-              triggerWorkflows: [],
-            },
-            'x-component-props': {
-              useProps: '{{ useCreateActionProps }}',
-            },
-          },
+          Component: 'SaveRecordActionInitializer',
         },
         formTriggerWorkflowActionInitializerV2,
         {
@@ -130,32 +106,7 @@ export const createFormActionInitializers = new SchemaInitializer({
         {
           name: 'saveRecord',
           title: '{{t("Save record")}}',
-          Component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{ t("Save record") }}',
-            'x-action': 'customize:save',
-            'x-component': 'Action',
-            // 'x-designer': 'Action.Designer',
-            'x-toolbar': 'ActionSchemaToolbar',
-            'x-settings': 'actionSettings:saveRecord',
-            'x-designer-props': {
-              modalTip:
-                '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
-            },
-            'x-action-settings': {
-              assignedValues: {},
-              skipValidator: false,
-              onSuccess: {
-                manualClose: true,
-                redirecting: false,
-                successMessage: '{{t("Submitted successfully")}}',
-              },
-              triggerWorkflows: [],
-            },
-            'x-component-props': {
-              useProps: '{{ useCreateActionProps }}',
-            },
-          },
+          Component: 'SaveRecordActionInitializer',
         },
         formTriggerWorkflowActionInitializerV2,
         {
@@ -210,32 +161,7 @@ export const updateFormActionInitializers = new SchemaInitializer({
         {
           name: 'saveRecord',
           title: '{{t("Save record")}}',
-          Component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{ t("Save") }}',
-            'x-component': 'Action',
-            'x-action': 'customize:save',
-            // 'x-designer': 'Action.Designer',
-            'x-toolbar': 'ActionSchemaToolbar',
-            'x-settings': 'actionSettings:saveRecord',
-            'x-designer-props': {
-              modalTip:
-                '{{ t("When the button is clicked, the following fields will be assigned and saved together with the fields in the form. If there are overlapping fields, the value here will overwrite the value in the form.") }}',
-            },
-            'x-action-settings': {
-              assignedValues: {},
-              skipValidator: false,
-              onSuccess: {
-                manualClose: true,
-                redirecting: false,
-                successMessage: '{{t("Submitted successfully")}}',
-              },
-              triggerWorkflows: [],
-            },
-            'x-component-props': {
-              useProps: '{{ useUpdateActionProps }}',
-            },
-          },
+          Component: 'SaveRecordActionInitializer',
         },
         formTriggerWorkflowActionInitializerV2,
         {

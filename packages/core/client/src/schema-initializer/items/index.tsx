@@ -49,3 +49,5 @@ export * from './UpdateSubmitActionInitializer';
 export * from './ViewActionInitializer';
 export * from './MarkdownFormItemInitializer';
 export * from './PopupActionInitializer';
+export * from './SaveRecordActionInitializer';
+export * from './UpdateRecordActionInitializer';

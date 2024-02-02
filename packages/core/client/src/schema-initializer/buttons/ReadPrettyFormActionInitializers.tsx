@@ -66,26 +66,11 @@ export const readPrettyFormActionInitializers = new SchemaInitializer({
         {
           name: 'updateRecord',
           title: '{{t("Update record")}}',
-          Component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{ t("Update record") }}',
-            'x-component': 'Action',
-            'x-toolbar': 'ActionSchemaToolbar',
-            'x-settings': 'actionSettings:updateRecord',
-            'x-action': 'customize:update',
-            'x-decorator': 'ACLActionProvider',
-            'x-acl-action': 'update',
-            'x-action-settings': {
-              assignedValues: {},
-              onSuccess: {
-                manualClose: true,
-                redirecting: false,
-                successMessage: '{{t("Updated successfully")}}',
-              },
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeUpdateActionProps }}',
-            },
+          Component: 'UpdateRecordActionInitializer',
+          useComponentProps() {
+            return {
+              'x-component': 'Action',
+            };
           },
           visible: useVisibleCollection,
         },

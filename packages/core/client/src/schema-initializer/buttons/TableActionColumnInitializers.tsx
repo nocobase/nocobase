@@ -189,27 +189,7 @@ export const tableActionColumnInitializers = new SchemaInitializer({
           type: 'item',
           title: '{{t("Update record")}}',
           name: 'updateRecord',
-          Component: 'CustomizeActionInitializer',
-          schema: {
-            title: '{{t("Update record")}}',
-            'x-component': 'Action.Link',
-            'x-action': 'customize:update',
-            'x-decorator': 'ACLActionProvider',
-            'x-acl-action': 'update',
-            'x-toolbar': 'ActionSchemaToolbar',
-            'x-settings': 'actionSettings:updateRecord',
-            'x-action-settings': {
-              assignedValues: {},
-              onSuccess: {
-                manualClose: true,
-                redirecting: false,
-                successMessage: '{{t("Updated successfully")}}',
-              },
-            },
-            'x-component-props': {
-              useProps: '{{ useCustomizeUpdateActionProps }}',
-            },
-          },
+          Component: 'UpdateRecordActionInitializer',
           useVisible() {
             const collection = useCollection();
             return (collection.template !== 'view' || collection?.writableView) && collection.template !== 'sql';

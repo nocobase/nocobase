@@ -3,7 +3,6 @@ import { BlockInitializer } from '.';
 import { useSchemaInitializerItem } from '../../application';
 
 export const PopupActionInitializer = (props) => {
-  console.log(props);
   const schema = {
     type: 'void',
     title: '{{ t("Popup") }}',
@@ -52,6 +51,5 @@ export const PopupActionInitializer = (props) => {
   };
 
   const itemConfig = useSchemaInitializerItem();
-  console.log(itemConfig);
   return <BlockInitializer {...itemConfig} schema={schema} item={itemConfig} />;
 };
