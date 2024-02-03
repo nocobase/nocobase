@@ -36,74 +36,79 @@ export const SettingsCenterDropdown = () => {
   const settings = app.pluginSettingsManager.getList();
   const [open, setOpen] = useState(false);
   return (
-    <ActionContextProvider value={{ visible, setVisible }}>
-      <Popover
-        open={open}
-        onOpenChange={(open) => {
-          setOpen(open);
-        }}
-        arrow={false}
-        content={
-          <div style={{ maxWidth: '21rem' }}>
-            <Card
-              bordered={false}
-              className={css`
-                box-shadow: none;
-              `}
-              style={{ boxShadow: 'none' }}
-            >
-              {settings.map((setting) => (
-                <Card.Grid
-                  className={css`
-                    cursor: pointer;
-                    padding: 0 !important;
-                    box-shadow: none !important;
-                    &:hover {
-                      border-radius: ${token.borderRadius}px;
-                      background: rgba(0, 0, 0, 0.045);
-                    }
-                  `}
-                  key={setting.name}
-                >
-                  <a
-                    role="button"
-                    aria-label={setting.name}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setOpen(false);
-                      navigate(setting.path);
+    settings.length > 0 && (
+      <ActionContextProvider value={{ visible, setVisible }}>
+        <Popover
+          open={open}
+          onOpenChange={(open) => {
+            setOpen(open);
+          }}
+          arrow={false}
+          content={
+            <div style={{ maxWidth: '21rem', overflow: 'auto', maxHeight: '50vh' }}>
+              <Card
+                bordered={false}
+                className={css`
+                  box-shadow: none;
+                `}
+                style={{ boxShadow: 'none' }}
+              >
+                {settings.map((setting) => (
+                  <Card.Grid
+                    style={{
+                      width: settings.length === 1 ? '100%' : settings.length === 2 ? '50%' : '33.33%',
                     }}
-                    title={compile(setting.title)}
-                    style={{ display: 'block', color: 'inherit', padding: token.marginSM }}
-                    href={setting.path}
+                    className={css`
+                      cursor: pointer;
+                      padding: 0 !important;
+                      box-shadow: none !important;
+                      &:hover {
+                        border-radius: ${token.borderRadius}px;
+                        background: rgba(0, 0, 0, 0.045);
+                      }
+                    `}
+                    key={setting.name}
                   >
-                    <div style={{ fontSize: '1.2rem', textAlign: 'center', marginBottom: '0.3rem' }}>
-                      {setting.icon || <SettingOutlined />}
-                    </div>
-                    <div
-                      style={{
-                        textAlign: 'center',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        fontSize: token.fontSizeSM,
+                    <a
+                      role="button"
+                      aria-label={setting.name}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setOpen(false);
+                        navigate(setting.path);
                       }}
+                      title={compile(setting.title)}
+                      style={{ display: 'block', color: 'inherit', minWidth: '4.5rem', padding: token.marginSM }}
+                      href={setting.path}
                     >
-                      {compile(setting.title)}
-                    </div>
-                  </a>
-                </Card.Grid>
-              ))}
-            </Card>
-          </div>
-        }
-      >
-        <Button
-          data-testid="plugin-settings-button"
-          icon={<SettingOutlined style={{ color: token.colorTextHeaderMenu }} />}
-          // title={t('All plugin settings')}
-        />
-      </Popover>
-    </ActionContextProvider>
+                      <div style={{ fontSize: '1.2rem', textAlign: 'center', marginBottom: '0.3rem' }}>
+                        {setting.icon || <SettingOutlined />}
+                      </div>
+                      <div
+                        style={{
+                          textAlign: 'center',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          fontSize: token.fontSizeSM,
+                        }}
+                      >
+                        {compile(setting.title)}
+                      </div>
+                    </a>
+                  </Card.Grid>
+                ))}
+              </Card>
+            </div>
+          }
+        >
+          <Button
+            data-testid="plugin-settings-button"
+            icon={<SettingOutlined style={{ color: token.colorTextHeaderMenu }} />}
+            // title={t('All plugin settings')}
+          />
+        </Popover>
+      </ActionContextProvider>
+    )
   );
 };
