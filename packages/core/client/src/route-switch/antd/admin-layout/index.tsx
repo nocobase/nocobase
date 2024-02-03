@@ -279,6 +279,9 @@ export const InternalAdminLayout = (props: any) => {
             background-color: ${token.colorBgHeaderMenuActive} !important;
             color: ${token.colorTextHeaderMenuActive} !important;
           }
+          .ant-menu-submenu-horizontal.ant-menu-submenu-selected > .ant-menu-submenu-title {
+            color: ${token.colorTextHeaderMenuActive} !important;
+          }
           .ant-menu-dark.ant-menu-horizontal > .ant-menu-item:hover {
             background-color: ${token.colorBgHeaderMenuHover} !important;
             color: ${token.colorTextHeaderMenuHover} !important;
