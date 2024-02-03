@@ -36,26 +36,28 @@ export const SettingsCenterDropdown = () => {
   const settings = app.pluginSettingsManager.getList();
   const [open, setOpen] = useState(false);
   return (
-    <ActionContextProvider value={{ visible, setVisible }}>
-      <Popover
-        open={open}
-        onOpenChange={(open) => {
-          setOpen(open);
-        }}
-        arrow={false}
-        content={
-          <div style={{ maxWidth: '21rem' }}>
-            <Card
-              bordered={false}
-              className={css`
-                box-shadow: none;
-              `}
-              style={{ boxShadow: 'none' }}
-            >
-              {settings
-                .filter((v) => v.isTopLevel !== false)
-                .map((setting) => (
+    settings.length > 0 && (
+      <ActionContextProvider value={{ visible, setVisible }}>
+        <Popover
+          open={open}
+          onOpenChange={(open) => {
+            setOpen(open);
+          }}
+          arrow={false}
+          content={
+            <div style={{ maxWidth: '21rem', overflow: 'auto', maxHeight: '50vh' }}>
+              <Card
+                bordered={false}
+                className={css`
+                  box-shadow: none;
+                `}
+                style={{ boxShadow: 'none' }}
+              >
+                {settings.map((setting) => (
                   <Card.Grid
+                    style={{
+                      width: settings.length === 1 ? '100%' : settings.length === 2 ? '50%' : '33.33%',
+                    }}
                     className={css`
                       cursor: pointer;
                       padding: 0 !important;
@@ -76,7 +78,7 @@ export const SettingsCenterDropdown = () => {
                         navigate(setting.path);
                       }}
                       title={compile(setting.title)}
-                      style={{ display: 'block', color: 'inherit', padding: token.marginSM }}
+                      style={{ display: 'block', color: 'inherit', minWidth: '4.5rem', padding: token.marginSM }}
                       href={setting.path}
                     >
                       <div style={{ fontSize: '1.2rem', textAlign: 'center', marginBottom: '0.3rem' }}>
@@ -96,16 +98,17 @@ export const SettingsCenterDropdown = () => {
                     </a>
                   </Card.Grid>
                 ))}
-            </Card>
-          </div>
-        }
-      >
-        <Button
-          data-testid="plugin-settings-button"
-          icon={<SettingOutlined style={{ color: token.colorTextHeaderMenu }} />}
-          // title={t('All plugin settings')}
-        />
-      </Popover>
-    </ActionContextProvider>
+              </Card>
+            </div>
+          }
+        >
+          <Button
+            data-testid="plugin-settings-button"
+            icon={<SettingOutlined style={{ color: token.colorTextHeaderMenu }} />}
+            // title={t('All plugin settings')}
+          />
+        </Popover>
+      </ActionContextProvider>
+    )
   );
 };

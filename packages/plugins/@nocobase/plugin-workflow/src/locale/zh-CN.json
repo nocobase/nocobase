@@ -36,9 +36,9 @@
     "适用于需要即时反馈的用户操作。不能在此模式下使用异步节点，并且不建议在同步模式下执行耗时的操作。",
 
   "Bind workflows": "绑定工作流",
-  "Workflow will be triggered after submitting succeeded.": "提交成功后触发工作流。",
-  "Workflow will be triggered after saving succeeded.": "保存成功后触发工作流。",
+  "Workflow will be triggered before or after submitting succeeded based on workflow type.": "工作流会基于其类型在提交成功之前或之后触发。",
   "Workflow will be triggered directly once the button clicked, without data saving.": "按钮点击后直接触发工作流，但不会保存数据。",
+  "Workflow will be triggered before deleting succeeded.": "删除成功之前触发工作流。",
   "Submit to workflow": "提交至工作流",
   "Add workflow": "添加工作流",
   "Select workflow": "选择工作流",
