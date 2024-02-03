@@ -73,7 +73,9 @@ export async function revision(context: Context, next) {
       ? {
           key: filter.key,
           title: origin.title,
+          triggerTitle: origin.triggerTitle,
           allExecuted: origin.allExecuted,
+          sync: origin.sync,
         }
       : values;
 
