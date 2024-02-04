@@ -393,7 +393,7 @@ export class M2MFieldInterface extends CollectionFieldInterface {
               'x-component': 'Grid.Col',
               properties: {
                 sourceKey: {
-                  type: 'void',
+                  type: 'string',
                   title: '{{t("Source key")}}',
                   'x-decorator': 'FormItem',
                   'x-component': 'SourceKey',
@@ -458,7 +458,7 @@ export class M2MFieldInterface extends CollectionFieldInterface {
               'x-component': 'Grid.Col',
               properties: {
                 targetKey: {
-                  type: 'void',
+                  type: 'string',
                   title: '{{t("Target key")}}',
                   'x-decorator': 'FormItem',
                   'x-component': 'TargetKey',
