@@ -53,7 +53,6 @@ const InternalRemoteSelect = connect(
     const searchData = useRef(null);
     const { getCollectionJoinField, getInterface } = useCollectionManager();
     const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema.name as string);
-    console.log(fieldNames);
     const targetField =
       _targetField ||
       (collectionField?.target &&

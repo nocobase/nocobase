@@ -143,10 +143,11 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const record = useRecord();
   const { getCollection } = useCollectionManager();
-  const collection = getCollection(props.collection);
   const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
+  const collection = getCollection(collectionField.collectionName);
+  const primaryKey = collection.getPrimaryKey();
   const appends = useAssociationNames(props.collection);
   let params = { ...props.params };
   if (props.dragSort) {
@@ -157,8 +158,8 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
     if (collectionFieldSchema.name === 'parent') {
       params.filter = {
         ...(params.filter ?? {}),
-        id: record.id && {
-          $ne: record.id,
+        id: record[primaryKey] && {
+          $ne: record[primaryKey],
         },
       };
     }
