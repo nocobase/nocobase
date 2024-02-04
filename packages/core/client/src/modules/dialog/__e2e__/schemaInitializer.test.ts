@@ -135,7 +135,7 @@ test.describe('where to open a popup and what can be added to it', () => {
     await expect(page.getByText('test1')).toBeVisible();
 
     // add blocks
-    await page.getByLabel('schema-initializer-Grid-CreateFormBulkEditBlockInitializers-general').hover();
+    await page.getByLabel('schema-initializer-Grid-BulkEditBlockInitializers-general').hover();
     await page.getByText('Form').click();
     await page.getByRole('menuitem', { name: 'Markdown' }).click();
 
