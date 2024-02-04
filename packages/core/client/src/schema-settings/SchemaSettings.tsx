@@ -236,7 +236,7 @@ export const SchemaSettingsTemplate = function Template(props) {
       title="Save as template"
       onClick={async () => {
         setVisible(false);
-        const { title } = collectionName ? getCollection(collectionName) : { title: '' };
+        const collection = collectionName && getCollection(collectionName);
         const values = await FormDialog(
           t('Save as template'),
           () => {
@@ -250,7 +250,9 @@ export const SchemaSettingsTemplate = function Template(props) {
                       name: {
                         title: t('Template name'),
                         required: true,
-                        default: title ? `${compile(title)}_${t(componentName)}` : t(componentName),
+                        default: collection
+                          ? `${compile(collection?.title || collection?.name)}_${t(componentName)}`
+                          : t(componentName),
                         'x-decorator': 'FormItem',
                         'x-component': 'Input',
                       },
