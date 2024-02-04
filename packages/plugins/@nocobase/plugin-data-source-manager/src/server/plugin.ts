@@ -227,7 +227,11 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.on('afterStart', async (app: Application) => {
-      const dataSourcesRecords: DataSourceModel[] = await this.app.db.getRepository('dataSources').find();
+      const dataSourcesRecords: DataSourceModel[] = await this.app.db.getRepository('dataSources').find({
+        filter: {
+          enabled: true,
+        },
+      });
 
       const loadPromises = dataSourcesRecords.map((dataSourceRecord) =>
         dataSourceRecord.loadIntoApplication({ app, loadAtAfterStart: true }),
