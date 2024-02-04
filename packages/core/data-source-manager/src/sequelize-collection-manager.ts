@@ -42,6 +42,9 @@ export class SequelizeCollectionManager implements ICollectionManager {
   defineCollection(options: CollectionOptions) {
     const collection = this.db.collection(options);
     // @ts-ignore
+    collection.model.refreshAttributes();
+
+    // @ts-ignore
     collection.model._findAutoIncrementAttribute();
     return collection;
   }
