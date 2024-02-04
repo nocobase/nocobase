@@ -17,7 +17,7 @@ export class UidField extends Field {
       } else if (re.test(value)) {
         instance.set(name, value);
       } else {
-        throw new Error(`uid '${value}' is invalid`);
+        throw new Error(`Field names can only include A-Z, a-z, 0-9, _-*$, '${value}' is invalid`);
       }
     };
   }
