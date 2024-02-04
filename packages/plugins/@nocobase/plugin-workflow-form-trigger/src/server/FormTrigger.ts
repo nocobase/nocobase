@@ -81,7 +81,7 @@ export default class extends Trigger {
           let payload = row;
           if (trigger[1]) {
             const paths = trigger[1].split('.');
-            for await (const field of paths) {
+            for (const field of paths) {
               if (payload.get(field)) {
                 payload = payload.get(field);
               } else {
