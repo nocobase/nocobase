@@ -668,7 +668,7 @@ test.describe('actions schema settings', () => {
   test.describe('add child', () => {
     const showMenu = async (page: Page) => {
       await page.getByLabel('action-Action.Link-Add child-create-treeCollection-table-0').hover();
-      await page.getByLabel('designer-schema-settings-Action.Link-Action.Designer-tree').hover();
+      await page.getByLabel('designer-schema-settings-Action.Link-actionSettings:addChild-tree').hover();
     };
 
     test('supported options', async ({ page, mockPage, mockRecord }) => {
