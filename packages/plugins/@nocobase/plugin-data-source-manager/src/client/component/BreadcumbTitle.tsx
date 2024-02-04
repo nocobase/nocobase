@@ -7,6 +7,7 @@ import { lang, NAMESPACE } from '../locale';
 export const BreadcumbTitle = () => {
   const app = useApp();
   const { name } = useParams();
+  console.log(app);
   return (
     <Breadcrumb
       separator=">"
