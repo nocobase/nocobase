@@ -45,6 +45,7 @@ import { tableBlockSettings } from '../modules/table/schemaSettings/tableBlockSe
 import { tableColumnSettings } from '../modules/table/schemaSettings/tableColumnSettings';
 import { viewActionSettings } from '../modules/table/schemaSettings/viewActionSettings';
 import { addChildActionSettings } from '../modules/table/schemaSettings/addChildActionSettings';
+import { expendableActionSettings } from '../modules/table/schemaSettings/expendableActionSettings';
 
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
@@ -80,6 +81,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(customizeSaveRecordActionSettings);
     this.schemaSettingsManager.add(customizeSubmitToWorkflowActionSettings);
     this.schemaSettingsManager.add(addChildActionSettings);
+    this.schemaSettingsManager.add(expendableActionSettings);
 
     // field settings
     this.schemaSettingsManager.add(formItemSettings);

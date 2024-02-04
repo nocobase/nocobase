@@ -1,11 +1,12 @@
 import React from 'react';
 import { ActionInitializer } from './ActionInitializer';
 
-export const ExpandActionInitializer = (props) => {
+export const ExpandableActionInitializer = (props) => {
   const schema = {
     'x-action': 'expandAll',
     'x-component': 'Action',
-    'x-designer': 'Expand.Action.Design',
+    'x-toolbar': 'ActionSchemaToolbar',
+    'x-settings': 'actionSettings:expendable',
     'x-component-props': {
       titleExpand: "{{t('Expand all')}}",
       titleCollapse: "{{t('Collapse all')}}",
