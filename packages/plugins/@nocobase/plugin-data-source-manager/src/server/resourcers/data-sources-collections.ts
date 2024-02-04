@@ -17,12 +17,15 @@ export default {
       const filterTitle = lodash.get(filter, '$and.0.title.$includes');
       const filterName = lodash.get(filter, '$and.0.name.$includes');
 
-      const collections = dataSource.collectionManager.getCollections().filter((collection) => {
-        return (
-          (!filterTitle || lodash.get(collection, 'options.title')?.includes(filterTitle)) &&
-          (!filterName || collection.options.name.includes(filterName))
-        );
-      });
+      const collections = lodash.sortBy(
+        dataSource.collectionManager.getCollections().filter((collection) => {
+          return (
+            (!filterTitle || lodash.get(collection, 'options.title')?.includes(filterTitle)) &&
+            (!filterName || collection.options.name.includes(filterName))
+          );
+        }),
+        'name',
+      );
 
       if (paginate === false || paginate === 'false') {
         ctx.body = collections.map((collection) => collection.options);
