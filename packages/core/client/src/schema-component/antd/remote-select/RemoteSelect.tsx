@@ -53,6 +53,7 @@ const InternalRemoteSelect = connect(
     const searchData = useRef(null);
     const { getCollectionJoinField, getInterface } = useCollectionManager();
     const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema.name as string);
+    console.log(fieldNames);
     const targetField =
       _targetField ||
       (collectionField?.target &&
@@ -210,7 +211,6 @@ const InternalRemoteSelect = connect(
       }
       firstRun.current = true;
     };
-
     return (
       <Select
         open={open}
@@ -257,9 +257,9 @@ const InternalRemoteSelect = connect(
         ...props,
         fieldNames: {
           ...defaultFieldNames,
-          ...props.fieldNames,
           ...field.componentProps.fieldNames,
           ...fieldSchema['x-component-props']?.fieldNames,
+          ...props.fieldNames,
         },
         suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };
