@@ -1,7 +1,11 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { NAMESPACE } from '../locale';
-
+export const statusEnum = [
+  { value: 'loading', label: `{{t("Loading",{ns:"${NAMESPACE}"})}}`, color: 'orange' },
+  { value: 'failed', label: `{{t("Failed",{ns:"${NAMESPACE}"})}}`, color: 'red' },
+  { value: 'loaded', label: `{{t("Loaded",{ns:"${NAMESPACE}"})}}`, color: 'green' },
+];
 const collection = {
   name: 'collections-' + uid(),
   fields: [
@@ -46,11 +50,7 @@ const collection = {
         title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Select',
-        enum: [
-          { value: 'loading', label: `{{t("Loading",{ns:"${NAMESPACE}"})}}`, color: 'orange' },
-          { value: 'failed', label: `{{t("Failed",{ns:"${NAMESPACE}"})}}`, color: 'red' },
-          { value: 'loaded', label: `{{t("Loaded",{ns:"${NAMESPACE}"})}}`, color: 'green' },
-        ],
+        enum: statusEnum,
       } as ISchema,
     },
     {
