@@ -1,5 +1,5 @@
 import { observer, useForm, useField } from '@formily/react';
-import { Select } from 'antd';
+import { Select, Tag } from 'antd';
 import React, { useState } from 'react';
 import { useCompile, useCollectionManager, useRecord, useFieldInterfaceOptions } from '@nocobase/client';
 
@@ -27,9 +27,10 @@ export const CollectionFieldInterfaceSelect = observer(
     const form = useForm();
     const field = useField();
     const [options, setOptions] = useState(data);
-    return (
+    return ['oho', 'obo', 'o2m', 'm2o', 'm2m'].includes(record.interface) ? (
+      <Tag key={value}>{options.find((v) => v.value === value)['label']}</Tag>
+    ) : (
       <Select
-        disabled={['oho', 'obo', 'o2m', 'm2o', 'm2m'].includes(record.interface)}
         defaultValue={value}
         style={{ width: '100%' }}
         popupMatchSelectWidth={false}
