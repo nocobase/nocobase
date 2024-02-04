@@ -40,7 +40,10 @@ export class SequelizeCollectionManager implements ICollectionManager {
   }
 
   defineCollection(options: CollectionOptions) {
-    return this.db.collection(options);
+    const collection = this.db.collection(options);
+    // @ts-ignore
+    collection.model._findAutoIncrementAttribute();
+    return collection;
   }
 
   extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions): ICollection {
