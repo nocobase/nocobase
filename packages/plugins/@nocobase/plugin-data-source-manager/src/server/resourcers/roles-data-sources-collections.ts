@@ -31,7 +31,6 @@ const rolesRemoteCollectionsResourcer = {
       const filterTitle = lodash.get(filterByTitle, 'title.$includes');
       const filterName = lodash.get(filterByName, 'name.$includes');
 
-      console.log({ filterTitle, filterName });
       const roleResources = await ctx.app.db.getRepository('dataSourcesRolesResources').find({
         filter: {
           roleName: role,
@@ -46,34 +45,37 @@ const rolesRemoteCollectionsResourcer = {
         .filter((roleResources) => roleResources.get('usingActionsConfig'))
         .map((roleResources) => roleResources.get('name'));
 
-      const items = collections
-        .filter((collection) => {
-          return (
-            (!filterTitle || lodash.get(collection, 'options.title')?.includes(filterTitle)) &&
-            (!filterName || collection.options.name.includes(filterName))
-          );
-        })
-        .map((collection, i) => {
-          const collectionName = collection.options.name;
-          const exists = roleResourcesNames.includes(collectionName);
+      const items = lodash.sortBy(
+        collections
+          .filter((collection) => {
+            return (
+              (!filterTitle || lodash.get(collection, 'options.title')?.includes(filterTitle)) &&
+              (!filterName || collection.options.name.includes(filterName))
+            );
+          })
+          .map((collection, i) => {
+            const collectionName = collection.options.name;
+            const exists = roleResourcesNames.includes(collectionName);
 
-          const usingConfig: UsingConfigType = roleResourceActionResourceNames.includes(collectionName)
-            ? 'resourceAction'
-            : 'strategy';
+            const usingConfig: UsingConfigType = roleResourceActionResourceNames.includes(collectionName)
+              ? 'resourceAction'
+              : 'strategy';
 
-          return {
-            type: 'collection',
-            name: collectionName,
-            collectionName,
-            title: collection.options.uiSchema?.title,
-            roleName: role,
-            usingConfig,
-            exists,
-            fields: [...collection.fields.values()].map((field) => {
-              return field.options;
-            }),
-          };
-        });
+            return {
+              type: 'collection',
+              name: collectionName,
+              collectionName,
+              title: collection.options.uiSchema?.title,
+              roleName: role,
+              usingConfig,
+              exists,
+              fields: [...collection.fields.values()].map((field) => {
+                return field.options;
+              }),
+            };
+          }),
+        'name',
+      );
 
       ctx.body = {
         count,
