@@ -1418,7 +1418,7 @@ export const createCollapseBlockSchema = (options) => {
       [uid()]: {
         type: 'void',
         'x-action': 'associateFilter',
-        'x-initializer': 'AssociationFilter.FilterBlockInitializer',
+        'x-initializer': 'AssociationFilterInitializers',
         'x-component': 'AssociationFilter',
         properties: {},
       },
