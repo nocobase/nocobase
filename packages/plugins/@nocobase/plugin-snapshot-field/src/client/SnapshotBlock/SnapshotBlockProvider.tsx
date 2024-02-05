@@ -5,7 +5,7 @@ import {
   BlockAssociationContext,
   BlockRequestContext,
   BlockResourceContext,
-  CollectionDataSourceProvider,
+  CollectionManagerProviderV2,
   FormBlockContext,
   MaybeCollectionProvider,
   RecordProvider,
@@ -78,7 +78,7 @@ const BlockProvider = (props) => {
   const resource = useResource(props);
 
   return (
-    <CollectionDataSourceProvider dataSource={dataSource}>
+    <CollectionManagerProviderV2 dataSource={dataSource}>
       <MaybeCollectionProvider collection={collection}>
         <BlockAssociationContext.Provider value={association}>
           <BlockResourceContext.Provider value={resource}>
@@ -86,7 +86,7 @@ const BlockProvider = (props) => {
           </BlockResourceContext.Provider>
         </BlockAssociationContext.Provider>
       </MaybeCollectionProvider>
-    </CollectionDataSourceProvider>
+    </CollectionManagerProviderV2>
   );
 };
 
