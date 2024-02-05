@@ -958,7 +958,9 @@ function useCollectionField() {
 
 export function useIsAssociationField() {
   const collectionField = useCollectionField();
-  const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface);
+  const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o', 'updatedBy', 'createdBy'].includes(
+    collectionField?.interface,
+  );
   return isAssociationField;
 }
 

@@ -11,7 +11,6 @@ import { removeNullCondition, useDesignable, useFieldModeOptions, useIsAddNewFor
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { DynamicComponentProps } from '../../../../schema-component/antd/filter/DynamicComponent';
 import {
-  useFieldMode,
   useIsAssociationField,
   useIsFieldReadPretty,
   useIsSelectFieldMode,
@@ -34,6 +33,8 @@ export const enableLink = {
   type: 'switch',
   useVisible() {
     const field = useField();
+    console.log(field);
+    console.log(useFieldSchema());
     return field.readPretty;
   },
   useComponentProps() {

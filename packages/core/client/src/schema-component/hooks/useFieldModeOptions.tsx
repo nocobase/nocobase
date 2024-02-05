@@ -22,7 +22,12 @@ export const useFieldModeOptions = (props?) => {
     if (!collectionField || !collectionField?.interface) {
       return;
     }
-    if (!['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m'].includes(collectionField.interface)) return;
+    if (
+      !['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m', 'updatedBy', 'createdBy'].includes(
+        collectionField.interface,
+      )
+    )
+      return;
     const collection = getCollection(collectionField.target);
     if (collection?.template === 'file') {
       return isReadPretty
