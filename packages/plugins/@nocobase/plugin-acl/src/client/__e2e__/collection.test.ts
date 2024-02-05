@@ -206,6 +206,7 @@ test.describe('update', () => {
       window.localStorage.setItem('NOCOBASE_ROLE', roleData.name);
     }, roleData);
     await page.reload();
+    await page.getByTestId('ui-editor-button').click();
     await expect(page.getByLabel('action-Action.Link-Edit')).not.toBeVisible();
     await updateRole({
       name: roleData.name,
