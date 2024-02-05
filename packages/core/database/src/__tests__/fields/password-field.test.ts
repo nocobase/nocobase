@@ -19,13 +19,17 @@ describe('password field', () => {
       fields: [{ type: 'password', name: 'password' }],
     });
     await db.sync();
-    const user = await User.model.create<any>({
+    let user = await User.model.create<any>({
       password: '123456',
     });
     const pwd = User.getField<PasswordField>('password');
     expect(await pwd.verify('123456', user.password)).toBeTruthy();
     user.set('password', '654321');
     await user.save();
+    expect(await pwd.verify('654321', user.password)).toBeTruthy();
+    user.set('password', null);
+    await user.save();
+    user = await User.model.findOne();
     expect(await pwd.verify('654321', user.password)).toBeTruthy();
   });
 });
