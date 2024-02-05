@@ -1,7 +1,7 @@
 import { DataSourceV2 } from '@nocobase/client';
 
 export class ThirdDataSource extends DataSourceV2 {
-  async getCollections() {
+  async getRemoteCollections() {
     const service = await this.app.apiClient.request<{
       data: any;
     }>({

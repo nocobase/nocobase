@@ -19,6 +19,14 @@ export class CollectionTemplateManagerV2 {
     }, {});
     Object.assign(this.collectionTemplateInstances, newCollectionTemplateInstances);
 
+    // Re-add collections
+    this.dataSourceManager.getDataSources().forEach((dataSource) => {
+      const reAddCollections = dataSource.collectionManager.getCollections((collection) => {
+        return newCollectionTemplateInstances[collection.template];
+      });
+      dataSource.collectionManager.reAddCollections(reAddCollections);
+    });
+
     return newCollectionTemplateInstances;
   }
 

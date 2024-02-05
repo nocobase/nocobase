@@ -15,6 +15,7 @@ export interface DataSourceManagerOptionsV2 {
   fieldInterfaceGroups?: Record<string, { label: string; order?: number }>;
   collectionMixins?: (typeof CollectionV2)[];
   dataSources?: DataSourceOptionsV2[];
+  collections?: CollectionOptionsV2[];
 }
 
 export class DataSourceManagerV2 {
@@ -39,8 +40,8 @@ export class DataSourceManagerV2 {
     this.addDataSource(LocalDataSource, {
       key: DEFAULT_DATA_SOURCE_NAME,
       displayName: DEFAULT_DATA_SOURCE_TITLE,
+      collections: options.collections || [],
     });
-
     (options.dataSources || []).forEach((dataSourceOptions) => {
       this.addDataSource(LocalDataSource, dataSourceOptions);
     });
@@ -48,10 +49,11 @@ export class DataSourceManagerV2 {
 
   addCollectionMixins(mixins: (typeof CollectionV2)[] = []) {
     const newMixins = mixins.filter((mixin) => !this.collectionMixins.includes(mixin));
+    if (!newMixins.length) return;
     this.collectionMixins.push(...newMixins);
 
     // Re-add tables
-    this.getDataSources().forEach((dataSource) => dataSource.addCollections());
+    this.getDataSources().forEach((dataSource) => dataSource.collectionManager.reAddCollections());
   }
 
   getDataSources() {
@@ -78,8 +80,12 @@ export class DataSourceManagerV2 {
     this.multiDataSources.push([request, DataSource]);
   }
 
-  getCollections(dataSource?: string) {
-    return this.getDataSource(dataSource).collectionManager.getCollections();
+  getCollections(options?: { dataSource?: string; predicate?: (collection: CollectionV2) => boolean }) {
+    return this.getDataSource(options?.dataSource).collectionManager.getCollections(options?.predicate);
+  }
+
+  addCollections(collections: CollectionOptionsV2[], dataSource?: string) {
+    return this.getDataSource(dataSource).addCollections(collections);
   }
 
   getCollection<Mixins = {}>(

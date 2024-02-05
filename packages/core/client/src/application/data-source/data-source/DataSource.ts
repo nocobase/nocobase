@@ -50,12 +50,7 @@ export abstract class DataSourceV2 {
   }
 
   get collections() {
-    return this.options.collections || [];
-  }
-
-  set collections(collections: CollectionOptionsV2[]) {
-    this.options.collections = collections;
-    this.addCollections();
+    return this.collectionManager.getCollections() || [];
   }
 
   getOptions() {
@@ -70,28 +65,33 @@ export abstract class DataSourceV2 {
     return this.options[key];
   }
 
-  addCollections() {
-    this.collectionManager.addCollections(this.collections);
-    this.reloadCallback && this.reloadCallback(this.collections);
+  addCollections(collections: CollectionOptionsV2[]) {
+    this.collectionManager.addCollections(collections);
+  }
+
+  setCollections(collections: CollectionOptionsV2[]) {
+    this.collectionManager.setCollections(collections);
   }
 
   setReloadCallback(callback: LoadCallback) {
     this.reloadCallback = callback;
   }
 
-  abstract getCollections(): Promise<CollectionOptionsV2[]> | CollectionOptionsV2[];
+  abstract getRemoteCollections(): Promise<CollectionOptionsV2[]> | CollectionOptionsV2[];
 
   // abstract load(callback?: LoadCallback): void | Promise<void>;
 
   // abstract reload(callback?: LoadCallback): void | Promise<void>;
   async reload() {
-    this.collections = await this.getCollections();
-    return this.collections;
+    const collections = await this.getRemoteCollections();
+    this.setCollections(collections);
+    this.reloadCallback && this.reloadCallback(collections);
+    return collections;
   }
 }
 
 export class LocalDataSource extends DataSourceV2 {
-  getCollections() {
+  getRemoteCollections() {
     return this.collections;
   }
 }

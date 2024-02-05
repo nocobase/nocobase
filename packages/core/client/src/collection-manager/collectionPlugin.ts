@@ -50,7 +50,7 @@ import {
 import { DEFAULT_DATA_SOURCE_NAME, DEFAULT_DATA_SOURCE_TITLE, DataSourceV2 } from '../application/data-source';
 
 class MainDataSource extends DataSourceV2 {
-  async getCollections() {
+  async getRemoteCollections() {
     const service = await this.app.apiClient.request({
       resource: 'collections',
       action: 'list',
@@ -73,7 +73,7 @@ export class CollectionPlugin extends Plugin {
     this.addFieldInterfaces();
     this.addCollectionTemplates();
     this.addFieldInterfaces();
-    this.addFieldGroups();
+    this.addFieldInterfaceGroups();
 
     this.dataSourceManager.addDataSource(MainDataSource, {
       key: DEFAULT_DATA_SOURCE_NAME,
@@ -81,7 +81,7 @@ export class CollectionPlugin extends Plugin {
     });
   }
 
-  addFieldGroups() {
+  addFieldInterfaceGroups() {
     this.dataSourceManager.addFieldInterfaceGroups({
       basic: {
         label: '{{t("Basic")}}',

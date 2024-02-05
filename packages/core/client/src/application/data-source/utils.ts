@@ -7,7 +7,7 @@ import { DEFAULT_DATA_SOURCE_NAME, DataSourceManagerV2 } from './data-source';
 // 等把老的去掉后，再把这个函数的实现从那边移动过来
 // export function getCollectionFieldsOptions(){}
 
-export const isTitleFieldV2 = (dm: DataSourceManagerV2, field: CollectionFieldOptionsV2) => {
+export const isTitleField = (dm: DataSourceManagerV2, field: CollectionFieldOptionsV2) => {
   return !field.isForeignKey && dm.collectionFieldInterfaceManager.getFieldInterface(field.interface)?.titleUsable;
 };
 

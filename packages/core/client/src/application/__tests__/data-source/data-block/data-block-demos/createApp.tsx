@@ -2,32 +2,39 @@ import {
   ApplicationOptions,
   Application,
   CardItem,
-  CollectionManagerOptionsV2,
+  Plugin,
   CollectionPlugin,
   DataBlockProviderV2,
+  LocalDataSource,
+  DEFAULT_DATA_SOURCE_NAME,
+  DEFAULT_DATA_SOURCE_TITLE,
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 import { ComponentType } from 'react';
-import collections from './collections.json';
+import collections from '../../collections.json';
 
 export function createApp(Demo: ComponentType<any>, options: ApplicationOptions = {}, mocks: Record<string, any>) {
-  const collectionManager = {
-    collections: collections as any,
-    ...(options.collectionManager as CollectionManagerOptionsV2),
-  };
+  class MyPlugin extends Plugin {
+    async load() {
+      this.app.dataSourceManager.addDataSource(LocalDataSource, {
+        key: DEFAULT_DATA_SOURCE_NAME,
+        displayName: DEFAULT_DATA_SOURCE_TITLE,
+        collections: collections as any,
+      });
+    }
+  }
   const app = new Application({
     apiClient: {
       baseURL: 'http://localhost:8000',
     },
     providers: [Demo],
     ...options,
-    collectionManager,
     components: {
       ...options.components,
       DataBlockProviderV2,
       CardItem,
     },
-    plugins: [CollectionPlugin],
+    plugins: [CollectionPlugin, MyPlugin],
     designable: true,
   });
 

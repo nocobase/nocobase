@@ -37,13 +37,33 @@ export class CollectionManagerV2 {
     return instance;
   }
 
-  addCollections(collections: CollectionOptionsV2[] = []) {
-    this.collectionInstancesArr = collections.map((collection) => this.getCollectionInstance(collection));
-
-    this.collectionInstancesMap = this.collectionInstancesArr.reduce((acc, collectionInstance) => {
+  private getInstancesMap(collections: CollectionOptionsV2[] = []): Record<string, CollectionV2> {
+    const instances = collections.map((collection) => this.getCollectionInstance(collection));
+    return instances.reduce<Record<string, CollectionV2>>((acc, collectionInstance) => {
       acc[collectionInstance.name] = collectionInstance;
       return acc;
     }, {});
+  }
+
+  addCollections(collections: CollectionOptionsV2[] = []) {
+    const newInstancesMap = this.getInstancesMap(collections);
+
+    this.collectionInstancesMap = {
+      ...this.collectionInstancesMap,
+      ...newInstancesMap,
+    };
+
+    this.collectionInstancesArr = Object.values(this.collectionInstancesMap);
+  }
+
+  setCollections(collections: CollectionOptionsV2[]) {
+    this.collectionInstancesMap = this.getInstancesMap(collections);
+    this.collectionInstancesArr = Object.values(this.collectionInstancesMap);
+  }
+
+  reAddCollections(collections: CollectionV2[] = this.collectionInstancesArr) {
+    const collectionOptions = collections.map((collection) => collection.getOptions());
+    this.setCollections(collectionOptions);
   }
 
   /**
