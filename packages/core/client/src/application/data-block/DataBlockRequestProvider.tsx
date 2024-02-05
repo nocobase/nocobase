@@ -119,7 +119,17 @@ export const BlockRequestProviderV2: FC = ({ children }) => {
           {children}
         </RecordProviderV2>
       ) : (
-        children
+        <RecordProviderV2
+          isNew={false}
+          record={null}
+          parentRecord={
+            parentRequest.data?.data &&
+            new RecordV2({ isNew: false, data: parentRequest.data?.data, collectionName: association.split('.')[0] })
+          }
+          collectionName={isString(collection) ? collection : collection?.name}
+        >
+          {children}
+        </RecordProviderV2>
       )}
     </BlockRequestContextV2.Provider>
   );
