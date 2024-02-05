@@ -144,7 +144,7 @@ export const collectionTableSchema: ISchema = {
         },
         refresh: {
           type: 'void',
-          title: '{{ t("Refresh") }}',
+          title: '{{ t("Sync") }}',
           'x-component': 'Action',
           'x-component-props': {
             icon: 'ReloadOutlined',

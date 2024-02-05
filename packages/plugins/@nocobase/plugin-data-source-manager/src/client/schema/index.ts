@@ -3,7 +3,7 @@ import { uid } from '@formily/shared';
 import { NAMESPACE } from '../locale';
 export const statusEnum = [
   { value: 'loading', label: `{{t("Loading",{ns:"${NAMESPACE}"})}}`, color: 'orange' },
-  { value: 'failed', label: `{{t("Failed",{ns:"${NAMESPACE}"})}}`, color: 'red' },
+  { value: 'loading-failed', label: `{{t("Failed",{ns:"${NAMESPACE}"})}}`, color: 'red' },
   { value: 'loaded', label: `{{t("Loaded",{ns:"${NAMESPACE}"})}}`, color: 'green' },
   { value: 'reloading', label: `{{t("Reloading",{ns:"${NAMESPACE}"})}}`, color: 'orange' },
 ];
