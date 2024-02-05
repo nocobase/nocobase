@@ -60,7 +60,7 @@ export const DatabaseConnectionManagerPane = () => {
     return {
       async onClick() {
         service?.refresh?.();
-        await dm.reloadThirdDataSource();
+        await dm.reload();
       },
     };
   };

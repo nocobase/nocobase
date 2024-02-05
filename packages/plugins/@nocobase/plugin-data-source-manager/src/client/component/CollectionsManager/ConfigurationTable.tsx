@@ -5,7 +5,6 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import {
-  useApp,
   useAPIClient,
   CollectionFieldsTable,
   useCurrentAppInfo,
@@ -135,7 +134,7 @@ export const ConfigurationTable = () => {
     const api = useAPIClient();
     const field = useField();
     field.data = field.data || {};
-    const app = useApp();
+    const dm = useDataSourceManagerV2();
     const { setDataSource } = useContext(DataSourceContext);
     return {
       async onClick() {
@@ -148,8 +147,8 @@ export const ConfigurationTable = () => {
           field.data.loading = false;
           service?.refresh?.();
           message.success(t('Data source synchronization in progress'));
-          await app.collectionManager.reloadThirdDataSource();
-          setDataSource(app.collectionManager.getDataSource(name));
+          await dm.reload();
+          setDataSource(dm.getDataSource(name));
         } catch (error) {
           field.data.loading = false;
         }
