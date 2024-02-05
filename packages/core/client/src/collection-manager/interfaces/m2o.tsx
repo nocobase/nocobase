@@ -319,7 +319,7 @@ export class M2OFieldInterface extends CollectionFieldInterface {
               'x-component': 'Grid.Col',
               properties: {
                 targetKey: {
-                  type: 'void',
+                  type: 'string',
                   title: '{{t("Target key")}}',
                   'x-decorator': 'FormItem',
                   'x-component': 'TargetKey',

@@ -363,6 +363,8 @@ describe('data source', async () => {
             name: 'post',
             target: 'posts',
             foreignKey: 'post_id',
+            sourceKey: 'id',
+            targetKey: 'id',
           },
         });
 

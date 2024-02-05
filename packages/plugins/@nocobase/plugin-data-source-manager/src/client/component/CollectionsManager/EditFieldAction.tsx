@@ -221,7 +221,7 @@ const EditFieldAction = (props) => {
             getContainer,
             useUpdateCollectionField,
             useCancelAction,
-            showReverseFieldConfig: !data?.reverseField,
+            showReverseFieldConfig: false,
             collections: currentCollections,
             isDialect,
             disabledJSONB: true,

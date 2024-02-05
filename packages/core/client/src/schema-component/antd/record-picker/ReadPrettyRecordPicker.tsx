@@ -56,7 +56,7 @@ export const ReadPrettyRecordPicker: React.FC = observer(
         const val = toValue(compile(record?.[fieldNames?.label || 'label']), 'N/A');
         const text = getLabelFormatValue(labelUiSchema, val, true);
         return (
-          <Fragment key={`${record.id}_${index}`}>
+          <Fragment key={`${record[fieldNames.value]}_${index}`}>
             {/* test-record-picker-read-pretty-item 用于在单元测试中方便选中元素 */}
             <span className="test-record-picker-read-pretty-item">
               {snapshot || isTagsMode ? (

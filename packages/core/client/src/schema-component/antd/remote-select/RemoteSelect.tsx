@@ -7,6 +7,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { mergeFilter } from '../../../filter-provider/utils';
+import { useDataSourceHeaders } from '../../../';
+import { useCollectionDataSourceName } from '../../../application/collection/CollectionDataSourceProvider';
 import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
@@ -41,6 +43,8 @@ const InternalRemoteSelect = connect(
       optionFilter,
       ...others
     } = props;
+    const dataSource = useCollectionDataSourceName();
+    const headers = useDataSourceHeaders(dataSource);
     const [open, setOpen] = useState(false);
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
@@ -130,6 +134,7 @@ const InternalRemoteSelect = connect(
       {
         action: 'list',
         ...service,
+        headers,
         params: {
           pageSize: 200,
           ...service?.params,
@@ -205,7 +210,6 @@ const InternalRemoteSelect = connect(
       }
       firstRun.current = true;
     };
-
     return (
       <Select
         open={open}
@@ -252,9 +256,9 @@ const InternalRemoteSelect = connect(
         ...props,
         fieldNames: {
           ...defaultFieldNames,
-          ...props.fieldNames,
           ...field.componentProps.fieldNames,
           ...fieldSchema['x-component-props']?.fieldNames,
+          ...props.fieldNames,
         },
         suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };

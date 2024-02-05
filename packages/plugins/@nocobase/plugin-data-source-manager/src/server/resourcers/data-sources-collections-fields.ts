@@ -1,3 +1,5 @@
+import lodash from 'lodash';
+
 export default {
   name: 'dataSourcesCollections.fields',
   actions: {
@@ -10,7 +12,10 @@ export default {
 
       const fields = collection.getFields();
 
-      ctx.body = fields.map((field) => field.options);
+      ctx.body = lodash.sortBy(
+        fields.map((field) => field.options),
+        'name',
+      );
 
       await next();
     },

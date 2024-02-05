@@ -323,7 +323,7 @@ export class O2MFieldInterface extends CollectionFieldInterface {
               'x-component': 'Grid.Col',
               properties: {
                 sourceKey: {
-                  type: 'void',
+                  type: 'string',
                   title: '{{t("Source key")}}',
                   default: 'id',
                   enum: [{ label: 'ID', value: 'id' }],
@@ -366,7 +366,7 @@ export class O2MFieldInterface extends CollectionFieldInterface {
               'x-component': 'Grid.Col',
               properties: {
                 targetKey: {
-                  type: 'void',
+                  type: 'string',
                   title: '{{t("Target key")}}',
                   'x-decorator': 'FormItem',
                   'x-component': 'TargetKey',

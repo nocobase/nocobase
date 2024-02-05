@@ -35,6 +35,36 @@ export class PluginDataSourceManagerServer extends Plugin {
       DataSourceModel,
     });
 
+    this.app.db.on('dataSourcesFields.beforeCreate', async (model, options) => {
+      const validatePresent = (name: string) => {
+        if (!model.get(name)) {
+          throw new Error(`"${name}" is required`);
+        }
+      };
+
+      const validatePresents = (names: string[]) => {
+        names.forEach((name) => validatePresent(name));
+      };
+
+      const type = model.get('type');
+
+      if (type === 'belongsTo') {
+        validatePresents(['foreignKey', 'sourceKey', 'targetKey', 'target']);
+      }
+
+      if (type === 'hasMany') {
+        validatePresents(['foreignKey', 'sourceKey', 'targetKey', 'target']);
+      }
+
+      if (type == 'hasOne') {
+        validatePresents(['foreignKey', 'sourceKey', 'targetKey', 'target']);
+      }
+
+      if (type === 'belongsToMany') {
+        validatePresents(['foreignKey', 'sourceKey', 'targetKey', 'through', 'throughKey', 'target']);
+      }
+    });
+
     this.app.db.on('dataSources.beforeCreate', async (model: DataSourceModel, options) => {
       this.dataSourceStatus[model.get('key')] = 'loading';
     });
@@ -227,7 +257,11 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     this.app.on('afterStart', async (app: Application) => {
-      const dataSourcesRecords: DataSourceModel[] = await this.app.db.getRepository('dataSources').find();
+      const dataSourcesRecords: DataSourceModel[] = await this.app.db.getRepository('dataSources').find({
+        filter: {
+          enabled: true,
+        },
+      });
 
       const loadPromises = dataSourcesRecords.map((dataSourceRecord) =>
         dataSourceRecord.loadIntoApplication({ app, loadAtAfterStart: true }),
