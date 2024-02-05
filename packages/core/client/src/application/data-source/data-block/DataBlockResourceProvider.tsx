@@ -5,7 +5,7 @@ import { useCollectionManagerV2 } from '../collection';
 import { useDataBlockPropsV2 } from './DataBlockProvider';
 import { useAPIClient } from '../../../api-client';
 import { RecordV2 } from '../record';
-import { useDataSourceHeadersV2 } from '../utils';
+import { useDataSourceHeaders } from '../utils';
 
 export const DataBlockResourceContextV2 = createContext<IResource>(null);
 DataBlockResourceContextV2.displayName = 'DataBlockResourceContextV2';
@@ -15,7 +15,7 @@ export const DataBlockResourceProviderV2: FC<{ children?: ReactNode }> = ({ chil
   const cm = useCollectionManagerV2();
   const { association, collection, dataSource, sourceId, parentRecord } = dataBlockProps;
   const api = useAPIClient();
-  const headers = useDataSourceHeadersV2(dataSource);
+  const headers = useDataSourceHeaders(dataSource);
   const collectionName = useMemo(() => (typeof collection === 'string' ? collection : collection?.name), [collection]);
 
   const sourceIdValue = useMemo(() => {

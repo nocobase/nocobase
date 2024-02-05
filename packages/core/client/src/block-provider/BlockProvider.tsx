@@ -13,7 +13,7 @@ import {
   WithoutTableFieldResource,
   useAPIClient,
   useActionContext,
-  useDataSourceHeadersV2,
+  useDataSourceHeaders,
   useDesignable,
   useRecord,
 } from '../';
@@ -71,7 +71,7 @@ const useResource = (props: UseResourceProps) => {
   const field = useField();
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   const __parent = useContext(BlockRequestContext);
-  const headers = useDataSourceHeadersV2(dataSource);
+  const headers = useDataSourceHeaders(dataSource);
 
   if (block === 'TableField') {
     const options = {
