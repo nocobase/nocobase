@@ -92,7 +92,7 @@ type AllDataBlockType = {
 
 export type DataBlockProviderPropsV2 = AllDataBlockType[keyof AllDataBlockType];
 
-export type UseDataBlockPropsV2<T extends keyof AllDataBlockType> = (
+export type UseDataBlockProps<T extends keyof AllDataBlockType> = (
   props: DataBlockProviderPropsV2 & { [index: string]: any },
 ) => Omit<AllDataBlockType[T], 'association' | 'collection' | 'dataSource' | 'action'> & { [index: string]: any };
 
