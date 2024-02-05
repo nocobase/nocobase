@@ -1,7 +1,7 @@
 import React from 'react';
 import { Breadcrumb, Tag, Space } from 'antd';
 import { Link, useParams } from 'react-router-dom';
-import { useApp, useCompile, useDataSourceManagerV3 } from '@nocobase/client';
+import { useApp, useCompile, useDataSourceManagerV2 } from '@nocobase/client';
 import { lang, NAMESPACE } from '../locale';
 import { statusEnum } from '../schema';
 
@@ -9,7 +9,7 @@ export const BreadcumbTitle = () => {
   const app = useApp();
   const { name } = useParams();
   const compile = useCompile();
-  const dm = useDataSourceManagerV3();
+  const dm = useDataSourceManagerV2();
   const { displayName, status } = dm.getDataSource(name) || {};
   const option = statusEnum.find((v) => v.value === status);
   return (

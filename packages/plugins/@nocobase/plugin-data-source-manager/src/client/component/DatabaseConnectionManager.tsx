@@ -6,7 +6,7 @@ import {
   useResourceActionContext,
   useResourceContext,
   useRecord,
-  useDataSourceManagerV3,
+  useDataSourceManagerV2,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import _ from 'lodash';
@@ -29,7 +29,7 @@ export const DatabaseConnectionManagerPane = () => {
     };
   });
 
-  const dm = useDataSourceManagerV3();
+  const dm = useDataSourceManagerV2();
 
   const reloadKeys = React.useRef<string[]>([]);
 
