@@ -21,8 +21,8 @@ export const BreadcumbTitle = () => {
           title: (
             <Space>
               <span>{displayName}</span>
-              <Tag key={status} color={option.color}>
-                {compile(option.label)}
+              <Tag key={status} color={option?.color}>
+                {compile(option?.label)}
               </Tag>
             </Space>
           ),
