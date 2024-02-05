@@ -5,7 +5,6 @@
   "main": "./lib/server/index.js",
   "dependencies": {
     "@formily/json-schema": "2.x",
-    "@nocobase/plugin-data-source-manager": "0.19.0-alpha.5",
     "@nocobase/plugin-acl": "0.19.0-alpha.5",
     "@nocobase/plugin-action-bulk-edit": "0.19.0-alpha.5",
     "@nocobase/plugin-action-bulk-update": "0.19.0-alpha.5",
@@ -23,6 +22,7 @@
     "@nocobase/plugin-client": "0.19.0-alpha.5",
     "@nocobase/plugin-collection-manager": "0.19.0-alpha.5",
     "@nocobase/plugin-custom-request": "0.19.0-alpha.5",
+    "@nocobase/plugin-data-source-manager": "0.19.0-alpha.5",
     "@nocobase/plugin-data-visualization": "0.19.0-alpha.5",
     "@nocobase/plugin-error-handler": "0.19.0-alpha.5",
     "@nocobase/plugin-export": "0.19.0-alpha.5",
