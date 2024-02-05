@@ -25,7 +25,7 @@ export const useCollectionManager = (dataSourceName?: string) => {
   const templates = useMemo(() => dm?.collectionTemplateManager.getCollectionTemplates(), [dm, random]);
   const getCollections = useCallback(() => {
     return dm
-      ?.getCollections(dataSourceNameValue)
+      ?.getCollections({ dataSource: dataSourceNameValue })
       ?.filter((item) => !item.isLocal)
       .map((item) => item.getOptions());
   }, [dm, dataSource]);
