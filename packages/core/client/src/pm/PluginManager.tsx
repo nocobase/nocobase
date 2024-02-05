@@ -74,24 +74,22 @@ const LocalPlugins = () => {
   const [keyword, setKeyword] = useState(null);
   const debouncedSearchValue = useDebounce(searchValue, { wait: 100 });
 
-  const keywordList = useMemo(() => {
-    let keyWordlists = [];
-    data?.data.forEach((v) => {
-      if (v.keywords) {
-        keyWordlists = keyWordlists.concat(v.keywords);
-      }
-    });
-    keyWordlists.sort((a, b) => {
-      if (a === 'data model') return -1;
-      if (b === 'data model') return 1;
-      return 0;
-    });
-    return _.uniq(keyWordlists).concat('other');
-  }, [data?.data]);
+  const keyWordlists = [
+    'Data Model',
+    'Fields',
+    'Blocks',
+    'Actions',
+    'Users & permissions',
+    'Workflow',
+    'System management',
+    'System & security',
+    'Third party services',
+    'Others',
+  ];
 
   const keyWordsfilterList = useMemo(() => {
-    const list = keywordList.map((i) => {
-      if (i === 'other') {
+    const list = keyWordlists.map((i) => {
+      if (i === 'Others') {
         const result = data?.data.filter((v) => !v.keywords);
         return {
           key: i,
@@ -105,7 +103,7 @@ const LocalPlugins = () => {
       };
     });
     return list;
-  }, [keywordList]);
+  }, [keyWordlists]);
 
   const pluginList = useMemo(() => {
     let list = filterList[filterIndex]?.list || [];
@@ -198,9 +196,7 @@ const LocalPlugins = () => {
                     style={{ padding: '3px 0' }}
                     onClick={() => (item.key !== keyword ? setKeyword(item.key) : setKeyword(null))}
                   >
-                    <a style={{ fontWeight: keyword === item.key ? 'bold' : 'normal' }}>
-                      {t(item.key?.charAt?.(0).toUpperCase() + item.key?.slice?.(1))}
-                    </a>
+                    <a style={{ fontWeight: keyword === item.key ? 'bold' : 'normal' }}>{t(item.key)}</a>
                   </List.Item>
                 );
               }}
