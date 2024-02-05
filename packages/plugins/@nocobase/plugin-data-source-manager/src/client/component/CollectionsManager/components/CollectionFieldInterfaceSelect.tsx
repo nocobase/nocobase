@@ -28,7 +28,9 @@ export const CollectionFieldInterfaceSelect = observer(
     const field = useField();
     const [options, setOptions] = useState(data);
     return ['oho', 'obo', 'o2m', 'm2o', 'm2m'].includes(record.interface) ? (
-      <Tag key={value}>{options.find((v) => v.value === value)['label']}</Tag>
+      <Tag key={value}>
+        {compile(initOptions.find((h) => h.key === 'relation')['children'].find((v) => v.name === value)?.['label'])}
+      </Tag>
     ) : (
       <Select
         defaultValue={value}
