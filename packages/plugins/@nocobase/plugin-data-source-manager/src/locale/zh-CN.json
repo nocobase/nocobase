@@ -23,5 +23,6 @@
   "Status": "状态",
   "Loading": "加载中",
   "Failed": "加载失败",
-  "Loaded": "已加载"
+  "Loaded": "已加载",
+  "Reloading":"加载中"
 }
