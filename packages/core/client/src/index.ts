@@ -22,6 +22,9 @@ export * from './async-data-provider';
 export * from './block-provider';
 export * from './china-region';
 export * from './collection-manager';
+export * as interfacesProperties from './collection-manager/interfaces/properties';
+export { getConfigurableProperties } from './collection-manager/templates/properties';
+
 export * from './common';
 export * from './css-variable';
 export * from './document-title';
