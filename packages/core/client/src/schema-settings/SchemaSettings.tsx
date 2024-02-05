@@ -40,10 +40,9 @@ import { Router } from 'react-router-dom';
 import {
   APIClientProvider,
   ActionContextProvider,
-  CollectionDataSourceProvider,
   CollectionFieldOptions,
-  CollectionManagerProviderV2,
   CollectionProvider,
+  DataSourceApplicationProvider,
   DatePickerProvider,
   Designable,
   FormDialog,
@@ -58,10 +57,9 @@ import {
   useActionContext,
   useBlockRequestContext,
   useCollection,
-  useCollectionDataSourceName,
   useCollectionManager,
-  useCollectionManagerV2,
   useCompile,
+  useDataSourceKey,
   useDesignable,
   useFilterBlock,
   useGlobalTheme,
@@ -70,6 +68,7 @@ import {
   useSchemaSettingsItem,
   useSortFields,
 } from '..';
+import { useDataSourceManagerV2 } from '../application/data-source/data-source/DataSourceManagerProvider';
 import { BlockRequestContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
 import {
   FormActiveFieldsProvider,
@@ -956,14 +955,14 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
-  const cm = useCollectionManagerV2();
   const collection = useCollection();
   const apiClient = useAPIClient();
   const { theme } = useGlobalTheme();
   const ctx = useContext(BlockRequestContext);
   const upLevelActiveFields = useFormActiveFields();
   const { locale } = useContext(ConfigProvider.ConfigContext);
-  const dataSourceName = useCollectionDataSourceName();
+  const dm = useDataSourceManagerV2();
+  const dataSourceKey = useDataSourceKey();
 
   if (hidden) {
     return null;
@@ -982,34 +981,32 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
               <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
                 <Router location={location} navigator={null}>
                   <BlockRequestContext.Provider value={ctx}>
-                    <CollectionManagerProviderV2 collectionManager={cm}>
-                      <CollectionDataSourceProvider dataSource={dataSourceName}>
-                        <CollectionProvider allowNull name={collection.name}>
-                          <SchemaComponentOptions scope={options.scope} components={options.components}>
-                            <FormLayout
-                              layout={'vertical'}
-                              className={css`
-                                // screen > 576px
-                                @media (min-width: 576px) {
-                                  min-width: 520px;
-                                }
+                    <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
+                      <CollectionProvider allowNull name={collection.name}>
+                        <SchemaComponentOptions scope={options.scope} components={options.components}>
+                          <FormLayout
+                            layout={'vertical'}
+                            className={css`
+                              // screen > 576px
+                              @media (min-width: 576px) {
+                                min-width: 520px;
+                              }
 
-                                // screen <= 576px
-                                @media (max-width: 576px) {
-                                  min-width: 320px;
-                                }
-                              `}
-                            >
-                              <APIClientProvider apiClient={apiClient}>
-                                <ConfigProvider locale={locale}>
-                                  <SchemaComponent components={components} scope={scope} schema={schema} />
-                                </ConfigProvider>
-                              </APIClientProvider>
-                            </FormLayout>
-                          </SchemaComponentOptions>
-                        </CollectionProvider>
-                      </CollectionDataSourceProvider>
-                    </CollectionManagerProviderV2>
+                              // screen <= 576px
+                              @media (max-width: 576px) {
+                                min-width: 320px;
+                              }
+                            `}
+                          >
+                            <APIClientProvider apiClient={apiClient}>
+                              <ConfigProvider locale={locale}>
+                                <SchemaComponent components={components} scope={scope} schema={schema} />
+                              </ConfigProvider>
+                            </APIClientProvider>
+                          </FormLayout>
+                        </SchemaComponentOptions>
+                      </CollectionProvider>
+                    </DataSourceApplicationProvider>
                   </BlockRequestContext.Provider>
                 </Router>
               </FormActiveFieldsProvider>

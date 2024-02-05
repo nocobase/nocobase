@@ -1,21 +1,21 @@
 import { IResource } from '@nocobase/sdk';
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
-import { useCollectionManagerV3 } from '../collection';
-import { useDataBlockPropsV3 } from './DataBlockProvider';
+import { useCollectionManagerV2 } from '../collection';
+import { useDataBlockPropsV2 } from './DataBlockProvider';
 import { useAPIClient } from '../../../api-client';
-import { RecordV3 } from '../record';
-import { useDataSourceHeadersV3 } from '../utils';
+import { RecordV2 } from '../record';
+import { useDataSourceHeadersV2 } from '../utils';
 
-export const DataBlockResourceContextV3 = createContext<IResource>(null);
-DataBlockResourceContextV3.displayName = 'DataBlockResourceContextV3';
+export const DataBlockResourceContextV2 = createContext<IResource>(null);
+DataBlockResourceContextV2.displayName = 'DataBlockResourceContextV2';
 
-export const DataBlockResourceProviderV3: FC<{ children?: ReactNode }> = ({ children }) => {
-  const dataBlockProps = useDataBlockPropsV3();
-  const cm = useCollectionManagerV3();
+export const DataBlockResourceProviderV2: FC<{ children?: ReactNode }> = ({ children }) => {
+  const dataBlockProps = useDataBlockPropsV2();
+  const cm = useCollectionManagerV2();
   const { association, collection, dataSource, sourceId, parentRecord } = dataBlockProps;
   const api = useAPIClient();
-  const headers = useDataSourceHeadersV3(dataSource);
+  const headers = useDataSourceHeadersV2(dataSource);
   const collectionName = useMemo(() => (typeof collection === 'string' ? collection : collection?.name), [collection]);
 
   const sourceIdValue = useMemo(() => {
@@ -25,7 +25,7 @@ export const DataBlockResourceProviderV3: FC<{ children?: ReactNode }> = ({ chil
     if (association && parentRecord) {
       const associationCollection = cm.getCollection(association);
       if (associationCollection) {
-        const parentRecordData = parentRecord instanceof RecordV3 ? parentRecord.data : parentRecord;
+        const parentRecordData = parentRecord instanceof RecordV2 ? parentRecord.data : parentRecord;
         return parentRecordData[associationCollection.sourceKey || 'id'];
       }
     }
@@ -37,14 +37,14 @@ export const DataBlockResourceProviderV3: FC<{ children?: ReactNode }> = ({ chil
     }
     return api.resource(collectionName, undefined, headers);
   }, [api, association, collection, sourceIdValue, headers]);
-  return <DataBlockResourceContextV3.Provider value={resource}>{children}</DataBlockResourceContextV3.Provider>;
+  return <DataBlockResourceContextV2.Provider value={resource}>{children}</DataBlockResourceContextV2.Provider>;
 };
 
-export function useDataBlockResourceV3() {
-  const context = useContext(DataBlockResourceContextV3);
+export function useDataBlockResourceV2() {
+  const context = useContext(DataBlockResourceContextV2);
 
   if (!context) {
-    throw new Error('useDataBlockResourceV3() must be used within a DataBlockResourceProviderV3');
+    throw new Error('useDataBlockResourceV2() must be used within a DataBlockResourceProviderV2');
   }
 
   return context;

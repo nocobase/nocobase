@@ -1,36 +1,36 @@
 import React, { FC, ReactNode, createContext, useContext } from 'react';
 
 import type { SchemaKey } from '@formily/react';
-import type { CollectionFieldOptionsV3 } from '../collection';
+import type { CollectionFieldOptionsV2 } from '../collection';
 
-import { useCollectionV3 } from '../collection';
+import { useCollectionV2 } from '../collection';
 import { CollectionDeletedPlaceholder } from '../components/CollectionDeletedPlaceholder';
 
-export const CollectionFieldContextV3 = createContext<CollectionFieldOptionsV3>(null);
-CollectionFieldContextV3.displayName = 'CollectionFieldContextV3';
+export const CollectionFieldContextV2 = createContext<CollectionFieldOptionsV2>(null);
+CollectionFieldContextV2.displayName = 'CollectionFieldContextV2';
 
-export type CollectionFieldProviderPropsV3 = {
+export type CollectionFieldProviderPropsV2 = {
   name?: SchemaKey;
   children?: ReactNode;
 };
 
-export const CollectionFieldProviderV3: FC<CollectionFieldProviderPropsV3> = (props) => {
+export const CollectionFieldProviderV2: FC<CollectionFieldProviderPropsV2> = (props) => {
   const { name, children } = props;
 
-  const collection = useCollectionV3();
+  const collection = useCollectionV2();
   const field = collection.getField(name);
 
   if (!field) {
     return <CollectionDeletedPlaceholder type="Field" name={name} />;
   }
 
-  return <CollectionFieldContextV3.Provider value={field}>{children}</CollectionFieldContextV3.Provider>;
+  return <CollectionFieldContextV2.Provider value={field}>{children}</CollectionFieldContextV2.Provider>;
 };
 
-export const useCollectionFieldV3 = () => {
-  const context = useContext(CollectionFieldContextV3);
+export const useCollectionFieldV2 = () => {
+  const context = useContext(CollectionFieldContextV2);
   if (!context) {
-    throw new Error('useCollectionFieldV3() must be used within a CollectionFieldProviderV3');
+    throw new Error('useCollectionFieldV2() must be used within a CollectionFieldProviderV2');
   }
 
   return context;

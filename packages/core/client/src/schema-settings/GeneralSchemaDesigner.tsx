@@ -7,11 +7,11 @@ import React, { FC, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   SchemaToolbarProvider,
+  useDataSourceV2,
   useSchemaInitializerRender,
   useSchemaSettingsRender,
-  useCollectionDataSourceName,
-  useCollectionManagerV2,
 } from '../application';
+import { useDataSourceManagerV2 } from '../application/data-source/data-source/DataSourceManagerProvider';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettingsDropdown } from './SchemaSettings';
@@ -81,10 +81,10 @@ export const GeneralSchemaDesigner: FC<GeneralSchemaDesignerProps> = (props: any
   );
   const rowCtx = useGridRowContext();
   const ctx = useGridContext();
-  const dataSourceName = useCollectionDataSourceName();
-  const collectionManager = useCollectionManagerV2();
-  const dataSources = collectionManager.getDataSources();
-  const dataSource = dataSources.length > 1 && collectionManager.getDataSource(dataSourceName);
+  const dm = useDataSourceManagerV2();
+  const dataSources = dm.getDataSources();
+  const dataSourceContext = useDataSourceV2();
+  const dataSource = dataSources.length > 1 && dataSourceContext;
 
   const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
     ? `${template?.name} ${t('(Fields only)')}`

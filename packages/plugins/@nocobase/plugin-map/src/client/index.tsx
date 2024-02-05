@@ -22,7 +22,7 @@ export class MapPlugin extends Plugin {
   async load() {
     this.app.use(MapProvider);
 
-    this.app.collectionManager.addFieldInterfaces(fields);
+    this.app.dataSourceManager.addFieldInterfaces(fields);
     this.app.collectionManager.addFieldGroups({
       map: {
         label: generateNTemplate('Map-based geometry'),

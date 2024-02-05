@@ -289,8 +289,8 @@ class MyPlugin extends Plugin {
       "db2": "DB2"
     });
 
-    this.app.collectionManager.addCollectionTemplates([ TreeCollectionTemplate, SqlCollectionTemplate ]);
-    this.app.collectionManager.addFieldInterfaces([CheckboxFieldInterface]);
+    this.app.dataSourceManager.addCollectionTemplates([ TreeCollectionTemplate, SqlCollectionTemplate ]);
+    this.app.dataSourceManager.addFieldInterfaces([CheckboxFieldInterface]);
   }
 }
 ```
@@ -348,7 +348,7 @@ collectionManager.getDataSources(); // [ { name: 'main', title: '主数据源' }
 - 类型
 
 ```tsx | pure
-collectionManager.addCollectionTemplates(templateClasses: (typeof CollectionTemplate)[]): void;
+dataSourceManager.addCollectionTemplates(templateClasses: (typeof CollectionTemplate)[]): void;
 ```
 
 - 示例
@@ -374,7 +374,7 @@ class TreeCollectionTemplate extends CollectionTemplate {
 
 class MyPlugin extends Plugin {
   async load() {
-    this.collectionManager.addCollectionTemplates([ SqlCollectionTemplate, TreeCollectionTemplate ]);
+    this.dataSourceManager.addCollectionTemplates([ SqlCollectionTemplate, TreeCollectionTemplate ]);
   }
 }
 ```
@@ -663,7 +663,7 @@ class CheckboxFieldInterface extends CollectionFieldInterface {
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.collectionManager.addFieldInterfaces([CheckboxFieldInterface]);
+    this.app.dataSourceManager.addFieldInterfaces([CheckboxFieldInterface]);
   }
 }
 ```

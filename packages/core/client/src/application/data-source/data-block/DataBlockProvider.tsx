@@ -1,59 +1,59 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
-import { BlockRequestProviderV3 } from './DataBlockRequestProvider';
-import { DataBlockResourceProviderV3 } from './DataBlockResourceProvider';
+import { BlockRequestProviderV2 } from './DataBlockRequestProvider';
+import { DataBlockResourceProviderV2 } from './DataBlockResourceProvider';
 import {
-  AssociationProviderV3,
-  CollectionManagerProviderV3,
-  CollectionOptionsV3,
-  CollectionProviderV3,
+  AssociationProviderV2,
+  CollectionManagerProviderV2,
+  CollectionOptionsV2,
+  CollectionProviderV2,
 } from '../collection';
-import { RecordV3 } from '../record';
+import { RecordV2 } from '../record';
 import { UseRequestOptions, UseRequestService } from '../../../api-client';
 import { Designable, useDesignable } from '../../../schema-component';
 import { withDynamicSchemaProps } from '../../hoc';
-import { DataSourceProviderV3 } from '../data-source';
+import { DataSourceProviderV2 } from '../data-source';
 
-export interface AllDataBlockPropsV3 {
-  collection: string | CollectionOptionsV3;
+export interface AllDataBlockPropsV2 {
+  collection: string | CollectionOptionsV2;
   association: string;
   dataSource?: string;
   sourceId?: string | number;
   filterByTk: string | number;
-  record: RecordV3;
+  record: RecordV2;
   action?: 'list' | 'get';
   params?: Record<string, any>;
-  parentRecord?: RecordV3;
+  parentRecord?: RecordV2;
   requestService?: UseRequestService<any>;
   requestOptions?: UseRequestOptions;
   [index: string]: any;
 }
 
-type CollectionCreate = Pick<AllDataBlockPropsV3, 'collection' | 'dataSource'>;
+type CollectionCreate = Pick<AllDataBlockPropsV2, 'collection' | 'dataSource'>;
 
 interface CollectionGet
   extends Pick<
-    AllDataBlockPropsV3,
+    AllDataBlockPropsV2,
     'collection' | 'dataSource' | 'filterByTk' | 'params' | 'requestService' | 'requestOptions'
   > {
   action: 'get';
 }
 
 interface CollectionList
-  extends Pick<AllDataBlockPropsV3, 'collection' | 'dataSource' | 'params' | 'requestService' | 'requestOptions'> {
+  extends Pick<AllDataBlockPropsV2, 'collection' | 'dataSource' | 'params' | 'requestService' | 'requestOptions'> {
   action: 'list';
 }
 
 type CollectionRecord = Pick<
-  AllDataBlockPropsV3,
+  AllDataBlockPropsV2,
   'collection' | 'dataSource' | 'record' | 'requestService' | 'requestOptions'
 >;
 
-type AssociationCreate = Pick<AllDataBlockPropsV3, 'association' | 'dataSource' | 'sourceId' | 'parentRecord'>;
+type AssociationCreate = Pick<AllDataBlockPropsV2, 'association' | 'dataSource' | 'sourceId' | 'parentRecord'>;
 
 interface AssociationGet
   extends Pick<
-    AllDataBlockPropsV3,
+    AllDataBlockPropsV2,
     | 'association'
     | 'dataSource'
     | 'sourceId'
@@ -68,14 +68,14 @@ interface AssociationGet
 
 interface AssociationList
   extends Pick<
-    AllDataBlockPropsV3,
+    AllDataBlockPropsV2,
     'association' | 'dataSource' | 'sourceId' | 'parentRecord' | 'params' | 'requestService' | 'requestOptions'
   > {
   action: 'list';
 }
 
 type AssociationRecord = Pick<
-  AllDataBlockPropsV3,
+  AllDataBlockPropsV2,
   'association' | 'dataSource' | 'record' | 'parentRecord' | 'requestService' | 'requestOptions'
 >;
 
@@ -90,32 +90,32 @@ type AllDataBlockType = {
   AssociationRecord: AssociationRecord;
 };
 
-export type DataBlockProviderPropsV3 = AllDataBlockType[keyof AllDataBlockType];
+export type DataBlockProviderPropsV2 = AllDataBlockType[keyof AllDataBlockType];
 
-export type UseDataBlockPropsV3<T extends keyof AllDataBlockType> = (
-  props: DataBlockProviderPropsV3 & { [index: string]: any },
+export type UseDataBlockPropsV2<T extends keyof AllDataBlockType> = (
+  props: DataBlockProviderPropsV2 & { [index: string]: any },
 ) => Omit<AllDataBlockType[T], 'association' | 'collection' | 'dataSource' | 'action'> & { [index: string]: any };
 
-export interface DataBlockContextValueV3<T extends {} = {}> {
-  props: AllDataBlockPropsV3 & T;
+export interface DataBlockContextValueV2<T extends {} = {}> {
+  props: AllDataBlockPropsV2 & T;
   dn: Designable;
 }
 
-export const DataBlockContextV3 = createContext<DataBlockContextValueV3<any>>({} as any);
-DataBlockContextV3.displayName = 'DataBlockContextV3';
+export const DataBlockContextV2 = createContext<DataBlockContextValueV2<any>>({} as any);
+DataBlockContextV2.displayName = 'DataBlockContextV2';
 
-export const DataBlockProviderV3: FC<DataBlockProviderPropsV3 & { children?: ReactNode }> = withDynamicSchemaProps(
+export const DataBlockProviderV2: FC<DataBlockProviderPropsV2 & { children?: ReactNode }> = withDynamicSchemaProps(
   (props) => {
-    const { collection, association, dataSource, children, ...resets } = props as Partial<AllDataBlockPropsV3>;
+    const { collection, association, dataSource, children, ...resets } = props as Partial<AllDataBlockPropsV2>;
     const AssociationOrCollection = useMemo(() => {
       if (association) {
         return {
-          Component: AssociationProviderV3,
+          Component: AssociationProviderV2,
           name: association,
         };
       }
       return {
-        Component: CollectionProviderV3,
+        Component: CollectionProviderV2,
         name: collection,
       };
     }, [collection, association]);
@@ -123,37 +123,37 @@ export const DataBlockProviderV3: FC<DataBlockProviderPropsV3 & { children?: Rea
     const { dn } = useDesignable();
 
     return (
-      <DataBlockContextV3.Provider
+      <DataBlockContextV2.Provider
         value={{
           dn,
-          props: { ...resets, collection, association, dataSource } as AllDataBlockPropsV3,
+          props: { ...resets, collection, association, dataSource } as AllDataBlockPropsV2,
         }}
       >
-        <DataSourceProviderV3 dataSource={dataSource}>
-          <CollectionManagerProviderV3>
+        <DataSourceProviderV2 dataSource={dataSource}>
+          <CollectionManagerProviderV2>
             <AssociationOrCollection.Component name={AssociationOrCollection.name as any}>
-              <DataBlockResourceProviderV3>
-                <BlockRequestProviderV3>{children}</BlockRequestProviderV3>
-              </DataBlockResourceProviderV3>
+              <DataBlockResourceProviderV2>
+                <BlockRequestProviderV2>{children}</BlockRequestProviderV2>
+              </DataBlockResourceProviderV2>
             </AssociationOrCollection.Component>
-          </CollectionManagerProviderV3>
-        </DataSourceProviderV3>
-      </DataBlockContextV3.Provider>
+          </CollectionManagerProviderV2>
+        </DataSourceProviderV2>
+      </DataBlockContextV2.Provider>
     );
   },
-  { displayName: 'DataBlockProviderV3' },
+  { displayName: 'DataBlockProviderV2' },
 );
 
-export const useDataBlockV3 = <T extends {}>() => {
-  const context = useContext<DataBlockContextValueV3<T>>(DataBlockContextV3);
+export const useDataBlockV2 = <T extends {}>() => {
+  const context = useContext<DataBlockContextValueV2<T>>(DataBlockContextV2);
   if (!context) {
-    throw new Error('useDataBlockV3() must be used within a DataBlockProviderV3');
+    throw new Error('useDataBlockV2() must be used within a DataBlockProviderV2');
   }
 
   return context;
 };
 
-export const useDataBlockPropsV3 = <T extends {}>(): DataBlockContextValueV3<T>['props'] => {
-  const context = useDataBlockV3<T>();
+export const useDataBlockPropsV2 = <T extends {}>(): DataBlockContextValueV2<T>['props'] => {
+  const context = useDataBlockV2<T>();
   return context.props;
 };

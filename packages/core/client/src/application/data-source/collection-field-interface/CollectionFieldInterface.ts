@@ -1,19 +1,13 @@
 import type { ISchema } from '@formily/react';
-import type { CollectionFieldOptionsV3 } from '../collection';
-import type { IField } from '../../../collection-manager';
-import type { Application } from '../../Application';
-import type { DataSourceManagerV3 } from '../data-source';
+import type { CollectionFieldOptionsV2 } from '../collection';
+import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
 
 export type CollectionFieldInterfaceFactory = new (
-  app: Application,
-  dataSourceManager: DataSourceManagerV3,
-) => CollectionFieldInterfaceV3;
+  collectionFieldInterfaceManager: CollectionFieldInterfaceManager,
+) => CollectionFieldInterface;
 
-export abstract class CollectionFieldInterfaceV3 implements IField {
-  constructor(
-    public app: Application,
-    public dataSourceManager: DataSourceManagerV3,
-  ) {}
+export abstract class CollectionFieldInterface {
+  constructor(public collectionFieldInterfaceManager: CollectionFieldInterfaceManager) {}
   name: string;
   group: string;
   title?: string;
@@ -47,7 +41,7 @@ export abstract class CollectionFieldInterfaceV3 implements IField {
     [key: string]: any;
   };
   titleUsable?: boolean;
-  abstract validateSchema(fieldSchema: ISchema): Record<string, ISchema>;
-  abstract usePathOptions(field: CollectionFieldOptionsV3): any;
-  abstract schemaInitialize(schema: ISchema, data: any): void;
+  validateSchema?(fieldSchema: ISchema): Record<string, ISchema>;
+  usePathOptions?(field: CollectionFieldOptionsV2): any;
+  schemaInitialize?(schema: ISchema, data: any): void;
 }

@@ -1,21 +1,19 @@
-import type { Application } from '../../Application';
-import type { DataSourceManagerV3 } from '../data-source';
-import type { CollectionTemplateV3, CollectionTemplateFactory } from './CollectionTemplate';
+import type { DataSourceManagerV2 } from '../data-source';
+import type { CollectionTemplate, CollectionTemplateFactory } from './CollectionTemplate';
 
-export class CollectionTemplateManagerV3 {
-  protected collectionTemplateInstances: Record<string, CollectionTemplateV3> = {};
+export class CollectionTemplateManagerV2 {
+  protected collectionTemplateInstances: Record<string, CollectionTemplate> = {};
 
   constructor(
     templateClasses: CollectionTemplateFactory[],
-    public app: Application,
-    public dataSourceManager: DataSourceManagerV3,
+    public dataSourceManager: DataSourceManagerV2,
   ) {
     this.addCollectionTemplates(templateClasses);
   }
 
   addCollectionTemplates(templateClasses: CollectionTemplateFactory[] = []) {
     const newCollectionTemplateInstances = templateClasses.reduce((acc, Template) => {
-      const instance = new Template(this.app, this.dataSourceManager);
+      const instance = new Template(this);
       acc[instance.name] = instance;
       return acc;
     }, {});
@@ -24,7 +22,7 @@ export class CollectionTemplateManagerV3 {
     return newCollectionTemplateInstances;
   }
 
-  getCollectionTemplate<T extends CollectionTemplateV3>(name: string): T {
+  getCollectionTemplate<T extends CollectionTemplate>(name: string): T {
     return this.collectionTemplateInstances[name] as T;
   }
 

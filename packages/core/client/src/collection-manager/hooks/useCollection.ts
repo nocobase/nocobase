@@ -1,8 +1,8 @@
 import { SchemaKey } from '@formily/react';
 import { useAPIClient } from '../../api-client';
-import { useCollectionV2 } from '../../application/collection/CollectionProvider';
 import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
 import { useCallback, useMemo } from 'react';
+import { useCollectionV2 } from '../../application';
 
 export type Collection = ReturnType<typeof useCollection>;
 

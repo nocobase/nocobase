@@ -8,6 +8,7 @@ import {
   useActionContext,
   useResourceActionContext,
   useResourceContext,
+  useDataSourceManagerV2,
 } from '@nocobase/client';
 import _ from 'lodash';
 import React, { useState } from 'react';
@@ -23,6 +24,7 @@ export const EditDatabaseConnectionAction = () => {
   const compile = useCompile();
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
+  const dm = useDataSourceManagerV2();
 
   const useUpdateAction = () => {
     const field = useField();
@@ -39,6 +41,8 @@ export const EditDatabaseConnectionAction = () => {
         try {
           await resource.update({ filterByTk, values: form.values });
           ctx.setVisible(false);
+          dm.getDataSource(filterByTk).setOptions(form.values);
+          dm.getDataSource(filterByTk).reload();
           await form.reset();
           refresh();
         } catch (e) {

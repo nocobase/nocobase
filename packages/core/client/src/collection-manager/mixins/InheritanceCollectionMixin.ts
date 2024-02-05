@@ -1,5 +1,5 @@
-import { CollectionFieldOptionsV2, GetCollectionFieldPredicate } from '../../application';
-import { CollectionV2 } from '../../application/collection/Collection';
+import { CollectionFieldOptionsV2, GetCollectionFieldPredicateV2 } from '../../application';
+import { CollectionV2 } from '../../application/data-source/collection/Collection';
 import _, { filter, unionBy, uniq } from 'lodash';
 
 export class InheritanceCollectionMixin extends CollectionV2 {
@@ -22,7 +22,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
 
     const parents: string[] = [];
     const getParentCollectionsInner = (collectionName: string) => {
-      const collection = this.collectionManager.getCollection(collectionName, { dataSource: this.dataSource });
+      const collection = this.collectionManager.getCollection(collectionName);
       if (collection) {
         const { inherits } = collection;
         if (inherits) {
@@ -45,7 +45,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
       return this.parentCollections;
     }
     this.parentCollections = this.getParentCollectionsName().map((collectionName) => {
-      return this.collectionManager.getCollection(collectionName, { dataSource: this.dataSource });
+      return this.collectionManager.getCollection(collectionName);
     });
     return this.parentCollections;
   }
@@ -57,7 +57,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
     }
 
     const children: string[] = [];
-    const collections = this.collectionManager.getCollections({ dataSource: this.dataSource });
+    const collections = this.collectionManager.getCollections();
     const getChildrenCollectionsInner = (collectionName: string) => {
       const inheritCollections = collections.filter((v) => {
         return v.inherits?.includes(collectionName);
@@ -90,7 +90,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
       return this.childrenCollections[cacheKey];
     }
     this.childrenCollections[cacheKey] = this.getChildrenCollectionsName(isSupportView).map((collectionName) => {
-      return this.collectionManager.getCollection(collectionName, { dataSource: this.dataSource });
+      return this.collectionManager.getCollection(collectionName);
     });
     return this.childrenCollections[cacheKey];
   }
@@ -102,10 +102,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
 
     const parentCollections = this.getParentCollectionsName();
     this.inheritsFields = parentCollections
-      .map(
-        (collectionName) =>
-          this.collectionManager.getCollection(collectionName, { dataSource: this.dataSource })?.getFields(),
-      )
+      .map((collectionName) => this.collectionManager.getCollection(collectionName)?.getFields())
       .flat()
       .filter(Boolean);
 
@@ -123,7 +120,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
     }, {});
     return this.fieldsMap;
   }
-  getCurrentFields(predicate?: GetCollectionFieldPredicate) {
+  getCurrentFields(predicate?: GetCollectionFieldPredicateV2) {
     return super.getFields(predicate);
   }
 
@@ -137,18 +134,14 @@ export class InheritanceCollectionMixin extends CollectionV2 {
 
     const currentFields = this.getCurrentFields();
     const parentCollections = this.getParentCollectionsName();
-    const parentCollection = this.collectionManager.getCollection<InheritanceCollectionMixin>(parentCollectionName, {
-      dataSource: this.dataSource,
-    });
+    const parentCollection = this.collectionManager.getCollection<InheritanceCollectionMixin>(parentCollectionName);
     const parentFields = parentCollection.getCurrentFields();
     const index = parentCollections.indexOf(parentCollectionName);
     let filterFields = currentFields;
     if (index > 0) {
       parentCollections.splice(index);
       parentCollections.forEach((collectionName) => {
-        const collection = this.collectionManager.getCollection<InheritanceCollectionMixin>(collectionName, {
-          dataSource: this.dataSource,
-        });
+        const collection = this.collectionManager.getCollection<InheritanceCollectionMixin>(collectionName);
         filterFields = filterFields.concat(collection.getCurrentFields());
       });
     }
@@ -168,9 +161,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
 
     const collectionsInheritChain = [this.name];
     const getInheritChain = (name: string) => {
-      const collection = this.collectionManager.getCollection<InheritanceCollectionMixin>(name, {
-        dataSource: this.dataSource,
-      });
+      const collection = this.collectionManager.getCollection<InheritanceCollectionMixin>(name);
       if (collection) {
         const { inherits } = collection;
         const children = collection.getChildrenCollectionsName();
@@ -188,7 +179,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
         // 搜寻后代表
         if (children) {
           for (let index = 0; index < children.length; index++) {
-            const collection = this.collectionManager.getCollection(children[index], { dataSource: this.dataSource });
+            const collection = this.collectionManager.getCollection(children[index]);
             const collectionKey = collection.name;
             if (collectionsInheritChain.includes(collectionKey)) {
               continue;
@@ -211,7 +202,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
     }
     const collectionsInheritChain = [this.name];
     const getInheritChain = (name: string) => {
-      const collection = this.collectionManager.getCollection(name, { dataSource: this.dataSource });
+      const collection = this.collectionManager.getCollection(name);
       if (collection) {
         const { inherits } = collection;
         if (inherits) {
@@ -233,7 +224,7 @@ export class InheritanceCollectionMixin extends CollectionV2 {
     return this.inheritCollectionsChain;
   }
 
-  getAllFields(predicate?: GetCollectionFieldPredicate) {
+  getAllFields(predicate?: GetCollectionFieldPredicateV2) {
     if (this.allFields?.length) {
       return this.allFields;
     }

@@ -117,6 +117,7 @@ export const databaseConnectionSchema: ISchema = {
                   title: "{{t('Delete')}}",
                   content: "{{t('Are you sure you want to delete it?')}}",
                 },
+                actionCallback: '{{ dataSourceDeleteCallback }}',
               },
             },
             create: {

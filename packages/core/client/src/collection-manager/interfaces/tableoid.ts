@@ -1,4 +1,4 @@
-import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../application/data-source/collection-field-interface/CollectionFieldInterface';
 import { operators } from './properties';
 import { IField } from './types';
 

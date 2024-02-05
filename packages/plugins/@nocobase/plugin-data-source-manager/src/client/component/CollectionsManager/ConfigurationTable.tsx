@@ -20,7 +20,7 @@ import {
   FieldSummary,
   TemplateSummary,
   ResourceActionContext,
-  useCollectionManagerV2,
+  useDataSourceManagerV2,
 } from '@nocobase/client';
 import { message } from 'antd';
 import { getCollectionSchema } from './schema/collections';
@@ -103,11 +103,10 @@ export const ConfigurationTable = () => {
   const api = useAPIClient();
   const resource = api.resource('dbViews');
   const compile = useCompile();
-  const cm = useCollectionManagerV2();
-
+  const dm = useDataSourceManagerV2();
   useEffect(() => {
     return () => {
-      cm.reloadThirdDataSource();
+      dm.getDataSource(name).reload();
     };
   }, []);
   const loadCategories = async () => {

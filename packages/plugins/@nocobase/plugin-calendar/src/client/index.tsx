@@ -8,7 +8,7 @@ import { CalendarBlockInitializer, RecordAssociationCalendarBlockInitializer } f
 
 export class PluginCalendarClient extends Plugin {
   async load() {
-    this.app.collectionManager.addCollectionTemplates([CalendarCollectionTemplate]);
+    this.app.dataSourceManager.addCollectionTemplates([CalendarCollectionTemplate]);
     this.app.schemaInitializerManager.addItem('BlockInitializers', 'dataBlocks.calendar', {
       title: generateNTemplate('Calendar'),
       Component: 'CalendarBlockInitializer',

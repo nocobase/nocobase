@@ -1,14 +1,14 @@
 import { SchemaKey } from '@formily/react';
 import { filter } from 'lodash';
 
-import type { CollectionManagerV3 } from './CollectionManager';
+import type { CollectionManagerV2 } from './CollectionManager';
 import type { Application } from '../../Application';
-import type { DataSourceManagerV3, DataSourceV3 } from '../data-source';
+import type { DataSourceManagerV2, DataSourceV2 } from '../data-source';
 
 type dumpable = 'required' | 'optional' | 'skip';
 type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
 
-export interface CollectionFieldOptionsV3 {
+export interface CollectionFieldOptionsV2 {
   name?: any;
   collectionName?: string;
   sourceKey?: string; // association field
@@ -18,7 +18,7 @@ export interface CollectionFieldOptionsV3 {
   [key: string]: any;
 }
 
-export interface CollectionOptionsV3 {
+export interface CollectionOptionsV2 {
   name: string;
   title?: string;
   dataSource?: string;
@@ -47,7 +47,7 @@ export interface CollectionOptionsV3 {
   writableView?: boolean;
 
   filterTargetKey?: string;
-  fields?: CollectionFieldOptionsV3[];
+  fields?: CollectionFieldOptionsV2[];
   model?: any;
   repository?: any;
   sortable?: CollectionSortable;
@@ -73,23 +73,24 @@ export interface CollectionOptionsV3 {
   [key: string]: any;
 }
 
-export type GetCollectionFieldPredicateV3 =
-  | ((collection: CollectionFieldOptionsV3) => boolean)
-  | CollectionFieldOptionsV3
-  | keyof CollectionFieldOptionsV3;
+export type GetCollectionFieldPredicateV2 =
+  | ((collection: CollectionFieldOptionsV2) => boolean)
+  | CollectionFieldOptionsV2
+  | keyof CollectionFieldOptionsV2;
 
-export class CollectionV3 {
-  protected fieldsMap: Record<string, CollectionFieldOptionsV3>;
+export class CollectionV2 {
+  protected fieldsMap: Record<string, CollectionFieldOptionsV2>;
   protected primaryKey: string;
   constructor(
-    protected options: CollectionOptionsV3,
-    public app: Application,
-    public DataSourceManager: DataSourceManagerV3,
-    public DataSource: DataSourceV3,
-    public collectionManager: CollectionManagerV3,
+    protected options: CollectionOptionsV2,
+    public collectionManager: CollectionManagerV2,
   ) {}
   get fields() {
     return this.options.fields || [];
+  }
+
+  get app() {
+    return this.collectionManager.app;
   }
 
   get dataSource() {
@@ -224,7 +225,7 @@ export class CollectionV3 {
   getOptions() {
     return this.options;
   }
-  getOption<K extends keyof CollectionOptionsV3>(key: K): CollectionOptionsV3[K] {
+  getOption<K extends keyof CollectionOptionsV2>(key: K): CollectionOptionsV2[K] {
     return this.options[key];
   }
   /**
@@ -236,7 +237,7 @@ export class CollectionV3 {
    * getFields('primaryKey') // 获取 primaryKey: true 字段
    * getFields((field) => field.name === 'nickname') // 获取 name: 'nickname' 字段
    */
-  getFields(predicate?: GetCollectionFieldPredicateV3) {
+  getFields(predicate?: GetCollectionFieldPredicateV2) {
     return predicate ? filter(this.fields, predicate) : this.fields;
   }
   getFieldsMap() {

@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { SQLInput, PreviewTable, FieldsConfigure, SQLRequestProvider } from './components/sql-collection';
 import { getConfigurableProperties } from './properties';
 import { i18n } from '../../i18n';
-import { CollectionTemplate } from '../../application/collection/CollectionTemplate';
+import { CollectionTemplate } from '../../application/data-source/collection-template/CollectionTemplate';
 import { ICollectionTemplate } from './types';
 
 export const sql: ICollectionTemplate = {

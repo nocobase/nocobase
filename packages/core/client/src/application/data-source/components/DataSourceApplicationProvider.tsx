@@ -1,9 +1,9 @@
 import React, { FC } from 'react';
-import { DataSourceManagerProviderV3, DataSourceManagerV3 } from '../data-source';
-import { CollectionManagerProviderPropsV3, CollectionManagerProviderV3 } from '../collection';
+import { DataSourceManagerProviderV2, DataSourceManagerV2 } from '../data-source';
+import { CollectionManagerProviderPropsV2, CollectionManagerProviderV2 } from '../collection';
 
-interface DataSourceApplicationProviderProps extends CollectionManagerProviderPropsV3 {
-  dataSourceManager: DataSourceManagerV3;
+interface DataSourceApplicationProviderProps extends CollectionManagerProviderPropsV2 {
+  dataSourceManager: DataSourceManagerV2;
 }
 
 export const DataSourceApplicationProvider: FC<DataSourceApplicationProviderProps> = ({
@@ -12,8 +12,8 @@ export const DataSourceApplicationProvider: FC<DataSourceApplicationProviderProp
   ...otherProps
 }) => {
   return (
-    <DataSourceManagerProviderV3 dataSourceManager={dataSourceManager}>
-      <CollectionManagerProviderV3 {...otherProps}>{children}</CollectionManagerProviderV3>
-    </DataSourceManagerProviderV3>
+    <DataSourceManagerProviderV2 dataSourceManager={dataSourceManager}>
+      <CollectionManagerProviderV2 {...otherProps}>{children}</CollectionManagerProviderV2>
+    </DataSourceManagerProviderV2>
   );
 };

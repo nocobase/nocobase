@@ -5,8 +5,12 @@ import {
   CollectionProvider,
   Filter,
   Input,
+  LocalDataSource,
   SchemaComponent,
   useCollection,
+  Plugin,
+  DEFAULT_DATA_SOURCE_NAME,
+  DEFAULT_DATA_SOURCE_TITLE,
 } from '@nocobase/client';
 import { Select } from 'antd';
 import React, { useState } from 'react';
@@ -99,12 +103,17 @@ const Demo = () => {
     </AntdSchemaComponentProvider>
   );
 };
-
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.dataSourceManager.addDataSource(LocalDataSource, {
+      key: DEFAULT_DATA_SOURCE_NAME,
+      displayName: DEFAULT_DATA_SOURCE_TITLE,
+      collections: collections as any,
+    });
+  }
+}
 const app = new Application({
-  collectionManager: {
-    collections: collections as any,
-  },
-  plugins: [CollectionPlugin],
+  plugins: [CollectionPlugin, MyPlugin],
   components: {
     Input,
     Filter,

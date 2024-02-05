@@ -12,7 +12,6 @@ import {
   SchemaSettingsRemove,
   useCollection,
   useCollectionFilterOptions,
-  useCollectionManagerV2,
   useDesignable,
   useMenuSearch,
 } from '@nocobase/client';

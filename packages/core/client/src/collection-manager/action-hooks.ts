@@ -387,7 +387,7 @@ export const useFilterAction = () => {
   };
 };
 
-export const useCreateAction = () => {
+export const useCreateAction = (actionCallback?: (values: any) => void) => {
   const form = useForm();
   const field = useField();
   const ctx = useActionContext();
@@ -399,8 +399,9 @@ export const useCreateAction = () => {
         await form.submit();
         field.data = field.data || {};
         field.data.loading = true;
-        await resource.create({ values: form.values });
+        const res = await resource.create({ values: form.values });
         ctx.setVisible(false);
+        actionCallback?.(res?.data?.data);
         await form.reset();
         field.data.loading = false;
         refresh();
@@ -413,19 +414,20 @@ export const useCreateAction = () => {
   };
 };
 
-export const useCreateActionWithoutRefresh = () => {
+export const useCreateActionWithoutRefresh = (actionCallback?: (values: any) => void) => {
   const form = useForm();
   const { resource } = useResourceContext();
   return {
     async run() {
       await form.submit();
-      await resource.create({ values: form.values });
+      const res = await resource.create({ values: form.values });
+      actionCallback?.(res?.data?.data);
       await form.reset();
     },
   };
 };
 
-export const useUpdateViewAction = () => {
+export const useUpdateViewAction = (actionCallback?: (filterByTk: string, values: any) => void) => {
   const form = useForm();
   const ctx = useActionContext();
   // const { refresh } = useResourceActionContext();
@@ -434,7 +436,8 @@ export const useUpdateViewAction = () => {
   return {
     async run() {
       await form.submit();
-      await resource.update({ filterByTk, values: form.values });
+      const res = await resource.update({ filterByTk, values: form.values });
+      actionCallback?.(filterByTk, res?.data?.data);
       // refresh();
       message.success('保存成功');
     },
@@ -455,7 +458,7 @@ export const useMoveAction = () => {
   };
 };
 
-export const useUpdateAction = () => {
+export const useUpdateAction = (actionCallback?: (key: string, values: any) => void) => {
   const field = useField();
   const form = useForm();
   const ctx = useActionContext();
@@ -468,8 +471,9 @@ export const useUpdateAction = () => {
       field.data = field.data || {};
       field.data.loading = true;
       try {
-        await resource.update({ filterByTk, values: form.values });
+        const res = await resource.update({ filterByTk, values: form.values });
         ctx.setVisible(false);
+        actionCallback?.(filterByTk, res?.data?.data);
         await form.reset();
         refresh();
       } catch (e) {
@@ -481,19 +485,20 @@ export const useUpdateAction = () => {
   };
 };
 
-export const useDestroyAction = () => {
+export const useDestroyAction = (actionCallback?: (key: string) => void) => {
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
   const { [targetKey]: filterByTk } = useRecord();
   return {
     async run() {
       await resource.destroy({ filterByTk });
+      actionCallback?.(filterByTk);
       refresh();
     },
   };
 };
 
-export const useBulkDestroyAction = () => {
+export const useBulkDestroyAction = (actionCallback?: (keys: string[]) => void) => {
   const { state, setState, refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
   const { t } = useTranslation();
@@ -505,6 +510,7 @@ export const useBulkDestroyAction = () => {
       await resource.destroy({
         filterByTk: state?.selectedRowKeys || [],
       });
+      actionCallback?.(state?.selectedRowKeys);
       setState?.({ selectedRowKeys: [] });
       refresh();
     },

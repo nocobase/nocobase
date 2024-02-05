@@ -8,7 +8,6 @@ export * from './schema-initializer';
 export * from './schema-settings';
 export * from './schema-toolbar';
 export * from './PluginSettingsManager';
-export * from './data-block';
 export * from './hoc';
-export * from './collection';
+export * from './data-source';
 export { ApplicationContext } from './context';
