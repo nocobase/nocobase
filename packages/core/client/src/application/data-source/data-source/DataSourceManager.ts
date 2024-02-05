@@ -1,47 +1,52 @@
-import type { CollectionV3 } from '../collection';
+import type { CollectionOptionsV2, CollectionV2 } from '../collection';
 import type { Application } from '../../Application';
 
-import { type DataSourceOptionsV3, DataSourceV3, LocalDataSource, DataSourceFactory } from './DataSource';
-import { type CollectionTemplateFactory, CollectionTemplateManagerV3 } from '../collection-template';
+import { type DataSourceOptionsV2, DataSourceV2, LocalDataSource, DataSourceFactory } from './DataSource';
+import { type CollectionTemplateFactory, CollectionTemplateManagerV2 } from '../collection-template';
 import { type CollectionFieldInterfaceFactory, CollectionFieldInterfaceManager } from '../collection-field-interface';
+import type { SchemaKey } from '@formily/json-schema';
 
-export const DEFAULT_DATA_SOURCE_NAME_V3 = 'main';
-export const DEFAULT_DATA_SOURCE_TITLE_V3 = '{{t("main")}}';
+export const DEFAULT_DATA_SOURCE_NAME = 'main';
+export const DEFAULT_DATA_SOURCE_TITLE = '{{t("main")}}';
 
-export interface DataSourceManagerOptionsV3 {
+export interface DataSourceManagerOptionsV2 {
   collectionTemplates?: CollectionTemplateFactory[];
   fieldInterfaces?: CollectionFieldInterfaceFactory[];
   fieldInterfaceGroups?: Record<string, { label: string; order?: number }>;
-  collectionMixins?: (typeof CollectionV3)[];
-  dataSources?: DataSourceOptionsV3[];
+  collectionMixins?: (typeof CollectionV2)[];
+  dataSources?: DataSourceOptionsV2[];
 }
 
-export class DataSourceManagerV3 {
-  protected dataSourceInstancesMap: Record<string, DataSourceV3> = {};
-  protected multiDataSources: [() => Promise<DataSourceOptionsV3[]>, DataSourceFactory][] = [];
-  public collectionMixins: (typeof CollectionV3)[] = [];
-  public collectionTemplateManager: CollectionTemplateManagerV3;
+export class DataSourceManagerV2 {
+  protected dataSourceInstancesMap: Record<string, DataSourceV2> = {};
+  protected multiDataSources: [() => Promise<DataSourceOptionsV2[]>, DataSourceFactory][] = [];
+  public collectionMixins: (typeof CollectionV2)[] = [];
+  public collectionTemplateManager: CollectionTemplateManagerV2;
   public collectionFieldInterfaceManager: CollectionFieldInterfaceManager;
 
   constructor(
-    protected options: DataSourceManagerOptionsV3 = {},
+    protected options: DataSourceManagerOptionsV2 = {},
     public app: Application,
   ) {
-    this.collectionTemplateManager = new CollectionTemplateManagerV3(options.collectionTemplates, app, this);
+    this.collectionTemplateManager = new CollectionTemplateManagerV2(options.collectionTemplates, this);
     this.collectionFieldInterfaceManager = new CollectionFieldInterfaceManager(
       options.fieldInterfaces,
       options.fieldInterfaceGroups,
-      app,
       this,
     );
     this.collectionMixins.push(...(options.collectionMixins || []));
+
+    this.addDataSource(LocalDataSource, {
+      key: DEFAULT_DATA_SOURCE_NAME,
+      displayName: DEFAULT_DATA_SOURCE_TITLE,
+    });
 
     (options.dataSources || []).forEach((dataSourceOptions) => {
       this.addDataSource(LocalDataSource, dataSourceOptions);
     });
   }
 
-  addCollectionMixins(mixins: (typeof CollectionV3)[] = []) {
+  addCollectionMixins(mixins: (typeof CollectionV2)[] = []) {
     const newMixins = mixins.filter((mixin) => !this.collectionMixins.includes(mixin));
     this.collectionMixins.push(...newMixins);
 
@@ -53,21 +58,38 @@ export class DataSourceManagerV3 {
     return Object.values(this.dataSourceInstancesMap);
   }
 
-  getDataSource(name: string) {
-    return name ? this.dataSourceInstancesMap[name] : this.dataSourceInstancesMap[DEFAULT_DATA_SOURCE_NAME_V3];
+  getDataSource(key?: string) {
+    return key ? this.dataSourceInstancesMap[key] : this.dataSourceInstancesMap[DEFAULT_DATA_SOURCE_NAME];
   }
 
-  addDataSource(DataSource: DataSourceFactory, options: DataSourceOptionsV3) {
-    const dataSourceInstance = new DataSource(options, this.app, this);
+  removeDataSources(keys: string[]) {
+    keys.forEach((key) => {
+      delete this.dataSourceInstancesMap[key];
+    });
+  }
+
+  addDataSource(DataSource: DataSourceFactory, options: DataSourceOptionsV2) {
+    const dataSourceInstance = new DataSource(options, this);
     this.dataSourceInstancesMap[dataSourceInstance.key] = dataSourceInstance;
     return dataSourceInstance;
   }
 
-  async addDataSources(request: () => Promise<DataSourceOptionsV3[]>, DataSource: DataSourceFactory) {
+  async addDataSources(request: () => Promise<DataSourceOptionsV2[]>, DataSource: DataSourceFactory) {
     this.multiDataSources.push([request, DataSource]);
   }
 
-  getAllCollections(predicate?: (collection: CollectionV3) => boolean) {
+  getCollections(dataSource?: string) {
+    return this.getDataSource(dataSource).collectionManager.getCollections();
+  }
+
+  getCollection<Mixins = {}>(
+    path: SchemaKey | CollectionOptionsV2,
+    dataSource?: string,
+  ): (Mixins & CollectionV2) | undefined {
+    return this.getDataSource(dataSource).collectionManager.getCollection(path);
+  }
+
+  getAllCollections(predicate?: (collection: CollectionV2) => boolean) {
     return this.getDataSources().reduce((acc, dataSource) => {
       acc.push({
         ...dataSource.getOptions(),
@@ -75,6 +97,18 @@ export class DataSourceManagerV3 {
       });
       return acc;
     }, []);
+  }
+
+  addFieldInterfaceGroups(options: Record<string, { label: string; order?: number }>) {
+    this.collectionFieldInterfaceManager.addFieldInterfaceGroups(options);
+  }
+
+  addCollectionTemplates(templateClasses: CollectionTemplateFactory[] = []) {
+    this.collectionTemplateManager.addCollectionTemplates(templateClasses);
+  }
+
+  addFieldInterfaces(fieldInterfaceClasses: CollectionFieldInterfaceFactory[] = []) {
+    this.collectionFieldInterfaceManager.addFieldInterfaces(fieldInterfaceClasses);
   }
 
   async reload() {

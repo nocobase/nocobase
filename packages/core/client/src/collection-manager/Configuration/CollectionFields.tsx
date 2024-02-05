@@ -93,9 +93,6 @@ const CurrentFields = (props) => {
             .update({ filterByTk, values: { titleField: checked ? record.name : 'id' } })
             .then(async () => {
               await props.refreshAsync();
-              // if (data?.data) {
-              //   // updateCollection(data.data);
-              // }
               setLoadingRecord(null);
               refreshCM();
             })
@@ -211,9 +208,6 @@ const InheritFields = (props) => {
             .update({ filterByTk, values: { titleField: checked ? record.name : 'id' } })
             .then(async () => {
               await props.refreshAsync();
-              // if (data?.data) {
-              //   updateCollection(data.data);
-              // }
               setLoadingRecord(null);
               refreshCM();
             })

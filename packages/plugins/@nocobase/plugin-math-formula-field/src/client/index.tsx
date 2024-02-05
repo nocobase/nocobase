@@ -5,7 +5,7 @@ import { MathFormulaFieldInterface } from './math-formula';
 export class MathFormulaFieldPlugin extends Plugin {
   async load() {
     this.app.use(MathFormulaFieldProvider);
-    this.app.collectionManager.addFieldInterfaces([MathFormulaFieldInterface]);
+    this.app.dataSourceManager.addFieldInterfaces([MathFormulaFieldInterface]);
   }
 }
 

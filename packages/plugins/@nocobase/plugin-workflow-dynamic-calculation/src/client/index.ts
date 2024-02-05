@@ -14,7 +14,7 @@ export default class extends Plugin {
 
   // You can get and modify the app instance here
   async load() {
-    this.app.collectionManager.addFieldInterfaces([ExpressionFieldInterface]);
+    this.app.dataSourceManager.addFieldInterfaces([ExpressionFieldInterface]);
     this.app.addComponents({
       DynamicExpression,
     });

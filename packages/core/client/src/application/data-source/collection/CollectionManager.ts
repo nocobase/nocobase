@@ -1,45 +1,43 @@
 import type { SchemaKey } from '@formily/json-schema';
-import type { Application } from '../../Application';
-import type { DataSourceV3, DataSourceManagerV3 } from '../data-source';
-import type { CollectionFieldOptionsV3, CollectionOptionsV3 } from './Collection';
+import type { DataSourceV2 } from '../data-source';
+import type { CollectionFieldOptionsV2, CollectionOptionsV2 } from './Collection';
 
-import { CollectionV3 } from './Collection';
+import { CollectionV2 } from './Collection';
 import { applyMixins, collectionTransform } from './utils';
 
-export class CollectionManagerV3 {
-  public collectionInstancesMap: Record<string, CollectionV3> = {};
-  public collectionInstancesArr: CollectionV3[] = [];
+export class CollectionManagerV2 {
+  public collectionInstancesMap: Record<string, CollectionV2> = {};
+  public collectionInstancesArr: CollectionV2[] = [];
 
   constructor(
-    collections: CollectionOptionsV3[],
-    public app: Application,
-    public dataSourceManager: DataSourceManagerV3,
-    public dataSource: DataSourceV3,
+    collections: CollectionOptionsV2[],
+    public dataSource: DataSourceV2,
   ) {
     this.addCollections(collections);
   }
 
-  protected getCollectionInstance(collection: CollectionOptionsV3) {
-    const collectionTemplateInstance = this.dataSourceManager.collectionTemplateManager.getCollectionTemplate(
-      collection.template,
-    );
-    const Cls = collectionTemplateInstance?.Collection || CollectionV3;
+  get dataSourceManager() {
+    return this.dataSource.dataSourceManager;
+  }
+
+  get app() {
+    return this.dataSourceManager.app;
+  }
+
+  protected getCollectionInstance(collection: CollectionOptionsV2) {
+    const collectionTemplateInstance =
+      this.dataSource.dataSourceManager.collectionTemplateManager.getCollectionTemplate(collection.template);
+    const Cls = collectionTemplateInstance?.Collection || CollectionV2;
     const transform = collectionTemplateInstance?.transform;
     const transformedCollection = transform
       ? transform(collectionTransform(collection, this.app), this.app)
-      : collectionTransform(collection, this.app);
-    const instance = new Cls(
-      { ...transformedCollection, dataSource: this.dataSource.key },
-      this.app,
-      this.dataSourceManager,
-      this.dataSource,
-      this,
-    );
+      : collectionTransform(collection, this.dataSource.dataSourceManager.app);
+    const instance = new Cls({ ...transformedCollection, dataSource: this.dataSource.key }, this);
     applyMixins(instance, this.dataSourceManager.collectionMixins);
     return instance;
   }
 
-  addCollections(collections: CollectionOptionsV3[] = []) {
+  addCollections(collections: CollectionOptionsV2[] = []) {
     this.collectionInstancesArr = collections.map((collection) => this.getCollectionInstance(collection));
 
     this.collectionInstancesMap = this.collectionInstancesArr.reduce((acc, collectionInstance) => {
@@ -55,11 +53,11 @@ export class CollectionManagerV3 {
    * getCollection('users.profile'); // Get the associated collection of the 'profile' field in the 'users' collection
    * getCollection('a.b.c'); // Get the associated collection of the 'c' field in the 'a' collection, which is associated with the 'b'  field in the 'a' collection
    */
-  getCollection<Mixins = {}>(path: SchemaKey | CollectionOptionsV3): (Mixins & CollectionV3) | undefined {
+  getCollection<Mixins = {}>(path: SchemaKey | CollectionOptionsV2): (Mixins & CollectionV2) | undefined {
     if (!path) return undefined;
 
     if (typeof path === 'object') {
-      return this.getCollectionInstance(path) as Mixins & CollectionV3;
+      return this.getCollectionInstance(path) as Mixins & CollectionV2;
     }
 
     if (String(path).split('.').length > 1) {
@@ -68,17 +66,17 @@ export class CollectionManagerV3 {
       return this.getCollection(associationField.target);
     }
 
-    return this.collectionInstancesMap[path] as Mixins & CollectionV3;
+    return this.collectionInstancesMap[path] as Mixins & CollectionV2;
   }
 
-  getCollections(predicate?: (collection: CollectionV3) => boolean) {
+  getCollections(predicate?: (collection: CollectionV2) => boolean) {
     if (predicate) {
       return this.collectionInstancesArr.filter(predicate);
     }
     return this.collectionInstancesArr;
   }
 
-  getCollectionName(path: SchemaKey | CollectionOptionsV3): string | undefined {
+  getCollectionName(path: SchemaKey | CollectionOptionsV2): string | undefined {
     const res = this.getCollection(path);
     return res?.name;
   }
@@ -89,7 +87,7 @@ export class CollectionManagerV3 {
    * getField('users.username'); // Get the 'username' field of the 'users' collection
    * getField('a.b.c'); // Get the associated collection of the 'c' field in the 'a' collection, which is associated with the 'b' field in the 'a' collection
    */
-  getCollectionField(path: SchemaKey | CollectionFieldOptionsV3) {
+  getCollectionField(path: SchemaKey | CollectionFieldOptionsV2) {
     if (!path) return;
 
     if (typeof path === 'object') {
@@ -113,8 +111,8 @@ export class CollectionManagerV3 {
     return this.getCollection(collectionName)?.getFields() || [];
   }
 
-  clone(collections: CollectionOptionsV3[] = []) {
-    const collectionManager = new CollectionManagerV3([], this.app, this.dataSourceManager, this.dataSource);
+  clone(collections: CollectionOptionsV2[] = []) {
+    const collectionManager = new CollectionManagerV2([], this.dataSource);
 
     collectionManager.collectionInstancesArr = this.collectionInstancesArr;
     collectionManager.collectionInstancesMap = this.collectionInstancesMap;

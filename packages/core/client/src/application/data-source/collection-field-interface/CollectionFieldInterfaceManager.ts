@@ -1,31 +1,30 @@
 import type { Application } from '../../Application';
-import type { DataSourceManagerV3 } from '../data-source';
-import type { CollectionFieldInterfaceV3, CollectionFieldInterfaceFactory } from './CollectionFieldInterface';
+import type { DataSourceManagerV2 } from '../data-source';
+import type { CollectionFieldInterface, CollectionFieldInterfaceFactory } from './CollectionFieldInterface';
 
 export class CollectionFieldInterfaceManager {
-  protected collectionFieldInterfaceInstances: Record<string, CollectionFieldInterfaceV3> = {};
+  protected collectionFieldInterfaceInstances: Record<string, CollectionFieldInterface> = {};
   protected collectionFieldGroups: Record<string, { label: string; order?: number }> = {};
 
   constructor(
     fieldInterfaceClasses: CollectionFieldInterfaceFactory[],
     fieldInterfaceGroups: Record<string, { label: string; order?: number }>,
-    public app: Application,
-    public dataSourceManager: DataSourceManagerV3,
+    public dataSourceManager: DataSourceManagerV2,
   ) {
     this.addFieldInterfaces(fieldInterfaceClasses);
-    this.addFieldGroups(fieldInterfaceGroups);
+    this.addFieldInterfaceGroups(fieldInterfaceGroups);
   }
 
   addFieldInterfaces(fieldInterfaceClasses: CollectionFieldInterfaceFactory[] = []) {
     const newCollectionFieldInterfaces = fieldInterfaceClasses.reduce((acc, Interface) => {
-      const instance = new Interface(this.app, this.dataSourceManager);
+      const instance = new Interface(this);
       acc[instance.name] = instance;
       return acc;
     }, {});
 
     Object.assign(this.collectionFieldInterfaceInstances, newCollectionFieldInterfaces);
   }
-  getFieldInterface<T extends CollectionFieldInterfaceV3>(name: string) {
+  getFieldInterface<T extends CollectionFieldInterface>(name: string) {
     return this.collectionFieldInterfaceInstances[name] as T;
   }
   getFieldInterfaces(dataSourceType?: string) {
@@ -43,13 +42,13 @@ export class CollectionFieldInterfaceManager {
     });
   }
 
-  addFieldGroups(groups: Record<string, { label: string; order?: number }>) {
+  addFieldInterfaceGroups(groups: Record<string, { label: string; order?: number }>) {
     Object.assign(this.collectionFieldGroups, groups);
   }
-  getFieldGroups() {
+  getFieldInterfaceGroups() {
     return this.collectionFieldGroups;
   }
-  getFieldGroup(name: string) {
+  getFieldInterfaceGroup(name: string) {
     return this.collectionFieldGroups[name];
   }
 }

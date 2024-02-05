@@ -8,21 +8,21 @@ import template from 'lodash/template';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  CollectionManagerProviderV2,
   TableFieldResource,
   WithoutTableFieldResource,
   useAPIClient,
   useActionContext,
+  useDataSourceHeaders,
   useDesignable,
   useRecord,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
-import { CollectionDataSourceProvider } from '../application/collection/CollectionDataSourceProvider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { useTemplateBlockContext } from './TemplateBlockProvider';
 import { useAssociationNames } from './hooks';
-import { useDataSourceHeaders } from '../application/collection/utils';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
@@ -322,7 +322,7 @@ export const BlockProvider = (props: {
 
   return (
     <BlockContext.Provider value={blockValue}>
-      <CollectionDataSourceProvider dataSource={dataSource}>
+      <CollectionManagerProviderV2 dataSource={dataSource}>
         <MaybeCollectionProvider collection={collection}>
           <BlockAssociationContext.Provider value={association}>
             <BlockResourceContext.Provider value={resource}>
@@ -334,7 +334,7 @@ export const BlockProvider = (props: {
             </BlockResourceContext.Provider>
           </BlockAssociationContext.Provider>
         </MaybeCollectionProvider>
-      </CollectionDataSourceProvider>
+      </CollectionManagerProviderV2>
     </BlockContext.Provider>
   );
 };

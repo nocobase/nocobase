@@ -6,12 +6,16 @@ import {
   CollectionField,
   CollectionPlugin,
   CurrentUserProvider,
+  DEFAULT_DATA_SOURCE_NAME,
+  DEFAULT_DATA_SOURCE_TITLE,
   FormBlockProvider,
   FormItem,
   FormV2,
   Grid,
   Input,
+  LocalDataSource,
   Password,
+  Plugin,
   SchemaComponent,
 } from '@nocobase/client';
 import React from 'react';
@@ -104,12 +108,18 @@ const Demo = () => {
   );
 };
 
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.dataSourceManager.addDataSource(LocalDataSource, {
+      key: DEFAULT_DATA_SOURCE_NAME,
+      displayName: DEFAULT_DATA_SOURCE_TITLE,
+      collections: collections as any,
+    });
+  }
+}
 const app = new Application({
   apiClient,
-  collectionManager: {
-    collections: collections as any,
-  },
-  plugins: [CollectionPlugin],
+  plugins: [CollectionPlugin, MyPlugin],
   components: {
     FormBlockProvider,
     FormItem,

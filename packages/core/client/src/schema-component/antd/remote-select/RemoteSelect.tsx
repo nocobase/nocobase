@@ -7,11 +7,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { mergeFilter } from '../../../filter-provider/utils';
-import { useDataSourceHeaders } from '../../../';
-import { useCollectionDataSourceName } from '../../../application/collection/CollectionDataSourceProvider';
 import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
+import { useDataSourceHeaders, useDataSourceKey } from '../../../application';
 const EMPTY = 'N/A';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
@@ -43,7 +42,7 @@ const InternalRemoteSelect = connect(
       optionFilter,
       ...others
     } = props;
-    const dataSource = useCollectionDataSourceName();
+    const dataSource = useDataSourceKey();
     const headers = useDataSourceHeaders(dataSource);
     const [open, setOpen] = useState(false);
     const firstRun = useRef(false);

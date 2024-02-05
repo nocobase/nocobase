@@ -56,7 +56,7 @@ class EmailFieldInterface extends CollectionFieldInterface {
 
 class MyPlugin extends Plugin {
   load() {
-    this.app.collectionManager.addFieldInterfaces([ EmailFieldInterface ]);
+    this.app.dataSourceManager.addFieldInterfaces([ EmailFieldInterface ]);
   }
 }
 ```

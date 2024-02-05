@@ -34,8 +34,8 @@ export class Plugin<T = any> {
     return this.app.schemaSettingsManager;
   }
 
-  get collectionManager() {
-    return this.app.collectionManager;
+  get dataSourceManager() {
+    return this.app.dataSourceManager;
   }
 
   async afterAdd() {}

@@ -1,18 +1,19 @@
 import { ISchema, useForm } from '@formily/react';
 import {
-  APIClientProvider,
   Action,
   Application,
   CollectionField,
-  CollectionManagerProvider,
   CollectionPlugin,
   CurrentUserProvider,
+  DEFAULT_DATA_SOURCE_NAME,
+  DEFAULT_DATA_SOURCE_TITLE,
   FormBlockProvider,
   FormItem,
   FormV2,
   Input,
+  Plugin,
+  LocalDataSource,
   SchemaComponent,
-  SchemaComponentProvider,
   useFormBlockContext,
 } from '@nocobase/client';
 import { notification } from 'antd';
@@ -93,12 +94,19 @@ const Demo = () => {
   );
 };
 
+class MyPlugin extends Plugin {
+  async load() {
+    this.app.dataSourceManager.addDataSource(LocalDataSource, {
+      key: DEFAULT_DATA_SOURCE_NAME,
+      displayName: DEFAULT_DATA_SOURCE_TITLE,
+      collections: collections as any,
+    });
+  }
+}
+
 const app = new Application({
   apiClient,
-  collectionManager: {
-    collections: collections as any,
-  },
-  plugins: [CollectionPlugin],
+  plugins: [CollectionPlugin, MyPlugin],
   components: {
     FormBlockProvider,
     FormV2,

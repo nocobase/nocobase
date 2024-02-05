@@ -1,35 +1,36 @@
-import type { Application } from '../../Application';
-import type { CollectionOptionsV3 } from '../collection';
-import type { DataSourceManagerV3 } from './DataSourceManager';
+import type { CollectionOptionsV2 } from '../collection';
+import type { DataSourceManagerV2 } from './DataSourceManager';
 
-import { CollectionManagerV3 } from '../collection';
+import { CollectionManagerV2 } from '../collection';
 
-type LoadCallback = (collections: CollectionOptionsV3[]) => void;
+type LoadCallback = (collections: CollectionOptionsV2[]) => void;
 
-export interface DataSourceOptionsV3 {
+export interface DataSourceOptionsV2 {
   key: string;
   displayName: string;
-  collections?: CollectionOptionsV3[];
+  collections?: CollectionOptionsV2[];
   errorMessage?: string;
   status?: 'loaded' | 'failed' | 'loading';
 }
 
 export type DataSourceFactory = new (
-  options: DataSourceOptionsV3,
-  app: Application,
-  dataSourceManager: DataSourceManagerV3,
-) => DataSourceV3;
+  options: DataSourceOptionsV2,
+  dataSourceManager: DataSourceManagerV2,
+) => DataSourceV2;
 
-export abstract class DataSourceV3 {
-  collectionManager: CollectionManagerV3;
+export abstract class DataSourceV2 {
+  collectionManager: CollectionManagerV2;
   reloadCallback?: LoadCallback;
 
   constructor(
-    protected options: DataSourceOptionsV3,
-    public app: Application,
-    public dataSourceManager: DataSourceManagerV3,
+    protected options: DataSourceOptionsV2,
+    public dataSourceManager: DataSourceManagerV2,
   ) {
-    this.collectionManager = new CollectionManagerV3(options.collections, app, dataSourceManager, this);
+    this.collectionManager = new CollectionManagerV2(options.collections, this);
+  }
+
+  get app() {
+    return this.dataSourceManager.app;
   }
 
   get key() {
@@ -52,7 +53,7 @@ export abstract class DataSourceV3 {
     return this.options.collections || [];
   }
 
-  set collections(collections: CollectionOptionsV3[]) {
+  set collections(collections: CollectionOptionsV2[]) {
     this.options.collections = collections;
     this.addCollections();
   }
@@ -61,7 +62,11 @@ export abstract class DataSourceV3 {
     return this.options;
   }
 
-  getOption<Key extends keyof DataSourceOptionsV3>(key: Key): DataSourceOptionsV3[Key] {
+  setOptions(options: DataSourceOptionsV2) {
+    this.options = options;
+  }
+
+  getOption<Key extends keyof DataSourceOptionsV2>(key: Key): DataSourceOptionsV2[Key] {
     return this.options[key];
   }
 
@@ -74,7 +79,7 @@ export abstract class DataSourceV3 {
     this.reloadCallback = callback;
   }
 
-  abstract getCollections(): Promise<CollectionOptionsV3[]> | CollectionOptionsV3[];
+  abstract getCollections(): Promise<CollectionOptionsV2[]> | CollectionOptionsV2[];
 
   // abstract load(callback?: LoadCallback): void | Promise<void>;
 
@@ -85,14 +90,7 @@ export abstract class DataSourceV3 {
   }
 }
 
-export class LocalDataSource extends DataSourceV3 {
-  // load() {
-  //   this.addCollections();
-  // }
-  // async reload() {
-  //   this.addCollections();
-  // }
-
+export class LocalDataSource extends DataSourceV2 {
   getCollections() {
     return this.collections;
   }

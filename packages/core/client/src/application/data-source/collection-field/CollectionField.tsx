@@ -3,7 +3,7 @@ import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useEffect, useMemo } from 'react';
-import { CollectionFieldProviderV3, useCollectionFieldV3 } from './CollectionFieldProvider';
+import { CollectionFieldProviderV2, useCollectionFieldV2 } from './CollectionFieldProvider';
 import { useCompile, useComponent } from '../../../schema-component';
 import { useFormBlockContext } from '../../../block-provider';
 import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
@@ -14,12 +14,12 @@ type Props = {
 };
 
 // TODO: 初步适配
-export const CollectionFieldInternalFieldV3: React.FC = (props: Props) => {
+export const CollectionFieldInternalFieldV2: React.FC = (props: Props) => {
   const { component } = props;
   const compile = useCompile();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { uiSchema: uiSchemaOrigin, defaultValue } = useCollectionFieldV3();
+  const { uiSchema: uiSchemaOrigin, defaultValue } = useCollectionFieldV2();
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
   const uiSchema = useMemo(() => compile(uiSchemaOrigin), [JSON.stringify(uiSchemaOrigin)]);
   const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
@@ -75,13 +75,13 @@ export const CollectionFieldInternalFieldV3: React.FC = (props: Props) => {
   return <Component {...props} />;
 };
 
-export const CollectionFieldV3 = connect((props) => {
+export const CollectionFieldV2 = connect((props) => {
   const fieldSchema = useFieldSchema();
   return (
-    <CollectionFieldProviderV3 name={fieldSchema.name}>
-      <CollectionFieldInternalFieldV3 {...props} />
-    </CollectionFieldProviderV3>
+    <CollectionFieldProviderV2 name={fieldSchema.name}>
+      <CollectionFieldInternalFieldV2 {...props} />
+    </CollectionFieldProviderV2>
   );
 });
 
-CollectionFieldV3.displayName = 'CollectionFieldV3';
+CollectionFieldV2.displayName = 'CollectionFieldV2';
