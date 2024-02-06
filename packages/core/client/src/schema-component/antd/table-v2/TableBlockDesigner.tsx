@@ -299,7 +299,7 @@ export const TableBlockDesigner = () => {
             });
           }}
         />
-        {sortable && <EditSortField />}
+        <EditSortField />
         <SchemaSettingsConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
         {supportTemplate && <SchemaSettingsDivider />}
         {supportTemplate && (
