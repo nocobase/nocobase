@@ -22,7 +22,7 @@ export * from './ResourceActionProvider';
 export { getConfigurableProperties } from './templates/properties';
 export * from './templates/types';
 export * from './types';
-export { CollectionHistoryProvider } from './CollectionHistoryProvider';
+export * from './CollectionHistoryProvider';
 export * from './interfaces/properties';
 export * from './collectionPlugin';
 export * from './mixins/InheritanceCollectionMixin';
