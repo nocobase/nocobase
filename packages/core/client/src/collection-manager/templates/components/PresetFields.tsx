@@ -20,7 +20,7 @@ const getDefaultCollectionFields = (presetFields, values) => {
         primaryKey: true,
         allowNull: false,
         uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
-        interface: 'id',
+        interface: 'integer',
       });
     }
   }
@@ -176,12 +176,20 @@ export const PresetFields = observer((props: any) => {
         selectedRowKeys,
         onChange: (_, selectedRows) => {
           const fields = getDefaultCollectionFields(selectedRows, form.values);
+          const config = {
+            autoGenId: !!selectedRows.find((v) => v.name === 'id'),
+            createdAt: !!selectedRows.find((v) => v.name === 'createdAt'),
+            createdBy: !!selectedRows.find((v) => v.name === 'createdBy'),
+            updatedAt: !!selectedRows.find((v) => v.name === 'updatedAt'),
+            updatedBy: !!selectedRows.find((v) => v.name === 'updatedBy'),
+          };
+
           setSelectedRowKeys(
             fields?.map?.((v) => {
               return v.name;
             }),
           );
-          form.setValuesIn('fields', fields);
+          form.setValues({ ...form.values, fields, ...config });
         },
       }}
     />
