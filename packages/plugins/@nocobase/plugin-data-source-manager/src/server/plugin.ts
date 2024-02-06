@@ -16,6 +16,8 @@ import lodash from 'lodash';
 
 type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
 
+const canRefreshStatus = ['loaded', 'loading-failed', 'reloading-failed'];
+
 export class PluginDataSourceManagerServer extends Plugin {
   public dataSourceErrors: {
     [dataSourceKey: string]: Error;
@@ -209,19 +211,26 @@ export class PluginDataSourceManagerServer extends Plugin {
       },
 
       async ['dataSources:refresh'](ctx, next) {
-        const { filterByTk } = ctx.action.params;
+        const { filterByTk, clientStatus } = ctx.action.params;
         const dataSourceModel: DataSourceModel = await ctx.db.getRepository('dataSources').findOne({
           filter: {
             key: filterByTk,
           },
         });
 
-        dataSourceModel.loadIntoApplication({
-          app: ctx.app,
-        });
+        const currentStatus = plugin.dataSourceStatus[filterByTk];
+
+        if (
+          canRefreshStatus.includes(currentStatus) &&
+          (clientStatus ? clientStatus && canRefreshStatus.includes(clientStatus) : true)
+        ) {
+          dataSourceModel.loadIntoApplication({
+            app: ctx.app,
+          });
+        }
 
         ctx.body = {
-          success: true,
+          status: plugin.dataSourceStatus[filterByTk],
         };
 
         await next();
