@@ -148,7 +148,7 @@ export const ConfigurationTable = () => {
           setDataSource(data?.data);
           if (data?.data?.status === 'reloading') {
             message.warning(t('Data source synchronization in progress'));
-          } else {
+          } else if (data?.data?.status === 'loaded') {
             message.success(t('Data source synchronization successful'));
             service?.refresh?.();
           }
