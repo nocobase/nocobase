@@ -214,7 +214,7 @@
   "Collection display name": "数据表名称",
   "Collection name": "数据表标识",
   "Inherits": "继承",
-  "Generate ID field automatically": "自动生成 ID 字段",
+  "Primary key, unique identifier, self growth": "主键、唯一标识、自增长",
   "Store the creation user of each record": "记录创建人",
   "Store the last update user of each record": "记录最后更新人",
   "Store the creation time of each record": "记录创建时间",

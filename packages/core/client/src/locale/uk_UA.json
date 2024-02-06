@@ -195,7 +195,7 @@
   "Collection display name": "Відображуване ім'я колекції",
   "Collection name": "Ім'я колекції",
   "Inherits": "Наслідує",
-  "Generate ID field automatically": "Автоматично генерувати поле ID",
+  "Primary key, unique identifier, self growth": "Основний ключ, унікальний ідентифікатор, самовирост",
   "Store the creation user of each record": "Зберігати користувача, який створив кожний запис",
   "Store the last update user of each record": "Зберігати користувача останнього оновлення кожного запису",
   "Store the creation time of each record": "Зберігати час створення кожного запису",

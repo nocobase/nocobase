@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Table } from 'antd';
+import { Table, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { observer, useField, useForm } from '@formily/react';
+import { useCompile } from '../../../';
+import { useCollectionManager } from '../../';
 
 const getDefaultCollectionFields = (presetFields, values) => {
   if (values?.template === 'view' || values?.template === 'sql') {
@@ -98,7 +100,9 @@ const getDefaultCollectionFields = (presetFields, values) => {
   return defaults;
 };
 export const PresetFields = observer((props: any) => {
+  const { getInterface } = useCollectionManager();
   const form = useForm();
+  const compile = useCompile();
   const [selectedRowKeys, setSelectedRowKeys] = useState(
     form.values?.fields?.map?.((v) => {
       return v.name;
@@ -115,6 +119,7 @@ export const PresetFields = observer((props: any) => {
       title: t('Interface'),
       dataIndex: 'interface',
       key: 'interface',
+      render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
     },
     {
       title: t('Description'),
@@ -125,8 +130,8 @@ export const PresetFields = observer((props: any) => {
   const dataSource = [
     {
       field: t('ID'),
-      interface: 'primaryKey',
-      description: t('Generate ID field automatically'),
+      interface: 'integer',
+      description: t('Primary key, unique identifier, self growth'),
       name: 'id',
     },
     {
@@ -137,13 +142,13 @@ export const PresetFields = observer((props: any) => {
     },
     {
       field: t('CreatedAt'),
-      interface: 'dataTime',
+      interface: 'datetime',
       description: t('Store the creation time of each record'),
       name: 'createdAt',
     },
     {
       field: t('UpdatedAt'),
-      interface: 'dataTime',
+      interface: 'datetime',
       description: t('Store the last update time of each recordd'),
       name: 'updatedAt',
     },

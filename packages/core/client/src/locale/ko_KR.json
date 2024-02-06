@@ -214,7 +214,7 @@
   "Collection display name": "데이터 테이블 표시 이름",
   "Collection name": "데이터 테이블 이름",
   "Inherits": "상속",
-  "Generate ID field automatically": "ID 필드 자동 생성",
+  "Primary key, unique identifier, self growth": "기본 키, 고유 ID, 증가",
   "Store the creation user of each record": "각 레코드의 생성 사용자 저장",
   "Store the last update user of each record": "각 레코드의 마지막 업데이트 사용자 저장",
   "Store the creation time of each record": "각 레코드의 생성 시간 저장",

@@ -184,7 +184,7 @@
   "Collection display name": "Nombre para mostrar colección",
   "Collection name": "Nombre de la colección",
   "Inherits": "Hereda",
-  "Generate ID field automatically": "Generar campo ID automáticamente",
+  "Primary key, unique identifier, self growth": "Primary key, unique identifier, self growth",
   "Store the creation user of each record": "Almacenar el usuario de creación de cada registro",
   "Store the last update user of each record": "Almacenar el usuario de última actualización de cada registro",
   "Store the creation time of each record": "Almacenar la hora de creación de cada registro",

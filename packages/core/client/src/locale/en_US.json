@@ -204,7 +204,7 @@
   "Collection display name": "Collection display name",
   "Collection name": "Collection name",
   "Inherits": "Inherits",
-  "Generate ID field automatically": "Generate ID field automatically",
+  "Primary key, unique identifier, self growth": "Primary key, unique identifier, self growth",
   "Store the creation user of each record": "Store the creation user of each record",
   "Store the last update user of each record": "Store the last update user of each record",
   "Store the creation time of each record": "Store the creation time of each record",
