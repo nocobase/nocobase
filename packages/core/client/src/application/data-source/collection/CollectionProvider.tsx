@@ -16,7 +16,7 @@ export interface CollectionProviderPropsV2 {
 export const CollectionProviderV2: FC<CollectionProviderPropsV2> = (props) => {
   const { name, children, allowNull } = props;
   const collectionManager = useCollectionManagerV2();
-  const collection = useMemo(() => collectionManager.getCollection(name), [collectionManager, name]);
+  const collection = useMemo(() => collectionManager?.getCollection(name), [collectionManager, name]);
   if (!collection && allowNull) return <>{props.children}</>;
   if (!collection && !allowNull) return <CollectionDeletedPlaceholder type="Collection" name={name as string} />;
   return <CollectionContextV2.Provider value={collection}>{children}</CollectionContextV2.Provider>;
