@@ -147,33 +147,31 @@ export const TableBlockDesigner = () => {
             }}
           />
         )}
-        {sortable && (
-          <SchemaSettingsSwitchItem
-            title={t('Enable drag and drop sorting')}
-            checked={field.decoratorProps.dragSort}
-            onChange={async (dragSort) => {
-              if (dragSort && collectionField) {
-                const { data } = await api.resource('collections.fields', collectionField.collectionName).update({
-                  filterByTk: collectionField.name,
-                  values: {
-                    sortable: true,
-                  },
-                });
-                const sortBy = data?.data?.[0]?.sortBy;
-                fieldSchema['x-decorator-props'].dragSortBy = sortBy;
-              }
-              field.decoratorProps.dragSort = dragSort;
-              fieldSchema['x-decorator-props'].dragSort = dragSort;
-              service.run({ ...service.params?.[0], sort: fieldSchema['x-decorator-props'].dragSortBy });
-              dn.emit('patch', {
-                schema: {
-                  ['x-uid']: fieldSchema['x-uid'],
-                  'x-decorator-props': fieldSchema['x-decorator-props'],
+        <SchemaSettingsSwitchItem
+          title={t('Enable drag and drop sorting')}
+          checked={field.decoratorProps.dragSort}
+          onChange={async (dragSort) => {
+            if (dragSort && collectionField) {
+              const { data } = await api.resource('collections.fields', collectionField.collectionName).update({
+                filterByTk: collectionField.name,
+                values: {
+                  sortable: true,
                 },
               });
-            }}
-          />
-        )}
+              const sortBy = data?.data?.[0]?.sortBy;
+              fieldSchema['x-decorator-props'].dragSortBy = sortBy;
+            }
+            field.decoratorProps.dragSort = dragSort;
+            fieldSchema['x-decorator-props'].dragSort = dragSort;
+            service.run({ ...service.params?.[0], sort: fieldSchema['x-decorator-props'].dragSortBy });
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': fieldSchema['x-decorator-props'],
+              },
+            });
+          }}
+        />
         <FixedBlockDesignerItem />
         <SchemaSettingsDataScope
           collectionName={name}
@@ -299,7 +297,7 @@ export const TableBlockDesigner = () => {
             });
           }}
         />
-        <EditSortField />
+        {field.decoratorProps.dragSort && <EditSortField />}
         <SchemaSettingsConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
         {supportTemplate && <SchemaSettingsDivider />}
         {supportTemplate && (
