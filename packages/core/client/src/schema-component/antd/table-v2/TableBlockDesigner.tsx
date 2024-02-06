@@ -47,7 +47,7 @@ export const EditSortField = () => {
       key="sort-field"
       title={t('Drag and drop sorting field')}
       options={options}
-      value={field?.componentProps?.fieldNames?.label}
+      value={field?.componentProps?.fieldNames?.sortField}
       onChange={(sortField) => {
         const schema = {
           ['x-uid']: fieldSchema['x-uid'],
