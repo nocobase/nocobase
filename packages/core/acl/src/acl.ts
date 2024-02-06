@@ -278,29 +278,42 @@ export class ACL extends EventEmitter {
   collectCanResult(ctx: Context, options: Omit<CanArgs, 'role'>): CanResult | null {
     const role = ctx.state.currentRole || 'anonymous';
     let canResult = this.can({ role, ...options });
+    console.log(canResult, role, options);
     const attachRoles = ctx.state.attachRoles || [];
     attachRoles.forEach((attachRole) => {
       if (role === attachRole) {
         return;
       }
       const attachCanResult = this.can({ role: attachRole, ...options });
-      if (!attachCanResult?.params) {
+      console.log(attachCanResult, attachRole, options);
+      if (!attachCanResult) {
         return;
       }
       if (!canResult) {
         canResult = attachCanResult;
-      } else {
-        canResult.params = assign(canResult?.params || {}, attachCanResult.params, {
-          filter: 'orMerge',
-          fields: 'union',
-          append: 'union',
-          except: 'union',
-          whitelist: 'union',
-          blacklist: 'union',
-          own: (x, y) => (x === false ? x : y),
-        });
       }
+      if (!attachCanResult.params) {
+        return;
+      }
+      canResult.params = assign(canResult?.params || {}, attachCanResult.params, {
+        filter: 'orMerge',
+        fields: (x, y) => {
+          if (lodash.isEmpty(x)) {
+            return x;
+          }
+          if (lodash.isEmpty(y)) {
+            return y;
+          }
+          return mergeStrategies.get('union')(x, y);
+        },
+        appends: 'union',
+        except: 'intersect',
+        whitelist: 'union',
+        blacklist: 'intersect',
+        own: (x, y) => (x === false ? x : y),
+      });
     });
+    console.log(canResult);
     return canResult;
   }
 

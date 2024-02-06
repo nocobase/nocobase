@@ -1,6 +1,7 @@
-import { ACLRole } from '@nocobase/acl';
+import { ACL, ACLRole } from '@nocobase/acl';
 import { Context, Next } from '@nocobase/actions';
-import { assign } from '@nocobase/utils';
+import { assign, mergeStrategies } from '@nocobase/utils';
+import lodash from 'lodash';
 
 const map2obj = (map: Map<string, string>) => {
   const obj = {};
@@ -88,36 +89,58 @@ const mergeSnippets = (roles: ACLRole[]) => {
   }, []);
 };
 
-const mergeActions = (roles: ACLRole[], globalActions: string[]) => {
-  const merge = (a: any, b: any) => {
-    const result = {};
-    new Set([...Object.keys(a), ...Object.keys(b)]).forEach((key) => {
-      const [_, action] = key.split(':');
-      if (a[key] && b[key]) {
-        result[key] = assign(a[key], b[key], {
-          filter: 'orMerge',
-          fields: 'union',
-          append: 'union',
-          except: 'union',
-          whitelist: 'union',
-          blacklist: 'union',
-          own: (x, y) => (x === false ? x : y),
-        });
-      } else if (a[key]) {
-        if (!globalActions.includes(action)) {
-          result[key] = a[key];
-        }
-      } else if (b[key]) {
-        if (!globalActions.includes(action)) {
-          result[key] = b[key];
-        }
-      }
+const mergeActions = (acl: ACL, roles: ACLRole[], globalActions: string[], resources: string[]) => {
+  const actionAlias = acl.actionAlias;
+  const actionsSet = new Set();
+  resources.forEach((resource) => {
+    globalActions.forEach((action) => {
+      const alias = actionAlias.get(action);
+      action = alias || action;
+      actionsSet.add(`${resource}:${action}`);
     });
-    return result;
-  };
-  return roles.reduce((actions, role) => {
-    return merge(actions, role.toJSON().actions);
-  }, {});
+  });
+  roles.forEach((role) => {
+    const roleActions = role.toJSON().actions;
+    Object.keys(roleActions).forEach((action) => actionsSet.add(action));
+  });
+  const actions = {};
+  actionsSet.forEach((key: string) => {
+    const [resource, action] = key.split(':');
+    let canResult = null;
+    roles.forEach((role) => {
+      const can = acl.can({ role: role.name, resource, action });
+      if (!can) {
+        return;
+      }
+      if (can && !canResult) {
+        canResult = {};
+      }
+      if (!can.params) {
+        return;
+      }
+      canResult = assign(canResult, can.params, {
+        filter: 'orMerge',
+        fields: (x, y) => {
+          if (lodash.isEmpty(x)) {
+            return x;
+          }
+          if (lodash.isEmpty(y)) {
+            return y;
+          }
+          return mergeStrategies.get('union')(x, y);
+        },
+        appends: 'union',
+        except: 'intersect',
+        whitelist: 'union',
+        blacklist: 'intersect',
+        own: (x, y) => (x === false ? x : y),
+      });
+    });
+    if (canResult) {
+      actions[key] = canResult;
+    }
+  });
+  return actions;
 };
 
 export async function checkAction(ctx: Context, next: Next) {
@@ -157,19 +180,20 @@ export async function checkAction(ctx: Context, next: Next) {
   const role = roles.find((role) => role.name === currentRole);
   const roleObj = role.toJSON();
   const availableActions = ctx.app.acl.getAvailableActions();
-  const strategryActions = mergeStrategyActions(roles);
+  const strategyActions = mergeStrategyActions(roles);
+  const resources = mergeResources(roles);
 
   ctx.body = {
     ...roleObj,
     snippets: mergeSnippets(roles),
-    actions: mergeActions(roles, strategryActions),
+    actions: mergeActions(ctx.app.acl, roles, strategyActions, resources),
     strategy: {
       ...roleObj.strategy,
-      actions: strategryActions,
+      actions: strategyActions,
     },
     roles: roles.map((role) => role.toJSON()),
     availableActions: [...availableActions.keys()],
-    resources: mergeResources(roles),
+    resources,
     actionAlias: map2obj(ctx.app.acl.actionAlias),
     allowAll: currentRole === 'root',
     allowConfigure: roleModels.some((role: any) => role.get('allowConfigure')),
