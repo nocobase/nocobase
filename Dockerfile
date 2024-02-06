@@ -15,7 +15,7 @@ RUN cd /tmp && \
     NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date +'%Y%m%d%H%M%S')" \
         && tmp=$(mktemp) \
         && jq ".version = \"${NEWVERSION}\"" lerna.json > "$tmp" && mv "$tmp" lerna.json
-RUN  yarn install && yarn build --no-dts
+RUN  yarn install && yarn build --no-dts --sourcemap
 
 RUN git checkout -b release-$(date +'%Y%m%d%H%M%S') \
     && yarn version:alpha -y

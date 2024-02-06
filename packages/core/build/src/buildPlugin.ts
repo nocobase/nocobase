@@ -310,9 +310,9 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
   const outputFileName = 'index.js';
 
   await viteBuild(userConfig.modifyViteConfig({
-    mode: 'production',
+    mode: 'development',
     define: {
-      'process.env.NODE_ENV': JSON.stringify('production'),
+      'process.env.NODE_ENV': JSON.stringify('development'),
       'process.env.__TEST__': false,
       'process.env.__E2E__': process.env.__E2E__ ? true : false,
     },
