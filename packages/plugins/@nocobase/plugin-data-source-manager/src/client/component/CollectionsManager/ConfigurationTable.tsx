@@ -26,7 +26,6 @@ import { message } from 'antd';
 import { getCollectionSchema } from './schema/collections';
 import { CollectionFields } from './CollectionFields';
 import { EditCollection } from './EditCollectionAction';
-import { DataSourceContext } from '../../DatabaseConnectionProvider';
 
 /**
  * @param service
@@ -134,8 +133,6 @@ export const ConfigurationTable = () => {
     const api = useAPIClient();
     const field = useField();
     field.data = field.data || {};
-    const dm = useDataSourceManagerV2();
-    const { setDataSource } = useContext(DataSourceContext);
     return {
       async onClick() {
         field.data.loading = true;
@@ -147,8 +144,6 @@ export const ConfigurationTable = () => {
           field.data.loading = false;
           service?.refresh?.();
           message.success(t('Data source synchronization in progress'));
-          dm.getDataSource(name).reload();
-          setDataSource(dm.getDataSource(name));
         } catch (error) {
           field.data.loading = false;
         }
