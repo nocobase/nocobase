@@ -147,7 +147,7 @@ export const ConfigurationTable = () => {
           field.data.loading = false;
           service?.refresh?.();
           message.success(t('Data source synchronization in progress'));
-          await dm.reload();
+          dm.getDataSource(name).reload();
           setDataSource(dm.getDataSource(name));
         } catch (error) {
           field.data.loading = false;
