@@ -78,6 +78,6 @@ export const tree: ICollectionTemplate = {
     'inherits',
     'category',
     'description',
-    'moreOptions',
+    'presetFields',
   ),
 };

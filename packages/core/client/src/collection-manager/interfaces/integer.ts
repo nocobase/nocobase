@@ -1,6 +1,6 @@
 import { registerValidateFormats } from '@formily/core';
 import { i18n } from '../../i18n';
-import { defaultProps, operators, unique } from './properties';
+import { defaultProps, operators, unique, autoIncrement, primaryKey } from './properties';
 import { IField } from './types';
 
 registerValidateFormats({
@@ -33,7 +33,9 @@ export const integer: IField = {
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
+    primaryKey,
     unique,
+    autoIncrement,
   },
   filterable: {
     operators: operators.number,

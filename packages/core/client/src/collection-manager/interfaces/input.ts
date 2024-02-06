@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/react';
-import { defaultProps, operators, unique } from './properties';
+import { defaultProps, operators, unique, primaryKey } from './properties';
 import { IField } from './types';
 import { i18n } from '../../i18n';
 import { registerValidateRules } from '@formily/validator';
@@ -29,6 +29,7 @@ export const input: IField = {
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
+    primaryKey,
     unique,
   },
   filterable: {

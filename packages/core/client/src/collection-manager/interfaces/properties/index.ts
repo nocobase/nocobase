@@ -39,6 +39,18 @@ export const unique = {
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
 };
+export const primaryKey = {
+  type: 'boolean',
+  'x-content': '{{t("Primary")}}',
+  'x-decorator': 'FormItem',
+  'x-component': 'Checkbox',
+};
+export const autoIncrement = {
+  type: 'boolean',
+  'x-content': '{{t("AutoIncrement")}}',
+  'x-decorator': 'FormItem',
+  'x-component': 'Checkbox',
+};
 
 export const relationshipType: ISchema = {
   type: 'string',

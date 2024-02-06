@@ -1,5 +1,6 @@
 import { ArrayItems } from '@formily/antd-v5';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { Field } from '@formily/core';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
@@ -24,6 +25,49 @@ import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { FixedBlockDesignerItem } from '../page';
+import { useCompile } from '../../';
+
+export const EditSortField = () => {
+  const { fields } = useCollection();
+  const field = useField<Field>();
+  const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
+  const { dn } = useDesignable();
+  const compile = useCompile();
+
+  const options = fields
+    .filter((field) => !field?.target && field.interface === 'sort')
+    .map((field) => ({
+      value: field?.name,
+      label: compile(field?.uiSchema?.title) || field?.name,
+    }));
+
+  return (
+    <SchemaSettingsSelectItem
+      key="sort-field"
+      title={t('Drag and drop sorting field')}
+      options={options}
+      value={field?.componentProps?.fieldNames?.label}
+      onChange={(sortField) => {
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
+        };
+        const fieldNames = {
+          ...field.componentProps.fieldNames,
+          sortField,
+        };
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props']['fieldNames'] = fieldNames;
+        schema['x-component-props'] = fieldSchema['x-component-props'];
+        field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
+        dn.emit('patch', {
+          schema,
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};
 
 export const TableBlockDesigner = () => {
   const { name, title, sortable } = useCollection();
@@ -255,6 +299,7 @@ export const TableBlockDesigner = () => {
             });
           }}
         />
+        {sortable && <EditSortField />}
         <SchemaSettingsConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
         {supportTemplate && <SchemaSettingsDivider />}
         {supportTemplate && (

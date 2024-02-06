@@ -15,6 +15,6 @@ export const general: ICollectionTemplate = {
     'inherits',
     'category',
     'description',
-    'moreOptions',
+    'presetFields',
   ),
 };
