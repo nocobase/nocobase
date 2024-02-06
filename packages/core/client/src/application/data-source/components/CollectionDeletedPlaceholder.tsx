@@ -1,8 +1,7 @@
+import { App, Button, Result } from 'antd';
 import React, { FC, useMemo } from 'react';
-import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { CardItem, useDesignable } from '../../../schema-component';
-import { Button, Result } from 'antd';
 
 export interface CollectionDeletedPlaceholderProps {
   type: 'Collection' | 'Field' | 'DataSource';
@@ -22,7 +21,9 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
       return `[nocobase]: ${t(type)} ${'name is required'}`;
     }
 
-    return t(`${t(type)}: "${name}" ${t('not exists')}`);
+    return (
+      <div>{t('The collection "{{name}}" might be deleted. If unnecessary, delete the current block.', { name })}</div>
+    );
   }, [message, name, type, t]);
 
   const WrapperComponent = useMemo(() => {
@@ -36,11 +37,11 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
     return (
       <WrapperComponent>
         <Result
-          status="warning"
-          title={messageValue}
+          status="404"
+          subTitle={messageValue}
           extra={
             <Button
-              type="primary"
+              // type="primary"
               key="Delete"
               onClick={() =>
                 modal.confirm({
