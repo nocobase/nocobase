@@ -9,7 +9,11 @@ const getDefaultCollectionFields = (presetFields, values) => {
   if (values?.template === 'view' || values?.template === 'sql') {
     return values.fields;
   }
-  const defaults = values.fields ? [...values.fields] : [];
+  const defaults = values.fields
+    ? [...values.fields].filter((v) => {
+        return !['id', 'createdBy', 'updatedAt', 'createdAt', 'updatedBy'].includes(v.name);
+      })
+    : [];
   if (presetFields.find((v) => v.name === 'id')) {
     const pk = values.fields.find((f) => f.primaryKey);
     if (!pk) {
