@@ -9,9 +9,9 @@ import {
   CollectionProviderV2,
 } from '../collection';
 import { RecordV2 } from '../record';
-import { UseRequestOptions, UseRequestService } from '../../../api-client';
-import { Designable, useDesignable } from '../../../schema-component';
-import { withDynamicSchemaProps } from '../../hoc';
+import { UseRequestOptions, UseRequestService } from '../../api-client';
+import { Designable, useDesignable } from '../../schema-component';
+import { withDynamicSchemaProps } from '../../application/hoc';
 import { DataSourceProviderV2 } from '../data-source/DataSourceProvider';
 
 export interface AllDataBlockPropsV2 {

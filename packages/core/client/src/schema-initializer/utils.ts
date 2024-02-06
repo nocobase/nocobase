@@ -8,9 +8,9 @@ import { FieldOptions, useCollection, useCollectionManager } from '../collection
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
-import { CollectionV2 } from '../application/data-source/collection/Collection';
-import { useDataSourceManagerV2 } from '../application/data-source/data-source/DataSourceManagerProvider';
-import { DataSourceManagerV2 } from '../application/data-source/data-source/DataSourceManager';
+import { CollectionV2 } from '../data-source/collection/Collection';
+import { useDataSourceManagerV2 } from '../data-source/data-source/DataSourceManagerProvider';
+import { DataSourceManagerV2 } from '../data-source/data-source/DataSourceManager';
 
 export const itemsMerge = (items1) => {
   return items1;

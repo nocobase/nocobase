@@ -4,9 +4,9 @@ import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useEffect, useMemo } from 'react';
 import { CollectionFieldProviderV2, useCollectionFieldV2 } from './CollectionFieldProvider';
-import { useCompile, useComponent } from '../../../schema-component';
-import { useFormBlockContext } from '../../../block-provider';
-import useIsAllowToSetDefaultValue from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { useCompile, useComponent } from '../../schema-component';
+import { useFormBlockContext } from '../../block-provider';
+import useIsAllowToSetDefaultValue from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 
 type Props = {
   component: any;

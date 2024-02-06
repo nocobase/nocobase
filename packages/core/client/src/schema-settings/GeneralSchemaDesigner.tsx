@@ -5,13 +5,9 @@ import { Space } from 'antd';
 import classNames from 'classnames';
 import React, { FC, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  SchemaToolbarProvider,
-  useDataSourceV2,
-  useSchemaInitializerRender,
-  useSchemaSettingsRender,
-} from '../application';
-import { useDataSourceManagerV2 } from '../application/data-source/data-source/DataSourceManagerProvider';
+import { SchemaToolbarProvider, useSchemaInitializerRender, useSchemaSettingsRender } from '../application';
+import { useDataSourceManagerV2 } from '../data-source/data-source/DataSourceManagerProvider';
+import { useDataSourceV2 } from '../data-source/data-source/DataSourceProvider';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
 import { gridRowColWrap } from '../schema-initializer/utils';
 import { SchemaSettingsDropdown } from './SchemaSettings';

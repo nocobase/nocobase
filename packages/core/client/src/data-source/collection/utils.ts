@@ -1,4 +1,4 @@
-import type { Application } from '../../Application';
+import type { Application } from '../../application/Application';
 import type { CollectionOptionsV2 } from './Collection';
 
 export const collectionTransform = (collection: CollectionOptionsV2, app: Application) => {

@@ -10,7 +10,8 @@ import { mergeFilter } from '../../../filter-provider/utils';
 import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
-import { useDataSourceHeaders, useDataSourceKey } from '../../../application';
+import { useDataSourceHeaders } from '../../../data-source/utils';
+import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
 const EMPTY = 'N/A';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {

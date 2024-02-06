@@ -1,6 +1,6 @@
-import { CollectionFieldInterface } from '../../application/data-source/collection-field-interface/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { useMemo } from 'react';
-import { useDataSourceManagerV2 } from '../../application/data-source/data-source/DataSourceManagerProvider';
+import { useDataSourceManagerV2 } from '../../data-source/data-source/DataSourceManagerProvider';
 
 export const getOptions = (
   fieldInterfaces: Record<string, CollectionFieldInterface[]>,

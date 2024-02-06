@@ -1,7 +1,7 @@
 import { FC, ReactNode } from 'react';
-import { CollectionProviderV2 } from '../application/data-source/collection/CollectionProvider';
-import { CollectionManagerProviderV2 } from '../application/data-source/collection/CollectionManagerProvider';
-import { CollectionOptionsV2 } from '../application/data-source/collection/Collection';
+import { CollectionProviderV2 } from '../data-source/collection/CollectionProvider';
+import { CollectionManagerProviderV2 } from '../data-source/collection/CollectionManagerProvider';
+import { CollectionOptionsV2 } from '../data-source/collection/Collection';
 import React from 'react';
 
 export const CollectionProvider: FC<{

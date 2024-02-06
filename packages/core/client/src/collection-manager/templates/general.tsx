@@ -1,4 +1,4 @@
-import { CollectionTemplate } from '../../application/data-source/collection-template/CollectionTemplate';
+import { CollectionTemplate } from '../../data-source/collection-template/CollectionTemplate';
 import { getConfigurableProperties } from './properties';
 import { ICollectionTemplate } from './types';
 

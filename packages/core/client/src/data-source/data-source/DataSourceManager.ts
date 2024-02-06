@@ -1,5 +1,5 @@
 import type { CollectionOptionsV2, CollectionV2 } from '../collection';
-import type { Application } from '../../Application';
+import type { Application } from '../../application/Application';
 
 import { type DataSourceOptionsV2, DataSourceV2, LocalDataSource, DataSourceFactory } from './DataSource';
 import { type CollectionTemplateFactory, CollectionTemplateManagerV2 } from '../collection-template';

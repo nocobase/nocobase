@@ -1,5 +1,5 @@
-import type { CollectionFieldOptionsV2, GetCollectionFieldPredicateV2 } from '../../application';
-import { CollectionV2 } from '../../application/data-source/collection/Collection';
+import type { CollectionFieldOptionsV2, GetCollectionFieldPredicateV2 } from '../../data-source';
+import { CollectionV2 } from '../../data-source/collection/Collection';
 import _, { filter, unionBy, uniq } from 'lodash';
 
 export class InheritanceCollectionMixin extends CollectionV2 {

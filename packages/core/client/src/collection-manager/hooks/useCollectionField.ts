@@ -1,5 +1,5 @@
 import { useAPIClient } from '../../api-client';
-import { useCollectionFieldV2 } from '../../application/data-source/collection-field/CollectionFieldProvider';
+import { useCollectionFieldV2 } from '../../data-source/collection-field/CollectionFieldProvider';
 import { useRecord } from '../../record-provider';
 import { useCompile } from '../../schema-component';
 import { useCollection } from './useCollection';

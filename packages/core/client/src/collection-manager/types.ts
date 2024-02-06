@@ -1,6 +1,6 @@
 import type { ISchema } from '@formily/react';
 import type { ReactNode } from 'react';
-import type { CollectionManagerV2, CollectionOptionsV2 } from '../application';
+import type { CollectionManagerV2, CollectionOptionsV2 } from '../data-source';
 
 export type CollectionOptions = CollectionOptionsV2;
 

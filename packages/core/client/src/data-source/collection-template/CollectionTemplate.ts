@@ -1,7 +1,7 @@
 import type { CollectionOptionsV2, CollectionV2 } from '../collection';
 import type { ISchema } from '@formily/react';
 import type { CollectionTemplateManagerV2 } from './CollectionTemplateManager';
-import type { Application } from '../../Application';
+import type { Application } from '../../application/Application';
 
 interface AvailableFieldInterfacesInclude {
   include?: any[];

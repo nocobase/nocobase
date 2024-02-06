@@ -1,6 +1,6 @@
 import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
-import { CollectionFieldInterface } from '../../application/data-source/collection-field-interface/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
 export const phone: IField = {
   name: 'phone',

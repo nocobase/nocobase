@@ -3,7 +3,7 @@ import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react'
 
 import { useCollectionManagerV2 } from '../collection';
 import { useDataBlockPropsV2 } from './DataBlockProvider';
-import { useAPIClient } from '../../../api-client';
+import { useAPIClient } from '../../api-client';
 import { RecordV2 } from '../record';
 import { useDataSourceHeaders } from '../utils';
 

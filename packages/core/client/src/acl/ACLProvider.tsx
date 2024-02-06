@@ -10,7 +10,8 @@ import { useCollection, useCollectionManager } from '../collection-manager';
 import { useResourceActionContext } from '../collection-manager/ResourceActionProvider';
 import { useRecord } from '../record-provider';
 import { SchemaComponentOptions, useDesignable } from '../schema-component';
-import { useApp, useDataSourceKey } from '../application';
+import { useApp } from '../application';
+import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 
 export const ACLContext = createContext<any>({});
 

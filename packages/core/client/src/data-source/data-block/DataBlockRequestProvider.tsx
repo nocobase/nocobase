@@ -3,7 +3,7 @@ import React, { FC, createContext, useContext } from 'react';
 
 import { useDataBlockResourceV2 } from './DataBlockResourceProvider';
 import { AllDataBlockPropsV2, useDataBlockPropsV2 } from './DataBlockProvider';
-import { UseRequestResult, useAPIClient, useRequest } from '../../../api-client';
+import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
 import { RecordProviderV2 } from '../record';
 
 export const BlockRequestContextV2 = createContext<UseRequestResult<any>>(null);

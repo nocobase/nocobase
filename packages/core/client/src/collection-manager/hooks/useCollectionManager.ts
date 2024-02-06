@@ -5,8 +5,8 @@ import { useCompile, useSchemaComponentContext } from '../../schema-component';
 import { CollectionFieldOptions, CollectionOptions } from '../types';
 import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
 import { uid } from '@formily/shared';
-import { useDataSourceManagerV2 } from '../../application/data-source/data-source/DataSourceManagerProvider';
-import { useDataSourceV2 } from '../../application/data-source/data-source/DataSourceProvider';
+import { useDataSourceManagerV2 } from '../../data-source/data-source/DataSourceManagerProvider';
+import { useDataSourceV2 } from '../../data-source/data-source/DataSourceProvider';
 
 export const useCollectionManager = (dataSourceName?: string) => {
   const dm = useDataSourceManagerV2();

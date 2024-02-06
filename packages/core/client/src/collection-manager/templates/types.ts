@@ -1,6 +1,7 @@
 import { ISchema } from '@formily/react';
 import { FieldOptions } from '../types';
-import type { Application, CollectionOptionsV2, CollectionV2 } from '../../application';
+import type { Application } from '../../application';
+import { CollectionOptionsV2, CollectionV2 } from '../../data-source/collection/Collection';
 
 export interface ICollectionTemplate {
   name: string;

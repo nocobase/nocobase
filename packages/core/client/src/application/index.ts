@@ -9,5 +9,4 @@ export * from './schema-settings';
 export * from './schema-toolbar';
 export * from './PluginSettingsManager';
 export * from './hoc';
-export * from './data-source';
 export { ApplicationContext } from './context';

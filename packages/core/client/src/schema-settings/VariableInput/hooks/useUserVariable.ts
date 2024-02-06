@@ -2,7 +2,7 @@ import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions } from '../../../collection-manager';
 import { useBaseVariable } from './useBaseVariable';
-import { DEFAULT_DATA_SOURCE_NAME } from '../../../application';
+import { DEFAULT_DATA_SOURCE_NAME } from '../../../data-source/data-source/DataSourceManager';
 
 /**
  * 变量：`当前用户`

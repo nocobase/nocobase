@@ -59,7 +59,6 @@ import {
   useCollection,
   useCollectionManager,
   useCompile,
-  useDataSourceKey,
   useDesignable,
   useFilterBlock,
   useGlobalTheme,
@@ -68,7 +67,8 @@ import {
   useSchemaSettingsItem,
   useSortFields,
 } from '..';
-import { useDataSourceManagerV2 } from '../application/data-source/data-source/DataSourceManagerProvider';
+import { useDataSourceManagerV2 } from '../data-source/data-source/DataSourceManagerProvider';
+import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { BlockRequestContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
 import {
   FormActiveFieldsProvider,

@@ -1,7 +1,7 @@
 import { App, Button, Result } from 'antd';
 import React, { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CardItem, useDesignable } from '../../../schema-component';
+import { CardItem, useDesignable } from '../../schema-component';
 
 export interface CollectionDeletedPlaceholderProps {
   type: 'Collection' | 'Field' | 'DataSource';

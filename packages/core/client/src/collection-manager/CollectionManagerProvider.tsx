@@ -3,9 +3,9 @@ import { useAPIClient, useRequest } from '../api-client';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
 import { CollectionCategroriesContext } from './context';
 import { CollectionManagerOptions } from './types';
-import type { CollectionOptionsV2 } from '../application';
-import { CollectionManagerProviderV2 } from '../application/data-source/collection/CollectionManagerProvider';
-import { useDataSourceManagerV2 } from '../application/data-source/data-source/DataSourceManagerProvider';
+import type { CollectionOptionsV2 } from '../data-source';
+import { CollectionManagerProviderV2 } from '../data-source/collection/CollectionManagerProvider';
+import { useDataSourceManagerV2 } from '../data-source/data-source/DataSourceManagerProvider';
 import { useCollectionHistory } from './CollectionHistoryProvider';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 

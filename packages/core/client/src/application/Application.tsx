@@ -25,10 +25,10 @@ import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
 
-import { type DataSourceManagerOptionsV2, DataSourceManagerV2 } from './data-source/data-source/DataSourceManager';
-import { DataSourceApplicationProvider } from './data-source/components/DataSourceApplicationProvider';
-import { CollectionFieldV2 } from './data-source/collection-field/CollectionField';
-import { DataBlockProviderV2 } from './data-source/data-block/DataBlockProvider';
+import { type DataSourceManagerOptionsV2, DataSourceManagerV2 } from '../data-source/data-source/DataSourceManager';
+import { DataSourceApplicationProvider } from '../data-source/components/DataSourceApplicationProvider';
+import { CollectionFieldV2 } from '../data-source/collection-field/CollectionField';
+import { DataBlockProviderV2 } from '../data-source/data-block/DataBlockProvider';
 
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
