@@ -1,13 +1,13 @@
-import React from 'react';
 import { render, screen } from '@nocobase/test/client';
+import React from 'react';
+import { RecordV2 } from '../../../../data-source/record/Record';
 import {
   RecordProviderV2,
-  RecordV2,
   useParentRecordDataV2,
   useParentRecordV2,
   useRecordDataV2,
   useRecordV2,
-} from '../../../data-source/record';
+} from '../../../../data-source/record/RecordProvider';
 
 describe('RecordProvider', () => {
   describe('record and parentRecord', () => {
