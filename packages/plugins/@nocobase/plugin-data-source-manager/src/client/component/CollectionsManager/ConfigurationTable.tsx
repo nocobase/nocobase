@@ -1,7 +1,7 @@
 import { useForm, useField } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import {
@@ -26,6 +26,7 @@ import { message } from 'antd';
 import { getCollectionSchema } from './schema/collections';
 import { CollectionFields } from './CollectionFields';
 import { EditCollection } from './EditCollectionAction';
+import { DataSourceContext } from '../../DatabaseConnectionProvider';
 
 /**
  * @param service
@@ -132,28 +133,38 @@ export const ConfigurationTable = () => {
     const service = useContext(ResourceActionContext);
     const api = useAPIClient();
     const field = useField();
+    const { name } = useParams();
     field.data = field.data || {};
+    const { setDataSource, dataSource } = useContext(DataSourceContext);
     return {
       async onClick() {
         field.data.loading = true;
         try {
-          await api.request({
-            url: `dataSources:refresh?filterByTk=${name}`,
+          const { data } = await api.request({
+            url: `dataSources:refresh?filterByTk=${name}&clientStatus=${dataSource.status || 'loaded'}`,
             method: 'post',
           });
           field.data.loading = false;
-          service?.refresh?.();
-          message.success(t('Data source synchronization in progress'));
+          setDataSource(data?.data);
+          if (data?.data?.status === 'reloading') {
+            message.warning(t('Data source synchronization in progress'));
+          } else {
+            message.success(t('Data source synchronization successful'));
+            service?.refresh?.();
+          }
         } catch (error) {
           field.data.loading = false;
         }
       },
     };
   };
+  const collectionSchema = useMemo(() => {
+    return getCollectionSchema(name);
+  }, [name]);
   return (
     <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
       <SchemaComponent
-        schema={getCollectionSchema(name)}
+        schema={collectionSchema}
         components={{
           EditCollection,
           AddSubFieldAction,
@@ -172,7 +183,6 @@ export const ConfigurationTable = () => {
           loadCategories,
           loadDBViews,
           loadStorages,
-          // useCurrentFields,
           useNewId,
           useCancelAction,
           interfaces,

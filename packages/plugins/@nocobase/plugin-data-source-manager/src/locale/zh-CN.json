@@ -26,5 +26,5 @@
   "Loaded": "已加载",
   "Reloading":"加载中",
   "Data source synchronization in progress":"数据源同步中",
-  "Sync":"同步"
+  "Data source synchronization successful":"数据源同步成功"
 }

@@ -1,17 +1,20 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Breadcrumb, Tag, Space } from 'antd';
 import { Link, useParams } from 'react-router-dom';
 import { useApp, useCompile, useDataSourceManagerV2 } from '@nocobase/client';
 import { lang, NAMESPACE } from '../locale';
 import { statusEnum } from '../schema';
+import { DataSourceContext } from '../DatabaseConnectionProvider';
 
 export const BreadcumbTitle = () => {
   const app = useApp();
   const { name } = useParams();
   const compile = useCompile();
   const dm = useDataSourceManagerV2();
-  const { displayName, status } = dm.getDataSource(name) || {};
-  const option = statusEnum.find((v) => v.value === status);
+  const { displayName } = dm.getDataSource(name) || {};
+  const { dataSource } = useContext(DataSourceContext);
+  const { status } = dataSource;
+  const option = statusEnum.find((v) => v.value === (status || 'loaded'));
   return (
     <Breadcrumb
       separator=">"
