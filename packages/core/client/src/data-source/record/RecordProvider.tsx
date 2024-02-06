@@ -13,6 +13,10 @@ export interface RecordProviderPropsV2<DataType = {}, ParentDataType = {}> {
    * 当前记录所属的 collection name
    */
   collectionName?: string;
+  /**
+   * 当前记录所属的父级 collection name
+   */
+  parentCollectionName?: string;
 }
 
 export const RecordProviderV2: FC<RecordProviderPropsV2> = ({
@@ -21,14 +25,15 @@ export const RecordProviderV2: FC<RecordProviderPropsV2> = ({
   parentRecord,
   children,
   collectionName,
+  parentCollectionName,
 }) => {
   const parentRecordValue = useMemo(() => {
     if (parentRecord) {
       if (parentRecord instanceof RecordV2) return parentRecord;
-      return new RecordV2({ data: parentRecord, collectionName });
+      return new RecordV2({ data: parentRecord, collectionName: parentCollectionName });
     }
     if (record instanceof RecordV2) return record.parentRecord;
-  }, [collectionName, parentRecord, record]);
+  }, [parentCollectionName, parentRecord, record]);
 
   const currentRecordValue = useMemo(() => {
     let res: RecordV2;
