@@ -3,7 +3,6 @@ const { resolve } = require('path');
 const pAll = require('p-all');
 const dotenv = require('dotenv');
 const fs = require('fs');
-const { Client } = require('pg');
 const glob = require('glob');
 const _ = require('lodash');
 
@@ -22,7 +21,7 @@ const config = {
 async function runApp(dir, index = 0) {
   // 一个进程需要占用两个端口? (一个是应用端口，一个是 socket 端口)
   index = index * 2;
-
+  const { Client } = require('pg');
   const database = `nocobase${index}`;
   const client = new Client({
     host: config['DB_HOST'],
