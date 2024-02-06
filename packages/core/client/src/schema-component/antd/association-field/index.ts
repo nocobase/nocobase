@@ -1,11 +1,11 @@
-import { connect, mapReadPretty, mapProps, useFieldSchema } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { Action } from '../action';
 import { Editable } from './Editable';
 import { InternalPicker } from './InternalPicker';
 import { Nester } from './Nester';
 import { ReadPretty } from './ReadPretty';
 import { SubTable } from './SubTable';
-import { useCollectionManager, useCollection } from '../../../collection-manager';
 
 export const AssociationField: any = connect(
   Editable,
@@ -18,7 +18,7 @@ export const AssociationField: any = connect(
     const targetCollection = getCollection(collectionField?.target);
     return {
       ...props,
-      fieldNames: { ...props.fieldNames, value: collectionField?.targetKey || targetCollection.primaryKey },
+      fieldNames: { ...props.fieldNames, value: collectionField?.targetKey || targetCollection.getPrimaryKey() },
     };
   }),
 );
