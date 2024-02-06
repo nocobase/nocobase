@@ -6,7 +6,6 @@ export * from '../../schema-component/antd/association-filter/AssociationFilterD
 export * from './ActionInitializer';
 export * from './BlockInitializer';
 export * from './BulkDestroyActionInitializer';
-export * from './BulkEditSubmitActionInitializer';
 export * from './CollectionFieldInitializer';
 export * from './CreateActionInitializer';
 export * from './CreateChildInitializer';

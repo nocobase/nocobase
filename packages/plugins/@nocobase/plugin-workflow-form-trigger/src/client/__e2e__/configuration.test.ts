@@ -93,7 +93,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await page.getByRole('button', { name: 'plus Add workflow' }).click();
     await page.getByRole('button', { name: 'Select workflow' }).click();
     await page.getByRole('option', { name: workFlowName }).click();
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
 
     // 2、测试步骤：进入“数据区块”-“添加”按钮，填写表单，点击“确定”按钮
     const fieldData = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();
@@ -187,7 +187,7 @@ test.describe('Configuration page to configure the Trigger node', () => {
     await page.getByRole('button', { name: 'plus Add workflow' }).click();
     await page.getByRole('button', { name: 'Select workflow' }).click();
     await page.getByRole('option', { name: workFlowName }).click();
-    await page.getByRole('button', { name: 'OK', exact: true }).click();
+    await page.getByRole('button', { name: 'Submit', exact: true }).click();
 
     // 2、测试步骤：进入“数据区块”-“添加”按钮，填写表单，点击“确定”按钮
     const fieldData = triggerNodeFieldDisplayName + dayjs().format('YYYYMMDDHHmmss.SSS').toString();

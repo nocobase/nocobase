@@ -2,7 +2,6 @@ import { Schema, useFieldSchema } from '@formily/react';
 import { flatten, getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
-import { mergeFilter } from '../block-provider';
 import { FilterTarget, findFilterTargets } from '../block-provider/hooks';
 import {
   Collection,
@@ -21,6 +20,21 @@ export enum FilterBlockType {
   TREE,
   COLLAPSE,
 }
+
+export const mergeFilter = (filters: any[], op = '$and') => {
+  const items = filters.filter((f) => {
+    if (f && typeof f === 'object' && !Array.isArray(f)) {
+      return Object.values(f).filter((v) => v !== undefined).length;
+    }
+  });
+  if (items.length === 0) {
+    return {};
+  }
+  if (items.length === 1) {
+    return items[0];
+  }
+  return { [op]: items };
+};
 
 export const getSupportFieldsByAssociation = (inheritCollectionsChain: string[], block: DataBlock) => {
   return block.associatedFields?.filter((field) =>

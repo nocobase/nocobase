@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActionInitializer } from './ActionInitializer';
+import { ActionInitializer } from '@nocobase/client';
 
 export const BulkEditSubmitActionInitializer = (props) => {
   const schema = {

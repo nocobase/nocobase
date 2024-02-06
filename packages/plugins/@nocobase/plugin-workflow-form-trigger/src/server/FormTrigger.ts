@@ -81,7 +81,7 @@ export default class extends Trigger {
           let payload = row;
           if (trigger[1]) {
             const paths = trigger[1].split('.');
-            for await (const field of paths) {
+            for (const field of paths) {
               if (payload.get(field)) {
                 payload = payload.get(field);
               } else {
@@ -116,14 +116,7 @@ export default class extends Trigger {
     }
 
     for (const event of syncGroup) {
-      await this.workflow.trigger(event[0], event[1]);
-      // if (processor.execution.status < EXECUTION_STATUS.STARTED) {
-      //   // error handling
-      //   return context.throw(
-      //     500,
-      //     'Your data saved, but some workflow on your action failed, please contact the administrator.',
-      //   );
-      // }
+      await this.workflow.trigger(event[0], event[1], { httpContext: context });
     }
 
     for (const event of asyncGroup) {

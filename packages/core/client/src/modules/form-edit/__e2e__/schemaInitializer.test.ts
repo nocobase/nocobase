@@ -8,7 +8,7 @@ test.describe('where edit form block can be added', () => {
 
     await page.getByLabel('action-Action.Link-Edit-update-general-table-0').click();
     await page.getByLabel('schema-initializer-Grid-RecordBlockInitializers-general').hover();
-    await page.getByText('Form').click();
+    await page.getByText('Form').first().click();
     await page.mouse.move(300, 0);
 
     await expect(page.getByLabel('block-item-CardItem-general-form')).toBeVisible();

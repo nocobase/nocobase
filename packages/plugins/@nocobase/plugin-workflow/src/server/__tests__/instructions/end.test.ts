@@ -35,12 +35,20 @@ describe('workflow > instructions > end', () => {
         },
       });
 
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+
+      await n1.setDownstream(n2);
+
       await plugin.trigger(workflow, {});
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
-      const [job] = await execution.getJobs();
-      expect(job.status).toBe(JOB_STATUS.RESOLVED);
+      const jobs = await execution.getJobs();
+      expect(jobs.length).toBe(1);
+      expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
     });
 
     it('failed', async () => {
@@ -51,12 +59,20 @@ describe('workflow > instructions > end', () => {
         },
       });
 
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+
+      await n1.setDownstream(n2);
+
       await plugin.trigger(workflow, {});
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.FAILED);
-      const [job] = await execution.getJobs();
-      expect(job.status).toBe(JOB_STATUS.FAILED);
+      const jobs = await execution.getJobs();
+      expect(jobs.length).toBe(1);
+      expect(jobs[0].status).toBe(JOB_STATUS.FAILED);
     });
   });
 });

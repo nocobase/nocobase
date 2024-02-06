@@ -4,9 +4,11 @@
   "displayName.zh-CN": "工作流：聚合查询节点",
   "description": "Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.",
   "description.zh-CN": "可用于在工作流中对数据库进行聚合查询，如：统计数量、求和、平均值等。",
-  "version": "0.19.0-alpha.4",
+  "version": "0.19.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/plugins/workflow-aggregate",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/plugins/workflow-aggregate",
   "devDependencies": {
     "antd": "5.x",
     "react": "18.x",
@@ -19,5 +21,8 @@
     "@nocobase/server": "0.x",
     "@nocobase/test": "0.x"
   },
-  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde"
+  "gitHead": "979a9c59a98c61a2287dd847580746a9b597cbde",
+  "keywords": [
+    "Workflow"
+  ]
 }
