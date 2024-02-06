@@ -382,7 +382,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
       title="Save as block template"
       onClick={async () => {
         setVisible(false);
-        const { title } = getCollection(collectionName);
+        const collection = collectionName && getCollection(collectionName);
         const gridSchema = findGridSchema(fieldSchema);
         const values = await FormDialog(
           t('Save as template'),
@@ -401,7 +401,9 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
                       name: {
                         title: t('Template name'),
                         required: true,
-                        default: `${compile(title)}_${componentTitle[componentName] || componentName}`,
+                        default: collection
+                          ? `${compile(collection?.title || collection?.name)}_${t(componentName)}`
+                          : t(componentName),
                         'x-decorator': 'FormItem',
                         'x-component': 'Input',
                       },

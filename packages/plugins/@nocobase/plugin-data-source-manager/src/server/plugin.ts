@@ -1,20 +1,22 @@
 import { Application, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
-import remoteCollectionsResourcer from './resourcers/data-sources-collections';
-import remoteFieldsResourcer from './resourcers/data-sources-collections-fields';
 import { DataSourcesCollectionModel } from './models/data-sources-collection-model';
 import { DataSourcesFieldModel } from './models/data-sources-field-model';
-import { rolesRemoteCollectionsResourcer } from './resourcers/roles-data-sources-collections';
-import databaseConnectionsRolesResourcer from './resourcers/data-sources-roles';
+import remoteCollectionsResourcer from './resourcers/data-sources-collections';
+import remoteFieldsResourcer from './resourcers/data-sources-collections-fields';
 import rolesConnectionResourcesResourcer from './resourcers/data-sources-resources';
+import databaseConnectionsRolesResourcer from './resourcers/data-sources-roles';
+import { rolesRemoteCollectionsResourcer } from './resourcers/roles-data-sources-collections';
 
-import { DataSourcesRolesModel } from './models/data-sources-roles-model';
+import lodash from 'lodash';
 import { DataSourcesRolesResourcesModel } from './models/connections-roles-resources';
 import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { DataSourceModel } from './models/data-source';
-import lodash from 'lodash';
+import { DataSourcesRolesModel } from './models/data-sources-roles-model';
 
 type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
+
+const canRefreshStatus = ['loaded', 'loading-failed', 'reloading-failed'];
 
 export class PluginDataSourceManagerServer extends Plugin {
   public dataSourceErrors: {
@@ -49,7 +51,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       const type = model.get('type');
 
       if (type === 'belongsTo') {
-        validatePresents(['foreignKey', 'sourceKey', 'targetKey', 'target']);
+        validatePresents(['foreignKey', 'targetKey', 'target']);
       }
 
       if (type === 'hasMany') {
@@ -57,11 +59,11 @@ export class PluginDataSourceManagerServer extends Plugin {
       }
 
       if (type == 'hasOne') {
-        validatePresents(['foreignKey', 'sourceKey', 'targetKey', 'target']);
+        validatePresents(['foreignKey', 'sourceKey', 'target']);
       }
 
       if (type === 'belongsToMany') {
-        validatePresents(['foreignKey', 'sourceKey', 'targetKey', 'through', 'throughKey', 'target']);
+        validatePresents(['foreignKey', 'otherKey', 'sourceKey', 'targetKey', 'through', 'target']);
       }
     });
 
@@ -209,19 +211,26 @@ export class PluginDataSourceManagerServer extends Plugin {
       },
 
       async ['dataSources:refresh'](ctx, next) {
-        const { filterByTk } = ctx.action.params;
+        const { filterByTk, clientStatus } = ctx.action.params;
         const dataSourceModel: DataSourceModel = await ctx.db.getRepository('dataSources').findOne({
           filter: {
             key: filterByTk,
           },
         });
 
-        dataSourceModel.loadIntoApplication({
-          app: ctx.app,
-        });
+        const currentStatus = plugin.dataSourceStatus[filterByTk];
+
+        if (
+          canRefreshStatus.includes(currentStatus) &&
+          (clientStatus ? clientStatus && canRefreshStatus.includes(clientStatus) : true)
+        ) {
+          dataSourceModel.loadIntoApplication({
+            app: ctx.app,
+          });
+        }
 
         ctx.body = {
-          success: true,
+          status: plugin.dataSourceStatus[filterByTk],
         };
 
         await next();
