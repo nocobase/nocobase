@@ -1,4 +1,4 @@
-import { CollectionFieldOptionsV2, GetCollectionFieldPredicateV2 } from '../../application';
+import type { CollectionFieldOptionsV2, GetCollectionFieldPredicateV2 } from '../../application';
 import { CollectionV2 } from '../../application/data-source/collection/Collection';
 import _, { filter, unionBy, uniq } from 'lodash';
 

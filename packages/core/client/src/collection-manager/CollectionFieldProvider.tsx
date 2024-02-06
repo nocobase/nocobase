@@ -2,7 +2,8 @@ import { SchemaKey, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useCollection, useCollectionManager } from './hooks';
 import { CollectionFieldOptions } from './types';
-import { CollectionFieldContextV2, CollectionDeletedPlaceholder } from '../application';
+import { CollectionDeletedPlaceholder } from '../application/data-source/components';
+import { CollectionFieldContextV2 } from '../application/data-source/collection-field/CollectionFieldProvider';
 
 export const CollectionFieldProvider: React.FC<{
   name?: SchemaKey;

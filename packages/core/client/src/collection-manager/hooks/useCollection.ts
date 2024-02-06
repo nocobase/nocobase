@@ -2,7 +2,7 @@ import { SchemaKey } from '@formily/react';
 import { useAPIClient } from '../../api-client';
 import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin';
 import { useCallback, useMemo } from 'react';
-import { useCollectionV2 } from '../../application';
+import { useCollectionV2 } from '../../application/data-source/collection/CollectionProvider';
 
 export type Collection = ReturnType<typeof useCollection>;
 

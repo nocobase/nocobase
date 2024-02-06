@@ -1,4 +1,4 @@
-import { CollectionFieldInterface } from '../../application';
+import { CollectionFieldInterface } from '../../application/data-source/collection-field-interface/CollectionFieldInterface';
 import { useMemo } from 'react';
 import { useDataSourceManagerV2 } from '../../application/data-source/data-source/DataSourceManagerProvider';
 
