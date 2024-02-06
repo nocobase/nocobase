@@ -24,7 +24,7 @@ export * from './china-region';
 export * from './collection-manager';
 export * as interfacesProperties from './collection-manager/interfaces/properties';
 export { getConfigurableProperties } from './collection-manager/templates/properties';
-
+export * from './collection-manager/CollectionHistoryProvider';
 export * from './common';
 export * from './css-variable';
 export * from './document-title';

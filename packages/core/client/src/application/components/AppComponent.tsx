@@ -13,7 +13,7 @@ export const AppComponent: FC<AppComponentProps> = observer((props) => {
   const handleErrors = useCallback((error: Error, info: { componentStack: string }) => {
     console.error(error);
     const err = new Error();
-    err.stack = info.componentStack;
+    err.stack = info.componentStack.trim();
     console.error(err);
   }, []);
   useEffect(() => {
