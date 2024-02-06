@@ -32,9 +32,9 @@ export function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean
   const outDir = path.resolve(cwd, 'es');
   return viteBuild(
     userConfig.modifyViteConfig({
-      mode: 'development',
+      mode: process.env.NODE_ENV || 'production',
       define: {
-        'process.env.NODE_ENV': JSON.stringify('development'),
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
         'process.env.__TEST__': false,
         'process.env.__E2E__': process.env.__E2E__ ? true : false,
       },
