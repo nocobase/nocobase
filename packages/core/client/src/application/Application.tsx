@@ -15,7 +15,6 @@ import { PluginManager, PluginType } from './PluginManager';
 import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
-import { DataBlockProviderV2 } from './data-source/data-block';
 import { APIClient, APIClientProvider } from '../api-client';
 import { i18n } from '../i18n';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
@@ -25,12 +24,11 @@ import { SchemaSettings, SchemaSettingsManager } from './schema-settings';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
-import {
-  DataSourceManagerOptionsV2,
-  DataSourceManagerV2,
-  DataSourceApplicationProvider,
-  CollectionFieldV2,
-} from './data-source';
+
+import { type DataSourceManagerOptionsV2, DataSourceManagerV2 } from './data-source/data-source/DataSourceManager';
+import { DataSourceApplicationProvider } from './data-source/components/DataSourceApplicationProvider';
+import { CollectionFieldV2 } from './data-source/collection-field/CollectionField';
+import { DataBlockProviderV2 } from './data-source/data-block/DataBlockProvider';
 
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';

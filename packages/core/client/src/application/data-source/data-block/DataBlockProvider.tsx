@@ -12,7 +12,7 @@ import { RecordV2 } from '../record';
 import { UseRequestOptions, UseRequestService } from '../../../api-client';
 import { Designable, useDesignable } from '../../../schema-component';
 import { withDynamicSchemaProps } from '../../hoc';
-import { DataSourceProviderV2 } from '../data-source';
+import { DataSourceProviderV2 } from '../data-source/DataSourceProvider';
 
 export interface AllDataBlockPropsV2 {
   collection: string | CollectionOptionsV2;

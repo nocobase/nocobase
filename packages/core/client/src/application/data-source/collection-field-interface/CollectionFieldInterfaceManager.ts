@@ -1,4 +1,3 @@
-import type { Application } from '../../Application';
 import type { DataSourceManagerV2 } from '../data-source';
 import type { CollectionFieldInterface, CollectionFieldInterfaceFactory } from './CollectionFieldInterface';
 

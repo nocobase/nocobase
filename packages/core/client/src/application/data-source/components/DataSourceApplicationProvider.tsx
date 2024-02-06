@@ -1,6 +1,10 @@
 import React, { FC } from 'react';
-import { DataSourceManagerProviderV2, DataSourceManagerV2 } from '../data-source';
-import { CollectionManagerProviderPropsV2, CollectionManagerProviderV2 } from '../collection';
+import type { DataSourceManagerV2 } from '../data-source/DataSourceManager';
+import { DataSourceManagerProviderV2 } from '../data-source/DataSourceManagerProvider';
+import {
+  type CollectionManagerProviderPropsV2,
+  CollectionManagerProviderV2,
+} from '../collection/CollectionManagerProvider';
 
 interface DataSourceApplicationProviderProps extends CollectionManagerProviderPropsV2 {
   dataSourceManager: DataSourceManagerV2;

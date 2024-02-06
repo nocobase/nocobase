@@ -12,7 +12,9 @@ export const AppComponent: FC<AppComponentProps> = observer((props) => {
   const { app } = props;
   const handleErrors = useCallback((error: Error, info: { componentStack: string }) => {
     console.error(error);
-    console.error(info.componentStack);
+    const err = new Error();
+    err.stack = info.componentStack;
+    console.error(err);
   }, []);
   useEffect(() => {
     app.load();

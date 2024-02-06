@@ -2,8 +2,6 @@ import { SchemaKey } from '@formily/react';
 import { filter } from 'lodash';
 
 import type { CollectionManagerV2 } from './CollectionManager';
-import type { Application } from '../../Application';
-import type { DataSourceManagerV2, DataSourceV2 } from '../data-source';
 
 type dumpable = 'required' | 'optional' | 'skip';
 type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };

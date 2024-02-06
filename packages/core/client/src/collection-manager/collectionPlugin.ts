@@ -47,7 +47,11 @@ import {
   TreeCollectionTemplate,
   ViewCollectionTemplate,
 } from './templates';
-import { DEFAULT_DATA_SOURCE_NAME, DEFAULT_DATA_SOURCE_TITLE, DataSourceV2 } from '../application/data-source';
+import {
+  DEFAULT_DATA_SOURCE_NAME,
+  DEFAULT_DATA_SOURCE_TITLE,
+} from '../application/data-source/data-source/DataSourceManager';
+import { DataSourceV2 } from '../application/data-source/data-source/DataSource';
 
 class MainDataSource extends DataSourceV2 {
   async getRemoteCollections() {
