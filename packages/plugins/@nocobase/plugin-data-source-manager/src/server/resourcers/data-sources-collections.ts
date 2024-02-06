@@ -27,15 +27,24 @@ export default {
         'name',
       );
 
+      const mapCollection = (collections) => {
+        return collections.map((collection) => {
+          return {
+            ...collection.options,
+            fields: collection.getFields().map((field) => field.options),
+          };
+        });
+      };
+
       if (paginate === false || paginate === 'false') {
-        ctx.body = collections.map((collection) => collection.options);
+        ctx.body = mapCollection(collections);
       } else {
         const { page = 1, pageSize = 20 } = ctx.action.params;
 
         ctx.withoutDataWrapping = true;
 
         ctx.body = {
-          data: collections.slice((page - 1) * pageSize, page * pageSize).map((collection) => collection.options),
+          data: mapCollection(collections.slice((page - 1) * pageSize, page * pageSize)),
           meta: {
             count: collections.length,
             page,
