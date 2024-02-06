@@ -63,7 +63,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       }
 
       if (type === 'belongsToMany') {
-        validatePresents(['foreignKey', 'sourceKey', 'targetKey', 'through', 'throughKey', 'target']);
+        validatePresents(['foreignKey', 'otherKey', 'sourceKey', 'targetKey', 'through', 'target']);
       }
     });
 
