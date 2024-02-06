@@ -1,10 +1,11 @@
 import { useDeepCompareEffect, useUpdateEffect } from 'ahooks';
 import React, { FC, createContext, useContext } from 'react';
 
-import { useDataBlockResourceV2 } from './DataBlockResourceProvider';
-import { AllDataBlockPropsV2, useDataBlockPropsV2 } from './DataBlockProvider';
+import { isString } from 'lodash';
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
-import { RecordProviderV2 } from '../record';
+import { RecordProviderV2, RecordV2 } from '../record';
+import { AllDataBlockPropsV2, useDataBlockPropsV2 } from './DataBlockProvider';
+import { useDataBlockResourceV2 } from './DataBlockResourceProvider';
 
 export const BlockRequestContextV2 = createContext<UseRequestResult<any>>(null);
 BlockRequestContextV2.displayName = 'BlockRequestContextV2';
@@ -18,14 +19,14 @@ function useCurrentRequest<T>(options: Omit<AllDataBlockPropsV2, 'type'>) {
   const request = useRequest<T>(
     requestService
       ? requestService
-      : () => {
+      : (customParams) => {
           if (record) return Promise.resolve({ data: record });
           if (!action) {
             throw new Error(
               `[nocobase]: The 'action' parameter is missing in the 'DataBlockRequestProvider' component`,
             );
           }
-          return resource[action](params).then((res) => res.data);
+          return resource[action]({ ...params, ...customParams }).then((res) => res.data);
         },
     {
       ...requestOptions,
@@ -109,12 +110,26 @@ export const BlockRequestProviderV2: FC = ({ children }) => {
         <RecordProviderV2
           isNew={action === undefined}
           record={currentRequest.data?.data}
-          parentRecord={parentRequest.data?.data}
+          parentRecord={
+            parentRequest.data?.data &&
+            new RecordV2({ isNew: false, data: parentRequest.data?.data, collectionName: association.split('.')[0] })
+          }
+          collectionName={isString(collection) ? collection : collection?.name}
         >
           {children}
         </RecordProviderV2>
       ) : (
-        children
+        <RecordProviderV2
+          isNew={false}
+          record={null}
+          parentRecord={
+            parentRequest.data?.data &&
+            new RecordV2({ isNew: false, data: parentRequest.data?.data, collectionName: association.split('.')[0] })
+          }
+          collectionName={isString(collection) ? collection : collection?.name}
+        >
+          {children}
+        </RecordProviderV2>
       )}
     </BlockRequestContextV2.Provider>
   );
