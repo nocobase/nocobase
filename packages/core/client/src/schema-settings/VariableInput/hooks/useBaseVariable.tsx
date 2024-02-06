@@ -59,6 +59,7 @@ interface BaseProps {
    * @param option
    */
   returnFields?(fields: FieldOption[], option: Option): FieldOption[];
+  dataSource?: string;
 }
 
 interface BaseVariableProviderProps {
@@ -138,12 +139,13 @@ export const useBaseVariable = ({
   noChildren = false,
   // TODO: 等整理完完整测试用例后，再开启该功能
   noDisabled = true,
+  dataSource,
   returnFields = (fields) => fields,
 }: BaseProps) => {
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
   const { isDisabled } = useContext(BaseVariableContext) || {};
-  const { getCollectionField } = useCollectionManager();
+  const { getCollectionField } = useCollectionManager(dataSource);
 
   const loadChildren = (option: Option): Promise<void> => {
     if (!option.field?.target) {
@@ -154,7 +156,7 @@ export const useBaseVariable = ({
     return new Promise((resolve) => {
       setTimeout(() => {
         const children = (
-          getChildren(returnFields(getFilterOptions(target), option), {
+          getChildren(returnFields(getFilterOptions(target, dataSource), option), {
             collectionField,
             uiSchema,
             targetFieldSchema,

@@ -11,7 +11,7 @@ import { useDataSourceV2 } from '../../application/data-source/data-source/DataS
 export const useCollectionManager = (dataSourceName?: string) => {
   const dm = useDataSourceManagerV2();
   const dataSource = useDataSourceV2();
-  const dataSourceNameValue = dataSource?.key || dataSourceName || undefined;
+  const dataSourceNameValue = dataSourceName || dataSource?.key || undefined;
   const [random, setRandom] = useState(uid());
   const { refresh } = useSchemaComponentContext();
   const interfaces = useMemo(

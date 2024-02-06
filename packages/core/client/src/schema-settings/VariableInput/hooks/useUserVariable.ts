@@ -2,6 +2,7 @@ import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions } from '../../../collection-manager';
 import { useBaseVariable } from './useBaseVariable';
+import { DEFAULT_DATA_SOURCE_NAME } from '../../../application';
 
 /**
  * 变量：`当前用户`
@@ -30,6 +31,7 @@ export const useUserVariable = ({
     name: '$user',
     title: t('Current user'),
     collectionName: 'users',
+    dataSource: DEFAULT_DATA_SOURCE_NAME,
     noDisabled,
     targetFieldSchema,
   });
