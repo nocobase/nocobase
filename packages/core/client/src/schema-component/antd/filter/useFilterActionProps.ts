@@ -10,7 +10,7 @@ export const useGetFilterOptions = () => {
   const { getCollectionFields } = useCollectionManager();
   const getFilterFieldOptions = useGetFilterFieldOptions();
 
-  return (collectionName, dataSource) => {
+  return (collectionName, dataSource?: string) => {
     const fields = getCollectionFields(collectionName, dataSource);
     const options = getFilterFieldOptions(fields);
     return options;
