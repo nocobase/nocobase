@@ -1,18 +1,19 @@
 import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react';
 
-import { BlockRequestProviderV2 } from './DataBlockRequestProvider';
-import { DataBlockResourceProviderV2 } from './DataBlockResourceProvider';
+import { ACLCollectionProvider } from '../../acl/ACLProvider';
+import { UseRequestOptions, UseRequestService } from '../../api-client';
+import { withDynamicSchemaProps } from '../../application/hoc';
+import { Designable, useDesignable } from '../../schema-component';
 import {
   AssociationProviderV2,
   CollectionManagerProviderV2,
   CollectionOptionsV2,
   CollectionProviderV2,
 } from '../collection';
-import { RecordV2 } from '../record';
-import { UseRequestOptions, UseRequestService } from '../../api-client';
-import { Designable, useDesignable } from '../../schema-component';
-import { withDynamicSchemaProps } from '../../application/hoc';
 import { DataSourceProviderV2 } from '../data-source/DataSourceProvider';
+import { RecordV2 } from '../record';
+import { BlockRequestProviderV2 } from './DataBlockRequestProvider';
+import { DataBlockResourceProviderV2 } from './DataBlockResourceProvider';
 
 export interface AllDataBlockPropsV2 {
   collection: string | CollectionOptionsV2;
@@ -132,9 +133,11 @@ export const DataBlockProviderV2: FC<DataBlockProviderPropsV2 & { children?: Rea
         <DataSourceProviderV2 dataSource={dataSource}>
           <CollectionManagerProviderV2>
             <AssociationOrCollection.Component name={AssociationOrCollection.name as any}>
-              <DataBlockResourceProviderV2>
-                <BlockRequestProviderV2>{children}</BlockRequestProviderV2>
-              </DataBlockResourceProviderV2>
+              <ACLCollectionProvider>
+                <DataBlockResourceProviderV2>
+                  <BlockRequestProviderV2>{children}</BlockRequestProviderV2>
+                </DataBlockResourceProviderV2>
+              </ACLCollectionProvider>
             </AssociationOrCollection.Component>
           </CollectionManagerProviderV2>
         </DataSourceProviderV2>
