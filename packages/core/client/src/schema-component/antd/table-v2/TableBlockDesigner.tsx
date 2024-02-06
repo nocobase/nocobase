@@ -34,6 +34,7 @@ export const EditSortField = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const compile = useCompile();
+  const { service } = useTableBlockContext();
 
   const options = fields
     .filter((field) => !field?.target && field.interface === 'sort')
@@ -47,21 +48,15 @@ export const EditSortField = () => {
       key="sort-field"
       title={t('Drag and drop sorting field')}
       options={options}
-      value={field?.componentProps?.fieldNames?.sortField}
-      onChange={(sortField) => {
-        const schema = {
-          ['x-uid']: fieldSchema['x-uid'],
-        };
-        const fieldNames = {
-          ...field.componentProps.fieldNames,
-          sortField,
-        };
-        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-        fieldSchema['x-component-props']['fieldNames'] = fieldNames;
-        schema['x-component-props'] = fieldSchema['x-component-props'];
-        field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
+      value={field.decoratorProps.dragSortBy}
+      onChange={(dragSortBy) => {
+        fieldSchema['x-decorator-props'].dragSortBy = dragSortBy;
+        service.run({ ...service.params?.[0], sort: dragSortBy });
         dn.emit('patch', {
-          schema,
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': fieldSchema['x-decorator-props'],
+          },
         });
         dn.refresh();
       }}
@@ -158,12 +153,12 @@ export const TableBlockDesigner = () => {
                   sortable: true,
                 },
               });
-              const sortBy = data?.data?.[0]?.sortBy;
-              fieldSchema['x-decorator-props'].dragSortBy = sortBy;
+              // const sortBy = data?.data?.[0]?.sortBy;
+              // fieldSchema['x-decorator-props'].dragSortBy = sortBy;
             }
             field.decoratorProps.dragSort = dragSort;
             fieldSchema['x-decorator-props'].dragSort = dragSort;
-            service.run({ ...service.params?.[0], sort: fieldSchema['x-decorator-props'].dragSortBy });
+            // service.run({ ...service.params?.[0], sort: fieldSchema['x-decorator-props'].dragSortBy });
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],

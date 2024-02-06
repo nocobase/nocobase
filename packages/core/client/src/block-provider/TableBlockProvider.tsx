@@ -37,6 +37,7 @@ interface Props {
 
 const InternalTableBlockProvider = (props: Props) => {
   const { params, showIndex, dragSort, rowKey, childrenColumnName, fieldNames, ...others } = props;
+  console.log(props);
   const field: any = useField();
   const { resource, service } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
@@ -82,8 +83,8 @@ export const TableBlockProvider = (props) => {
 
   const collection = getCollection(props.collection);
   const { treeTable, dragSortBy } = fieldSchema?.['x-decorator-props'] || {};
-  if (props.dragSort) {
-    params['sort'] = dragSortBy || ['sort'];
+  if (props.dragSort && dragSortBy) {
+    params['sort'] = dragSortBy;
   }
   let childrenColumnName = 'children';
   if (collection?.tree && treeTable !== false) {
@@ -152,7 +153,7 @@ export const useTableBlockProps = () => {
     childrenColumnName: ctx.childrenColumnName,
     loading: ctx?.service?.loading,
     showIndex: ctx.showIndex,
-    dragSort: ctx.dragSort,
+    dragSort: ctx.dragSort && ctx.dragSortBy,
     rowKey: ctx.rowKey || 'id',
     pagination:
       ctx?.params?.paginate !== false

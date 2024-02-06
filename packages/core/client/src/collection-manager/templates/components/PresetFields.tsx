@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { observer, useField, useForm } from '@formily/react';
+import { observer, useForm } from '@formily/react';
 import { useCompile } from '../../../';
 import { useCollectionManager } from '../../';
 
@@ -15,18 +15,15 @@ const getDefaultCollectionFields = (presetFields, values) => {
       })
     : [];
   if (presetFields.find((v) => v.name === 'id')) {
-    const pk = values.fields.find((f) => f.primaryKey);
-    if (!pk) {
-      defaults.push({
-        name: 'id',
-        type: 'bigInt',
-        autoIncrement: true,
-        primaryKey: true,
-        allowNull: false,
-        uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
-        interface: 'integer',
-      });
-    }
+    defaults.push({
+      name: 'id',
+      type: 'bigInt',
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false,
+      uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
+      interface: 'integer',
+    });
   }
   if (presetFields.find((v) => v.name === 'createdAt')) {
     defaults.push({
@@ -139,12 +136,6 @@ export const PresetFields = observer((props: any) => {
       name: 'id',
     },
     {
-      field: t('CreatedBy'),
-      interface: 'm2o',
-      description: t('Store the creation user of each record'),
-      name: 'createdBy',
-    },
-    {
       field: t('CreatedAt'),
       interface: 'datetime',
       description: t('Store the creation time of each record'),
@@ -156,6 +147,13 @@ export const PresetFields = observer((props: any) => {
       description: t('Store the last update time of each recordd'),
       name: 'updatedAt',
     },
+    {
+      field: t('CreatedBy'),
+      interface: 'm2o',
+      description: t('Store the creation user of each record'),
+      name: 'createdBy',
+    },
+
     {
       field: t('UpdatedBy'),
       interface: 'm2o',
@@ -181,12 +179,13 @@ export const PresetFields = observer((props: any) => {
         onChange: (_, selectedRows) => {
           const fields = getDefaultCollectionFields(selectedRows, form.values);
           const config = {
-            autoGenId: !!selectedRows.find((v) => v.name === 'id'),
-            createdAt: !!selectedRows.find((v) => v.name === 'createdAt'),
-            createdBy: !!selectedRows.find((v) => v.name === 'createdBy'),
-            updatedAt: !!selectedRows.find((v) => v.name === 'updatedAt'),
-            updatedBy: !!selectedRows.find((v) => v.name === 'updatedBy'),
+            autoGenId: !!fields.find((v) => v.name === 'id'),
+            createdAt: !!fields.find((v) => v.name === 'createdAt'),
+            createdBy: !!fields.find((v) => v.name === 'createdBy'),
+            updatedAt: !!fields.find((v) => v.name === 'updatedAt'),
+            updatedBy: !!fields.find((v) => v.name === 'updatedBy'),
           };
+          console.log(fields, selectedRows);
 
           setSelectedRowKeys(
             fields?.map?.((v) => {
