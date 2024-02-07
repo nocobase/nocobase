@@ -5,6 +5,7 @@ export const id: IField = {
   name: 'id',
   type: 'object',
   group: 'systemInfo',
+  hidden: true,
   order: 0,
   title: '{{t("ID")}}',
   sortable: true,
