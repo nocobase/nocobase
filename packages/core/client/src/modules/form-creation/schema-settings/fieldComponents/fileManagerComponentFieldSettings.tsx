@@ -5,8 +5,13 @@ import { SchemaSettings } from '../../../../application/schema-settings/SchemaSe
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
-import { useIsFieldReadPretty } from '../../../../schema-component/antd/form-item/FormItem.Settings';
+import {
+  useIsFieldReadPretty,
+  useIsAssociationField,
+} from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { useColumnSchema } from '../../../../schema-component/antd/table-v2/Table.Column.Decorator';
+import { allowMultiple } from './selectComponentFieldSettings';
+import { useIsShowMultipleSwitch } from '../../../../schema-settings/hooks/useIsShowMultipleSwitch';
 
 const fieldComponent: any = {
   name: 'fieldComponent',
@@ -166,6 +171,14 @@ export const fileManagerComponentFieldSettings = new SchemaSettings({
             dn.refresh();
           },
         };
+      },
+    },
+    {
+      ...allowMultiple,
+      useVisible() {
+        const isAssociationField = useIsAssociationField();
+        const IsShowMultipleSwitch = useIsShowMultipleSwitch();
+        return isAssociationField && IsShowMultipleSwitch();
       },
     },
   ],
