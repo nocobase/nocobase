@@ -3,6 +3,8 @@ import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import _ from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import { useCollection } from '../collection-manager/hooks/useCollection';
+import { useParentRecordV2 } from '../data-source/record/RecordProvider';
 import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useParsedFilter } from './hooks';
@@ -20,6 +22,8 @@ const InternalDetailsBlockProvider = (props) => {
     [],
   );
   const { resource, service } = useBlockRequestContext();
+  const parentRecord = useParentRecordV2(false);
+  const { name: collectionName } = useCollection();
   const currentRecord = service?.data?.data?.[0] || {};
   const detailsBLockValue = useMemo(() => {
     return {
@@ -47,7 +51,13 @@ const InternalDetailsBlockProvider = (props) => {
 
   return (
     <DetailsBlockContext.Provider value={detailsBLockValue}>
-      <RecordProvider record={currentRecord}>{props.children}</RecordProvider>
+      <RecordProvider
+        record={currentRecord}
+        parent={parentRecord?.data}
+        parentCollectionName={parentRecord?.collectionName}
+      >
+        {props.children}
+      </RecordProvider>
     </DetailsBlockContext.Provider>
   );
 };

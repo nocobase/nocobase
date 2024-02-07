@@ -1,9 +1,9 @@
 import { createForm } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
-import _, { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';
+import { useRecordV2 } from '../data-source';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
@@ -26,7 +26,7 @@ const InternalFormBlockProvider = (props) => {
   );
   const { resource, service, updateAssociationValues } = useBlockRequestContext();
   const formBlockRef = useRef();
-  const record = useRecord();
+  const record = useRecordV2(false);
   const formBlockValue = useMemo(() => {
     return {
       ...ctx,
@@ -47,32 +47,21 @@ const InternalFormBlockProvider = (props) => {
   if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
     return <Spin />;
   }
-  let content = (
-    <div ref={formBlockRef}>
-      <RenderChildrenWithDataTemplates form={form} />
-    </div>
-  );
-  if (readPretty) {
-    content = (
-      <RecordProvider parent={isEmpty(record?.__parent) ? record : record?.__parent} record={service?.data?.data}>
-        {content}
-      </RecordProvider>
-    );
-  } else if (
-    formBlockValue.type === 'create' &&
-    // 关系表单区块的 record 应该是空的，因为其是一个创建数据的表单；
-    !_.isEmpty(_.omit(record, ['__parent', '__collectionName'])) &&
-    // association 不为空，说明是关系区块
-    association
-  ) {
-    content = (
-      <RecordProvider parent={record} record={{}}>
-        {content}
-      </RecordProvider>
-    );
-  }
 
-  return <FormBlockContext.Provider value={formBlockValue}>{content}</FormBlockContext.Provider>;
+  return (
+    <FormBlockContext.Provider value={formBlockValue}>
+      <RecordProvider
+        parent={record?.parentRecord?.data}
+        record={record?.data}
+        collectionName={record?.collectionName}
+        parentCollectionName={record?.parentRecord?.collectionName}
+      >
+        <div ref={formBlockRef}>
+          <RenderChildrenWithDataTemplates form={form} />
+        </div>
+      </RecordProvider>
+    </FormBlockContext.Provider>
+  );
 };
 
 /**
