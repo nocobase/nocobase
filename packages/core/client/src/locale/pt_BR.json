@@ -147,7 +147,7 @@
   "Collection display name": "Nome para exibição da coleção",
   "Collection name": "Nome da coleção",
   "Inherits": "Herdado",
-  "Generate ID field automatically": "Gerar campo de ID automaticamente",
+  "Primary key, unique identifier, self growth": "Chave primária, identificador único, crescimento próprio",
   "Store the creation user of each record": "Armazenar o usuário criador de cada registro",
   "Store the last update user of each record": "Armazenar o último usuário que atualizou cada registro",
   "Store the creation time of each record": "Armazenar a hora de criação de cada registro",
