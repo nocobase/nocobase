@@ -5,6 +5,7 @@ import { isArr, isValid, toArr as toArray } from '@formily/shared';
 import { UploadFile } from 'antd/es/upload/interface';
 import { useEffect } from 'react';
 import { useAPIClient } from '../../../api-client';
+import { useBlockRequestContext, useSourceIdFromParentRecord } from '../../../block-provider/BlockProvider';
 import { UPLOAD_PLACEHOLDER } from './placeholder';
 import type { IUploadProps, UploadProps } from './type';
 
@@ -171,6 +172,8 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
   };
 
   const api = useAPIClient();
+  const { props: blockProps } = useBlockRequestContext();
+  const sourceId = useSourceIdFromParentRecord();
 
   return {
     ...props,
@@ -185,6 +188,11 @@ export function useUploadProps<T extends IUploadProps = UploadProps>({ serviceEr
         });
       }
       formData.append(filename, file);
+
+      if (blockProps?.association) {
+        action = `${blockProps?.association.split('.')[0]}/${sourceId}/${action}`;
+      }
+
       // eslint-disable-next-line promise/catch-or-return
       api.axios
         .post(action, formData, {
