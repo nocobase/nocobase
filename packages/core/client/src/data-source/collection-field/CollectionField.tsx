@@ -7,6 +7,7 @@ import { CollectionFieldProviderV2, useCollectionFieldV2 } from './CollectionFie
 import { useCompile, useComponent } from '../../schema-component';
 import { useFormBlockContext } from '../../block-provider';
 import useIsAllowToSetDefaultValue from '../../schema-settings/hooks/useIsAllowToSetDefaultValue';
+import { useCollectionManager, useCollection } from '../../collection-manager';
 
 type Props = {
   component: any;
@@ -21,6 +22,8 @@ export const CollectionFieldInternalFieldV2: React.FC = (props: Props) => {
   const fieldSchema = useFieldSchema();
   const { uiSchema: uiSchemaOrigin, defaultValue } = useCollectionFieldV2();
   const { isAllowToSetDefaultValue } = useIsAllowToSetDefaultValue();
+  const { getCollection, getCollectionJoinField } = useCollectionManager();
+  const { getField } = useCollection();
   const uiSchema = useMemo(() => compile(uiSchemaOrigin), [JSON.stringify(uiSchemaOrigin)]);
   const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
   const setFieldProps = (key, value) => {
@@ -66,7 +69,17 @@ export const CollectionFieldInternalFieldV2: React.FC = (props: Props) => {
     // @ts-ignore
     field.dataSource = uiSchema.enum;
     const originalProps = compile(uiSchema['x-component-props']) || {};
-    const componentProps = merge(originalProps, field.componentProps || {});
+    //处理关系字段 fieldNames
+    const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema.name as string);
+    const targetCollection = getCollection(collectionField?.target);
+    let fieldNames = {};
+    if (collectionField?.target) {
+      fieldNames = {
+        label: collectionField?.targetKey || targetCollection.getPrimaryKey(),
+        value: collectionField?.targetKey || targetCollection.getPrimaryKey(),
+      };
+    }
+    const componentProps = merge(originalProps, { ...(field.componentProps || {}), fieldNames });
     field.component = [Component, componentProps];
   }, [JSON.stringify(uiSchema)]);
   if (!uiSchema) {
