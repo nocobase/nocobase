@@ -1,7 +1,6 @@
 import React, { ComponentType } from 'react';
 import { render, screen } from '@nocobase/test/client';
 import {
-  CollectionManagerProviderV2,
   CollectionProviderV2,
   useCollectionFieldsV2,
   useCollectionV2,
@@ -81,7 +80,7 @@ describe('CollectionProvider', () => {
 
     renderApp(Demo, { name: 'not-exists', allowNull: false });
 
-    expect(screen.getByText(`Collection: "not-exists" not exists`)).toBeInTheDocument();
+    expect(screen.getByTestId('app').innerHTML).toContain('ant-result');
   });
 
   test('useCollectionFieldsV2() support predicate', () => {

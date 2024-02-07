@@ -22,7 +22,12 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
     }
 
     return (
-      <div>{t('The collection "{{name}}" might be deleted. If unnecessary, delete the current block.', { name })}</div>
+      <div>
+        {t(
+          `The ${t(type).toLocaleLowerCase()} "{{name}}" might be deleted. If unnecessary, delete the current block.`,
+          { name },
+        )}
+      </div>
     );
   }, [message, name, type, t]);
 
