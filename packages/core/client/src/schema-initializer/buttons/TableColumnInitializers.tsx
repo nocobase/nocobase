@@ -89,7 +89,7 @@ export const tableColumnInitializers = new SchemaInitializer({
       type: 'divider',
       useVisible() {
         const fieldSchema = useFieldSchema();
-        return fieldSchema['x-component'] === 'TableV2';
+        return fieldSchema['x-component'] !== 'AssociationField.SubTable';
       },
     },
     {
@@ -99,7 +99,7 @@ export const tableColumnInitializers = new SchemaInitializer({
       Component: 'TableActionColumnInitializer',
       useVisible() {
         const fieldSchema = useFieldSchema();
-        return fieldSchema['x-component'] === 'TableV2';
+        return fieldSchema['x-component'] !== 'AssociationField.SubTable';
       },
     },
   ],
