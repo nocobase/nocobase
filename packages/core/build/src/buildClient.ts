@@ -39,7 +39,7 @@ export function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: boolean
         'process.env.__E2E__': process.env.__E2E__ ? true : false,
       },
       build: {
-        minify: false,
+        minify: process.env.NODE_ENV === 'production',
         outDir,
         cssCodeSplit: true,
         emptyOutDir: true,
@@ -78,13 +78,13 @@ export async function buildLib(
 
   await viteBuild(
     userConfig.modifyViteConfig({
-      mode: 'production',
+      mode: process.env.NODE_ENV || 'production',
       esbuild: {
         format: 'cjs',
       },
       build: {
         outDir,
-        minify: false,
+        minify: process.env.NODE_ENV === 'production',
         sourcemap,
         lib: {
           entry: path.join(cwd, 'es/index.ts'),

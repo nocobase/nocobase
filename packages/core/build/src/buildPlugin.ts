@@ -318,7 +318,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
     },
     logLevel: 'warn',
     build: {
-      minify: sourcemap,
+      minify: process.env.NODE_ENV === 'production',
       outDir,
       cssCodeSplit: false,
       emptyOutDir: true,
