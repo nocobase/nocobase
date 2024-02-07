@@ -755,5 +755,6 @@
   "loading": "chargement",
   "name is required": "le nom est requis",
   "data source": "source de données",
+  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "Le {{type}} \"{{name}}\" a peut-être été supprimé. Veuillez supprimer ce {{blockType}}.",
   "DataSource": "Source de données"
 }

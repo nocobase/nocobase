@@ -80,7 +80,7 @@ describe('CollectionProvider', () => {
 
     renderApp(Demo, { name: 'not-exists', allowNull: false });
 
-    expect(screen.getByText(`Collection: "not-exists" not exists`)).toBeInTheDocument();
+    expect(document.body.innerHTML).toContain('ant-result');
   });
 
   test('useCollectionFieldsV2() support predicate', () => {

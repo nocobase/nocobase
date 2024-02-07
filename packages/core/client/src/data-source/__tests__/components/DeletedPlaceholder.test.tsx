@@ -27,7 +27,7 @@ describe('CollectionDeletedPlaceholder', () => {
   test('name is undefined, render `Result` component', () => {
     renderApp(undefined, true);
 
-    expect(screen.getByText('[nocobase]: Collection name is required')).toBeInTheDocument();
+    expect(document.body.innerHTML).toContain('ant-result');
   });
 
   describe('name exist', () => {
@@ -39,7 +39,7 @@ describe('CollectionDeletedPlaceholder', () => {
 
       process.env.NODE_ENV = NODE_ENV;
 
-      expect(screen.getByTestId('app').innerHTML).toContain('ant-result');
+      expect(document.body.innerHTML).toContain('ant-result');
     });
 
     test("designable: false & process.env.NODE_ENV === 'development', render `Result` component", () => {
@@ -50,7 +50,7 @@ describe('CollectionDeletedPlaceholder', () => {
 
       process.env.NODE_ENV = NODE_ENV;
 
-      expect(screen.getByTestId('app').innerHTML).toContain('ant-result');
+      expect(document.body.innerHTML).toContain('ant-result');
     });
 
     test("designable: true & process.env.NODE_ENV !== 'development', render `Result` component", () => {
@@ -61,7 +61,7 @@ describe('CollectionDeletedPlaceholder', () => {
 
       process.env.NODE_ENV = NODE_ENV;
 
-      expect(screen.getByTestId('app').innerHTML).toContain('ant-result');
+      expect(document.body.innerHTML).toContain('ant-result');
     });
 
     test("designable: false & process.env.NODE_ENV !== 'development', render nothing", () => {

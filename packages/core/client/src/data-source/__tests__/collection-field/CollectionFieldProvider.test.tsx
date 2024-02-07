@@ -54,7 +54,7 @@ describe('CollectionFieldProvider', () => {
 
     renderApp(Demo, 'not-exists');
 
-    expect(screen.getByTestId('app').innerHTML).toContain('ant-result');
-    expect(screen.getByTestId('app').innerHTML).not.toContain('children');
+    expect(document.body.innerHTML).toContain('ant-typography');
+    expect(document.body.innerHTML).not.toContain('children');
   });
 });

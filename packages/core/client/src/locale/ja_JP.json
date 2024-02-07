@@ -673,5 +673,6 @@
   "loading": "ロード中",
   "name is required": "名前は必須です",
   "data source": "データソース",
+  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" は削除されている可能性があります。この {{blockType}} を削除してください。",
   "DataSource": "データソース"
 }

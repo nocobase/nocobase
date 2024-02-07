@@ -734,6 +734,7 @@
   "Add": "Añadir",
   "loading": "cargando",
   "name is required": "el nombre es obligatorio",
+  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "El {{type}} \"{{name}}\" puede haber sido eliminado. Por favor, elimine este {{blockType}}.",
   "data source": "fuente de datos",
   "DataSource": "Fuente de datos"
 }

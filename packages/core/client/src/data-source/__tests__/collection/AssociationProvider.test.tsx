@@ -87,6 +87,6 @@ describe('AssociationProvider', () => {
     };
     renderApp(Demo, { name: 'users.not-exists' });
 
-    expect(screen.getByText('Collection: "users.not-exists" not exists')).toBeInTheDocument();
+    expect(document.body.innerHTML).toContain('ant-result');
   });
 });
