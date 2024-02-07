@@ -95,7 +95,7 @@ class SqlCollectionTemplate extends CollectionTemplate {
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.collectionManager.addCollectionTemplates([ SqlCollectionTemplate ]);
+    this.app.dataSourceManager.addCollectionTemplates([ SqlCollectionTemplate ]);
   }
 }
 ```

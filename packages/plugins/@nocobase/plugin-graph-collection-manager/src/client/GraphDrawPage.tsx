@@ -12,8 +12,8 @@ import {
   ApplicationContext,
   CollectionCategroriesContext,
   CollectionCategroriesProvider,
-  CollectionManagerProvider,
   CurrentAppInfoContext,
+  DataSourceApplicationProvider,
   SchemaComponent,
   SchemaComponentOptions,
   Select,
@@ -21,9 +21,10 @@ import {
   useAPIClient,
   useApp,
   useCollectionManager,
-  useCollectionManagerV2,
   useCompile,
   useCurrentAppInfo,
+  useDataSourceManagerV2,
+  useDataSourceV2,
   useGlobalTheme,
 } from '@nocobase/client';
 import { App, Button, ConfigProvider, Layout, Spin, Switch, Tooltip } from 'antd';
@@ -373,7 +374,7 @@ export const GraphDrawPage = React.memo(() => {
   const [collectionList, setCollectionList] = useState<any>([]);
   const [loading, setLoading] = useState(false);
   const { collections, getCollections } = useCollectionManager();
-  const cm = useCollectionManagerV2();
+  const dm = useDataSourceManagerV2();
   const currentAppInfo = useCurrentAppInfo();
   const app = useApp();
   const {
@@ -429,6 +430,16 @@ export const GraphDrawPage = React.memo(() => {
       renderDiffGraphCollection(collections);
     }
   };
+
+  const dataSource = useDataSourceV2();
+  useEffect(() => {
+    dataSource.setReloadCallback(reloadCallback);
+
+    return () => {
+      dataSource.setReloadCallback(null);
+    };
+  }, []);
+
   const initGraphCollections = () => {
     targetGraph = new Graph({
       container: document.getElementById('container')!,
@@ -503,10 +514,10 @@ export const GraphDrawPage = React.memo(() => {
       component: React.forwardRef((props, ref) => {
         return (
           <CurrentAppInfoContext.Provider value={currentAppInfo}>
-            <APIClientProvider apiClient={api}>
-              <SchemaComponentOptions inherit scope={scope} components={components}>
-                <CollectionCategroriesProvider {...categoryCtx}>
-                  <CollectionManagerProvider reloadCallback={reloadCallback} cm={cm}>
+            <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSource?.key}>
+              <APIClientProvider apiClient={api}>
+                <SchemaComponentOptions inherit scope={scope} components={components}>
+                  <CollectionCategroriesProvider {...categoryCtx}>
                     {/* TODO: 因为画布中的卡片是一次性注册进 Graph 的，这里的 theme 是存在闭包里的，因此当主题动态变更时，并不会触发卡片的重新渲染 */}
                     <ConfigProvider theme={theme as any}>
                       <div style={{ height: 'auto' }}>
@@ -517,10 +528,10 @@ export const GraphDrawPage = React.memo(() => {
                         </App>
                       </div>
                     </ConfigProvider>
-                  </CollectionManagerProvider>
-                </CollectionCategroriesProvider>
-              </SchemaComponentOptions>
-            </APIClientProvider>
+                  </CollectionCategroriesProvider>
+                </SchemaComponentOptions>
+              </APIClientProvider>
+            </DataSourceApplicationProvider>
           </CurrentAppInfoContext.Provider>
         );
       }),
@@ -1108,7 +1119,7 @@ export const GraphDrawPage = React.memo(() => {
     <Layout>
       <div className={styles.graphCollectionContainerClass}>
         <Spin spinning={loading}>
-          <CollectionManagerProvider cm={cm} reloadCallback={reloadCallback}>
+          <DataSourceApplicationProvider dataSourceManager={dm}>
             <CollapsedContext.Provider value={{ collectionList, handleSearchCollection }}>
               <div className={cx(styles.collectionListClass)}>
                 <SchemaComponent
@@ -1257,7 +1268,7 @@ export const GraphDrawPage = React.memo(() => {
                 />
               </div>
             </CollapsedContext.Provider>
-          </CollectionManagerProvider>
+          </DataSourceApplicationProvider>
           <div id="container" style={{ width: '100vw' }}></div>
           <div
             id="graph-minimap"

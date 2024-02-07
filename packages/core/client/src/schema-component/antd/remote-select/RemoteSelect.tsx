@@ -10,6 +10,8 @@ import { mergeFilter } from '../../../filter-provider/utils';
 import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
+import { useDataSourceHeaders } from '../../../data-source/utils';
+import { useDataSourceKey } from '../../../data-source/data-source/DataSourceProvider';
 const EMPTY = 'N/A';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
@@ -41,6 +43,8 @@ const InternalRemoteSelect = connect(
       optionFilter,
       ...others
     } = props;
+    const dataSource = useDataSourceKey();
+    const headers = useDataSourceHeaders(dataSource);
     const [open, setOpen] = useState(false);
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
@@ -130,6 +134,7 @@ const InternalRemoteSelect = connect(
       {
         action: 'list',
         ...service,
+        headers,
         params: {
           pageSize: 200,
           ...service?.params,
@@ -205,7 +210,6 @@ const InternalRemoteSelect = connect(
       }
       firstRun.current = true;
     };
-
     return (
       <Select
         open={open}
@@ -252,9 +256,9 @@ const InternalRemoteSelect = connect(
         ...props,
         fieldNames: {
           ...defaultFieldNames,
-          ...props.fieldNames,
           ...field.componentProps.fieldNames,
           ...fieldSchema['x-component-props']?.fieldNames,
+          ...props.fieldNames,
         },
         suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };

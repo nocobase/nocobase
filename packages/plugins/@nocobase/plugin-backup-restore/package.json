@@ -38,5 +38,7 @@
     "@nocobase/test": "0.x",
     "@nocobase/utils": "0.x"
   },
-  "keywords":["system"]
+  "keywords": [
+    "System management"
+  ]
 }

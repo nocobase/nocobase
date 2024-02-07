@@ -22,8 +22,8 @@ export class MapPlugin extends Plugin {
   async load() {
     this.app.use(MapProvider);
 
-    this.app.collectionManager.addFieldInterfaces(fields);
-    this.app.collectionManager.addFieldGroups({
+    this.app.dataSourceManager.addFieldInterfaces(fields);
+    this.app.dataSourceManager.addFieldInterfaceGroups({
       map: {
         label: generateNTemplate('Map-based geometry'),
         order: 51,

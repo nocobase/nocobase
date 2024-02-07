@@ -1,4 +1,4 @@
-import { CollectionManagerProvider, Plugin, SchemaComponentOptions } from '@nocobase/client';
+import { Plugin, SchemaComponentOptions } from '@nocobase/client';
 import React from 'react';
 import { CustomRequestConfigurationFieldsSchema } from './schemas';
 import { CustomRequestAction } from './components';

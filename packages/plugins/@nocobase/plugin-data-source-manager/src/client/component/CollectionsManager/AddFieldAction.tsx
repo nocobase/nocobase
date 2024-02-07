@@ -329,7 +329,7 @@ const AddFieldAction = (props) => {
               override: false,
               useCreateCollectionField,
               record,
-              showReverseFieldConfig: true,
+              showReverseFieldConfig: false,
               targetScope,
               collections: currentCollections,
               isDialect,

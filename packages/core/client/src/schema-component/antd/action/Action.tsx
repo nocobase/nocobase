@@ -43,6 +43,7 @@ export const Action: ComposedAction = observer(
       style,
       openSize,
       disabled: propsDisabled,
+      actionCallback,
       ...others
     } = useProps(props);
     const aclCtx = useACLActionParamsContext();
@@ -52,7 +53,7 @@ export const Action: ComposedAction = observer(
     const [formValueChanged, setFormValueChanged] = useState(false);
     const Designer = useDesigner();
     const field = useField<any>();
-    const { run, element } = useAction();
+    const { run, element } = useAction(actionCallback);
     const fieldSchema = useFieldSchema();
     const compile = useCompile();
     const form = useForm();

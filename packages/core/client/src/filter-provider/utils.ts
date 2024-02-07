@@ -37,8 +37,8 @@ export const mergeFilter = (filters: any[], op = '$and') => {
 };
 
 export const getSupportFieldsByAssociation = (inheritCollectionsChain: string[], block: DataBlock) => {
-  return block.associatedFields?.filter((field) =>
-    inheritCollectionsChain.some((collectionName) => collectionName === field.target),
+  return block.associatedFields?.filter(
+    (field) => inheritCollectionsChain?.some((collectionName) => collectionName === field.target),
   );
 };
 

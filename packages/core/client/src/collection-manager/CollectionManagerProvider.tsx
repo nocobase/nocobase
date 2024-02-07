@@ -1,25 +1,18 @@
-import React, { FC, ReactNode, useMemo } from 'react';
+import React, { FC, ReactNode } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
 import { CollectionCategroriesContext } from './context';
 import { CollectionManagerOptions } from './types';
-import { CollectionManagerProviderV2, CollectionOptionsV2 } from '../application';
-import { useCollectionManagerV2 } from '../application/collection/CollectionManagerProvider';
+import type { CollectionOptionsV2 } from '../data-source';
+import { CollectionManagerProviderV2 } from '../data-source/collection/CollectionManagerProvider';
+import { useDataSourceManagerV2 } from '../data-source/data-source/DataSourceManagerProvider';
 import { useCollectionHistory } from './CollectionHistoryProvider';
 import { useAppSpin } from '../application/hooks/useAppSpin';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
-  const { reloadCallback, cm, collections = [] } = props;
-  const cmContext = useCollectionManagerV2();
-  const newCm = useMemo(() => {
-    const ctx = cm || cmContext;
-    return ctx.inherit({
-      collections: collections as any,
-      reloadCallback,
-    });
-  }, [cm]);
+  const { collections = [] } = props;
   return (
-    <CollectionManagerProviderV2 collectionManager={newCm}>
+    <CollectionManagerProviderV2 collections={collections}>
       <CollectionManagerSchemaComponentProvider>{props.children}</CollectionManagerSchemaComponentProvider>
     </CollectionManagerProviderV2>
   );
@@ -35,7 +28,7 @@ export const CollectionExtendsProvider: FC<{ collections: CollectionOptionsV2[];
 
 export const RemoteCollectionManagerProvider = (props: any) => {
   const api = useAPIClient();
-  const cm = useCollectionManagerV2();
+  const dm = useDataSourceManagerV2();
   const { refreshCH } = useCollectionHistory();
 
   const coptions = {
@@ -47,7 +40,9 @@ export const RemoteCollectionManagerProvider = (props: any) => {
   };
   const service = useRequest<{
     data: any;
-  }>(() => cm.reloadAll(refreshCH));
+  }>(() => {
+    return dm.reload().then(refreshCH);
+  });
   const result = useRequest<{
     data: any;
   }>(coptions);

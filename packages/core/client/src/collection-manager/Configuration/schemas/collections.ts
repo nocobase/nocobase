@@ -6,7 +6,7 @@ import { useAPIClient } from '../../../api-client';
 import { i18n } from '../../../i18n';
 import { CollectionCategory } from '../components/CollectionCategory';
 import { CollectionTemplateTag } from '../components/CollectionTemplateTag';
-import { CollectionOptionsV2 } from '../../../application';
+import { CollectionOptionsV2 } from '../../../data-source/collection/Collection';
 
 const compile = (source) => {
   return Schema.compile(source, { t: i18n.t });

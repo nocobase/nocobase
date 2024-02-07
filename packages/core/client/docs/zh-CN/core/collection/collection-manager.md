@@ -42,9 +42,9 @@ class CollectionManagerV2 {
   getFieldInterfaces(): CollectionFieldInterface[];
   getFieldInterface<T extends CollectionFieldInterface>(name: string): T;
 
-  addFieldGroups(fieldGroups: Record<string, { label: string; order?: number }>): void;
-  getFieldGroups():  Record<string, { label: string; order?: number }>;
-  getFieldGroup(name: string): { label: string; order?: number };
+  addFieldInterfaceGroups(fieldGroups: Record<string, { label: string; order?: number }>): void;
+  getFieldInterfaceGroups():  Record<string, { label: string; order?: number }>;
+  getFieldInterfaceGroup(name: string): { label: string; order?: number };
 
   addCollectionMixins(mixins: CollectionMixinConstructor[]): void;
 }
@@ -158,7 +158,7 @@ import { Plugin } from '@nocobase/client';
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.collectionManager.addFieldGroups({
+    this.app.collectionManager.addFieldInterfaceGroups({
       "basic": {
         label: "Basic",
         order: 1
@@ -238,7 +238,7 @@ const app = new Application({
     dataSources: {
       "db2": "DB2"
     },
-    fieldGroups: {
+    fieldInterfaceGroups: {
       'test': {
         label: 'Test',
         order: 1,
@@ -289,8 +289,8 @@ class MyPlugin extends Plugin {
       "db2": "DB2"
     });
 
-    this.app.collectionManager.addCollectionTemplates([ TreeCollectionTemplate, SqlCollectionTemplate ]);
-    this.app.collectionManager.addFieldInterfaces([CheckboxFieldInterface]);
+    this.app.dataSourceManager.addCollectionTemplates([ TreeCollectionTemplate, SqlCollectionTemplate ]);
+    this.app.dataSourceManager.addFieldInterfaces([CheckboxFieldInterface]);
   }
 }
 ```
@@ -348,7 +348,7 @@ collectionManager.getDataSources(); // [ { name: 'main', title: '主数据源' }
 - 类型
 
 ```tsx | pure
-collectionManager.addCollectionTemplates(templateClasses: (typeof CollectionTemplate)[]): void;
+dataSourceManager.addCollectionTemplates(templateClasses: (typeof CollectionTemplate)[]): void;
 ```
 
 - 示例
@@ -374,7 +374,7 @@ class TreeCollectionTemplate extends CollectionTemplate {
 
 class MyPlugin extends Plugin {
   async load() {
-    this.collectionManager.addCollectionTemplates([ SqlCollectionTemplate, TreeCollectionTemplate ]);
+    this.dataSourceManager.addCollectionTemplates([ SqlCollectionTemplate, TreeCollectionTemplate ]);
   }
 }
 ```
@@ -663,7 +663,7 @@ class CheckboxFieldInterface extends CollectionFieldInterface {
 
 class MyPlugin extends Plugin {
   async load() {
-    this.app.collectionManager.addFieldInterfaces([CheckboxFieldInterface]);
+    this.app.dataSourceManager.addFieldInterfaces([CheckboxFieldInterface]);
   }
 }
 ```
@@ -705,7 +705,7 @@ collectionManager.getFieldInterface('checkbox'); // checkboxFieldInterface
 ```
 
 
-### cm.addFieldGroups(fieldGroups)
+### cm.addFieldInterfaceGroups(fieldGroups)
 
 添加数据表字段分组。
 
@@ -713,7 +713,7 @@ collectionManager.getFieldInterface('checkbox'); // checkboxFieldInterface
 
 ```tsx | pure
 class CollectionManagerV2 {
-  addFieldGroups(fieldGroups: Record<string, { label: string; order?: number }>): void;
+  addFieldInterfaceGroups(fieldGroups: Record<string, { label: string; order?: number }>): void;
 }
 ```
 
@@ -722,7 +722,7 @@ class CollectionManagerV2 {
 ```tsx | pure
 class MyPlugin extends Plugin {
   async load() {
-    this.app.collectionManager.addFieldGroups({
+    this.app.collectionManager.addFieldInterfaceGroups({
       'test': {
         label: 'Test',
         order: 1,
@@ -732,7 +732,7 @@ class MyPlugin extends Plugin {
 }
 ```
 
-### cm.getFieldGroups()
+### cm.getFieldInterfaceGroups()
 
 获取数据表字段分组。
 
@@ -740,17 +740,17 @@ class MyPlugin extends Plugin {
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getFieldGroups():  Record<string, { label: string; order?: number }>;
+  getFieldInterfaceGroups():  Record<string, { label: string; order?: number }>;
 }
 ```
 
 - 示例
 
 ```tsx | pure
-collectionManager.getFieldGroups(); // { test: { label: 'Test', order: 1 } }
+collectionManager.getFieldInterfaceGroups(); // { test: { label: 'Test', order: 1 } }
 ```
 
-### cm.getFieldGroup(name)
+### cm.getFieldInterfaceGroup(name)
 
 获取数据表字段分组。
 
@@ -758,12 +758,12 @@ collectionManager.getFieldGroups(); // { test: { label: 'Test', order: 1 } }
 
 ```tsx | pure
 class CollectionManagerV2 {
-  getFieldGroup(name: string): { label: string; order?: number };
+  getFieldInterfaceGroup(name: string): { label: string; order?: number };
 }
 ```
 
 - 示例
 
 ```tsx | pure
-collectionManager.getFieldGroup('test'); // { label: 'Test', order: 1 }
+collectionManager.getFieldInterfaceGroup('test'); // { label: 'Test', order: 1 }
 ```

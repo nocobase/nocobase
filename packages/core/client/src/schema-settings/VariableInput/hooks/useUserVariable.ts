@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions } from '../../../collection-manager';
 import { useCurrentUserContext } from '../../../user';
 import { useBaseVariable } from './useBaseVariable';
+import { DEFAULT_DATA_SOURCE_NAME } from '../../../data-source/data-source/DataSourceManager';
 
 /**
  * @deprecated
@@ -34,6 +35,7 @@ export const useUserVariable = ({
     name: '$user',
     title: t('Current user'),
     collectionName: 'users',
+    dataSource: DEFAULT_DATA_SOURCE_NAME,
     noDisabled,
     targetFieldSchema,
   });

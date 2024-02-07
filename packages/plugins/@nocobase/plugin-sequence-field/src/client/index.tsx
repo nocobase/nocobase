@@ -5,7 +5,7 @@ import { SequenceFieldInterface } from './sequence';
 export class SequenceFieldPlugin extends Plugin {
   async load() {
     this.app.use(SequenceFieldProvider);
-    this.app.collectionManager.addFieldInterfaces([SequenceFieldInterface]);
+    this.app.dataSourceManager.addFieldInterfaces([SequenceFieldInterface]);
   }
 }
 

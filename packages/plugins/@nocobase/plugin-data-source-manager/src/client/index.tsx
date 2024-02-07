@@ -6,6 +6,7 @@ import { CollectionManager } from './component/CollectionsManager';
 import { PermissionManager } from './component/PermissionManager';
 import { BreadcumbTitle } from './component/BreadcumbTitle';
 import React from 'react';
+import { ThirdDataSource } from './ThridDataSource';
 
 export class PluginDataSourceManagerClient extends Plugin {
   types = new Map();
@@ -42,7 +43,23 @@ export class PluginDataSourceManagerClient extends Plugin {
       pluginKey: NAMESPACE,
     });
 
-    this.collectionManager.setThirdDataSource(this.getThirdDataSource.bind(this));
+    this.app.dataSourceManager.addDataSources(this.getThirdDataSource.bind(this), ThirdDataSource);
+    // this.setDataSources();
+  }
+
+  async setDataSources() {
+    const allDataSources = await this.app.apiClient.request<{
+      data: any;
+    }>({
+      resource: 'dataSources',
+      action: 'listEnabled',
+      params: {
+        paginate: false,
+        // appends: ['collections'],
+      },
+    });
+
+    return allDataSources?.data?.data;
   }
 
   async getThirdDataSource() {

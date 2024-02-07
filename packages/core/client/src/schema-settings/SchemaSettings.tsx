@@ -40,10 +40,9 @@ import { Router } from 'react-router-dom';
 import {
   APIClientProvider,
   ActionContextProvider,
-  CollectionDataSourceProvider,
   CollectionFieldOptions,
-  CollectionManagerProviderV2,
   CollectionProvider,
+  DataSourceApplicationProvider,
   DatePickerProvider,
   Designable,
   FormDialog,
@@ -59,9 +58,7 @@ import {
   useActionContext,
   useBlockRequestContext,
   useCollection,
-  useCollectionDataSourceName,
   useCollectionManager,
-  useCollectionManagerV2,
   useCompile,
   useDesignable,
   useFilterBlock,
@@ -81,6 +78,8 @@ import {
 } from '../block-provider/hooks';
 import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks';
 import { SelectWithTitle, SelectWithTitleProps } from '../common/SelectWithTitle';
+import { useDataSourceManagerV2 } from '../data-source/data-source/DataSourceManagerProvider';
+import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import {
   FilterBlockType,
   getSupportFieldsByAssociation,
@@ -386,7 +385,7 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
       title="Save as block template"
       onClick={async () => {
         setVisible(false);
-        const { title } = getCollection(collectionName);
+        const collection = collectionName && getCollection(collectionName);
         const gridSchema = findGridSchema(fieldSchema);
         const values = await FormDialog(
           t('Save as template'),
@@ -405,7 +404,11 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
                       name: {
                         title: t('Template name'),
                         required: true,
-                        default: `${compile(title)}_${componentTitle[componentName] || componentName}`,
+                        default: collection
+                          ? `${compile(collection?.title || collection?.name)}_${t(
+                              componentTitle[componentName] || componentName,
+                            )}`
+                          : t(componentTitle[componentName] || componentName),
                         'x-decorator': 'FormItem',
                         'x-component': 'Input',
                       },
@@ -961,14 +964,14 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
-  const cm = useCollectionManagerV2();
   const collection = useCollection();
   const apiClient = useAPIClient();
   const { theme } = useGlobalTheme();
   const ctx = useBlockRequestContext();
   const upLevelActiveFields = useFormActiveFields();
   const { locale } = useContext(ConfigProvider.ConfigContext);
-  const dataSourceName = useCollectionDataSourceName();
+  const dm = useDataSourceManagerV2();
+  const dataSourceKey = useDataSourceKey();
   const record = useRecordV2(false);
 
   // 解决变量`当前对象`值在弹窗中丢失的问题
@@ -993,34 +996,32 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                   <FormActiveFieldsProvider name="form" getActiveFieldsName={upLevelActiveFields?.getActiveFieldsName}>
                     <Router location={location} navigator={null}>
                       <BlockRequestContext.Provider value={ctx}>
-                        <CollectionManagerProviderV2 collectionManager={cm}>
-                          <CollectionDataSourceProvider dataSource={dataSourceName}>
-                            <CollectionProvider allowNull name={collection.name}>
-                              <SchemaComponentOptions scope={options.scope} components={options.components}>
-                                <FormLayout
-                                  layout={'vertical'}
-                                  className={css`
-                                    // screen > 576px
-                                    @media (min-width: 576px) {
-                                      min-width: 520px;
-                                    }
+                        <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
+                          <CollectionProvider allowNull name={collection.name}>
+                            <SchemaComponentOptions scope={options.scope} components={options.components}>
+                              <FormLayout
+                                layout={'vertical'}
+                                className={css`
+                                  // screen > 576px
+                                  @media (min-width: 576px) {
+                                    min-width: 520px;
+                                  }
 
-                                    // screen <= 576px
-                                    @media (max-width: 576px) {
-                                      min-width: 320px;
-                                    }
-                                  `}
-                                >
-                                  <APIClientProvider apiClient={apiClient}>
-                                    <ConfigProvider locale={locale}>
-                                      <SchemaComponent components={components} scope={scope} schema={schema} />
-                                    </ConfigProvider>
-                                  </APIClientProvider>
-                                </FormLayout>
-                              </SchemaComponentOptions>
-                            </CollectionProvider>
-                          </CollectionDataSourceProvider>
-                        </CollectionManagerProviderV2>
+                                  // screen <= 576px
+                                  @media (max-width: 576px) {
+                                    min-width: 320px;
+                                  }
+                                `}
+                              >
+                                <APIClientProvider apiClient={apiClient}>
+                                  <ConfigProvider locale={locale}>
+                                    <SchemaComponent components={components} scope={scope} schema={schema} />
+                                  </ConfigProvider>
+                                </APIClientProvider>
+                              </FormLayout>
+                            </SchemaComponentOptions>
+                          </CollectionProvider>
+                        </DataSourceApplicationProvider>
                       </BlockRequestContext.Provider>
                     </Router>
                   </FormActiveFieldsProvider>

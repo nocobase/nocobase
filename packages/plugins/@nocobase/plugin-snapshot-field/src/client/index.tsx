@@ -7,7 +7,7 @@ export class SnapshotFieldPlugin extends Plugin {
   async load() {
     this.app.use(SnapshotFieldProvider);
     this.app.schemaInitializerManager.add(snapshotBlockInitializers);
-    this.app.collectionManager.addFieldInterfaces([SnapshotFieldInterface]);
+    this.app.dataSourceManager.addFieldInterfaces([SnapshotFieldInterface]);
   }
 }
 

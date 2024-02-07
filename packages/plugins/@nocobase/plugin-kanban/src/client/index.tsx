@@ -1,12 +1,5 @@
-import React, { useContext } from 'react';
-import {
-  Plugin,
-  Action,
-  CurrentAppInfoProvider,
-  SchemaComponentOptions,
-  useCollectionManagerV2,
-  CollectionManagerProviderV2,
-} from '@nocobase/client';
+import React from 'react';
+import { Plugin, Action, CurrentAppInfoProvider, SchemaComponentOptions } from '@nocobase/client';
 import { Kanban } from './Kanban';
 import { KanbanCard } from './Kanban.Card';
 import { KanbanCardDesigner, kanbanCardInitializers } from './Kanban.Card.Designer';

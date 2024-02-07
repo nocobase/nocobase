@@ -2,7 +2,7 @@ import { createForm } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import {
   BlockRequestContext,
-  CollectionDataSourceProvider,
+  CollectionManagerProviderV2,
   CollectionProvider,
   DEFAULT_DATA_SOURCE_NAME,
   FormActiveFieldsProvider,
@@ -12,9 +12,9 @@ import {
   useAPIClient,
   useAssociationNames,
   useBlockRequestContext,
+  useDataSourceHeaders,
   useDesignable,
   useRecord,
-  useDataSourceHeaders,
 } from '@nocobase/client';
 import React, { useMemo, useRef } from 'react';
 
@@ -73,7 +73,7 @@ export function FormBlockProvider(props) {
   }, [field, form, params, service, updateAssociationValues]);
 
   return !userJob.status || values ? (
-    <CollectionDataSourceProvider dataSource={dataSource}>
+    <CollectionManagerProviderV2 dataSource={dataSource}>
       <CollectionProvider collection={props.collection}>
         <RecordProvider record={values} parent={false}>
           <FormActiveFieldsProvider name="form">
@@ -90,6 +90,6 @@ export function FormBlockProvider(props) {
           </FormActiveFieldsProvider>
         </RecordProvider>
       </CollectionProvider>
-    </CollectionDataSourceProvider>
+    </CollectionManagerProviderV2>
   ) : null;
 }

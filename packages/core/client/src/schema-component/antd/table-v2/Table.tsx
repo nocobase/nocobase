@@ -20,6 +20,7 @@ import {
   useSchemaInitializerRender,
   useTableBlockContext,
   useTableSelectorContext,
+  useCollection,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useToken } from '../__builtins__';
@@ -226,6 +227,7 @@ export const Table: any = observer(
     const field = useArrayField(others);
     const columns = useTableColumns(others);
     const schema = useFieldSchema();
+    const collection = useCollection();
     const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
     const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
     const { expandFlag, allIncludesChildren } = ctx;
@@ -552,7 +554,9 @@ export const Table: any = observer(
             columns={columns}
             expandable={{
               onExpand: (flag, record) => {
-                const newKeys = flag ? [...expandedKeys, record.id] : expandedKeys.filter((i) => record.id !== i);
+                const newKeys = flag
+                  ? [...expandedKeys, record[collection.getPrimaryKey()]]
+                  : expandedKeys.filter((i) => record[collection.getPrimaryKey()] !== i);
                 setExpandesKeys(newKeys);
                 onExpand?.(flag, record);
               },

@@ -24,9 +24,8 @@ import {
   VariableScopeProvider,
   css,
   gridRowColWrap,
-  useCollectionManager,
-  useCollectionManagerV2,
   useCompile,
+  useDataSourceManagerV2,
   useFormActiveFields,
   useFormBlockContext,
   usePlugin,
@@ -165,8 +164,8 @@ export const addBlockButton: SchemaInitializer = new SchemaInitializer({
       name: 'form',
       title: '{{t("Form")}}',
       useChildren() {
-        const cm = useCollectionManagerV2();
-        const allCollections = cm.getAllCollections((collection) => !collection.isLocal);
+        const dm = useDataSourceManagerV2();
+        const allCollections = dm.getAllCollections((collection) => !collection.isLocal);
         return Array.from(manualFormTypes.getValues()).map((item: ManualFormType) => {
           const { useInitializer: getInitializer } = item.config;
           return getInitializer({ allCollections });

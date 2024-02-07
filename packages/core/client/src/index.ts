@@ -22,6 +22,35 @@ export * from './async-data-provider';
 export * from './block-provider';
 export * from './china-region';
 export * from './collection-manager';
+
+export {
+  useCancelAction,
+  useCollectionFilterOptions,
+  useSortFields,
+  useLinkageCollectionFilterOptions,
+  useCollectionFieldsOptions,
+  isDeleteButtonDisabled,
+} from './collection-manager/action-hooks';
+export * from './collection-manager/CollectionField';
+export * from './collection-manager/CollectionFieldProvider';
+export * from './collection-manager/CollectionManagerProvider';
+export * from './collection-manager/CollectionHistoryProvider';
+export * from './collection-manager/CollectionManagerSchemaComponentProvider';
+export * from './collection-manager/CollectionManagerShortcut';
+export * from './collection-manager/CollectionProvider';
+export * from './collection-manager/Configuration';
+export { useFieldInterfaceOptions } from './collection-manager/Configuration/interfaces';
+export * from './collection-manager/context';
+export * from './collection-manager/hooks';
+export * as interfacesProperties from './collection-manager/interfaces/properties';
+export * from './collection-manager/interfaces/types';
+export * from './collection-manager/ResourceActionProvider';
+export { getConfigurableProperties } from './collection-manager/templates/properties';
+export * from './collection-manager/templates/types';
+export * from './collection-manager/types';
+export * from './collection-manager/mixins/InheritanceCollectionMixin';
+export * from './collection-manager/sub-table';
+
 export * from './common';
 export * from './css-variable';
 export * from './document-title';
@@ -49,3 +78,4 @@ export * from './system-settings';
 export * from './testUtils';
 export * from './user';
 export * from './variables';
+export * from './data-source';

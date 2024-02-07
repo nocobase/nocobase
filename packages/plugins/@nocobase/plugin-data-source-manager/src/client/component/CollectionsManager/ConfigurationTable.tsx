@@ -1,7 +1,7 @@
 import { useForm, useField } from '@formily/react';
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import {
@@ -20,12 +20,13 @@ import {
   FieldSummary,
   TemplateSummary,
   ResourceActionContext,
-  useCollectionManagerV2,
+  useDataSourceManagerV2,
 } from '@nocobase/client';
 import { message } from 'antd';
 import { getCollectionSchema } from './schema/collections';
 import { CollectionFields } from './CollectionFields';
 import { EditCollection } from './EditCollectionAction';
+import { DataSourceContext } from '../../DatabaseConnectionProvider';
 
 /**
  * @param service
@@ -73,20 +74,6 @@ const useBulkDestroySubField = () => {
   };
 };
 
-// // 获取当前字段列表
-// const useCurrentFields = () => {
-//   const record = useRecord();
-//   // 仅当当前字段为子表单时，从DataSourceContext中获取已配置的字段列表
-//   if (record.__parent && record.__parent.interface === 'subTable') {
-//     const ctx = useContext(DataSourceContext);
-//     return ctx.dataSource;
-//   }
-
-//   const { getCollectionFields } = useCollectionManager();
-//   const fields = getCollectionFields(record.collectionName || record.name) as any[];
-//   return fields;
-// };
-
 const useNewId = (prefix) => {
   return `${prefix || ''}${uid()}`;
 };
@@ -103,11 +90,10 @@ export const ConfigurationTable = () => {
   const api = useAPIClient();
   const resource = api.resource('dbViews');
   const compile = useCompile();
-  const cm = useCollectionManagerV2();
-
+  const dm = useDataSourceManagerV2();
   useEffect(() => {
     return () => {
-      cm.reloadThirdDataSource();
+      dm.getDataSource(name).reload();
     };
   }, []);
   const loadCategories = async () => {
@@ -147,28 +133,38 @@ export const ConfigurationTable = () => {
     const service = useContext(ResourceActionContext);
     const api = useAPIClient();
     const field = useField();
+    const { name } = useParams();
     field.data = field.data || {};
+    const { setDataSource, dataSource } = useContext(DataSourceContext);
     return {
       async onClick() {
         field.data.loading = true;
         try {
-          await api.request({
-            url: `dataSources:refresh?filterByTk=${name}`,
+          const { data } = await api.request({
+            url: `dataSources:refresh?filterByTk=${name}&clientStatus=${dataSource.status || 'loaded'}`,
             method: 'post',
           });
           field.data.loading = false;
-          service?.refresh?.();
-          message.success(t('Sync successfully'));
+          setDataSource(data?.data);
+          if (data?.data?.status === 'reloading') {
+            message.warning(t('Data source synchronization in progress'));
+          } else if (data?.data?.status === 'loaded') {
+            message.success(t('Data source synchronization successful'));
+            service?.refresh?.();
+          }
         } catch (error) {
           field.data.loading = false;
         }
       },
     };
   };
+  const collectionSchema = useMemo(() => {
+    return getCollectionSchema(name);
+  }, [name]);
   return (
     <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
       <SchemaComponent
-        schema={getCollectionSchema(name)}
+        schema={collectionSchema}
         components={{
           EditCollection,
           AddSubFieldAction,
@@ -187,7 +183,6 @@ export const ConfigurationTable = () => {
           loadCategories,
           loadDBViews,
           loadStorages,
-          // useCurrentFields,
           useNewId,
           useCancelAction,
           interfaces,

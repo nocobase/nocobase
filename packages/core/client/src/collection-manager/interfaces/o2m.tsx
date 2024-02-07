@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/react';
-import { CollectionFieldInterface } from '../../application/collection/CollectionFieldInterface';
+import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
 

@@ -1,11 +1,16 @@
 import { SchemaComponentOptions } from '@nocobase/client';
-import React, { FC } from 'react';
+import React, { FC, useState, createContext } from 'react';
 import * as hooks from './hooks';
 
+export const DataSourceContext = createContext(null);
+
 export const DatabaseConnectionProvider: FC = (props) => {
+  const [dataSource, setDataSource] = useState({});
   return (
-    <SchemaComponentOptions scope={hooks} components={{}}>
-      {props.children}
-    </SchemaComponentOptions>
+    <DataSourceContext.Provider value={{ dataSource, setDataSource }}>
+      <SchemaComponentOptions scope={hooks} components={{}}>
+        {props.children}
+      </SchemaComponentOptions>
+    </DataSourceContext.Provider>
   );
 };

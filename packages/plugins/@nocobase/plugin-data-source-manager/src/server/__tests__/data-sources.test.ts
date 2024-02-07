@@ -14,6 +14,59 @@ describe('data source', async () => {
     await app.destroy();
   });
 
+  it('should refresh status', async () => {
+    class MockDataSource extends DataSource {
+      static testConnection(options?: any): Promise<boolean> {
+        return Promise.resolve(true);
+      }
+
+      async load(): Promise<void> {
+        await waitSecond(1000);
+      }
+
+      createCollectionManager(options?: any): any {
+        return undefined;
+      }
+    }
+
+    app.dataSourceManager.factory.register('mock', MockDataSource);
+
+    await app.db.getRepository('dataSources').create({
+      values: {
+        key: 'mockInstance1',
+        type: 'mock',
+        displayName: 'Mock',
+        options: {},
+      },
+    });
+
+    const plugin: any = app.pm.get('data-source-manager');
+
+    await waitSecond(2000);
+
+    expect(plugin.dataSourceStatus['mockInstance1']).toBe('loaded');
+
+    // current status is loaded
+    // request refresh, should change to loading
+    const refreshResp = await app.agent().resource('dataSources').refresh({
+      filterByTk: 'mockInstance1',
+    });
+
+    expect(refreshResp.status).toBe(200);
+    expect(refreshResp.body.data.status).toBe('reloading');
+
+    await waitSecond(2000);
+
+    // get refresh loaded status
+    const refreshResp1 = await app.agent().resource('dataSources').refresh({
+      filterByTk: 'mockInstance1',
+      clientStatus: 'reloading',
+    });
+
+    expect(refreshResp1.status).toBe(200);
+    expect(refreshResp1.body.data.status).toBe('loaded');
+  });
+
   it('should load datasource async', async () => {
     class MockDataSource extends DataSource {
       static testConnection(options?: any): Promise<boolean> {
@@ -363,6 +416,8 @@ describe('data source', async () => {
             name: 'post',
             target: 'posts',
             foreignKey: 'post_id',
+            sourceKey: 'id',
+            targetKey: 'id',
           },
         });
 

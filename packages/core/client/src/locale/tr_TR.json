@@ -547,5 +547,6 @@
   "loading": "yükleniyor",
   "name is required": "ad gereklidir",
   "data source": "veri kaynağı",
+  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" silinmiş olabilir. Lütfen bu {{blockType}}'yi kaldırın.",
   "DataSource": "Veri Kaynağı"
 }

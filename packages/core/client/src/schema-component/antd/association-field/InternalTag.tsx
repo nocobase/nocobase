@@ -46,7 +46,7 @@ export const ReadPrettyInternalTag: React.FC = observer(
         const val = toValue(compile(record?.[fieldNames?.label || 'label']), 'N/A');
         const text = getTabFormatValue(compile(labelUiSchema), val, record[tagColorField]);
         return (
-          <Fragment key={`${record.id}_${index}`}>
+          <Fragment key={`${record?.[fieldNames.value]}_${index}`}>
             <span>
               {snapshot ? (
                 text

@@ -47,20 +47,43 @@ import {
   TreeCollectionTemplate,
   ViewCollectionTemplate,
 } from './templates';
+import { DEFAULT_DATA_SOURCE_NAME, DEFAULT_DATA_SOURCE_TITLE } from '../data-source/data-source/DataSourceManager';
+import { DataSourceV2 } from '../data-source/data-source/DataSource';
+
+class MainDataSource extends DataSourceV2 {
+  async getRemoteCollections() {
+    const service = await this.app.apiClient.request({
+      resource: 'collections',
+      action: 'list',
+      params: {
+        paginate: false,
+        appends: ['fields', 'category'],
+        filter: {
+          // inherit: false,
+        },
+        sort: ['sort'],
+      },
+    });
+    return service?.data?.data || [];
+  }
+}
 
 export class CollectionPlugin extends Plugin {
   async load() {
-    this.collectionManager.addCollectionMixins([InheritanceCollectionMixin]);
+    this.dataSourceManager.addCollectionMixins([InheritanceCollectionMixin]);
     this.addFieldInterfaces();
     this.addCollectionTemplates();
     this.addFieldInterfaces();
-    this.addFieldGroups();
+    this.addFieldInterfaceGroups();
 
-    this.collectionManager.setMainDataSource(this.reloadCollections.bind(this));
+    this.dataSourceManager.addDataSource(MainDataSource, {
+      key: DEFAULT_DATA_SOURCE_NAME,
+      displayName: DEFAULT_DATA_SOURCE_TITLE,
+    });
   }
 
-  addFieldGroups() {
-    this.collectionManager.addFieldGroups({
+  addFieldInterfaceGroups() {
+    this.dataSourceManager.addFieldInterfaceGroups({
       basic: {
         label: '{{t("Basic")}}',
       },
@@ -89,7 +112,7 @@ export class CollectionPlugin extends Plugin {
   }
 
   addFieldInterfaces() {
-    this.app.collectionManager.addFieldInterfaces([
+    this.dataSourceManager.addFieldInterfaces([
       CheckboxFieldInterface,
       CheckboxGroupFieldInterface,
       ChinaRegionFieldInterface,
@@ -131,31 +154,12 @@ export class CollectionPlugin extends Plugin {
   }
 
   addCollectionTemplates() {
-    this.app.collectionManager.addCollectionTemplates([
+    this.dataSourceManager.addCollectionTemplates([
       GeneralCollectionTemplate,
       ExpressionCollectionTemplate,
       SqlCollectionTemplate,
       TreeCollectionTemplate,
       ViewCollectionTemplate,
     ]);
-  }
-
-  async reloadCollections() {
-    const service = await this.app.apiClient.request<{
-      data: any;
-    }>({
-      resource: 'collections',
-      action: 'list',
-      params: {
-        paginate: false,
-        appends: ['fields', 'category'],
-        filter: {
-          // inherit: false,
-        },
-        sort: ['sort'],
-      },
-    });
-
-    return service?.data?.data || [];
   }
 }

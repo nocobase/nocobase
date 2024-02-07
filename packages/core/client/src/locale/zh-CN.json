@@ -843,9 +843,9 @@
   "Return to the main application": "返回主应用",
   "Permission denied": "没有权限",
   "Allow add new": "允许新增",
-  "Allow selection of existing records":  "允许选择已有数据",
   "loading": "加载中",
   "name is required": "名称不能为空",
+  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" 可能已被删除。请删除当前{{blockType}}.",
   "data source": "数据源",
   "DataSource": "数据源",
   "Data model": "数据模型",
@@ -853,5 +853,12 @@
   "Action": "操作",
   "System": "系统管理",
   "Other": "其他",
-  "Workflow":"工作流"
+  "Allow selection of existing records": "允许选择已有数据",
+  "Data Model": "数据模型",
+  "Blocks":"区块",
+  "Users & permissions": "用户和权限",
+  "System management": "系统管理",
+  "System & security":"系统和安全",
+  "Workflow":"工作流",
+  "Third party services":"第三方服务"
 }

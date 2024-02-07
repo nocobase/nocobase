@@ -550,5 +550,6 @@
   "loading": "загрузка",
   "name is required": "имя обязательно",
   "data source": "источник данных",
+  "The {{type}} \"{{name}}\" may have been deleted. Please remove this {{blockType}}.": "{{type}} \"{{name}}\" возможно был удален. Пожалуйста, удалите этот {{blockType}}.",
   "DataSource": "Источник данных"
 }

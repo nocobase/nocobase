@@ -1,17 +1,13 @@
-import { ISchema } from '@formily/react';
-import { ReactNode } from 'react';
-import { CollectionManagerV2, CollectionOptionsV2, CollectionV2 } from '../application';
+import type { ISchema } from '@formily/react';
+import type { ReactNode } from 'react';
+import type { CollectionManagerV2, CollectionOptionsV2 } from '../data-source';
 
 export type CollectionOptions = CollectionOptionsV2;
 
 export interface CollectionManagerOptions {
-  service?: any;
   collections?: CollectionOptions[];
-  // refreshCM?: () => Promise<void>;
-  reloadCallback?: (collection: CollectionV2[]) => void;
-  cm?: CollectionManagerV2;
+  instance?: CollectionManagerV2;
   children?: ReactNode;
-  updateCollection?: (collection: any) => void;
 }
 
 export type FieldOptions = any;

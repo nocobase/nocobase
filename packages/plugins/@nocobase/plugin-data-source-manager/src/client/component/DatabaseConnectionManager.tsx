@@ -6,16 +6,17 @@ import {
   useResourceActionContext,
   useResourceContext,
   useRecord,
-  useCollectionManagerV2,
+  useDataSourceManagerV2,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import _ from 'lodash';
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import PluginDatabaseConnectionsClient from '../';
 import { databaseConnectionSchema } from '../schema';
 import { CreateDatabaseConnectAction } from './CreateDatabaseConnectAction';
 import { EditDatabaseConnectionAction } from './EditDatabaseConnectionAction';
 import { ViewDatabaseConnectionAction } from './ViewDatabaseConnectionAction';
+import { ThirdDataSource } from '../ThridDataSource';
 
 export const DatabaseConnectionManagerPane = () => {
   const compile = useCompile();
@@ -27,12 +28,31 @@ export const DatabaseConnectionManagerPane = () => {
       label: compile(type?.label),
     };
   });
-  const cm = useCollectionManagerV2();
+
+  const dm = useDataSourceManagerV2();
+
+  const reloadKeys = React.useRef<string[]>([]);
 
   useEffect(() => {
     return () => {
-      cm.reloadThirdDataSource();
+      dm.getDataSources().forEach((dataSource) => {
+        if (reloadKeys.current.includes(dataSource.key)) {
+          dataSource.reload();
+        }
+      });
     };
+  }, [reloadKeys]);
+
+  const dataSourceDeleteCallback = useCallback(
+    (keys: string[]) => {
+      dm.removeDataSources(keys);
+    },
+    [dm],
+  );
+
+  const dataSourceCreateCallback = useCallback((data: any) => {
+    dm.addDataSource(ThirdDataSource, data);
+    reloadKeys.current = [...reloadKeys.current, data.key];
   }, []);
 
   const useRefreshActionProps = () => {
@@ -50,6 +70,7 @@ export const DatabaseConnectionManagerPane = () => {
     return {
       async run() {
         await resource.destroy({ filterByTk });
+        dataSourceDeleteCallback([filterByTk]);
         refresh();
       },
     };
@@ -62,7 +83,14 @@ export const DatabaseConnectionManagerPane = () => {
           EditDatabaseConnectionAction,
           ViewDatabaseConnectionAction,
         }}
-        scope={{ useNewId: (prefix) => `${prefix}${uid()}`, types, useRefreshActionProps, useDestroyAction }}
+        scope={{
+          useNewId: (prefix) => `${prefix}${uid()}`,
+          types,
+          useRefreshActionProps,
+          useDestroyAction,
+          dataSourceDeleteCallback,
+          dataSourceCreateCallback,
+        }}
         schema={databaseConnectionSchema}
       />
     </Card>

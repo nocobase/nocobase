@@ -10,8 +10,8 @@ export class FileManagerPlugin extends Plugin {
   storageTypes = new Map();
 
   async load() {
-    this.app.collectionManager.addFieldInterfaces([AttachmentFieldInterface]);
-    this.app.collectionManager.addCollectionTemplates([FileCollectionTemplate]);
+    this.app.dataSourceManager.addFieldInterfaces([AttachmentFieldInterface]);
+    this.app.dataSourceManager.addCollectionTemplates([FileCollectionTemplate]);
 
     this.app.use(FileManagerProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {

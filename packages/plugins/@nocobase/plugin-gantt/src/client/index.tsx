@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  Plugin,
-  ActionBar,
-  CurrentAppInfoProvider,
-  SchemaComponentOptions,
-  useCollectionManagerV2,
-  CollectionManagerProviderV2,
-} from '@nocobase/client';
+import { Plugin, ActionBar, CurrentAppInfoProvider, SchemaComponentOptions } from '@nocobase/client';
 import { Gantt } from './components/gantt/gantt';
 import { GanttDesigner } from './Gantt.Designer';
 import { ViewMode } from './types/public-types';

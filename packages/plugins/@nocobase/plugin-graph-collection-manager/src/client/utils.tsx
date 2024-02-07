@@ -1,4 +1,3 @@
-import { CollectionV2 } from '@nocobase/client';
 import lodash from 'lodash';
 import { useTranslation } from 'react-i18next';
 

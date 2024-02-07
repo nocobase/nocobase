@@ -30,7 +30,6 @@ export const createGanttBlockSchema = (options) => {
       resource: resource || collection,
       action: 'list',
       fieldNames: {
-        id: 'id',
         ...fieldNames,
       },
       params: {

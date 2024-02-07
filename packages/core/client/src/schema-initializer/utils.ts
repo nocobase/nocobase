@@ -3,18 +3,14 @@ import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  CollectionManagerV2,
-  CollectionV2,
-  SchemaInitializerItemType,
-  useCollectionManagerV2,
-  useFormActiveFields,
-  useFormBlockContext,
-} from '../';
-import { CollectionFieldOptions, FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
+import { SchemaInitializerItemType, useFormActiveFields, useFormBlockContext } from '../';
+import { FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
+import { CollectionV2 } from '../data-source/collection/Collection';
+import { useDataSourceManagerV2 } from '../data-source/data-source/DataSourceManagerProvider';
+import { DataSourceManagerV2 } from '../data-source/data-source/DataSourceManager';
 
 export const itemsMerge = (items1) => {
   return items1;
@@ -869,9 +865,9 @@ export const useCollectionDataSourceItems = (
   filter: (collection: CollectionV2) => boolean = () => true,
 ) => {
   const { t } = useTranslation();
-  const cm = useCollectionManagerV2();
+  const dm = useDataSourceManagerV2();
   const notLocal = (collection) => !collection.isLocal;
-  const allCollections = cm.getAllCollections((collection) => notLocal(collection) && filter(collection));
+  const allCollections = dm.getAllCollections((collection) => notLocal(collection) && filter(collection));
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const res = useMemo(() => {
     return allCollections.map(({ key, displayName, collections }) => ({
@@ -880,7 +876,7 @@ export const useCollectionDataSourceItems = (
       type: 'subMenu',
       children: getChildren({
         collections,
-        collectionManager: cm,
+        dataSourceManager: dm,
         componentName,
         searchValue: '',
         dataSource: key,
@@ -888,7 +884,7 @@ export const useCollectionDataSourceItems = (
         t,
       }),
     }));
-  }, [allCollections, componentName, cm, getTemplatesByCollection, t]);
+  }, [allCollections, componentName, dm, getTemplatesByCollection, t]);
 
   return res;
 };
@@ -1510,7 +1506,7 @@ export const createTableSelectorSchema = (options) => {
 
 const getChildren = ({
   collections,
-  collectionManager,
+  dataSourceManager,
   dataSource,
   componentName,
   searchValue,
@@ -1518,7 +1514,7 @@ const getChildren = ({
   t,
 }: {
   collections: any[];
-  collectionManager: CollectionManagerV2;
+  dataSourceManager: DataSourceManagerV2;
   componentName: string;
   searchValue: string;
   dataSource: string;
@@ -1530,7 +1526,7 @@ const getChildren = ({
       if (item.inherit) {
         return false;
       }
-      const fields = collectionManager.getCollectionFields(item.name, { dataSource });
+      const fields = dataSourceManager.getDataSource(dataSource)?.collectionManager.getCollectionFields(item.name);
       if (item.autoGenId === false && !fields.find((v) => v.primaryKey)) {
         return false;
       } else if (

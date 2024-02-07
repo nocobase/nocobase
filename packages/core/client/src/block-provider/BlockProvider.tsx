@@ -16,11 +16,11 @@ import {
   useDataBlockPropsV2,
   useDataBlockRequestV2,
   useDataBlockResourceV2,
+  useDataSourceHeaders,
   useDesignable,
   useRecord,
 } from '../';
 import { ACLCollectionProvider } from '../acl/ACLProvider';
-import { useDataSourceHeaders } from '../application/collection/utils';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { DataBlockCollector } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
