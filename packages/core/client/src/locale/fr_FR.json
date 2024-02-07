@@ -195,7 +195,7 @@
   "Collection display name": "Nom d'affichage de la collection",
   "Collection name": "Nom de la collection",
   "Inherits": "Hérite de",
-  "Generate ID field automatically": "Générer automatiquement le champ ID",
+  "Primary key, unique identifier, self growth": "Générer automatiquement le champ ID",
   "Store the creation user of each record": "Enregistrer l'utilisateur de création de chaque enregistrement",
   "Store the last update user of each record": "Enregistrer l'utilisateur de dernière mise à jour de chaque enregistrement",
   "Store the creation time of each record": "Stocker l'heure de création de chaque enregistrement",
