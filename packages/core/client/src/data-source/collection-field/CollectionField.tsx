@@ -73,7 +73,7 @@ export const CollectionFieldInternalFieldV2: React.FC = (props: Props) => {
     const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema.name as string);
     const targetCollection = getCollection(collectionField?.target);
     let fieldNames = {};
-    if (collectionField?.target) {
+    if (collectionField?.target && targetCollection) {
       fieldNames = {
         label: collectionField?.targetKey || targetCollection.getPrimaryKey(),
         value: collectionField?.targetKey || targetCollection.getPrimaryKey(),
