@@ -22,10 +22,14 @@ export * from './async-data-provider';
 export * from './block-provider';
 export * from './china-region';
 export * from './collection-manager';
+
 export * as interfacesProperties from './collection-manager/interfaces/properties';
 export { getConfigurableProperties } from './collection-manager/templates/properties';
 export * from './collection-manager/CollectionHistoryProvider';
 export * from './collection-manager/context';
+export * from './collection-manager/ResourceActionProvider';
+export * from './collection-manager/Configuration/interfaces';
+
 export * from './common';
 export * from './css-variable';
 export * from './document-title';
