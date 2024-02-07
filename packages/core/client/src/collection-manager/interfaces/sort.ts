@@ -1,5 +1,4 @@
-import { i18n } from '../../i18n';
-import { defaultProps, operators, unique, autoIncrement, primary } from './properties';
+import { defaultProps, operators } from './properties';
 import { IField } from './types';
 
 export const sort: IField = {

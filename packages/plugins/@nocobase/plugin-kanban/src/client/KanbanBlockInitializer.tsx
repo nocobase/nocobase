@@ -45,6 +45,18 @@ export const KanbanBlockInitializer = () => {
               },
             };
           });
+        const sortFields = collectionFields
+          ?.filter((field) => ['sort'].includes(field.interface))
+          ?.map((field) => {
+            return {
+              label: field?.uiSchema?.title,
+              value: field.name,
+              uiSchema: {
+                ...field.uiSchema,
+                name: field.name,
+              },
+            };
+          });
         const values = await FormDialog(
           t('Create kanban block'),
           () => {
@@ -66,6 +78,18 @@ export const KanbanBlockInitializer = () => {
                           },
                           'x-decorator': 'FormItem',
                         },
+                        dragSortBy: {
+                          title: t('Sorting field'),
+                          enum: sortFields,
+                          required: true,
+                          description: '{{t("Drag-and-drop sorting of Kanban cards")}}',
+                          'x-component': 'Select',
+                          'x-component-props': {
+                            objectValue: true,
+                            fieldNames: { label: 'label', value: 'value' },
+                          },
+                          'x-decorator': 'FormItem',
+                        },
                       },
                     }}
                   />
@@ -77,18 +101,18 @@ export const KanbanBlockInitializer = () => {
         ).open({
           initialValues: {},
         });
-        const sortName = `${values.groupField.value}_sort`;
-        const exists = collectionFields?.find((field) => field.name === sortName);
-        if (!exists) {
-          await api.resource('collections.fields', item.name).create({
-            values: {
-              type: 'sort',
-              name: sortName,
-              hidden: true,
-              scopeKey: values.groupField.value,
-            },
-          });
-        }
+        const sortName = values.dragSortBy;
+        // const exists = collectionFields?.find((field) => field.name === sortName);
+        // if (!exists) {
+        //   await api.resource('collections.fields', item.name).create({
+        //     values: {
+        //       type: 'sort',
+        //       name: sortName,
+        //       hidden: true,
+        //       scopeKey: values.groupField.value,
+        //     },
+        //   });
+        // }
         insert(
           createKanbanBlockSchema({
             groupField: values.groupField.value,
