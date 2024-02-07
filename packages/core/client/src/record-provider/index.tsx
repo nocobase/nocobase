@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
-import { useRecordDataV2 } from '../application';
 import { useCollection } from '../collection-manager';
+import { useRecordDataV2 } from '../data-source/record/RecordProvider';
 import { useCurrentUserContext } from '../user';
 
 export const RecordContext = createContext({});

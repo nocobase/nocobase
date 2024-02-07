@@ -1,7 +1,7 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { useRecordV2 } from '../../../application';
 import { CollectionFieldOptions } from '../../../collection-manager';
+import { useRecordV2 } from '../../../data-source/record/RecordProvider';
 import { useBaseVariable } from './useBaseVariable';
 
 interface Props {
