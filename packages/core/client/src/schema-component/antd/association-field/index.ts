@@ -18,7 +18,10 @@ export const AssociationField: any = connect(
     const targetCollection = getCollection(collectionField?.target);
     return {
       ...props,
-      fieldNames: { ...props.fieldNames, value: collectionField?.targetKey || targetCollection.getPrimaryKey() },
+      fieldNames: {
+        ...props.fieldNames,
+        value: collectionField?.targetKey || targetCollection?.getPrimaryKey() || 'id',
+      },
     };
   }),
 );

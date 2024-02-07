@@ -1,4 +1,4 @@
-import { RecordV2 } from '../../../data-source/record';
+import { RecordV2 } from '../../../../data-source/record/Record';
 
 describe('Record', () => {
   test('should works', () => {

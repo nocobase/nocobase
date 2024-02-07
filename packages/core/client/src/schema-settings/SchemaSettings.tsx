@@ -67,8 +67,6 @@ import {
   useSchemaSettingsItem,
   useSortFields,
 } from '..';
-import { useDataSourceManagerV2 } from '../data-source/data-source/DataSourceManagerProvider';
-import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { BlockRequestContext, useFormBlockContext, useFormBlockType, useTableBlockContext } from '../block-provider';
 import {
   FormActiveFieldsProvider,
@@ -78,6 +76,8 @@ import {
 } from '../block-provider/hooks';
 import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks';
 import { SelectWithTitle, SelectWithTitleProps } from '../common/SelectWithTitle';
+import { useDataSourceManagerV2 } from '../data-source/data-source/DataSourceManagerProvider';
+import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import {
   FilterBlockType,
   getSupportFieldsByAssociation,
@@ -402,8 +402,10 @@ export const SchemaSettingsFormItemTemplate = function FormItemTemplate(props) {
                         title: t('Template name'),
                         required: true,
                         default: collection
-                          ? `${compile(collection?.title || collection?.name)}_${t(componentName)}`
-                          : t(componentName),
+                          ? `${compile(collection?.title || collection?.name)}_${t(
+                              componentTitle[componentName] || componentName,
+                            )}`
+                          : t(componentTitle[componentName] || componentName),
                         'x-decorator': 'FormItem',
                         'x-component': 'Input',
                       },
