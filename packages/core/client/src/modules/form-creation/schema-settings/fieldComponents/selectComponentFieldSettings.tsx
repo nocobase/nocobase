@@ -121,7 +121,9 @@ export const allowMultiple: any = {
   useComponentProps() {
     const { t } = useTranslation();
     const field = useField<Field>();
-    const fieldSchema = useFieldSchema();
+    const { fieldSchema: tableColumnSchema } = useColumnSchema();
+    const schema = useFieldSchema();
+    const fieldSchema = tableColumnSchema || schema;
     const { dn, refresh } = useDesignable();
     return {
       title: t('Allow multiple'),
