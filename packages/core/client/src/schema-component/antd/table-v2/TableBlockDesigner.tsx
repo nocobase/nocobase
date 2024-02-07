@@ -52,6 +52,7 @@ export const EditSortField = () => {
       onChange={(dragSortBy) => {
         fieldSchema['x-decorator-props'].dragSortBy = dragSortBy;
         service.run({ ...service.params?.[0], sort: dragSortBy });
+        field.decoratorProps.dragSortBy = dragSortBy;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],
