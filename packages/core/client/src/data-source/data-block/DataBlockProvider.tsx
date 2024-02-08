@@ -105,22 +105,35 @@ export interface DataBlockContextValueV2<T extends {} = {}> {
 export const DataBlockContextV2 = createContext<DataBlockContextValueV2<any>>({} as any);
 DataBlockContextV2.displayName = 'DataBlockContextV2';
 
+export const AssociationOrCollectionProvider = (props: {
+  collection: string | CollectionOptionsV2;
+  association: string;
+  children: ReactNode;
+}) => {
+  const { collection, association } = props;
+  const AssociationOrCollection = useMemo(() => {
+    if (association) {
+      return {
+        Component: AssociationProviderV2,
+        name: association,
+      };
+    }
+    return {
+      Component: CollectionProviderV2,
+      name: collection,
+    };
+  }, [collection, association]);
+
+  return (
+    <AssociationOrCollection.Component name={AssociationOrCollection.name as any}>
+      {props.children}
+    </AssociationOrCollection.Component>
+  );
+};
+
 export const DataBlockProviderV2: FC<DataBlockProviderPropsV2 & { children?: ReactNode }> = withDynamicSchemaProps(
   (props) => {
     const { collection, association, dataSource, children, ...resets } = props as Partial<AllDataBlockPropsV2>;
-    const AssociationOrCollection = useMemo(() => {
-      if (association) {
-        return {
-          Component: AssociationProviderV2,
-          name: association,
-        };
-      }
-      return {
-        Component: CollectionProviderV2,
-        name: collection,
-      };
-    }, [collection, association]);
-
     const { dn } = useDesignable();
 
     return (
@@ -132,13 +145,13 @@ export const DataBlockProviderV2: FC<DataBlockProviderPropsV2 & { children?: Rea
       >
         <DataSourceProviderV2 dataSource={dataSource}>
           <CollectionManagerProviderV2>
-            <AssociationOrCollection.Component name={AssociationOrCollection.name as any}>
+            <AssociationOrCollectionProvider collection={collection} association={association}>
               <ACLCollectionProvider>
                 <DataBlockResourceProviderV2>
                   <BlockRequestProviderV2>{children}</BlockRequestProviderV2>
                 </DataBlockResourceProviderV2>
               </ACLCollectionProvider>
-            </AssociationOrCollection.Component>
+            </AssociationOrCollectionProvider>
           </CollectionManagerProviderV2>
         </DataSourceProviderV2>
       </DataBlockContextV2.Provider>
