@@ -1,10 +1,13 @@
 name: NocoBase Backend Test
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
       - main
-      - develop
     paths:
       - 'package.json'
       - 'packages/core/acl/**'

@@ -33,7 +33,7 @@ export const PinnedPluginList = () => {
           background: none;
           color: rgba(255, 255, 255, 0.65);
           &:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.1) !important;
           }
         }
       `}
