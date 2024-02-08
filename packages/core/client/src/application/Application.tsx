@@ -26,13 +26,13 @@ import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
 
 import { type DataSourceManagerOptionsV2, DataSourceManagerV2 } from '../data-source/data-source/DataSourceManager';
+import { DataSourceApplicationProvider } from '../data-source/components/DataSourceApplicationProvider';
 import { CollectionFieldV2 } from '../data-source/collection-field/CollectionField';
 import { DataBlockProviderV2 } from '../data-source/data-block/DataBlockProvider';
 
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
 import type { RequireJS } from './utils/requirejs';
-import { DataSourceManagerProviderV2 } from '../data-source/data-source/DataSourceManagerProvider';
 
 declare global {
   interface Window {
@@ -139,7 +139,7 @@ export class Application {
       scope: this.scopes,
     });
     this.use(AntdAppProvider);
-    this.use(DataSourceManagerProviderV2, { dataSourceManager: this.dataSourceManager });
+    this.use(DataSourceApplicationProvider, { dataSourceManager: this.dataSourceManager });
   }
 
   private addReactRouterComponents() {

@@ -7,10 +7,13 @@ import { InheritanceCollectionMixin } from '../mixins/InheritanceCollectionMixin
 import { uid } from '@formily/shared';
 import { useDataSourceManagerV2 } from '../../data-source/data-source/DataSourceManagerProvider';
 import { useDataSourceV2 } from '../../data-source/data-source/DataSourceProvider';
+import { DEFAULT_DATA_SOURCE_NAME } from '../../data-source/data-source/DataSourceManager';
+import { useCollectionManagerV2 } from '../../data-source/collection/CollectionManagerProvider';
 
 export const useCollectionManager = (dataSourceName?: string) => {
   const dm = useDataSourceManagerV2();
   const dataSource = useDataSourceV2();
+  const cm = useCollectionManagerV2();
   const dataSourceNameValue = dataSourceName || dataSource?.key || undefined;
   const [random, setRandom] = useState(uid());
   const { refresh } = useSchemaComponentContext();
@@ -26,11 +29,20 @@ export const useCollectionManager = (dataSourceName?: string) => {
   const getCollections = useCallback(() => {
     return dm?.getCollections({ dataSource: dataSourceNameValue }).map((item) => item.getOptions());
   }, [dm, dataSource]);
+
+  const getCm = useCallback(
+    (dataSource?: string) => {
+      if (cm && !dataSource) return cm;
+      return dm?.getDataSource(dataSource || dataSourceNameValue)?.collectionManager;
+    },
+    [cm, dm, dataSourceNameValue],
+  );
+
   const collections = useMemo(() => dm?.getCollections(), [dm, random]);
   const service = useCallback(
     () =>
       dm
-        ?.getDataSource()
+        ?.getDataSource(DEFAULT_DATA_SOURCE_NAME)
         .reload()
         .then(() => {
           refresh();
@@ -41,7 +53,7 @@ export const useCollectionManager = (dataSourceName?: string) => {
   const refreshCM = useCallback(
     () =>
       dm
-        ?.getDataSource()
+        ?.getDataSource(DEFAULT_DATA_SOURCE_NAME)
         .reload()
         .then(() => {
           refresh();
@@ -53,70 +65,52 @@ export const useCollectionManager = (dataSourceName?: string) => {
   const compile = useCompile();
   const getInheritedFields = useCallback(
     (name: string, customDataSource?: string) => {
-      return (
-        dm
-          ?.getDataSource(customDataSource || dataSourceNameValue)
-          ?.collectionManager?.getCollection<InheritanceCollectionMixin>(name)
-          ?.getInheritedFields() || []
-      );
+      return getCm(customDataSource)?.getCollection<InheritanceCollectionMixin>(name)?.getInheritedFields() || [];
     },
-    [dm],
+    [dm, getCm],
   );
 
   const getCollectionFields = useCallback(
     (name: any, customDataSource?: string): CollectionFieldOptions[] => {
       if (!name) return [];
-      const collection = dm
-        ?.getDataSource(customDataSource || dataSourceNameValue)
-        ?.collectionManager?.getCollection<InheritanceCollectionMixin>(name);
+      const collection = getCm(customDataSource)?.getCollection<InheritanceCollectionMixin>(name);
 
       return collection?.getAllFields?.() || collection?.getFields() || [];
     },
-    [dm],
+    [dm, getCm],
   );
   const getCollectionField = useCallback(
     (name: string, customDataSource?: string) => {
       if (!name || name.split('.').length < 2) return;
-      return dm?.getDataSource(customDataSource || dataSourceNameValue)?.collectionManager.getCollectionField(name);
+      return getCm(customDataSource)?.getCollectionField(name);
     },
-    [dm],
+    [dm, getCm],
   );
   const getInheritCollections = useCallback(
     (name, customDataSource?: string) => {
       if (!name) return [];
-      return (
-        dm
-          ?.getDataSource(customDataSource || dataSourceNameValue)
-          ?.collectionManager?.getCollection<InheritanceCollectionMixin>(name)
-          ?.getParentCollectionsName() || []
-      );
+      return getCm(customDataSource)?.getCollection<InheritanceCollectionMixin>(name)?.getParentCollectionsName() || [];
     },
-    [dm],
+    [dm, getCm],
   );
 
   const getChildrenCollections = useCallback(
     (name: string, isSupportView = false, customDataSource?: string) => {
       if (!name) return [];
       return (
-        dm
-          ?.getDataSource(customDataSource || dataSourceNameValue)
-          ?.collectionManager?.getCollection<InheritanceCollectionMixin>(name)
+        getCm(customDataSource)
+          ?.getCollection<InheritanceCollectionMixin>(name)
           ?.getChildrenCollections(isSupportView) || []
       );
     },
-    [dm],
+    [dm, getCm],
   );
   const getCurrentCollectionFields = useCallback(
     (name: string, customDataSource?: string) => {
       if (!name) return [];
-      return (
-        dm
-          ?.getDataSource(customDataSource || dataSourceNameValue)
-          ?.collectionManager?.getCollection<InheritanceCollectionMixin>(name)
-          ?.getCurrentFields() || []
-      );
+      return getCm(customDataSource)?.getCollection<InheritanceCollectionMixin>(name)?.getCurrentFields() || [];
     },
-    [dm],
+    [dm, getCm],
   );
 
   // 缓存下面已经获取的 options，防止无限循环
@@ -226,22 +220,19 @@ export const useCollectionManager = (dataSourceName?: string) => {
 
   const getCollection = useCallback(
     (name: any, customDataSource?: string): CollectionOptions => {
-      return dm
-        ?.getDataSource(customDataSource || dataSourceNameValue)
-        ?.collectionManager?.getCollection<InheritanceCollectionMixin>(name);
+      return getCm(customDataSource)?.getCollection<InheritanceCollectionMixin>(name);
     },
-    [dm],
+    [dm, getCm],
   );
 
   // 获取当前 collection 继承链路上的所有 collection
   const getAllCollectionsInheritChain = useCallback(
     (collectionName: string, customDataSource?: string) => {
-      return dm
-        ?.getDataSource(customDataSource || dataSourceNameValue)
-        ?.collectionManager?.getCollection<InheritanceCollectionMixin>(collectionName)
+      return getCm(customDataSource)
+        ?.getCollection<InheritanceCollectionMixin>(collectionName)
         ?.getAllCollectionsInheritChain();
     },
-    [dm],
+    [dm, getCm],
   );
 
   /**
@@ -251,12 +242,11 @@ export const useCollectionManager = (dataSourceName?: string) => {
    */
   const getInheritCollectionsChain = useCallback(
     (collectionName: string, customDataSource?: string) => () => {
-      return dm
-        ?.getDataSource(customDataSource || dataSourceNameValue)
-        ?.collectionManager?.getCollection<InheritanceCollectionMixin>(collectionName)
+      return getCm(customDataSource)
+        ?.getCollection<InheritanceCollectionMixin>(collectionName)
         ?.getInheritCollectionsChain();
     },
-    [dm],
+    [dm, getCm],
   );
 
   const getInterface = useCallback(
@@ -271,12 +261,14 @@ export const useCollectionManager = (dataSourceName?: string) => {
     return !field.isForeignKey && getInterface(field.interface)?.titleUsable;
   };
 
-  const getParentCollectionFields = (parentCollection, currentCollection, customDataSource?: string) => {
-    return dm
-      ?.getDataSource(customDataSource || dataSourceNameValue)
-      ?.collectionManager?.getCollection<InheritanceCollectionMixin>(currentCollection)
-      ?.getParentCollectionFields(parentCollection);
-  };
+  const getParentCollectionFields = useCallback(
+    (parentCollection, currentCollection, customDataSource?: string) => {
+      return getCm(customDataSource)
+        ?.getCollection<InheritanceCollectionMixin>(currentCollection)
+        ?.getParentCollectionFields(parentCollection);
+    },
+    [dm, getCm],
+  );
 
   const getTemplate = useCallback(
     (name = 'general') => {
