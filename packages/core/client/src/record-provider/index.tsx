@@ -14,22 +14,16 @@ export const RecordIndexContext = createContext(null);
 export const RecordProvider: React.FC<{
   record: any;
   parent?: any;
-  collectionName?: string;
-  parentCollectionName?: string;
+  isNew?: boolean;
 }> = (props) => {
-  const { record, children, collectionName, parent, parentCollectionName } = props;
+  const { record, children, parent, isNew } = props;
   const { name: __collectionName } = useCollection();
   const value = { ...record };
   value['__parent'] = parent;
-  value['__collectionName'] = collectionName || __collectionName;
+  value['__collectionName'] = __collectionName;
   return (
     <RecordContext.Provider value={value}>
-      <RecordProviderV2
-        record={record}
-        collectionName={collectionName}
-        parentRecord={parent}
-        parentCollectionName={parentCollectionName}
-      >
+      <RecordProviderV2 isNew={isNew} record={record} parentRecord={parent}>
         {children}
       </RecordProviderV2>
     </RecordContext.Provider>

@@ -50,12 +50,7 @@ const InternalFormBlockProvider = (props) => {
 
   return (
     <FormBlockContext.Provider value={formBlockValue}>
-      <RecordProvider
-        parent={record?.parentRecord?.data}
-        record={record?.data}
-        collectionName={record?.collectionName}
-        parentCollectionName={record?.parentRecord?.collectionName}
-      >
+      <RecordProvider isNew={record?.isNew} parent={record?.parentRecord?.data} record={record?.data}>
         <div ref={formBlockRef}>
           <RenderChildrenWithDataTemplates form={form} />
         </div>
