@@ -16,7 +16,7 @@ export const collectionTransform = (collection: CollectionOptionsV2, app: Applic
       if (Array.isArray(uiSchema?.enum)) {
         uiSchema.enum = uiSchema.enum.map((item) => ({
           ...item,
-          value: item?.value || item,
+          value: item?.value === undefined ? item : item.value,
           label: item.rawLabel ? item.label : app.i18n.t(item.label, { ns: 'lm-collections' }),
           rawLabel: item.rawLabel || item.label,
         }));
