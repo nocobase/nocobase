@@ -74,9 +74,12 @@ export const CollectionFieldInternalFieldV2: React.FC = (props: Props) => {
     const targetCollection = getCollection(collectionField?.target);
     let fieldNames = {};
     if (collectionField?.target && targetCollection) {
+      const initField = collectionField?.targetKey || targetCollection.getPrimaryKey();
       fieldNames = {
-        label: collectionField?.targetKey || targetCollection.getPrimaryKey(),
-        value: collectionField?.targetKey || targetCollection.getPrimaryKey(),
+        label: targetCollection.getFields()?.find((v) => v.name === field.componentProps.fieldNames?.label)
+          ? field.componentProps.fieldNames?.label
+          : initField,
+        value: initField,
       };
     }
     const componentProps = merge(originalProps, { ...(field.componentProps || {}), fieldNames });

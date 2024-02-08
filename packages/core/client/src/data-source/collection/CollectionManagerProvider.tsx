@@ -19,8 +19,9 @@ const CollectionManagerProviderInnerV2: FC<CollectionManagerProviderPropsV2> = (
   collections,
 }) => {
   const dataSource = useDataSourceV2();
+  const parentCollectionManager = useCollectionManagerV2();
   const cm = useMemo(() => {
-    const res = instance || dataSource?.collectionManager;
+    const res = instance || parentCollectionManager || dataSource?.collectionManager;
     return collections ? res.clone(collections) : res;
   }, [instance, collections, dataSource]);
   return <CollectionManagerContextV2.Provider value={cm}>{children}</CollectionManagerContextV2.Provider>;
