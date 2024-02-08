@@ -1,9 +1,8 @@
-import React, { FC, ReactNode } from 'react';
+import React from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
 import { CollectionCategroriesContext } from './context';
 import { CollectionManagerOptions } from './types';
-import type { CollectionOptionsV2 } from '../data-source';
 import { CollectionManagerProviderV2 } from '../data-source/collection/CollectionManagerProvider';
 import { useDataSourceManagerV2 } from '../data-source/data-source/DataSourceManagerProvider';
 import { useCollectionHistory } from './CollectionHistoryProvider';
@@ -16,14 +15,6 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
       <CollectionManagerSchemaComponentProvider>{props.children}</CollectionManagerSchemaComponentProvider>
     </CollectionManagerProviderV2>
   );
-};
-
-export const CollectionExtendsProvider: FC<{ collections: CollectionOptionsV2[]; children?: ReactNode }> = ({
-  children,
-  collections,
-}) => {
-  const localCollections = collections.map((item) => ({ ...item, isLocal: true }));
-  return <CollectionManagerProvider collections={localCollections}>{children}</CollectionManagerProvider>;
 };
 
 export const RemoteCollectionManagerProvider = (props: any) => {

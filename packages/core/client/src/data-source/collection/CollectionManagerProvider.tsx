@@ -2,6 +2,7 @@ import React, { FC, ReactNode, createContext, useContext, useMemo } from 'react'
 import type { CollectionManagerV2 } from './CollectionManager';
 import type { CollectionOptionsV2, CollectionV2 } from './Collection';
 import { DataSourceProviderV2, useDataSourceV2 } from '../data-source/DataSourceProvider';
+import { useExtendCollections } from './ExtendCollectionsProvider';
 
 export const CollectionManagerContextV2 = createContext<CollectionManagerV2>(null);
 CollectionManagerContextV2.displayName = 'CollectionManagerContextV2';
@@ -19,9 +20,15 @@ const CollectionManagerProviderInnerV2: FC<CollectionManagerProviderPropsV2> = (
   collections,
 }) => {
   const dataSource = useDataSourceV2();
+  const extendCollections = useExtendCollections();
+
   const cm = useMemo(() => {
     const res = instance || dataSource?.collectionManager;
-    return collections ? res.clone(collections) : res;
+    const extendsCollectionsValue = [...(collections || []), ...(extendCollections || [])];
+    if (extendsCollectionsValue.length) {
+      return res.clone(extendsCollectionsValue);
+    }
+    return res;
   }, [instance, collections, dataSource]);
   return <CollectionManagerContextV2.Provider value={cm}>{children}</CollectionManagerContextV2.Provider>;
 };

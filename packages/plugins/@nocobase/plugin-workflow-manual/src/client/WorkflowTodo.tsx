@@ -3,7 +3,7 @@ import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
 
-import { CollectionExtendsProvider, css, useCompile, usePlugin } from '@nocobase/client';
+import { css, useCompile, usePlugin } from '@nocobase/client';
 
 import {
   SchemaComponent,
@@ -15,6 +15,7 @@ import {
   useFormBlockContext,
   useRecord,
   useTableBlockContext,
+  ExtendCollectionsProvider,
 } from '@nocobase/client';
 import WorkflowPlugin, {
   useAvailableUpstreams,
@@ -631,11 +632,11 @@ function Decorator({ params = {}, children }) {
   };
 
   return (
-    <CollectionExtendsProvider collections={[nodeCollection, workflowCollection, todoCollection]}>
+    <ExtendCollectionsProvider collections={[nodeCollection, workflowCollection, todoCollection]}>
       <TableBlockProvider name="workflow-todo" {...blockProps}>
         {children}
       </TableBlockProvider>
-    </CollectionExtendsProvider>
+    </ExtendCollectionsProvider>
   );
 }
 

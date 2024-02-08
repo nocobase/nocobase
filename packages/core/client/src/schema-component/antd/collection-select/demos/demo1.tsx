@@ -1,5 +1,5 @@
 import { FormItem } from '@formily/antd-v5';
-import { CollectionExtendsProvider, CollectionSelect, FormProvider, SchemaComponent } from '@nocobase/client';
+import { ExtendCollectionsProvider, CollectionSelect, FormProvider, SchemaComponent } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -22,9 +22,9 @@ export default () => {
 
   return (
     <FormProvider>
-      <CollectionExtendsProvider collections={collections as any}>
+      <ExtendCollectionsProvider collections={collections as any}>
         <SchemaComponent components={{ FormItem, CollectionSelect }} scope={{ t }} schema={schema} />
-      </CollectionExtendsProvider>
+      </ExtendCollectionsProvider>
     </FormProvider>
   );
 };

@@ -1,7 +1,7 @@
 import { ArrayTable } from '@formily/antd-v5';
 import { observer, useField } from '@formily/react';
 import {
-  CollectionExtendsProvider,
+  ExtendCollectionsProvider,
   FormProvider,
   SchemaComponent,
   TableBlockProvider,
@@ -498,9 +498,9 @@ AuditLogs.Decorator = observer(
     };
     return (
       <IsAssociationBlock.Provider value={!!parent.name}>
-        <CollectionExtendsProvider collections={[collection]}>
+        <ExtendCollectionsProvider collections={[collection]}>
           <TableBlockProvider {...defaults}>{props.children}</TableBlockProvider>
-        </CollectionExtendsProvider>
+        </ExtendCollectionsProvider>
       </IsAssociationBlock.Provider>
     );
   },
