@@ -17,7 +17,6 @@ export const collection: CollectionOptionsV2 = {
   filterTargetKey: 'name',
   targetKey: 'name',
   sortable: true,
-  isLocal: true,
   fields: [
     {
       type: 'integer',

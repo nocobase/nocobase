@@ -866,8 +866,7 @@ export const useCollectionDataSourceItems = (
 ) => {
   const { t } = useTranslation();
   const dm = useDataSourceManagerV2();
-  const notLocal = (collection) => !collection.isLocal;
-  const allCollections = dm.getAllCollections((collection) => notLocal(collection) && filter(collection));
+  const allCollections = dm.getAllCollections(filter);
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const res = useMemo(() => {
     return allCollections.map(({ key, displayName, collections }) => ({

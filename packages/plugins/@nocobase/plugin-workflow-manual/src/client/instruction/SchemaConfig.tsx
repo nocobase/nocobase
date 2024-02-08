@@ -165,7 +165,7 @@ export const addBlockButton: SchemaInitializer = new SchemaInitializer({
       title: '{{t("Form")}}',
       useChildren() {
         const dm = useDataSourceManagerV2();
-        const allCollections = dm.getAllCollections((collection) => !collection.isLocal);
+        const allCollections = dm.getAllCollections();
         return Array.from(manualFormTypes.getValues()).map((item: ManualFormType) => {
           const { useInitializer: getInitializer } = item.config;
           return getInitializer({ allCollections });

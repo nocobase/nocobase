@@ -4,7 +4,7 @@ import {
   AntdSchemaComponentProvider,
   Application,
   BlockSchemaComponentProvider,
-  CollectionExtendsProvider,
+  ExtendCollectionsProvider,
   SchemaComponent,
   SchemaComponentProvider,
   useFormBlockContext,
@@ -211,13 +211,13 @@ const Root = () => {
   return (
     <APIClientProvider apiClient={apiClient}>
       <SchemaComponentProvider>
-        <CollectionExtendsProvider collections={collections.data as any}>
+        <ExtendCollectionsProvider collections={collections.data as any}>
           <AntdSchemaComponentProvider>
             <BlockSchemaComponentProvider>
               <SchemaComponent schema={schema} scope={{ useCreateAction }} />
             </BlockSchemaComponentProvider>
           </AntdSchemaComponentProvider>
-        </CollectionExtendsProvider>
+        </ExtendCollectionsProvider>
       </SchemaComponentProvider>
     </APIClientProvider>
   );

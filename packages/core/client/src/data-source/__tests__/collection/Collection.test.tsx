@@ -208,7 +208,6 @@ describe('Collection', () => {
     expect(users.logging).toBe(usersOptions.logging);
     expect(users.from).toBe(usersOptions.from);
     expect(users.rawTitle).toBe(usersOptions.rawTitle);
-    expect(users.isLocal).toBe(usersOptions.isLocal);
     expect(users.inherits).toMatchObject([]);
     expect(users.sources).toMatchObject([]);
     expect(users.fields).toMatchObject(usersOptions.fields);

@@ -20,7 +20,6 @@ export interface CollectionOptionsV2 {
   name: string;
   title?: string;
   dataSource?: string;
-  isLocal?: boolean;
   /**
    * Used for @nocobase/plugin-duplicator
    * @see packages/core/database/src/collection-group-manager.tss
@@ -143,9 +142,6 @@ export class CollectionV2 {
   }
   get rawTitle() {
     return this.options.rawTitle;
-  }
-  get isLocal() {
-    return this.options.isLocal;
   }
   getPrimaryKey(): string {
     if (this.primaryKey) {
