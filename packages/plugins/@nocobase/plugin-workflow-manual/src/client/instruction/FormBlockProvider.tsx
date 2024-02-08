@@ -75,7 +75,7 @@ export function FormBlockProvider(props) {
   return !userJob.status || values ? (
     <CollectionManagerProviderV2 dataSource={dataSource}>
       <CollectionProvider collection={props.collection}>
-        <RecordProvider record={values} parent={false}>
+        <RecordProvider record={values} parent={null}>
           <FormActiveFieldsProvider name="form">
             <BlockRequestContext.Provider value={{ block: 'form', props, field, service, resource, __parent }}>
               <FormBlockContext.Provider value={formBlockValue}>

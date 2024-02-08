@@ -66,7 +66,7 @@ export function DetailsBlockProvider(props) {
 
   return (
     <CollectionProvider collection={props.collection}>
-      <RecordProvider record={values} parent={false}>
+      <RecordProvider record={values} parent={null}>
         <BlockRequestContext.Provider value={{ block: 'form', field, service, resource, __parent }}>
           <FormBlockContext.Provider
             value={{

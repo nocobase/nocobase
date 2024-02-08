@@ -6,7 +6,7 @@ import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCurrentAppInfo } from '../../appInfo';
 import { RecordProvider, useRecord } from '../../record-provider';
-import { Action, useAttach, useCompile, SchemaComponent } from '../../schema-component';
+import { Action, SchemaComponent, useAttach, useCompile } from '../../schema-component';
 import { Input } from '../../schema-component/antd/input';
 import {
   isDeleteButtonDisabled,
@@ -64,7 +64,8 @@ const CurrentFields = (props) => {
   const { t } = useTranslation();
   const { setState } = useResourceActionContext();
   const { resource, targetKey } = props.collectionResource || {};
-  const { [targetKey]: filterByTk, titleField, template } = useRecord();
+  const record = useRecord();
+  const { [targetKey]: filterByTk, titleField, template } = record;
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
   const { refreshCM, isTitleField, getTemplate } = useCollectionManager();
   const targetTemplate = getTemplate(template);
@@ -123,21 +124,21 @@ const CurrentFields = (props) => {
     {
       dataIndex: 'actions',
       title: t('Actions'),
-      render: (_, record) => {
+      render: (_, item) => {
         const deleteProps = {
           confirm: {
             title: t('Delete record'),
             content: t('Are you sure you want to delete it?'),
           },
           useAction: useDestroyActionAndRefreshCM,
-          disabled: isDeleteButtonDisabled(record) || targetTemplate?.forbidDeletion,
+          disabled: isDeleteButtonDisabled(item) || targetTemplate?.forbidDeletion,
           title: t('Delete'),
         };
 
         return (
-          <RecordProvider record={record}>
+          <RecordProvider record={item} parent={record}>
             <Space>
-              <EditCollectionField role="button" aria-label={`edit-button-${record.name}`} type="primary" />
+              <EditCollectionField role="button" aria-label={`edit-button-${item.name}`} type="primary" />
               <Action.Link {...deleteProps} />
             </Space>
           </RecordProvider>
@@ -178,7 +179,8 @@ const InheritFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager();
   const { resource, targetKey } = props.collectionResource || {};
-  const { [targetKey]: filterByTk, titleField, name } = useRecord();
+  const record = useRecord();
+  const { [targetKey]: filterByTk, titleField, name } = record;
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { t } = useTranslation();
   const { refreshCM, isTitleField } = useCollectionManager();
@@ -232,7 +234,7 @@ const InheritFields = (props) => {
     {
       dataIndex: 'actions',
       title: t('Actions'),
-      render: function Render(_, record) {
+      render: function Render(_, item) {
         const overrideProps = {
           type: 'primary',
           currentCollection: name,
@@ -242,7 +244,7 @@ const InheritFields = (props) => {
         };
 
         return (
-          <RecordProvider record={record}>
+          <RecordProvider record={item} parent={record}>
             <Space>
               <OverridingCollectionField {...overrideProps} />
               <ViewCollectionField {...viewCollectionProps} />

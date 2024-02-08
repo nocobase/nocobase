@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { css } from '@emotion/css';
-import { useTranslation } from 'react-i18next';
-import { Button, message } from 'antd';
-import { useForm } from '@formily/react';
 import { DeleteOutlined, ExclamationCircleFilled } from '@ant-design/icons';
+import { css } from '@emotion/css';
+import { useForm } from '@formily/react';
+import { Button, message } from 'antd';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useActionContext, useCollectionManager, useResourceActionContext, useResourceContext } from '../../';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent } from '../../schema-component';
-import * as components from './components';
-import { useCollectionManager, useResourceActionContext, useResourceContext, useActionContext } from '../../';
 import { useCancelAction } from '../action-hooks';
+import * as components from './components';
 
 export const DeleteCollection = (props) => {
   const record = useRecord();

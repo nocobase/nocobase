@@ -4,6 +4,7 @@ import _ from 'lodash';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
+import { useParentRecordDataV2 } from '../data-source/record/RecordProvider';
 import { isInFilterFormBlock } from '../filter-provider';
 import { mergeFilter } from '../filter-provider/utils';
 import { RecordProvider, useRecord } from '../record-provider';
@@ -49,11 +50,12 @@ const InternalTableSelectorProvider = (props) => {
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   const [expandFlag, setExpandFlag] = useState(false);
+  const parentRecordData = useParentRecordDataV2(false);
   // if (service.loading) {
   //   return <Spin />;
   // }
   return (
-    <RecordProvider record={{}}>
+    <RecordProvider record={{}} parent={parentRecordData}>
       <TableSelectorContext.Provider
         value={{
           field,

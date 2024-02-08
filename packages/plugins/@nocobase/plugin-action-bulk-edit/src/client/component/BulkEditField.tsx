@@ -1,18 +1,18 @@
 import { css } from '@emotion/css';
 import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
-import { merge, uid } from '@formily/shared';
-import { Checkbox, Select, Space } from 'antd';
-import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { merge } from '@formily/shared';
 import {
-  useFormBlockContext,
   CollectionFieldProvider,
   useCollection,
   useCollectionField,
   useCompile,
   useComponent,
+  useFormBlockContext,
 } from '@nocobase/client';
+import { Checkbox, Select, Space } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const DeletedField = () => {
   const { t } = useTranslation();
@@ -106,24 +106,6 @@ export const BulkEditField = (props: any) => {
 
   const valueChangeHandler = (val) => {
     setValue(val?.target?.value ?? val?.target?.checked ?? val);
-  };
-
-  const collectionSchema: any = {
-    type: 'void',
-    properties: {
-      [uid()]: {
-        type: 'string',
-        'x-component': 'BulkEditCollectionField',
-        'x-collection-field': fieldSchema['x-collection-field'],
-        'x-component-props': {
-          ...props,
-          value,
-          onChange: valueChangeHandler,
-          style: { minWidth: 150 },
-        },
-        'x-decorator': 'FormItem',
-      },
-    },
   };
 
   return (

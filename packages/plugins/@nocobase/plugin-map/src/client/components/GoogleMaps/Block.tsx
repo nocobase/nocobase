@@ -8,6 +8,7 @@ import {
   useCollectionManager,
   useCompile,
   useFilterAPI,
+  useParentRecordDataV2,
   useProps,
 } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
@@ -15,9 +16,9 @@ import { Button, Space } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { defaultImage, selectedImage } from '../../constants';
 import { useMapTranslation } from '../../locale';
+import { getSource } from '../../utils';
 import { GoogleMapForwardedRefProps, GoogleMapsComponent, OverlayOptions } from './Map';
 import { getIcon } from './utils';
-import { getSource } from '../../utils';
 
 const OVERLAY_KEY = 'google-maps-overlay-id';
 const OVERLAY_SELECtED = 'google-maps-overlay-selected';
@@ -359,6 +360,7 @@ export const GoogleMapsBlock = (props) => {
 
 const MapBlockDrawer = (props) => {
   const { setVisible, record } = props;
+  const parentRecordData = useParentRecordDataV2(false);
   const fieldSchema = useFieldSchema();
   const schema: Schema = useMemo(
     () =>
@@ -374,7 +376,7 @@ const MapBlockDrawer = (props) => {
   return (
     schema && (
       <ActionContextProvider value={{ visible: !!record, setVisible }}>
-        <RecordProvider record={record}>
+        <RecordProvider record={record} parent={parentRecordData}>
           <RecursionField schema={schema} name={schema.name} />
         </RecordProvider>
       </ActionContextProvider>

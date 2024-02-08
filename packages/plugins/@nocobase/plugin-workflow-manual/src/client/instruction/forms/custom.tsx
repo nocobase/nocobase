@@ -52,7 +52,7 @@ function CustomFormBlockProvider(props) {
         fields,
       }}
     >
-      <RecordProvider record={values} parent={false}>
+      <RecordProvider record={values} parent={null}>
         <FormBlockContext.Provider
           value={{
             form,

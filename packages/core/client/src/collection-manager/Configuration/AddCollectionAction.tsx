@@ -236,8 +236,8 @@ const useCreateCollection = (schema?: any) => {
 };
 
 export const AddCollection = (props) => {
-  const record = useRecord();
-  return <AddCollectionAction item={record} {...props} />;
+  const recordData = useRecord();
+  return <AddCollectionAction item={recordData} {...props} />;
 };
 
 export const AddCollectionAction = (props) => {

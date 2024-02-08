@@ -7,6 +7,7 @@ import set from 'lodash/set';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
+import { useParentRecordDataV2 } from '../../data-source/record/RecordProvider';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
@@ -144,11 +145,12 @@ const useUpdateCollectionField = () => {
 
 export const EditCollectionField = (props) => {
   const record = useRecord();
-  return <EditFieldAction item={record} {...props} />;
+  const parentRecordData = useParentRecordDataV2(false);
+  return <EditFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
 
 export const EditFieldAction = (props) => {
-  const { scope, getContainer, item: record, children, ...otherProps } = props;
+  const { scope, getContainer, item: record, parentItem: parentRecord, children, ...otherProps } = props;
   const { getInterface, collections } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -168,7 +170,7 @@ export const EditFieldAction = (props) => {
   }, []);
 
   return (
-    <RecordProvider record={record}>
+    <RecordProvider record={record} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           {...otherProps}

@@ -1,6 +1,5 @@
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
-import flat from 'flat';
 import React, { Fragment, useRef, useState } from 'react';
 import { useDesignable } from '../../';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
@@ -93,11 +92,13 @@ export const ReadPrettyInternalTag: React.FC = observer(
       const collectionFieldNames = fieldSchema?.['x-collection-field']?.split('.');
 
       return collectionFieldNames && collectionFieldNames.length > 2 ? (
-        <RecordProvider record={recordCtx[collectionFieldNames[1]]}>
-          <RecordProvider record={record}>{renderWithoutTableFieldResourceProvider()}</RecordProvider>
+        <RecordProvider record={record} parent={recordCtx[collectionFieldNames[1]]}>
+          {renderWithoutTableFieldResourceProvider()}
         </RecordProvider>
       ) : (
-        <RecordProvider record={record}>{renderWithoutTableFieldResourceProvider()}</RecordProvider>
+        <RecordProvider record={record} parent={recordCtx}>
+          {renderWithoutTableFieldResourceProvider()}
+        </RecordProvider>
       );
     };
 

@@ -17,10 +17,11 @@ import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
   RecordProvider,
+  useCollection,
+  useParentRecordDataV2,
   useSchemaInitializerRender,
   useTableBlockContext,
   useTableSelectorContext,
-  useCollection,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useToken } from '../__builtins__';
@@ -39,6 +40,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
+  const parentRecordData = useParentRecordDataV2(false);
   const columns = schema
     .reduceProperties((buf, s) => {
       if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
@@ -65,7 +67,7 @@ const useTableColumns = (props: { showDel?: boolean; isSubTable?: boolean }) => 
           return (
             <SubFormProvider value={record}>
               <RecordIndexProvider index={record.__index || index}>
-                <RecordProvider record={record}>
+                <RecordProvider record={record} parent={parentRecordData}>
                   <ColumnFieldProvider schema={s} basePath={field.address.concat(record.__index || index)}>
                     <span role="button">
                       <RecursionField

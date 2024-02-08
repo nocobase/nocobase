@@ -17,7 +17,7 @@ import {
 } from '@nocobase/client';
 import { Badge, Tag } from 'antd';
 import lodash from 'lodash';
-import React, { useContext, useMemo, useRef, useState } from 'react';
+import React, { useContext, useRef, useState } from 'react';
 import {
   useAsyncDataSource,
   useCancelAction,
@@ -121,8 +121,8 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      __parent: collectionData.current,
                     },
+                    parentItem: collectionData.current,
                   },
                 },
                 delete: {
@@ -156,9 +156,9 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      __parent: collectionData.current,
                       targetCollection: name,
                     },
+                    parentItem: collectionData.current,
                   },
                 },
                 view: {
@@ -171,8 +171,8 @@ const OperationButton: any = React.memo((props: any) => {
                     item: {
                       ...property,
                       title,
-                      __parent: collectionData.current,
                     },
+                    parentItem: collectionData.current,
                   },
                 },
                 connectAssociation: {

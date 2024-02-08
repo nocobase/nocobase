@@ -6,12 +6,13 @@ import cloneDeep from 'lodash/cloneDeep';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
+import { useParentRecordDataV2 } from '../../data-source';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 
 const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
@@ -123,7 +124,8 @@ const useOverridingCollectionField = () => {
 
 export const OverridingCollectionField = (props) => {
   const record = useRecord();
-  return <OverridingFieldAction item={record} {...props} />;
+  const parentRecordData = useParentRecordDataV2(false);
+  return <OverridingFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
 
 const getIsOverriding = (currentFields, record) => {
@@ -133,7 +135,7 @@ const getIsOverriding = (currentFields, record) => {
   return flag;
 };
 export const OverridingFieldAction = (props) => {
-  const { scope, getContainer, item: record, children, currentCollection } = props;
+  const { scope, getContainer, item: record, parentItem: parentRecord, children, currentCollection } = props;
   const { target, through } = record;
   const { getInterface, getCurrentCollectionFields, getChildrenCollections, collections } = useCollectionManager();
   const [visible, setVisible] = useState(false);
@@ -161,7 +163,7 @@ export const OverridingFieldAction = (props) => {
     });
   }, []);
   return (
-    <RecordProvider record={{ ...record, collectionName: record.__parent.name }}>
+    <RecordProvider record={{ ...record, collectionName: parentRecord.name }} parent={parentRecord}>
       <ActionContextProvider value={{ visible, setVisible }}>
         <a
           //@ts-ignore

@@ -83,7 +83,8 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
   (props) => {
     const sortKeyArr: Array<CategorizeKey> = ['primaryAndForeignKey', 'relation', 'basic', 'systemInfo'];
     const field = useField<ArrayField>();
-    const { name } = useRecord();
+    const record = useRecord();
+    const { name } = record;
     const { t } = useTranslation();
     const compile = useCompile();
     const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields, getInheritedFields } =
@@ -170,11 +171,11 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
             title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
             dataIndex: s.name,
             key: s.name,
-            render: (v, record) => {
-              const index = findIndex(field.value, record);
+            render: (v, item) => {
+              const index = findIndex(field.value, item);
               return (
                 <RecordIndexProvider index={index}>
-                  <RecordProvider record={record}>
+                  <RecordProvider record={item} parent={record}>
                     <RecursionField schema={s} name={index} onlyRenderProperties />
                   </RecordProvider>
                 </RecordIndexProvider>
@@ -192,20 +193,20 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
       });
     };
 
-    const ExpandedRowRender = (record: CategorizeDataItem, index, indent, expanded) => {
+    const ExpandedRowRender = (item: CategorizeDataItem, index, indent, expanded) => {
       const columns = useTableColumns();
       if (!props.loading) {
-        if (inherits.includes(record.key)) {
+        if (inherits.includes(item.key)) {
           columns.pop();
           columns.push({
             title: <RecursionField name={'column4'} schema={overridingSchema as Schema} onlyRenderSelf />,
             dataIndex: 'column4',
             key: 'column4',
-            render: (v, record) => {
-              const index = findIndex(field.value, record);
+            render: (v, item) => {
+              const index = findIndex(field.value, item);
               return (
                 <RecordIndexProvider index={index}>
-                  <RecordProvider record={record}>
+                  <RecordProvider record={item} parent={record}>
                     <SchemaComponent
                       scope={{ currentCollection: name }}
                       schema={overridingSchema as Schema}
@@ -220,7 +221,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
         }
         const restProps = {
           rowSelection:
-            props.rowSelection && !inherits.includes(record.key)
+            props.rowSelection && !inherits.includes(item.key)
               ? {
                   type: 'checkbox',
                   selectedRowKeys,
@@ -238,7 +239,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer(
             components={components}
             showHeader={true}
             columns={columns}
-            dataSource={record.data}
+            dataSource={item.data}
             pagination={false}
           />
         );
