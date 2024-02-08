@@ -40,8 +40,8 @@ import { Router } from 'react-router-dom';
 import {
   APIClientProvider,
   ActionContextProvider,
+  AssociationOrCollectionProvider,
   CollectionFieldOptions,
-  CollectionProvider,
   DataSourceApplicationProvider,
   DatePickerProvider,
   Designable,
@@ -60,6 +60,7 @@ import {
   useCollection,
   useCollectionManager,
   useCompile,
+  useDataBlockPropsV2,
   useDesignable,
   useFilterBlock,
   useGlobalTheme,
@@ -973,6 +974,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const dm = useDataSourceManagerV2();
   const dataSourceKey = useDataSourceKey();
   const record = useRecordV2(false);
+  const { association } = useDataBlockPropsV2() || {};
 
   // 解决变量`当前对象`值在弹窗中丢失的问题
   const { formValue: subFormValue } = useSubFormValue();
@@ -997,7 +999,11 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                     <Router location={location} navigator={null}>
                       <BlockRequestContext.Provider value={ctx}>
                         <DataSourceApplicationProvider dataSourceManager={dm} dataSource={dataSourceKey}>
-                          <CollectionProvider allowNull name={collection.name}>
+                          <AssociationOrCollectionProvider
+                            allowNull
+                            collection={collection.name}
+                            association={association}
+                          >
                             <SchemaComponentOptions scope={options.scope} components={options.components}>
                               <FormLayout
                                 layout={'vertical'}
@@ -1020,7 +1026,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                                 </APIClientProvider>
                               </FormLayout>
                             </SchemaComponentOptions>
-                          </CollectionProvider>
+                          </AssociationOrCollectionProvider>
                         </DataSourceApplicationProvider>
                       </BlockRequestContext.Provider>
                     </Router>

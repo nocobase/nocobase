@@ -1,6 +1,7 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions } from '../../../collection-manager';
+import { useParentCollection } from '../../../data-source/collection/AssociationProvider';
 import { useRecordV2 } from '../../../data-source/record/RecordProvider';
 import { useBaseVariable } from './useBaseVariable';
 
@@ -45,15 +46,14 @@ export const useParentRecordVariable = (props: Props) => {
 export const useCurrentParentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
   const record = useRecordV2(false);
-
-  const collectionName = record?.parentRecord?.collectionName;
+  const { name: parentCollectionName } = useParentCollection() || {};
 
   const currentParentRecordSettings = useBaseVariable({
     collectionField: props.collectionField,
     uiSchema: props.schema,
     name: '$nParentRecord',
     title: t('Parent record'),
-    collectionName: collectionName,
+    collectionName: parentCollectionName,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
   });
@@ -62,6 +62,6 @@ export const useCurrentParentRecordVariable = (props: Props = {}) => {
     currentParentRecordSettings,
     currentParentRecordCtx: record?.parentRecord?.data,
     shouldDisplayCurrentParentRecord: !!record?.parentRecord?.data,
-    collectionName: collectionName,
+    collectionName: parentCollectionName,
   };
 };

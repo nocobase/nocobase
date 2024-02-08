@@ -1,12 +1,13 @@
 import { Schema } from '@formily/json-schema';
 import { useTranslation } from 'react-i18next';
-import { CollectionFieldOptions } from '../../../collection-manager';
+import { CollectionFieldOptions, useCollection } from '../../../collection-manager';
 import { useRecordV2 } from '../../../data-source/record/RecordProvider';
 import { useBaseVariable } from './useBaseVariable';
 
 interface Props {
   collectionField?: CollectionFieldOptions;
   schema?: any;
+  /** @deprecated */
   collectionName?: string;
   noDisabled?: boolean;
   /** 消费变量值的字段 */
@@ -45,13 +46,13 @@ export const useRecordVariable = (props: Props) => {
 export const useCurrentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
   const record = useRecordV2(false);
-
+  const { name: collectionName } = useCollection() || {};
   const currentRecordSettings = useBaseVariable({
     collectionField: props.collectionField,
     uiSchema: props.schema,
     name: '$nRecord',
     title: t('Current record'),
-    collectionName: props.collectionName,
+    collectionName,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
   });
@@ -64,6 +65,6 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     /** 用于判断是否需要显示配置项 */
     shouldDisplayCurrentRecord: !!record?.data,
     /** 当前记录对应的 collection name */
-    collectionName: record?.collectionName,
+    collectionName,
   };
 };
