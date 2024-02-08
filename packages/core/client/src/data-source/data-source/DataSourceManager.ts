@@ -80,21 +80,6 @@ export class DataSourceManagerV2 {
     this.multiDataSources.push([request, DataSource]);
   }
 
-  getCollections(options?: { dataSource?: string; predicate?: (collection: CollectionV2) => boolean }) {
-    return this.getDataSource(options?.dataSource).collectionManager.getCollections(options?.predicate);
-  }
-
-  addCollections(collections: CollectionOptionsV2[], dataSource?: string) {
-    return this.getDataSource(dataSource).addCollections(collections);
-  }
-
-  getCollection<Mixins = {}>(
-    path: SchemaKey | CollectionOptionsV2,
-    dataSource?: string,
-  ): (Mixins & CollectionV2) | undefined {
-    return this.getDataSource(dataSource).collectionManager.getCollection(path);
-  }
-
   getAllCollections(predicate?: (collection: CollectionV2) => boolean) {
     return this.getDataSources().reduce((acc, dataSource) => {
       acc.push({
