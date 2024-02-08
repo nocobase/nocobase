@@ -109,8 +109,9 @@ export const AssociationOrCollectionProvider = (props: {
   collection: string | CollectionOptionsV2;
   association: string;
   children: ReactNode;
+  allowNull?: boolean;
 }) => {
-  const { collection, association } = props;
+  const { collection, association, allowNull = false } = props;
   const AssociationOrCollection = useMemo(() => {
     if (association) {
       return {
@@ -125,7 +126,7 @@ export const AssociationOrCollectionProvider = (props: {
   }, [collection, association]);
 
   return (
-    <AssociationOrCollection.Component name={AssociationOrCollection.name as any}>
+    <AssociationOrCollection.Component name={AssociationOrCollection.name as any} allowNull={allowNull}>
       {props.children}
     </AssociationOrCollection.Component>
   );
