@@ -20,20 +20,20 @@ describe('CollectionManager', () => {
           },
         });
 
-        expect(app.dataSourceManager.getCollections().length).toBe(collectionLength);
+        expect(app.getCollectionManager().getCollections().length).toBe(collectionLength);
       });
 
       test('plugin should work', async () => {
         class MyPlugin extends Plugin {
           async load() {
-            this.app.dataSourceManager.addCollections(collections as any);
+            this.app.getCollectionManager().addCollections(collections as any);
           }
         }
         const app = new Application({
           plugins: [MyPlugin],
         });
         await app.load();
-        expect(app.dataSourceManager.getCollections().length).toBe(collectionLength);
+        expect(app.getCollectionManager().getCollections().length).toBe(collectionLength);
       });
 
       test('collection should be instantiated', () => {
@@ -43,7 +43,7 @@ describe('CollectionManager', () => {
           },
         });
 
-        const collectionInstances = app.dataSourceManager.getCollections();
+        const collectionInstances = app.getCollectionManager().getCollections();
         collectionInstances.forEach((collection) => {
           expect(collection).toBeInstanceOf(CollectionV2);
         });
@@ -54,23 +54,23 @@ describe('CollectionManager', () => {
       test('addCollections(collections)', async () => {
         class MyPlugin extends Plugin {
           async load() {
-            this.app.dataSourceManager.addCollections(collections as any);
+            this.app.getCollectionManager().addCollections(collections as any);
           }
         }
         const app = new Application({
           plugins: [MyPlugin],
         });
         await app.load();
-        expect(app.dataSourceManager.getCollections().length).toBe(collectionLength);
+        expect(app.getCollectionManager().getCollections().length).toBe(collectionLength);
       });
 
       test('addCollections(collections) should deduplicate when adding collections', () => {
         const app = new Application();
-        app.dataSourceManager.addCollections([collections[0]] as any);
-        app.dataSourceManager.addCollections([collections[1]] as any);
-        app.dataSourceManager.addCollections(collections as any);
+        app.getCollectionManager().addCollections([collections[0]] as any);
+        app.getCollectionManager().addCollections([collections[1]] as any);
+        app.getCollectionManager().addCollections(collections as any);
 
-        expect(app.dataSourceManager.getCollections().length).toBe(collectionLength);
+        expect(app.getCollectionManager().getCollections().length).toBe(collectionLength);
       });
 
       test('addCollections(collections, { dataSource })', () => {
@@ -85,17 +85,17 @@ describe('CollectionManager', () => {
           },
         });
 
-        app.dataSourceManager.addCollections(collections as any, 'a');
-        expect(app.dataSourceManager.getCollections({ dataSource: 'a' }).length).toBe(collectionLength);
+        app.getCollectionManager('a').addCollections(collections as any);
+        expect(app.getCollectionManager('a').getCollections().length).toBe(collectionLength);
       });
     });
     describe('setCollections()', () => {
       test('setCollections(collections) will reset the corresponding data source content', () => {
         const app = new Application();
-        app.dataSourceManager.getDataSource().collectionManager.setCollections(collections as any);
-        app.dataSourceManager.getDataSource().collectionManager.setCollections([collections[1] as any]);
+        app.getCollectionManager().setCollections(collections as any);
+        app.getCollectionManager().setCollections([collections[1] as any]);
 
-        const collectionInstances = app.dataSourceManager.getCollections();
+        const collectionInstances = app.getCollectionManager().getCollections();
         expect(collectionInstances.length).toBe(1);
         expect(collectionInstances[0].name).toBe(collections[1]['name']);
       });
@@ -112,10 +112,10 @@ describe('CollectionManager', () => {
           },
         });
 
-        app.dataSourceManager.addCollections(collections as any, 'a');
-        app.dataSourceManager.getDataSource('a').collectionManager.setCollections([collections[1]] as any);
+        app.getCollectionManager('a').addCollections(collections as any);
+        app.getCollectionManager('a').setCollections([collections[1]] as any);
 
-        const collectionInstances = app.dataSourceManager.getCollections({ dataSource: 'a' });
+        const collectionInstances = app.getCollectionManager('a').getCollections();
         expect(collectionInstances.length).toBe(1);
         expect(collectionInstances[0].name).toBe(collections[1]['name']);
       });
@@ -133,10 +133,10 @@ describe('CollectionManager', () => {
             ],
           },
         });
-        app.dataSourceManager.addCollections(collections as any);
-        app.dataSourceManager.addCollections(collections as any, 'a');
-        expect(app.dataSourceManager.getCollections().length).toBe(collectionLength);
-        expect(app.dataSourceManager.getCollections({ dataSource: 'a' }).length).toBe(collectionLength);
+        app.getCollectionManager().addCollections(collections as any);
+        app.getCollectionManager('a').addCollections(collections as any);
+        expect(app.getCollectionManager().getCollections().length).toBe(collectionLength);
+        expect(app.getCollectionManager('a').getCollections().length).toBe(collectionLength);
       });
 
       test('getCollections({ predicate })', () => {
@@ -146,15 +146,11 @@ describe('CollectionManager', () => {
           },
         });
 
-        expect(app.dataSourceManager.getCollections().length).toBe(collectionLength);
+        expect(app.getCollectionManager().getCollections().length).toBe(collectionLength);
         expect(
-          app.dataSourceManager.getCollections({
-            predicate: (collection) => collection.name === collections[0]['name'],
-          }).length,
+          app.getCollectionManager().getCollections((collection) => collection.name === collections[0]['name']).length,
         ).toBe(1);
-        expect(
-          app.dataSourceManager.getCollections({ predicate: (collection) => collection.hidden === false }).length,
-        ).toBe(2);
+        expect(app.getCollectionManager().getCollections((collection) => collection.hidden === false).length).toBe(2);
       });
     });
 
@@ -170,8 +166,8 @@ describe('CollectionManager', () => {
             ],
           },
         });
-        app.dataSourceManager.addCollections(collections as any);
-        app.dataSourceManager.addCollections([collections[0]] as any, 'a');
+        app.getCollectionManager().addCollections(collections as any);
+        app.getCollectionManager('a').addCollections([collections[0]] as any);
 
         const allCollections = app.dataSourceManager.getAllCollections();
 
@@ -191,7 +187,7 @@ describe('CollectionManager', () => {
             collections: collections as any,
           },
         });
-        const collection = app.dataSourceManager.getCollection('users');
+        const collection = app.getCollectionManager().getCollection('users');
         expect(collection instanceof CollectionV2).toBeTruthy();
         expect(collection.name).toBe('users');
       });
@@ -201,14 +197,14 @@ describe('CollectionManager', () => {
             collections: collections as any,
           },
         });
-        const collection = app.dataSourceManager.getCollection('users.roles');
+        const collection = app.getCollectionManager().getCollection('users.roles');
         expect(collection instanceof CollectionV2).toBeTruthy();
         expect(collection.name).toBe('roles');
       });
 
       test('getCollection(object) should return an instance without performing a lookup', () => {
         const app = new Application();
-        const collection = app.dataSourceManager.getCollection(collections[0] as any);
+        const collection = app.getCollectionManager().getCollection(collections[0] as any);
         expect(collection instanceof CollectionV2).toBeTruthy();
         expect(collection.name).toBe('users');
       });
@@ -224,8 +220,8 @@ describe('CollectionManager', () => {
             ],
           },
         });
-        app.dataSourceManager.addCollections(collections as any, 'a');
-        const collection = app.dataSourceManager.getCollection('users', 'a');
+        app.getCollectionManager('a').addCollections(collections as any);
+        const collection = app.getCollectionManager('a').getCollection('users');
         expect(collection instanceof CollectionV2).toBeTruthy();
         expect(collection.name).toBe('users');
       });
@@ -236,8 +232,8 @@ describe('CollectionManager', () => {
             collections: collections as any,
           },
         });
-        const collection1 = app.dataSourceManager.getCollection('not-exists');
-        const collection2 = app.dataSourceManager.getCollection('users.not-exists');
+        const collection1 = app.getCollectionManager().getCollection('not-exists');
+        const collection2 = app.getCollectionManager().getCollection('users.not-exists');
         expect(collection1).toBeUndefined();
         expect(collection2).toBeUndefined();
       });
@@ -248,7 +244,7 @@ describe('CollectionManager', () => {
             collections: collections as any,
           },
         });
-        const collection = app.dataSourceManager.getCollection(undefined);
+        const collection = app.getCollectionManager().getCollection(undefined);
         expect(collection).toBeUndefined();
       });
     });
@@ -260,7 +256,7 @@ describe('CollectionManager', () => {
             collections: collections as any,
           },
         });
-        const collectionName = app.dataSourceManager.getDataSource().collectionManager.getCollectionName('users');
+        const collectionName = app.getCollectionManager().getCollectionName('users');
         expect(collectionName).toBe('users');
       });
       test('getCollectionName("collectionName.associationFieldName")', () => {
@@ -269,7 +265,7 @@ describe('CollectionManager', () => {
             collections: collections as any,
           },
         });
-        const collectionName = app.dataSourceManager.getDataSource().collectionManager.getCollectionName('users.roles');
+        const collectionName = app.getCollectionManager().getCollectionName('users.roles');
         expect(collectionName).toBe('roles');
       });
       test('getCollectionName("collectionName", { dataSource })', () => {
@@ -283,8 +279,8 @@ describe('CollectionManager', () => {
             ],
           },
         });
-        app.dataSourceManager.addCollections(collections as any, 'a');
-        const collectionName = app.dataSourceManager.getDataSource('a').collectionManager.getCollectionName('users');
+        app.getCollectionManager('a').addCollections(collections as any);
+        const collectionName = app.getCollectionManager('a').getCollectionName('users');
         expect(collectionName).toBe('users');
       });
       test('getCollectionName("not-exists") should return undefined', () => {
@@ -293,10 +289,8 @@ describe('CollectionManager', () => {
             collections: collections as any,
           },
         });
-        const collection1 = app.dataSourceManager.getDataSource().collectionManager.getCollectionName('not-exists');
-        const collection2 = app.dataSourceManager
-          .getDataSource()
-          .collectionManager.getCollectionName('users.not-exists');
+        const collection1 = app.getCollectionManager().getCollectionName('not-exists');
+        const collection2 = app.getCollectionManager().getCollectionName('users.not-exists');
         expect(collection1).toBeUndefined();
         expect(collection2).toBeUndefined();
       });
@@ -309,7 +303,7 @@ describe('CollectionManager', () => {
             collections: collections as any,
           },
         });
-        const field = app.dataSourceManager.getDataSource().collectionManager.getCollectionField('users.nickname');
+        const field = app.getCollectionManager().getCollectionField('users.nickname');
         expect(field).toBeTruthy();
         expect(field.name).toBe('nickname');
       });
@@ -320,7 +314,7 @@ describe('CollectionManager', () => {
             collections: collections as any,
           },
         });
-        const field = app.dataSourceManager.getDataSource().collectionManager.getCollectionField('users.roles.name');
+        const field = app.getCollectionManager().getCollectionField('users.roles.name');
         expect(field).toBeTruthy();
         expect(field.name).toBe('name');
         expect(field.collectionName).toBe('roles');
@@ -338,7 +332,7 @@ describe('CollectionManager', () => {
             ],
           },
         });
-        const field = app.dataSourceManager.getDataSource('a').collectionManager.getCollectionField('users.nickname');
+        const field = app.getCollectionManager('a').getCollectionField('users.nickname');
         expect(field).toBeTruthy();
         expect(field.name).toBe('nickname');
       });
@@ -349,11 +343,9 @@ describe('CollectionManager', () => {
             collections: collections as any,
           },
         });
-        const field1 = app.dataSourceManager.getDataSource().collectionManager.getCollectionField('not-exists');
-        const field2 = app.dataSourceManager.getDataSource().collectionManager.getCollectionField('users.not-exists');
-        const field3 = app.dataSourceManager
-          .getDataSource()
-          .collectionManager.getCollectionField('not-exists.not-exists');
+        const field1 = app.getCollectionManager().getCollectionField('not-exists');
+        const field2 = app.getCollectionManager().getCollectionField('users.not-exists');
+        const field3 = app.getCollectionManager().getCollectionField('not-exists.not-exists');
         expect(field1).toBeUndefined();
         expect(field2).toBeUndefined();
         expect(field3).toBeUndefined();
@@ -365,7 +357,7 @@ describe('CollectionManager', () => {
             collections: collections as any,
           },
         });
-        const field = app.dataSourceManager.getDataSource().collectionManager.getCollectionField(undefined);
+        const field = app.getCollectionManager().getCollectionField(undefined);
         expect(field).toBeUndefined();
       });
 
@@ -376,7 +368,7 @@ describe('CollectionManager', () => {
           type: 'string',
         };
 
-        const field = app.dataSourceManager.getDataSource().collectionManager.getCollectionField(obj);
+        const field = app.getCollectionManager().getCollectionField(obj);
         expect(field).toEqual(obj);
       });
     });
@@ -390,7 +382,7 @@ describe('CollectionManager', () => {
             collections: collections as any,
           },
         });
-        const fields = app.dataSourceManager.getDataSource().collectionManager.getCollectionFields('users');
+        const fields = app.getCollectionManager().getCollectionFields('users');
         expect(fields).toEqual(users.fields);
       });
 
@@ -406,7 +398,7 @@ describe('CollectionManager', () => {
             ],
           },
         });
-        const fields = app.dataSourceManager.getDataSource('a').collectionManager.getCollectionFields('users');
+        const fields = app.getCollectionManager('a').getCollectionFields('users');
         expect(fields).toEqual(users.fields);
       });
 
@@ -416,7 +408,7 @@ describe('CollectionManager', () => {
             collections: collections as any,
           },
         });
-        const fields = app.dataSourceManager.getDataSource().collectionManager.getCollectionFields('users.roles');
+        const fields = app.getCollectionManager().getCollectionFields('users.roles');
         expect(fields).toEqual(roles.fields);
       });
 
@@ -426,7 +418,7 @@ describe('CollectionManager', () => {
             collections: collections as any,
           },
         });
-        const fields = app.dataSourceManager.getDataSource().collectionManager.getCollectionFields('not-exists');
+        const fields = app.getCollectionManager().getCollectionFields('not-exists');
         expect(Array.isArray(fields)).toBeTruthy();
         expect(fields.length).toBe(0);
       });
@@ -448,7 +440,7 @@ describe('CollectionManager', () => {
         },
       });
 
-      const user = app.dataSourceManager.getCollection<DemoCollectionMixin>('users');
+      const user = app.getCollectionManager().getCollection<DemoCollectionMixin>('users');
       expect(user.a()).toBe('test-users');
     });
 
@@ -461,7 +453,7 @@ describe('CollectionManager', () => {
 
       class MyPlugin extends Plugin {
         async load() {
-          this.app.dataSourceManager.addCollections(collections as any);
+          this.app.getCollectionManager().addCollections(collections as any);
           this.app.dataSourceManager.addCollectionMixins([DemoCollectionMixin]);
         }
       }
@@ -472,7 +464,7 @@ describe('CollectionManager', () => {
 
       await app.load();
 
-      const user = app.dataSourceManager.getCollection<DemoCollectionMixin>('users');
+      const user = app.getCollectionManager().getCollection<DemoCollectionMixin>('users');
       expect(user.b()).toBe('test-users');
     });
 
@@ -496,7 +488,7 @@ describe('CollectionManager', () => {
         },
       });
 
-      const user = app.dataSourceManager.getCollection<DemoCollectionMixin1 & DemoCollectionMixin2>('users');
+      const user = app.getCollectionManager().getCollection<DemoCollectionMixin1 & DemoCollectionMixin2>('users');
       expect(user.c()).toBe('test1-users');
       expect(user.d()).toBe('test2-users');
     });
@@ -514,12 +506,12 @@ describe('CollectionManager', () => {
         },
       });
 
-      const user = app.dataSourceManager.getCollection<DemoCollectionMixin>('users');
+      const user = app.getCollectionManager().getCollection<DemoCollectionMixin>('users');
       expect(user.e).toBeUndefined();
 
       app.dataSourceManager.addCollectionMixins([DemoCollectionMixin]);
 
-      const user2 = app.dataSourceManager.getCollection<DemoCollectionMixin>('users');
+      const user2 = app.getCollectionManager().getCollection<DemoCollectionMixin>('users');
       expect(user2.e()).toBe('test-users');
     });
   });
@@ -585,7 +577,7 @@ describe('CollectionManager', () => {
         },
       });
 
-      const user = app.dataSourceManager.getCollection<CustomCollection>('users');
+      const user = app.getCollectionManager().getCollection<CustomCollection>('users');
       expect(user.custom()).toBe('custom-users');
     });
 
@@ -607,12 +599,12 @@ describe('CollectionManager', () => {
         },
       });
 
-      const user = app.dataSourceManager.getCollection<CustomCollection>('users');
+      const user = app.getCollectionManager().getCollection<CustomCollection>('users');
       expect(user.custom).toBeUndefined();
 
       app.dataSourceManager.addCollectionTemplates([DemoTemplate]);
 
-      const user2 = app.dataSourceManager.getCollection<CustomCollection>('users');
+      const user2 = app.getCollectionManager().getCollection<CustomCollection>('users');
       expect(user2.custom()).toBe('custom-users');
     });
 
@@ -806,12 +798,12 @@ describe('CollectionManager', () => {
   //     const mockFn = vitest.fn();
   //     const mockFn2 = vitest.fn();
 
-  //     app.dataSourceManager.setMainDataSource(mainDataSourceFn);
-  //     app.dataSourceManager.addReloadCallback(mockFn);
+  //     app.getCollectionManager().setMainDataSource(mainDataSourceFn);
+  //     app.getCollectionManager().addReloadCallback(mockFn);
 
-  //     await app.dataSourceManager.reloadMain(mockFn2);
+  //     await app.getCollectionManager().reloadMain(mockFn2);
 
-  //     const collectionInstances = app.dataSourceManager.getCollections();
+  //     const collectionInstances = app.getCollectionManager().getCollections();
   //     expect(collectionInstances.length).toBe(1);
   //     expect(collectionInstances[0].name).toBe(collections[1]['name']);
   //     expect(mockFn).toBeCalledTimes(1);
@@ -838,15 +830,15 @@ describe('CollectionManager', () => {
   //     const mockFn = vitest.fn();
   //     const mockFn2 = vitest.fn();
 
-  //     app.dataSourceManager.setThirdDataSource(dataSourceFn);
-  //     app.dataSourceManager.addReloadCallback(mockFn, 'a');
+  //     app.getCollectionManager().setThirdDataSource(dataSourceFn);
+  //     app.getCollectionManager().addReloadCallback(mockFn, 'a');
 
-  //     await app.dataSourceManager.reloadThirdDataSource(mockFn2);
+  //     await app.getCollectionManager().reloadThirdDataSource(mockFn2);
 
-  //     expect(app.dataSourceManager.getCollections().length).toBe(collectionLength);
-  //     expect(app.dataSourceManager.getCollections('a').length).toBe(collectionLength);
-  //     expect(app.dataSourceManager.getDataSources().length).toBe(2);
-  //     expect(app.dataSourceManager.getDataSource('a').key).toBe('a');
+  //     expect(app.getCollectionManager().getCollections().length).toBe(collectionLength);
+  //     expect(app.getCollectionManager().getCollections('a').length).toBe(collectionLength);
+  //     expect(app.getCollectionManager().getDataSources().length).toBe(2);
+  //     expect(app.getCollectionManager().getDataSource('a').key).toBe('a');
 
   //     expect(mockFn).toBeCalledTimes(1);
   //     expect(mockFn2).toBeCalledTimes(1);
@@ -855,10 +847,10 @@ describe('CollectionManager', () => {
   //   test('reload all', async () => {
   //     const app = new Application();
 
-  //     app.dataSourceManager.setMainDataSource(() => {
+  //     app.getCollectionManager().setMainDataSource(() => {
   //       return Promise.resolve(collections as any);
   //     });
-  //     app.dataSourceManager.setThirdDataSource(() => {
+  //     app.getCollectionManager().setThirdDataSource(() => {
   //       return Promise.resolve([
   //         {
   //           key: 'a',
@@ -871,14 +863,14 @@ describe('CollectionManager', () => {
   //     const mockFn = vitest.fn();
   //     const mockFn2 = vitest.fn();
 
-  //     app.dataSourceManager.addReloadCallback(mockFn);
-  //     app.dataSourceManager.addReloadCallback(mockFn, 'a');
-  //     await app.dataSourceManager.reloadAll(mockFn2);
+  //     app.getCollectionManager().addReloadCallback(mockFn);
+  //     app.getCollectionManager().addReloadCallback(mockFn, 'a');
+  //     await app.getCollectionManager().reloadAll(mockFn2);
 
-  //     expect(app.dataSourceManager.getCollections().length).toBe(collectionLength);
-  //     expect(app.dataSourceManager.getCollections('a').length).toBe(collectionLength);
-  //     expect(app.dataSourceManager.getDataSources().length).toBe(2);
-  //     expect(app.dataSourceManager.getDataSource('a').key).toBe('a');
+  //     expect(app.getCollectionManager().getCollections().length).toBe(collectionLength);
+  //     expect(app.getCollectionManager().getCollections('a').length).toBe(collectionLength);
+  //     expect(app.getCollectionManager().getDataSources().length).toBe(2);
+  //     expect(app.getCollectionManager().getDataSource('a').key).toBe('a');
 
   //     expect(mockFn).toBeCalledTimes(2);
   //     expect(mockFn2).toBeCalledTimes(1);
@@ -890,9 +882,9 @@ describe('CollectionManager', () => {
   //     const mockFn = vitest.fn();
   //     const mockFn2 = vitest.fn();
 
-  //     app.dataSourceManager.addReloadCallback(mockFn);
-  //     app.dataSourceManager.addReloadCallback(mockFn, 'a');
-  //     await app.dataSourceManager.reloadAll(mockFn2);
+  //     app.getCollectionManager().addReloadCallback(mockFn);
+  //     app.getCollectionManager().addReloadCallback(mockFn, 'a');
+  //     await app.getCollectionManager().reloadAll(mockFn2);
 
   //     expect(mockFn).toBeCalledTimes(0);
   //     expect(mockFn2).toBeCalledTimes(1);
@@ -912,9 +904,9 @@ describe('CollectionManager', () => {
   //     const mainDataSourceFn = () => {
   //       return Promise.resolve([collections[0]] as any);
   //     };
-  //     app.dataSourceManager.setMainDataSource(mainDataSourceFn);
+  //     app.getCollectionManager().setMainDataSource(mainDataSourceFn);
 
-  //     const cm = app.dataSourceManager.inherit({
+  //     const cm = app.getCollectionManager().inherit({
   //       collections: [collections[1]] as any,
   //       reloadCallback: mockFn,
   //     });
@@ -925,7 +917,7 @@ describe('CollectionManager', () => {
   //     expect(cm.getCollections().length).toBe(1);
   //     expect(mockFn).toBeCalledTimes(1);
 
-  //     expect(app.dataSourceManager.getCollections().length).toBe(1);
+  //     expect(app.getCollectionManager().getCollections().length).toBe(1);
   //   });
   // });
 });

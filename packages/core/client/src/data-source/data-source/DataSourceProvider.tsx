@@ -22,18 +22,6 @@ export const DataSourceProviderV2: FC<DataSourceProviderPropsV2> = ({ children, 
   const [_, setRandom] = React.useState(0);
   const dataSourceValue = dataSourceManager.getDataSource(dataSource);
 
-  const reloadCallback = useCallback(() => {
-    refresh();
-    setRandom(Math.random());
-  }, [refresh, setRandom]);
-
-  useEffect(() => {
-    dataSourceValue.addReloadCallback(reloadCallback);
-    return () => {
-      dataSourceValue.removeReloadCallback(reloadCallback);
-    };
-  }, []);
-
   if (!dataSourceValue) {
     return <CollectionDeletedPlaceholder type="DataSource" name={dataSource} />;
   }
