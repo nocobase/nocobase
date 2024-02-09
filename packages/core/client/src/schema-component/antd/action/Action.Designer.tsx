@@ -2,7 +2,7 @@ import { ArrayTable } from '@formily/antd-v5';
 import { Field, onFieldValueChange } from '@formily/core';
 import { ISchema, connect, mapProps, useField, useFieldSchema, useForm, useFormEffects } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Alert, Tree as AntdTree, Flex, ModalProps, Space, Tag } from 'antd';
+import { Alert, Tree as AntdTree, Flex, ModalProps, Tag } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, useCompile, useDesignable } from '../..';
@@ -10,7 +10,8 @@ import { useApp } from '../../../application';
 import { usePlugin } from '../../../application/hooks';
 import { SchemaSettingOptions, SchemaSettings } from '../../../application/schema-settings';
 import { useSchemaToolbar } from '../../../application/schema-toolbar';
-import { CollectionOptions, useCollection, useCollectionManager } from '../../../collection-manager';
+import { useFormBlockContext } from '../../../block-provider';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { FlagProvider } from '../../../flag-provider';
 import { SchemaSettingOpenModeSchemaItems } from '../../../schema-items';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
@@ -18,18 +19,16 @@ import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDes
 import {
   SchemaSettingsActionModalItem,
   SchemaSettingsDivider,
+  SchemaSettingsEnableChildCollections,
   SchemaSettingsItemGroup,
   SchemaSettingsLinkageRules,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   SchemaSettingsSwitchItem,
-  SchemaSettingsEnableChildCollections,
 } from '../../../schema-settings/SchemaSettings';
 import { DefaultValueProvider } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
-import { useFormBlockContext } from '../../../block-provider';
-import { useRequest } from '../../../api-client';
 
 const Tree = connect(
   AntdTree,
@@ -710,7 +709,9 @@ export const actionSettingsItems: SchemaSettingOptions['items'] = [
       },
       {
         name: 'linkageRules',
-        Component: SchemaSettingsLinkageRules,
+        Component: (props) => {
+          return <SchemaSettingsLinkageRules {...props} />;
+        },
         useVisible() {
           const isAction = useLinkageAction();
           const { linkageAction } = useSchemaToolbar();
