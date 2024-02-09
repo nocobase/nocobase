@@ -1,14 +1,20 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { isURL, parse } from '@nocobase/utils/client';
 import { App, message } from 'antd';
-import _, { cloneDeep } from 'lodash';
+import _ from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useCallback, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
-import { AssociationFilter, useFormActiveFields, useFormBlockContext, useTableBlockContext } from '../..';
+import {
+  AssociationFilter,
+  useDataSourceHeaders,
+  useFormActiveFields,
+  useFormBlockContext,
+  useTableBlockContext,
+} from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useCollection, useCollectionManager } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
@@ -1004,10 +1010,12 @@ export const useAssociationFilterProps = () => {
   const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
   const field = useField();
   const collectionFieldName = collectionField.name;
+  const headers = useDataSourceHeaders(blockProps?.dataSource);
   const { data, params, run } = useRequest<{
     data: { [key: string]: any }[];
   }>(
     {
+      headers,
       resource: collectionField.target,
       action: 'list',
       params: {
