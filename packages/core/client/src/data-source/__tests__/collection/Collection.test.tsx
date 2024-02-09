@@ -8,7 +8,7 @@ function getCollection(collection: CollectionOptionsV2) {
     },
   });
 
-  return app.dataSourceManager.getCollection(collection.name);
+  return app.getCollectionManager().getCollection(collection.name);
 }
 
 describe('Collection', () => {
@@ -95,7 +95,7 @@ describe('Collection', () => {
       },
     });
 
-    const user = app.dataSourceManager.getCollection('user', 'a');
+    const user = app.getCollectionManager('a').getCollection('user');
     expect(user.dataSource).toBe('a');
   });
 
@@ -150,7 +150,7 @@ describe('Collection', () => {
         },
       });
 
-      const users = app.dataSourceManager.getCollection('users');
+      const users = app.getCollectionManager().getCollection('users');
       expect(users.getField('roles.name')).toMatchObject({ name: 'name', collectionName: 'roles' });
     });
 
@@ -161,7 +161,7 @@ describe('Collection', () => {
         },
       });
 
-      const users = app.dataSourceManager.getCollection('users');
+      const users = app.getCollectionManager().getCollection('users');
 
       expect(users.getField('no-exist')).toBeUndefined();
       expect(users.getField('no-exist.c')).toBeUndefined();
@@ -189,7 +189,7 @@ describe('Collection', () => {
       },
     });
 
-    const users = app.dataSourceManager.getCollection('users');
+    const users = app.getCollectionManager().getCollection('users');
     const usersOptions: any = collections.find((c) => c.name === 'users');
 
     expect(users.sourceKey).toBe(usersOptions.sourceKey);
