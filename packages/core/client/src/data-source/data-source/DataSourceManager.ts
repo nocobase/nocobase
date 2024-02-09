@@ -77,6 +77,7 @@ export class DataSourceManagerV2 {
   }
 
   async addDataSources(request: () => Promise<DataSourceOptionsV2[]>, DataSource: DataSourceFactory) {
+    if (this.multiDataSources.some(([req, DS]) => req === request && DS === DataSource)) return;
     this.multiDataSources.push([request, DataSource]);
   }
 

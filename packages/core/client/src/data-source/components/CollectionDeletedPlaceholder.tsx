@@ -48,13 +48,12 @@ export const CollectionDeletedPlaceholder: FC<CollectionDeletedPlaceholderProps>
   }, [type]);
 
   const messageValue = useMemo(() => {
-    if (message) {
-      return message;
-    }
     if (!name) {
       return `${t(type)} ${'name is required'}`;
     }
-
+    if (message) {
+      return `${t(type)} "${nameValue}" ${message}`;
+    }
     return t(`The {{type}} "{{name}}" may have been deleted. Please remove this {{blockType}}.`, {
       type: t(type).toLocaleLowerCase(),
       name: nameValue,

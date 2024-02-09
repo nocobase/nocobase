@@ -93,7 +93,7 @@ export const ConfigurationTable = () => {
   const dm = useDataSourceManagerV2();
   useEffect(() => {
     return () => {
-      dm.getDataSource(name).reload();
+      name && dm.getDataSource(name).reload();
     };
   }, []);
   const loadCategories = async () => {

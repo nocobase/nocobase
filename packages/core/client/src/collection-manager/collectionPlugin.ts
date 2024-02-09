@@ -51,7 +51,7 @@ import { DEFAULT_DATA_SOURCE_NAME, DEFAULT_DATA_SOURCE_TITLE } from '../data-sou
 import { DataSourceV2 } from '../data-source/data-source/DataSource';
 
 class MainDataSource extends DataSourceV2 {
-  async getRemoteCollections() {
+  async getDataSource() {
     const service = await this.app.apiClient.request({
       resource: 'collections',
       action: 'list',
@@ -64,7 +64,10 @@ class MainDataSource extends DataSourceV2 {
         sort: ['sort'],
       },
     });
-    return service?.data?.data || [];
+    const collections = service?.data?.data || [];
+    return {
+      collections,
+    };
   }
 }
 

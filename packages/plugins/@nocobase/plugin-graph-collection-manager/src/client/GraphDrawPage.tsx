@@ -433,10 +433,10 @@ export const GraphDrawPage = React.memo(() => {
 
   const dataSource = useDataSourceV2();
   useEffect(() => {
-    dataSource.setReloadCallback(reloadCallback);
+    dataSource.addReloadCallback(reloadCallback);
 
     return () => {
-      dataSource.setReloadCallback(null);
+      dataSource.removeReloadCallback(reloadCallback);
     };
   }, []);
 
