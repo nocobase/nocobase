@@ -103,25 +103,12 @@ const RuleTypes = {
     title: `{{t("Autoincrement", { ns: "${NAMESPACE}" })}}`,
     optionRenders: {
       digits: function Digits({ value }) {
-        const { t } = useTranslation();
-        return <span>{t('{{value}} Digits', { ns: NAMESPACE, value })}</span>;
+        return <code>{value}</code>;
       },
       start: function Start({ value }) {
-        const { t } = useTranslation();
-        return <span>{t('Starts from {{value}}', { ns: NAMESPACE, value })}</span>;
+        return <code>{value}</code>;
       },
-      cycle: function Cycle({ value }) {
-        return (
-          <SchemaComponent
-            schema={{
-              type: 'string',
-              name: 'cycle',
-              'x-component': 'Cron',
-              'x-read-pretty': true,
-            }}
-          />
-        );
-      },
+      cycle: Cron.ReadPretty,
     },
     fieldset: {
       digits: {
@@ -275,6 +262,7 @@ export const sequence: IField = {
   group: 'advanced',
   order: 3,
   title: `{{t("Sequence", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.", { ns: "${NAMESPACE}" })}}`,
   sortable: true,
   default: {
     type: 'sequence',
