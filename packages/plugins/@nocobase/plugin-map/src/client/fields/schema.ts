@@ -26,33 +26,6 @@ if (Array.isArray(interfacesProperties.type.enum)) {
   );
 }
 
-export const commonSchema = {
-  properties: {
-    ...defaultProps,
-    'uiSchema.x-component-props.mapType': {
-      title: generateNTemplate('Map type'),
-      type: 'string',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Select',
-      'x-component-props': {
-        showSearch: false,
-        allowClear: false,
-      },
-      'x-disabled': '{{ isOverride || !createOnly }}',
-      default: 'amap',
-      enum: MapTypes,
-    },
-  },
-  schemaInitialize(schema: ISchema, { block }) {
-    if (block === 'Form') {
-      Object.assign(schema, {
-        'x-designer': 'Map.Designer',
-      });
-    }
-  },
-};
-
 export class CommonSchema extends CollectionFieldInterface {
   properties = {
     ...defaultProps,
