@@ -46,7 +46,7 @@ export class CheckboxFieldInterface extends CollectionFieldInterface {
       'x-component': 'Checkbox',
     },
   };
-  availableTypes = ['boolean'];
+  availableTypes = ['boolean', 'integer', 'bigInt'];
   hasDefaultValue = true;
   properties = {
     ...defaultProps,

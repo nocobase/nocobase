@@ -64,7 +64,6 @@ export class TableoidFieldInterface extends CollectionFieldInterface {
       'x-read-pretty': true,
     },
   };
-  availableTypes = ['string'];
   properties = {
     'uiSchema.title': {
       type: 'string',
