@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/react';
-import { defaultProps, operators } from './properties';
+import { defaultProps, operators } from '../';
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 
 export class CheckboxFieldInterface extends CollectionFieldInterface {
