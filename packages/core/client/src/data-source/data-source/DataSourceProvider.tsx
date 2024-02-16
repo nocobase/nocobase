@@ -1,9 +1,9 @@
-import React, { FC, ReactNode, createContext, useCallback, useContext, useEffect, useMemo } from 'react';
+import React, { FC, ReactNode, createContext, useContext } from 'react';
 import type { DataSourceV2 } from './DataSource';
 import { useDataSourceManagerV2 } from './DataSourceManagerProvider';
 import { CollectionDeletedPlaceholder } from '../components/CollectionDeletedPlaceholder';
 import { CardItem, useSchemaComponentContext } from '../../schema-component';
-import { Button, Card, Result } from 'antd';
+import { Button, Result } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
@@ -25,22 +25,6 @@ export const DataSourceProviderV2: FC<DataSourceProviderPropsV2> = ({ children, 
   if (!dataSourceValue) {
     return <CollectionDeletedPlaceholder type="DataSource" name={dataSource} />;
   }
-  // return <CardItem>
-  //   <Result
-  //     icon={<LoadingOutlined />}
-  //     title={`${dataSource} ${t('data source')} ${t('loading')}...`}
-  //     extra={
-  //       <Button
-  //         type="primary"
-  //         onClick={() =>
-  //           dataSourceValue.reload().then()
-  //         }
-  //       >
-  //         {t('Refresh')}
-  //       </Button>
-  //     }
-  //   />
-  // </CardItem>
 
   if (dataSourceValue.status === 'loading-failed') {
     return (

@@ -1,6 +1,6 @@
 import type { SchemaKey } from '@formily/json-schema';
 import type { DataSourceV2 } from '../data-source';
-import type { CollectionFieldOptionsV2, CollectionOptionsV2 } from './Collection';
+import type { CollectionFieldOptionsV2, CollectionOptionsV2, GetCollectionFieldPredicateV2 } from './Collection';
 
 import { CollectionV2 } from './Collection';
 import { applyMixins, collectionTransform } from './utils';
@@ -63,7 +63,7 @@ export class CollectionManagerV2 {
 
   reAddCollections(collections: CollectionV2[] = this.collectionInstancesArr) {
     const collectionOptions = collections.map((collection) => collection.getOptions());
-    this.setCollections(collectionOptions);
+    this.addCollections(collectionOptions);
   }
 
   /**
@@ -127,8 +127,8 @@ export class CollectionManagerV2 {
     return collection.getField(fieldNames.join('.'));
   }
 
-  getCollectionFields(collectionName: string) {
-    return this.getCollection(collectionName)?.getFields() || [];
+  getCollectionFields(collectionName: string, predicate?: GetCollectionFieldPredicateV2) {
+    return this.getCollection(collectionName)?.getFields(predicate) || [];
   }
 
   clone(collections: CollectionOptionsV2[] = []) {

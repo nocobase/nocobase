@@ -12,10 +12,24 @@ import {
 } from '@nocobase/client';
 import collections from '../collections.json';
 
-function renderApp() {
+function renderApp(fieldName: string) {
+  const noUiSchema = {
+    key: 'no-ui-schema',
+    name: 'no-ui-schema',
+    type: 'string',
+    interface: 'select',
+    description: null,
+    collectionName: 't_vwpds9fs4xs',
+    parentKey: null,
+    reverseKey: null,
+  };
+
+  const usersCollection: any = collections[0];
+  usersCollection.fields.push(noUiSchema);
+
   const app = new Application({
     dataSourceManager: {
-      collections: collections as any,
+      collections: [usersCollection],
     },
   });
 
@@ -23,7 +37,7 @@ function renderApp() {
     name: 'root',
     type: 'object',
     properties: {
-      nickname: {
+      [fieldName]: {
         'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
       },
@@ -44,9 +58,14 @@ function renderApp() {
 }
 
 describe('CollectionField', () => {
-  it('works', async () => {
-    renderApp();
+  it('works', () => {
+    renderApp('nickname');
     expect(screen.getByText('Nickname')).toBeInTheDocument();
     expect(screen.getByRole('textbox')).toHaveClass('ant-input');
+  });
+
+  it('no schema', () => {
+    renderApp('no-ui-schema');
+    expect(document.querySelector('.ant-formily-item-control-content-component')).toHaveTextContent('');
   });
 });

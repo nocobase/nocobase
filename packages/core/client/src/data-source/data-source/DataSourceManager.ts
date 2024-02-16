@@ -4,7 +4,6 @@ import type { Application } from '../../application/Application';
 import { type DataSourceOptionsV2, DataSourceV2, LocalDataSource, DataSourceFactory } from './DataSource';
 import { type CollectionTemplateFactory, CollectionTemplateManagerV2 } from '../collection-template';
 import { type CollectionFieldInterfaceFactory, CollectionFieldInterfaceManager } from '../collection-field-interface';
-import type { SchemaKey } from '@formily/json-schema';
 
 export const DEFAULT_DATA_SOURCE_NAME = 'main';
 export const DEFAULT_DATA_SOURCE_TITLE = '{{t("main")}}';

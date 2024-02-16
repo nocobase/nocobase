@@ -57,8 +57,8 @@ export abstract class DataSourceV2 {
     return this.options;
   }
 
-  setOptions(options: DataSourceOptionsV2) {
-    this.options = options;
+  setOptions(options: Partial<DataSourceOptionsV2>) {
+    Object.assign(this.options, options);
   }
 
   getOption<Key extends keyof DataSourceOptionsV2>(key: Key): DataSourceOptionsV2[Key] {

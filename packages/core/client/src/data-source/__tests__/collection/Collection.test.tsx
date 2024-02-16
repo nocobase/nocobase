@@ -192,6 +192,8 @@ describe('Collection', () => {
     const users = app.getCollectionManager().getCollection('users');
     const usersOptions: any = collections.find((c) => c.name === 'users');
 
+    expect(users.app).toBe(app);
+    expect(users.template).toBe(usersOptions.template);
     expect(users.sourceKey).toBe(usersOptions.sourceKey);
     expect(users.name).toBe(usersOptions.name);
     expect(users.key).toBe(usersOptions.key);

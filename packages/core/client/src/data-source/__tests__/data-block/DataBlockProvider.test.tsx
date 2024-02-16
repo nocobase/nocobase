@@ -8,136 +8,134 @@ import AssociationTableListAndSourceIdDemo from './data-block-demos/association-
 import AssociationTableListAndParentRecordDemo from './data-block-demos/association-table-list-and-parent-record';
 
 describe('CollectionDataSourceProvider', () => {
-  describe('demos', () => {
-    describe('collection', () => {
-      test('Table list', async () => {
-        const { getByText, getByRole } = render(<CollectionTableListDemo />);
+  describe('collection', () => {
+    test('Table list', async () => {
+      const { getByText, getByRole } = render(<CollectionTableListDemo />);
 
-        // app loading
-        await waitFor(() => {
-          expect(getByRole('table')).toBeInTheDocument();
-        });
-
-        expect(getByText('UserName')).toBeInTheDocument();
-        expect(getByText('NickName')).toBeInTheDocument();
-        expect(getByText('Email')).toBeInTheDocument();
-
-        // loading table data
-        await waitFor(() => {
-          const columns = screen.getByRole('table').querySelectorAll('tbody tr');
-          expect(columns.length).toBe(3);
-        });
-
-        expect(getByText('jack')).toBeInTheDocument();
-        expect(getByText('Jack Ma')).toBeInTheDocument();
-        expect(getByText('test@gmail.com')).toBeInTheDocument();
+      // app loading
+      await waitFor(() => {
+        expect(getByRole('table')).toBeInTheDocument();
       });
 
-      test('Form get & update', async () => {
-        render(<CollectionFormGetAndUpdateDemo />);
+      expect(getByText('UserName')).toBeInTheDocument();
+      expect(getByText('NickName')).toBeInTheDocument();
+      expect(getByText('Email')).toBeInTheDocument();
 
-        await waitFor(() => {
-          expect(screen.getByText('Username')).toBeInTheDocument();
-          expect(screen.getByText('Age')).toBeInTheDocument();
-        });
-
-        // load form data success
-        await waitFor(() => {
-          expect(document.getElementById('username')).toHaveValue('Bamboo');
-          expect(document.getElementById('age')).toHaveValue('18');
-        });
-
-        fireEvent.click(document.querySelector('button'));
-
-        await waitFor(() => {
-          expect(screen.getByText('Save successfully!')).toBeInTheDocument();
-        });
+      // loading table data
+      await waitFor(() => {
+        const columns = screen.getByRole('table').querySelectorAll('tbody tr');
+        expect(columns.length).toBe(3);
       });
 
-      test('Form create', async () => {
-        render(<CollectionFormCreateDemo />);
+      expect(getByText('jack')).toBeInTheDocument();
+      expect(getByText('Jack Ma')).toBeInTheDocument();
+      expect(getByText('test@gmail.com')).toBeInTheDocument();
+    });
 
-        await waitFor(() => {
-          expect(screen.getByText('Username')).toBeInTheDocument();
-          expect(screen.getByText('Age')).toBeInTheDocument();
-        });
+    test('Form get & update', async () => {
+      render(<CollectionFormGetAndUpdateDemo />);
 
-        fireEvent.change(document.getElementById('username'), { target: { value: 'Bamboo' } });
-        fireEvent.change(document.getElementById('age'), { target: { value: '18' } });
-
-        fireEvent.click(document.querySelector('button'));
-
-        await waitFor(() => {
-          expect(screen.getByText('Save successfully!')).toBeInTheDocument();
-        });
+      await waitFor(() => {
+        expect(screen.getByText('Username')).toBeInTheDocument();
+        expect(screen.getByText('Age')).toBeInTheDocument();
       });
 
-      test('Form record & update', async () => {
-        render(<CollectionFormRecordAndUpdateDemo />);
+      // load form data success
+      await waitFor(() => {
+        expect(document.getElementById('username')).toHaveValue('Bamboo');
+        expect(document.getElementById('age')).toHaveValue('18');
+      });
 
-        await waitFor(() => {
-          expect(screen.getByText('Username')).toBeInTheDocument();
-          expect(screen.getByText('Age')).toBeInTheDocument();
-        });
+      fireEvent.click(document.querySelector('button'));
 
-        await waitFor(() => {
-          expect(document.getElementById('username')).toHaveValue('Bamboo');
-          expect(document.getElementById('age')).toHaveValue('18');
-        });
-
-        fireEvent.click(document.querySelector('button'));
-
-        await waitFor(() => {
-          expect(screen.getByText('Save successfully!')).toBeInTheDocument();
-        });
+      await waitFor(() => {
+        expect(screen.getByText('Save successfully!')).toBeInTheDocument();
       });
     });
 
-    describe('association', () => {
-      test('Table list & sourceId', async () => {
-        const { getByText, getByRole } = render(<AssociationTableListAndSourceIdDemo />);
+    test('Form create', async () => {
+      render(<CollectionFormCreateDemo />);
 
-        // app loading
-        await waitFor(() => {
-          expect(getByRole('table')).toBeInTheDocument();
-        });
-
-        expect(getByText('Name')).toBeInTheDocument();
-        expect(getByText('Title')).toBeInTheDocument();
-        expect(getByText('Description')).toBeInTheDocument();
-
-        // loading table data
-        await waitFor(() => {
-          const columns = screen.getByRole('table').querySelectorAll('tbody tr');
-          expect(columns.length).toBe(2);
-        });
-
-        expect(getByText('admin')).toBeInTheDocument();
-        expect(getByText('Admin')).toBeInTheDocument();
-        expect(getByText('Admin description')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Username')).toBeInTheDocument();
+        expect(screen.getByText('Age')).toBeInTheDocument();
       });
-      test('Table list & parentRecord', async () => {
-        const { getByText, getByRole } = render(<AssociationTableListAndParentRecordDemo />);
 
-        // app loading
-        await waitFor(() => {
-          expect(getByRole('table')).toBeInTheDocument();
-        });
+      fireEvent.change(document.getElementById('username'), { target: { value: 'Bamboo' } });
+      fireEvent.change(document.getElementById('age'), { target: { value: '18' } });
 
-        expect(getByText('Name')).toBeInTheDocument();
-        expect(getByText('Title')).toBeInTheDocument();
-        expect(getByText('Description')).toBeInTheDocument();
+      fireEvent.click(document.querySelector('button'));
 
-        // loading table data
-        await waitFor(() => {
-          const columns = screen.getByRole('table').querySelectorAll('tbody tr');
-          expect(columns.length).toBe(2);
-        });
-
-        expect(getByText('admin')).toBeInTheDocument();
-        expect(getByText('Admin')).toBeInTheDocument();
-        expect(getByText('Admin description')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Save successfully!')).toBeInTheDocument();
       });
+    });
+
+    test('Form record & update', async () => {
+      render(<CollectionFormRecordAndUpdateDemo />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Username')).toBeInTheDocument();
+        expect(screen.getByText('Age')).toBeInTheDocument();
+      });
+
+      await waitFor(() => {
+        expect(document.getElementById('username')).toHaveValue('Bamboo');
+        expect(document.getElementById('age')).toHaveValue('18');
+      });
+
+      fireEvent.click(document.querySelector('button'));
+
+      await waitFor(() => {
+        expect(screen.getByText('Save successfully!')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('association', () => {
+    test('Table list & sourceId', async () => {
+      const { getByText, getByRole } = render(<AssociationTableListAndSourceIdDemo />);
+
+      // app loading
+      await waitFor(() => {
+        expect(getByRole('table')).toBeInTheDocument();
+      });
+
+      expect(getByText('Name')).toBeInTheDocument();
+      expect(getByText('Title')).toBeInTheDocument();
+      expect(getByText('Description')).toBeInTheDocument();
+
+      // loading table data
+      await waitFor(() => {
+        const columns = screen.getByRole('table').querySelectorAll('tbody tr');
+        expect(columns.length).toBe(2);
+      });
+
+      expect(getByText('admin')).toBeInTheDocument();
+      expect(getByText('Admin')).toBeInTheDocument();
+      expect(getByText('Admin description')).toBeInTheDocument();
+    });
+    test('Table list & parentRecord', async () => {
+      const { getByText, getByRole } = render(<AssociationTableListAndParentRecordDemo />);
+
+      // app loading
+      await waitFor(() => {
+        expect(getByRole('table')).toBeInTheDocument();
+      });
+
+      expect(getByText('Name')).toBeInTheDocument();
+      expect(getByText('Title')).toBeInTheDocument();
+      expect(getByText('Description')).toBeInTheDocument();
+
+      // loading table data
+      await waitFor(() => {
+        const columns = screen.getByRole('table').querySelectorAll('tbody tr');
+        expect(columns.length).toBe(2);
+      });
+
+      expect(getByText('admin')).toBeInTheDocument();
+      expect(getByText('Admin')).toBeInTheDocument();
+      expect(getByText('Admin description')).toBeInTheDocument();
     });
   });
 });
