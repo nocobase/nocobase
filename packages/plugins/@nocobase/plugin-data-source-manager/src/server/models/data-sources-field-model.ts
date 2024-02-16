@@ -4,6 +4,21 @@ import { Application } from '@nocobase/server';
 type LoadOptions = {
   app: Application;
 };
+
+function mergeOptions(fieldOptions, modelOptions) {
+  const newOptions = {
+    ...fieldOptions,
+    ...modelOptions,
+  };
+
+  for (const key of Object.keys(modelOptions)) {
+    if (modelOptions[key] === null && fieldOptions[key]) {
+      newOptions[key] = fieldOptions[key];
+    }
+  }
+  return newOptions;
+}
+
 export class DataSourcesFieldModel extends MagicAttributeModel {
   load(loadOptions: LoadOptions) {
     const { app } = loadOptions;
@@ -14,10 +29,7 @@ export class DataSourcesFieldModel extends MagicAttributeModel {
     const collection = dataSource.collectionManager.getCollection(collectionName);
     const oldField = collection.getField(name);
 
-    const newOptions = {
-      ...(oldField?.options || {}),
-      ...options,
-    };
+    const newOptions = mergeOptions(oldField ? oldField.options : {}, options);
 
     collection.setField(name, newOptions);
 
