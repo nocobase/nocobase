@@ -346,7 +346,7 @@ export const Table: any = observer(
     }, [field, onRowDragEnd, dragSort]);
 
     /**
-     * 为没有设置 key 属性的 record 生成一个唯一的 key
+     * 为没有设置 key 属性的表格行生成一个唯一的 key
      * 1. rowKey 的默认值是 “key”，所以先判断有没有 record.key；
      * 2. 如果没有就生成一个唯一的 key，并以 record 的值作为索引；
      * 3. 这样下次就能取到对应的 key 的值；

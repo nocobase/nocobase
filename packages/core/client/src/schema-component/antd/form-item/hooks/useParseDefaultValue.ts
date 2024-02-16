@@ -25,7 +25,8 @@ const useParseDefaultValue = () => {
   const variables = useVariables();
   const localVariables = useLocalVariables();
   const record = useRecord();
-  const { isInAssignFieldValues, isInSetDefaultValueDialog, isInFormDataTemplate, isInSubTable } = useFlag() || {};
+  const { isInAssignFieldValues, isInSetDefaultValueDialog, isInFormDataTemplate, isInSubTable, isInSubForm } =
+    useFlag() || {};
   const { getField } = useCollection();
   const { isSpecialCase, setDefaultValue } = useSpecialCase();
   const index = useRecordIndex();
@@ -135,6 +136,9 @@ const useParseDefaultValue = () => {
       );
 
       return dispose;
+    } else if (field.value == null && (isInSubTable || isInSubForm)) {
+      // 解决子表格（或子表单）中新增一行数据时，默认值不生效的问题
+      field.setValue(fieldSchema.default);
     }
   }, [fieldSchema.default]);
 };
