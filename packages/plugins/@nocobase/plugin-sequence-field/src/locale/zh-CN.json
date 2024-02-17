@@ -1,5 +1,6 @@
 {
   "Sequence": "自动编码",
+  "Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.": "根据配置的规则自动生成编码，支持日期、数字、文本的组合。",
   "Sequence rules": "编号规则",
   "Add rule": "添加规则",
   "Inputable": "可输入",
