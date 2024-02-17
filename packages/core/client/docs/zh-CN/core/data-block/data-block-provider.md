@@ -36,10 +36,10 @@ Table 中的字段信息及列表数据，都是存储在数据库中的。
 为了方便对数据区块的数据进行管理，我们提供了 `DataBlockProvider` 组件，其内部封装了：
 
 - `DataBlockProvider`：封装了下面的所有组件，并提供了区块属性
-  - [CollectionProvider](/core/collection/collection-provider) / [AssociationProvider](/core/collection/association-provider): 根据 `DataBlockProvider` 提供的上下文信息，查询对应数据表数据及关系字段信息并传递
+  - [CollectionProvider](/core/data-source/collection-provider) / [AssociationProvider](/core/data-source/association-provider): 根据 `DataBlockProvider` 提供的上下文信息，查询对应数据表数据及关系字段信息并传递
   - [BlockResourceProvider](/core/data-block/data-block-resource-provider): 根据 `DataBlockProvider` 提供的上下文信息，构建区块 [Resource](https://docs.nocobase.com/api/sdk#resource-action) API，用于区块数据的增删改查
   - [BlockRequestProvider](/core/data-block/data-block-request-provider): 根据 `DataBlockProvider` 提供的上下文信息，自动调用 `BlockResourceProvider` 提供的 `resource.get()` 或 `resource.list()` 发起请求，得到区块数据，并传递
-    - [RecordProvider](/core/collection/record-provider): 对于 `resource.get()` 场景，会自动嵌套 `RecordProvider` 并将 `resource.get()` 请求结果传递下去，`resource.list()` 场景则需要自行使用 `RecordProvider` 提供数据记录
+    - [RecordProvider](/core/data-source/record-provider): 对于 `resource.get()` 场景，会自动嵌套 `RecordProvider` 并将 `resource.get()` 请求结果传递下去，`resource.list()` 场景则需要自行使用 `RecordProvider` 提供数据记录
 
 ```tsx | pure
 const DataBlockProvider = (props) => {

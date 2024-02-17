@@ -78,7 +78,7 @@ const formSettings = new SchemaSettings({
 const app = new Application({
   providers: [Root],
   components: { Form, Input, FormItem },
-  collectionManager: {
+  dataSourceManager: {
     collections: [collection],
     collectionMixins: [InheritanceCollectionMixin],
   },

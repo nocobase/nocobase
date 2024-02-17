@@ -105,48 +105,72 @@ export default defineConfig({
           ],
         },
         {
-          title: 'Collection',
+          title: 'Data Source',
           type: 'group',
           children: [
             {
+              title: 'DataSourceManager',
+              link: '/core/data-source/data-source-manager',
+            },
+            {
+              title: 'DataSourceManagerProvider',
+              link: '/core/data-source/data-source-manager-provider',
+            },
+            {
+              title: 'DataSource',
+              link: '/core/data-source/data-source',
+            },
+            {
+              title: 'DataSourceProvider',
+              link: '/core/data-source/data-source-provider',
+            },
+            {
               title: 'CollectionManager',
-              link: '/core/collection/collection-manager',
+              link: '/core/data-source/collection-manager',
             },
             {
               title: 'CollectionManagerProvider',
-              link: '/core/collection/collection-manager-provider',
+              link: '/core/data-source/collection-manager-provider',
+            },
+            {
+              title: 'CollectionTemplateManager',
+              link: '/core/data-source/collection-template-manager',
             },
             {
               title: 'CollectionTemplate',
-              link: '/core/collection/collection-template',
+              link: '/core/data-source/collection-template',
             },
             {
               title: 'Collection',
-              link: '/core/collection/collection',
+              link: '/core/data-source/collection',
             },
             {
               title: 'CollectionProvider',
-              link: '/core/collection/collection-provider',
+              link: '/core/data-source/collection-provider',
+            },
+            {
+              title: 'CollectionMixins',
+              link: '/core/data-source/collection-mixins',
             },
             {
               title: 'CollectionField',
-              link: '/core/collection/collection-field',
+              link: '/core/data-source/collection-field',
+            },
+            {
+              title: 'CollectionFieldInterfaceManager',
+              link: '/core/data-source/collection-field-interface-manager',
             },
             {
               title: 'CollectionFieldInterface',
-              link: '/core/collection/collection-field-interface',
+              link: '/core/data-source/collection-field-interface',
             },
             {
               title: 'AssociationProvider',
-              link: '/core/collection/association-provider',
+              link: '/core/data-source/association-provider',
             },
             {
-              title: 'Record',
-              link: '/core/collection/record',
-            },
-            {
-              title: 'RecordProvider',
-              link: '/core/collection/record-provider',
+              title: 'ExtendCollectionsProvider',
+              link: '/core/data-source/extend-collections-provider',
             },
           ]
         },
@@ -154,6 +178,14 @@ export default defineConfig({
           title: 'DataBlock',
           type: 'group',
           children: [
+            {
+              title: 'Record',
+              link: '/core/data-block/record',
+            },
+            {
+              title: 'RecordProvider',
+              link: '/core/data-block/record-provider',
+            },
             {
               title: 'DataBlockProvider',
               link: '/core/data-block/data-block-provider',

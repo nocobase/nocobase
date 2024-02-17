@@ -1,6 +1,6 @@
 # CollectionProvider
 
-用于提供 [Collection](/core/collection/collction) 实例。
+用于提供 [Collection](/core/data-source/collction) 实例。
 
 ## 组件
 
@@ -18,9 +18,9 @@ interface CollectionProviderProps {
 
 - 详解
 
-组件会根据 `name` 去 [CollectionManager](/core/collection/collection-manager) 中查询数据表信息，如果查询不到，则会不进行渲染。
+组件会根据 `name` 去 [CollectionManager](/core/data-source/collection-manager) 中查询数据表信息，如果查询不到，则会不进行渲染。
 
-`dataSource` 用于指定数据表所在的[命名空间](/core/collection/collection-manager#datasource)，如果不指定，则默认命名空间。
+`dataSource` 用于指定数据表所在的[命名空间](/core/data-source/collection-manager#datasource)，如果不指定，则默认命名空间。
 
 - 示例
 

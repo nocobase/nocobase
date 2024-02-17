@@ -80,7 +80,7 @@ export abstract class DataSourceV2 {
 
   async reload() {
     const dataSource = await this.getDataSource();
-    Object.assign(this.options, dataSource);
+    this.setOptions(dataSource);
     this.collectionManager.setCollections(dataSource.collections || []);
     this.reloadCallbacks.forEach((callback) => callback(dataSource.collections));
     return this.options;

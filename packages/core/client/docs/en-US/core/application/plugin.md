@@ -35,7 +35,7 @@ class Plugin<T = any> {
   }
 
   get collectionManager() {
-    return this.app.collectionManager;
+    return this.app.dataSourceManager;
   }
 
   async afterAdd() {}

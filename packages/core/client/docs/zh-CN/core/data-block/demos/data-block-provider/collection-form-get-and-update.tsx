@@ -10,7 +10,7 @@ import {
 import { ISchema } from '@formily/json-schema';
 import useUrlState from '@ahooksjs/use-url-state';
 
-import { createApp } from '../../../collection/demos/createApp';
+import { createApp } from '../../../data-source/demos/createApp';
 
 interface DemoFormFieldType {
   id: number;

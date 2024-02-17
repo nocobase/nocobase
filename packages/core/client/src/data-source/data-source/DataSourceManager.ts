@@ -80,14 +80,19 @@ export class DataSourceManagerV2 {
     this.multiDataSources.push([request, DataSource]);
   }
 
-  getAllCollections(predicate?: (collection: CollectionV2) => boolean) {
-    return this.getDataSources().reduce((acc, dataSource) => {
-      acc.push({
-        ...dataSource.getOptions(),
-        collections: dataSource.collectionManager.getCollections(predicate),
-      });
-      return acc;
-    }, []);
+  getAllCollections(
+    predicate?: (collection: CollectionV2) => boolean,
+  ): (DataSourceOptionsV2 & { collections: CollectionV2[] })[] {
+    return this.getDataSources().reduce<(DataSourceOptionsV2 & { collections: CollectionV2[] })[]>(
+      (acc, dataSource) => {
+        acc.push({
+          ...dataSource.getOptions(),
+          collections: dataSource.collectionManager.getCollections(predicate),
+        });
+        return acc;
+      },
+      [],
+    );
   }
 
   addFieldInterfaceGroups(options: Record<string, { label: string; order?: number }>) {

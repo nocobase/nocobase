@@ -10,4 +10,4 @@ const AssociationProvider = <CollectionFieldProviderV2 name={fieldName}>
 </CollectionFieldProviderV2>
 ```
 
-关于关系字段的更多信息，请参考 [关系字段](https://docs.nocobase.com/development/server/collections/association-fields) 以及 [CollectionField](/core/collection/collection-field)。
+关于关系字段的更多信息，请参考 [关系字段](https://docs.nocobase.com/development/server/collections/association-fields) 以及 [CollectionField](/core/data-source/collection-field)。

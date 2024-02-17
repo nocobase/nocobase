@@ -41,7 +41,7 @@ class CollectionFieldInterface {
 }
 ```
 
-其需要结合 [CollectionManager](/core/collection/collection-manager#cmaddcollectionfieldinterfacesinterfaces) 使用。
+其需要结合 [CollectionManager](./collection-field-interface-manager.md) 使用。
 
 ```ts
 class EmailFieldInterface extends CollectionFieldInterface {

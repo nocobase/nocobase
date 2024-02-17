@@ -127,7 +127,7 @@ const Root = observer(() => {
 const app = new Application({
   providers: [Root],
   components: { Action, Form, Input, FormItem },
-  collectionManager: {
+  dataSourceManager: {
     collections: [collection],
     collectionMixins: [InheritanceCollectionMixin],
   },

@@ -61,8 +61,8 @@ export class CollectionManagerV2 {
     this.collectionInstancesArr = Object.values(this.collectionInstancesMap);
   }
 
-  reAddCollections(collections: CollectionV2[] = this.collectionInstancesArr) {
-    const collectionOptions = collections.map((collection) => collection.getOptions());
+  reAddCollections(collectionInstances: CollectionV2[] = this.collectionInstancesArr) {
+    const collectionOptions = collectionInstances.map((collection) => collection.getOptions());
     this.addCollections(collectionOptions);
   }
 

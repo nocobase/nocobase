@@ -68,7 +68,7 @@ class CollectionTemplate {
 }
 ```
 
-其需要结合 [CollectionManager](/core/collection/collection-manager#cmaddcollectiontemplatestemplates) 使用。
+其需要结合 [CollectionManager](./collection-template-manager.md) 使用。
 
 ```ts
 import { Plugin, CollectionV2, CollectionTemplate } from '@nocobase/client';
@@ -95,6 +95,9 @@ class SqlCollectionTemplate extends CollectionTemplate {
 
 class MyPlugin extends Plugin {
   async load() {
+    this.app.dataSourceManager.collectionTemplateManager.addCollectionTemplates([ SqlCollectionTemplate ]);
+
+    // or
     this.app.dataSourceManager.addCollectionTemplates([ SqlCollectionTemplate ]);
   }
 }
@@ -111,7 +114,7 @@ class MyPlugin extends Plugin {
 
 模板对应的数据表类。
 
-在创建数据表后，Collection 会有 [template 字段](/core/collection/collection#collectionoptions)，用于标识该数据表是由哪个模板创建的。
+在创建数据表后，Collection 会有 [template 字段](/core/data-source/collection#collectionoptions)，用于标识该数据表是由哪个模板创建的。
 
 当通过 `collectionManager.addCollections()` 添加数据表对象时，会先读取 `collection.template` 字段，然后通过 `collectionManager.getCollectionTemplate(collection.template)` 获取到 `collectionTemplate`。
 
