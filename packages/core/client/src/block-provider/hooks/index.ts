@@ -218,14 +218,14 @@ export const useCreateActionProps = () => {
         __parent?.service?.refresh?.();
         if (!onSuccess?.successMessage) {
           message.success(t('Saved successfully'));
-          await form.reset();
+          await form.reset(undefined, { forceClear: true });
           return;
         }
         if (onSuccess?.manualClose) {
           modal.success({
             title: compile(onSuccess?.successMessage),
             onOk: async () => {
-              await form.reset();
+              await form.reset(undefined, { forceClear: true });
               if (onSuccess?.redirecting && onSuccess?.redirectTo) {
                 if (isURL(onSuccess.redirectTo)) {
                   window.location.href = onSuccess.redirectTo;
@@ -237,7 +237,7 @@ export const useCreateActionProps = () => {
           });
         } else {
           message.success(compile(onSuccess?.successMessage));
-          await form.reset();
+          await form.reset(undefined, { forceClear: true });
           if (onSuccess?.redirecting && onSuccess?.redirectTo) {
             if (isURL(onSuccess.redirectTo)) {
               window.location.href = onSuccess.redirectTo;
