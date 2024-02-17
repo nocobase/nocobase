@@ -60,6 +60,14 @@ export class BelongsToManyField extends RelationField {
       return false;
     }
 
+    if (!this.collection.model.primaryKeyAttribute) {
+      throw new Error(`Collection model ${this.collection.model.name} has no primary key attribute`);
+    }
+
+    if (!Target.primaryKeyAttribute) {
+      throw new Error(`Target model ${Target.name} has no primary key attribute`);
+    }
+
     const through = this.through;
 
     let Through: Collection;
