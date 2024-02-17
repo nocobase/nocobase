@@ -175,7 +175,7 @@ export const TargetKey = observer(
                   .map((k) => {
                     return {
                       value: k.name,
-                      label: compile(k.title || k.name),
+                      label: compile(k?.uiSchema?.title || k.title || k.name),
                     };
                   }),
               );
