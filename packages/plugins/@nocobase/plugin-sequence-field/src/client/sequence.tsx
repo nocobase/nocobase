@@ -261,7 +261,8 @@ export class SequenceFieldInterface extends CollectionFieldInterface {
   type = 'object';
   group = 'advanced';
   order = 3;
-  title = `{{t("Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.", { ns: "${NAMESPACE}" })}}`;
+  title = `{{t("Sequence", { ns: "${NAMESPACE}" })}}`;
+  description = `{{t("Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.", { ns: "${NAMESPACE}" })}}`;
   sortable = true;
   default = {
     type: 'sequence',
