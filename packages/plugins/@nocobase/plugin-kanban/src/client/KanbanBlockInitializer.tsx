@@ -118,7 +118,7 @@ export const KanbanBlockInitializer = () => {
             groupField: values.groupField.value,
             collection: item.name,
             params: {
-              sort: [sortName],
+              sort: [sortName.value],
               paginate: false,
             },
           }),
