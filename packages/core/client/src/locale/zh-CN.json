@@ -210,6 +210,7 @@
   "Before change": "变更前",
   "After change": "变更后",
   "Delete record": "删除数据",
+  "Delete collection":"删除数据表",
   "Create collection": "创建数据表",
   "Collection display name": "数据表名称",
   "Collection name": "数据表标识",
