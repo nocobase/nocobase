@@ -985,6 +985,7 @@ export const useDetailsPaginationProps = () => {
     current: ctx.service?.data?.meta?.page || 1,
     total: count,
     pageSize: 1,
+    showSizeChanger: false,
     async onChange(page) {
       const params = ctx.service?.params?.[0];
       ctx.service.run({ ...params, page });
