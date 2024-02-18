@@ -168,6 +168,7 @@ export const TableBlockDesigner = () => {
             });
           }}
         />
+        {field.decoratorProps.dragSort && <EditSortField />}
         <FixedBlockDesignerItem />
         <SchemaSettingsDataScope
           collectionName={name}
@@ -293,7 +294,6 @@ export const TableBlockDesigner = () => {
             });
           }}
         />
-        {field.decoratorProps.dragSort && <EditSortField />}
         <SchemaSettingsConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
         {supportTemplate && <SchemaSettingsDivider />}
         {supportTemplate && (

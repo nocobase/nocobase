@@ -136,26 +136,26 @@ export const PresetFields = observer((props: any) => {
       name: 'id',
     },
     {
-      field: t('CreatedAt'),
+      field: t('Created at'),
       interface: 'datetime',
       description: t('Store the creation time of each record'),
       name: 'createdAt',
     },
     {
-      field: t('UpdatedAt'),
+      field: t('Updated at'),
       interface: 'datetime',
       description: t('Store the last update time of each recordd'),
       name: 'updatedAt',
     },
     {
-      field: t('CreatedBy'),
+      field: t('Created by'),
       interface: 'm2o',
       description: t('Store the creation user of each record'),
       name: 'createdBy',
     },
 
     {
-      field: t('UpdatedBy'),
+      field: t('Updated by'),
       interface: 'm2o',
       description: t('Store the last update user of each record'),
       name: 'updatedBy',
