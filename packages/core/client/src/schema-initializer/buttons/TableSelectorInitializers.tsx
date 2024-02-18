@@ -25,7 +25,7 @@ export const tableSelectorInitializers = new SchemaInitializer({
       title: '{{t("Filter blocks")}}',
       name: 'filterBlocks',
       useChildren() {
-        const { name } = useCollection();
+        const { name, dataSource } = useCollection();
         return [
           {
             name: 'filterFormBlockInTableSelector',
@@ -35,6 +35,7 @@ export const tableSelectorInitializers = new SchemaInitializer({
               isItem: true,
             },
             collectionName: name,
+            dataSource,
           },
           {
             name: 'filterCollapseBlockInTableSelector',
@@ -44,6 +45,7 @@ export const tableSelectorInitializers = new SchemaInitializer({
               isItem: true,
             },
             collectionName: name,
+            dataSource,
           },
         ];
       },

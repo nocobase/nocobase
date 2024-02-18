@@ -81,7 +81,7 @@ export default {
           appends: ctx.action.params.appends,
         });
 
-      ctx.body = record.toJSON();
+      ctx.body = record;
 
       await next();
     },
