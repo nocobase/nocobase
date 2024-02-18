@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { CollectionFieldOptions } from '../../../collection-manager';
 import { useParentCollection } from '../../../data-source/collection/AssociationProvider';
 import { useRecordV2 } from '../../../data-source/record/RecordProvider';
+import { useFlag } from '../../../flag-provider/hooks/useFlag';
 import { useBaseVariable } from './useBaseVariable';
 
 interface Props {
@@ -47,6 +48,7 @@ export const useCurrentParentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
   const record = useRecordV2();
   const { name: parentCollectionName } = useParentCollection() || {};
+  const { isInSubForm, isInSubTable } = useFlag() || {};
 
   const currentParentRecordSettings = useBaseVariable({
     collectionField: props.collectionField,
@@ -61,7 +63,7 @@ export const useCurrentParentRecordVariable = (props: Props = {}) => {
   return {
     currentParentRecordSettings,
     currentParentRecordCtx: record?.parentRecord?.data,
-    shouldDisplayCurrentParentRecord: !!record?.parentRecord?.data,
+    shouldDisplayCurrentParentRecord: !!record?.parentRecord?.data && !isInSubForm && !isInSubTable,
     collectionName: parentCollectionName,
   };
 };
