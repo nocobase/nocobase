@@ -74,7 +74,7 @@ export const DuplicateAction = observer(
     const { service, __parent, block } = useBlockRequestContext();
     const { duplicateFields, duplicateMode = 'quickDulicate', duplicateCollection } = fieldSchema['x-component-props'];
     const record = useRecord();
-    const parentRecordData = useParentRecordDataV2(false);
+    const parentRecordData = useParentRecordDataV2();
     const { id, __collection } = record;
     const ctx = useActionContext();
     const { name } = useCollection();

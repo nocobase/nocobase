@@ -40,7 +40,7 @@ export const DeleteEventContext = React.createContext({
 });
 const GanttRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
-  const parentRecordData = useParentRecordDataV2(false);
+  const parentRecordData = useParentRecordDataV2();
   const fieldSchema = useFieldSchema();
   const eventSchema: Schema = fieldSchema.properties.detail;
   const close = useCallback(() => {

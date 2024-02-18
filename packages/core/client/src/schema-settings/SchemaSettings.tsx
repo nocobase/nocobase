@@ -973,7 +973,7 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
   const { locale } = useContext(ConfigProvider.ConfigContext);
   const dm = useDataSourceManagerV2();
   const dataSourceKey = useDataSourceKey();
-  const record = useRecordV2(false);
+  const record = useRecordV2();
   const { association } = useDataBlockPropsV2() || {};
 
   // 解决变量`当前对象`值在弹窗中丢失的问题

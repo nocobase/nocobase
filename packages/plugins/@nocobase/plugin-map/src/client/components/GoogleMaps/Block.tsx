@@ -360,7 +360,7 @@ export const GoogleMapsBlock = (props) => {
 
 const MapBlockDrawer = (props) => {
   const { setVisible, record } = props;
-  const parentRecordData = useParentRecordDataV2(false);
+  const parentRecordData = useParentRecordDataV2();
   const fieldSchema = useFieldSchema();
   const schema: Schema = useMemo(
     () =>

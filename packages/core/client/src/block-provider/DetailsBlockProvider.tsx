@@ -21,7 +21,7 @@ const InternalDetailsBlockProvider = (props) => {
     [],
   );
   const { resource, service } = useBlockRequestContext();
-  const parentRecord = useParentRecordV2(false);
+  const parentRecord = useParentRecordV2();
   const currentRecord = service?.data?.data?.[0] || {};
   const detailsBLockValue = useMemo(() => {
     return {

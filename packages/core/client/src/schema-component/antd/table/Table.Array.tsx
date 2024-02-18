@@ -33,7 +33,7 @@ const useTableColumns = () => {
   const schema = useFieldSchema();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
   const scope = useContext(SchemaExpressionScopeContext);
-  const parentRecordData = useParentRecordDataV2(false);
+  const parentRecordData = useParentRecordDataV2();
 
   const columns = schema
     .reduceProperties((buf, s) => {

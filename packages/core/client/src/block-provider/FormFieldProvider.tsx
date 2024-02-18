@@ -14,7 +14,7 @@ export const FormFieldContext = createContext<any>({});
 const InternalFormFieldProvider = (props) => {
   const { action, readPretty, fieldName } = props;
   const formBlockCtx = useFormBlockContext();
-  const parentRecordData = useParentRecordDataV2(false);
+  const parentRecordData = useParentRecordDataV2();
 
   if (!formBlockCtx?.updateAssociationValues?.includes(fieldName)) {
     formBlockCtx?.updateAssociationValues?.push(fieldName);

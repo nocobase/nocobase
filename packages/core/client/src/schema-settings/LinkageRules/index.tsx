@@ -41,7 +41,7 @@ export const FormLinkageRules = observer(
     const { options, defaultValues, collectionName, form, formBlockType, variables, localVariables, record } =
       useProps();
     const { getAllCollectionsInheritChain } = useCollectionManager();
-    const parentRecordData = useParentRecordDataV2(false);
+    const parentRecordData = useParentRecordDataV2();
 
     const components = useMemo(() => ({ ArrayCollapse }), []);
     const schema = useMemo(

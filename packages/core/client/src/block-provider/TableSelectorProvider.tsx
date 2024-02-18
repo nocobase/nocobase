@@ -50,7 +50,7 @@ const InternalTableSelectorProvider = (props) => {
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   const [expandFlag, setExpandFlag] = useState(false);
-  const parentRecordData = useParentRecordDataV2(false);
+  const parentRecordData = useParentRecordDataV2();
   // if (service.loading) {
   //   return <Spin />;
   // }

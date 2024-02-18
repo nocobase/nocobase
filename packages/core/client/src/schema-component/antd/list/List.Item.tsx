@@ -8,7 +8,7 @@ import { RecordProvider } from '../../../record-provider';
 
 export const ListItem = (props) => {
   const field = useField<ObjectField>();
-  const parentRecordData = useParentRecordDataV2(false);
+  const parentRecordData = useParentRecordDataV2();
   return (
     <div className={classnames('itemCss', props.className)}>
       <RecordProvider record={field.value} parent={parentRecordData}>

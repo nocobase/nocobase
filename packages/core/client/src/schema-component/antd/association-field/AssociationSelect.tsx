@@ -58,7 +58,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const api = useAPIClient();
   const resource = api.resource(collectionField.target);
   const linkageFields = filterAnalyses(field.componentProps?.service?.params?.filter);
-  const recordData = useRecordDataV2(false);
+  const recordData = useRecordDataV2();
   useEffect(() => {
     const initValue = isVariable(field.value) ? undefined : field.value;
     const value = Array.isArray(initValue) ? initValue.filter(Boolean) : initValue;

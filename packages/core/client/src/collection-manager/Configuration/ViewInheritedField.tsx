@@ -70,7 +70,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 
 export const ViewCollectionField = (props) => {
   const record = useRecord();
-  const parentRecordData = useParentRecordDataV2(false);
+  const parentRecordData = useParentRecordDataV2();
   return <ViewFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
 

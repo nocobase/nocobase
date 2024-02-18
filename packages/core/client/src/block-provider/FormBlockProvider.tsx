@@ -26,7 +26,7 @@ const InternalFormBlockProvider = (props) => {
   );
   const { resource, service, updateAssociationValues } = useBlockRequestContext();
   const formBlockRef = useRef();
-  const record = useRecordV2(false);
+  const record = useRecordV2();
   const formBlockValue = useMemo(() => {
     return {
       ...ctx,

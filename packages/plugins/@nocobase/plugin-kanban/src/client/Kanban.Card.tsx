@@ -17,7 +17,7 @@ export const KanbanCard: any = observer(
   (props: any) => {
     const { setDisableCardDrag, cardViewerSchema, card, cardField, columnIndex, cardIndex } =
       useContext(KanbanCardContext);
-    const parentRecordData = useParentRecordDataV2(false);
+    const parentRecordData = useParentRecordDataV2();
     const fieldSchema = useFieldSchema();
     const [visible, setVisible] = useState(false);
     const labelDisabled = fieldSchema['x-label-disabled'];

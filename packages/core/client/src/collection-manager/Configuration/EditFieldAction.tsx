@@ -145,7 +145,7 @@ const useUpdateCollectionField = () => {
 
 export const EditCollectionField = (props) => {
   const record = useRecord();
-  const parentRecordData = useParentRecordDataV2(false);
+  const parentRecordData = useParentRecordDataV2();
   return <EditFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
 

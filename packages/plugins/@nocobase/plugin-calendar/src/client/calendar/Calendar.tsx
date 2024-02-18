@@ -141,7 +141,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
 
 const CalendarRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
-  const parentRecordData = useParentRecordDataV2(false);
+  const parentRecordData = useParentRecordDataV2();
   const fieldSchema = useFieldSchema();
   const eventSchema: Schema = useMemo(
     () =>

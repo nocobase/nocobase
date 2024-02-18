@@ -75,7 +75,7 @@ export const InternalPicker = observer(
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const isAllowAddNew = fieldSchema['x-add-new'];
     const [selectedRows, setSelectedRows] = useState([]);
-    const recordData = useRecordDataV2(false);
+    const recordData = useRecordDataV2();
     const options = useMemo(() => {
       if (value && Object.keys(value).length > 0) {
         const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {

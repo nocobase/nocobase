@@ -42,7 +42,7 @@ export const Nester = (props) => {
 
 const ToOneNester = (props) => {
   const { field } = useAssociationFieldContext<ArrayField>();
-  const recordData = useRecordDataV2(false);
+  const recordData = useRecordDataV2();
 
   const isAllowToSetDefaultValue = useCallback(
     ({ form, fieldSchema, collectionField, getInterface, formBlockType }: IsAllowToSetDefaultValueParams) => {
@@ -95,7 +95,7 @@ const ToManyNester = observer(
     const fieldSchema = useFieldSchema();
     const { options, field, allowMultiple, allowDissociate } = useAssociationFieldContext<ArrayField>();
     const { t } = useTranslation();
-    const recordData = useRecordDataV2(false);
+    const recordData = useRecordDataV2();
 
     if (!Array.isArray(field.value)) {
       field.value = [];

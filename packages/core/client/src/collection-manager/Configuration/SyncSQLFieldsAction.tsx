@@ -127,7 +127,7 @@ export const SyncSQLFieldsAction: React.FC<{
   refreshCMList: any;
 }> = ({ refreshCMList }) => {
   const record = useRecord();
-  const parentRecordData = useParentRecordDataV2(false);
+  const parentRecordData = useParentRecordDataV2();
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const form = useMemo(

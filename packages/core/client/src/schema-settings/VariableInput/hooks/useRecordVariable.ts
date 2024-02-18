@@ -45,7 +45,7 @@ export const useRecordVariable = (props: Props) => {
  */
 export const useCurrentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
-  const record = useRecordV2(false);
+  const record = useRecordV2();
   const { name: collectionName } = useCollection() || {};
   const currentRecordSettings = useBaseVariable({
     collectionField: props.collectionField,

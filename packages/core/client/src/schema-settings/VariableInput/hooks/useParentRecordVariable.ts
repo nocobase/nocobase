@@ -45,7 +45,7 @@ export const useParentRecordVariable = (props: Props) => {
  */
 export const useCurrentParentRecordVariable = (props: Props = {}) => {
   const { t } = useTranslation();
-  const record = useRecordV2(false);
+  const record = useRecordV2();
   const { name: parentCollectionName } = useParentCollection() || {};
 
   const currentParentRecordSettings = useBaseVariable({

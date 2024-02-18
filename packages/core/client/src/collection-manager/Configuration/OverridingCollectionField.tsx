@@ -124,7 +124,7 @@ const useOverridingCollectionField = () => {
 
 export const OverridingCollectionField = (props) => {
   const record = useRecord();
-  const parentRecordData = useParentRecordDataV2(false);
+  const parentRecordData = useParentRecordDataV2();
   return <OverridingFieldAction item={record} parentItem={parentRecordData} {...props} />;
 };
 

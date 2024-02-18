@@ -17,7 +17,7 @@ const itemCss = css`
 
 export const GridCardItem = (props) => {
   const field = useField<ObjectField>();
-  const parentRecordData = useParentRecordDataV2(false);
+  const parentRecordData = useParentRecordDataV2();
   return (
     <Card
       role="button"

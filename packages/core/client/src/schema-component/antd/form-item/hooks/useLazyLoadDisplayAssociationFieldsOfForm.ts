@@ -22,7 +22,7 @@ const useLazyLoadDisplayAssociationFieldsOfForm = () => {
   const { name } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
   const form = useForm();
-  const recordData = useRecordDataV2(false);
+  const recordData = useRecordDataV2();
   const fieldSchema = useFieldSchema();
   const variables = useVariables();
   const field = useField<Field>();
