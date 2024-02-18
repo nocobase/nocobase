@@ -1519,8 +1519,7 @@ const getChildren = ({
       if (item.inherit) {
         return false;
       }
-      const fields = getCollectionFields(item.name);
-      if (item.autoGenId === false && !fields.find((v) => v.primaryKey)) {
+      if (!item.filterTargetKey) {
         return false;
       } else if (
         ['Kanban', 'FormItem'].includes(componentName) &&
