@@ -311,7 +311,6 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
-      console.log(interfaceConfig?.schemaInitialize);
       const resultItem = {
         type: 'item',
         name: field.name,
